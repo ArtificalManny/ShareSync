@@ -1,13 +1,22 @@
 // src/pages/Messages.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// MESSAGES PAGE - Connected to Real Backend + WebSocket
-// v4.0 - "The Gallery Walk" Light Theme
+// SHARESYNC MESSAGES PAGE v4.0 - "The Gallery Walk" Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES IN v4.0:
-// - Updated to light theme (white backgrounds, slate text)
-// - All functionality preserved exactly
-// - NO BACKEND CHANGES
+// THEME: "The Communication Hub"
+//
+// COLOR MAP:
+// - Page Background: #F8FAFC (light)
+// - Conversation List: #FFFFFF (white sidebar)
+// - Selected Conversation: #EEF2FF (violet tint)
+// - Unread Indicator: #8B5CF6 (violet dot)
+// - Message Bubble (Sent): #8B5CF6 (violet)
+// - Message Bubble (Received): #F1F5F9 (light gray)
+// - Timestamp: #94A3B8 (muted)
+// - Input Area: #FFFFFF (white)
+// - Send Button: #8B5CF6 (violet)
+//
+// NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -88,7 +97,7 @@ const searchUsers = async (query) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   LOADING SKELETONS (✅ UPDATED: Light theme)
+   LOADING SKELETONS - Light theme
 ───────────────────────────────────────────────────────────────────────── */
 const ConversationSkeleton = () => (
   <div className="p-4 space-y-4">
@@ -119,7 +128,7 @@ const MessagesSkeleton = () => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────────
-   ERROR STATE (✅ UPDATED: Light theme)
+   ERROR STATE - Light theme
 ───────────────────────────────────────────────────────────────────────── */
 const ErrorState = ({ message, onRetry }) => (
   <div className="p-8 text-center">
@@ -138,7 +147,7 @@ const ErrorState = ({ message, onRetry }) => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────────
-   AVATAR COMPONENT (✅ UPDATED: Light theme)
+   AVATAR COMPONENT - Light theme with violet accent
 ───────────────────────────────────────────────────────────────────────── */
 const Avatar = ({ user, size = 'md', className = '' }) => {
   const sizes = {
@@ -167,7 +176,7 @@ const Avatar = ({ user, size = 'md', className = '' }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TYPING INDICATOR (✅ UPDATED: Light theme)
+   TYPING INDICATOR - Light theme
 ───────────────────────────────────────────────────────────────────────── */
 const TypingIndicator = ({ users }) => {
   if (!users || users.length === 0) return null;
@@ -191,7 +200,7 @@ const TypingIndicator = ({ users }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CONVERSATION LIST ITEM (✅ UPDATED: Light theme)
+   CONVERSATION LIST ITEM - Light theme with violet selection
 ───────────────────────────────────────────────────────────────────────── */
 const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) => {
   const displayName = getConversationDisplayName(conversation, currentUserId);
@@ -227,10 +236,10 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
         w-full flex items-start gap-3 p-4
         transition-all duration-200
         ${isSelected 
-          ? 'bg-violet-50 border-l-2 border-l-violet-500' 
+          ? 'bg-indigo-50 border-l-2 border-l-violet-500' 
           : 'hover:bg-slate-50 border-l-2 border-l-transparent'
         }
-        ${unreadCount > 0 ? 'bg-blue-50/50' : ''}
+        ${unreadCount > 0 && !isSelected ? 'bg-violet-50/50' : ''}
       `}
     >
       <Avatar user={otherUser} size="md" />
@@ -262,7 +271,7 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MESSAGE BUBBLE (✅ UPDATED: Light theme)
+   MESSAGE BUBBLE - Light theme (Sent: Violet, Received: Light gray)
 ───────────────────────────────────────────────────────────────────────── */
 const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
   const time = new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -279,7 +288,7 @@ const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
         <div className={`
           px-4 py-2.5 rounded-2xl
           ${isOwn 
-            ? 'bg-blue-500 text-white rounded-br-md' 
+            ? 'bg-violet-500 text-white rounded-br-md' 
             : 'bg-slate-100 text-slate-800 rounded-bl-md'
           }
           ${message.__optimistic ? 'opacity-70' : ''}
@@ -297,7 +306,7 @@ const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   NEW MESSAGE MODAL (✅ UPDATED: Light theme)
+   NEW MESSAGE MODAL - Light theme
 ───────────────────────────────────────────────────────────────────────── */
 const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -368,7 +377,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-slate-800">New Message</h3>
@@ -381,7 +390,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-2">To:</label>
             {selectedUser ? (
-              <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-2 p-2 bg-violet-50 rounded-lg border border-violet-200">
                 <Avatar user={selectedUser} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">
@@ -389,7 +398,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
                   </p>
                   <p className="text-xs text-slate-500 truncate">{selectedUser.email}</p>
                 </div>
-                <button onClick={() => setSelectedUser(null)} className="p-1 rounded hover:bg-slate-200 text-slate-400">
+                <button onClick={() => setSelectedUser(null)} className="p-1 rounded hover:bg-violet-100 text-slate-400">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -459,7 +468,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
           <button
             onClick={handleSend}
             disabled={!selectedUser || !messageContent.trim() || isSending}
-            className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-md shadow-blue-200"
+            className="px-4 py-2 rounded-lg bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-md shadow-violet-200"
           >
             {isSending ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Message</>}
           </button>
@@ -470,7 +479,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN MESSAGES PAGE (✅ UPDATED: Light theme)
+   MAIN MESSAGES PAGE - "The Communication Hub"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Messages() {
   const queryClient = useQueryClient();
@@ -737,18 +746,24 @@ export default function Messages() {
   const hasUnreadMessages = conversations.some(c => (c.unreadCount || 0) > 0);
 
   return (
-    <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4 bg-gradient-to-b from-slate-50 to-white">
+    <div 
+      className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4"
+      style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)' }}
+    >
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full">
         
         {/* LEFT: Conversation List */}
-        <aside className="rounded-2xl border border-slate-200 bg-white overflow-hidden flex flex-col shadow-sm">
+        <aside 
+          className="rounded-2xl border border-slate-200 bg-white overflow-hidden flex flex-col"
+          style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+        >
           <div className="p-4 border-b border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-slate-800">Messages</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-md shadow-blue-200"
+                  className="p-2 rounded-lg bg-violet-500 text-white hover:bg-violet-600 transition-colors shadow-md shadow-violet-200"
                   title="New message"
                 >
                   <Plus className="w-4 h-4" />
@@ -809,7 +824,7 @@ export default function Messages() {
                 <p className="text-sm text-slate-500">No conversations yet</p>
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm hover:bg-blue-600 transition-colors shadow-md shadow-blue-200"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500 text-white text-sm hover:bg-violet-600 transition-colors shadow-md shadow-violet-200"
                 >
                   <Plus className="w-4 h-4" />
                   New Message
@@ -837,7 +852,10 @@ export default function Messages() {
         </aside>
 
         {/* RIGHT: Message Thread */}
-        <section className="rounded-2xl border border-slate-200 bg-white h-full flex flex-col overflow-hidden shadow-sm">
+        <section 
+          className="rounded-2xl border border-slate-200 bg-white h-full flex flex-col overflow-hidden"
+          style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+        >
           {selectedConversation ? (
             <>
               {/* Header */}
@@ -899,9 +917,9 @@ export default function Messages() {
               <TypingIndicator users={typingUsers} />
               
               {/* Input */}
-              <div className="p-4 border-t border-slate-200 bg-slate-50">
+              <div className="p-4 border-t border-slate-200 bg-white">
                 <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+                  <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                     <Paperclip className="w-5 h-5 text-slate-400" />
                   </button>
                   <input
@@ -910,12 +928,12 @@ export default function Messages() {
                     onChange={handleInputChange}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-colors"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-colors"
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim() || sendMessageMutation.isPending}
-                    className="p-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-blue-200"
+                    className="p-2.5 rounded-lg bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-violet-200"
                   >
                     <Send className={`w-5 h-5 ${sendMessageMutation.isPending ? 'animate-pulse' : ''}`} />
                   </button>
@@ -925,14 +943,14 @@ export default function Messages() {
           ) : (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <Send className="w-8 h-8 text-slate-400" />
+                <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mx-auto mb-4">
+                  <Send className="w-8 h-8 text-violet-500" />
                 </div>
                 <h3 className="text-lg font-medium text-slate-800 mb-2">Select a conversation</h3>
                 <p className="text-sm text-slate-500 max-w-sm">Choose a message from the list or start a new conversation</p>
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors shadow-md shadow-blue-200"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-600 transition-colors shadow-md shadow-violet-200"
                 >
                   <Plus className="w-4 h-4" />
                   New Message
