@@ -18,8 +18,16 @@ export default function ModerationTable({
             key={i}
             className="p-4 rounded-2xl bg-surface-1 border border-white/[0.06] animate-pulse"
           >
-            <div className="h-4 w-1/3 bg-surface-2 rounded mb-2" />
-            <div className="h-3 w-2/3 bg-surface-2 rounded" />
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-3">
+                <div className="h-4 w-1/3 bg-surface-2 rounded" />
+                <div className="h-3 w-2/3 bg-surface-2 rounded" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="h-8 w-24 bg-surface-2 rounded-xl" />
+                <div className="h-8 w-24 bg-surface-2 rounded-xl" />
+              </div>
+            </div>
           </div>
         ))}
       </div>

@@ -34,15 +34,16 @@ export const AUTH_INPUT_WITH_ICON =
   "transition-all duration-200";
 
 // Layout shell
+// ✅ CHANGE: Added "auth-layout" class for CSS variable scoping
 export function AuthLayout({ title, subtitle, children }) {
   return (
-    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#070712]">
-            {/* Ambient background */}
+    <div className="auth-layout fixed inset-0 w-screen h-screen overflow-hidden bg-[#070712]">
+      {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Base */}
         <div className="absolute inset-0 bg-[#070712]" />
 
-        {/* KEY: full-screen purple wash that fades out (prevents the “boxed slab” look) */}
+        {/* KEY: full-screen purple wash that fades out (prevents the "boxed slab" look) */}
         <div className="absolute inset-0 bg-gradient-to-r from-purple-700/30 via-purple-700/12 to-transparent" />
 
         {/* Existing blobs */}

@@ -1,0 +1,30 @@
+cd /Users/realmannyrivas/Documents/ShareSync/ShareSync-backend
+
+# Create a temporary file with the new routes
+cat > /tmp/new_routes.txt << 'EOF'
+
+// ============================================
+// 🚀 PHASE 1: MOMENTUM & NARRATIVE ENDPOINTS
+// ============================================
+
+const { calculateMomentumIndex, getWeeklyNarrative } = require('../../controllers/userController');
+
+// GET /api/users/momentum -> get momentum index
+router.get('/momentum', requireAuth, calculateMomentumIndex);
+
+// GET /api/users/weekly-narrative -> get weekly narrative
+router.get('/weekly-narrative', requireAuth, getWeeklyNarrative);
+
+EOF
+
+# Now insert these routes before the last line (module.exports)
+head -n 282 src/routes/users.js > /tmp/users_updated.js
+cat /tmp/new_routes.txt >> /tmp/users_updated.js
+tail -n 1 src/routes/users.js >> /tmp/users_updated.js
+
+# Replace the original file
+mv /tmp/users_updated.js src/routes/users.js
+
+# Verify it worked
+echo "✅ Routes added! Here's the end of the file:"
+tail -20 src/routes/users.js

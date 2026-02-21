@@ -1,6 +1,14 @@
 // src/pages/Messages.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGES PAGE - Connected to Real Backend + WebSocket
+// v4.0 - "The Gallery Walk" Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES IN v4.0:
+// - Updated to light theme (white backgrounds, slate text)
+// - All functionality preserved exactly
+// - NO BACKEND CHANGES
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -80,16 +88,16 @@ const searchUsers = async (query) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   LOADING SKELETONS
+   LOADING SKELETONS (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const ConversationSkeleton = () => (
   <div className="p-4 space-y-4">
     {[1, 2, 3, 4, 5].map(i => (
       <div key={i} className="flex gap-3 animate-pulse">
-        <div className="w-10 h-10 rounded-full bg-white/10" />
+        <div className="w-10 h-10 rounded-full bg-slate-200" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 bg-white/10 rounded w-3/4" />
-          <div className="h-3 bg-white/10 rounded w-1/2" />
+          <div className="h-4 bg-slate-200 rounded w-3/4" />
+          <div className="h-3 bg-slate-200 rounded w-1/2" />
         </div>
       </div>
     ))}
@@ -100,10 +108,10 @@ const MessagesSkeleton = () => (
   <div className="p-4 space-y-4">
     {[1, 2, 3, 4].map(i => (
       <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'justify-end' : ''}`}>
-        {i % 2 !== 0 && <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />}
+        {i % 2 !== 0 && <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />}
         <div className={`space-y-1 ${i % 2 === 0 ? 'items-end' : ''}`}>
-          <div className={`h-16 bg-white/10 rounded-xl animate-pulse ${i % 2 === 0 ? 'w-48' : 'w-64'}`} />
-          <div className="h-3 bg-white/10 rounded w-16 animate-pulse" />
+          <div className={`h-16 bg-slate-200 rounded-xl animate-pulse ${i % 2 === 0 ? 'w-48' : 'w-64'}`} />
+          <div className="h-3 bg-slate-200 rounded w-16 animate-pulse" />
         </div>
       </div>
     ))}
@@ -111,16 +119,16 @@ const MessagesSkeleton = () => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────────
-   ERROR STATE
+   ERROR STATE (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const ErrorState = ({ message, onRetry }) => (
   <div className="p-8 text-center">
     <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-    <p className="text-sm text-text-secondary mb-2">{message || 'Something went wrong'}</p>
+    <p className="text-sm text-slate-600 mb-2">{message || 'Something went wrong'}</p>
     {onRetry && (
       <button
         onClick={onRetry}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm transition-colors text-slate-700"
       >
         <RefreshCw className="w-4 h-4" />
         Try Again
@@ -130,7 +138,7 @@ const ErrorState = ({ message, onRetry }) => (
 );
 
 /* ─────────────────────────────────────────────────────────────────────────
-   AVATAR COMPONENT
+   AVATAR COMPONENT (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const Avatar = ({ user, size = 'md', className = '' }) => {
   const sizes = {
@@ -152,14 +160,14 @@ const Avatar = ({ user, size = 'md', className = '' }) => {
   }
 
   return (
-    <div className={`${sizes[size]} rounded-full bg-brand-500/20 flex items-center justify-center flex-shrink-0 ${className}`}>
-      <span className="font-medium text-brand-400">{initials}</span>
+    <div className={`${sizes[size]} rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 ${className}`}>
+      <span className="font-medium text-violet-600">{initials}</span>
     </div>
   );
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TYPING INDICATOR
+   TYPING INDICATOR (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const TypingIndicator = ({ users }) => {
   if (!users || users.length === 0) return null;
@@ -171,11 +179,11 @@ const TypingIndicator = ({ users }) => {
     : `${users[0]} and ${users.length - 1} others are typing...`;
   
   return (
-    <div className="flex items-center gap-2 px-4 py-2 text-xs text-text-tertiary">
+    <div className="flex items-center gap-2 px-4 py-2 text-xs text-slate-500">
       <div className="flex gap-1">
-        <span className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
       <span>{text}</span>
     </div>
@@ -183,7 +191,7 @@ const TypingIndicator = ({ users }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CONVERSATION LIST ITEM
+   CONVERSATION LIST ITEM (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) => {
   const displayName = getConversationDisplayName(conversation, currentUserId);
@@ -219,32 +227,32 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
         w-full flex items-start gap-3 p-4
         transition-all duration-200
         ${isSelected 
-          ? 'bg-brand-500/10 border-l-2 border-l-brand-500' 
-          : 'hover:bg-surface-2 border-l-2 border-l-transparent'
+          ? 'bg-violet-50 border-l-2 border-l-violet-500' 
+          : 'hover:bg-slate-50 border-l-2 border-l-transparent'
         }
-        ${unreadCount > 0 ? 'bg-surface-1/50' : ''}
+        ${unreadCount > 0 ? 'bg-blue-50/50' : ''}
       `}
     >
       <Avatar user={otherUser} size="md" />
       
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center justify-between mb-1">
-          <span className={`text-sm truncate ${unreadCount > 0 ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
+          <span className={`text-sm truncate ${unreadCount > 0 ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>
             {displayName}
           </span>
-          <span className="text-xs text-text-tertiary ml-2 flex-shrink-0">
+          <span className="text-xs text-slate-400 ml-2 flex-shrink-0">
             {formatTime(lastMessageAt)}
           </span>
         </div>
-        <p className={`text-sm truncate ${unreadCount > 0 ? 'text-text-secondary' : 'text-text-tertiary'}`}>
+        <p className={`text-sm truncate ${unreadCount > 0 ? 'text-slate-600' : 'text-slate-400'}`}>
           {lastMessage}
         </p>
       </div>
       
       <div className="flex flex-col items-center gap-1">
-        {isStarred && <Star className="w-3 h-3 text-warning-500 fill-warning-500" />}
+        {isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
         {unreadCount > 0 && (
-          <div className="min-w-[18px] h-[18px] rounded-full bg-brand-500 flex items-center justify-center">
+          <div className="min-w-[18px] h-[18px] rounded-full bg-violet-500 flex items-center justify-center">
             <span className="text-[10px] font-medium text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
           </div>
         )}
@@ -254,7 +262,7 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MESSAGE BUBBLE
+   MESSAGE BUBBLE (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
   const time = new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -271,17 +279,17 @@ const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
         <div className={`
           px-4 py-2.5 rounded-2xl
           ${isOwn 
-            ? 'bg-brand-500 text-white rounded-br-md' 
-            : 'bg-surface-2 text-text-primary rounded-bl-md'
+            ? 'bg-blue-500 text-white rounded-br-md' 
+            : 'bg-slate-100 text-slate-800 rounded-bl-md'
           }
           ${message.__optimistic ? 'opacity-70' : ''}
         `}>
           <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         </div>
         <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'justify-end' : ''}`}>
-          <span className="text-xs text-text-tertiary">{time}</span>
-          {message.isEdited && <span className="text-xs text-text-tertiary">(edited)</span>}
-          {message.__optimistic && <span className="text-xs text-text-tertiary">Sending...</span>}
+          <span className="text-xs text-slate-400">{time}</span>
+          {message.isEdited && <span className="text-xs text-slate-400">(edited)</span>}
+          {message.__optimistic && <span className="text-xs text-slate-400">Sending...</span>}
         </div>
       </div>
     </div>
@@ -289,7 +297,7 @@ const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   NEW MESSAGE MODAL
+   NEW MESSAGE MODAL (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -360,58 +368,58 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-surface-1 rounded-2xl border border-white/[0.06] w-full max-w-lg overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
-          <h3 className="text-lg font-semibold text-text-primary">New Message</h3>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-800">New Message</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">To:</label>
+            <label className="block text-sm font-medium text-slate-600 mb-2">To:</label>
             {selectedUser ? (
-              <div className="flex items-center gap-2 p-2 bg-surface-2 rounded-lg">
+              <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
                 <Avatar user={selectedUser} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">
+                  <p className="text-sm font-medium text-slate-800 truncate">
                     {selectedUser.firstName} {selectedUser.lastName}
                   </p>
-                  <p className="text-xs text-text-tertiary truncate">{selectedUser.email}</p>
+                  <p className="text-xs text-slate-500 truncate">{selectedUser.email}</p>
                 </div>
-                <button onClick={() => setSelectedUser(null)} className="p-1 rounded hover:bg-white/10 text-text-tertiary">
+                <button onClick={() => setSelectedUser(null)} className="p-1 rounded hover:bg-slate-200 text-slate-400">
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ) : (
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name or email..."
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-surface-2 border border-white/[0.06] text-text-primary placeholder:text-text-tertiary focus:border-brand-500/50 focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-colors"
                   autoFocus
                 />
-                {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary animate-spin" />}
+                {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />}
               </div>
             )}
 
             {searchResults.length > 0 && !selectedUser && (
-              <div className="mt-2 bg-surface-2 border border-white/[0.06] rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+              <div className="mt-2 bg-white border border-slate-200 rounded-lg overflow-hidden max-h-48 overflow-y-auto shadow-lg">
                 {searchResults.map((user) => (
                   <button
                     key={user._id || user.id}
                     onClick={() => { setSelectedUser(user); setSearchQuery(''); setSearchResults([]); }}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors text-left"
                   >
                     <Avatar user={user} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-primary truncate">{user.firstName} {user.lastName}</p>
-                      <p className="text-xs text-text-tertiary truncate">{user.email}</p>
+                      <p className="text-sm font-medium text-slate-800 truncate">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
                     </div>
                   </button>
                 ))}
@@ -419,39 +427,39 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
             )}
 
             {searchQuery.length >= 2 && !isSearching && searchResults.length === 0 && !selectedUser && (
-              <div className="mt-2 p-4 bg-surface-2 rounded-lg text-center">
-                <User className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
-                <p className="text-sm text-text-secondary">No users found</p>
+              <div className="mt-2 p-4 bg-slate-50 rounded-lg text-center border border-slate-200">
+                <User className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">No users found</p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Message:</label>
+            <label className="block text-sm font-medium text-slate-600 mb-2">Message:</label>
             <textarea
               value={messageContent}
               onChange={(e) => setMessageContent(e.target.value)}
               placeholder="Write your message..."
               rows={4}
-              className="w-full px-4 py-3 rounded-lg resize-none bg-surface-2 border border-white/[0.06] text-text-primary placeholder:text-text-tertiary focus:border-brand-500/50 focus:outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-lg resize-none bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-colors"
             />
           </div>
 
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 p-4 border-t border-white/[0.06]">
-          <button onClick={onClose} disabled={isSending} className="px-4 py-2 rounded-lg text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-50">
+        <div className="flex justify-end gap-3 p-4 border-t border-slate-200 bg-slate-50">
+          <button onClick={onClose} disabled={isSending} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50">
             Cancel
           </button>
           <button
             onClick={handleSend}
             disabled={!selectedUser || !messageContent.trim() || isSending}
-            className="px-4 py-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-md shadow-blue-200"
           >
             {isSending ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Message</>}
           </button>
@@ -462,7 +470,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN MESSAGES PAGE
+   MAIN MESSAGES PAGE (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 export default function Messages() {
   const queryClient = useQueryClient();
@@ -472,7 +480,7 @@ export default function Messages() {
   const { user: currentUser } = useAuth?.() || { user: null };
   const currentUserId = currentUser?._id || currentUser?.id || '';
   
-  // ⭐ WebSocket integration
+  // WebSocket integration
   const { joinConversationRoom, leaveConversationRoom, sendTypingStart, sendTypingStop } = useSocketContext?.() || {};
   
   // Local state
@@ -524,10 +532,9 @@ export default function Messages() {
   });
 
   // ═══════════════════════════════════════════════════════════════════════
-  // ⭐ WEBSOCKET EVENT HANDLERS
+  // WEBSOCKET EVENT HANDLERS
   // ═══════════════════════════════════════════════════════════════════════
 
-  // Handle new message from WebSocket
   useSocketEvent?.('message:new', useCallback((data) => {
     if (data.conversationId === selectedConversationId) {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
@@ -539,7 +546,6 @@ export default function Messages() {
     queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
   }, [selectedConversationId, queryClient]));
 
-  // Handle typing indicators
   useSocketEvent?.('typing:user', useCallback((data) => {
     if (data.conversationId !== selectedConversationId) return;
     
@@ -555,7 +561,6 @@ export default function Messages() {
     });
   }, [selectedConversationId]));
 
-  // Handle message edited
   useSocketEvent?.('message:edited', useCallback((data) => {
     if (data.conversationId === selectedConversationId) {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
@@ -569,7 +574,6 @@ export default function Messages() {
     }
   }, [selectedConversationId, queryClient]));
 
-  // Handle message deleted
   useSocketEvent?.('message:deleted', useCallback((data) => {
     if (data.conversationId === selectedConversationId) {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
@@ -590,7 +594,6 @@ export default function Messages() {
   const sendMessageMutation = useMutation({
     mutationFn: (data) => messagesApi.sendMessage(data),
     onMutate: async (newMessage) => {
-      // Optimistic update
       const optimisticMessage = {
         _id: newMessage.clientMessageId,
         content: newMessage.content,
@@ -607,7 +610,6 @@ export default function Messages() {
       return { optimisticMessage };
     },
     onSuccess: (newMessage, variables, context) => {
-      // Replace optimistic message with real one
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
         messages: (old?.messages || []).map(m => 
@@ -618,7 +620,6 @@ export default function Messages() {
       setMessageInput('');
     },
     onError: (error, variables, context) => {
-      // Remove optimistic message on error
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
         messages: (old?.messages || []).filter(m => m._id !== variables.clientMessageId),
@@ -646,19 +647,16 @@ export default function Messages() {
   // EFFECTS
   // ═══════════════════════════════════════════════════════════════════════
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Mark as read when selecting conversation
   useEffect(() => {
     if (selectedConversation && (selectedConversation.unreadCount || 0) > 0) {
       markAsReadMutation.mutate(selectedConversationId);
     }
   }, [selectedConversationId]);
 
-  // ⭐ Join/leave conversation room for WebSocket
   useEffect(() => {
     if (selectedConversationId && joinConversationRoom) {
       joinConversationRoom(selectedConversationId);
@@ -694,7 +692,6 @@ export default function Messages() {
   const handleInputChange = (e) => {
     setMessageInput(e.target.value);
     
-    // ⭐ Send typing indicator (throttled)
     if (sendTypingStart && selectedConversationId) {
       const now = Date.now();
       if (now - lastTypingRef.current > 2000) {
@@ -712,7 +709,6 @@ export default function Messages() {
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedConversationId) return;
     
-    // Stop typing indicator
     if (sendTypingStop) sendTypingStop(selectedConversationId);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     
@@ -741,36 +737,36 @@ export default function Messages() {
   const hasUnreadMessages = conversations.some(c => (c.unreadCount || 0) > 0);
 
   return (
-    <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4">
+    <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4 bg-gradient-to-b from-slate-50 to-white">
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full">
         
         {/* LEFT: Conversation List */}
-        <aside className="rounded-2xl border border-white/[0.06] bg-surface-1 overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-white/[0.06]">
+        <aside className="rounded-2xl border border-slate-200 bg-white overflow-hidden flex flex-col shadow-sm">
+          <div className="p-4 border-b border-slate-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-text-primary">Messages</h2>
+              <h2 className="text-lg font-semibold text-slate-800">Messages</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="p-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors"
+                  className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-md shadow-blue-200"
                   title="New message"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
-                <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors">
+                <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
               </div>
             </div>
             
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg bg-surface-2 border border-white/[0.06] text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500/50 focus:outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-colors"
               />
             </div>
             
@@ -780,11 +776,11 @@ export default function Messages() {
                   key={f}
                   onClick={() => setFilter(f)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all duration-200 ${
-                    filter === f ? 'bg-brand-500/10 text-brand-400' : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-2'
+                    filter === f ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   {f}
-                  {f === 'unread' && unreadData?.total > 0 && <span className="ml-1 text-brand-400">({unreadData.total})</span>}
+                  {f === 'unread' && unreadData?.total > 0 && <span className="ml-1 text-violet-600">({unreadData.total})</span>}
                 </button>
               ))}
             </div>
@@ -796,7 +792,7 @@ export default function Messages() {
             ) : conversationsError ? (
               <ErrorState message="Failed to load conversations" onRetry={refetchConversations} />
             ) : filteredConversations.length > 0 ? (
-              <div className="divide-y divide-white/[0.06]">
+              <div className="divide-y divide-slate-100">
                 {filteredConversations.map(conv => (
                   <ConversationItem
                     key={conv._id || conv.id}
@@ -809,11 +805,11 @@ export default function Messages() {
               </div>
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center">
-                <MessageCircle className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
-                <p className="text-sm text-text-secondary">No conversations yet</p>
+                <MessageCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm text-slate-500">No conversations yet</p>
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white text-sm hover:bg-brand-600 transition-colors"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm hover:bg-blue-600 transition-colors shadow-md shadow-blue-200"
                 >
                   <Plus className="w-4 h-4" />
                   New Message
@@ -821,17 +817,17 @@ export default function Messages() {
               </div>
             ) : (
               <div className="p-8 text-center">
-                <Search className="w-8 h-8 text-text-tertiary mx-auto mb-3" />
-                <p className="text-sm text-text-secondary">No messages found</p>
+                <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm text-slate-500">No messages found</p>
               </div>
             )}
           </div>
           
           {hasUnreadMessages && (
-            <div className="p-3 border-t border-white/[0.06] bg-surface-0">
+            <div className="p-3 border-t border-slate-200 bg-slate-50">
               <button
                 onClick={handleMarkAllAsRead}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-text-secondary hover:bg-surface-2 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-200 transition-colors"
               >
                 <Archive className="w-4 h-4" />
                 Mark all as read
@@ -841,18 +837,18 @@ export default function Messages() {
         </aside>
 
         {/* RIGHT: Message Thread */}
-        <section className="rounded-2xl border border-white/[0.06] bg-surface-1 h-full flex flex-col overflow-hidden">
+        <section className="rounded-2xl border border-slate-200 bg-white h-full flex flex-col overflow-hidden shadow-sm">
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
                 <div className="flex items-center gap-3">
                   <Avatar user={selectedOtherUser} size="md" />
                   <div>
-                    <h3 className="text-sm font-medium text-text-primary">
+                    <h3 className="text-sm font-medium text-slate-800">
                       {getConversationDisplayName(selectedConversation, currentUserId)}
                     </h3>
-                    <p className="text-xs text-text-tertiary">
+                    <p className="text-xs text-slate-500">
                       {selectedConversation.type === 'direct' ? 'Direct message' : selectedConversation.type}
                     </p>
                   </div>
@@ -860,18 +856,18 @@ export default function Messages() {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => toggleStarMutation.mutate({ conversationId: selectedConversationId, isPinned: selectedConversation.isPinned })}
-                    className={`p-2 rounded-lg hover:bg-surface-2 transition-colors ${selectedConversation.isPinned ? 'text-warning-500' : 'text-text-tertiary'}`}
+                    className={`p-2 rounded-lg hover:bg-slate-200 transition-colors ${selectedConversation.isPinned ? 'text-amber-500' : 'text-slate-400'}`}
                   >
-                    <Star className={`w-4 h-4 ${selectedConversation.isPinned ? 'fill-warning-500' : ''}`} />
+                    <Star className={`w-4 h-4 ${selectedConversation.isPinned ? 'fill-amber-500' : ''}`} />
                   </button>
-                  <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors"><Phone className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors"><Video className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors"><Phone className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors"><Video className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
                 </div>
               </div>
               
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
                 {loadingMessages ? (
                   <MessagesSkeleton />
                 ) : messagesError ? (
@@ -892,8 +888,8 @@ export default function Messages() {
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                      <MessageCircle className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
-                      <p className="text-sm text-text-secondary">No messages yet</p>
+                      <MessageCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-sm text-slate-500">No messages yet</p>
                     </div>
                   </div>
                 )}
@@ -903,10 +899,10 @@ export default function Messages() {
               <TypingIndicator users={typingUsers} />
               
               {/* Input */}
-              <div className="p-4 border-t border-white/[0.06]">
+              <div className="p-4 border-t border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-surface-2 rounded-lg transition-colors">
-                    <Paperclip className="w-5 h-5 text-text-tertiary" />
+                  <button className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+                    <Paperclip className="w-5 h-5 text-slate-400" />
                   </button>
                   <input
                     type="text"
@@ -914,12 +910,12 @@ export default function Messages() {
                     onChange={handleInputChange}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-surface-2 border border-white/[0.06] text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500/50 focus:outline-none transition-colors"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition-colors"
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim() || sendMessageMutation.isPending}
-                    className="p-2.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-blue-200"
                   >
                     <Send className={`w-5 h-5 ${sendMessageMutation.isPending ? 'animate-pulse' : ''}`} />
                   </button>
@@ -929,14 +925,14 @@ export default function Messages() {
           ) : (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mx-auto mb-4">
-                  <Send className="w-8 h-8 text-text-tertiary" />
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <Send className="w-8 h-8 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-medium text-text-primary mb-2">Select a conversation</h3>
-                <p className="text-sm text-text-secondary max-w-sm">Choose a message from the list or start a new conversation</p>
+                <h3 className="text-lg font-medium text-slate-800 mb-2">Select a conversation</h3>
+                <p className="text-sm text-slate-500 max-w-sm">Choose a message from the list or start a new conversation</p>
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors shadow-md shadow-blue-200"
                 >
                   <Plus className="w-4 h-4" />
                   New Message

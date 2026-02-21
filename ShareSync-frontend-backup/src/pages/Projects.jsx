@@ -1,13 +1,13 @@
 // src/pages/Projects.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v3.0 - Phase 7: Visual Cohesion + Phase D: Empty States
+// SHARESYNC PROJECTS PAGE v4.0 - "The Gallery Walk" Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
-// UPDATES:
-// - ⭐ PHASE D: EmptyProjects when no projects exist
-// - ⭐ PHASE D: EmptySearch when search returns no results
-// - Progress bars use purple intensity (not traffic lights)
-// - Consistent with design token system
-// - ⭐ FIX: Added _id || id fallback to prevent /projects/undefined
+//
+// CHANGES IN v4.0:
+// - Updated to light theme (white backgrounds, slate text)
+// - All functionality preserved exactly
+// - NO BACKEND CHANGES
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -21,11 +21,11 @@ import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
 
-// ⭐ PHASE D: Import empty state components
+// PHASE D: Import empty state components
 import EmptyProjects from '../components/empty-states/EmptyProjects';
 import EmptySearch from '../components/empty-states/EmptySearch';
 
-// ✅ Use API helpers that already unwrap backend shapes correctly
+// Use API helpers that already unwrap backend shapes correctly
 import { getProjects } from '../api/projects';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -40,17 +40,17 @@ const getProjectId = (project) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS COLOR - Phase 7: Purple intensity, not traffic lights
+   PROGRESS COLOR - Purple intensity scale
 ───────────────────────────────────────────────────────────────────────── */
 const getProgressFillClass = (percentage) => {
-  if (percentage >= 100) return 'bg-success';      // Teal celebration
-  if (percentage >= 67) return 'bg-brand-400';     // Bright purple
-  if (percentage >= 34) return 'bg-brand';         // Standard purple
-  return 'bg-brand-700';                           // Darker purple
+  if (percentage >= 100) return 'bg-emerald-500';
+  if (percentage >= 67) return 'bg-violet-400';
+  if (percentage >= 34) return 'bg-violet-500';
+  return 'bg-violet-600';
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROJECT CARD - Grid View
+   PROJECT CARD - Grid View (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -67,7 +67,6 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const isImpressiveStreak = streak >= 7;
   const hasNextStep = Boolean(project.nextMicroStep);
 
-  // ⭐ FIX: Safe ID extraction
   const projectId = getProjectId(project);
 
   const handleClick = () => {
@@ -88,71 +87,71 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
       onClick={handleClick}
       className={`
         group p-5 rounded-xl cursor-pointer
-        bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
+        bg-white border border-slate-200
+        hover:bg-slate-50 hover:border-violet-200
+        hover:shadow-lg hover:shadow-violet-100
         transition-all duration-200
-        ${project.isAtRisk ? 'border-l-2 border-l-warning' : ''}
+        ${project.isAtRisk ? 'border-l-4 border-l-amber-400' : ''}
       `}
     >
       {/* Header: Emoji + Streak */}
       <div className="flex justify-between items-start mb-4">
-        <div className="w-12 h-12 bg-surface-2 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
           {getSeasonEmoji(project.season)}
         </div>
 
-        {/* Streak - only prominent when earned */}
         {streak > 0 && (
           <div className={`
             flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
             ${isImpressiveStreak
-              ? 'bg-brand/10 text-brand'
-              : 'bg-surface-2 text-text-tertiary'
+              ? 'bg-violet-100 text-violet-600'
+              : 'bg-slate-100 text-slate-500'
             }
           `}>
-            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-brand' : 'text-text-tertiary'}`} />
+            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-violet-500' : 'text-slate-400'}`} />
             <span>{streak}d</span>
           </div>
         )}
       </div>
 
       {/* Title + Description */}
-      <h3 className="text-base font-semibold text-text-primary mb-1 group-hover:text-brand transition-colors">
+      <h3 className="text-base font-semibold text-slate-800 mb-1 group-hover:text-violet-600 transition-colors">
         {project.name}
       </h3>
-      <p className="text-sm text-text-secondary line-clamp-2 mb-4">
+      <p className="text-sm text-slate-500 line-clamp-2 mb-4">
         {project.description}
       </p>
 
-      {/* Next Step - gentle nudge, not alarming */}
+      {/* Next Step */}
       {hasNextStep ? (
-        <div className="bg-surface-2 rounded-lg p-3 mb-4">
-          <div className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">
+        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 mb-4">
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">
             Next step
           </div>
-          <div className="text-sm text-text-primary truncate">
+          <div className="text-sm text-slate-700 truncate">
             {project.nextMicroStep}
           </div>
         </div>
       ) : (
-        <div className="bg-surface-2 rounded-lg p-3 mb-4 border border-dashed border-white/[0.08]">
-          <div className="flex items-center gap-2 text-text-tertiary">
+        <div className="bg-slate-50 rounded-lg p-3 mb-4 border border-dashed border-slate-200">
+          <div className="flex items-center gap-2 text-slate-400">
             <AlertCircle className="w-3.5 h-3.5" />
             <span className="text-xs">Add a next step</span>
           </div>
         </div>
       )}
 
-      {/* Velocity Progress - PHASE 7: Purple intensity */}
+      {/* Velocity Progress */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] text-text-tertiary uppercase tracking-wider">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider">
             Velocity
           </span>
-          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-success' : 'text-text-primary'}`}>
+          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-emerald-600' : 'text-slate-700'}`}>
             {velocity}%
           </span>
         </div>
-        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(velocity)}`}
             style={{ width: `${Math.min(velocity, 100)}%` }}
@@ -161,8 +160,8 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
-        <div className="flex items-center gap-1.5 text-text-tertiary">
+      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-1.5 text-slate-400">
           <Users className="w-3.5 h-3.5" />
           <span className="text-xs">
             {project.metrics?.openTasks?.value || 0} tasks
@@ -173,8 +172,9 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
           onClick={handleStartSprint}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
-            bg-brand text-white
-            hover:bg-brand-600 hover:shadow-glow-brand
+            bg-gradient-to-r from-blue-500 to-blue-600 text-white
+            hover:from-blue-600 hover:to-blue-700
+            shadow-sm hover:shadow-md hover:shadow-blue-200
             transition-all duration-200
           "
         >
@@ -186,7 +186,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROJECT ROW - List View
+   PROJECT ROW - List View (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -201,7 +201,6 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const streak = project.streak?.value || 0;
   const isImpressiveStreak = streak >= 7;
 
-  // ⭐ FIX: Safe ID extraction
   const projectId = getProjectId(project);
 
   const handleClick = () => {
@@ -222,31 +221,31 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
       onClick={handleClick}
       className="
         group flex items-center justify-between p-4 rounded-xl cursor-pointer
-        bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
+        bg-white border border-slate-200
+        hover:bg-slate-50 hover:border-violet-200
+        hover:shadow-md hover:shadow-violet-100
         transition-all duration-200
       "
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-surface-2 rounded-lg flex items-center justify-center text-xl">
+        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-xl">
           {getSeasonEmoji(project.season)}
         </div>
         <div>
-          <h3 className="text-sm font-medium text-text-primary group-hover:text-brand transition-colors">
+          <h3 className="text-sm font-medium text-slate-800 group-hover:text-violet-600 transition-colors">
             {project.name}
           </h3>
-          <p className="text-xs text-text-tertiary">
+          <p className="text-xs text-slate-500">
             {project.description}
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-6">
-        {/* Streak */}
         {streak > 0 && (
           <div className={`
             flex items-center gap-1 text-xs
-            ${isImpressiveStreak ? 'text-brand' : 'text-text-tertiary'}
+            ${isImpressiveStreak ? 'text-violet-600' : 'text-slate-400'}
           `}>
             <Flame className="w-3.5 h-3.5" />
             <span className="font-medium">{streak}d</span>
@@ -257,22 +256,22 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
           onClick={handleStartSprint}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
-            bg-surface-2 text-text-secondary
-            hover:bg-brand hover:text-white
+            bg-slate-100 text-slate-600
+            hover:bg-violet-500 hover:text-white
             transition-all duration-200
           "
         >
           Launch
         </button>
 
-        <ChevronRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN PAGE
+   MAIN PAGE (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const Projects = () => {
   const { user } = useAuth();
@@ -288,7 +287,6 @@ const Projects = () => {
 
   useEffect(() => {
     fetchProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilter, searchQuery]);
 
   const fetchProjects = async () => {
@@ -297,7 +295,6 @@ const Projects = () => {
 
       const data = await getProjects();
 
-      // getProjects() already unwraps. But backend might still return { projects: [] }
       const list =
         Array.isArray(data) ? data :
         Array.isArray(data?.projects) ? data.projects :
@@ -307,7 +304,6 @@ const Projects = () => {
       setProjects(list);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      // If API fails, don't fake it—keep empty and show EmptyProjects, but you can swap back to mocks if you want.
       setProjects([]);
     } finally {
       setLoading(false);
@@ -316,7 +312,6 @@ const Projects = () => {
 
   const handleProjectCreated = (newProject) => setProjects(prev => [newProject, ...prev]);
   
-  // ⭐ FIX: Navigation handler with validation
   const handleProjectClick = (projectId) => {
     if (!projectId) {
       console.error('[Projects] handleProjectClick called with invalid ID:', projectId);
@@ -327,7 +322,6 @@ const Projects = () => {
   
   const handleStartSprint = (project) => setSelectedProject(project);
 
-  // ⭐ PHASE D: Search handlers
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query && !recentSearches.includes(query)) {
@@ -339,10 +333,8 @@ const Projects = () => {
     setRecentSearches([]);
   };
 
-  // ⭐ PHASE D: Create project from search
   const handleCreateProjectFromSearch = (query) => {
     setShowCreateModal(true);
-    // The modal would be pre-filled with the query as project name
   };
 
   const filteredProjects = projects.filter(project => {
@@ -353,9 +345,7 @@ const Projects = () => {
     return matchesSearch;
   });
 
-  // ⭐ PHASE D: Render appropriate empty state
   const renderEmptyState = () => {
-    // If searching and no results
     if (searchQuery && filteredProjects.length === 0) {
       return (
         <EmptySearch
@@ -374,7 +364,6 @@ const Projects = () => {
       );
     }
 
-    // If no projects at all
     if (projects.length === 0) {
       return (
         <EmptyProjects
@@ -389,7 +378,6 @@ const Projects = () => {
       );
     }
 
-    // If filter returns no results
     if (filteredProjects.length === 0 && selectedFilter !== 'all') {
       return (
         <EmptySearch
@@ -400,12 +388,12 @@ const Projects = () => {
           variant="minimal"
         >
           <div className="text-center mt-4">
-            <p className="text-sm text-text-secondary mb-4">
+            <p className="text-sm text-slate-500 mb-4">
               No {selectedFilter === 'at-risk' ? 'at-risk' : 'active'} projects found.
             </p>
             <button
               onClick={() => setSelectedFilter('all')}
-              className="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+              className="text-sm text-violet-600 hover:text-violet-700 transition-colors"
             >
               View all projects
             </button>
@@ -418,20 +406,18 @@ const Projects = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto">
+    <div className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto bg-gradient-to-b from-slate-50 to-white">
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          HEADER
-      ═══════════════════════════════════════════════════════════════════ */}
+      {/* HEADER */}
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <LayoutGrid className="w-4 h-4 text-brand" />
-            <span className="text-xs text-text-tertiary uppercase tracking-wider">
+            <LayoutGrid className="w-4 h-4 text-violet-600" />
+            <span className="text-xs text-slate-500 uppercase tracking-wider">
               Project Deck
             </span>
           </div>
-          <h1 className="text-4xl font-semibold text-text-primary">
+          <h1 className="text-4xl font-semibold text-slate-800">
             Projects
           </h1>
         </div>
@@ -439,15 +425,15 @@ const Projects = () => {
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search projects..."
               className="
-                bg-surface-1 border border-white/[0.06] rounded-lg
-                pl-10 pr-4 py-2.5 text-sm text-text-primary
-                placeholder:text-text-tertiary
-                focus:border-brand/50 focus:outline-none
+                bg-white border border-slate-200 rounded-lg
+                pl-10 pr-4 py-2.5 text-sm text-slate-700
+                placeholder:text-slate-400
+                focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100
                 w-56 transition-all focus:w-72
               "
               value={searchQuery}
@@ -460,8 +446,9 @@ const Projects = () => {
             onClick={() => setShowCreateModal(true)}
             className="
               flex items-center gap-2 px-4 py-2.5 rounded-lg
-              bg-brand text-white text-sm font-medium
-              hover:bg-brand-600 hover:shadow-glow-brand
+              bg-gradient-to-r from-violet-500 to-violet-600 text-white text-sm font-medium
+              hover:from-violet-600 hover:to-violet-700
+              shadow-md shadow-violet-200 hover:shadow-lg hover:shadow-violet-300
               transition-all duration-200
             "
           >
@@ -473,10 +460,8 @@ const Projects = () => {
 
       <QuietProjectsBanner />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          TOOLBAR
-      ═══════════════════════════════════════════════════════════════════ */}
-      <div className="flex items-center justify-between mb-6 mt-8 pb-4 border-b border-white/[0.06]">
+      {/* TOOLBAR */}
+      <div className="flex items-center justify-between mb-6 mt-8 pb-4 border-b border-slate-200">
         {/* Filters */}
         <div className="flex gap-1">
           {['all', 'active', 'at-risk'].map(filter => (
@@ -487,8 +472,8 @@ const Projects = () => {
                 px-3 py-1.5 rounded-lg text-xs font-medium capitalize
                 transition-all duration-200
                 ${selectedFilter === filter
-                  ? 'bg-surface-2 text-text-primary'
-                  : 'text-text-tertiary hover:text-text-secondary'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                 }
               `}
             >
@@ -498,14 +483,14 @@ const Projects = () => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center gap-1 p-1 bg-surface-1 rounded-lg border border-white/[0.06]">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
           <button
             onClick={() => setViewMode('grid')}
             className={`
               p-2 rounded-md transition-all
               ${viewMode === 'grid'
-                ? 'bg-surface-2 text-text-primary'
-                : 'text-text-tertiary hover:text-text-secondary'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
               }
             `}
           >
@@ -516,8 +501,8 @@ const Projects = () => {
             className={`
               p-2 rounded-md transition-all
               ${viewMode === 'list'
-                ? 'bg-surface-2 text-text-primary'
-                : 'text-text-tertiary hover:text-text-secondary'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
               }
             `}
           >
@@ -526,9 +511,7 @@ const Projects = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          PROJECT GRID / LIST
-      ═══════════════════════════════════════════════════════════════════ */}
+      {/* PROJECT GRID / LIST */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => <SkeletonProjectCard key={i} />)}

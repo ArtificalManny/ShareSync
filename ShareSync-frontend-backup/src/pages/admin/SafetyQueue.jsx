@@ -2,9 +2,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // ADMIN SAFETY QUEUE — Content moderation dashboard
 // Review user-reported content and take action
+// 
+// ATMOSPHERIC VERSION: Uses transparent backgrounds to let the body glow through
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
@@ -23,7 +25,6 @@ import {
   Folder,
   Image,
   Filter,
-  BarChart3,
 } from 'lucide-react';
 import api from '../../api/client';
 
@@ -40,7 +41,7 @@ const REASON_LABELS = {
   impersonation: { label: 'Impersonation', icon: '🎭', color: 'text-purple-400' },
   misinformation: { label: 'Misinformation', icon: '❌', color: 'text-yellow-400' },
   intellectual_property: { label: 'IP Violation', icon: '©️', color: 'text-blue-400' },
-  other: { label: 'Other', icon: '��', color: 'text-slate-400' },
+  other: { label: 'Other', icon: '📝', color: 'text-slate-400' },
 };
 
 const CONTENT_TYPE_ICONS = {
@@ -85,7 +86,7 @@ function BlurredContent({ content, type }) {
     const imageUrl = content?.avatar || content?.url;
     
     return (
-      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800">
+      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-white/[0.05]">
         <img
           src={imageUrl}
           alt="Reported content"
@@ -137,7 +138,7 @@ function BlurredContent({ content, type }) {
           onClick={() => setRevealed(true)}
           className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"
         >
-          <span className="px-3 py-1.5 rounded-full bg-slate-800 text-xs text-slate-300 flex items-center gap-2">
+          <span className="px-3 py-1.5 rounded-full bg-white/[0.1] backdrop-blur-sm text-xs text-slate-300 flex items-center gap-2">
             <Eye className="w-3 h-3" />
             Click to reveal content
           </span>
@@ -148,7 +149,7 @@ function BlurredContent({ content, type }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// REPORT CARD
+// REPORT CARD (Glass Effect)
 // ═══════════════════════════════════════════════════════════════════════════════
 function ReportCard({ report, onResolve, isResolving }) {
   const [expanded, setExpanded] = useState(false);
@@ -168,7 +169,7 @@ function ReportCard({ report, onResolve, isResolving }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="bg-[#12121a] rounded-xl border border-white/[0.06] overflow-hidden"
+      className="bg-white/[0.03] backdrop-blur-sm rounded-xl border border-white/[0.06] overflow-hidden"
     >
       {/* Header - Always Visible */}
       <button
@@ -262,7 +263,7 @@ function ReportCard({ report, onResolve, isResolving }) {
             <div className="p-4 space-y-4">
               {/* Reported User Info */}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02]">
-                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-white/[0.05] flex items-center justify-center">
                   <User className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
@@ -383,26 +384,26 @@ function ReportCard({ report, onResolve, isResolving }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// STATS CARD
+// STATS CARD (Glass Effect)
 // ═══════════════════════════════════════════════════════════════════════════════
 function StatsCard({ stats }) {
   if (!stats) return null;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div className="p-4 rounded-xl bg-[#12121a] border border-white/[0.06]">
+      <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
         <p className="text-2xl font-bold text-amber-400">{stats.pending || 0}</p>
         <p className="text-xs text-slate-500">Pending</p>
       </div>
-      <div className="p-4 rounded-xl bg-[#12121a] border border-white/[0.06]">
+      <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
         <p className="text-2xl font-bold text-orange-400">{stats.underReview || 0}</p>
         <p className="text-xs text-slate-500">Under Review</p>
       </div>
-      <div className="p-4 rounded-xl bg-[#12121a] border border-white/[0.06]">
+      <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
         <p className="text-2xl font-bold text-emerald-400">{stats.resolvedToday || 0}</p>
         <p className="text-xs text-slate-500">Resolved Today</p>
       </div>
-      <div className="p-4 rounded-xl bg-[#12121a] border border-white/[0.06]">
+      <div className="p-4 rounded-xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
         <p className="text-2xl font-bold text-purple-400">
           {(stats.pending || 0) + (stats.underReview || 0)}
         </p>
@@ -461,15 +462,10 @@ export default function SafetyQueue() {
     }
   };
 
-  // Fetch on mount and filter change
-  useState(() => {
+  // Fetch on mount and when filters change
+  useEffect(() => {
     fetchReports();
   }, [page, statusFilter]);
-
-  // Also fetch on mount
-  useState(() => {
-    fetchReports();
-  }, []);
 
   // Resolve report
   const handleResolve = async (reportId, action, notes) => {
@@ -497,7 +493,8 @@ export default function SafetyQueue() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08080f] p-6 lg:p-10">
+    // ATMOSPHERIC: Transparent background lets body glow shine through
+    <div className="min-h-screen p-6 lg:p-10">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -538,7 +535,6 @@ export default function SafetyQueue() {
               onClick={() => {
                 setStatusFilter(status);
                 setPage(1);
-                fetchReports();
               }}
               className={`
                 px-3 py-1.5 rounded-lg text-sm capitalize transition-colors
@@ -571,11 +567,11 @@ export default function SafetyQueue() {
         <div className="space-y-4">
           <AnimatePresence mode="popLayout">
             {isLoading ? (
-              // Skeleton loaders
+              // Skeleton loaders (glass effect)
               [...Array(3)].map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
-                  className="h-20 rounded-xl bg-[#12121a] animate-pulse"
+                  className="h-20 rounded-xl bg-white/[0.03] backdrop-blur-sm animate-pulse"
                 />
               ))
             ) : reports.length === 0 ? (
@@ -611,10 +607,7 @@ export default function SafetyQueue() {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-8">
             <button
-              onClick={() => {
-                setPage((p) => Math.max(1, p - 1));
-                fetchReports();
-              }}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="
                 px-3 py-1.5 rounded-lg text-sm
@@ -629,10 +622,7 @@ export default function SafetyQueue() {
               Page {page} of {totalPages}
             </span>
             <button
-              onClick={() => {
-                setPage((p) => Math.min(totalPages, p + 1));
-                fetchReports();
-              }}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="
                 px-3 py-1.5 rounded-lg text-sm

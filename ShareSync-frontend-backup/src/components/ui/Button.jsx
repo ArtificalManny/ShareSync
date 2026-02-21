@@ -1,15 +1,19 @@
 // src/components/ui/Button.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC BUTTON v2.1 - Chapter 4: Micro-Interactions Library (SAFE MERGE)
+// SHARESYNC BUTTON v4.0 - "The Gallery Walk" Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES IN v4.0:
+// - Updated gradient colors for light theme
+// - All functionality preserved exactly
+// - NO BACKEND CHANGES
 //
 // Kept 100% backwards compatible with existing props/styles.
 // Adds OPTIONAL micro-interactions:
 // - Framer Motion hover/tap scale (disabled when disabled/loading)
-// - Optional "state" overlay: loading | success | error (without breaking "loading" boolean)
-// - Success/error icons via lucide-react (safe; lucide already used across app)
+// - Optional "state" overlay: loading | success | error
+// - Success/error icons via lucide-react
 //
-// NOTE: No backend changes. No API shape changes required.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useMemo } from "react";
@@ -40,48 +44,40 @@ const VARIANT = {
   success: "btn--success",
   warning: "btn--warning",
   danger: "btn--danger",
-  live: "btn--live", // Electric Cyan for real-time actions
-  energy: "btn--energy", // Coral for high-momentum actions
+  live: "btn--live",
+  energy: "btn--energy",
 
   // Legacy/special
   proton: "btn--proton",
 };
 
-// Deep Violet gradient styles (inline for primary)
+// ✅ UPDATED: Light theme gradient styles
 const GRADIENT_STYLES = {
   primary: {
-    background:
-      "linear-gradient(135deg, var(--brand-600, #7C3AED) 0%, var(--brand-700, #6D28D9) 100%)",
+    background: "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)",
   },
   success: {
-    background:
-      "linear-gradient(135deg, var(--success-500, #10B981) 0%, var(--success-600, #059669) 100%)",
+    background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
   },
   warning: {
-    background:
-      "linear-gradient(135deg, var(--warning-500, #F59E0B) 0%, var(--warning-600, #D97706) 100%)",
+    background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
   },
   danger: {
-    background:
-      "linear-gradient(135deg, var(--error-500, #EF4444) 0%, var(--error-600, #DC2626) 100%)",
+    background: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
   },
   live: {
-    background:
-      "linear-gradient(135deg, var(--cyan-500, #06B6D4) 0%, var(--cyan-600, #0891B2) 100%)",
+    background: "linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)",
   },
   energy: {
-    background:
-      "linear-gradient(135deg, var(--energy-500, #F43F5E) 0%, var(--energy-600, #E11D48) 100%)",
+    background: "linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)",
   },
 };
 
 function getMotionComponent(As) {
-  // For string tags, prefer motion.button/div/etc.
   if (typeof As === "string") {
     const key = As.toLowerCase();
     return motion[key] || motion.button;
   }
-  // For React components, wrap via motion()
   return motion(As);
 }
 
@@ -101,9 +97,7 @@ export default function Button({
   pulse = false,
   fullWidth = false,
 
-  // NEW (optional) - micro-interaction state machine
-  // If you don't pass this, nothing changes.
-  // state overrides visuals/overlays but remains compatible with `loading`.
+  // Optional micro-interaction state machine
   state = "idle", // idle | loading | success | error
 
   // Motion toggles (optional)
@@ -130,7 +124,7 @@ export default function Button({
     className
   );
 
-  // Apply gradient for filled variants (unchanged behavior)
+  // Apply gradient for filled variants
   const gradientVariants = ["primary", "success", "warning", "danger", "live", "energy"];
   const useGradient = gradientVariants.includes(variant);
   const gradientStyle = useGradient ? GRADIENT_STYLES[variant] : {};
@@ -150,7 +144,7 @@ export default function Button({
       transition={{ type: "spring", stiffness: 420, damping: 30 }}
       {...rest}
     >
-      {/* Overlays: loading / success / error (optional, safe) */}
+      {/* Overlays: loading / success / error */}
       <AnimatePresence mode="wait">
         {derivedState === "loading" ? (
           <motion.span
@@ -161,7 +155,6 @@ export default function Button({
             className="btn__overlay"
             aria-hidden="true"
           >
-            {/* Use your existing spinner SVG to avoid any styling surprises */}
             <span className="btn__spinner" aria-hidden="true">
               <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <circle
@@ -210,15 +203,12 @@ export default function Button({
             exit={{ opacity: 0.95 }}
             className="btn__content"
           >
-            {/* Left icon (unchanged behavior) */}
             {leftIcon && !isBusy && (
               <span className="btn__icon btn__icon--left">{leftIcon}</span>
             )}
 
-            {/* Label (unchanged behavior) */}
             <span className={cn("btn__label", isBusy && "opacity-0")}>{children}</span>
 
-            {/* Right icon (unchanged behavior) */}
             {rightIcon && <span className="btn__icon btn__icon--right">{rightIcon}</span>}
           </motion.span>
         )}

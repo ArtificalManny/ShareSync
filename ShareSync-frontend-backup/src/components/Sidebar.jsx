@@ -1,7 +1,14 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v3.1 - Phase C: Momentum Engine + Phase E: Social Proof
-// + PHASE N: Instagram-style Auto-Hide on Hover
+// SHARESYNC SIDEBAR v4.0 - "The Gallery Walk" Light Theme
+// Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
+// ═══════════════════════════════════════════════════════════════════════════════
+// 
+// CHANGES IN v4.0:
+// - Updated to light theme (white/slate backgrounds)
+// - Preserved ALL existing functionality
+// - NO BACKEND CHANGES
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
@@ -64,7 +71,6 @@ function buildDisplayName(u) {
 }
 
 function getUserFromLocalStorage() {
-  // Try a few common keys; harmless if they don’t exist.
   const candidates = ["ss.user", "sharesync.user", "user", "auth.user", "currentUser"];
 
   for (const k of candidates) {
@@ -102,18 +108,20 @@ function resolveAvatarUrl(u) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-MOMENTUM LEVEL INDICATOR - Shows current momentum state
+   MOMENTUM LEVEL INDICATOR - Shows current momentum state
+   ✅ UPDATED: Light theme colors
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
   const { glowLevel, glowState, isFireMode, message } = useMomentumContext();
 
+  // ✅ UPDATED: Light theme color configs
   const levelConfig = {
-    0: { icon: null, color: "text-text-tertiary", bg: "bg-surface-2", label: "Idle" },
-    1: { icon: Zap, color: "text-brand-400", bg: "bg-brand-500/10", label: "Warming" },
-    2: { icon: Zap, color: "text-brand-500", bg: "bg-brand-500/15", label: "Building" },
-    3: { icon: TrendingUp, color: "text-brand-400", bg: "bg-brand-500/20", label: "Flowing" },
-    4: { icon: TrendingUp, color: "text-cyan-400", bg: "bg-cyan-500/20", label: "Peak" },
-    5: { icon: Flame, color: "text-energy-500", bg: "bg-energy-500/20", label: "On Fire" },
+    0: { icon: null, color: "text-slate-400", bg: "bg-slate-100", label: "Idle" },
+    1: { icon: Zap, color: "text-violet-500", bg: "bg-violet-50", label: "Warming" },
+    2: { icon: Zap, color: "text-violet-600", bg: "bg-violet-100", label: "Building" },
+    3: { icon: TrendingUp, color: "text-violet-600", bg: "bg-violet-100", label: "Flowing" },
+    4: { icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-50", label: "Peak" },
+    5: { icon: Flame, color: "text-orange-500", bg: "bg-orange-50", label: "On Fire" },
   };
 
   const config = levelConfig[glowLevel] || levelConfig[0];
@@ -124,10 +132,10 @@ function MomentumLevelIndicator({ collapsed = false }) {
     return (
       <div
         className={`
-        mx-auto w-8 h-8 rounded-lg flex items-center justify-center
-        ${config.bg}
-        ${isFireMode ? "animate-pulse" : ""}
-      `}
+          mx-auto w-8 h-8 rounded-lg flex items-center justify-center
+          ${config.bg}
+          ${isFireMode ? "animate-pulse" : ""}
+        `}
       >
         <Icon className={`w-4 h-4 ${config.color}`} />
       </div>
@@ -137,27 +145,27 @@ function MomentumLevelIndicator({ collapsed = false }) {
   return (
     <div
       className={`
-      mx-3 px-3 py-2 rounded-xl
-      ${config.bg} border border-white/[0.06]
-      transition-all duration-500
-      ${isFireMode ? "border-energy-500/30" : ""}
-    `}
+        mx-3 px-3 py-2 rounded-xl
+        ${config.bg} border border-slate-200
+        transition-all duration-500
+        ${isFireMode ? "border-orange-300" : ""}
+      `}
     >
       <div className="flex items-center gap-2">
         {Icon && (
           <div
             className={`
-            w-6 h-6 rounded-lg flex items-center justify-center
-            ${glowLevel >= 3 ? "bg-white/10" : "bg-surface-2"}
-            ${isFireMode ? "animate-bounce" : ""}
-          `}
+              w-6 h-6 rounded-lg flex items-center justify-center
+              ${glowLevel >= 3 ? "bg-white/80" : "bg-white"}
+              ${isFireMode ? "animate-bounce" : ""}
+            `}
           >
             <Icon className={`w-3.5 h-3.5 ${config.color}`} />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className={`text-xs font-medium ${config.color}`}>{config.label}</div>
-          <div className="text-[10px] text-text-tertiary truncate">Level {glowLevel}</div>
+          <div className="text-[10px] text-slate-500 truncate">Level {glowLevel}</div>
         </div>
       </div>
     </div>
@@ -165,7 +173,8 @@ function MomentumLevelIndicator({ collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-PROGRESS RING - With entrance animation, momentum glow, and Phase C breathing
+   PROGRESS RING - With entrance animation, momentum glow, and breathing
+   ✅ UPDATED: Light theme adjustments
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({
   progress: actualProgress = 0.75,
@@ -246,17 +255,17 @@ function ProgressRing({
 
   const glowStyle = useMemo(() => {
     if (isAnimatingRing) {
-      return { filter: `drop-shadow(0 0 16px rgb(124 58 237 / 0.5))` };
+      return { filter: `drop-shadow(0 0 12px rgb(139 92 246 / 0.4))` };
     }
     if (isFireMode) {
       return {
-        filter: `drop-shadow(0 0 20px rgb(124 58 237 / 0.6)) drop-shadow(0 0 40px rgb(244 63 94 / 0.3))`,
+        filter: `drop-shadow(0 0 16px rgb(139 92 246 / 0.5)) drop-shadow(0 0 30px rgb(249 115 22 / 0.3))`,
       };
     }
     if (glowLevel === 0) return {};
-    const intensity = glowLevel * 0.15;
-    const blur = 8 + glowLevel * 4;
-    return { filter: `drop-shadow(0 0 ${blur}px rgb(124 58 237 / ${intensity}))` };
+    const intensity = glowLevel * 0.12;
+    const blur = 6 + glowLevel * 3;
+    return { filter: `drop-shadow(0 0 ${blur}px rgb(139 92 246 / ${intensity}))` };
   }, [glowLevel, isAnimatingRing, isFireMode]);
 
   const breathingClass = useMemo(() => {
@@ -291,7 +300,7 @@ function ProgressRing({
             style={{
               width: size,
               height: size,
-              background: "radial-gradient(circle, var(--brand-400, #A78BFA) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)",
             }}
           />
         )}
@@ -304,7 +313,7 @@ function ProgressRing({
               height: size + 8,
               top: -4,
               left: -4,
-              border: "2px solid rgb(244 63 94 / 0.5)",
+              border: "2px solid rgb(249 115 22 / 0.4)",
             }}
           />
         )}
@@ -315,7 +324,8 @@ function ProgressRing({
           className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`}
           style={glowStyle}
         >
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--surface-2, #1A1A1D)" strokeWidth={strokeWidth} />
+          {/* ✅ UPDATED: Light theme track color */}
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E2E8F0" strokeWidth={strokeWidth} />
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -323,16 +333,16 @@ function ProgressRing({
             fill="none"
             stroke={
               isLevelingUp
-                ? "var(--success-500, #10B981)"
+                ? "#10B981"
                 : isFireMode
-                ? "var(--energy-500, #F43F5E)"
-                : "var(--brand-600, #7C3AED)"
+                ? "#F97316"
+                : "#8B5CF6"
             }
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className={isPulsing ? "stroke-brand-400" : ""}
+            className={isPulsing ? "stroke-violet-400" : ""}
             style={{
               transition: isAnimatingRing
                 ? "stroke-dashoffset 50ms linear"
@@ -344,16 +354,17 @@ function ProgressRing({
         <div className="absolute inset-0 flex items-center justify-center">
           {isLevelingUp ? (
             <div className="text-center level-up-number">
-              <div className="text-[8px] text-brand-300 uppercase tracking-wider">Level Up!</div>
-              <span className="text-lg font-bold text-brand-500">{level}</span>
+              <div className="text-[8px] text-violet-500 uppercase tracking-wider">Level Up!</div>
+              <span className="text-lg font-bold text-violet-600">{level}</span>
             </div>
           ) : isFireMode ? (
             <span className="text-lg animate-pulse">🔥</span>
           ) : (
+            // ✅ UPDATED: Dark text for light theme
             <span
-              className={`font-semibold text-text-primary tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${
-                isPulsing || isCountAnimating ? "scale-110 text-brand-500" : "scale-100"
-              } ${isAnimatingRing ? "text-brand-400" : ""} transition-all duration-200`}
+              className={`font-semibold text-slate-700 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${
+                isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"
+              } ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}
             >
               {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
             </span>
@@ -365,19 +376,19 @@ function ProgressRing({
         <div
           className={`mt-3 px-2 py-1 rounded-full text-[10px] font-medium flex items-center gap-1 transition-all duration-300 ${
             isImpressiveStreak
-              ? "bg-warning-500/10 text-warning-500 border border-warning-500/20"
-              : "bg-surface-2 text-text-tertiary border border-transparent"
+              ? "bg-amber-50 text-amber-600 border border-amber-200"
+              : "bg-slate-100 text-slate-500 border border-transparent"
           }`}
         >
-          <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-warning-500" : "text-text-tertiary"}`} />
+          <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
           <span>{streak}d</span>
         </div>
       )}
 
       <style>{`
-        @keyframes ring-pulse { 0% { box-shadow: 0 0 0 0 var(--brand-500, #8B5CF6); opacity: 0.6; } 100% { box-shadow: 0 0 0 12px transparent; opacity: 0; } }
+        @keyframes ring-pulse { 0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.5); opacity: 0.6; } 100% { box-shadow: 0 0 0 12px transparent; opacity: 0; } }
         .ring-pulse { animation: ring-pulse 0.6s ease-out forwards; }
-        @keyframes ring-pulse-strong { 0% { box-shadow: 0 0 0 0 var(--brand-400, #A78BFA); opacity: 0.7; } 50% { box-shadow: 0 0 16px 4px var(--brand-500, #8B5CF6); opacity: 0.5; } 100% { box-shadow: 0 0 0 16px transparent; opacity: 0; } }
+        @keyframes ring-pulse-strong { 0% { box-shadow: 0 0 0 0 rgb(167 139 250 / 0.6); opacity: 0.7; } 50% { box-shadow: 0 0 16px 4px rgb(139 92 246 / 0.4); opacity: 0.5; } 100% { box-shadow: 0 0 0 16px transparent; opacity: 0; } }
         .ring-pulse-strong { animation: ring-pulse-strong 0.8s ease-out forwards; }
         @keyframes level-up-flash { 0% { transform: scale(0.8); opacity: 0; } 30% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
         .level-up-flash { animation: level-up-flash 0.6s ease-out forwards; }
@@ -387,13 +398,13 @@ function ProgressRing({
         .animate-bounce-subtle { animation: bounce-subtle 0.3s ease-out; }
         .progress-ring-entrance { animation: ring-entrance 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes ring-entrance { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes ring-breathe { 0%, 100% { filter: drop-shadow(0 0 12px rgb(124 58 237 / 0.35)); } 50% { filter: drop-shadow(0 0 16px rgb(124 58 237 / 0.45)); } }
+        @keyframes ring-breathe { 0%, 100% { filter: drop-shadow(0 0 10px rgb(139 92 246 / 0.25)); } 50% { filter: drop-shadow(0 0 14px rgb(139 92 246 / 0.35)); } }
         .animate-ring-breathe { animation: ring-breathe 3s ease-in-out infinite; }
-        @keyframes ring-breathe-strong { 0%, 100% { filter: drop-shadow(0 0 16px rgb(124 58 237 / 0.5)); } 50% { filter: drop-shadow(0 0 22px rgb(167 139 250 / 0.6)); } }
+        @keyframes ring-breathe-strong { 0%, 100% { filter: drop-shadow(0 0 12px rgb(139 92 246 / 0.35)); } 50% { filter: drop-shadow(0 0 18px rgb(167 139 250 / 0.45)); } }
         .animate-ring-breathe-strong { animation: ring-breathe-strong 2.5s ease-in-out infinite; }
-        @keyframes ring-fire { 0%, 100% { filter: drop-shadow(0 0 20px rgb(124 58 237 / 0.6)); } 50% { filter: drop-shadow(0 0 25px rgb(167 139 250 / 0.7)) drop-shadow(0 0 40px rgb(244 63 94 / 0.3)); } }
+        @keyframes ring-fire { 0%, 100% { filter: drop-shadow(0 0 14px rgb(139 92 246 / 0.4)); } 50% { filter: drop-shadow(0 0 20px rgb(167 139 250 / 0.5)) drop-shadow(0 0 30px rgb(249 115 22 / 0.25)); } }
         .animate-ring-fire { animation: ring-fire 2s ease-in-out infinite; }
-        @keyframes fire-ring { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } }
+        @keyframes fire-ring { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
         .animate-fire-ring { animation: fire-ring 1.5s ease-in-out infinite; }
       `}</style>
     </div>
@@ -401,7 +412,8 @@ function ProgressRing({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-SHIP COUNTER
+   SHIP COUNTER
+   ✅ UPDATED: Light theme colors
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const { glowLevel } = useMomentumContext();
@@ -428,21 +440,21 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   if (collapsed) {
     const progress = Math.min(1, current / target);
     return (
-      <div className="mx-auto mt-4 w-8 h-1 bg-surface-2 rounded-full overflow-hidden">
-        <div className="h-full bg-brand-600 rounded-full transition-all duration-500" style={{ width: `${progress * 100}%` }} />
+      <div className="mx-auto mt-4 w-8 h-1 bg-slate-200 rounded-full overflow-hidden">
+        <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${progress * 100}%` }} />
       </div>
     );
   }
 
   return (
     <div
-      className={`mx-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06] transition-all duration-200 ${
-        isAnimating ? "ring-2 ring-brand-500/20" : ""
+      className={`mx-3 px-4 py-3 rounded-xl bg-white border border-slate-200 transition-all duration-200 ${
+        isAnimating ? "ring-2 ring-violet-200" : ""
       }`}
     >
       <div className="flex justify-between items-center mb-2">
-        <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">Ships today</span>
-        <span className={`text-xs font-semibold tabular-nums ${isAnimating ? "text-brand-500 scale-110" : "text-text-primary scale-100"} transition-all duration-200`}>
+        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Ships today</span>
+        <span className={`text-xs font-semibold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
           {displayCurrent}/{target}
         </span>
       </div>
@@ -451,8 +463,8 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
           <div
             key={i}
             className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-              i < current ? "bg-brand-600" : "bg-surface-3"
-            } ${i === justFilledIndex ? "scale-y-150 bg-brand-400" : "scale-y-100"}`}
+              i < current ? "bg-violet-500" : "bg-slate-200"
+            } ${i === justFilledIndex ? "scale-y-150 bg-violet-400" : "scale-y-100"}`}
             style={{ transitionDelay: i === justFilledIndex ? "0ms" : `${i * 50}ms` }}
           />
         ))}
@@ -462,7 +474,8 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-COLLAPSIBLE SECTION
+   COLLAPSIBLE SECTION
+   ✅ UPDATED: Light theme colors
 ───────────────────────────────────────────────────────────────────────── */
 function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -471,12 +484,12 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, c
 
   return (
     <div className="mx-3">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-surface-1 transition-colors">
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-50 transition-colors">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-3.5 h-3.5 text-text-tertiary" />}
-          <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">{title}</span>
+          {Icon && <Icon className="w-3.5 h-3.5 text-slate-400" />}
+          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{title}</span>
         </div>
-        {isOpen ? <ChevronUp className="w-3 h-3 text-text-tertiary" /> : <ChevronDown className="w-3 h-3 text-text-tertiary" />}
+        {isOpen ? <ChevronUp className="w-3 h-3 text-slate-400" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
       </button>
       {isOpen && <div className="mt-2">{children}</div>}
     </div>
@@ -484,7 +497,7 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, c
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-⭐ PHASE N: HOVER TRIGGER ZONE - Instagram-style reveal
+   HOVER TRIGGER ZONE - Instagram-style reveal (UNCHANGED)
 ───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
   return (
@@ -498,7 +511,8 @@ function HoverTriggerZone({ onHover, onLeave }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-MAIN SIDEBAR
+   MAIN SIDEBAR
+   ✅ UPDATED: Light theme - white background, slate borders
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -506,7 +520,7 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  // ⭐ PHASE N: Auto-hide state
+  // Auto-hide state (UNCHANGED)
   const [autoHideEnabled, setAutoHideEnabled] = useState(() => {
     try {
       return localStorage.getItem(LS_AUTOHIDE_KEY) === "1";
@@ -523,7 +537,7 @@ export default function Sidebar({ user }) {
     }
   });
 
-  // ⭐ PHASE N: Hover state for Instagram-style behavior
+  // Hover state for Instagram-style behavior (UNCHANGED)
   const [isHovering, setIsHovering] = useState(false);
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
@@ -538,7 +552,7 @@ export default function Sidebar({ user }) {
     document.body.classList.toggle("sidebar-collapsed", collapsed);
   }, [userCollapsed, autoHideEnabled, collapsed]);
 
-  // ⭐ PHASE N: Handle hover trigger zone
+  // Handle hover trigger zone (UNCHANGED)
   const handleTriggerHover = () => {
     if (!autoHideEnabled) return;
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -552,7 +566,7 @@ export default function Sidebar({ user }) {
     }, 100);
   };
 
-  // ⭐ PHASE N: Handle sidebar mouse events
+  // Handle sidebar mouse events (UNCHANGED)
   const handleSidebarEnter = () => {
     if (!autoHideEnabled) return;
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -589,7 +603,7 @@ export default function Sidebar({ user }) {
     if (!autoHideEnabled) setUserCollapsed(false);
   };
 
-  // ✅ REAL USER (props first, then localStorage fallback)
+  // REAL USER (props first, then localStorage fallback) - UNCHANGED
   const localUser = useMemo(() => getUserFromLocalStorage(), []);
   const effectiveUser = user || localUser;
 
@@ -615,11 +629,11 @@ export default function Sidebar({ user }) {
         className={`
           sidebar-item
           h-screen flex flex-col
-          bg-surface-0 border-r border-white/[0.06]
+          bg-white border-r border-slate-200
           transition-all duration-300 ease-out
           ${collapsed ? "w-[72px]" : "w-[260px]"}
           ${isInFlow ? "opacity-90" : "opacity-100"}
-          ${autoHideEnabled ? "fixed left-0 top-0 z-50 shadow-2xl" : ""}
+          ${autoHideEnabled ? "fixed left-0 top-0 z-50 shadow-xl" : ""}
           translate-x-0
         `}
         data-momentum={glowLevel}
@@ -630,13 +644,13 @@ export default function Sidebar({ user }) {
           {!collapsed && (
             <div className="flex items-center gap-2.5">
               <div
-                className={`sidebar-logo w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center transition-all duration-500 ${
-                  isFireMode ? "shadow-glow-energy" : ""
+                className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 ${
+                  isFireMode ? "shadow-lg shadow-orange-200" : "shadow-md shadow-violet-200"
                 }`}
               >
                 <span className="text-xs font-bold text-white">S</span>
               </div>
-              <span className="text-sm font-semibold text-text-primary">ShareSync</span>
+              <span className="text-sm font-semibold text-slate-800">ShareSync</span>
             </div>
           )}
           <div className="flex items-center gap-1">
@@ -644,10 +658,10 @@ export default function Sidebar({ user }) {
               <button
                 onClick={handleToggleAutoHide}
                 className={`
-                  p-2 rounded-lg text-text-tertiary 
-                  hover:bg-surface-2 hover:text-text-primary 
+                  p-2 rounded-lg text-slate-400 
+                  hover:bg-slate-100 hover:text-slate-600 
                   transition-all duration-200
-                  ${autoHideEnabled ? "bg-brand-500/10 text-brand-500" : ""}
+                  ${autoHideEnabled ? "bg-violet-50 text-violet-500" : ""}
                 `}
                 title={autoHideEnabled ? "Disable auto-hide (Instagram mode)" : "Enable auto-hide (Instagram mode)"}
               >
@@ -658,7 +672,7 @@ export default function Sidebar({ user }) {
             )}
             <button
               onClick={handleToggle}
-              className={`p-2 rounded-lg text-text-tertiary hover:bg-surface-2 hover:text-text-primary transition-all duration-200 ${
+              className={`p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 ${
                 collapsed ? "mx-auto" : ""
               }`}
               title={autoHideEnabled ? "Disable auto-hide" : collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -683,14 +697,14 @@ export default function Sidebar({ user }) {
           </div>
         )}
 
-        {/* Navigation */}
+        {/* Navigation - ✅ UPDATED: Light theme for nav items */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
 
           <div className="py-4">
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-slate-200" />
           </div>
 
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
@@ -704,7 +718,7 @@ export default function Sidebar({ user }) {
           {!collapsed && (
             <>
               <div className="pt-4">
-                <div className="h-px bg-white/[0.06]" />
+                <div className="h-px bg-slate-200" />
               </div>
 
               <CollapsibleSection title="Team" icon={Users} defaultOpen={true} collapsed={collapsed}>
@@ -720,23 +734,23 @@ export default function Sidebar({ user }) {
           )}
         </nav>
 
-        {/* User Card */}
+        {/* User Card - ✅ UPDATED: Light theme */}
         <div className="p-3">
           <div
             onClick={() => navigate("/profile")}
-            className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-surface-1 border border-white/[0.06] hover:bg-surface-2 hover:border-brand-500/20 transition-all duration-200 ${
+            className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-violet-200 transition-all duration-200 ${
               collapsed ? "justify-center" : ""
             }`}
           >
             <div className="relative">
               <UserAvatar size={32} name={me.name} avatarUrl={me.avatarUrl} />
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success-500 ring-2 ring-surface-1" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>
 
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-text-primary truncate">{me.name}</div>
-                <div className="text-[10px] text-success-500 flex items-center gap-1">
+                <div className="text-sm font-medium text-slate-800 truncate">{me.name}</div>
+                <div className="text-[10px] text-emerald-600 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3" />
                   <span>Online</span>
                 </div>
@@ -745,11 +759,11 @@ export default function Sidebar({ user }) {
           </div>
         </div>
 
-        {autoHideEnabled && collapsed && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-brand-500/50 rounded-l-full" />}
+        {autoHideEnabled && collapsed && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-violet-400 rounded-l-full" />}
       </aside>
 
       {autoHideEnabled && !collapsed && (
-        <div className="fixed inset-0 bg-black/20 z-40 transition-opacity duration-300" onClick={() => setIsHovering(false)} />
+        <div className="fixed inset-0 bg-black/10 z-40 transition-opacity duration-300" onClick={() => setIsHovering(false)} />
       )}
     </>
   );

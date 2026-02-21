@@ -1,0 +1,43 @@
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ATMOSPHERIC PAGE WRAPPER
+   Use this on page containers to allow the body glow to shine through
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.page-atmospheric {
+  background: transparent !important;
+  min-height: 100vh;
+}
+
+/* Translucent card that lets glow through */
+.card-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
+
+.card-glass-elevated {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+/* Sidebar glass effect */
+.sidebar-glass {
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Navbar glass effect */
+.navbar-glass {
+  background: rgba(11, 15, 25, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}

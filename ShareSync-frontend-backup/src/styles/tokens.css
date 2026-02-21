@@ -1,479 +1,433 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC DESIGN TOKENS v4.0 - Phase 1: Emotional Color System
+   SHARESYNC DESIGN TOKENS v4.0 - "The Gallery Walk" Color System
    ═══════════════════════════════════════════════════════════════════════════════
    
-   UPDATED: Deep Violet signature palette (#7C3AED → #6D28D9)
+   PHILOSOPHY: 
+   - Auth pages = Dark atmospheric entrance (dramatic purple/teal glow)
+   - App pages = Light airy gallery (white/slate with fluorescent accents)
    
-   COLOR PHILOSOPHY:
-   • Deep Violet = Creativity, ambition, transformation (BRAND)
-   • Electric Cyan = Technology, clarity, progress (LIVE)
-   • Mint = Growth, health, achievement (SUCCESS)
-   • Amber = Attention, warmth (WARNING)
-   • Coral = Energy, high-momentum (ENERGY)
-   • Red = Errors only (ERROR)
+   The user enters through the grand entrance (Login) then walks into the 
+   light-filled main gallery (the app).
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ================================
-     SURFACE HIERARCHY (Dark Theme)
-     ================================ */
-  --surface-0: #09090B;           /* Page background - deepest void */
-  --surface-1: #111113;           /* Cards, panels */
-  --surface-2: #1A1A1D;           /* Elevated cards, hover states */
-  --surface-3: #252529;           /* Interactive elements */
-  --surface-4: #313136;           /* Highest elevation */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TYPOGRAPHY SCALE
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* RGB channels for alpha operations */
-  --surface-0-rgb: 9 9 11;
-  --surface-1-rgb: 17 17 19;
-  --surface-2-rgb: 26 26 29;
-  --surface-3-rgb: 37 37 41;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.25rem;
+  --fs-2xl: 1.5rem;
+  --fs-3xl: 2rem;
+  --fs-4xl: 2.5rem;
 
-  /* Legacy surface aliases */
-  --bg-void: var(--surface-0);
-  --bg-surface: var(--surface-1);
-  --bg-elevated: var(--surface-2);
-  --bg: var(--surface-0-rgb);
-  --card: var(--surface-1-rgb);
-
-  /* ================================
-     TEXT HIERARCHY
-     ================================ */
-  --text-primary: #FAFAFA;        /* Primary content */
-  --text-secondary: #A1A1AA;      /* Secondary content */
-  --text-tertiary: #71717A;       /* Hints, metadata */
-  --text-muted: #52525B;          /* Disabled, placeholders */
-  --text-inverse: #09090B;        /* Text on light backgrounds */
-
-  /* RGB channels */
-  --text-primary-rgb: 250 250 250;
-  --text-secondary-rgb: 161 161 170;
-  --text-tertiary-rgb: 113 113 122;
-  
-  /* Legacy text aliases */
-  --text: var(--text-primary-rgb);
-  --fg: var(--text-primary-rgb);
-  --muted: var(--text-secondary-rgb);
-  --nav-fg: var(--text-primary-rgb);
-  --nav-muted: var(--text-secondary-rgb);
-
-  /* ================================
-     BRAND: DEEP VIOLET (Primary)
-     #7C3AED → #6D28D9 gradient
-     ================================ */
-  --brand-50:  #F5F3FF;
-  --brand-100: #EDE9FE;
-  --brand-200: #DDD6FE;
-  --brand-300: #C4B5FD;
-  --brand-400: #A78BFA;
-  --brand-500: #8B5CF6;
-  --brand-600: #7C3AED;           /* ← PRIMARY SIGNATURE */
-  --brand-700: #6D28D9;           /* ← PRIMARY DARK */
-  --brand-800: #5B21B6;
-  --brand-900: #4C1D95;
-  --brand-950: #2E1065;
-
-  /* RGB channels for brand */
-  --brand-600-rgb: 124 58 237;
-  --brand-700-rgb: 109 40 217;
-  --brand-500-rgb: 139 92 246;
-
-  /* Legacy accent mappings */
-  --accent: var(--brand-600-rgb);
-  --accent-hex: #7C3AED;
-  --ring: var(--brand-500-rgb);
-
-  /* ================================
-     ACCENT: FUCHSIA (Gradients)
-     ================================ */
-  --accent-400: #E879F9;
-  --accent-500: #D946EF;
-  --accent-600: #C026D3;
-  --accent-400-rgb: 232 121 249;
-  --accent-500-rgb: 217 70 239;
-
-  /* ================================
-     LIVE: ELECTRIC CYAN
-     For real-time & active states
-     ================================ */
-  --cyan-50:  #ECFEFF;
-  --cyan-100: #CFFAFE;
-  --cyan-200: #A5F3FC;
-  --cyan-300: #67E8F9;
-  --cyan-400: #22D3EE;
-  --cyan-500: #06B6D4;            /* ← LIVE PRIMARY */
-  --cyan-600: #0891B2;
-  --cyan-700: #0E7490;
-  --cyan-800: #155E75;
-  --cyan-900: #164E63;
-
-  --cyan-500-rgb: 6 182 212;
-  --cyan-400-rgb: 34 211 238;
-  --accent-2: var(--cyan-400-rgb);
-  --accent-2-hex: #22D3EE;
-
-  /* ================================
-     SUCCESS: MINT (Achievements)
-     Softer than clinical green
-     ================================ */
-  --success-50:  #ECFDF5;
-  --success-100: #D1FAE5;
-  --success-200: #A7F3D0;
-  --success-300: #6EE7B7;
-  --success-400: #34D399;
-  --success-500: #10B981;         /* ← SUCCESS PRIMARY */
-  --success-600: #059669;
-  --success-700: #047857;
-  --success-800: #065F46;
-  --success-900: #064E3B;
-
-  --success-500-rgb: 16 185 129;
-  --success-400-rgb: 52 211 153;
-  --success: var(--success-500-rgb);
-
-  /* ================================
-     WARNING: AMBER (Attention)
-     ================================ */
-  --warning-50:  #FFFBEB;
-  --warning-100: #FEF3C7;
-  --warning-200: #FDE68A;
-  --warning-300: #FCD34D;
-  --warning-400: #FBBF24;
-  --warning-500: #F59E0B;         /* ← WARNING PRIMARY */
-  --warning-600: #D97706;
-  --warning-700: #B45309;
-  --warning-800: #92400E;
-  --warning-900: #78350F;
-
-  --warning-500-rgb: 245 158 11;
-  --warning-400-rgb: 251 191 36;
-  --warning: var(--warning-500-rgb);
-
-  /* ================================
-     ENERGY: CORAL (High Momentum)
-     ================================ */
-  --energy-50:  #FFF1F2;
-  --energy-100: #FFE4E6;
-  --energy-200: #FECDD3;
-  --energy-300: #FDA4AF;
-  --energy-400: #FB7185;
-  --energy-500: #F43F5E;          /* ← ENERGY PRIMARY */
-  --energy-600: #E11D48;
-  --energy-700: #BE123C;
-  --energy-800: #9F1239;
-  --energy-900: #881337;
-
-  --energy-500-rgb: 244 63 94;
-  --energy-400-rgb: 251 113 133;
-  --accent-3: var(--energy-400-rgb);
-  --accent-3-hex: #FB7185;
-
-  /* ================================
-     ERROR: TRUE RED (Errors Only)
-     ================================ */
-  --error-50:  #FEF2F2;
-  --error-100: #FEE2E2;
-  --error-200: #FECACA;
-  --error-300: #FCA5A5;
-  --error-400: #F87171;
-  --error-500: #EF4444;           /* ← ERROR PRIMARY */
-  --error-600: #DC2626;
-  --error-700: #B91C1C;
-  --error-800: #991B1B;
-  --error-900: #7F1D1D;
-
-  --error-500-rgb: 239 68 68;
-  --danger: var(--error-500-rgb);
-
-  /* ================================
-     INFO: BLUE (Informational)
-     ================================ */
-  --info-50:  #EFF6FF;
-  --info-100: #DBEAFE;
-  --info-200: #BFDBFE;
-  --info-300: #93C5FD;
-  --info-400: #60A5FA;
-  --info-500: #3B82F6;            /* ← INFO PRIMARY */
-  --info-600: #2563EB;
-  --info-700: #1D4ED8;
-  --info-800: #1E40AF;
-  --info-900: #1E3A8A;
-
-  --info-500-rgb: 59 130 246;
-  --info: var(--info-500-rgb);
-
-  /* ================================
-     BORDERS
-     ================================ */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --border-brand: rgba(124, 58, 237, 0.40);
-  --border-focus: rgba(124, 58, 237, 0.60);
-
-  /* Legacy border */
-  --border: 63 63 70;
-
-  /* ================================
-     SHADOWS & GLOWS
-     ================================ */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.35);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
-
-  /* Signature glows */
-  --glow-brand: 0 0 20px rgb(var(--brand-600-rgb) / 0.35);
-  --glow-brand-strong: 0 0 30px rgb(var(--brand-600-rgb) / 0.5);
-  --glow-live: 0 0 20px rgb(var(--cyan-500-rgb) / 0.35);
-  --glow-success: 0 0 20px rgb(var(--success-500-rgb) / 0.35);
-  --glow-warning: 0 0 20px rgb(var(--warning-500-rgb) / 0.35);
-  --glow-error: 0 0 20px rgb(var(--error-500-rgb) / 0.35);
-  --glow-energy: 0 0 20px rgb(var(--energy-500-rgb) / 0.35);
-
-  /* Focus ring */
-  --ring-focus: 0 0 0 3px rgb(var(--brand-600-rgb) / 0.4);
-  --shadow-focus: var(--ring-focus);
-
-  /* Legacy shadows */
-  --shadow-1: var(--shadow-sm);
-  --shadow-2: var(--shadow-md);
-  --shadow-3: var(--shadow-lg);
-  --shadow-4: var(--shadow-xl);
-  --shadow-soft: var(--shadow-md);
-  --shadow-elev: var(--shadow-lg);
-  --shadow-glow: var(--glow-brand);
-  --elev-1: var(--shadow-md);
-  --elev-2: var(--shadow-lg);
-
-  /* ================================
-     PROGRESS BARS (Purple-based)
-     ================================ */
-  --progress-track: rgba(124, 58, 237, 0.15);
-  --progress-fill: var(--brand-600);
-  --progress-fill-low: var(--brand-400);
-  --progress-fill-mid: var(--brand-500);
-  --progress-fill-high: var(--brand-600);
-  --progress-fill-complete: var(--success-500);
-
-  /* ================================
-     SIGNATURE GRADIENTS
-     ================================ */
-  --gradient-brand: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%);
-  --gradient-signature: linear-gradient(135deg, var(--brand-600) 0%, var(--cyan-500) 100%);
-  --gradient-energy: linear-gradient(135deg, var(--energy-500) 0%, var(--warning-500) 100%);
-  --gradient-success: linear-gradient(135deg, var(--success-500) 0%, var(--cyan-500) 100%);
-  --gradient-flow: linear-gradient(135deg, var(--brand-700) 0%, var(--brand-900) 100%);
-
-  /* Legacy gradient tokens */
-  --grad-signature: var(--gradient-signature);
-  --grad-pandora: var(--gradient-signature);
-  --grad-accent: var(--gradient-brand);
-  --grad-primary: var(--gradient-signature);
-
-  /* Gradient channel tokens */
-  --grad-blue-a: var(--brand-600-rgb);
-  --grad-blue-b: var(--cyan-400-rgb);
-  --grad-purple-a: var(--brand-600-rgb);
-  --grad-purple-b: var(--accent-400-rgb);
-  --grad-emerald-a: var(--success-500-rgb);
-  --grad-emerald-b: 20 184 166;
-  --grad-pandora-a: var(--brand-600-rgb);
-  --grad-pandora-b: var(--cyan-400-rgb);
-
-  /* ================================
-     TYPOGRAPHY TOKENS
-     ================================ */
-  --font-display: "Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-sans: var(--font-body);
-
-  /* Font sizes (responsive) */
-  --fs-xs:  clamp(0.75rem, 0.72rem + 0.1vw, 0.80rem);
-  --fs-sm:  clamp(0.875rem, 0.84rem + 0.2vw, 0.95rem);
-  --fs-md:  clamp(1rem, 0.96rem + 0.3vw, 1.08rem);
-  --fs-lg:  clamp(1.125rem, 1.06rem + 0.5vw, 1.32rem);
-  --fs-xl:  clamp(1.25rem, 1.16rem + 0.7vw, 1.58rem);
-  --fs-2xl: clamp(1.5rem, 1.34rem + 1.1vw, 1.95rem);
-  --fs-3xl: clamp(1.875rem, 1.62rem + 1.6vw, 2.45rem);
-
-  /* Line heights */
-  --lh-tight: 1.15;
-  --lh-snug: 1.25;
-  --lh-normal: 1.45;
-
-  /* Font weights */
-  --fw-regular: 400;
+  --fw-normal: 400;
   --fw-medium: 500;
   --fw-semibold: 600;
   --fw-bold: 700;
 
-  /* ================================
-     RADII & SPACING
-     ================================ */
-  --radius-xs: 4px;
+  --lh-tight: 1.2;
+  --lh-snug: 1.35;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.65;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SPACING & RADIUS
+     ═══════════════════════════════════════════════════════════════════════════ */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-2xl: 22px;
-  --radius-3xl: 28px;
-  --radius-pill: 999px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
 
-  /* Legacy radii */
-  --r-sm: var(--radius-sm);
-  --r-md: var(--radius-md);
-  --r-lg: var(--radius-lg);
-  --r-xl: var(--radius-xl);
-
-  /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-
-  /* ================================
-     MOTION TOKENS
-     ================================ */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     MOTION
+     ═══════════════════════════════════════════════════════════════════════════ */
   --motion-fast: 150ms;
-  --motion-normal: 250ms;
-  --motion-slow: 400ms;
-  --motion-quick: var(--motion-fast);
+  --motion-normal: 200ms;
+  --motion-slow: 300ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
 
-  --easing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --easing-emph: cubic-bezier(0.2, 0.8, 0, 1);
-  --easing-in: cubic-bezier(0.4, 0, 1, 1);
-  --easing-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-standard: var(--easing-standard);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     PRIMARY: ELECTRIC VIOLET (Brand Signature)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --violet-50:  #F5F3FF;
+  --violet-100: #EDE9FE;
+  --violet-200: #DDD6FE;
+  --violet-300: #C4B5FD;
+  --violet-400: #A78BFA;
+  --violet-500: #8B5CF6;
+  --violet-600: #7C3AED;
+  --violet-700: #6D28D9;
+  --violet-800: #5B21B6;
+  --violet-900: #4C1D95;
 
-  --transition-base: var(--motion-normal) var(--easing-standard);
-  --transition-fast: var(--motion-fast) var(--easing-standard);
-  --transition-slow: var(--motion-slow) var(--easing-standard);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SECONDARY: OCEAN BLUE (Actions & Info)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --blue-50:  #EFF6FF;
+  --blue-100: #DBEAFE;
+  --blue-200: #BFDBFE;
+  --blue-300: #93C5FD;
+  --blue-400: #60A5FA;
+  --blue-500: #3B82F6;
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-800: #1E40AF;
+  --blue-900: #1E3A8A;
 
-  /* ================================
-     NEON BRAND PALETTE (Legacy)
-     ================================ */
-  --neon-violet: var(--brand-600);
-  --neon-fuchsia: var(--accent-500);
-  --neon-cyan: var(--cyan-500);
-  --neon-blue: var(--info-500);
-  --neon-teal: #14B8A6;
-  --neon-lime: #84CC16;
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TERTIARY: AURORA TEAL (Success & Positive)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --teal-50:  #F0FDFA;
+  --teal-100: #CCFBF1;
+  --teal-200: #99F6E4;
+  --teal-300: #5EEAD4;
+  --teal-400: #2DD4BF;
+  --teal-500: #14B8A6;
+  --teal-600: #0D9488;
+  --teal-700: #0F766E;
+  --teal-800: #115E59;
+  --teal-900: #134E4A;
 
-  --signal-good: var(--success-500);
-  --signal-warn: var(--warning-500);
-  --signal-bad: var(--error-500);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     NEUTRAL: SOFT SLATE (Foundation)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --slate-50:  #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
 
-  --brand-accent: var(--neon-violet);
-  --brand-accent-2: var(--neon-cyan);
-  --brand-accent-3: var(--energy-500);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ACCENT: FLUORESCENT SPARKS
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --orange-400: #FB923C;
+  --orange-500: #F97316;
+  --rose-400: #FB7185;
+  --rose-500: #F43F5E;
+  --red-500: #EF4444;
+  --red-600: #DC2626;
+  --lime-400: #A3E635;
+  --cyan-400: #22D3EE;
+  --cyan-500: #06B6D4;
 
-  /* ================================
-     PROTON THEME TOKENS
-     ================================ */
-  --proton-purple-hex: var(--brand-600);
-  --proton-blue-hex: var(--cyan-400);
-  --proton-iris-hex: #6C72FF;
-  --proton-purple: var(--brand-600-rgb);
-  --proton-iris: 108 114 255;
-  --proton-blue: var(--cyan-400-rgb);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     RGB VALUES (for rgba() usage)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --violet-500-rgb: 139, 92, 246;
+  --violet-600-rgb: 124, 58, 237;
+  --blue-500-rgb: 59, 130, 246;
+  --blue-600-rgb: 37, 99, 235;
+  --teal-400-rgb: 45, 212, 191;
+  --teal-500-rgb: 20, 184, 166;
+  --cyan-500-rgb: 6, 182, 212;
+  --amber-500-rgb: 245, 158, 11;
+  --orange-500-rgb: 249, 115, 22;
+  --rose-500-rgb: 244, 63, 94;
+  --red-500-rgb: 239, 68, 68;
 
-  /* ================================
-     ALPHA HELPERS
-     ================================ */
-  --alpha-0: 0;
-  --alpha-1: 0.04;
-  --alpha-2: 0.08;
-  --alpha-3: 0.12;
-  --alpha-4: 0.16;
-  --alpha-5: 0.24;
-  --alpha-6: 0.32;
-  --alpha-7: 0.44;
-  --alpha-8: 0.56;
-  --alpha-9: 0.72;
-
-  /* ================================
-     CHART COLORS
-     ================================ */
-  --chart-1: var(--brand-600-rgb);
-  --chart-2: var(--cyan-500-rgb);
-  --chart-3: var(--success-500-rgb);
-  --chart-4: var(--warning-500-rgb);
-  --chart-5: var(--energy-500-rgb);
-
-  /* ================================
-     PROJECT ICON SIZING
-     ================================ */
-  --project-icon-size: 28px;
-  --project-icon-radius: 10px;
-
-  /* ================================
-     LAYOUT RHYTHM
-     ================================ */
-  --section-gap: 48px;
-  --card-pad: 24px;
-  --toolbar-gap: 8px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LIGHT MODE OVERRIDES
-   ═══════════════════════════════════════════════════════════════════════════════ */
-:root:not(.dark):not([data-theme="dark"]) {
-  /* Only apply light mode if explicitly not dark */
-}
-
-[data-theme="light"] {
-  --surface-0: #F8FAFC;
-  --surface-1: #FFFFFF;
-  --surface-2: #F1F5F9;
-  --surface-3: #E2E8F0;
-  --surface-4: #CBD5E1;
-
-  --surface-0-rgb: 248 250 252;
-  --surface-1-rgb: 255 255 255;
-  --surface-2-rgb: 241 245 249;
-
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-tertiary: #64748B;
-  --text-muted: #94A3B8;
-
-  --text-primary-rgb: 15 23 42;
-  --text: var(--text-primary-rgb);
-  --fg: var(--text-primary-rgb);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SEMANTIC: LIGHT MODE (App Pages Default)
+     ═══════════════════════════════════════════════════════════════════════════ */
   
-  --border-subtle: rgba(0, 0, 0, 0.06);
-  --border-default: rgba(0, 0, 0, 0.10);
-  --border-strong: rgba(0, 0, 0, 0.16);
+  /* Backgrounds */
+  --bg-primary: var(--slate-50);
+  --bg-secondary: var(--slate-100);
+  --bg-tertiary: var(--slate-200);
+  --bg-elevated: #FFFFFF;
+  --bg-page: linear-gradient(180deg, var(--slate-50) 0%, #EEF2FF 50%, var(--slate-100) 100%);
 
-  /* Softer shadows in light mode */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.10);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  /* Surfaces (Cards, Panels) */
+  --surface-0: var(--slate-50);
+  --surface-1: #FFFFFF;
+  --surface-2: var(--slate-50);
+  --surface-3: var(--slate-100);
 
-  /* Softer glows in light mode */
-  --glow-brand: 0 0 20px rgb(var(--brand-600-rgb) / 0.20);
-  --glow-brand-strong: 0 0 30px rgb(var(--brand-600-rgb) / 0.30);
+  /* Text */
+  --text-primary: var(--slate-800);
+  --text-secondary: var(--slate-600);
+  --text-tertiary: var(--slate-500);
+  --text-muted: var(--slate-400);
+  --text-inverse: #FFFFFF;
+
+  /* Borders */
+  --border-subtle: var(--slate-200);
+  --border-default: var(--slate-300);
+  --border-strong: var(--slate-400);
+  --border-brand: var(--violet-300);
+
+  /* Brand Colors */
+  --brand-50: var(--violet-50);
+  --brand-100: var(--violet-100);
+  --brand-200: var(--violet-200);
+  --brand-300: var(--violet-300);
+  --brand-400: var(--violet-400);
+  --brand-500: var(--violet-500);
+  --brand-600: var(--violet-600);
+  --brand-700: var(--violet-700);
+  --brand-500-rgb: var(--violet-500-rgb);
+  --brand-600-rgb: var(--violet-600-rgb);
+
+  /* Action Colors */
+  --action-primary: var(--blue-500);
+  --action-primary-hover: var(--blue-600);
+  --action-secondary: var(--violet-500);
+  --action-secondary-hover: var(--violet-600);
+
+  /* Status Colors */
+  --success-50: var(--teal-50);
+  --success-100: var(--teal-100);
+  --success-500: var(--teal-500);
+  --success-600: var(--teal-600);
+  --warning-50: #FEF3C7;
+  --warning-100: #FDE68A;
+  --warning-400: var(--amber-400);
+  --warning-500: var(--amber-500);
+  --warning-600: #D97706;
+  --error-50: #FEE2E2;
+  --error-100: #FECACA;
+  --error-500: var(--red-500);
+  --error-600: var(--red-600);
+  --info-500: var(--blue-500);
+  --info-500-rgb: var(--blue-500-rgb);
+
+  /* Energy (Momentum/Fire Mode) */
+  --energy-400: var(--orange-400);
+  --energy-500: var(--orange-500);
+  --energy-600: #EA580C;
+
+  /* Cyan (Live/Real-time) */
+  --cyan-400: #22D3EE;
+  --cyan-500: #06B6D4;
+  --cyan-600: #0891B2;
+
+  /* Tints (Soft backgrounds for badges/highlights) */
+  --tint-brand: var(--violet-50);
+  --tint-blue: var(--blue-50);
+  --tint-success: var(--teal-50);
+  --tint-warning: #FEF3C7;
+  --tint-error: #FEE2E2;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SHADOWS (Light Mode)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.02);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 10px 10px rgba(0, 0, 0, 0.02);
+  
+  /* Colored shadows */
+  --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.15);
+  --shadow-brand-lg: 0 8px 24px rgba(139, 92, 246, 0.2);
+  --shadow-blue: 0 4px 14px rgba(59, 130, 246, 0.15);
+  --shadow-blue-lg: 0 8px 24px rgba(59, 130, 246, 0.2);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     FOCUS & GLOW RINGS
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --ring-focus: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  --ring-focus-blue: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  --glow-brand: 0 0 20px rgba(139, 92, 246, 0.15);
+  --glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     MOMENTUM GLOWS (Light Mode - Subtle)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --momentum-glow-1: 0 0 10px rgba(139, 92, 246, 0.03);
+  --momentum-glow-2: 0 0 15px rgba(139, 92, 246, 0.05);
+  --momentum-glow-3: 0 0 20px rgba(139, 92, 246, 0.08);
+  --momentum-glow-4: 0 0 25px rgba(139, 92, 246, 0.12);
+  --momentum-glow-5: 0 0 30px rgba(139, 92, 246, 0.18);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     GRADIENTS
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Signature gradients */
+  --gradient-brand: linear-gradient(135deg, var(--violet-500) 0%, var(--violet-600) 100%);
+  --gradient-brand-soft: linear-gradient(135deg, var(--violet-400) 0%, var(--violet-500) 100%);
+  --gradient-sunset: linear-gradient(135deg, var(--violet-500) 0%, #A855F7 50%, #EC4899 100%);
+  --gradient-ocean: linear-gradient(135deg, var(--blue-500) 0%, var(--cyan-500) 50%, var(--teal-400) 100%);
+  --gradient-aurora: linear-gradient(135deg, var(--violet-500) 0%, #6366F1 25%, var(--blue-500) 50%, var(--cyan-500) 75%, var(--teal-400) 100%);
+  --gradient-energy: linear-gradient(135deg, var(--orange-400) 0%, var(--rose-500) 100%);
+  --gradient-success: linear-gradient(135deg, var(--teal-400) 0%, var(--teal-500) 100%);
+  
+  /* Background gradients */
+  --gradient-page: linear-gradient(180deg, var(--slate-50) 0%, #EEF2FF 50%, var(--slate-100) 100%);
+  --gradient-card-hover: linear-gradient(180deg, #FFFFFF 0%, var(--slate-50) 100%);
+  
+  /* Legacy mappings */
+  --grad-pandora: var(--gradient-aurora);
+  --grad-cnbc: var(--gradient-ocean);
+  --grad-primary: var(--gradient-brand);
+  --gradient-signature: var(--gradient-aurora);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     LEGACY MAPPINGS (Backward Compatibility)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --surface: var(--surface-1);
+  --ink: var(--text-primary);
+  --border-color: var(--border-default);
+  --os-primary: var(--violet-500);
+  --os-primary-2: var(--violet-600);
+  --os-bg-0: var(--bg-primary);
+  --os-bg-1: var(--bg-secondary);
+  --os-surface-1: var(--surface-1);
+  --os-surface-2: var(--surface-2);
+  --os-text: var(--text-primary);
+  --os-muted: var(--text-tertiary);
+  --os-muted-2: var(--text-muted);
+  --os-border: var(--border-default);
+  --os-success: var(--success-500);
+  --os-warning: var(--warning-500);
+  --os-danger: var(--error-500);
+  --os-info: var(--info-500);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   REDUCED MOTION
+   DARK MODE SEMANTIC OVERRIDES (For Auth Pages & Dark Contexts)
+   Applied via .dark class or data-theme="dark"
    ═══════════════════════════════════════════════════════════════════════════════ */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --motion-fast: 0ms;
-    --motion-normal: 0ms;
-    --motion-slow: 0ms;
-    --motion-quick: 0ms;
-  }
+.dark,
+[data-theme="dark"],
+.auth-layout {
+  /* Backgrounds */
+  --bg-primary: var(--slate-900);
+  --bg-secondary: #131826;
+  --bg-tertiary: var(--slate-800);
+  --bg-elevated: rgba(30, 41, 59, 0.8);
+
+  /* Surfaces */
+  --surface-0: var(--slate-900);
+  --surface-1: rgba(30, 41, 59, 0.6);
+  --surface-2: rgba(51, 65, 85, 0.4);
+  --surface-3: rgba(71, 85, 105, 0.3);
+
+  /* Text */
+  --text-primary: var(--slate-50);
+  --text-secondary: var(--slate-200);
+  --text-tertiary: var(--slate-400);
+  --text-muted: var(--slate-500);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-brand: rgba(139, 92, 246, 0.4);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.25);
+  --shadow-brand-lg: 0 8px 24px rgba(139, 92, 246, 0.35);
+
+  /* Focus rings */
+  --ring-focus: 0 0 0 3px rgba(139, 92, 246, 0.3);
+  --glow-brand: 0 0 30px rgba(139, 92, 246, 0.25);
+
+  /* Momentum glows (stronger in dark mode) */
+  --momentum-glow-1: 0 0 15px rgba(139, 92, 246, 0.08);
+  --momentum-glow-2: 0 0 20px rgba(139, 92, 246, 0.12);
+  --momentum-glow-3: 0 0 25px rgba(139, 92, 246, 0.18);
+  --momentum-glow-4: 0 0 35px rgba(139, 92, 246, 0.25);
+  --momentum-glow-5: 0 0 45px rgba(139, 92, 246, 0.35);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE TYPOGRAPHY APPLICATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+html, body {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6,
+.heading, .display {
+  font-family: var(--font-display);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+h1, .h1 { font-size: var(--fs-3xl); font-weight: var(--fw-bold); }
+h2, .h2 { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-snug); }
+h3, .h3 { font-size: var(--fs-xl);  font-weight: var(--fw-semibold); }
+h4, .h4 { font-size: var(--fs-lg);  font-weight: var(--fw-medium); }
+h5, .h5 { font-size: var(--fs-md);  font-weight: var(--fw-medium); }
+h6, .h6 { font-size: var(--fs-sm);  font-weight: var(--fw-medium); }
+
+.small { font-size: var(--fs-sm); line-height: var(--lh-normal); }
+.muted { color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-muted { color: var(--text-muted); }
+.text-brand { color: var(--brand-500); }
+.text-success { color: var(--success-500); }
+.text-warning { color: var(--warning-500); }
+.text-error { color: var(--error-500); }
+
+.bg-brand { background-color: var(--brand-500); }
+.bg-brand-soft { background-color: var(--tint-brand); }
+.bg-surface { background-color: var(--surface-1); }
+.bg-elevated { background-color: var(--bg-elevated); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS & ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════════════════════════ */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NEON THEME COMPATIBILITY (Preserved)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.layout-stage[data-theme="neon"] {
+  --surface: var(--surface-1);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+  --border: var(--border-default);
+}
+
+.text-neon {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ATMOSPHERIC SYSTEM v1.0
+   ═══════════════════════════════════════════════════════════════════════════════
+   This file makes surfaces translucent so the body's atmospheric glow shines through.
+   
+   HOW IT WORKS:
+   - body::before and body::after (in theme.css) create purple/teal radial gradients
+   - This file ensures page wrappers and cards don't block that glow with opaque colors
+   
+   SAFE: Only adds utility classes and overrides CSS custom properties.
+   Does NOT modify any components directly.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   OVERRIDE SURFACE COLORS TO BE TRANSLUCENT
+   These work with your existing --surface-0, --surface-1, etc. tokens
+───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Base background - slightly translucent to let glow peek through edges */
+  --surface-0: rgba(11, 15, 25, 0.95);
+  
+  /* Card backgrounds - translucent for glassmorphism */
+  --surface-1: rgba(18, 22, 36, 0.7);
+  --surface-2: rgba(30, 36, 54, 0.6);
+  --surface-3: rgba(45, 52, 72, 0.5);
+  
+  /* Alternative naming (some components use these) */
+  --bg-surface: rgba(18, 22, 36, 0.7);
+  --bg-elevated: rgba(30, 36, 54, 0.6);
+  
+  /* Ensure borders are translucent white for glass effect */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-emphasis: rgba(255, 255, 255, 0.12);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGE WRAPPER UTILITIES
+   Apply to main page containers to ensure atmospheric glow shows through
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Fully transparent - lets all glow through */
+.page-atmospheric {
+  background: transparent !important;
+}
+
+/* Slight tint but still lets glow through */
+.page-atmospheric-tinted {
+  background: rgba(11, 15, 25, 0.3) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CARD GLASS UTILITIES
+   Add backdrop-blur for true glassmorphism
+───────────────────────────────────────────────────────────────────────────── */
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.card-glass:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.card-glass-elevated {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SIDEBAR & NAVBAR GLASS
+───────────────────────────────────────────────────────────────────────────── */
+
+.nav-glass {
+  background: rgba(11, 15, 25, 0.8) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL OVERLAYS
+   Keep these semi-opaque for focus, but let some glow peek through
+───────────────────────────────────────────────────────────────────────────── */
+
+.overlay-atmospheric {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TAILWIND-STYLE UTILITIES
+   bg-surface-X classes that are translucent
+───────────────────────────────────────────────────────────────────────────── */
+
+.bg-surface-0-glass {
+  background: rgba(11, 15, 25, 0.95);
+}
+
+.bg-surface-1-glass {
+  background: rgba(18, 22, 36, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.bg-surface-2-glass {
+  background: rgba(30, 36, 54, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FIX OPAQUE BACKGROUNDS (Surgical overrides)
+   These target specific patterns that block the atmospheric glow
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Override flat slate backgrounds on main content areas */
+.main-content {
+  background: transparent !important;
+}
+
+.content-wrapper {
+  background: transparent !important;
+}
+
+/* Ensure the app container doesn't block glow */
+.app-container {
+  background: transparent !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PERFORMANCE: Disable backdrop-filter on low-power devices
+───────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .card-glass,
+  .card-glass-elevated,
+  .nav-glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}

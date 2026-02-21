@@ -1,4 +1,15 @@
-// src/pages/Settings.jsx - Fixed with PresenceSettings
+// src/pages/Settings.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARESYNC SETTINGS PAGE v4.0 - "The Gallery Walk" Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES IN v4.0:
+// - Updated to light theme (white backgrounds, slate text)
+// - All functionality preserved exactly
+// - NO BACKEND CHANGES
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useEffect, useRef, useState } from 'react';
 import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { toast } from '../components/ui/Toaster.jsx';
@@ -7,14 +18,14 @@ import { DISCOVERABILITY } from '../config/flags.js';
 import {
   Beaker,
   Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles,
-  Play, Zap, Clock, Film, Star, Moon, Sun, Eye
+  Play, Zap, Clock, Film, Star, Moon, Sun, Eye, Settings as SettingsIcon
 } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
 import ExperimentHistory from "../components/settings/ExperimentHistory";
 import WhatWorksAnalyzer from "../components/settings/WhatWorksAnalyzer";
 import PrivacyCard from "../components/settings/PrivacyCard";
 
-// Slider Component
+// ✅ UPDATED: Light theme Slider Component
 function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Icon }) {
   const percentage = ((value - min) / (max - min)) * 100;
 
@@ -22,18 +33,18 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-5 h-5 text-purple-400" />}
-          <label className="text-sm font-medium text-white">{label}</label>
+          {Icon && <Icon className="w-5 h-5 text-violet-500" />}
+          <label className="text-sm font-medium text-slate-700">{label}</label>
         </div>
-        <span className="text-lg font-bold text-white">
+        <span className="text-lg font-bold text-slate-800">
           {value}{unit}
         </span>
       </div>
 
       <div className="relative">
-        <div className="h-3 rounded-full bg-slate-700/50 overflow-hidden">
+        <div className="h-3 rounded-full bg-slate-200 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-300"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -47,7 +58,7 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
         />
       </div>
 
-      <div className="flex justify-between text-xs text-slate-500">
+      <div className="flex justify-between text-xs text-slate-400">
         <span>{min}{unit}</span>
         <span>{max}{unit}</span>
       </div>
@@ -55,7 +66,7 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
   );
 }
 
-// Toggle Component
+// ✅ UPDATED: Light theme Toggle Component (Blue when ON!)
 function Toggle({ label, checked, onChange, description }) {
   return (
     <label className="flex items-start gap-3 cursor-pointer group">
@@ -66,28 +77,28 @@ function Toggle({ label, checked, onChange, description }) {
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only peer"
         />
-        <div className="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-fuchsia-500 transition-all" />
-        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-5" />
+        <div className="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-blue-600 transition-all" />
+        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all peer-checked:translate-x-5" />
       </div>
       <div className="flex-1">
-        <div className="text-sm font-medium text-white group-hover:text-purple-300 transition-colors">
+        <div className="text-sm font-medium text-slate-700 group-hover:text-violet-600 transition-colors">
           {label}
         </div>
         {description && (
-          <div className="text-xs text-slate-400 mt-0.5">{description}</div>
+          <div className="text-xs text-slate-500 mt-0.5">{description}</div>
         )}
       </div>
     </label>
   );
 }
 
-// Radio Group Component
+// ✅ UPDATED: Light theme Radio Group Component
 function RadioGroup({ label, options, value, onChange, icon: Icon }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        {Icon && <Icon className="w-5 h-5 text-purple-400" />}
-        <label className="text-sm font-medium text-white">{label}</label>
+        {Icon && <Icon className="w-5 h-5 text-violet-500" />}
+        <label className="text-sm font-medium text-slate-700">{label}</label>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -98,13 +109,13 @@ function RadioGroup({ label, options, value, onChange, icon: Icon }) {
             onClick={() => onChange(option.value)}
             className={`px-4 py-3 rounded-xl border-2 transition-all text-left ${
               value === option.value
-                ? 'border-purple-500 bg-purple-500/10'
-                : 'border-slate-700 bg-slate-800/30 hover:border-purple-500/50'
+                ? 'border-violet-500 bg-violet-50'
+                : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-slate-50'
             }`}
           >
-            <div className="text-sm font-medium text-white">{option.label}</div>
+            <div className="text-sm font-medium text-slate-800">{option.label}</div>
             {option.description && (
-              <div className="text-xs text-slate-400 mt-1">{option.description}</div>
+              <div className="text-xs text-slate-500 mt-1">{option.description}</div>
             )}
           </button>
         ))}
@@ -159,37 +170,35 @@ export default function Settings() {
 
   const mqlRef = useRef(null);
 
- const applyTheme = (mode) => {
-  const root = document.documentElement;
+  const applyTheme = (mode) => {
+    const root = document.documentElement;
 
-  const setDark = (isDark) => {
-    root.classList.toggle('dark', isDark);
-    root.dataset.theme = isDark ? 'dark' : 'light';
+    const setDark = (isDark) => {
+      root.classList.toggle('dark', isDark);
+      root.dataset.theme = isDark ? 'dark' : 'light';
+    };
+
+    if (mqlRef.current?.removeEventListener && mqlRef.current?._handler) {
+      mqlRef.current.removeEventListener('change', mqlRef.current._handler);
+      mqlRef.current = null;
+    }
+
+    if (mode === 'dark') {
+      setDark(true);
+      localStorage.setItem('ss.theme', 'dark');
+      return;
+    }
+
+    if (mode === 'light') {
+      setDark(false);
+      localStorage.setItem('ss.theme', 'light');
+      return;
+    }
+
+    // System mode
+    setDark(false);
+    localStorage.setItem('ss.theme', 'system');
   };
-
-  // Cleanup any previous matchMedia listener (old system mode logic)
-  if (mqlRef.current?.removeEventListener && mqlRef.current?._handler) {
-    mqlRef.current.removeEventListener('change', mqlRef.current._handler);
-    mqlRef.current = null;
-  }
-
-  if (mode === 'dark') {
-    setDark(true);
-    localStorage.setItem('ss.theme', 'dark');
-    return;
-  }
-
-  // TEMP: until we truly support light UI everywhere, treat "light" as dark
-  if (mode === 'light') {
-    setDark(true);
-    localStorage.setItem('ss.theme', 'light');
-    return;
-  }
-
-  // TEMP: until we truly support light UI everywhere, treat "system" as dark
-  setDark(true);
-  localStorage.setItem('ss.theme', 'system');
-};
 
   useEffect(() => {
     let ignore = false;
@@ -201,8 +210,7 @@ export default function Settings() {
         setPublicProfile(Boolean(me?.publicProfile ?? true));
         setDiscoverable(Boolean(me?.discoverable ?? false));
 
-        // Optional safety: default fallback theme to dark (instead of system)
-        const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'dark';
+        const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'light';
 
         setTheme(initialTheme);
         applyTheme(initialTheme);
@@ -308,30 +316,37 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-white text-lg">Loading your preferences...</div>
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-slate-600">Loading your preferences...</span>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-6 py-12">
       <div className="max-w-4xl mx-auto space-y-8">
 
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent mb-3">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <SettingsIcon className="w-5 h-5 text-violet-600" />
+            <span className="text-xs text-slate-500 uppercase tracking-wider">System</span>
+          </div>
+          <h1 className="text-4xl font-bold text-slate-800 mb-3">
             Design Your Momentum
           </h1>
-          <p className="text-slate-400 text-lg">Who do you want to become?</p>
+          <p className="text-slate-500 text-lg">Who do you want to become?</p>
         </div>
 
         {errorMsg && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-4 text-red-300">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-red-600">
             {errorMsg}
           </div>
         )}
         {ok && (
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-4 text-emerald-300">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-emerald-600">
             {ok}
           </div>
         )}
@@ -339,10 +354,12 @@ export default function Settings() {
         <form onSubmit={handleSave} className="space-y-6">
 
           {/* LAYER 1: Momentum Engine */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Target className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Momentum Engine</h2>
+              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <Target className="w-5 h-5 text-violet-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Momentum Engine</h2>
             </div>
 
             <div className="space-y-6">
@@ -372,10 +389,12 @@ export default function Settings() {
           </div>
 
           {/* LAYER 2: Focus DNA */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Brain className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Focus DNA</h2>
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Brain className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Focus DNA</h2>
             </div>
 
             <div className="space-y-6">
@@ -399,10 +418,12 @@ export default function Settings() {
           </div>
 
           {/* LAYER 3: Social Proof */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <UsersIcon className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Social Proof</h2>
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <UsersIcon className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Social Proof</h2>
             </div>
 
             <div className="space-y-6">
@@ -434,10 +455,12 @@ export default function Settings() {
           </div>
 
           {/* LAYER 4: AI Mentor Personality */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Sparkles className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">AI Mentor Personality</h2>
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-amber-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">AI Mentor Personality</h2>
             </div>
 
             <div className="space-y-6">
@@ -474,19 +497,23 @@ export default function Settings() {
           </div>
 
           {/* Cursor Presence Settings */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Eye className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Live Cursor Privacy</h2>
+              <div className="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center">
+                <Eye className="w-5 h-5 text-cyan-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Live Cursor Privacy</h2>
             </div>
             <PresenceSettings />
           </div>
 
           {/* LAYER 6: Legacy Mode */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Heart className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Legacy Mode</h2>
+              <div className="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-pink-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Legacy Mode</h2>
             </div>
 
             <div className="space-y-6">
@@ -507,7 +534,7 @@ export default function Settings() {
               <button
                 type="button"
                 onClick={handleGenerateYearMontage}
-                className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3"
+                className="w-full bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-md shadow-violet-200"
               >
                 <Film className="w-5 h-5" />
                 Generate My 2025 Montage
@@ -516,10 +543,12 @@ export default function Settings() {
           </div>
 
           {/* LAYER 7: Experience Mode */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Star className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Experience Mode</h2>
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <Star className="w-5 h-5 text-indigo-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Experience Mode</h2>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -528,13 +557,13 @@ export default function Settings() {
                 onClick={() => setUserMode('kid')}
                 className={`px-6 py-8 rounded-xl border-2 transition-all ${
                   userMode === 'kid'
-                    ? 'border-purple-500 bg-purple-500/10'
-                    : 'border-slate-700 bg-slate-800/30 hover:border-purple-500/50'
+                    ? 'border-violet-500 bg-violet-50'
+                    : 'border-slate-200 bg-white hover:border-violet-300'
                 }`}
               >
-                <Moon className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-                <div className="text-lg font-bold text-white">Kid Mode</div>
-                <div className="text-xs text-slate-400 mt-2">
+                <Moon className="w-8 h-8 text-violet-500 mx-auto mb-3" />
+                <div className="text-lg font-bold text-slate-800">Kid Mode</div>
+                <div className="text-xs text-slate-500 mt-2">
                   Bigger rings, confetti, private data
                 </div>
               </button>
@@ -544,24 +573,26 @@ export default function Settings() {
                 onClick={() => setUserMode('pro')}
                 className={`px-6 py-8 rounded-xl border-2 transition-all ${
                   userMode === 'pro'
-                    ? 'border-purple-500 bg-purple-500/10'
-                    : 'border-slate-700 bg-slate-800/30 hover:border-purple-500/50'
+                    ? 'border-violet-500 bg-violet-50'
+                    : 'border-slate-200 bg-white hover:border-violet-300'
                 }`}
               >
-                <Sun className="w-8 h-8 text-fuchsia-400 mx-auto mb-3" />
-                <div className="text-lg font-bold text-white">Pro Mode</div>
-                <div className="text-xs text-slate-400 mt-2">
+                <Sun className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+                <div className="text-lg font-bold text-slate-800">Pro Mode</div>
+                <div className="text-xs text-slate-500 mt-2">
                   Minimal, data-heavy, analytics
                 </div>
               </button>
             </div>
           </div>
 
-          {/* ⭐ PHASE 4: SETTINGS LAB */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+          {/* PHASE 4: SETTINGS LAB */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Beaker className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-bold text-white">Settings Lab</h2>
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <Beaker className="w-5 h-5 text-teal-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Settings Lab</h2>
             </div>
             <div className="space-y-6">
               <ExperimentHistory />
@@ -569,19 +600,19 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* ⭐ PHASE 4: PRIVACY TRANSPARENCY */}
+          {/* PHASE 4: PRIVACY TRANSPARENCY */}
           <PrivacyCard />
 
           {/* Appearance */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Appearance</h2>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-xl font-bold text-slate-800 mb-4">Appearance</h2>
             <select
               value={theme}
               onChange={(e) => {
                 setTheme(e.target.value);
                 applyTheme(e.target.value);
               }}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
             >
               <option value="system">System</option>
               <option value="light">Light</option>
@@ -589,11 +620,11 @@ export default function Settings() {
             </select>
           </div>
 
-          {/* Save Button */}
+          {/* Save Button - Blue as requested! */}
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all hover:scale-105 shadow-lg shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving Your Future...' : 'Save Changes'}
           </button>

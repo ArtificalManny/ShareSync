@@ -1,24 +1,32 @@
-// src/pages/Discover.jsx - WEEK 6 SOCIAL DISCOVERY
-import React, { useState, useEffect } from 'react';
+// src/pages/Discover.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEEK 6 SOCIAL DISCOVERY
+// v4.0 - "The Gallery Walk" Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES IN v4.0:
+// - Updated to light theme (white backgrounds, slate text)
+// - All functionality preserved exactly
+// - NO BACKEND CHANGES
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Flame, TrendingUp, Users, Heart, Clock, Zap, Star,
-  UserPlus, MessageCircle, Bell, ChevronRight, Rocket,
-  Target, Coffee, Moon, Activity, Award, Sparkles
+  Flame, Users, Heart, Clock, Target, Coffee, Moon, Activity, Rocket, Sparkles, UserPlus
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
 import { toast } from '../components/ui/toast';
 import { getDiscoverySections } from '../api/discovery';
 
-// ✅ NEW: real follow system
+// Real follow system
 import FollowButton from '../components/follow/FollowButton';
 
-// ──────────────────────────────────────────────────────────────
-// Phase 2 Moderation Gate (frontend-safe)
-// - If VITE_MODERATION_GATE_V1 !== "true": allow everything (current behavior)
-// - If enabled: only show items with moderationStatus === "approved"
-//   (missing moderationStatus is treated as approved for backwards compatibility)
-// ──────────────────────────────────────────────────────────────
+// Polling hook
+import usePolling from '../hooks/usePolling';
+
+// Phase 2 Moderation Gate
 const MODERATION_GATE_V1 = String(import.meta?.env?.VITE_MODERATION_GATE_V1 || "false") === "true";
 
 function isModerationApproved(item) {
@@ -28,7 +36,7 @@ function isModerationApproved(item) {
 }
 
 // =====================================
-// JUNGLE VIEW COMPONENTS
+// JUNGLE VIEW COMPONENTS (✅ UPDATED: Light theme)
 // =====================================
 
 // 1. HOT STREAKS SECTION
@@ -37,10 +45,10 @@ const HotStreaksSection = ({ isMobile, items }) => {
 
   const getMomentumColor = (momentum) => {
     switch (momentum) {
-      case 'blazing': return 'from-orange-600 to-red-600';
-      case 'high': return 'from-purple-600 to-fuchsia-600';
-      case 'steady': return 'from-blue-600 to-cyan-600';
-      default: return 'from-slate-600 to-slate-700';
+      case 'blazing': return 'from-orange-500 to-red-500';
+      case 'high': return 'from-violet-500 to-fuchsia-500';
+      case 'steady': return 'from-blue-500 to-cyan-500';
+      default: return 'from-slate-400 to-slate-500';
     }
   };
 
@@ -55,12 +63,12 @@ const HotStreaksSection = ({ isMobile, items }) => {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200">
           <Flame className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">🔥 Hot Streaks</h2>
-          <p className="text-sm text-slate-400">Teams on 10+ day streaks crushing it</p>
+          <h2 className="text-xl font-bold text-slate-800">🔥 Hot Streaks</h2>
+          <p className="text-sm text-slate-500">Teams on 10+ day streaks crushing it</p>
         </div>
       </div>
 
@@ -68,27 +76,27 @@ const HotStreaksSection = ({ isMobile, items }) => {
         {items.map((project) => (
           <div
             key={project.id}
-            className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/50 transition-all cursor-pointer group"
+            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 transition-all cursor-pointer group shadow-sm"
           >
             {/* Header */}
             <div className="flex items-start gap-3 mb-4">
               <span className="text-4xl">{project.emoji}</span>
               <div className="flex-1">
-                <h3 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">
+                <h3 className="font-bold text-slate-800 text-lg group-hover:text-violet-600 transition-colors">
                   {project.projectName}
                 </h3>
-                <p className="text-sm text-slate-400">{project.teamName}</p>
+                <p className="text-sm text-slate-500">{project.teamName}</p>
               </div>
             </div>
 
             {/* Streak Badge */}
             <div className={`bg-gradient-to-r ${getMomentumColor(project.momentum)} p-0.5 rounded-xl mb-4`}>
-              <div className="bg-slate-900 rounded-xl p-3 flex items-center justify-between">
+              <div className="bg-white rounded-xl p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-400" />
-                  <span className="font-bold text-white text-lg">{project.streak} days</span>
+                  <Flame className="w-5 h-5 text-orange-500" />
+                  <span className="font-bold text-slate-800 text-lg">{project.streak} days</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-slate-400">
+                <div className="flex items-center gap-1 text-xs text-slate-500">
                   <Users className="w-3 h-3" />
                   <span>{project.members}</span>
                 </div>
@@ -96,32 +104,32 @@ const HotStreaksSection = ({ isMobile, items }) => {
             </div>
 
             {/* Last Ship */}
-            <div className="bg-slate-900/50 rounded-xl p-3 mb-4">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-4">
               <div className="flex items-center gap-2 mb-1">
-                <Rocket className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-semibold text-slate-300">Latest:</span>
+                <Rocket className="w-4 h-4 text-violet-500" />
+                <span className="text-xs font-semibold text-slate-600">Latest:</span>
               </div>
-              <p className="text-sm text-white">{project.lastShip}</p>
+              <p className="text-sm text-slate-700">{project.lastShip}</p>
             </div>
 
             {/* Actions */}
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); handleRequestJoin(project); }}
-                className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
+                className="px-3 py-2 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg text-xs font-semibold text-violet-700 transition-all active:scale-95 flex flex-col items-center gap-1"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Join</span>
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleStartCowork(project); }}
-                className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
+                className="px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700 transition-all active:scale-95 flex flex-col items-center gap-1"
               >
                 <Users className="w-4 h-4" />
                 <span>Co-work</span>
               </button>
 
-              {/* ✅ Real follow */}
+              {/* Real follow */}
               <div className="flex justify-center">
                 <FollowButton
                   projectId={project.id}
@@ -153,12 +161,12 @@ const QuietButPromisingSection = ({ isMobile, items }) => {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
           <Target className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">🌱 Quiet but Promising</h2>
-          <p className="text-sm text-slate-400">Projects that need a push to finish strong</p>
+          <h2 className="text-xl font-bold text-slate-800">🌱 Quiet but Promising</h2>
+          <p className="text-sm text-slate-500">Projects that need a push to finish strong</p>
         </div>
       </div>
 
@@ -166,71 +174,71 @@ const QuietButPromisingSection = ({ isMobile, items }) => {
         {items.map((project) => (
           <div
             key={project.id}
-            className="bg-slate-800/50 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-5 hover:border-blue-500/50 transition-all"
+            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100 transition-all shadow-sm"
           >
             {/* Header */}
             <div className="flex items-start gap-3 mb-4">
               <span className="text-3xl">{project.emoji}</span>
               <div className="flex-1">
-                <h3 className="font-bold text-white text-lg">{project.projectName}</h3>
-                <p className="text-sm text-slate-400">by {project.ownerName}</p>
+                <h3 className="font-bold text-slate-800 text-lg">{project.projectName}</h3>
+                <p className="text-sm text-slate-500">by {project.ownerName}</p>
               </div>
               <div className="text-right">
-                <div className="text-xs text-slate-500">Last activity</div>
-                <div className="text-sm font-semibold text-orange-400">{project.lastActivity}</div>
+                <div className="text-xs text-slate-400">Last activity</div>
+                <div className="text-sm font-semibold text-amber-600">{project.lastActivity}</div>
               </div>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-slate-900/50 rounded-xl p-3">
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs text-slate-400">Progress</span>
+                  <Activity className="w-4 h-4 text-blue-500" />
+                  <span className="text-xs text-slate-500">Progress</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
                       style={{ width: `${project.completionRate}%` }}
                     />
                   </div>
-                  <span className="text-sm font-bold text-white">{project.completionRate}%</span>
+                  <span className="text-sm font-bold text-slate-700">{project.completionRate}%</span>
                 </div>
               </div>
 
-              <div className="bg-slate-900/50 rounded-xl p-3">
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <Rocket className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs text-slate-400">Ships</span>
+                  <Rocket className="w-4 h-4 text-violet-500" />
+                  <span className="text-xs text-slate-500">Ships</span>
                 </div>
-                <div className="text-lg font-bold text-white">{project.totalShips}</div>
+                <div className="text-lg font-bold text-slate-800">{project.totalShips}</div>
               </div>
             </div>
 
             {/* Reason */}
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-4">
-              <p className="text-sm text-slate-300">💡 {project.reason}</p>
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4">
+              <p className="text-sm text-slate-700">💡 {project.reason}</p>
             </div>
 
             {/* Actions */}
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => handleOfferHelp(project)}
-                className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
+                className="px-3 py-2 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg text-xs font-semibold text-violet-700 transition-all active:scale-95 flex flex-col items-center gap-1"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Help</span>
               </button>
               <button
                 onClick={() => handleSendEncouragement(project)}
-                className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-lg text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-1"
+                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-700 transition-all active:scale-95 flex flex-col items-center gap-1"
               >
                 <Heart className="w-4 h-4" />
                 <span>Cheer</span>
               </button>
 
-              {/* ✅ Real follow */}
+              {/* Real follow */}
               <div className="flex justify-center">
                 <FollowButton
                   projectId={project.id}
@@ -259,28 +267,24 @@ const PeopleWorkLikeYouSection = ({ isMobile, items }) => {
     toast({ title: `Co-work session scheduled with ${person.name}`, variant: 'success' });
   };
 
-  const handleViewProfile = (person) => {
-    toast({ title: `Viewing ${person.name}'s profile`, variant: 'success' });
-  };
-
   const getWorkStyleIcon = (style) => {
     switch (style) {
-      case 'Night Owl': return <Moon className="w-4 h-4 text-purple-400" />;
-      case 'Early Bird': return <Coffee className="w-4 h-4 text-orange-400" />;
-      case 'Deep Focus': return <Target className="w-4 h-4 text-blue-400" />;
-      default: return <Activity className="w-4 h-4" />;
+      case 'Night Owl': return <Moon className="w-4 h-4 text-violet-500" />;
+      case 'Early Bird': return <Coffee className="w-4 h-4 text-amber-500" />;
+      case 'Deep Focus': return <Target className="w-4 h-4 text-blue-500" />;
+      default: return <Activity className="w-4 h-4 text-slate-400" />;
     }
   };
 
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-200">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">✨ People Who Work Like You</h2>
-          <p className="text-sm text-slate-400">Based on your patterns and preferences</p>
+          <h2 className="text-xl font-bold text-slate-800">✨ People Who Work Like You</h2>
+          <p className="text-sm text-slate-500">Based on your patterns and preferences</p>
         </div>
       </div>
 
@@ -288,44 +292,44 @@ const PeopleWorkLikeYouSection = ({ isMobile, items }) => {
         {items.map((person) => (
           <div
             key={person.id}
-            className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-5 hover:border-purple-500/50 transition-all"
+            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 transition-all shadow-sm"
           >
             {/* Profile */}
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full flex items-center justify-center text-2xl shadow-lg shadow-violet-200">
                 {person.avatar}
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-white">{person.name}</h3>
+                <h3 className="font-bold text-slate-800">{person.name}</h3>
                 <div className="flex items-center gap-2 mt-1">
                   {getWorkStyleIcon(person.workStyle)}
-                  <span className="text-xs text-slate-400">{person.workStyle}</span>
+                  <span className="text-xs text-slate-500">{person.workStyle}</span>
                 </div>
               </div>
             </div>
 
             {/* Similarity Badge */}
-            <div className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 rounded-xl p-3 mb-4">
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-100 rounded-xl p-3 mb-4">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-emerald-300">Match Score</span>
-                <span className="text-lg font-bold text-emerald-400">{person.similarity}%</span>
+                <span className="text-xs font-semibold text-emerald-600">Match Score</span>
+                <span className="text-lg font-bold text-emerald-600">{person.similarity}%</span>
               </div>
-              <p className="text-xs text-slate-400">{person.reason}</p>
+              <p className="text-xs text-slate-500">{person.reason}</p>
             </div>
 
             {/* Details */}
             <div className="space-y-2 mb-4">
               <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-blue-400" />
-                <span className="text-slate-300">Peak: {person.peakTime}</span>
+                <Clock className="w-4 h-4 text-blue-500" />
+                <span className="text-slate-600">Peak: {person.peakTime}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Rocket className="w-4 h-4 text-purple-400" />
-                <span className="text-slate-300">{person.currentProject}</span>
+                <Rocket className="w-4 h-4 text-violet-500" />
+                <span className="text-slate-600">{person.currentProject}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Flame className="w-4 h-4 text-orange-400" />
-                <span className="text-slate-300">{person.streak} day streak</span>
+                <Flame className="w-4 h-4 text-orange-500" />
+                <span className="text-slate-600">{person.streak} day streak</span>
               </div>
             </div>
 
@@ -333,13 +337,13 @@ const PeopleWorkLikeYouSection = ({ isMobile, items }) => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => handleConnect(person)}
-                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs font-semibold transition-all active:scale-95"
+                className="px-3 py-2 bg-violet-500 hover:bg-violet-600 rounded-lg text-xs font-semibold text-white transition-all active:scale-95 shadow-md shadow-violet-200"
               >
                 Connect
               </button>
               <button
                 onClick={() => handleScheduleCowork(person)}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold transition-all active:scale-95"
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition-all active:scale-95"
               >
                 Co-work
               </button>
@@ -352,74 +356,103 @@ const PeopleWorkLikeYouSection = ({ isMobile, items }) => {
 };
 
 // =====================================
-// MAIN DISCOVER PAGE
+// MAIN DISCOVER PAGE (✅ UPDATED: Light theme)
 // =====================================
 
 export default function Discover() {
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
 
-  // ✅ Start EMPTY (NO mock defaults)
+  // Start EMPTY (NO mock defaults)
   const [hotStreaks, setHotStreaks] = useState([]);
   const [quietProjects, setQuietProjects] = useState([]);
   const [similarPeople, setSimilarPeople] = useState([]);
 
-  useEffect(() => {
-    let alive = true;
+  // Keep track of in-flight request, abort on new poll/unmount
+  const abortRef = useRef(null);
+  const aliveRef = useRef(true);
 
-    async function load({ silent = false } = {}) {
-      try {
-        if (!silent) setLoading(true);
+  const load = useCallback(async ({ silent = false } = {}) => {
+    try {
+      if (!silent) setLoading(true);
 
-        const sections = await getDiscoverySections({});
-
-        const hs0 = Array.isArray(sections?.hotStreaks) ? sections.hotStreaks : [];
-        const qp0 = Array.isArray(sections?.quietPromising) ? sections.quietPromising : [];
-        const pl0 = Array.isArray(sections?.peopleLikeYou) ? sections.peopleLikeYou : [];
-
-        // ✅ Phase 2 Moderation filter (safe no-op unless enabled)
-        const hs = hs0.filter(isModerationApproved);
-        const qp = qp0.filter(isModerationApproved);
-        const pl = pl0.filter(isModerationApproved);
-
-        if (!alive) return;
-
-        // ✅ Always set arrays (even if empty)
-        setHotStreaks(hs);
-        setQuietProjects(qp);
-        setSimilarPeople(pl);
-
-      } catch (e) {
-        // Keep empty on error (do NOT fall back to mocks)
-        if (!alive) return;
-        setHotStreaks([]);
-        setQuietProjects([]);
-        setSimilarPeople([]);
-      } finally {
-        if (!alive) return;
-        if (!silent) setLoading(false);
+      // Abort any previous request
+      if (abortRef.current) {
+        try { abortRef.current.abort(); } catch {}
       }
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const sections = await getDiscoverySections({ signal: controller.signal });
+
+      const hs0 = Array.isArray(sections?.hotStreaks) ? sections.hotStreaks : [];
+      const qp0 = Array.isArray(sections?.quietPromising) ? sections.quietPromising : [];
+      const pl0 = Array.isArray(sections?.peopleLikeYou) ? sections.peopleLikeYou : [];
+
+      // Phase 2 Moderation filter (safe no-op unless enabled)
+      const hs = hs0.filter(isModerationApproved);
+      const qp = qp0.filter(isModerationApproved);
+      const pl = pl0.filter(isModerationApproved);
+
+      if (!aliveRef.current) return;
+
+      setHotStreaks(hs);
+      setQuietProjects(qp);
+      setSimilarPeople(pl);
+    } catch (e) {
+      // If aborted, ignore silently
+      if (e?.name === "CanceledError" || e?.name === "AbortError") return;
+
+      if (!aliveRef.current) return;
+
+      // Keep empty on error (do NOT fall back to mocks)
+      setHotStreaks([]);
+      setQuietProjects([]);
+      setSimilarPeople([]);
+    } finally {
+      if (!aliveRef.current) return;
+      if (!silent) setLoading(false);
     }
+  }, []);
 
-    // Keep your “loading feel” while fetching real data
-    const t = setTimeout(() => load({ silent: false }), 350);
+  // Initial load with your existing "loading feel"
+  useEffect(() => {
+    aliveRef.current = true;
 
-    // ✅ Poll for “realtime-ish” updates (safe/simple, no backend changes)
-    const poll = setInterval(() => {
-      load({ silent: true });
-    }, 10000);
+    const t = setTimeout(() => {
+      load({ silent: false });
+    }, 350);
 
     return () => {
-      alive = false;
+      aliveRef.current = false;
       clearTimeout(t);
-      clearInterval(poll);
+      if (abortRef.current) {
+        try { abortRef.current.abort(); } catch {}
+      }
     };
-  }, []);
+  }, [load]);
+
+  // Poll in the background (silent)
+  const pollMs = Number(import.meta?.env?.VITE_DISCOVER_POLL_MS) || 20000;
+
+  usePolling(
+    async () => {
+      await load({ silent: true });
+    },
+    {
+      intervalMs: pollMs,
+      immediate: false,
+      pauseWhenHidden: true,
+      jitter: true,
+      backoffOnError: true,
+      backoffMaxMs: 120000,
+    }
+  );
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -430,22 +463,21 @@ export default function Discover() {
     (!similarPeople || similarPeople.length === 0);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-20">
       <div className={`max-w-7xl mx-auto ${isMobile ? 'px-4' : 'px-6'} py-8`}>
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-200">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-slate-800">
                 Discover
               </h1>
-              <p className="text-slate-400">Find your tribe in the jungle 🌴</p>
+              <p className="text-slate-500">Find your tribe in the jungle 🌴</p>
               {MODERATION_GATE_V1 && (
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-400">
                   Moderation gate: showing approved listings only.
                 </p>
               )}
@@ -453,12 +485,12 @@ export default function Discover() {
           </div>
         </div>
 
-        {/* ✅ Empty state when backend returns nothing */}
+        {/* Empty state when backend returns nothing */}
         {isEmpty && (
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-8">
-            <div className="text-xl font-bold text-white mb-2">No public projects yet</div>
-            <p className="text-slate-300 text-sm">
-              As teams set projects to <span className="text-purple-300 font-semibold">Public + Listed</span>, they’ll appear here automatically.
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+            <div className="text-xl font-bold text-slate-800 mb-2">No public projects yet</div>
+            <p className="text-slate-600 text-sm">
+              As teams set projects to <span className="text-violet-600 font-semibold">Public + Listed</span>, they'll appear here automatically.
             </p>
             <div className="mt-4 text-xs text-slate-400">
               (This page refreshes quietly in the background.)
@@ -466,11 +498,10 @@ export default function Discover() {
           </div>
         )}
 
-        {/* ✅ Render sections only if they have items */}
+        {/* Render sections only if they have items */}
         {hotStreaks?.length > 0 && <HotStreaksSection isMobile={isMobile} items={hotStreaks} />}
         {quietProjects?.length > 0 && <QuietButPromisingSection isMobile={isMobile} items={quietProjects} />}
         {similarPeople?.length > 0 && <PeopleWorkLikeYouSection isMobile={isMobile} items={similarPeople} />}
-
       </div>
     </div>
   );

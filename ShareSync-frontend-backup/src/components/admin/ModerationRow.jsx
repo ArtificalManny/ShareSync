@@ -108,10 +108,12 @@ export default function ModerationRow({
 
             <a
               href={`/projects/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs
                          border border-white/[0.08] bg-surface-2 hover:bg-surface-3
                          text-text-secondary transition-all"
-              title="Open project"
+              title="Open project in new tab"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               Open
@@ -148,10 +150,10 @@ export default function ModerationRow({
               hover:bg-error-500/18 transition-all
               ${!canReject ? 'opacity-60 cursor-not-allowed' : ''}
             `}
-            title="Reject listing"
+            title={showReject ? "Cancel rejection" : "Reject listing"}
           >
             <X className="w-4 h-4" />
-            Reject
+            {showReject ? 'Cancel' : 'Reject'}
           </button>
         </div>
       </div>
@@ -163,9 +165,11 @@ export default function ModerationRow({
           </div>
           <div className="flex gap-2">
             <input
+              autoFocus
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g., Needs better description / not appropriate / spam"
+              onKeyDown={(e) => e.key === 'Enter' && handleReject()}
+              placeholder="e.g., Needs better description / spam"
               className="flex-1 bg-surface-0 border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               disabled={busy}
             />

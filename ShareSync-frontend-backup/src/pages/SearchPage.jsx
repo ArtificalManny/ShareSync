@@ -12,7 +12,7 @@ import ProjectResultCard from "../components/search/cards/ProjectResultCard";
 import UserResultCard from "../components/search/cards/UserResultCard";
 import PostResultCard from "../components/search/cards/PostResultCard";
 import FileResultCard from "../components/search/cards/FileResultCard";
-import TaskResultCard from "../components/search/cards/TaskResultCard";
+import TaskResultCard from "../components/search/cards/TasxkResultCard";
 
 // Filters
 import SearchFilters from "../components/search/SearchFilters";

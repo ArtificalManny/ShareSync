@@ -1,290 +1,473 @@
-/* ================================
-   Base typography application
-   ================================ */
-   html, body {
-    font-family: var(--font-body);
-    font-size: var(--fs-md);
-    line-height: var(--lh-normal);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  h1, h2, h3, h4, h5, h6,
-  .heading, .display {
-    font-family: var(--font-display);
-    line-height: var(--lh-tight);
-    letter-spacing: -0.01em;
-    margin: 0;
-    color: rgb(var(--text));
-  }
-  
-  h1, .h1 { font-size: var(--fs-3xl); font-weight: var(--fw-bold); }
-  h2, .h2 { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-snug); }
-  h3, .h3 { font-size: var(--fs-xl);  font-weight: var(--fw-semibold); }
-  h4, .h4 { font-size: var(--fs-lg);  font-weight: var(--fw-medium);   }
-  h5, .h5 { font-size: var(--fs-md);  font-weight: var(--fw-medium);   }
-  h6, .h6 { font-size: var(--fs-sm);  font-weight: var(--fw-medium);   }
-  
-  /* Body, small text helpers */
-  .small { font-size: var(--fs-sm); line-height: var(--lh-normal); }
-  .muted { color: rgb(var(--muted)); }
-  
-  /* Surface/ink/border glue (tokens available in both modes) */
-  :root {
-    --surface: rgb(var(--card));
-    --ink: rgb(var(--text));
-    --border-color: rgb(var(--border));
-    /* Gradient companions used by components, mapped to tokens */
-    --grad-accent: var(--grad-pandora);
-    --grad-info: var(--grad-cnbc);
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC THEME v4.0 - "The Gallery Walk" Theme Application
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   This file applies the color tokens to the actual UI.
+   
+   LIGHT MODE (Default): App pages - clean, bright gallery feel
+   DARK MODE: Auth pages - dramatic entrance atmosphere
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-    /* ================================
-       OpenShare Palette (neutral-heavy)
-       ================================ */
-    /* Neutrals (do 80% of the work) */
-    --os-bg-0: #070A0F;                 /* inky black */
-    --os-bg-1: #0B1020;                 /* deep slate */
-    --os-surface-1: #101827;            /* cards */
-    --os-surface-2: #141F33;            /* raised */
-    --os-border: rgba(255,255,255,0.08);
-    --os-text: #EAF0FF;
-    --os-muted: #A7B2CC;
-    --os-muted-2: #7F8AA6;
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LIGHT MODE - THE MAIN GALLERY (App Pages)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
 
-    /* Accents (use sparingly) */
-    --os-primary: #F43F5E;              /* ember CTA */
-    --os-primary-2: #E11D48;            /* darker ember */
-    --os-brand: #8B5CF6;                /* orchid (less usage) */
-    --os-success: #22C55E;
-    --os-warning: #F59E0B;
-    --os-info: #2DD4BF;
-  }
-  
-  /* Ensure gradient surfaces have readable text */
-  .bg-grad-blue,
-  .bg-grad-purple,
-  .bg-grad-emerald,
-  .bg-grad-pandora,
-  .bg-grad-cnbc,
-  .bg-grad-ig {
-    color: #fff;
-    --accent-foreground: 255 255 255;
-  }
-  
-  /* ================================
-     Existing themed background (kept)
-     ================================ */
-  
-  /* Futuristic cityscape background */
-  body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') no-repeat center center fixed;
-    background-size: cover;
-    opacity: 0.3;
-    z-index: -1;
-  }
-  
-  /* Twin suns effect */
-  body::after {
-    content: "";
-    position: fixed;
-    top: 10%;
-    right: 10%;
-    width: 50px;
-    height: 50px;
-    background: radial-gradient(circle, #ffcc00 20%, #ff9900 70%, transparent 100%);
-    border-radius: 50%;
-    box-shadow: 0 0 20px #ffcc00;
-    z-index: -1;
-  }
-  
-  body::before {
-    content: "";
-    position: fixed;
-    top: 15%;
-    right: 15%;
-    width: 40px;
-    height: 40px;
-    background: radial-gradient(circle, #ff6600 20%, #ff3300 70%, transparent 100%);
-    border-radius: 50%;
-    box-shadow: 0 0 15px #ff6600;
-    z-index: -1;
-  }
-  
-  /* Purple accents (#6A5ACD) */
-  button {
-    background-color: var(--os-primary);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    border-radius: 5px;
-  }
-  
-  button:hover {
-    background-color: var(--os-primary-2);
-  }
-  
-  button:nth-child(2) {
-    background-color: transparent;
-    border: 1px solid var(--os-border);
-    color: var(--os-text);
-  }
-  
-  button:nth-child(2):hover {
-    background-color: color-mix(in oklab, var(--os-primary) 14%, transparent);
-    border-color: color-mix(in oklab, var(--os-primary) 45%, var(--os-border));
-    color: var(--os-text);
-  }
-  
-  input, select {
-    background-color: var(--os-bg-1);
-    color: var(--os-text);
-    border: 1px solid var(--os-border);
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    border-radius: 5px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  form {
-    display: flex;
-    flex-direction: column;
-    max-width: 400px;
-    margin: 0 auto;
-    gap: 1rem;
-    background: rgba(16, 24, 39, 0.8);
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(244, 63, 94, 0.22);
-    border: 1px solid var(--os-border);
-  }
-  
-  label {
-    color: var(--os-text);
-    font-size: 0.9rem;
-  }
-  
-  /*  Link + Focus accessibility baseline */
-a, button {
+/* Subtle atmospheric glow - echoes the auth pages but much lighter */
+body::before {
+  content: "";
+  position: fixed;
+  top: -20%;
+  left: -15%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  bottom: -20%;
+  right: -15%;
+  width: 45vw;
+  height: 45vw;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.03) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DARK MODE - THE GRAND ENTRANCE (Auth Pages)
+   Applied via .auth-layout class on auth page wrappers
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.auth-layout {
+  background: #0B0F19;
+  color: var(--slate-50);
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Dramatic purple glow - top left */
+.auth-layout::before {
+  content: "";
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 70vw;
+  height: 70vw;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(11, 15, 25, 0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Teal glow - bottom right */
+.auth-layout::after {
+  content: "";
+  position: fixed;
+  bottom: -20%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.08) 0%, rgba(11, 15, 25, 0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BUTTONS - Light Mode (Default)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Primary button - Violet gradient */
+button,
+.btn,
+.btn-primary {
+  background: var(--gradient-brand);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  transition: all var(--motion-fast) var(--easing-standard);
+  box-shadow: var(--shadow-brand);
+}
+
+button:hover,
+.btn:hover,
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-700) 100%);
+  box-shadow: var(--shadow-brand-lg);
+  transform: translateY(-1px);
+}
+
+button:active,
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Blue action button (Save, Start Sprint, etc.) */
+.btn-blue,
+.btn-action {
+  background: var(--gradient-ocean);
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
+  color: white;
+  box-shadow: var(--shadow-blue);
+}
+
+.btn-blue:hover,
+.btn-action:hover {
+  background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 100%);
+  box-shadow: var(--shadow-blue-lg);
+}
+
+/* Secondary/Outline button */
+.btn-secondary,
+.btn-outline {
+  background: transparent;
+  color: var(--brand-600);
+  border: 1.5px solid var(--brand-300);
+  box-shadow: none;
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+  background: var(--tint-brand);
+  border-color: var(--brand-400);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Ghost button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: var(--slate-100);
+  color: var(--text-primary);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INPUTS - Light Mode
+   ═══════════════════════════════════════════════════════════════════════════════ */
+input,
+select,
+textarea {
+  background: white;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-default);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  width: 100%;
+  box-sizing: border-box;
+  transition: 
+    border-color var(--motion-fast) var(--easing-standard),
+    box-shadow var(--motion-fast) var(--easing-standard);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-a:focus-visible,
-button:focus-visible {
-  box-shadow: var(--shadow-focus);
-  border-radius: 8px;
+  border-color: var(--brand-500);
+  box-shadow: var(--ring-focus);
 }
 
-/* ===== Neon Theme ===== */
-.layout-stage[data-theme="neon"] {
-  /* elevate base contrast a touch */
-  --surface: #0B1020;      /* deep navy */
-  --bg:      #0E1426;
-  --text:    #E6ECFF;
-  --muted:   #9AA7C7;
-  --border:  #1D2743;
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
 }
 
-/* Buttons */
-.layout-stage[data-theme="neon"] .btn.btn--primary{
-  background: var(--grad-primary);
-  color: var(--btn-contrast);
-  border: 1px solid color-mix(in oklab, var(--brand-accent) 60%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--brand-accent) 35%, transparent),
-    0 8px 28px var(--glow-mid),
-    0 2px 8px rgba(0,0,0,.24);
-}
-.layout-stage[data-theme="neon"] .btn.btn--primary:hover{
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--brand-accent) 55%, transparent),
-    0 12px 36px var(--glow-strong);
-  transform: translateY(-0.5px);
+/* ═══════════════════════════════════════════════════════════════════════════════
+   AUTH PAGE INPUTS (Dark Mode)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.auth-layout input,
+.auth-layout select,
+.auth-layout textarea {
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--slate-50);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.layout-stage[data-theme="neon"] .btn.btn--outline{
-  border: 1px solid color-mix(in oklab, var(--brand-accent) 40%, #6b7280 60%);
-  color: var(--text);
-}
-.layout-stage[data-theme="neon"] .btn.btn--outline:hover{
-  background: color-mix(in oklab, var(--brand-accent) 8%, transparent);
-  box-shadow: 0 6px 18px var(--glow-soft);
+.auth-layout input:focus,
+.auth-layout select:focus,
+.auth-layout textarea:focus {
+  border-color: var(--violet-500);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
-/* PageHeader + specular backdrop */
-.layout-stage[data-theme="neon"] .accent-bar{
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.06), transparent),
-    radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--brand-accent) 14%, transparent) 0%, transparent 60%);
+.auth-layout input::placeholder {
+  color: var(--slate-400);
 }
 
-/* Focus rings */
-.layout-stage[data-theme="neon"] .focus-ring:focus-visible,
-.layout-stage[data-theme="neon"] [tabindex]:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-  border-radius: 14px;
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TOGGLES - Blue when active (as requested!)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.toggle,
+[role="switch"] {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--slate-300);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--easing-standard);
 }
 
-/* KPI tiles slight lift on hover */
-.layout-stage[data-theme="neon"] .kpi-strip .card{
-  box-shadow: 0 10px 32px -8px var(--glow-soft);
-}
-.layout-stage[data-theme="neon"] .kpi-strip .card:hover{
-  box-shadow: 0 18px 48px -8px var(--glow-mid);
+.toggle.active,
+.toggle[data-state="checked"],
+[role="switch"][aria-checked="true"] {
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
 }
 
-/* Presence dots—make the “online” feel neon */
-.layout-stage[data-theme="neon"] .presence-dot.is-online{
-  background: var(--signal-good);
-  box-shadow: 0 0 0 2px var(--surface), 0 0 10px 2px var(--signal-good);
-}
-.layout-stage[data-theme="neon"] .presence-dot.is-away{
-  background: #97A3C1;
-  box-shadow: 0 0 0 2px var(--surface);
-}
-.text-neon {
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow:
-    0 0 18px color-mix(in oklab, var(--brand-accent) 25%, transparent);
-}
-.layout-stage[data-theme="neon"] .card{
-  border-color: color-mix(in oklab, var(--brand-accent) 20%, var(--border));
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
-    var(--surface);
-}
-.layout-stage[data-theme="neon"] .row-accent-violet{
-  --row-glow: var(--glow-soft);
-  box-shadow: 0 18px 56px -10px var(--row-glow);
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform var(--motion-fast) var(--easing-standard);
 }
 
-/* ──────────────────────────────────────────────────────────────────────────────
-   OPENSHARE NEON OVERRIDES (only if data-theme="neon" is active)
-   Note: this file uses rgb(var(--text)) style tokens, so we set RGB triples.
-   ────────────────────────────────────────────────────────────────────────────── */
-.layout-stage[data-theme="neon"]{
-  --bg: 7 10 15;           /* #070A0F */
-  --surface: 16 24 39;     /* #101827 */
-  --text: 234 240 255;     /* #EAF0FF */
-  --muted: 167 178 204;    /* #A7B2CC */
-  --border: 255 255 255;   /* use with rgb(var(--border) / alpha) if needed */
-
-  /* Make “primary” feel ember (kills the purple dominance fast) */
-  --brand-accent: #F43F5E;
-  --grad-primary: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
-
-  /* System colors */
-  --signal-good: #22C55E;
+.toggle.active .toggle-thumb,
+.toggle[data-state="checked"] .toggle-thumb {
+  transform: translateX(20px);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FORMS - Light Mode
+   ═══════════════════════════════════════════════════════════════════════════════ */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+label {
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  margin-bottom: 0.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   AUTH PAGE FORMS (Dark Mode - Glassmorphic)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.auth-layout form,
+.auth-card {
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.auth-layout label {
+  color: var(--slate-300);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BADGES - Light Mode with Fluorescent Colors
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: var(--fw-medium);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+}
+
+.badge-brand,
+.badge-violet {
+  background: var(--violet-100);
+  color: var(--violet-700);
+  border-color: var(--violet-200);
+}
+
+.badge-blue {
+  background: var(--blue-100);
+  color: var(--blue-700);
+  border-color: var(--blue-200);
+}
+
+.badge-teal,
+.badge-success {
+  background: var(--teal-100);
+  color: var(--teal-700);
+  border-color: var(--teal-200);
+}
+
+.badge-amber,
+.badge-warning {
+  background: #FEF3C7;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.badge-rose,
+.badge-error {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border-color: #FECACA;
+}
+
+.badge-slate,
+.badge-neutral {
+  background: var(--slate-100);
+  color: var(--slate-600);
+  border-color: var(--slate-200);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PROGRESS BARS - Ocean Gradient
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.progress-bar,
+.progress-track {
+  background: var(--slate-200);
+  height: 8px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill,
+.progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-ocean);
+  border-radius: var(--radius-full);
+  transition: width var(--motion-slow) var(--easing-decelerate);
+}
+
+/* Variant: Brand/Violet */
+.progress-fill.brand,
+.progress-bar.brand .progress-fill {
+  background: var(--gradient-brand);
+}
+
+/* Variant: Success/Teal */
+.progress-fill.success,
+.progress-bar.success .progress-fill {
+  background: var(--gradient-success);
+}
+
+/* Variant: Energy/Orange */
+.progress-fill.energy,
+.progress-bar.energy .progress-fill {
+  background: var(--gradient-energy);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LINKS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+a {
+  color: var(--brand-600);
+  text-decoration: none;
+  transition: color var(--motion-fast) var(--easing-standard);
+}
+
+a:hover {
+  color: var(--brand-700);
+  text-decoration: underline;
+}
+
+.auth-layout a {
+  color: var(--violet-400);
+}
+
+.auth-layout a:hover {
+  color: var(--violet-300);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DIVIDERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+hr,
+.divider {
+  border: none;
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 1rem 0;
+}
+
+.auth-layout hr,
+.auth-layout .divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCROLLBAR STYLING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--slate-100);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--slate-300);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-400);
+}
+
+/* Dark mode scrollbar */
+.auth-layout ::-webkit-scrollbar-track,
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-layout ::-webkit-scrollbar-thumb,
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SELECTION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+::selection {
+  background: var(--violet-200);
+  color: var(--violet-900);
+}
+
+.auth-layout ::selection,
+.dark ::selection {
+  background: var(--violet-600);
+  color: white;
+}

@@ -1,10 +1,14 @@
 // src/pages/Profile.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE K: Enhanced Profile with Growth Track Components
-// + Patch: robust displayName + near-realtime refresh without backend changes
-// + Fix: Profile avatar now stays in sync with localStorage (Sidebar/Navbar behavior)
-// + Fix: remove missing uploadMyAvatar import (NO backend changes)
-// + ⭐ FIX: Better handling of getMe() response shape + debugging
+// v4.0 - "The Gallery Walk" Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES IN v4.0:
+// - Updated to light theme (white backgrounds, slate text)
+// - All functionality preserved exactly
+// - NO BACKEND CHANGES
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
@@ -56,12 +60,6 @@ function levelForXp(xp = 0) {
   return lvl;
 }
 
-/**
- * Robust name resolver:
- * - Prefer firstName/lastName
- * - Fall back to common alternatives
- * - Final fallback: username (so UI never looks blank)
- */
 function resolveUserName(user) {
   const first =
     user?.firstName ||
@@ -129,7 +127,7 @@ function readAvatarOverride() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROFILE PHOTO EDITOR (SAFE + PERSISTENT UI)
+   PROFILE PHOTO EDITOR (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -240,8 +238,8 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   return (
     <div className="relative flex flex-col items-center">
       <div className="relative w-40 h-40 group">
-        <div className="absolute inset-0 rounded-full border border-brand/20" />
-        <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-surface-0 bg-surface-2">
+        <div className="absolute inset-0 rounded-full border border-violet-200" />
+        <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-lg shadow-violet-100">
           <UserAvatar
             size={144}
             name={user?.name || user?.username || "User"}
@@ -250,11 +248,11 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             ringClassName="ring-0"
           />
           {isOwnProfile && (
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-brand rounded-full hover:bg-brand-600 transition-colors"
+                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg"
                 aria-label="Change profile photo"
               >
                 <Camera className="w-5 h-5 text-white" />
@@ -262,23 +260,23 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             </div>
           )}
         </div>
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-surface-1 rounded-lg border border-white/[0.08]">
-          <span className="text-xs font-medium text-text-primary">Rank {levelForXp(user?.xp)}</span>
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <span className="text-xs font-medium text-slate-700">Rank {levelForXp(user?.xp)}</span>
         </div>
       </div>
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
       {isEditing && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
-          <div className="w-full max-w-sm p-6 bg-surface-1 border border-white/[0.08] rounded-2xl">
-            <h3 className="text-xl font-semibold text-text-primary mb-6 text-center">Update Photo?</h3>
-            <div className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 border-2 border-brand/30">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
+          <div className="w-full max-w-sm p-6 bg-white border border-slate-200 rounded-2xl shadow-2xl">
+            <h3 className="text-xl font-semibold text-slate-800 mb-6 text-center">Update Photo?</h3>
+            <div className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 border-2 border-violet-200 shadow-lg">
               <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
             </div>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => { setIsEditing(false); setSelectedFile(null); setPreviewUrl(null); }}
-                className="flex-1 py-3 rounded-xl bg-surface-2 text-text-secondary hover:bg-surface-3 transition-colors"
+                className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
@@ -286,7 +284,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
                 type="button"
                 onClick={handleUpload}
                 disabled={uploading}
-                className="flex-1 py-3 rounded-xl bg-brand text-white hover:bg-brand-600 transition-colors"
+                className="flex-1 py-3 rounded-xl bg-violet-500 text-white hover:bg-violet-600 transition-colors shadow-md shadow-violet-200"
               >
                 {uploading ? "Uploading..." : "Confirm"}
               </button>
@@ -299,17 +297,17 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   STAT CARD
+   STAT CARD (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
-const StatCard = ({ value, label, color = "text-text-primary" }) => (
-  <div className="p-5 rounded-xl bg-surface-2 border border-white/[0.04] hover:bg-surface-3 transition-colors">
+const StatCard = ({ value, label, color = "text-slate-800" }) => (
+  <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
     <div className={`text-3xl font-semibold ${color}`}>{value}</div>
-    <div className="text-[10px] text-text-tertiary uppercase tracking-wider mt-1">{label}</div>
+    <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">{label}</div>
   </div>
 );
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN PAGE
+   MAIN PAGE (✅ UPDATED: Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
   const { username: routeUsername } = useParams();
@@ -410,89 +408,99 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
-        <div className="text-sm text-text-tertiary">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-slate-500">Loading...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto">
+    <div className="min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto bg-gradient-to-b from-slate-50 to-white">
       <section className="flex flex-col items-center mb-16">
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
         <div className="text-center mt-8">
-          <h1 className="text-4xl font-semibold text-text-primary mb-3">
+          <h1 className="text-4xl font-semibold text-slate-800 mb-3">
             {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
           </h1>
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-sm text-text-tertiary">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-sm text-slate-500">
               ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
             </span>
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium border border-emerald-200">
               <ShieldCheck className="w-3.5 h-3.5" />
               Core Verified
             </span>
             {skillProfile?.archetype?.current && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 text-brand text-xs font-medium">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 text-violet-600 text-xs font-medium border border-violet-200">
                 <Star className="w-3.5 h-3.5" />
                 {skillProfile.archetype.current}
               </span>
             )}
           </div>
-          {user?.bio && <p className="mt-6 text-text-secondary max-w-lg mx-auto leading-relaxed">{user.bio}</p>}
+          {user?.bio && <p className="mt-6 text-slate-600 max-w-lg mx-auto leading-relaxed">{user.bio}</p>}
         </div>
       </section>
 
       <div className="grid grid-cols-12 gap-6">
+        {/* Left Column */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+          {/* Impact Metrics */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <TrendingUp className="w-4 h-4 text-brand" />
-              <h3 className="text-sm font-medium text-text-secondary">Impact Metrics</h3>
+              <TrendingUp className="w-4 h-4 text-violet-600" />
+              <h3 className="text-sm font-medium text-slate-600">Impact Metrics</h3>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <StatCard value={user?.totalShips || 0} label="Deployments" color="text-text-primary" />
-              <StatCard value={`${user?.currentStreak || 0}d`} label="Momentum" color="text-brand" />
+              <StatCard value={user?.totalShips || 0} label="Deployments" color="text-slate-800" />
+              <StatCard value={`${user?.currentStreak || 0}d`} label="Momentum" color="text-violet-600" />
             </div>
             {skillProfile?.overallGrowth && (
-              <div className="p-4 rounded-lg bg-success/5 border border-success/10">
+              <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-100">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium text-success">+{skillProfile.overallGrowth}% growth this quarter</span>
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700">+{skillProfile.overallGrowth}% growth this quarter</span>
                 </div>
               </div>
             )}
           </div>
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+
+          {/* Operational Trust */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Activity className="w-4 h-4 text-success" />
-              <h3 className="text-sm font-medium text-text-secondary">Operational Trust</h3>
+              <Activity className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-sm font-medium text-slate-600">Operational Trust</h3>
             </div>
             <div className="flex items-end gap-2 mb-4">
-              <span className="text-4xl font-semibold text-text-primary">{reliability}%</span>
-              <span className="text-xs text-success font-medium mb-1">
+              <span className="text-4xl font-semibold text-slate-800">{reliability}%</span>
+              <span className="text-xs text-emerald-600 font-medium mb-1">
                 {reliability >= 70 ? "Excellent" : reliability >= 40 ? "Good" : "Building"}
               </span>
             </div>
-            <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
-              <div className="h-full bg-success rounded-full transition-all duration-700" style={{ width: `${reliability}%` }} />
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${reliability}%` }} />
             </div>
           </div>
+
           {isOwnProfile && <EvolutionMoments moments={evolution} loading={growthLoading} />}
         </div>
 
+        {/* Middle Column */}
         <div className="col-span-12 lg:col-span-5 space-y-6">
+          {/* Skill Profile */}
           {isOwnProfile && skillProfile?.skills && (
-            <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+            <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-brand-400" />
-                  <h3 className="text-sm font-medium text-text-secondary">Skill Profile</h3>
+                  <Brain className="w-4 h-4 text-violet-500" />
+                  <h3 className="text-sm font-medium text-slate-600">Skill Profile</h3>
                 </div>
                 {skillProfile.strengths?.length > 0 && (
                   <div className="flex gap-1">
                     {skillProfile.strengths.map((s) => (
-                      <span key={s} className="px-2 py-0.5 rounded text-[10px] bg-brand/10 text-brand capitalize">{s}</span>
+                      <span key={s} className="px-2 py-0.5 rounded text-[10px] bg-violet-50 text-violet-600 border border-violet-100 capitalize">{s}</span>
                     ))}
                   </div>
                 )}
@@ -501,40 +509,45 @@ export default function Profile() {
                 <SkillRadarChart skills={skillProfile.skills} size={280} showLabels={true} showValues={true} showTrends={true} />
               </div>
               {skillProfile.growthAreas?.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-white/[0.06]">
-                  <p className="text-xs text-text-tertiary mb-2">Focus areas for growth:</p>
+                <div className="mt-6 pt-4 border-t border-slate-100">
+                  <p className="text-xs text-slate-500 mb-2">Focus areas for growth:</p>
                   <div className="flex flex-wrap gap-2">
                     {skillProfile.growthAreas.map((area) => (
-                      <span key={area} className="px-2 py-1 rounded-lg text-xs bg-warning/10 text-warning capitalize">{area}</span>
+                      <span key={area} className="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600 border border-amber-100 capitalize">{area}</span>
                     ))}
                   </div>
                 </div>
               )}
             </div>
           )}
-          <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+
+          {/* Behavioral Analysis */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-8">
-              <Brain className="w-4 h-4 text-brand-400" />
-              <h3 className="text-sm font-medium text-text-secondary">Behavioral Analysis</h3>
+              <Brain className="w-4 h-4 text-violet-500" />
+              <h3 className="text-sm font-medium text-slate-600">Behavioral Analysis</h3>
             </div>
             <div className="grid grid-cols-1 gap-6">
               {profileAnalytics?.collaborationStyle && <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />}
               {profileAnalytics?.roleClassification && <RoleClassificationCard data={profileAnalytics.roleClassification} />}
             </div>
-            <div className="mt-10 pt-8 border-t border-white/[0.06]">
+            <div className="mt-10 pt-8 border-t border-slate-100">
               {user && <WorkPersonality userId={user._id || user.id} />}
             </div>
           </div>
         </div>
 
+        {/* Right Column */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
           {isOwnProfile && <GrowthSuggestions suggestions={suggestions} loading={growthLoading} />}
+          
+          {/* Trends */}
           {isOwnProfile && trends && (
-            <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+            <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <Activity className="w-4 h-4 text-brand" />
-                <h3 className="text-sm font-medium text-text-secondary">Trends</h3>
-                <span className="text-xs text-text-tertiary">12 weeks</span>
+                <Activity className="w-4 h-4 text-violet-600" />
+                <h3 className="text-sm font-medium text-slate-600">Trends</h3>
+                <span className="text-xs text-slate-400">12 weeks</span>
               </div>
               <div className="space-y-4">
                 {["velocity", "quality", "collaboration"].map((metric) => {
@@ -544,10 +557,10 @@ export default function Profile() {
                   return (
                     <div key={metric} className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-text-primary capitalize">{metric}</p>
-                        <p className="text-xs text-text-tertiary">{latest}/100</p>
+                        <p className="text-sm text-slate-700 capitalize">{metric}</p>
+                        <p className="text-xs text-slate-400">{latest}/100</p>
                       </div>
-                      <span className={`text-sm font-medium ${isPositive ? "text-success" : "text-error-500"}`}>
+                      <span className={`text-sm font-medium ${isPositive ? "text-emerald-600" : "text-red-500"}`}>
                         {isPositive ? "+" : ""}{growth}%
                       </span>
                     </div>
@@ -558,14 +571,16 @@ export default function Profile() {
           )}
         </div>
 
+        {/* Trend Charts - Full Width */}
         {isOwnProfile && (
           <div className="col-span-12">
             <TrendCharts trends={trends} loading={growthLoading} />
           </div>
         )}
 
+        {/* Export Button */}
         <div className="col-span-12 flex justify-center pt-8">
-          <button className="flex items-center gap-3 px-6 py-3 rounded-xl bg-surface-1 border border-white/[0.06] text-text-tertiary hover:text-text-primary hover:bg-surface-2 hover:border-white/[0.1] transition-all duration-200 group">
+          <button className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 group shadow-sm">
             <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
             <span className="text-sm">Export Profile Data</span>
           </button>

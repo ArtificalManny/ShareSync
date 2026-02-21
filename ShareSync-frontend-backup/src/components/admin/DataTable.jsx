@@ -36,50 +36,51 @@ export default function DataTable({
       <th
         key={col.key}
         style={{ width: col.width }}
-        className={clickable ? "is-sortable" : undefined}
+        className={clickable ? "is-sortable cursor-pointer hover:bg-white/[0.02]" : ""}
         onClick={() => clickable && onSortChange(col.key)}
         aria-sort={
           isSorted ? (sort.dir === "asc" ? "ascending" : "descending") : "none"
         }
         role={clickable ? "button" : undefined}
       >
-        <span className="hdr">
+        <span className="hdr flex items-center gap-2">
           {col.header || col.key}
-          {sortedIcon && <span className="sort">{sortedIcon}</span>}
+          {sortedIcon && <span className="sort text-xs opacity-60">{sortedIcon}</span>}
         </span>
       </th>
     );
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-0 overflow-hidden">
+    <div className="rounded-2xl border border-white/[0.08] bg-surface-1 p-0 overflow-hidden">
       <div className="overflow-auto">
-        <table className="admin-table">
-          <thead>
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-surface-2 border-b border-white/[0.08]">
             <tr>{columns.map(headerCell)}</tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-white/[0.04]">
             {loading
               ? [...Array(5)].map((_, i) => (
                   <tr key={`sk-${i}`} className="animate-pulse">
-                    <td colSpan={columns.length} className="p-3 text-sm text-muted">
-                      Loading…
+                    <td colSpan={columns.length} className="p-4 text-sm text-text-tertiary">
+                      <div className="h-4 bg-surface-2 rounded w-1/3"></div>
                     </td>
                   </tr>
                 ))
               : rows.length === 0
               ? (
                 <tr>
-                  <td colSpan={columns.length} className="p-3 text-sm text-muted">
+                  <td colSpan={columns.length} className="p-8 text-center text-sm text-text-tertiary">
                     {emptyText}
                   </td>
                 </tr>
                 )
               : rows.map((row, ri) => (
-                  <tr key={row.id || row._id || ri}>
+                  <tr key={row.id || row._id || ri} className="hover:bg-white/[0.02] transition-colors">
                     {columns.map((col) => (
                       <td
                         key={col.key}
+                        className="p-4 text-sm text-text-secondary"
                         style={{ textAlign: col.align || "left", width: col.width }}
                       >
                         {typeof col.render === "function"
@@ -94,36 +95,36 @@ export default function DataTable({
       </div>
 
       {/* Pager */}
-      <div className="px-3 py-2 border-t border-border flex items-center justify-between text-sm">
-        <div className="text-muted">
-          Total: <span className="font-medium">{total || 0}</span>
+      <div className="px-4 py-3 border-t border-white/[0.08] flex items-center justify-between text-sm">
+        <div className="text-text-tertiary">
+          Total: <span className="font-medium text-text-secondary">{total || 0}</span>
           {rows.length > 0 && (
             <>
               {" · "}
               Showing{" "}
-              <span className="font-medium">
+              <span className="font-medium text-text-secondary">
                 {(page - 1) * pageSize + 1}
               </span>
               –
-              <span className="font-medium">
+              <span className="font-medium text-text-secondary">
                 {Math.min(page * pageSize, total || 0)}
               </span>
             </>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
-            className="btn btn-ghost px-2 py-1 rounded-lg border border-border"
+            className="px-3 py-1.5 rounded-lg border border-white/[0.08] hover:bg-surface-2 disabled:opacity-50 transition-all text-text-secondary"
             onClick={() => onPageChange(Math.max(1, page - 1))}
             disabled={loading || page <= 1}
           >
             Prev
           </button>
-          <div className="px-2">
-            Page <span className="font-medium">{page}</span> / {totalPages}
+          <div className="text-text-tertiary">
+            Page <span className="font-medium text-text-secondary">{page}</span> / {totalPages}
           </div>
           <button
-            className="btn btn-ghost px-2 py-1 rounded-lg border border-border"
+            className="px-3 py-1.5 rounded-lg border border-white/[0.08] hover:bg-surface-2 disabled:opacity-50 transition-all text-text-secondary"
             onClick={() => onPageChange(Math.min(totalPages, page + 1))}
             disabled={loading || page >= totalPages}
           >
