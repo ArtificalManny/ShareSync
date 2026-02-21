@@ -1,4 +1,21 @@
-// src/components/profile/ProfileHeader.jsx
+// src/components/Profile/ProfileHeader.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARESYNC PROFILE HEADER v4.0 - "The Gallery Walk" Light Theme
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// THEME: "The Personal Gallery"
+//
+// COLOR MAP:
+// - Text Primary: #1E293B (slate-800)
+// - Text Secondary: #64748B (slate-500)
+// - Avatar Ring: Aurora Gradient
+// - Edit Button: #3B82F6 (blue)
+// - Badges: Soft tints with borders
+//
+// NO BACKEND CHANGES
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React from "react";
 import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
@@ -10,11 +27,13 @@ function xpForLevel(level) {
   for (let i = 1; i < level; i++) sum += Math.round(75 + Math.pow(i, 1.35) * 35);
   return sum;
 }
+
 function levelForXp(xp = 0) {
   let lvl = 1;
   while (xp >= xpForLevel(lvl + 1)) lvl++;
   return lvl;
 }
+
 function progressToNext(xp = 0) {
   const lvl = levelForXp(xp);
   const cur = xpForLevel(lvl);
@@ -27,7 +46,7 @@ export default function ProfileHeader({
   user,
   isOwner = false,
   isPublic = false,
-  onAvatarUploaded, // optional callback to open uploader in owner mode
+  onAvatarUploaded,
   prefersReduced = false,
 }) {
   const name = user?.firstName || user?.name || user?.displayName || "User";
@@ -48,49 +67,76 @@ export default function ProfileHeader({
 
   return (
     <div className="flex items-start gap-4">
+      {/* Avatar with Aurora ring effect */}
       <div className="relative">
-        <Avatar src={pic} emoji={emoji} name={name} size={64} />
+        <div 
+          className="p-0.5 rounded-full"
+          style={{
+            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)'
+          }}
+        >
+          <div className="bg-white rounded-full p-0.5">
+            <Avatar src={pic} emoji={emoji} name={name} size={64} />
+          </div>
+        </div>
+        
         {isOwner && !isPublic && typeof onAvatarUploaded === "function" && (
           <button
-            className="absolute -bottom-2 left-0 rounded-full btn btn-primary text-[11px] px-2 py-0.5"
-            onClick={() => {
-              // Let parent open its uploader (keeps uploads centralized)
-              onAvatarUploaded(null);
-            }}
+            className="absolute -bottom-2 left-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+            onClick={() => onAvatarUploaded(null)}
           >
             Change
           </button>
         )}
       </div>
 
+      {/* User info */}
       <div className="flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold text-text">{name}</h1>
-          {at && <span className="text-muted">{at}</span>}
+          <h1 className="text-xl font-semibold text-slate-800">{name}</h1>
+          {at && <span className="text-slate-500">{at}</span>}
+          
+          {/* Privacy badge */}
           <span
-            className={`chip ${user?.publicProfile ? "is-selected" : ""} px-2 py-0.5 text-[11px] ml-2`}
+            className={`
+              px-2 py-0.5 text-[11px] font-medium rounded-full ml-2
+              ${user?.publicProfile 
+                ? 'bg-teal-50 text-teal-700 border border-teal-200' 
+                : 'bg-slate-100 text-slate-600 border border-slate-200'
+              }
+            `}
             title={privacy}
           >
             {privacy}
           </span>
         </div>
 
-        {user?.bio && <p className="mt-1 text-muted">{user.bio}</p>}
+        {user?.bio && (
+          <p className="mt-1 text-slate-500">{user.bio}</p>
+        )}
 
-        {/* Owner-only controls hidden in public */}
+        {/* Owner-only controls */}
         {isOwner && !isPublic && (
           <div className="mt-3 flex items-center gap-2">
-            <Link to="/settings" className="btn btn-primary text-sm">
+            <Link 
+              to="/settings" 
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all"
+              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+            >
               Edit profile
             </Link>
-            <Link to="/projects" className="btn btn-ghost text-sm border border-border">
+            <Link 
+              to="/projects" 
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+            >
               View projects
             </Link>
           </div>
         )}
       </div>
 
-      {/* XP ring (read-only visual; safe to show publicly) */}
+      {/* XP ring */}
       <div className="hidden sm:block">
         <XpRing
           level={level}
