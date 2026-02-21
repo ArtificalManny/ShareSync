@@ -1,116 +1,164 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC GRADIENTS v4.0 - Fluorescent Color System
+   SHARESYNC GRADIENTS v4.0 - "The Gallery Walk" Signature Gradient System
    ═══════════════════════════════════════════════════════════════════════════════
    
-   Three signature gradient families:
-   1. AURORA - The rainbow (violet → blue → cyan → teal)
-   2. SUNSET - Warm & energetic (violet → purple → pink)
+   SIGNATURE GRADIENTS:
+   1. AURORA - Full spectrum (violet → indigo → blue → cyan → teal)
+   2. SUNSET - Warm & vibrant (violet → purple → pink)
    3. OCEAN - Cool & professional (blue → cyan → teal)
+   4. SOFT GLOW - Light backgrounds (paper → violet hint → slate)
    
-   Plus utility gradients for backgrounds, text, and accents.
+   Plus utility gradients for backgrounds, text, borders, and accents.
    
    NO BACKEND CHANGES - Pure CSS
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BACKGROUND GRADIENTS - Card & Surface Fills
+   CSS VARIABLES FOR GRADIENTS
    ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Aurora - Full spectrum (for special moments) */
-.bg-grad-aurora {
-  background: var(--palette-gradient-aurora);
-  color: var(--palette-white);
-}
-
-/* Sunset - Warm & vibrant (CTAs, highlights) */
-.bg-grad-sunset {
-  background: var(--palette-gradient-sunset);
-  color: var(--palette-white);
-}
-
-/* Ocean - Cool & professional (progress, info) */
-.bg-grad-ocean {
-  background: var(--palette-gradient-ocean);
-  color: var(--palette-white);
-}
-
-/* Brand - Simple violet gradient */
-.bg-grad-brand,
-.bg-grad-violet {
-  background: var(--palette-gradient-brand);
-  color: var(--palette-white);
-}
-
-/* Blue - Action gradient */
-.bg-grad-blue {
-  background: var(--palette-gradient-blue);
-  color: var(--palette-white);
-}
-
-/* Success - Teal gradient */
-.bg-grad-success,
-.bg-grad-teal {
-  background: var(--palette-gradient-success);
-  color: var(--palette-white);
-}
-
-/* Energy - Warning/Fire gradient */
-.bg-grad-energy,
-.bg-grad-warning {
-  background: var(--palette-gradient-energy);
-  color: var(--palette-white);
-}
-
-/* Error - Red gradient */
-.bg-grad-error {
-  background: linear-gradient(135deg, var(--rose-500) 0%, var(--red-600) 100%);
-  color: var(--palette-white);
+:root {
+  /* Signature Gradients */
+  --gradient-aurora: linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%);
+  --gradient-sunset: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%);
+  --gradient-ocean: linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%);
+  --gradient-soft-glow: linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%);
+  
+  /* Brand Gradients */
+  --gradient-brand: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%);
+  --gradient-blue: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  
+  /* Semantic Gradients */
+  --gradient-success: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);
+  --gradient-warning: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+  --gradient-error: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+  --gradient-energy: linear-gradient(135deg, #FB923C 0%, #F43F5E 100%);
+  --gradient-live: linear-gradient(135deg, #22D3EE 0%, #06B6D4 100%);
+  
+  /* Special Gradients */
+  --gradient-legendary: linear-gradient(135deg, #FFD700 0%, #EF4444 50%, #8B5CF6 100%);
+  --gradient-fire: linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%);
+  --gradient-gold: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SOFT BACKGROUND GRADIENTS (Light Mode Cards)
+   BACKGROUND GRADIENTS - Filled Surfaces
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Soft violet tint for cards */
+/* Signature Gradients */
+.bg-grad-aurora {
+  background: var(--gradient-aurora);
+  color: white;
+}
+
+.bg-grad-sunset {
+  background: var(--gradient-sunset);
+  color: white;
+}
+
+.bg-grad-ocean {
+  background: var(--gradient-ocean);
+  color: white;
+}
+
+.bg-grad-soft-glow {
+  background: var(--gradient-soft-glow);
+}
+
+/* Brand Gradients */
+.bg-grad-brand,
+.bg-grad-violet {
+  background: var(--gradient-brand);
+  color: white;
+}
+
+.bg-grad-brand-soft {
+  background: var(--gradient-brand-soft);
+  color: white;
+}
+
+.bg-grad-blue {
+  background: var(--gradient-blue);
+  color: white;
+}
+
+/* Semantic Gradients */
+.bg-grad-success,
+.bg-grad-teal {
+  background: var(--gradient-success);
+  color: white;
+}
+
+.bg-grad-warning {
+  background: var(--gradient-warning);
+  color: white;
+}
+
+.bg-grad-error,
+.bg-grad-danger {
+  background: var(--gradient-error);
+  color: white;
+}
+
+.bg-grad-energy {
+  background: var(--gradient-energy);
+  color: white;
+}
+
+.bg-grad-live {
+  background: var(--gradient-live);
+  color: white;
+}
+
+/* Special Gradients */
+.bg-grad-legendary {
+  background: var(--gradient-legendary);
+  color: white;
+}
+
+.bg-grad-fire {
+  background: var(--gradient-fire);
+  color: white;
+}
+
+.bg-grad-gold {
+  background: var(--gradient-gold);
+  color: #78350F;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SOFT BACKGROUND GRADIENTS (Light Mode Cards & Sections)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .bg-grad-soft-violet {
-  background: linear-gradient(180deg, var(--palette-white) 0%, var(--violet-50) 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%);
 }
 
-/* Soft blue tint */
 .bg-grad-soft-blue {
-  background: linear-gradient(180deg, var(--palette-white) 0%, var(--blue-50) 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
 }
 
-/* Soft teal tint */
 .bg-grad-soft-teal {
-  background: linear-gradient(180deg, var(--palette-white) 0%, var(--teal-50) 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F0FDFA 100%);
+}
+
+.bg-grad-soft-amber {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 100%);
+}
+
+.bg-grad-soft-rose {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF1F2 100%);
 }
 
 /* Page background gradient */
 .bg-grad-page {
-  background: var(--palette-gradient-page);
+  background: var(--gradient-soft-glow);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ATMOSPHERIC GRADIENTS (Dark Mode / Auth Pages)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Deep atmospheric with violet glow */
-.bg-grad-atmosphere {
-  background: 
-    radial-gradient(60% 100% at 10% 0%, rgba(var(--palette-violet-500-rgb), 0.12), transparent 60%),
-    linear-gradient(180deg, var(--palette-slate-950) 0%, var(--slate-900) 100%);
-}
-
-/* Signature gradient for dark surfaces */
-.bg-grad-signature,
-.bg-grad-pandora {
-  background:
-    radial-gradient(60% 100% at 10% 0%, rgba(var(--palette-teal-400-rgb), 0.1), transparent 60%),
-    linear-gradient(135deg, rgba(var(--palette-violet-500-rgb), 0.3), rgba(var(--palette-teal-400-rgb), 0.15));
-  color: var(--palette-white);
-  border: 1px solid var(--palette-white-10);
+/* Card hover gradient */
+.bg-grad-card-hover {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -125,98 +173,133 @@
 .text-grad-violet,
 .text-grad-blue,
 .text-grad-success,
-.text-grad-energy {
+.text-grad-energy,
+.text-grad-legendary,
+.text-grad-fire,
+.text-grad-gold,
+.text-grad-pandora,
+.text-grad-cnbc,
+.text-grad-ig,
+.text-grad-purple,
+.text-grad-emerald,
+.text-grad-pink,
+.text-grad-live,
+.text-grad-flow {
   -webkit-background-clip: text;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
   color: transparent;
 }
 
-/* Aurora text */
+/* Signature Text Gradients */
 .text-grad-aurora {
-  background-image: linear-gradient(
-    135deg,
-    var(--violet-500),
-    var(--palette-indigo-500),
-    var(--blue-500),
-    var(--cyan-500)
-  );
+  background-image: var(--gradient-aurora);
 }
 
-/* Sunset text */
 .text-grad-sunset {
-  background-image: linear-gradient(
-    135deg,
-    var(--violet-500),
-    var(--palette-fuchsia-500),
-    var(--palette-pink-500)
-  );
+  background-image: var(--gradient-sunset);
 }
 
-/* Ocean text */
 .text-grad-ocean {
-  background-image: linear-gradient(
-    135deg,
-    var(--blue-500),
-    var(--cyan-500),
-    var(--teal-400)
-  );
+  background-image: var(--gradient-ocean);
 }
 
-/* Brand/Violet text */
+/* Brand Text Gradients */
 .text-grad-brand,
 .text-grad-violet {
-  background-image: linear-gradient(
-    135deg,
-    var(--violet-400),
-    var(--violet-600)
-  );
+  background-image: var(--gradient-brand);
 }
 
-/* Blue text */
 .text-grad-blue {
-  background-image: linear-gradient(
-    135deg,
-    var(--blue-400),
-    var(--blue-600)
-  );
+  background-image: var(--gradient-blue);
 }
 
-/* Success text */
+/* Semantic Text Gradients */
 .text-grad-success {
-  background-image: linear-gradient(
-    135deg,
-    var(--teal-400),
-    var(--teal-600)
-  );
+  background-image: var(--gradient-success);
 }
 
-/* Energy text */
 .text-grad-energy {
-  background-image: linear-gradient(
-    135deg,
-    var(--orange-400),
-    var(--rose-500)
-  );
+  background-image: var(--gradient-energy);
+}
+
+.text-grad-live {
+  background-image: var(--gradient-live);
+}
+
+/* Special Text Gradients */
+.text-grad-legendary {
+  background-image: var(--gradient-legendary);
+}
+
+.text-grad-fire {
+  background-image: var(--gradient-fire);
+}
+
+.text-grad-gold {
+  background-image: var(--gradient-gold);
+}
+
+/* Legacy Aliases */
+.text-grad-pandora {
+  background-image: var(--gradient-aurora);
+}
+
+.text-grad-cnbc {
+  background-image: var(--gradient-ocean);
+}
+
+.text-grad-ig {
+  background-image: var(--gradient-sunset);
+}
+
+.text-grad-purple {
+  background-image: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%);
+}
+
+.text-grad-emerald {
+  background-image: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+}
+
+.text-grad-pink {
+  background-image: linear-gradient(135deg, #F472B6 0%, #EC4899 100%);
+}
+
+.text-grad-flow {
+  background-image: var(--gradient-blue);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    BORDER GRADIENTS
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Rainbow border using gradient */
 .border-grad-aurora {
   border: 2px solid transparent;
-  background: linear-gradient(var(--palette-white), var(--palette-white)) padding-box,
-              linear-gradient(135deg, var(--violet-500), var(--blue-500), var(--teal-400)) border-box;
-  border-radius: var(--radius-lg);
+  background: linear-gradient(white, white) padding-box,
+              var(--gradient-aurora) border-box;
+  border-radius: 14px;
 }
 
-/* Violet border gradient */
+.border-grad-sunset {
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              var(--gradient-sunset) border-box;
+  border-radius: 14px;
+}
+
+.border-grad-ocean {
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              var(--gradient-ocean) border-box;
+  border-radius: 14px;
+}
+
+.border-grad-brand,
 .border-grad-violet {
   border: 2px solid transparent;
-  background: linear-gradient(var(--palette-white), var(--palette-white)) padding-box,
-              linear-gradient(135deg, var(--violet-400), var(--violet-600)) border-box;
-  border-radius: var(--radius-lg);
+  background: linear-gradient(white, white) padding-box,
+              var(--gradient-brand) border-box;
+  border-radius: 14px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -224,35 +307,62 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .accent-bar-aurora {
-  background: linear-gradient(180deg, var(--violet-500), var(--blue-500), var(--teal-400));
+  background: var(--gradient-aurora);
+}
+
+.accent-bar-sunset {
+  background: var(--gradient-sunset);
+}
+
+.accent-bar-ocean {
+  background: var(--gradient-ocean);
 }
 
 .accent-bar-brand {
-  background: linear-gradient(180deg, var(--violet-400), var(--violet-600));
+  background: var(--gradient-brand);
 }
 
 .accent-bar-blue {
-  background: linear-gradient(180deg, var(--blue-400), var(--blue-600));
+  background: var(--gradient-blue);
 }
 
 .accent-bar-success {
-  background: linear-gradient(180deg, var(--teal-400), var(--teal-600));
+  background: var(--gradient-success);
 }
 
 .accent-bar-warning {
-  background: linear-gradient(180deg, var(--amber-400), var(--orange-500));
+  background: var(--gradient-warning);
 }
 
 .accent-bar-error {
-  background: linear-gradient(180deg, var(--rose-400), var(--red-600));
+  background: var(--gradient-error);
 }
 
 .accent-bar-energy {
-  background: linear-gradient(180deg, var(--orange-400), var(--rose-500));
+  background: var(--gradient-energy);
 }
 
 .accent-bar-live {
-  background: linear-gradient(180deg, var(--cyan-400), var(--cyan-500));
+  background: var(--gradient-live);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ATMOSPHERIC GRADIENTS (Dark Mode / Auth Pages)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.bg-grad-atmosphere {
+  background: 
+    radial-gradient(60% 100% at 10% 0%, rgba(139, 92, 246, 0.12), transparent 60%),
+    linear-gradient(180deg, #0B0F19 0%, #0F172A 100%);
+}
+
+.bg-grad-signature,
+.bg-grad-pandora {
+  background:
+    radial-gradient(60% 100% at 10% 0%, rgba(45, 212, 191, 0.1), transparent 60%),
+    linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(45, 212, 191, 0.15));
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -272,7 +382,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle at center,
-    rgba(var(--palette-violet-500-rgb), var(--momentum-intensity, 0)) 0%,
+    rgba(139, 92, 246, var(--momentum-intensity, 0)) 0%,
     transparent 70%
   );
   transition: opacity 800ms ease;
@@ -285,7 +395,7 @@
 [data-momentum="5"] { --momentum-intensity: 0.15; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHIMMER & SHINE EFFECTS
+   SHIMMER & ANIMATION EFFECTS
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .shimmer {
@@ -315,67 +425,90 @@
   }
 }
 
-/* Light mode shimmer (more subtle) */
+/* Light mode shimmer */
 .shimmer-light::after {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--palette-violet-500-rgb), 0.08),
+    rgba(139, 92, 246, 0.08),
     transparent
   );
+}
+
+/* Gradient shift animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    HOVER GLOW EFFECTS
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+.hover-glow-aurora {
+  transition: box-shadow 300ms ease;
+}
+.hover-glow-aurora:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.2), 0 0 60px rgba(6, 182, 212, 0.1);
+}
+
+.hover-glow-sunset {
+  transition: box-shadow 300ms ease;
+}
+.hover-glow-sunset:hover {
+  box-shadow: 0 0 30px rgba(236, 72, 153, 0.2), 0 0 60px rgba(168, 85, 247, 0.1);
+}
+
+.hover-glow-ocean {
+  transition: box-shadow 300ms ease;
+}
+.hover-glow-ocean:hover {
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.2), 0 0 60px rgba(45, 212, 191, 0.1);
+}
+
 .hover-glow-brand {
-  transition: box-shadow var(--motion-normal) var(--easing-standard);
+  transition: box-shadow 300ms ease;
 }
-
 .hover-glow-brand:hover {
-  box-shadow: 0 0 30px rgba(var(--palette-violet-500-rgb), 0.2);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
 }
 
+.hover-glow-blue {
+  transition: box-shadow 300ms ease;
+}
 .hover-glow-blue:hover {
-  box-shadow: 0 0 30px rgba(var(--palette-blue-500-rgb), 0.2);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
 }
 
+.hover-glow-teal {
+  transition: box-shadow 300ms ease;
+}
 .hover-glow-teal:hover {
-  box-shadow: 0 0 30px rgba(var(--palette-teal-400-rgb), 0.2);
+  box-shadow: 0 0 30px rgba(45, 212, 191, 0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LEGACY MAPPINGS (Backward Compatibility)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.bg-grad-purple { background: var(--palette-gradient-brand); color: var(--palette-white); }
-.bg-grad-emerald { background: var(--palette-gradient-success); color: var(--palette-white); }
-.bg-grad-coral { background: var(--palette-gradient-energy); color: var(--palette-white); }
-.bg-grad-mint { background: var(--palette-gradient-success); color: var(--palette-white); }
-.bg-grad-cnbc { background: var(--palette-gradient-ocean); color: var(--palette-white); }
-.bg-grad-ig { background: var(--palette-gradient-sunset); color: var(--palette-white); }
-
-.text-grad-pandora { 
-  background-image: linear-gradient(135deg, var(--violet-500), var(--palette-indigo-500), var(--blue-500), var(--cyan-500));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-grad-live { 
-  background-image: linear-gradient(135deg, var(--blue-500), var(--cyan-500), var(--teal-400));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-grad-flow { 
-  background-image: linear-gradient(135deg, var(--blue-400), var(--blue-600));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+.bg-grad-purple { background: var(--gradient-brand); color: white; }
+.bg-grad-emerald { background: var(--gradient-success); color: white; }
+.bg-grad-coral { background: var(--gradient-energy); color: white; }
+.bg-grad-mint { background: var(--gradient-success); color: white; }
+.bg-grad-cnbc { background: var(--gradient-ocean); color: white; }
+.bg-grad-ig { background: var(--gradient-sunset); color: white; }
 
 /* Gradient surfaces have white text */
 .bg-grad-aurora,
@@ -385,8 +518,13 @@
 .bg-grad-violet,
 .bg-grad-blue,
 .bg-grad-success,
+.bg-grad-teal,
 .bg-grad-energy,
-.bg-grad-error {
-  color: var(--palette-white);
+.bg-grad-error,
+.bg-grad-danger,
+.bg-grad-live,
+.bg-grad-legendary,
+.bg-grad-fire {
+  color: white;
   --accent-foreground: 255 255 255;
 }

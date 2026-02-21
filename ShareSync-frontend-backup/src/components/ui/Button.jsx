@@ -1,18 +1,16 @@
 // src/components/ui/Button.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC BUTTON v4.0 - "The Gallery Walk" Light Theme
+// SHARESYNC BUTTON v4.0 - "The Gallery Walk" Light Theme + Signature Gradients
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES IN v4.0:
-// - Updated gradient colors for light theme
-// - All functionality preserved exactly
-// - NO BACKEND CHANGES
+// SIGNATURE GRADIENT VARIANTS:
+// - primary: Brand violet gradient (default)
+// - sunset: Violet → Purple → Pink (CTAs, hero buttons)
+// - ocean: Blue → Cyan → Teal (info actions)
+// - aurora: Full spectrum (special moments)
+// - blue: Blue action gradient (Save, Start Sprint)
 //
-// Kept 100% backwards compatible with existing props/styles.
-// Adds OPTIONAL micro-interactions:
-// - Framer Motion hover/tap scale (disabled when disabled/loading)
-// - Optional "state" overlay: loading | success | error
-// - Success/error icons via lucide-react
+// All functionality preserved exactly. NO BACKEND CHANGES.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -34,6 +32,12 @@ const SIZE = {
 const VARIANT = {
   // Primary - Deep Violet brand gradient
   primary: "btn--primary",
+  
+  // Signature Gradients (NEW)
+  sunset: "btn--sunset",
+  ocean: "btn--ocean",
+  aurora: "btn--aurora",
+  blue: "btn--blue",
 
   // Secondary variants
   outline: "btn--outline",
@@ -51,11 +55,29 @@ const VARIANT = {
   proton: "btn--proton",
 };
 
-// ✅ UPDATED: Light theme gradient styles
+// Signature gradient styles
 const GRADIENT_STYLES = {
+  // Primary brand
   primary: {
     background: "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)",
   },
+  // Sunset - CTAs and hero buttons
+  sunset: {
+    background: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)",
+  },
+  // Ocean - Info actions
+  ocean: {
+    background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)",
+  },
+  // Aurora - Special moments
+  aurora: {
+    background: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)",
+  },
+  // Blue - Save, Start Sprint actions
+  blue: {
+    background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
+  },
+  // Semantic
   success: {
     background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
   },
@@ -71,6 +93,20 @@ const GRADIENT_STYLES = {
   energy: {
     background: "linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)",
   },
+};
+
+// Shadow colors for each variant
+const SHADOW_COLORS = {
+  primary: "rgba(139, 92, 246, 0.25)",
+  sunset: "rgba(168, 85, 247, 0.25)",
+  ocean: "rgba(6, 182, 212, 0.25)",
+  aurora: "rgba(139, 92, 246, 0.2)",
+  blue: "rgba(59, 130, 246, 0.25)",
+  success: "rgba(16, 185, 129, 0.25)",
+  warning: "rgba(245, 158, 11, 0.25)",
+  danger: "rgba(239, 68, 68, 0.25)",
+  live: "rgba(6, 182, 212, 0.25)",
+  energy: "rgba(244, 63, 94, 0.25)",
 };
 
 function getMotionComponent(As) {
@@ -125,9 +161,13 @@ export default function Button({
   );
 
   // Apply gradient for filled variants
-  const gradientVariants = ["primary", "success", "warning", "danger", "live", "energy"];
+  const gradientVariants = ["primary", "sunset", "ocean", "aurora", "blue", "success", "warning", "danger", "live", "energy"];
   const useGradient = gradientVariants.includes(variant);
   const gradientStyle = useGradient ? GRADIENT_STYLES[variant] : {};
+  
+  // Add shadow
+  const shadowColor = SHADOW_COLORS[variant] || SHADOW_COLORS.primary;
+  const shadowStyle = useGradient ? { boxShadow: `0 4px 14px ${shadowColor}` } : {};
 
   // Motion (safe defaults)
   const whileHover = motionEnabled && !isDisabled ? { scale: 1.02 } : undefined;
@@ -138,7 +178,7 @@ export default function Button({
       className={classes}
       disabled={typeof As === "string" && As.toLowerCase() === "button" ? isDisabled : undefined}
       aria-disabled={isDisabled ? true : undefined}
-      style={gradientStyle}
+      style={{ ...gradientStyle, ...shadowStyle }}
       whileHover={whileHover}
       whileTap={whileTap}
       transition={{ type: "spring", stiffness: 420, damping: 30 }}
@@ -246,4 +286,25 @@ export function IconButton({ icon, variant = "ghost", size = "md", className, la
       {icon}
     </Button>
   );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GRADIENT BUTTON PRESETS
+// Convenient shortcuts for signature gradient buttons
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function SunsetButton({ children, ...props }) {
+  return <Button variant="sunset" {...props}>{children}</Button>;
+}
+
+export function OceanButton({ children, ...props }) {
+  return <Button variant="ocean" {...props}>{children}</Button>;
+}
+
+export function AuroraButton({ children, ...props }) {
+  return <Button variant="aurora" {...props}>{children}</Button>;
+}
+
+export function BlueButton({ children, ...props }) {
+  return <Button variant="blue" {...props}>{children}</Button>;
 }

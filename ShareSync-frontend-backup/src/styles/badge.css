@@ -1,0 +1,381 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC BADGE STYLES v4.0 - "The Gallery Walk" Badge System
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   Badge variants:
+   - Solid: Filled background with white text
+   - Soft: Light tinted background with colored text
+   - Outline: Transparent with colored border
+   - Gradient: Signature gradient backgrounds
+   
+   NO BACKEND CHANGES - Pure CSS
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE BADGE STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: all 150ms ease;
+}
+
+/* Sizes */
+.badge--xs {
+  font-size: 10px;
+  padding: 0.125rem 0.375rem;
+}
+
+.badge--sm {
+  font-size: 12px;
+  padding: 0.25rem 0.5rem;
+}
+
+.badge--md {
+  font-size: 14px;
+  padding: 0.375rem 0.75rem;
+}
+
+.badge--lg {
+  font-size: 14px;
+  padding: 0.5rem 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SOFT BADGES (Light tinted backgrounds - default for light theme)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--violet,
+.badge--brand {
+  background: #F5F3FF;
+  color: #7C3AED;
+  border-color: #DDD6FE;
+}
+
+.badge--blue {
+  background: #EFF6FF;
+  color: #2563EB;
+  border-color: #BFDBFE;
+}
+
+.badge--teal,
+.badge--success {
+  background: #F0FDFA;
+  color: #0D9488;
+  border-color: #99F6E4;
+}
+
+.badge--emerald {
+  background: #ECFDF5;
+  color: #059669;
+  border-color: #A7F3D0;
+}
+
+.badge--amber,
+.badge--warning {
+  background: #FFFBEB;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.badge--orange,
+.badge--energy {
+  background: #FFF7ED;
+  color: #C2410C;
+  border-color: #FED7AA;
+}
+
+.badge--rose,
+.badge--error {
+  background: #FFF1F2;
+  color: #BE123C;
+  border-color: #FECDD3;
+}
+
+.badge--red {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border-color: #FECACA;
+}
+
+.badge--cyan,
+.badge--live {
+  background: #ECFEFF;
+  color: #0891B2;
+  border-color: #A5F3FC;
+}
+
+.badge--slate,
+.badge--neutral {
+  background: #F8FAFC;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+
+.badge--indigo {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #C7D2FE;
+}
+
+.badge--sky {
+  background: #F0F9FF;
+  color: #0369A1;
+  border-color: #BAE6FD;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GRADIENT BADGES (Signature gradients with white text)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--grad,
+.badge--gradient {
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-aurora {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-sunset {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-ocean {
+  background: linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-brand,
+.badge--grad-violet,
+.badge--grad-purple {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-blue {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-success,
+.badge--grad-teal,
+.badge--grad-emerald {
+  background: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-warning,
+.badge--grad-amber {
+  background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-energy,
+.badge--grad-orange {
+  background: linear-gradient(135deg, #FB923C 0%, #F43F5E 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-error,
+.badge--grad-danger {
+  background: linear-gradient(135deg, #F87171 0%, #EF4444 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-live,
+.badge--grad-cyan {
+  background: linear-gradient(135deg, #22D3EE 0%, #06B6D4 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Special gradient badges */
+.badge--grad-legendary {
+  background: linear-gradient(135deg, #FFD700 0%, #EF4444 50%, #8B5CF6 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.badge--grad-fire {
+  background: linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.badge--grad-gold {
+  background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+  color: #78350F;
+  border-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SOLID BADGES (Filled backgrounds)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--solid-violet {
+  background: #8B5CF6;
+  color: white;
+  border-color: transparent;
+}
+
+.badge--solid-blue {
+  background: #3B82F6;
+  color: white;
+  border-color: transparent;
+}
+
+.badge--solid-teal {
+  background: #14B8A6;
+  color: white;
+  border-color: transparent;
+}
+
+.badge--solid-amber {
+  background: #F59E0B;
+  color: white;
+  border-color: transparent;
+}
+
+.badge--solid-red {
+  background: #EF4444;
+  color: white;
+  border-color: transparent;
+}
+
+.badge--solid-slate {
+  background: #64748B;
+  color: white;
+  border-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   OUTLINE BADGES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--outline-violet {
+  background: transparent;
+  color: #7C3AED;
+  border-color: #C4B5FD;
+}
+
+.badge--outline-blue {
+  background: transparent;
+  color: #2563EB;
+  border-color: #93C5FD;
+}
+
+.badge--outline-teal {
+  background: transparent;
+  color: #0D9488;
+  border-color: #5EEAD4;
+}
+
+.badge--outline-amber {
+  background: transparent;
+  color: #D97706;
+  border-color: #FCD34D;
+}
+
+.badge--outline-red {
+  background: transparent;
+  color: #DC2626;
+  border-color: #FCA5A5;
+}
+
+.badge--outline-slate {
+  background: transparent;
+  color: #475569;
+  border-color: #CBD5E1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATUS BADGES (With dot indicator)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--status {
+  padding-left: 0.625rem;
+}
+
+.badge--status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge--status-active::before {
+  background: #10B981;
+}
+
+.badge--status-inactive::before {
+  background: #94A3B8;
+}
+
+.badge--status-pending::before {
+  background: #F59E0B;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.badge--status-error::before {
+  background: #EF4444;
+}
+
+.badge--status-live::before {
+  background: #06B6D4;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COUNTER BADGES (For notifications)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--counter {
+  min-width: 1.25rem;
+  justify-content: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HOVER STATES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge--hoverable {
+  cursor: pointer;
+}
+
+.badge--hoverable:hover {
+  filter: brightness(0.95);
+}
+
+.badge--grad.badge--hoverable:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
