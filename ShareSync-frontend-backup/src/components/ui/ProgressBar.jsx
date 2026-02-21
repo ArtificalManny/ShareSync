@@ -1,27 +1,63 @@
 // src/components/ui/ProgressBar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROGRESS BAR v4.0 - "The Gallery Walk" Light Theme
+// SHARESYNC PROGRESS BAR v4.0 - "The Gallery Walk" + Signature Gradients
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // CHANGES IN v4.0:
-// - Updated to light theme colors
+// - Added Ocean gradient as default fill (blue → cyan → teal)
+// - Added variant prop for different gradient fills
 // - All Phase 8 micro-interactions preserved
 // - NO BACKEND CHANGES
 //
-// ENHANCEMENTS:
-// - Threshold crossing animations (25%, 50%, 75%, 100%)
-// - Pulse effect when milestones are reached
-// - Shine sweep at 100% completion
-// - Count-up animation for label (optional)
+// VARIANTS:
+// - ocean: Blue → Cyan → Teal (default)
+// - brand: Violet gradient
+// - aurora: Full spectrum
+// - success: Teal gradient
+// - energy: Orange → Rose
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
 
+const cn = (...classes) => classes.filter(Boolean).join(' ');
+
+// Gradient fill styles for progress bar
+const GRADIENT_FILLS = {
+  ocean: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
+  brand: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
+  aurora: 'linear-gradient(90deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
+  sunset: 'linear-gradient(90deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
+  success: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)',
+  energy: 'linear-gradient(90deg, #FB923C 0%, #F43F5E 100%)',
+  warning: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)',
+  danger: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)',
+  // Legacy solid colors (backward compatibility)
+  violet: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
+  blue: 'linear-gradient(90deg, #3B82F6 0%, #2563EB 100%)',
+  teal: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)',
+};
+
+// Pulse colors for each variant
+const PULSE_COLORS = {
+  ocean: 'rgba(6, 182, 212, 0.4)',
+  brand: 'rgba(139, 92, 246, 0.4)',
+  aurora: 'rgba(139, 92, 246, 0.4)',
+  sunset: 'rgba(236, 72, 153, 0.4)',
+  success: 'rgba(45, 212, 191, 0.4)',
+  energy: 'rgba(249, 115, 22, 0.4)',
+  warning: 'rgba(245, 158, 11, 0.4)',
+  danger: 'rgba(239, 68, 68, 0.4)',
+  violet: 'rgba(139, 92, 246, 0.4)',
+  blue: 'rgba(59, 130, 246, 0.4)',
+  teal: 'rgba(45, 212, 191, 0.4)',
+};
+
 export default function ProgressBar({ 
   value, 
   max = 100, 
   size = 'md',
+  variant = 'ocean',  // NEW: gradient variant
   showLabel = false,
   animate = true,
   countUp = false,
@@ -96,53 +132,55 @@ export default function ProgressBar({
     requestAnimationFrame(animateValue);
   }, [percentage, countUp]);
   
-  // ✅ UPDATED: Light theme size classes
   const sizeClasses = {
     xs: 'h-1',
     sm: 'h-1.5',
     md: 'h-2',
-    lg: 'h-3'
+    lg: 'h-3',
+    xl: 'h-4',
   };
   
-  // ✅ UPDATED: Light theme progress fill colors
-  const getProgressFillClass = () => {
-    if (isComplete) return 'bg-emerald-500';
-    if (percentage >= 67) return 'bg-violet-400';
-    if (percentage >= 34) return 'bg-violet-500';
-    return 'bg-violet-600';
-  };
+  // Get gradient fill - use success variant when complete
+  const gradientFill = isComplete 
+    ? GRADIENT_FILLS.success 
+    : (GRADIENT_FILLS[variant] || GRADIENT_FILLS.ocean);
+  
+  const pulseColor = PULSE_COLORS[variant] || PULSE_COLORS.ocean;
 
   return (
-    <div className={`space-y-1 ${className}`}>
+    <div className={cn('space-y-1', className)}>
       {showLabel && (
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-500">Progress</span>
-          <span className={`
-            font-semibold tabular-nums
-            ${isComplete ? 'text-emerald-600' : 'text-slate-700'}
-            ${isPulsing ? 'animate-bounce-subtle' : ''}
-          `}>
+          <span className={cn(
+            'font-semibold tabular-nums',
+            isComplete ? 'text-emerald-600' : 'text-slate-700',
+            isPulsing && 'animate-bounce-subtle'
+          )}>
             {Math.round(displayValue)}%
           </span>
         </div>
       )}
       
-      {/* Track - ✅ UPDATED: Light theme */}
-      <div className={`
-        relative rounded-full overflow-hidden
-        bg-slate-200
-        ${sizeClasses[size]}
-        ${isPulsing ? 'progress-pulse' : ''}
-      `}>
-        {/* Fill */}
+      {/* Track */}
+      <div 
+        className={cn(
+          'relative rounded-full overflow-hidden bg-slate-200',
+          sizeClasses[size] || sizeClasses.md,
+          isPulsing && 'progress-pulse'
+        )}
+        style={{ '--pulse-color': pulseColor }}
+      >
+        {/* Fill with gradient */}
         <div 
-          className={`
-            h-full rounded-full
-            transition-all duration-500 ease-out
-            ${getProgressFillClass()}
-            ${isShining ? 'progress-shine' : ''}
-          `}
-          style={{ width: `${percentage}%` }}
+          className={cn(
+            'h-full rounded-full transition-all duration-500 ease-out',
+            isShining && 'progress-shine'
+          )}
+          style={{ 
+            width: `${percentage}%`,
+            background: gradientFill,
+          }}
           role="progressbar"
           aria-valuenow={value}
           aria-valuemin={0}
@@ -155,12 +193,10 @@ export default function ProgressBar({
             {[25, 50, 75].map(threshold => (
               <div 
                 key={threshold}
-                className={`
-                  absolute top-0 bottom-0 w-px
-                  transition-opacity duration-300
-                  ${percentage >= threshold ? 'opacity-0' : 'opacity-30'}
-                  bg-slate-400
-                `}
+                className={cn(
+                  'absolute top-0 bottom-0 w-px transition-opacity duration-300 bg-slate-400',
+                  percentage >= threshold ? 'opacity-0' : 'opacity-30'
+                )}
                 style={{ left: `${threshold}%` }}
               />
             ))}
@@ -175,8 +211,8 @@ export default function ProgressBar({
         }
         
         @keyframes progress-pulse {
-          0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
-          100% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+          0% { box-shadow: 0 0 0 0 var(--pulse-color, rgba(6, 182, 212, 0.4)); }
+          100% { box-shadow: 0 0 0 8px transparent; }
         }
         
         .progress-shine::after {
@@ -213,14 +249,14 @@ export default function ProgressBar({
 }
 
 /**
- * ProgressRing - Circular progress indicator with micro-interactions
- * ✅ UPDATED: Light theme colors
+ * ProgressRing - Circular progress indicator with gradient support
  */
 export function ProgressRing({
   value,
   max = 100,
   size = 64,
   strokeWidth = 4,
+  variant = 'ocean',
   showValue = true,
   animate = true,
   className = ''
@@ -254,22 +290,34 @@ export function ProgressRing({
     prevPercentageRef.current = percentage;
   }, [percentage, animate]);
 
-  // ✅ UPDATED: Light theme colors
-  const getStrokeColor = () => {
-    if (isComplete) return '#10B981'; // emerald-500
-    if (percentage >= 67) return '#A78BFA'; // violet-400
-    if (percentage >= 34) return '#8B5CF6'; // violet-500
-    return '#7C3AED'; // violet-600
+  // Gradient ID unique to this instance
+  const gradientId = `progress-gradient-${Math.random().toString(36).substr(2, 9)}`;
+
+  // Gradient colors based on variant
+  const getGradientColors = () => {
+    if (isComplete) return ['#2DD4BF', '#14B8A6'];
+    
+    const gradientMap = {
+      ocean: ['#3B82F6', '#06B6D4', '#2DD4BF'],
+      brand: ['#8B5CF6', '#7C3AED'],
+      aurora: ['#8B5CF6', '#3B82F6', '#2DD4BF'],
+      sunset: ['#8B5CF6', '#EC4899'],
+      success: ['#2DD4BF', '#14B8A6'],
+      energy: ['#FB923C', '#F43F5E'],
+    };
+    
+    return gradientMap[variant] || gradientMap.ocean;
   };
 
+  const gradientColors = getGradientColors();
+
   return (
-    <div className={`relative inline-flex items-center justify-center ${className}`}>
+    <div className={cn('relative inline-flex items-center justify-center', className)}>
       {/* Pulse ring (behind) */}
       {isPulsing && (
         <div 
           className="absolute inset-0 rounded-full"
           style={{ 
-            boxShadow: `0 0 0 0 ${getStrokeColor()}`,
             animation: 'ring-pulse 0.6s ease-out',
           }}
         />
@@ -278,9 +326,24 @@ export function ProgressRing({
       <svg
         width={size}
         height={size}
-        className={`transform -rotate-90 ${isPulsing ? 'scale-105' : 'scale-100'} transition-transform duration-200`}
+        className={cn(
+          'transform -rotate-90 transition-transform duration-200',
+          isPulsing ? 'scale-105' : 'scale-100'
+        )}
       >
-        {/* Track - ✅ UPDATED: Light theme */}
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            {gradientColors.map((color, index) => (
+              <stop 
+                key={index}
+                offset={`${(index / (gradientColors.length - 1)) * 100}%`} 
+                stopColor={color} 
+              />
+            ))}
+          </linearGradient>
+        </defs>
+        
+        {/* Track */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -289,13 +352,13 @@ export function ProgressRing({
           stroke="#E2E8F0"
           strokeWidth={strokeWidth}
         />
-        {/* Fill */}
+        {/* Fill with gradient */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={getStrokeColor()}
+          stroke={`url(#${gradientId})`}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -305,22 +368,80 @@ export function ProgressRing({
       </svg>
       
       {showValue && (
-        <span className={`
-          absolute text-xs font-semibold tabular-nums
-          ${isComplete ? 'text-emerald-600' : 'text-slate-700'}
-          ${isPulsing ? 'scale-110' : 'scale-100'}
-          transition-transform duration-200
-        `}>
+        <span className={cn(
+          'absolute text-xs font-semibold tabular-nums transition-transform duration-200',
+          isComplete ? 'text-emerald-600' : 'text-slate-700',
+          isPulsing ? 'scale-110' : 'scale-100'
+        )}>
           {Math.round(percentage)}
         </span>
       )}
       
       <style>{`
         @keyframes ring-pulse {
-          0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
-          100% { box-shadow: 0 0 0 12px rgba(139, 92, 246, 0); }
+          0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+          100% { box-shadow: 0 0 0 12px rgba(6, 182, 212, 0); }
         }
       `}</style>
+    </div>
+  );
+}
+
+/**
+ * ProgressSteps - Step-based progress indicator
+ */
+export function ProgressSteps({
+  steps = [],
+  currentStep = 0,
+  variant = 'ocean',
+  className = ''
+}) {
+  const gradientLine = GRADIENT_FILLS[variant] || GRADIENT_FILLS.ocean;
+
+  return (
+    <div className={cn('flex items-center', className)}>
+      {steps.map((step, index) => {
+        const isCompleted = index < currentStep;
+        const isCurrent = index === currentStep;
+        
+        return (
+          <React.Fragment key={index}>
+            {/* Step circle */}
+            <div className="flex flex-col items-center">
+              <div 
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300',
+                  isCompleted && 'text-white',
+                  isCurrent && 'text-white ring-4 ring-blue-100',
+                  !isCompleted && !isCurrent && 'bg-slate-200 text-slate-500'
+                )}
+                style={isCompleted || isCurrent ? { background: gradientLine } : {}}
+              >
+                {isCompleted ? '✓' : index + 1}
+              </div>
+              {step.label && (
+                <span className={cn(
+                  'mt-2 text-xs',
+                  isCurrent ? 'text-slate-800 font-medium' : 'text-slate-500'
+                )}>
+                  {step.label}
+                </span>
+              )}
+            </div>
+            
+            {/* Connector line */}
+            {index < steps.length - 1 && (
+              <div 
+                className={cn(
+                  'flex-1 h-0.5 mx-2 transition-all duration-300',
+                  isCompleted ? '' : 'bg-slate-200'
+                )}
+                style={isCompleted ? { background: gradientLine } : {}}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }

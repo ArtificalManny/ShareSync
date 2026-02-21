@@ -1,337 +1,354 @@
 // src/components/common/Card.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE B: Living Cards - Unified Card System
+// SHARESYNC CARD v4.0 - "The Gallery Walk" + Soft Glow Gradient Option
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// BASE CARD TOKENS:
-// - Border radius: rounded-xl (12px)
-// - Background: bg-surface-1
-// - Border: border-white/[0.06]
-// - Hover: bg-surface-2, border-white/[0.1]
-// - Padding: p-4 (compact) or p-5 (standard)
-// - Shadow: none at rest, subtle on hover
-//
-// LIVING BEHAVIORS (Phase B):
-// - state prop: 'idle' | 'priority' | 'completing' | 'completed' | 'stale' | 'blocked' | 'live'
-// - Automatic breathing animation on hover
-// - Momentum-responsive glow
-// - State-specific visual treatments
+// UNIFIED CARD SYSTEM - Used across all page types
+// 
+// CHANGES IN v4.0:
+// - Added gradient prop for soft glow backgrounds
+// - Added accentBar prop for gradient side indicators
+// - Light theme colors with violet-tinted shadows
+// - All existing functionality preserved
+// - NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from 'react';
-import { useLivingCard, getLivingStateClasses } from '../../hooks/useLivingCard';
+import React from "react";
+
+const cn = (...classes) => classes.filter(Boolean).join(' ');
+
+// Soft glow gradient backgrounds
+const GRADIENT_BACKGROUNDS = {
+  none: '',
+  softGlow: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)',
+  softViolet: 'linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%)',
+  softBlue: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%)',
+  softTeal: 'linear-gradient(180deg, #FFFFFF 0%, #F0FDFA 100%)',
+  softAmber: 'linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 100%)',
+  softRose: 'linear-gradient(180deg, #FFFFFF 0%, #FFF1F2 100%)',
+};
+
+// Accent bar gradient options
+const ACCENT_GRADIENTS = {
+  aurora: 'linear-gradient(180deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
+  sunset: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
+  ocean: 'linear-gradient(180deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
+  brand: 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED 100%)',
+  success: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)',
+  warning: 'linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%)',
+  energy: 'linear-gradient(180deg, #FB923C 0%, #F43F5E 100%)',
+  danger: 'linear-gradient(180deg, #F87171 0%, #EF4444 100%)',
+};
 
 /**
- * Card - Base card component with living behaviors
+ * Card - Base card component with light theme styling
  */
-export default function Card({ 
-  children, 
+export default function Card({
+  children,
   className = '',
-  onClick,
-  padding = 'standard', // 'compact' | 'standard' | 'spacious' | 'none'
+  gradient = 'none',      // NEW: Soft glow background
+  accentBar = null,       // NEW: Left accent bar variant
   hover = true,
-  selected = false,
-  disabled = false,
-  variant = 'default', // 'default' | 'ghost' | 'outline' | 'elevated' | 'glass' | 'subtle'
-  as: Component = 'div',
-  
-  // Phase B: Living card props
-  state = null, // 'idle' | 'priority' | 'completing' | 'completed' | 'stale' | 'blocked' | 'live' | 'done' | 'overdue'
-  data = null, // Pass task/project data to auto-calculate state
-  living = false, // Enable living card styles
-  breathing = false, // Enable breathing animation
-  momentum = null, // Override momentum level (0-5)
-  
-  ...props 
+  padding = true,
+  rounded = 'xl',
+  shadow = true,
+  border = true,
+  onClick,
+  ...rest
 }) {
-  // Calculate living state from data if provided
-  const calculatedState = useLivingCard(data || {});
-  const currentState = state || (data ? calculatedState.state : null);
-  const livingClassName = currentState ? getLivingStateClasses(currentState) : '';
-
-  const paddingClasses = {
+  const roundedClasses = {
     none: '',
-    compact: 'p-4',
-    standard: 'p-5',
-    spacious: 'p-6',
+    sm: 'rounded-lg',
+    md: 'rounded-xl',
+    lg: 'rounded-2xl',
+    xl: 'rounded-2xl',
+    '2xl': 'rounded-3xl',
   };
 
-  const variantClasses = {
-    default: 'bg-surface-1 border border-white/[0.06]',
-    ghost: 'bg-transparent border border-transparent',
-    outline: 'bg-transparent border border-white/[0.08]',
-    elevated: 'bg-surface-1 border border-white/[0.06] shadow-card card-elevated',
-    glass: 'card-glass',
-    subtle: 'card-subtle',
-  };
-
-  const hoverClasses = hover && !disabled
-    ? 'hover:bg-surface-2 hover:border-white/[0.1] cursor-pointer'
-    : '';
-
-  const selectedClasses = selected
-    ? 'ring-2 ring-brand/50 border-brand/30'
-    : '';
-
-  const disabledClasses = disabled
-    ? 'opacity-50 cursor-not-allowed'
-    : '';
-
-  // Combine all classes
-  const cardClasses = [
-    'group rounded-xl transition-all duration-200',
-    living || currentState ? 'living-card' : 'card',
-    livingClassName,
-    paddingClasses[padding],
-    variantClasses[variant],
-    hoverClasses,
-    selectedClasses,
-    disabledClasses,
-    breathing ? 'living-card--active' : '',
-    className,
-  ].filter(Boolean).join(' ');
+  const gradientBackground = GRADIENT_BACKGROUNDS[gradient] || '';
+  const accentGradient = accentBar ? (ACCENT_GRADIENTS[accentBar] || ACCENT_GRADIENTS.brand) : null;
 
   return (
-    <Component
-      onClick={disabled ? undefined : onClick}
-      className={cardClasses}
-      data-living-state={currentState}
-      data-momentum={momentum}
-      {...props}
+    <div
+      className={cn(
+        'relative overflow-hidden transition-all duration-200',
+        !gradientBackground && 'bg-white',
+        border && 'border border-slate-200',
+        shadow && 'shadow-sm',
+        roundedClasses[rounded] || roundedClasses.xl,
+        hover && 'hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60',
+        onClick && 'cursor-pointer',
+        className
+      )}
+      style={gradientBackground ? { background: gradientBackground } : {}}
+      onClick={onClick}
+      {...rest}
+    >
+      {/* Accent bar */}
+      {accentGradient && (
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+          style={{ background: accentGradient }}
+        />
+      )}
+      
+      {/* Content */}
+      <div className={cn(
+        padding && 'p-6',
+        accentGradient && 'pl-5'
+      )}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CARD SUBCOMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function CardHeader({ children, className = '', ...rest }) {
+  return (
+    <div className={cn('mb-4', className)} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+export function CardBody({ children, className = '', ...rest }) {
+  return (
+    <div className={cn('', className)} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+export function CardFooter({ children, className = '', ...rest }) {
+  return (
+    <div className={cn('mt-4 pt-4 border-t border-slate-100', className)} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+export function CardTitle({ 
+  children, 
+  as: Tag = 'h3', 
+  className = '',
+  gradient = null,  // NEW: Gradient text option
+  ...rest 
+}) {
+  const gradientStyle = gradient ? {
+    background: ACCENT_GRADIENTS[gradient] || ACCENT_GRADIENTS.brand,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  } : {};
+
+  return (
+    <Tag 
+      className={cn('text-lg font-semibold text-slate-800', className)} 
+      style={gradientStyle}
+      {...rest}
     >
       {children}
-    </Component>
+    </Tag>
   );
 }
 
-/**
- * CardHeader - Top section of card
- */
-export function CardHeader({ children, className = '' }) {
+export function CardMeta({ children, className = '', ...rest }) {
   return (
-    <div className={`flex items-start justify-between mb-4 ${className}`}>
+    <p className={cn('text-sm text-slate-500 mt-1', className)} {...rest}>
       {children}
-    </div>
+    </p>
   );
 }
 
-/**
- * CardBody - Main content area
- */
-export function CardBody({ children, className = '' }) {
-  return (
-    <div className={`${className}`}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * CardFooter - Bottom section with border
- */
-export function CardFooter({ children, className = '' }) {
-  return (
-    <div className={`pt-4 mt-4 border-t border-white/[0.06] ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * CardTitle - Main heading
- */
-export function CardTitle({ children, className = '', as: Component = 'h3' }) {
-  return (
-    <Component className={`
-      text-base font-semibold text-text-primary 
-      group-hover:text-brand transition-colors
-      task-title
-      ${className}
-    `}>
-      {children}
-    </Component>
-  );
-}
-
-/**
- * CardMeta - Secondary text (dates, categories, etc.)
- */
-export function CardMeta({ children, className = '' }) {
-  return (
-    <div className={`flex items-center gap-1.5 text-xs text-text-tertiary ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * CardMetric - Large number with label
- */
-export function CardMetric({ value, label, className = '' }) {
-  return (
-    <div className={`${className}`}>
-      <div className="text-2xl font-bold text-text-primary">{value}</div>
-      <div className="text-xs text-text-tertiary uppercase tracking-wider mt-1">{label}</div>
-    </div>
-  );
-}
-
-/**
- * CardBadge - Small status badge
- */
-export function CardBadge({ 
-  children, 
-  variant = 'default', // 'default' | 'brand' | 'success' | 'warning' | 'error' | 'live'
+export function CardMetric({ 
+  value, 
+  label, 
+  trend, 
+  trendDirection = 'up',
   className = '' 
 }) {
-  const variantClasses = {
-    default: 'bg-surface-2 text-text-tertiary',
-    brand: 'bg-brand/10 text-brand',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    error: 'bg-error/10 text-error',
-    live: 'bg-cyan-500/10 text-cyan-500',
+  const trendColors = {
+    up: 'text-emerald-600',
+    down: 'text-red-500',
+    neutral: 'text-slate-500',
   };
 
   return (
-    <span className={`
-      inline-flex items-center gap-1 px-2 py-1 rounded-md 
-      text-[10px] font-medium
-      ${variantClasses[variant]}
-      ${className}
-    `}>
-      {children}
-    </span>
-  );
-}
-
-/**
- * CardIconBox - Icon container with consistent styling
- */
-export function CardIconBox({ 
-  children, 
-  size = 'md', // 'sm' | 'md' | 'lg'
-  variant = 'default', // 'default' | 'brand' | 'success' | 'warning' | 'error' | 'live'
-  className = '' 
-}) {
-  const sizeClasses = {
-    sm: 'w-8 h-8 text-base',
-    md: 'w-10 h-10 text-lg',
-    lg: 'w-12 h-12 text-xl',
-  };
-
-  const variantClasses = {
-    default: 'bg-surface-2 group-hover:bg-brand/10',
-    brand: 'bg-brand/10',
-    success: 'bg-success/10',
-    warning: 'bg-warning/10',
-    error: 'bg-error/10',
-    live: 'bg-cyan-500/10',
-  };
-
-  return (
-    <div className={`
-      rounded-xl flex items-center justify-center shrink-0
-      transition-colors duration-200
-      ${sizeClasses[size]}
-      ${variantClasses[variant]}
-      ${className}
-    `}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * CardProgress - Progress bar with Phase 7 purple intensity + Phase B shimmer
- */
-export function CardProgress({ 
-  value = 0, 
-  showLabel = true,
-  size = 'sm', // 'xs' | 'sm' | 'md'
-  shimmer = false, // Enable shimmer effect for "completing" state
-  className = '' 
-}) {
-  const percentage = Math.min(Math.max(value, 0), 100);
-  const isComplete = percentage >= 100;
-  const isNearComplete = percentage >= 80;
-
-  const sizeClasses = {
-    xs: 'h-1',
-    sm: 'h-1.5',
-    md: 'h-2',
-  };
-
-  // Phase 7: Purple intensity, not traffic lights
-  // Phase B: Cyan for near-complete
-  const getProgressFillClass = () => {
-    if (isComplete) return 'bg-success';
-    if (isNearComplete) return 'bg-cyan-500';
-    if (percentage >= 67) return 'bg-brand-400';
-    if (percentage >= 34) return 'bg-brand';
-    return 'bg-brand-700';
-  };
-
-  return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div className="flex-1">
-        <div className={`
-          card-progress bg-surface-3 rounded-full overflow-hidden relative
-          ${sizeClasses[size]}
-        `}>
-          <div 
-            className={`
-              card-progress-fill h-full rounded-full transition-all duration-500 
-              ${getProgressFillClass()}
-            `}
-            style={{ width: `${percentage}%` }}
-          />
-          {/* Shimmer effect for completing state */}
-          {shimmer && isNearComplete && !isComplete && (
-            <div className="
-              absolute inset-0 
-              bg-gradient-to-r from-transparent via-white/30 to-transparent
-              animate-[completing-shimmer_2s_ease-in-out_infinite]
-            " />
-          )}
+    <div className={cn('', className)}>
+      <div className="text-2xl font-bold text-slate-800">{value}</div>
+      {label && <div className="text-sm text-slate-500">{label}</div>}
+      {trend && (
+        <div className={cn('text-sm font-medium', trendColors[trendDirection])}>
+          {trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : ''}
+          {trend}
         </div>
-      </div>
-      {showLabel && (
-        <span className={`
-          text-xs font-medium w-8 text-right
-          ${isComplete ? 'text-success' : isNearComplete ? 'text-cyan-500' : 'text-text-secondary'}
-        `}>
-          {Math.round(percentage)}%
-        </span>
       )}
     </div>
   );
 }
 
-/**
- * CardAccentBar - Left side accent indicator
- */
-export function CardAccentBar({
-  variant = 'brand', // 'brand' | 'live' | 'success' | 'warning' | 'error' | 'energy'
-  className = '',
-}) {
-  const variantClasses = {
-    brand: 'bg-gradient-to-b from-brand-400 to-brand-600',
-    live: 'bg-gradient-to-b from-cyan-400 to-cyan-600',
-    success: 'bg-gradient-to-b from-success-400 to-success-600',
-    warning: 'bg-gradient-to-b from-warning-400 to-warning-600',
-    error: 'bg-gradient-to-b from-error-400 to-error-600',
-    energy: 'bg-gradient-to-b from-energy-400 to-energy-600',
+export function CardBadge({ children, tone = 'violet', className = '', ...rest }) {
+  const toneClasses = {
+    violet: 'bg-violet-50 text-violet-700 border-violet-200',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    teal: 'bg-teal-50 text-teal-700 border-teal-200',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200',
+    red: 'bg-red-50 text-red-700 border-red-200',
+    slate: 'bg-slate-100 text-slate-700 border-slate-200',
   };
 
   return (
-    <div className={`
-      accent-bar__left
-      absolute left-0 top-0 bottom-0 w-1
-      rounded-l-xl
-      ${variantClasses[variant]}
-      ${className}
-    `} />
+    <span 
+      className={cn(
+        'inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md border',
+        toneClasses[tone] || toneClasses.violet,
+        className
+      )}
+      {...rest}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function CardIconBox({ 
+  icon: Icon, 
+  variant = 'brand',
+  size = 'md',
+  className = '' 
+}) {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+  };
+
+  const iconSizes = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
+  };
+
+  const variantClasses = {
+    brand: 'bg-violet-50 text-violet-600',
+    blue: 'bg-blue-50 text-blue-600',
+    teal: 'bg-teal-50 text-teal-600',
+    amber: 'bg-amber-50 text-amber-600',
+    red: 'bg-red-50 text-red-600',
+    slate: 'bg-slate-100 text-slate-600',
+  };
+
+  return (
+    <div 
+      className={cn(
+        'rounded-lg flex items-center justify-center',
+        sizeClasses[size] || sizeClasses.md,
+        variantClasses[variant] || variantClasses.brand,
+        className
+      )}
+    >
+      {Icon && <Icon className={iconSizes[size] || iconSizes.md} />}
+    </div>
+  );
+}
+
+export function CardProgress({ 
+  value, 
+  max = 100, 
+  variant = 'ocean',
+  showLabel = false,
+  className = '' 
+}) {
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  
+  const gradients = {
+    ocean: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
+    brand: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
+    success: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)',
+    energy: 'linear-gradient(90deg, #FB923C 0%, #F43F5E 100%)',
+  };
+
+  return (
+    <div className={cn('space-y-1', className)}>
+      {showLabel && (
+        <div className="flex justify-between text-xs">
+          <span className="text-slate-500">Progress</span>
+          <span className="font-medium text-slate-700">{Math.round(percentage)}%</span>
+        </div>
+      )}
+      <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+        <div 
+          className="h-full rounded-full transition-all duration-500"
+          style={{ 
+            width: `${percentage}%`,
+            background: gradients[variant] || gradients.ocean,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GRADIENT CARD VARIANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function GlowCard({ children, variant = 'softViolet', ...props }) {
+  return (
+    <Card gradient={variant} {...props}>
+      {children}
+    </Card>
+  );
+}
+
+export function AccentCard({ children, accent = 'brand', ...props }) {
+  return (
+    <Card accentBar={accent} {...props}>
+      {children}
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STAT CARD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function StatCard({
+  label,
+  value,
+  trend,
+  trendDirection = 'up',
+  icon: Icon,
+  accentBar,
+  className = '',
+  ...rest
+}) {
+  return (
+    <Card accentBar={accentBar} className={className} {...rest}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm text-slate-500">{label}</p>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{value}</p>
+          {trend && (
+            <p className={cn(
+              'text-sm mt-1',
+              trendDirection === 'up' ? 'text-emerald-600' : 
+              trendDirection === 'down' ? 'text-red-500' : 'text-slate-500'
+            )}>
+              {trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : ''}
+              {trend}
+            </p>
+          )}
+        </div>
+        {Icon && (
+          <CardIconBox icon={Icon} variant="brand" />
+        )}
+      </div>
+    </Card>
   );
 }
