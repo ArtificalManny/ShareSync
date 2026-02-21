@@ -3,10 +3,20 @@
 // SHARESYNC PROJECTS PAGE v4.0 - "The Gallery Walk" Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES IN v4.0:
-// - Updated to light theme (white backgrounds, slate text)
-// - All functionality preserved exactly
-// - NO BACKEND CHANGES
+// THEME: "The Working Studio"
+//
+// COLOR MAP:
+// - Page Background: #F8FAFC (clean canvas)
+// - Project Cards: #FFFFFF with violet-tinted shadows
+// - Card Hover: violet shadow lift effect
+// - Card Border: #E2E8F0 (slate-200)
+// - Project Icon Background: #EEF2FF (soft violet tint)
+// - Velocity Bar: Ocean Gradient (blue → cyan → teal)
+// - "Start Sprint" Button: #3B82F6 (blue-500)
+// - Filter Pills Active: #8B5CF6 bg, white text
+// - Filter Pills Inactive: #F1F5F9 bg, #64748B text
+//
+// NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -40,17 +50,29 @@ const getProjectId = (project) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS COLOR - Purple intensity scale
+   VELOCITY BAR - Ocean Gradient
 ───────────────────────────────────────────────────────────────────────── */
-const getProgressFillClass = (percentage) => {
-  if (percentage >= 100) return 'bg-emerald-500';
-  if (percentage >= 67) return 'bg-violet-400';
-  if (percentage >= 34) return 'bg-violet-500';
-  return 'bg-violet-600';
+const VelocityBar = ({ percentage }) => {
+  const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
+  const isComplete = clampedPercentage >= 100;
+  
+  return (
+    <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-500"
+        style={{ 
+          width: `${clampedPercentage}%`,
+          background: isComplete 
+            ? 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)'
+            : 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)'
+        }}
+      />
+    </div>
+  );
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROJECT CARD - Grid View (✅ UPDATED: Light theme)
+   PROJECT CARD - Grid View (Light theme with violet shadows)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -88,15 +110,26 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
       className={`
         group p-5 rounded-xl cursor-pointer
         bg-white border border-slate-200
-        hover:bg-slate-50 hover:border-violet-200
-        hover:shadow-lg hover:shadow-violet-100
+        hover:border-violet-200
         transition-all duration-200
         ${project.isAtRisk ? 'border-l-4 border-l-amber-400' : ''}
       `}
+      style={{
+        boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.12)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 24px rgba(139, 92, 246, 0.06)';
+        e.currentTarget.style.transform = 'translateY(0)';
+      }}
     >
       {/* Header: Emoji + Streak */}
       <div className="flex justify-between items-start mb-4">
-        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+        {/* Project Icon Background: #EEF2FF (soft violet tint) */}
+        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
           {getSeasonEmoji(project.season)}
         </div>
 
@@ -104,11 +137,11 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
           <div className={`
             flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
             ${isImpressiveStreak
-              ? 'bg-violet-100 text-violet-600'
+              ? 'bg-violet-100 text-violet-700'
               : 'bg-slate-100 text-slate-500'
             }
           `}>
-            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-violet-500' : 'text-slate-400'}`} />
+            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-violet-600' : 'text-slate-400'}`} />
             <span>{streak}d</span>
           </div>
         )}
@@ -141,22 +174,17 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         </div>
       )}
 
-      {/* Velocity Progress */}
+      {/* Velocity Progress - Ocean Gradient */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-[10px] text-slate-400 uppercase tracking-wider">
             Velocity
           </span>
-          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-emerald-600' : 'text-slate-700'}`}>
+          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-teal-600' : 'text-slate-700'}`}>
             {velocity}%
           </span>
         </div>
-        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(velocity)}`}
-            style={{ width: `${Math.min(velocity, 100)}%` }}
-          />
-        </div>
+        <VelocityBar percentage={velocity} />
       </div>
 
       {/* Footer */}
@@ -168,15 +196,24 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
           </span>
         </div>
 
+        {/* Start Sprint Button - Blue (#3B82F6) */}
         <button
           onClick={handleStartSprint}
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
-            bg-gradient-to-r from-blue-500 to-blue-600 text-white
-            hover:from-blue-600 hover:to-blue-700
-            shadow-sm hover:shadow-md hover:shadow-blue-200
+            text-white
+            hover:shadow-lg hover:shadow-blue-200
             transition-all duration-200
           "
+          style={{
+            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)';
+          }}
         >
           Start Sprint
         </button>
@@ -186,7 +223,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROJECT ROW - List View (✅ UPDATED: Light theme)
+   PROJECT ROW - List View (Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -222,13 +259,21 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
       className="
         group flex items-center justify-between p-4 rounded-xl cursor-pointer
         bg-white border border-slate-200
-        hover:bg-slate-50 hover:border-violet-200
-        hover:shadow-md hover:shadow-violet-100
+        hover:border-violet-200
         transition-all duration-200
       "
+      style={{
+        boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 20px rgba(139, 92, 246, 0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(139, 92, 246, 0.04)';
+      }}
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-xl">
+        <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-xl">
           {getSeasonEmoji(project.season)}
         </div>
         <div>
@@ -257,7 +302,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
           className="
             px-3 py-1.5 rounded-lg text-xs font-medium
             bg-slate-100 text-slate-600
-            hover:bg-violet-500 hover:text-white
+            hover:bg-blue-500 hover:text-white
             transition-all duration-200
           "
         >
@@ -271,7 +316,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN PAGE (✅ UPDATED: Light theme)
+   MAIN PAGE (Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 const Projects = () => {
   const { user } = useAuth();
@@ -406,9 +451,15 @@ const Projects = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto bg-gradient-to-b from-slate-50 to-white">
-
-      {/* HEADER */}
+    <div 
+      className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto"
+      style={{
+        background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)'
+      }}
+    >
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -441,16 +492,26 @@ const Projects = () => {
             />
           </div>
 
-          {/* New Project Button */}
+          {/* New Project Button - Violet Gradient (Sunset) */}
           <button
             onClick={() => setShowCreateModal(true)}
             className="
               flex items-center gap-2 px-4 py-2.5 rounded-lg
-              bg-gradient-to-r from-violet-500 to-violet-600 text-white text-sm font-medium
-              hover:from-violet-600 hover:to-violet-700
-              shadow-md shadow-violet-200 hover:shadow-lg hover:shadow-violet-300
+              text-white text-sm font-medium
               transition-all duration-200
             "
+            style={{
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
+              boxShadow: '0 4px 14px rgba(139, 92, 246, 0.25)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.35)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(139, 92, 246, 0.25)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Project</span>
@@ -460,9 +521,11 @@ const Projects = () => {
 
       <QuietProjectsBanner />
 
-      {/* TOOLBAR */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          TOOLBAR
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center justify-between mb-6 mt-8 pb-4 border-b border-slate-200">
-        {/* Filters */}
+        {/* Filters - Active: violet bg, white text / Inactive: slate bg */}
         <div className="flex gap-1">
           {['all', 'active', 'at-risk'].map(filter => (
             <button
@@ -472,7 +535,7 @@ const Projects = () => {
                 px-3 py-1.5 rounded-lg text-xs font-medium capitalize
                 transition-all duration-200
                 ${selectedFilter === filter
-                  ? 'bg-violet-100 text-violet-700'
+                  ? 'bg-violet-500 text-white shadow-sm'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                 }
               `}
@@ -511,7 +574,9 @@ const Projects = () => {
         </div>
       </div>
 
-      {/* PROJECT GRID / LIST */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROJECT GRID / LIST
+      ═══════════════════════════════════════════════════════════════════ */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => <SkeletonProjectCard key={i} />)}

@@ -3,10 +3,20 @@
 // SHARESYNC HOME PAGE v4.0 - "The Gallery Walk" Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
 // 
-// CHANGES IN v4.0:
-// - Updated Tailwind classes for light theme
-// - All functionality preserved exactly
-// - NO BACKEND CHANGES
+// THEME: "The Light Gallery" - Mission Control
+// 
+// COLOR MAP:
+// - Page Background: #F8FAFC → #EEF2FF gradient (via CSS)
+// - Section Cards: #FFFFFF with violet-tinted shadows
+// - Headings: #1E293B (slate-800)
+// - Body Text: #475569 (slate-600)
+// - Muted Text: #94A3B8 (slate-400)
+// - Card Border: #E2E8F0 (slate-200)
+// - Card Shadow: violet-tinted (rgba(139, 92, 246, 0.06))
+// - Progress Bars: Ocean Gradient (blue → cyan → teal)
+// - Accent Bar: Aurora Gradient
+//
+// NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -38,7 +48,9 @@ import { useFocusEngine } from "../contexts/FocusEngineContext";
 import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
 
-/* ───────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────────────────
+   STAT CARD - Light theme with violet-tinted shadows
+─────────────────────────────────────────────────────────────────────────── */
 const StatCard = ({ label, value, color = "text-violet-600", description }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -49,13 +61,18 @@ const StatCard = ({ label, value, color = "text-violet-600", description }) => {
       className={`
         relative p-5 rounded-xl
         bg-white border border-slate-200
-        hover:bg-slate-50 hover:border-violet-200
-        shadow-sm hover:shadow-md hover:shadow-violet-100
+        hover:border-violet-200
+        shadow-sm hover:shadow-lg
         transition-all duration-200 cursor-default
         momentum-responsive-card momentum-card
         ${isHovered ? "transform -translate-y-0.5" : ""}
-        ${isFireMode ? "border-orange-200" : ""}
+        ${isFireMode ? "border-orange-200 hover:border-orange-300" : ""}
       `}
+      style={{
+        boxShadow: isHovered 
+          ? '0 8px 32px rgba(139, 92, 246, 0.12)' 
+          : '0 4px 24px rgba(139, 92, 246, 0.06)'
+      }}
       data-momentum={glowLevel}
       onMouseEnter={() => {
         setShowTooltip(true);
@@ -93,6 +110,9 @@ const StatCard = ({ label, value, color = "text-violet-600", description }) => {
   );
 };
 
+/* ───────────────────────────────────────────────────────────────────────────
+   SECTION HEADER - Light theme
+─────────────────────────────────────────────────────────────────────────── */
 const SectionHeader = ({
   icon: Icon,
   iconColor = "text-violet-600",
@@ -126,7 +146,10 @@ const SectionHeader = ({
         {rightSlot}
 
         {action && (
-          <button onClick={handleAction} className="text-xs text-slate-500 hover:text-violet-600 transition-colors">
+          <button 
+            onClick={handleAction} 
+            className="text-xs text-slate-500 hover:text-violet-600 transition-colors"
+          >
             {action}
           </button>
         )}
@@ -135,14 +158,18 @@ const SectionHeader = ({
   );
 };
 
+/* ───────────────────────────────────────────────────────────────────────────
+   MOMENTUM STATUS BANNER - Light theme badges
+─────────────────────────────────────────────────────────────────────────── */
 const MomentumStatusBanner = () => {
   const { glowLevel, glowState, message, isFireMode } = useMomentumContext();
   if (glowLevel < 3) return null;
 
+  // Light theme badge colors per Part 4 color map
   const config = {
-    3: { bg: "bg-violet-50", border: "border-violet-200", icon: TrendingUp, color: "text-violet-600" },
-    4: { bg: "bg-blue-50", border: "border-blue-200", icon: Rocket, color: "text-blue-600" },
-    5: { bg: "bg-orange-50", border: "border-orange-200", icon: Flame, color: "text-orange-600" },
+    3: { bg: "bg-violet-50", border: "border-violet-200", icon: TrendingUp, color: "text-violet-700" },
+    4: { bg: "bg-blue-50", border: "border-blue-200", icon: Rocket, color: "text-blue-700" },
+    5: { bg: "bg-orange-50", border: "border-orange-200", icon: Flame, color: "text-orange-700" },
   };
 
   const currentConfig = config[glowLevel] || config[3];
@@ -171,7 +198,9 @@ const MomentumStatusBanner = () => {
   );
 };
 
-/* ───────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────────────────
+   MAIN HOME PAGE
+─────────────────────────────────────────────────────────────────────────── */
 export default function Home() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelContent, setPanelContent] = useState("balance");
@@ -285,15 +314,16 @@ export default function Home() {
     [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll]
   );
 
-  // ✅ UPDATED: Light theme section card classes
+  // Section card classes with violet-tinted shadows
   const sectionCardClasses = useMemo(() => {
-    const base = "p-6 rounded-xl bg-white border border-slate-200 shadow-sm momentum-responsive-card momentum-card";
-    if (isFireMode) return `${base} border-orange-200 shadow-orange-100`;
-    if (glowLevel >= 4) return `${base} border-violet-200 shadow-violet-100`;
-    return base;
+    const base = "p-6 rounded-xl bg-white border border-slate-200 momentum-responsive-card momentum-card";
+    const shadow = "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
+    if (isFireMode) return `${base} ${shadow} border-orange-200`;
+    if (glowLevel >= 4) return `${base} ${shadow} border-violet-200`;
+    return `${base} ${shadow}`;
   }, [glowLevel, isFireMode]);
 
-  // ✅ UPDATED: Light theme Live/Offline pill
+  // Live/Offline pill - Light theme
   const LivePill = useMemo(() => {
     const live = Boolean(isConnected);
 
@@ -303,7 +333,10 @@ export default function Home() {
           flex items-center gap-1.5
           px-2 py-1 rounded-full
           border text-[10px] font-medium
-          ${live ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-slate-200 text-slate-500"}
+          ${live 
+            ? "bg-teal-50 border-teal-200 text-teal-700" 
+            : "bg-slate-100 border-slate-200 text-slate-500"
+          }
         `}
         title={live ? "Connected to live updates" : "Offline (showing last known data)"}
       >
@@ -314,15 +347,23 @@ export default function Home() {
   }, [isConnected]);
 
   return (
-    <div className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto" data-momentum={glowLevel}>
+    <div 
+      className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto" 
+      data-momentum={glowLevel}
+    >
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-10 flex justify-between items-end">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2 h-2 rounded-full ${isFireMode ? "bg-orange-500 animate-pulse" : "bg-emerald-500"}`} />
-            <span className="text-xs text-slate-500">{isFireMode ? "Fire Mode Active 🔥" : "Operational Status: Live"}</span>
+            <div className={`w-2 h-2 rounded-full ${isFireMode ? "bg-orange-500 animate-pulse" : "bg-teal-500"}`} />
+            <span className="text-xs text-slate-500">
+              {isFireMode ? "Fire Mode Active 🔥" : "Operational Status: Live"}
+            </span>
 
             {focusEngine.hasUrgentMoves && (
-              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 text-amber-600 text-[10px] font-medium border border-amber-200">
+              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">
                 ⚠️ Urgent moves pending
               </span>
             )}
@@ -359,6 +400,9 @@ export default function Home() {
         </div>
       </header>
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          TEAM PULSE BANNER
+      ═══════════════════════════════════════════════════════════════════ */}
       <TeamPulse
         variant="banner"
         showAvatars={true}
@@ -375,6 +419,9 @@ export default function Home() {
 
       <MomentumStatusBanner />
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          YOUR MOVES TODAY
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-8">
         <YourMovesToday
           variant="default"
@@ -387,6 +434,9 @@ export default function Home() {
         />
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          MAIN GRID
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-12 gap-6">
         {/* Missions */}
         <div className="col-span-12 xl:col-span-8">
@@ -486,10 +536,17 @@ export default function Home() {
           />
         </div>
 
-        {/* Velocity Metrics */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            VELOCITY METRICS
+        ═══════════════════════════════════════════════════════════════════ */}
         <div className="col-span-12">
           <div className={sectionCardClasses} data-momentum={glowLevel}>
-            <SectionHeader icon={TrendingUp} iconColor="text-violet-600" title="Velocity Metrics" rightSlot={LivePill} />
+            <SectionHeader 
+              icon={TrendingUp} 
+              iconColor="text-violet-600" 
+              title="Velocity Metrics" 
+              rightSlot={LivePill} 
+            />
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
@@ -501,13 +558,13 @@ export default function Home() {
               <StatCard
                 label="Streak"
                 value={`${summary.streakDays}D`}
-                color="text-amber-500"
+                color="text-amber-600"
                 description="Current streak (from backend summary if available; otherwise derived from activity)."
               />
               <StatCard
                 label="Focus"
                 value={`${summary.focus}%`}
-                color="text-emerald-500"
+                color="text-teal-600"
                 description="Focus estimate (backend if available; otherwise derived from activity types)."
               />
               <StatCard
@@ -521,10 +578,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Slide-out panel - ✅ UPDATED: Light theme */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          SLIDE-OUT PANEL - Light theme
+      ═══════════════════════════════════════════════════════════════════ */}
       <div
         className={`
-          fixed inset-0 bg-black/30 backdrop-blur-sm z-[60]
+          fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[60]
           transition-opacity duration-300
           ${isPanelOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
         `}
@@ -536,7 +595,7 @@ export default function Home() {
           fixed top-0 right-0 h-full w-full max-w-[480px]
           bg-white border-l border-slate-200
           z-[70] p-8
-          shadow-2xl
+          shadow-2xl shadow-slate-900/10
           transition-transform duration-300 ease-out
           ${isPanelOpen ? "translate-x-0" : "translate-x-full"}
         `}
@@ -545,7 +604,10 @@ export default function Home() {
           <h3 className="text-sm font-medium text-slate-600">
             {panelContent === "balance" ? "Team Balance" : "Mission Telemetry"}
           </h3>
-          <button onClick={handleClosePanel} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
+          <button 
+            onClick={handleClosePanel} 
+            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+          >
             <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
@@ -557,6 +619,7 @@ export default function Home() {
         )}
       </div>
 
+      {/* Animations */}
       <style>{`
         @keyframes pulse-once {
           0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.3); }
