@@ -1,32 +1,47 @@
-/* App.css - FIXED: No dead space */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC App.css v4.0 - "The Gallery Walk"
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   UPDATED: Now references CSS variables from palette.css/tokens.css
+   NO BACKEND CHANGES - Pure CSS
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Lato:wght@400;500&display=swap');
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LEGACY COLOR VARIABLES (Now mapped to design system)
+   ═══════════════════════════════════════════════════════════════════════════════ */
 :root {
-  --emerald-green: #2dd4bf;
+  /* Map legacy variables to new system */
+  --emerald-green: var(--teal-400);
   --saffron-yellow: #f4d03f;
-  --indigo-vivid: #4f46e5;
-  --crimson-red: #dc2626;
-  --lavender-gray: #c4b5fd;
-  --charcoal-gray: #4b5563;
-  --midnight-navy: #1e3a8a;
-  --neon-coral: #ff6e7f;
-  --white: #ffffff;
-  --black: #1c2526;
-  --gray-600: #606770;
-  --gray-200: #e4e6eb;
-  --dark-bg: #1a202c;
-  --dark-secondary: #2d3748;
-  --blue-dark: #1e40af;
-  --light-bg: #f0f2f5;
-  --light-blue: #f5faff;
-  --blue-accent: #1877f2;
-  --blue-hover: #dbeafe;
-  --red-accent: #e63946;
-  --green-accent: #48bb78;
-  --orange-accent: #f6ad55;
-  --purple-accent: #a78bfa;
+  --indigo-vivid: var(--palette-indigo-600);
+  --crimson-red: var(--red-600);
+  --lavender-gray: var(--violet-300);
+  --charcoal-gray: var(--slate-600);
+  --midnight-navy: var(--blue-900);
+  --neon-coral: var(--rose-400);
+  --white: var(--palette-white);
+  --black: var(--slate-800);
+  --gray-600: var(--slate-500);
+  --gray-200: var(--slate-200);
+  --dark-bg: var(--slate-900);
+  --dark-secondary: var(--slate-800);
+  --blue-dark: var(--blue-800);
+  --light-bg: var(--slate-50);
+  --light-blue: var(--blue-50);
+  --blue-accent: var(--blue-500);
+  --blue-hover: var(--blue-100);
+  --red-accent: var(--rose-500);
+  --green-accent: var(--emerald-500);
+  --orange-accent: var(--orange-400);
+  --purple-accent: var(--violet-400);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE RESETS
+   ═══════════════════════════════════════════════════════════════════════════════ */
 * {
   margin: 0;
   padding: 0;
@@ -34,43 +49,53 @@
 }
 
 body {
-  font-family: 'Lato', sans-serif;
-  background: var(--light-blue);
-  color: var(--black);
-  min-height: 100vh; /* ⭐ Kept - allows scrolling */
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
   transition: background-color 0.3s, color 0.3s;
 }
 
 html.dark body {
-  background: #111827;
-  color: #ffffff;
+  background: var(--slate-900);
+  color: var(--slate-50);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-display);
   letter-spacing: 0.02em;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASSMORPHIC EFFECT
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .glassmorphic {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--palette-white-20);
+  box-shadow: var(--shadow-md);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARD STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .card {
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
   padding: 1rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
-  border-color: var(--blue-accent);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--brand-300);
+  box-shadow: var(--shadow-brand);
   transform: scale(1.02);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MICRO GRADIENT
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .micro-gradient {
   position: relative;
   overflow: hidden;
@@ -85,39 +110,52 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   background: linear-gradient(
     to right,
-    rgba(24, 119, 242, 0.05),
+    rgba(var(--palette-violet-500-rgb), 0.05),
     transparent
   );
   pointer-events: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .btn-primary {
-  background: var(--emerald-green);
-  color: #fff;
+  background: var(--gradient-brand);
+  color: var(--palette-white);
   padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-md);
   transition: background 0.2s ease, transform 0.2s ease;
+  box-shadow: var(--shadow-brand);
 }
 
 .btn-primary:hover {
-  background: var(--neon-coral);
+  background: linear-gradient(135deg, var(--violet-600) 0%, var(--violet-700) 100%);
   transform: scale(1.05);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INPUT FIELDS
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .input-field {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--black);
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
   padding: 0.5rem;
+  border-radius: var(--radius-md);
 }
 
 .input-field:focus {
-  border-color: var(--blue-accent);
+  border-color: var(--brand-500);
+  box-shadow: var(--ring-focus);
+  outline: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOADER
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .loader {
-  border: 4px solid rgba(255, 255, 255, 0.2);
-  border-top: 4px solid var(--emerald-green);
+  border: 4px solid var(--slate-200);
+  border-top: 4px solid var(--brand-500);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -129,6 +167,9 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: rotate(360deg); }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PROFILE PIC
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .profile-pic {
   transition: transform 0.2s ease;
 }
@@ -137,26 +178,18 @@ h1, h2, h3, h4, h5, h6 {
   transform: scale(1.05);
 }
 
-/* ⭐ REMOVED - This was causing dead space
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: none;
-  opacity: 0;
-  z-index: -1;
-}
-*/
-
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
 :focus-visible {
-  outline: 2px solid var(--blue-accent);
+  outline: 2px solid var(--brand-500);
   outline-offset: 2px;
-  box-shadow: 0 0 8px rgba(24, 119, 242, 0.3);
+  box-shadow: 0 0 8px rgba(var(--palette-violet-500-rgb), 0.3);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .animate-pulse {
   animation: pulse 1.5s infinite;
 }
@@ -170,40 +203,56 @@ body::before {
   }
 }
 
-/* Ensure WCAG contrast compliance */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY - CONTRAST COMPLIANCE
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .text-gray-600 {
-  color: #606770; /* Contrast ratio 4.5:1 against #f5faff */
+  color: var(--slate-600);
 }
 
 .dark .text-gray-600 {
-  color: #a0aec0; /* Contrast ratio 4.5:1 against #111827 */
+  color: var(--slate-400);
 }
 
 .text-gray-500 {
-  color: #718096; /* Contrast ratio 4.5:1 against #f5faff */
+  color: var(--slate-500);
 }
 
 .dark .text-gray-500 {
-  color: #9ca3af; /* Contrast ratio 4.5:1 against #111827 */
+  color: var(--slate-400);
 }
 
-/* Tier-based background gradient */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TIER-BASED GRADIENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .tier-gradient-newcomer {
-  background: linear-gradient(135deg, #e0e7ff, #f0f5ff);
-}
-.tier-gradient-intermediate {
-  background: linear-gradient(135deg, #bfdbfe, #dbeafe);
-}
-.tier-gradient-advanced {
-  background: linear-gradient(135deg, #6ee7b7, #a7f3d0);
-}
-.tier-gradient-pro {
-  background: linear-gradient(135deg, #fde68a, #fcd34d);
-}
-.tier-gradient-veteran {
-  background: linear-gradient(135deg, #c084fc, #a855f7);
+  background: linear-gradient(135deg, var(--violet-100), var(--violet-50));
 }
 
+.tier-gradient-intermediate {
+  background: linear-gradient(135deg, var(--blue-200), var(--blue-100));
+}
+
+.tier-gradient-advanced {
+  background: linear-gradient(135deg, var(--teal-300), var(--teal-200));
+}
+
+.tier-gradient-pro {
+  background: linear-gradient(135deg, var(--palette-amber-200), var(--palette-amber-300));
+}
+
+.tier-gradient-veteran {
+  background: linear-gradient(135deg, var(--violet-400), var(--violet-500));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLOW TEXT
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .glow-text {
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+}
+
+/* Light mode glow */
+.glow-text-brand {
+  text-shadow: 0 0 12px rgba(var(--palette-violet-500-rgb), 0.4);
 }

@@ -7,6 +7,8 @@
    LIGHT MODE (Default): App pages - clean, bright gallery feel
    DARK MODE: Auth pages - dramatic entrance atmosphere
    
+   NO BACKEND CHANGES - Pure CSS
+   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -25,7 +27,7 @@ body::before {
   left: -15%;
   width: 50vw;
   height: 50vw;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--palette-violet-500-rgb), 0.04) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -38,7 +40,7 @@ body::after {
   right: -15%;
   width: 45vw;
   height: 45vw;
-  background: radial-gradient(circle, rgba(45, 212, 191, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--palette-teal-400-rgb), 0.03) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -49,7 +51,7 @@ body::after {
    Applied via .auth-layout class on auth page wrappers
    ═══════════════════════════════════════════════════════════════════════════════ */
 .auth-layout {
-  background: #0B0F19;
+  background: var(--palette-slate-950);
   color: var(--slate-50);
   min-height: 100vh;
   position: relative;
@@ -64,7 +66,7 @@ body::after {
   left: -10%;
   width: 70vw;
   height: 70vw;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(11, 15, 25, 0) 70%);
+  background: radial-gradient(circle, rgba(var(--palette-violet-500-rgb), 0.15) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -78,7 +80,7 @@ body::after {
   right: -10%;
   width: 60vw;
   height: 60vw;
-  background: radial-gradient(circle, rgba(45, 212, 191, 0.08) 0%, rgba(11, 15, 25, 0) 70%);
+  background: radial-gradient(circle, rgba(var(--palette-teal-400-rgb), 0.08) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -93,7 +95,7 @@ button,
 .btn,
 .btn-primary {
   background: var(--gradient-brand);
-  color: white;
+  color: var(--palette-white);
   border: none;
   padding: 0.625rem 1.25rem;
   cursor: pointer;
@@ -120,9 +122,8 @@ button:active,
 /* Blue action button (Save, Start Sprint, etc.) */
 .btn-blue,
 .btn-action {
-  background: var(--gradient-ocean);
-  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
-  color: white;
+  background: var(--palette-gradient-blue);
+  color: var(--palette-white);
   box-shadow: var(--shadow-blue);
 }
 
@@ -170,7 +171,7 @@ button:active,
 input,
 select,
 textarea {
-  background: white;
+  background: var(--palette-white);
   color: var(--text-primary);
   border: 1.5px solid var(--border-default);
   padding: 0.75rem 1rem;
@@ -210,14 +211,14 @@ textarea::placeholder {
 .auth-layout textarea {
   background: rgba(15, 23, 42, 0.6);
   color: var(--slate-50);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--palette-white-10);
 }
 
 .auth-layout input:focus,
 .auth-layout select:focus,
 .auth-layout textarea:focus {
   border-color: var(--violet-500);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.2);
 }
 
 .auth-layout input::placeholder {
@@ -241,7 +242,7 @@ textarea::placeholder {
 .toggle.active,
 .toggle[data-state="checked"],
 [role="switch"][aria-checked="true"] {
-  background: linear-gradient(135deg, var(--blue-500) 0%, var(--blue-600) 100%);
+  background: var(--palette-gradient-blue);
 }
 
 .toggle-thumb {
@@ -250,7 +251,7 @@ textarea::placeholder {
   left: 2px;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--palette-white);
   border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform var(--motion-fast) var(--easing-standard);
@@ -285,7 +286,7 @@ label {
   background: rgba(30, 41, 59, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--palette-white-8);
   border-radius: var(--radius-xl);
   padding: 2.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -331,16 +332,16 @@ label {
 
 .badge-amber,
 .badge-warning {
-  background: #FEF3C7;
-  color: #B45309;
-  border-color: #FDE68A;
+  background: var(--palette-amber-100);
+  color: var(--palette-amber-700);
+  border-color: var(--palette-amber-200);
 }
 
 .badge-rose,
 .badge-error {
-  background: #FEE2E2;
-  color: #B91C1C;
-  border-color: #FECACA;
+  background: var(--palette-red-100);
+  color: var(--palette-red-700);
+  border-color: var(--palette-red-200);
 }
 
 .badge-slate,
@@ -422,7 +423,7 @@ hr,
 
 .auth-layout hr,
 .auth-layout .divider {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--palette-white-8);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -450,12 +451,12 @@ hr,
 /* Dark mode scrollbar */
 .auth-layout ::-webkit-scrollbar-track,
 .dark ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--palette-white-5);
 }
 
 .auth-layout ::-webkit-scrollbar-thumb,
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--palette-white-15);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -469,5 +470,5 @@ hr,
 .auth-layout ::selection,
 .dark ::selection {
   background: var(--violet-600);
-  color: white;
+  color: var(--palette-white);
 }

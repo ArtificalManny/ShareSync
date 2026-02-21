@@ -1,59 +1,73 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC - Main Stylesheet
+   SHARESYNC - Main Stylesheet v4.0 "The Gallery Walk"
    ═══════════════════════════════════════════════════════════════════════════════
    
    Import order matters! Organized for proper cascade:
-   1. Design tokens (CSS custom properties)
-   2. Color system
-   3. Momentum glow system
-   4. Entrance animations
-   5. Heartbeat system (momentum-responsive body)
-   6. ⭐ PHASE C: Momentum Engine styles
-   7. Living cards
-   8. Component styles
-   9. Utilities
-   10. Tailwind
+   1. Palette (raw color values - FIRST)
+   2. Design tokens (semantic variables)
+   3. Theme application
+   4. Gradients
+   5. Momentum systems
+   6. Component styles
+   7. Utilities
+   8. Tailwind
+   
+   NO BACKEND CHANGES - Pure CSS
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   1. DESIGN TOKENS
+   1. MASTER COLOR PALETTE (Must be first!)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/palette.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. DESIGN TOKENS (References palette)
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/tokens.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   2. COLOR SYSTEM
+   3. THEME APPLICATION
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/theme.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. GRADIENT SYSTEM
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/gradients.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. COLOR SYSTEM (Legacy - may contain additional colors)
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/colors.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   3. MOMENTUM GLOW SYSTEM (Phase 1)
+   6. MOMENTUM GLOW SYSTEM (Phase 1)
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/momentum-glow.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   4. ENTRANCE ANIMATIONS (Phase A)
+   7. ENTRANCE ANIMATIONS (Phase A)
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/entrance.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   5. HEARTBEAT SYSTEM (Phase A) - Momentum-responsive body
+   8. HEARTBEAT SYSTEM (Phase A) - Momentum-responsive body
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/heartbeat.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   6. ⭐ PHASE C: MOMENTUM ENGINE STYLES
-   Full momentum-responsive interface system
+   9. PHASE C: MOMENTUM ENGINE STYLES
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/momentum-engine.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   7. LIVING CARDS (Phase B)
+   10. LIVING CARDS (Phase B)
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/living-cards.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   8. COMPONENT STYLES
+   11. COMPONENT STYLES
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/card.css';
 @import './styles/button.css';
@@ -65,13 +79,13 @@
 @import './styles/tooltip.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   9. UTILITIES
+   12. UTILITIES
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/utilities.css';
 @import './styles/animations.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   10. TAILWIND
+   13. TAILWIND
 ───────────────────────────────────────────────────────────────────────────── */
 @tailwind base;
 @tailwind components;
@@ -83,7 +97,7 @@
 
 /* Base HTML setup */
 html {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
@@ -102,7 +116,6 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    SEMANTIC COLOR UTILITIES
-   Deep Violet brand color system
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .text-brand {
@@ -134,7 +147,7 @@ body {
   color: var(--warning-500);
 }
 
-/* ⭐ PHASE C: Energy (fire mode) utilities */
+/* Energy (fire mode) utilities */
 .text-energy {
   color: var(--energy-500);
 }
@@ -160,7 +173,7 @@ body {
    ═══════════════════════════════════════════════════════════════════════════════ */
 .bento-card {
   background: var(--surface-1);
-  border: 1px solid rgb(255 255 255 / 0.06);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   transition: 
     transform 200ms ease,
@@ -171,7 +184,7 @@ body {
 .bento-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
-  border-color: rgb(255 255 255 / 0.1);
+  border-color: var(--border-default);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -187,18 +200,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(255 255 255 / 0.1);
+  background: var(--slate-300);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(255 255 255 / 0.2);
+  background: var(--slate-400);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 255 255 / 0.1) transparent;
+  scrollbar-color: var(--slate-300) transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -206,7 +219,7 @@ body {
    ═══════════════════════════════════════════════════════════════════════════════ */
 ::selection {
   background: var(--brand-500);
-  color: white;
+  color: var(--palette-white);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -218,30 +231,30 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   ⭐ PHASE C: MOMENTUM ENGINE GLOBAL UTILITIES
+   MOMENTUM ENGINE GLOBAL UTILITIES
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* Glow utilities */
 .shadow-glow-brand {
-  box-shadow: 0 0 20px rgb(var(--brand-500-rgb) / 0.3);
+  box-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
 }
 
 .shadow-glow-cyan {
-  box-shadow: 0 0 20px rgb(var(--cyan-500-rgb) / 0.3);
+  box-shadow: 0 0 20px rgba(var(--palette-cyan-500-rgb), 0.3);
 }
 
 .shadow-glow-energy {
-  box-shadow: 0 0 20px rgb(var(--energy-500-rgb) / 0.3);
+  box-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
 }
 
 /* Momentum-responsive text glow */
 body[data-momentum="4"] .text-glow,
 body[data-momentum="5"] .text-glow {
-  text-shadow: 0 0 20px rgb(var(--brand-500-rgb) / 0.3);
+  text-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
 }
 
 body[data-momentum-fire="true"] .text-glow {
-  text-shadow: 0 0 20px rgb(var(--energy-500-rgb) / 0.3);
+  text-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

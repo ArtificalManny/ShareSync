@@ -1,0 +1,336 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC PALETTE v4.0 - "The Gallery Walk" Master Color Palette
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   This is the SINGLE SOURCE OF TRUTH for all raw color values.
+   All other CSS files should reference these variables.
+   
+   Color Families:
+   1. Electric Violet (Brand Signature)
+   2. Ocean Blue (Actions & Info)
+   3. Aurora Teal (Success & Positive)
+   4. Soft Slate (Neutral Foundation)
+   5. Fluorescent Sparks (Accents)
+   
+   NO BACKEND CHANGES - Pure CSS
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════════════════════
+     PRIMARY: ELECTRIC VIOLET
+     The signature ShareSync color - used sparingly for maximum impact
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --palette-violet-50:  #F5F3FF;   /* Whisper - backgrounds */
+  --palette-violet-100: #EDE9FE;   /* Mist - hover states */
+  --palette-violet-200: #DDD6FE;   /* Soft - borders */
+  --palette-violet-300: #C4B5FD;   /* Glow - subtle accents */
+  --palette-violet-400: #A78BFA;   /* Medium - secondary buttons */
+  --palette-violet-500: #8B5CF6;   /* Core - primary brand */
+  --palette-violet-600: #7C3AED;   /* Deep - hover on primary */
+  --palette-violet-700: #6D28D9;   /* Rich - active states */
+  --palette-violet-800: #5B21B6;   /* Dark - emphasis */
+  --palette-violet-900: #4C1D95;   /* Deepest - rare use */
+
+  /* RGB values for rgba() usage */
+  --palette-violet-50-rgb:  245, 243, 255;
+  --palette-violet-100-rgb: 237, 233, 254;
+  --palette-violet-200-rgb: 221, 214, 254;
+  --palette-violet-300-rgb: 196, 181, 253;
+  --palette-violet-400-rgb: 167, 139, 250;
+  --palette-violet-500-rgb: 139, 92, 246;
+  --palette-violet-600-rgb: 124, 58, 237;
+  --palette-violet-700-rgb: 109, 40, 217;
+  --palette-violet-800-rgb: 91, 33, 182;
+  --palette-violet-900-rgb: 76, 29, 149;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SECONDARY: OCEAN BLUE
+     Complementary color for actions, links, and info states
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --palette-blue-50:  #EFF6FF;    /* Sky - light backgrounds */
+  --palette-blue-100: #DBEAFE;    /* Cloud - cards on light */
+  --palette-blue-200: #BFDBFE;    /* Soft - input borders */
+  --palette-blue-300: #93C5FD;    /* Bright - toggles, chips */
+  --palette-blue-400: #60A5FA;    /* Electric - active toggles */
+  --palette-blue-500: #3B82F6;    /* Core - links, info */
+  --palette-blue-600: #2563EB;    /* Deep - buttons */
+  --palette-blue-700: #1D4ED8;    /* Rich - hover */
+  --palette-blue-800: #1E40AF;    /* Dark - emphasis */
+  --palette-blue-900: #1E3A8A;    /* Deepest - rare use */
+
+  /* RGB values */
+  --palette-blue-50-rgb:  239, 246, 255;
+  --palette-blue-100-rgb: 219, 234, 254;
+  --palette-blue-200-rgb: 191, 219, 254;
+  --palette-blue-300-rgb: 147, 197, 253;
+  --palette-blue-400-rgb: 96, 165, 250;
+  --palette-blue-500-rgb: 59, 130, 246;
+  --palette-blue-600-rgb: 37, 99, 235;
+  --palette-blue-700-rgb: 29, 78, 216;
+  --palette-blue-800-rgb: 30, 64, 175;
+  --palette-blue-900-rgb: 30, 58, 138;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TERTIARY: AURORA TEAL
+     Success states and positive momentum
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --palette-teal-50:  #F0FDFA;    /* Mint - success backgrounds */
+  --palette-teal-100: #CCFBF1;    /* Fresh - badges */
+  --palette-teal-200: #99F6E4;    /* Glow - progress bars */
+  --palette-teal-300: #5EEAD4;    /* Bright - highlights */
+  --palette-teal-400: #2DD4BF;    /* Electric - success icons */
+  --palette-teal-500: #14B8A6;    /* Core - success states */
+  --palette-teal-600: #0D9488;    /* Deep - hover */
+  --palette-teal-700: #0F766E;    /* Rich - active */
+  --palette-teal-800: #115E59;    /* Dark - emphasis */
+  --palette-teal-900: #134E4A;    /* Deepest - rare use */
+
+  /* RGB values */
+  --palette-teal-50-rgb:  240, 253, 250;
+  --palette-teal-100-rgb: 204, 251, 241;
+  --palette-teal-200-rgb: 153, 246, 228;
+  --palette-teal-300-rgb: 94, 234, 212;
+  --palette-teal-400-rgb: 45, 212, 191;
+  --palette-teal-500-rgb: 20, 184, 166;
+  --palette-teal-600-rgb: 13, 148, 136;
+  --palette-teal-700-rgb: 15, 118, 110;
+  --palette-teal-800-rgb: 17, 94, 89;
+  --palette-teal-900-rgb: 19, 78, 74;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     EMERALD (Alternate Success - for variety)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --palette-emerald-50:  #ECFDF5;
+  --palette-emerald-100: #D1FAE5;
+  --palette-emerald-200: #A7F3D0;
+  --palette-emerald-300: #6EE7B7;
+  --palette-emerald-400: #34D399;
+  --palette-emerald-500: #10B981;
+  --palette-emerald-600: #059669;
+  --palette-emerald-700: #047857;
+  --palette-emerald-800: #065F46;
+  --palette-emerald-900: #064E3B;
+
+  /* RGB values */
+  --palette-emerald-500-rgb: 16, 185, 129;
+  --palette-emerald-600-rgb: 5, 150, 105;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     NEUTRAL: SOFT SLATE
+     NOT black. Warm, inviting grays with subtle blue undertones
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --palette-slate-50:  #F8FAFC;   /* Paper - main backgrounds */
+  --palette-slate-100: #F1F5F9;   /* Canvas - section backgrounds */
+  --palette-slate-200: #E2E8F0;   /* Mist - card backgrounds */
+  --palette-slate-300: #CBD5E1;   /* Soft - borders */
+  --palette-slate-400: #94A3B8;   /* Medium - muted text */
+  --palette-slate-500: #64748B;   /* Core - secondary text */
+  --palette-slate-600: #475569;   /* Deep - body text */
+  --palette-slate-700: #334155;   /* Rich - headings */
+  --palette-slate-800: #1E293B;   /* Dark - emphasis */
+  --palette-slate-900: #0F172A;   /* Night - ONLY for auth pages */
+  --palette-slate-950: #0B0F19;   /* Deepest night - auth backgrounds */
+
+  /* RGB values */
+  --palette-slate-50-rgb:  248, 250, 252;
+  --palette-slate-100-rgb: 241, 245, 249;
+  --palette-slate-200-rgb: 226, 232, 240;
+  --palette-slate-300-rgb: 203, 213, 225;
+  --palette-slate-400-rgb: 148, 163, 184;
+  --palette-slate-500-rgb: 100, 116, 139;
+  --palette-slate-600-rgb: 71, 85, 105;
+  --palette-slate-700-rgb: 51, 65, 85;
+  --palette-slate-800-rgb: 30, 41, 59;
+  --palette-slate-900-rgb: 15, 23, 42;
+  --palette-slate-950-rgb: 11, 15, 25;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     ACCENT: FLUORESCENT SPARKS
+     High-energy accent colors for warnings, errors, and special states
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Amber (Warnings) */
+  --palette-amber-50:  #FFFBEB;
+  --palette-amber-100: #FEF3C7;
+  --palette-amber-200: #FDE68A;
+  --palette-amber-300: #FCD34D;
+  --palette-amber-400: #FBBF24;
+  --palette-amber-500: #F59E0B;
+  --palette-amber-600: #D97706;
+  --palette-amber-700: #B45309;
+  --palette-amber-800: #92400E;
+  --palette-amber-900: #78350F;
+  --palette-amber-500-rgb: 245, 158, 11;
+
+  /* Orange (Energy/Fire Mode) */
+  --palette-orange-50:  #FFF7ED;
+  --palette-orange-100: #FFEDD5;
+  --palette-orange-200: #FED7AA;
+  --palette-orange-300: #FDBA74;
+  --palette-orange-400: #FB923C;
+  --palette-orange-500: #F97316;
+  --palette-orange-600: #EA580C;
+  --palette-orange-700: #C2410C;
+  --palette-orange-800: #9A3412;
+  --palette-orange-900: #7C2D12;
+  --palette-orange-500-rgb: 249, 115, 22;
+
+  /* Rose (Critical/Notifications) */
+  --palette-rose-50:  #FFF1F2;
+  --palette-rose-100: #FFE4E6;
+  --palette-rose-200: #FECDD3;
+  --palette-rose-300: #FDA4AF;
+  --palette-rose-400: #FB7185;
+  --palette-rose-500: #F43F5E;
+  --palette-rose-600: #E11D48;
+  --palette-rose-700: #BE123C;
+  --palette-rose-800: #9F1239;
+  --palette-rose-900: #881337;
+  --palette-rose-500-rgb: 244, 63, 94;
+
+  /* Red (Errors/Danger) */
+  --palette-red-50:  #FEF2F2;
+  --palette-red-100: #FEE2E2;
+  --palette-red-200: #FECACA;
+  --palette-red-300: #FCA5A5;
+  --palette-red-400: #F87171;
+  --palette-red-500: #EF4444;
+  --palette-red-600: #DC2626;
+  --palette-red-700: #B91C1C;
+  --palette-red-800: #991B1B;
+  --palette-red-900: #7F1D1D;
+  --palette-red-500-rgb: 239, 68, 68;
+  --palette-red-600-rgb: 220, 38, 38;
+
+  /* Cyan (Live/Real-time) */
+  --palette-cyan-50:  #ECFEFF;
+  --palette-cyan-100: #CFFAFE;
+  --palette-cyan-200: #A5F3FC;
+  --palette-cyan-300: #67E8F9;
+  --palette-cyan-400: #22D3EE;
+  --palette-cyan-500: #06B6D4;
+  --palette-cyan-600: #0891B2;
+  --palette-cyan-700: #0E7490;
+  --palette-cyan-800: #155E75;
+  --palette-cyan-900: #164E63;
+  --palette-cyan-500-rgb: 6, 182, 212;
+
+  /* Lime (Extreme Success) */
+  --palette-lime-300: #BEF264;
+  --palette-lime-400: #A3E635;
+  --palette-lime-500: #84CC16;
+  --palette-lime-400-rgb: 163, 230, 53;
+
+  /* Indigo (Purple-Blue blend) */
+  --palette-indigo-400: #818CF8;
+  --palette-indigo-500: #6366F1;
+  --palette-indigo-600: #4F46E5;
+  --palette-indigo-500-rgb: 99, 102, 241;
+
+  /* Fuchsia (Pink-Purple blend) */
+  --palette-fuchsia-400: #E879F9;
+  --palette-fuchsia-500: #D946EF;
+  --palette-fuchsia-600: #C026D3;
+  --palette-fuchsia-500-rgb: 217, 70, 239;
+
+  /* Pink */
+  --palette-pink-400: #F472B6;
+  --palette-pink-500: #EC4899;
+  --palette-pink-600: #DB2777;
+  --palette-pink-500-rgb: 236, 72, 153;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SPECIAL: PURE VALUES
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --palette-white: #FFFFFF;
+  --palette-black: #000000;
+  --palette-transparent: transparent;
+
+  /* White with alpha */
+  --palette-white-5:  rgba(255, 255, 255, 0.05);
+  --palette-white-8:  rgba(255, 255, 255, 0.08);
+  --palette-white-10: rgba(255, 255, 255, 0.10);
+  --palette-white-15: rgba(255, 255, 255, 0.15);
+  --palette-white-20: rgba(255, 255, 255, 0.20);
+  --palette-white-30: rgba(255, 255, 255, 0.30);
+  --palette-white-40: rgba(255, 255, 255, 0.40);
+  --palette-white-50: rgba(255, 255, 255, 0.50);
+  --palette-white-60: rgba(255, 255, 255, 0.60);
+  --palette-white-80: rgba(255, 255, 255, 0.80);
+
+  /* Black with alpha */
+  --palette-black-5:  rgba(0, 0, 0, 0.05);
+  --palette-black-10: rgba(0, 0, 0, 0.10);
+  --palette-black-20: rgba(0, 0, 0, 0.20);
+  --palette-black-30: rgba(0, 0, 0, 0.30);
+  --palette-black-40: rgba(0, 0, 0, 0.40);
+  --palette-black-50: rgba(0, 0, 0, 0.50);
+  --palette-black-60: rgba(0, 0, 0, 0.60);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SIGNATURE GRADIENTS (Raw Values)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  
+  /* Aurora - Full spectrum rainbow */
+  --palette-gradient-aurora: linear-gradient(
+    135deg,
+    #8B5CF6 0%,
+    #6366F1 25%,
+    #3B82F6 50%,
+    #06B6D4 75%,
+    #2DD4BF 100%
+  );
+
+  /* Sunset - Warm & vibrant */
+  --palette-gradient-sunset: linear-gradient(
+    135deg,
+    #8B5CF6 0%,
+    #A855F7 50%,
+    #EC4899 100%
+  );
+
+  /* Ocean - Cool & professional */
+  --palette-gradient-ocean: linear-gradient(
+    135deg,
+    #3B82F6 0%,
+    #06B6D4 50%,
+    #2DD4BF 100%
+  );
+
+  /* Brand - Violet gradient */
+  --palette-gradient-brand: linear-gradient(
+    135deg,
+    #8B5CF6 0%,
+    #7C3AED 100%
+  );
+
+  /* Blue Action - For Save/Start buttons */
+  --palette-gradient-blue: linear-gradient(
+    135deg,
+    #3B82F6 0%,
+    #2563EB 100%
+  );
+
+  /* Success - Teal gradient */
+  --palette-gradient-success: linear-gradient(
+    135deg,
+    #2DD4BF 0%,
+    #14B8A6 100%
+  );
+
+  /* Energy - Fire/Momentum gradient */
+  --palette-gradient-energy: linear-gradient(
+    135deg,
+    #FB923C 0%,
+    #F43F5E 100%
+  );
+
+  /* Page background - Soft with violet hint */
+  --palette-gradient-page: linear-gradient(
+    180deg,
+    #F8FAFC 0%,
+    #EEF2FF 50%,
+    #F1F5F9 100%
+  );
+}

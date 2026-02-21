@@ -9,6 +9,8 @@
    
    Plus utility gradients for backgrounds, text, and accents.
    
+   NO BACKEND CHANGES - Pure CSS
+   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -17,90 +19,53 @@
 
 /* Aurora - Full spectrum (for special moments) */
 .bg-grad-aurora {
-  background: linear-gradient(
-    135deg,
-    var(--violet-500) 0%,
-    #6366F1 25%,
-    var(--blue-500) 50%,
-    var(--cyan-500) 75%,
-    var(--teal-400) 100%
-  );
-  color: white;
+  background: var(--palette-gradient-aurora);
+  color: var(--palette-white);
 }
 
 /* Sunset - Warm & vibrant (CTAs, highlights) */
 .bg-grad-sunset {
-  background: linear-gradient(
-    135deg,
-    var(--violet-500) 0%,
-    #A855F7 50%,
-    #EC4899 100%
-  );
-  color: white;
+  background: var(--palette-gradient-sunset);
+  color: var(--palette-white);
 }
 
 /* Ocean - Cool & professional (progress, info) */
 .bg-grad-ocean {
-  background: linear-gradient(
-    135deg,
-    var(--blue-500) 0%,
-    var(--cyan-500) 50%,
-    var(--teal-400) 100%
-  );
-  color: white;
+  background: var(--palette-gradient-ocean);
+  color: var(--palette-white);
 }
 
 /* Brand - Simple violet gradient */
 .bg-grad-brand,
 .bg-grad-violet {
-  background: linear-gradient(
-    135deg,
-    var(--violet-500) 0%,
-    var(--violet-600) 100%
-  );
-  color: white;
+  background: var(--palette-gradient-brand);
+  color: var(--palette-white);
 }
 
 /* Blue - Action gradient */
 .bg-grad-blue {
-  background: linear-gradient(
-    135deg,
-    var(--blue-500) 0%,
-    var(--blue-600) 100%
-  );
-  color: white;
+  background: var(--palette-gradient-blue);
+  color: var(--palette-white);
 }
 
 /* Success - Teal gradient */
 .bg-grad-success,
 .bg-grad-teal {
-  background: linear-gradient(
-    135deg,
-    var(--teal-400) 0%,
-    var(--teal-500) 100%
-  );
-  color: white;
+  background: var(--palette-gradient-success);
+  color: var(--palette-white);
 }
 
 /* Energy - Warning/Fire gradient */
 .bg-grad-energy,
 .bg-grad-warning {
-  background: linear-gradient(
-    135deg,
-    var(--orange-400) 0%,
-    var(--rose-500) 100%
-  );
-  color: white;
+  background: var(--palette-gradient-energy);
+  color: var(--palette-white);
 }
 
 /* Error - Red gradient */
 .bg-grad-error {
-  background: linear-gradient(
-    135deg,
-    var(--rose-500) 0%,
-    var(--red-600) 100%
-  );
-  color: white;
+  background: linear-gradient(135deg, var(--rose-500) 0%, var(--red-600) 100%);
+  color: var(--palette-white);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -109,39 +74,22 @@
 
 /* Soft violet tint for cards */
 .bg-grad-soft-violet {
-  background: linear-gradient(
-    180deg,
-    #FFFFFF 0%,
-    var(--violet-50) 100%
-  );
+  background: linear-gradient(180deg, var(--palette-white) 0%, var(--violet-50) 100%);
 }
 
 /* Soft blue tint */
 .bg-grad-soft-blue {
-  background: linear-gradient(
-    180deg,
-    #FFFFFF 0%,
-    var(--blue-50) 100%
-  );
+  background: linear-gradient(180deg, var(--palette-white) 0%, var(--blue-50) 100%);
 }
 
 /* Soft teal tint */
 .bg-grad-soft-teal {
-  background: linear-gradient(
-    180deg,
-    #FFFFFF 0%,
-    var(--teal-50) 100%
-  );
+  background: linear-gradient(180deg, var(--palette-white) 0%, var(--teal-50) 100%);
 }
 
 /* Page background gradient */
 .bg-grad-page {
-  background: linear-gradient(
-    180deg,
-    var(--slate-50) 0%,
-    #EEF2FF 50%,
-    var(--slate-100) 100%
-  );
+  background: var(--palette-gradient-page);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -151,18 +99,18 @@
 /* Deep atmospheric with violet glow */
 .bg-grad-atmosphere {
   background: 
-    radial-gradient(60% 100% at 10% 0%, rgba(139, 92, 246, 0.12), transparent 60%),
-    linear-gradient(180deg, #0B0F19 0%, #131826 100%);
+    radial-gradient(60% 100% at 10% 0%, rgba(var(--palette-violet-500-rgb), 0.12), transparent 60%),
+    linear-gradient(180deg, var(--palette-slate-950) 0%, var(--slate-900) 100%);
 }
 
 /* Signature gradient for dark surfaces */
 .bg-grad-signature,
 .bg-grad-pandora {
   background:
-    radial-gradient(60% 100% at 10% 0%, rgba(45, 212, 191, 0.1), transparent 60%),
-    linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(45, 212, 191, 0.15));
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+    radial-gradient(60% 100% at 10% 0%, rgba(var(--palette-teal-400-rgb), 0.1), transparent 60%),
+    linear-gradient(135deg, rgba(var(--palette-violet-500-rgb), 0.3), rgba(var(--palette-teal-400-rgb), 0.15));
+  color: var(--palette-white);
+  border: 1px solid var(--palette-white-10);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -188,7 +136,7 @@
   background-image: linear-gradient(
     135deg,
     var(--violet-500),
-    #6366F1,
+    var(--palette-indigo-500),
     var(--blue-500),
     var(--cyan-500)
   );
@@ -199,8 +147,8 @@
   background-image: linear-gradient(
     135deg,
     var(--violet-500),
-    #A855F7,
-    #EC4899
+    var(--palette-fuchsia-500),
+    var(--palette-pink-500)
   );
 }
 
@@ -258,7 +206,7 @@
 /* Rainbow border using gradient */
 .border-grad-aurora {
   border: 2px solid transparent;
-  background: linear-gradient(white, white) padding-box,
+  background: linear-gradient(var(--palette-white), var(--palette-white)) padding-box,
               linear-gradient(135deg, var(--violet-500), var(--blue-500), var(--teal-400)) border-box;
   border-radius: var(--radius-lg);
 }
@@ -266,7 +214,7 @@
 /* Violet border gradient */
 .border-grad-violet {
   border: 2px solid transparent;
-  background: linear-gradient(white, white) padding-box,
+  background: linear-gradient(var(--palette-white), var(--palette-white)) padding-box,
               linear-gradient(135deg, var(--violet-400), var(--violet-600)) border-box;
   border-radius: var(--radius-lg);
 }
@@ -304,7 +252,7 @@
 }
 
 .accent-bar-live {
-  background: linear-gradient(180deg, var(--cyan-400), var(--cyan-600));
+  background: linear-gradient(180deg, var(--cyan-400), var(--cyan-500));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -324,7 +272,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle at center,
-    rgba(139, 92, 246, var(--momentum-intensity, 0)) 0%,
+    rgba(var(--palette-violet-500-rgb), var(--momentum-intensity, 0)) 0%,
     transparent 70%
   );
   transition: opacity 800ms ease;
@@ -372,7 +320,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(139, 92, 246, 0.08),
+    rgba(var(--palette-violet-500-rgb), 0.08),
     transparent
   );
 }
@@ -386,31 +334,48 @@
 }
 
 .hover-glow-brand:hover {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 30px rgba(var(--palette-violet-500-rgb), 0.2);
 }
 
 .hover-glow-blue:hover {
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 30px rgba(var(--palette-blue-500-rgb), 0.2);
 }
 
 .hover-glow-teal:hover {
-  box-shadow: 0 0 30px rgba(45, 212, 191, 0.2);
+  box-shadow: 0 0 30px rgba(var(--palette-teal-400-rgb), 0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LEGACY MAPPINGS (Backward Compatibility)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.bg-grad-purple { @extend .bg-grad-violet; }
-.bg-grad-emerald { @extend .bg-grad-teal; }
-.bg-grad-coral { @extend .bg-grad-energy; }
-.bg-grad-mint { @extend .bg-grad-success; }
-.bg-grad-cnbc { @extend .bg-grad-ocean; }
-.bg-grad-ig { @extend .bg-grad-sunset; }
+.bg-grad-purple { background: var(--palette-gradient-brand); color: var(--palette-white); }
+.bg-grad-emerald { background: var(--palette-gradient-success); color: var(--palette-white); }
+.bg-grad-coral { background: var(--palette-gradient-energy); color: var(--palette-white); }
+.bg-grad-mint { background: var(--palette-gradient-success); color: var(--palette-white); }
+.bg-grad-cnbc { background: var(--palette-gradient-ocean); color: var(--palette-white); }
+.bg-grad-ig { background: var(--palette-gradient-sunset); color: var(--palette-white); }
 
-.text-grad-pandora { @extend .text-grad-aurora; }
-.text-grad-live { @extend .text-grad-ocean; }
-.text-grad-flow { @extend .text-grad-blue; }
+.text-grad-pandora { 
+  background-image: linear-gradient(135deg, var(--violet-500), var(--palette-indigo-500), var(--blue-500), var(--cyan-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-grad-live { 
+  background-image: linear-gradient(135deg, var(--blue-500), var(--cyan-500), var(--teal-400));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-grad-flow { 
+  background-image: linear-gradient(135deg, var(--blue-400), var(--blue-600));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 /* Gradient surfaces have white text */
 .bg-grad-aurora,
@@ -422,6 +387,6 @@
 .bg-grad-success,
 .bg-grad-energy,
 .bg-grad-error {
-  color: white;
+  color: var(--palette-white);
   --accent-foreground: 255 255 255;
 }

@@ -9,6 +9,9 @@
    The user enters through the grand entrance (Login) then walks into the 
    light-filled main gallery (the app).
    
+   IMPORTS: This file references palette.css for raw color values
+   NO BACKEND CHANGES - Pure CSS
+   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -59,90 +62,88 @@
   --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     PRIMARY: ELECTRIC VIOLET (Brand Signature)
+     COLOR SCALE ALIASES (Reference palette.css)
+     These create shorter aliases for common usage
      ═══════════════════════════════════════════════════════════════════════════ */
-  --violet-50:  #F5F3FF;
-  --violet-100: #EDE9FE;
-  --violet-200: #DDD6FE;
-  --violet-300: #C4B5FD;
-  --violet-400: #A78BFA;
-  --violet-500: #8B5CF6;
-  --violet-600: #7C3AED;
-  --violet-700: #6D28D9;
-  --violet-800: #5B21B6;
-  --violet-900: #4C1D95;
+  
+  /* Violet */
+  --violet-50:  var(--palette-violet-50);
+  --violet-100: var(--palette-violet-100);
+  --violet-200: var(--palette-violet-200);
+  --violet-300: var(--palette-violet-300);
+  --violet-400: var(--palette-violet-400);
+  --violet-500: var(--palette-violet-500);
+  --violet-600: var(--palette-violet-600);
+  --violet-700: var(--palette-violet-700);
+  --violet-800: var(--palette-violet-800);
+  --violet-900: var(--palette-violet-900);
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     SECONDARY: OCEAN BLUE (Actions & Info)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --blue-50:  #EFF6FF;
-  --blue-100: #DBEAFE;
-  --blue-200: #BFDBFE;
-  --blue-300: #93C5FD;
-  --blue-400: #60A5FA;
-  --blue-500: #3B82F6;
-  --blue-600: #2563EB;
-  --blue-700: #1D4ED8;
-  --blue-800: #1E40AF;
-  --blue-900: #1E3A8A;
+  /* Blue */
+  --blue-50:  var(--palette-blue-50);
+  --blue-100: var(--palette-blue-100);
+  --blue-200: var(--palette-blue-200);
+  --blue-300: var(--palette-blue-300);
+  --blue-400: var(--palette-blue-400);
+  --blue-500: var(--palette-blue-500);
+  --blue-600: var(--palette-blue-600);
+  --blue-700: var(--palette-blue-700);
+  --blue-800: var(--palette-blue-800);
+  --blue-900: var(--palette-blue-900);
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     TERTIARY: AURORA TEAL (Success & Positive)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --teal-50:  #F0FDFA;
-  --teal-100: #CCFBF1;
-  --teal-200: #99F6E4;
-  --teal-300: #5EEAD4;
-  --teal-400: #2DD4BF;
-  --teal-500: #14B8A6;
-  --teal-600: #0D9488;
-  --teal-700: #0F766E;
-  --teal-800: #115E59;
-  --teal-900: #134E4A;
+  /* Teal */
+  --teal-50:  var(--palette-teal-50);
+  --teal-100: var(--palette-teal-100);
+  --teal-200: var(--palette-teal-200);
+  --teal-300: var(--palette-teal-300);
+  --teal-400: var(--palette-teal-400);
+  --teal-500: var(--palette-teal-500);
+  --teal-600: var(--palette-teal-600);
+  --teal-700: var(--palette-teal-700);
+  --teal-800: var(--palette-teal-800);
+  --teal-900: var(--palette-teal-900);
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     NEUTRAL: SOFT SLATE (Foundation)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --slate-50:  #F8FAFC;
-  --slate-100: #F1F5F9;
-  --slate-200: #E2E8F0;
-  --slate-300: #CBD5E1;
-  --slate-400: #94A3B8;
-  --slate-500: #64748B;
-  --slate-600: #475569;
-  --slate-700: #334155;
-  --slate-800: #1E293B;
-  --slate-900: #0F172A;
+  /* Slate */
+  --slate-50:  var(--palette-slate-50);
+  --slate-100: var(--palette-slate-100);
+  --slate-200: var(--palette-slate-200);
+  --slate-300: var(--palette-slate-300);
+  --slate-400: var(--palette-slate-400);
+  --slate-500: var(--palette-slate-500);
+  --slate-600: var(--palette-slate-600);
+  --slate-700: var(--palette-slate-700);
+  --slate-800: var(--palette-slate-800);
+  --slate-900: var(--palette-slate-900);
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     ACCENT: FLUORESCENT SPARKS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --amber-400: #FBBF24;
-  --amber-500: #F59E0B;
-  --orange-400: #FB923C;
-  --orange-500: #F97316;
-  --rose-400: #FB7185;
-  --rose-500: #F43F5E;
-  --red-500: #EF4444;
-  --red-600: #DC2626;
-  --lime-400: #A3E635;
-  --cyan-400: #22D3EE;
-  --cyan-500: #06B6D4;
+  /* Accents */
+  --amber-400: var(--palette-amber-400);
+  --amber-500: var(--palette-amber-500);
+  --orange-400: var(--palette-orange-400);
+  --orange-500: var(--palette-orange-500);
+  --rose-400: var(--palette-rose-400);
+  --rose-500: var(--palette-rose-500);
+  --red-500: var(--palette-red-500);
+  --red-600: var(--palette-red-600);
+  --lime-400: var(--palette-lime-400);
+  --cyan-400: var(--palette-cyan-400);
+  --cyan-500: var(--palette-cyan-500);
+  --emerald-500: var(--palette-emerald-500);
+  --emerald-600: var(--palette-emerald-600);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      RGB VALUES (for rgba() usage)
      ═══════════════════════════════════════════════════════════════════════════ */
-  --violet-500-rgb: 139, 92, 246;
-  --violet-600-rgb: 124, 58, 237;
-  --blue-500-rgb: 59, 130, 246;
-  --blue-600-rgb: 37, 99, 235;
-  --teal-400-rgb: 45, 212, 191;
-  --teal-500-rgb: 20, 184, 166;
-  --cyan-500-rgb: 6, 182, 212;
-  --amber-500-rgb: 245, 158, 11;
-  --orange-500-rgb: 249, 115, 22;
-  --rose-500-rgb: 244, 63, 94;
-  --red-500-rgb: 239, 68, 68;
+  --violet-500-rgb: var(--palette-violet-500-rgb);
+  --violet-600-rgb: var(--palette-violet-600-rgb);
+  --blue-500-rgb: var(--palette-blue-500-rgb);
+  --blue-600-rgb: var(--palette-blue-600-rgb);
+  --teal-400-rgb: var(--palette-teal-400-rgb);
+  --teal-500-rgb: var(--palette-teal-500-rgb);
+  --cyan-500-rgb: var(--palette-cyan-500-rgb);
+  --amber-500-rgb: var(--palette-amber-500-rgb);
+  --orange-500-rgb: var(--palette-orange-500-rgb);
+  --rose-500-rgb: var(--palette-rose-500-rgb);
+  --red-500-rgb: var(--palette-red-500-rgb);
+  --emerald-500-rgb: var(--palette-emerald-500-rgb);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      SEMANTIC: LIGHT MODE (App Pages Default)
@@ -152,12 +153,12 @@
   --bg-primary: var(--slate-50);
   --bg-secondary: var(--slate-100);
   --bg-tertiary: var(--slate-200);
-  --bg-elevated: #FFFFFF;
-  --bg-page: linear-gradient(180deg, var(--slate-50) 0%, #EEF2FF 50%, var(--slate-100) 100%);
+  --bg-elevated: var(--palette-white);
+  --bg-page: var(--palette-gradient-page);
 
   /* Surfaces (Cards, Panels) */
   --surface-0: var(--slate-50);
-  --surface-1: #FFFFFF;
+  --surface-1: var(--palette-white);
   --surface-2: var(--slate-50);
   --surface-3: var(--slate-100);
 
@@ -166,7 +167,7 @@
   --text-secondary: var(--slate-600);
   --text-tertiary: var(--slate-500);
   --text-muted: var(--slate-400);
-  --text-inverse: #FFFFFF;
+  --text-inverse: var(--palette-white);
 
   /* Borders */
   --border-subtle: var(--slate-200);
@@ -186,7 +187,7 @@
   --brand-500-rgb: var(--violet-500-rgb);
   --brand-600-rgb: var(--violet-600-rgb);
 
-  /* Action Colors */
+  /* Action Colors (Blue for Save/Start buttons) */
   --action-primary: var(--blue-500);
   --action-primary-hover: var(--blue-600);
   --action-secondary: var(--violet-500);
@@ -197,13 +198,13 @@
   --success-100: var(--teal-100);
   --success-500: var(--teal-500);
   --success-600: var(--teal-600);
-  --warning-50: #FEF3C7;
-  --warning-100: #FDE68A;
+  --warning-50: var(--palette-amber-50);
+  --warning-100: var(--palette-amber-100);
   --warning-400: var(--amber-400);
   --warning-500: var(--amber-500);
-  --warning-600: #D97706;
-  --error-50: #FEE2E2;
-  --error-100: #FECACA;
+  --warning-600: var(--palette-amber-600);
+  --error-50: var(--palette-red-50);
+  --error-100: var(--palette-red-100);
   --error-500: var(--red-500);
   --error-600: var(--red-600);
   --info-500: var(--blue-500);
@@ -212,19 +213,15 @@
   /* Energy (Momentum/Fire Mode) */
   --energy-400: var(--orange-400);
   --energy-500: var(--orange-500);
-  --energy-600: #EA580C;
-
-  /* Cyan (Live/Real-time) */
-  --cyan-400: #22D3EE;
-  --cyan-500: #06B6D4;
-  --cyan-600: #0891B2;
+  --energy-600: var(--palette-orange-600);
+  --energy-500-rgb: var(--orange-500-rgb);
 
   /* Tints (Soft backgrounds for badges/highlights) */
   --tint-brand: var(--violet-50);
   --tint-blue: var(--blue-50);
   --tint-success: var(--teal-50);
-  --tint-warning: #FEF3C7;
-  --tint-error: #FEE2E2;
+  --tint-warning: var(--palette-amber-50);
+  --tint-error: var(--palette-red-50);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      SHADOWS (Light Mode)
@@ -236,44 +233,40 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 10px 10px rgba(0, 0, 0, 0.02);
   
   /* Colored shadows */
-  --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.15);
-  --shadow-brand-lg: 0 8px 24px rgba(139, 92, 246, 0.2);
-  --shadow-blue: 0 4px 14px rgba(59, 130, 246, 0.15);
-  --shadow-blue-lg: 0 8px 24px rgba(59, 130, 246, 0.2);
+  --shadow-brand: 0 4px 14px rgba(var(--palette-violet-500-rgb), 0.15);
+  --shadow-brand-lg: 0 8px 24px rgba(var(--palette-violet-500-rgb), 0.2);
+  --shadow-blue: 0 4px 14px rgba(var(--palette-blue-500-rgb), 0.15);
+  --shadow-blue-lg: 0 8px 24px rgba(var(--palette-blue-500-rgb), 0.2);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      FOCUS & GLOW RINGS
      ═══════════════════════════════════════════════════════════════════════════ */
-  --ring-focus: 0 0 0 3px rgba(139, 92, 246, 0.15);
-  --ring-focus-blue: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  --glow-brand: 0 0 20px rgba(139, 92, 246, 0.15);
-  --glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+  --ring-focus: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.15);
+  --ring-focus-blue: 0 0 0 3px rgba(var(--palette-blue-500-rgb), 0.15);
+  --glow-brand: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.15);
+  --glow-blue: 0 0 20px rgba(var(--palette-blue-500-rgb), 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      MOMENTUM GLOWS (Light Mode - Subtle)
      ═══════════════════════════════════════════════════════════════════════════ */
-  --momentum-glow-1: 0 0 10px rgba(139, 92, 246, 0.03);
-  --momentum-glow-2: 0 0 15px rgba(139, 92, 246, 0.05);
-  --momentum-glow-3: 0 0 20px rgba(139, 92, 246, 0.08);
-  --momentum-glow-4: 0 0 25px rgba(139, 92, 246, 0.12);
-  --momentum-glow-5: 0 0 30px rgba(139, 92, 246, 0.18);
+  --momentum-glow-1: 0 0 10px rgba(var(--palette-violet-500-rgb), 0.03);
+  --momentum-glow-2: 0 0 15px rgba(var(--palette-violet-500-rgb), 0.05);
+  --momentum-glow-3: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.08);
+  --momentum-glow-4: 0 0 25px rgba(var(--palette-violet-500-rgb), 0.12);
+  --momentum-glow-5: 0 0 30px rgba(var(--palette-violet-500-rgb), 0.18);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     GRADIENTS
+     GRADIENTS (Reference palette)
      ═══════════════════════════════════════════════════════════════════════════ */
-  
-  /* Signature gradients */
-  --gradient-brand: linear-gradient(135deg, var(--violet-500) 0%, var(--violet-600) 100%);
+  --gradient-brand: var(--palette-gradient-brand);
   --gradient-brand-soft: linear-gradient(135deg, var(--violet-400) 0%, var(--violet-500) 100%);
-  --gradient-sunset: linear-gradient(135deg, var(--violet-500) 0%, #A855F7 50%, #EC4899 100%);
-  --gradient-ocean: linear-gradient(135deg, var(--blue-500) 0%, var(--cyan-500) 50%, var(--teal-400) 100%);
-  --gradient-aurora: linear-gradient(135deg, var(--violet-500) 0%, #6366F1 25%, var(--blue-500) 50%, var(--cyan-500) 75%, var(--teal-400) 100%);
-  --gradient-energy: linear-gradient(135deg, var(--orange-400) 0%, var(--rose-500) 100%);
-  --gradient-success: linear-gradient(135deg, var(--teal-400) 0%, var(--teal-500) 100%);
-  
-  /* Background gradients */
-  --gradient-page: linear-gradient(180deg, var(--slate-50) 0%, #EEF2FF 50%, var(--slate-100) 100%);
-  --gradient-card-hover: linear-gradient(180deg, #FFFFFF 0%, var(--slate-50) 100%);
+  --gradient-sunset: var(--palette-gradient-sunset);
+  --gradient-ocean: var(--palette-gradient-ocean);
+  --gradient-aurora: var(--palette-gradient-aurora);
+  --gradient-energy: var(--palette-gradient-energy);
+  --gradient-success: var(--palette-gradient-success);
+  --gradient-page: var(--palette-gradient-page);
+  --gradient-card-hover: linear-gradient(180deg, var(--palette-white) 0%, var(--slate-50) 100%);
   
   /* Legacy mappings */
   --grad-pandora: var(--gradient-aurora);
@@ -305,14 +298,14 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    DARK MODE SEMANTIC OVERRIDES (For Auth Pages & Dark Contexts)
-   Applied via .dark class or data-theme="dark"
+   Applied via .dark class, data-theme="dark", or .auth-layout
    ═══════════════════════════════════════════════════════════════════════════════ */
 .dark,
 [data-theme="dark"],
 .auth-layout {
   /* Backgrounds */
   --bg-primary: var(--slate-900);
-  --bg-secondary: #131826;
+  --bg-secondary: var(--palette-slate-950);
   --bg-tertiary: var(--slate-800);
   --bg-elevated: rgba(30, 41, 59, 0.8);
 
@@ -329,29 +322,29 @@
   --text-muted: var(--slate-500);
 
   /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-brand: rgba(139, 92, 246, 0.4);
+  --border-subtle: var(--palette-white-8);
+  --border-default: var(--palette-white-10);
+  --border-strong: var(--palette-white-15);
+  --border-brand: rgba(var(--palette-violet-500-rgb), 0.4);
 
-  /* Shadows */
+  /* Shadows (darker for dark mode) */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
-  --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.25);
-  --shadow-brand-lg: 0 8px 24px rgba(139, 92, 246, 0.35);
+  --shadow-brand: 0 4px 14px rgba(var(--palette-violet-500-rgb), 0.25);
+  --shadow-brand-lg: 0 8px 24px rgba(var(--palette-violet-500-rgb), 0.35);
 
   /* Focus rings */
-  --ring-focus: 0 0 0 3px rgba(139, 92, 246, 0.3);
-  --glow-brand: 0 0 30px rgba(139, 92, 246, 0.25);
+  --ring-focus: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.3);
+  --glow-brand: 0 0 30px rgba(var(--palette-violet-500-rgb), 0.25);
 
   /* Momentum glows (stronger in dark mode) */
-  --momentum-glow-1: 0 0 15px rgba(139, 92, 246, 0.08);
-  --momentum-glow-2: 0 0 20px rgba(139, 92, 246, 0.12);
-  --momentum-glow-3: 0 0 25px rgba(139, 92, 246, 0.18);
-  --momentum-glow-4: 0 0 35px rgba(139, 92, 246, 0.25);
-  --momentum-glow-5: 0 0 45px rgba(139, 92, 246, 0.35);
+  --momentum-glow-1: 0 0 15px rgba(var(--palette-violet-500-rgb), 0.08);
+  --momentum-glow-2: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.12);
+  --momentum-glow-3: 0 0 25px rgba(var(--palette-violet-500-rgb), 0.18);
+  --momentum-glow-4: 0 0 35px rgba(var(--palette-violet-500-rgb), 0.25);
+  --momentum-glow-5: 0 0 45px rgba(var(--palette-violet-500-rgb), 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
