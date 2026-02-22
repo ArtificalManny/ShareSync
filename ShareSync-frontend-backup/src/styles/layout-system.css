@@ -1,6 +1,7 @@
 /**
- * layout-system.css - DEAD SPACE FIXED VERSION + NAVBAR OVERLAP FIX
- * COORDINATED WITH SIDEBAR.CSS
+ * layout-system.css - STRUCTURAL ONLY
+ * Aesthetic colors and backgrounds have been removed to allow theme.css 
+ * and Tailwind to control the "Gallery Walk" theme.
  */
 
 /* ============================================
@@ -18,13 +19,11 @@ body,
   gap: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
-  height: auto !important; /* ⭐ NATURAL HEIGHT */
-  min-height: auto !important; /* ⭐ FIXED: Was 100vh causing 2000px+ dead space */
+  height: auto !important; 
+  min-height: auto !important; 
 }
 
-body {
-  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important;
-}
+/* REMOVED: Hardcoded blue body background. theme.css handles this now. */
 
 header,
 nav,
@@ -49,7 +48,7 @@ footer {
 }
 
 /* ============================================
-   NAVBAR - FIXED OVERLAP ISSUE
+   NAVBAR - POSITIONING ONLY
    ============================================ */
 
 .navbar {
@@ -58,13 +57,11 @@ footer {
   left: var(--sidebar-w, 248px) !important;
   right: 0 !important;
   height: 64px !important;
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(10px) !important; /* ⭐ Better glass effect */
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03) !important;
-  z-index: 110 !important; /* ⭐ FIXED: Higher than sidebar (was 90) */
+  /* REMOVED: Hardcoded dark blue background so Tailwind can work */
+  z-index: 110 !important; 
   display: flex !important;
   align-items: center !important;
-  padding: 0 !important; /* ⭐ FIXED: Let Navbar.jsx handle padding */
+  padding: 0 !important; 
   margin: 0 !important;
   transition: left 220ms ease !important;
 }
@@ -73,14 +70,13 @@ body.sidebar-collapsed .navbar {
   left: var(--sidebar-w-collapsed, 72px) !important;
 }
 
-/* ⭐ NEW: Ensure navbar content is always visible */
 .navbar > * {
   z-index: 1 !important;
   position: relative !important;
 }
 
 /* ============================================
-   MAIN CONTENT - FIXED FOR NO DEAD SPACE
+   MAIN CONTENT - FLUSH TO EDGES
    ============================================ */
 
 .main-content {
@@ -89,41 +85,36 @@ body.sidebar-collapsed .navbar {
   margin-top: 0 !important;
   margin-right: 0 !important;
   margin-bottom: 0 !important;
-  padding-top: 64px !important; /* ⭐ Matches navbar height */
+  padding-top: 64px !important; /* Matches navbar height */
   padding-left: 0 !important;
   padding-right: 0 !important;
-  padding-bottom: 2rem !important; /* ⭐ Reasonable padding */
-  min-height: 100vh !important; /* Fill viewport */
-  height: auto !important; /* ⭐ NATURAL HEIGHT - no forcing */
+  padding-bottom: 0 !important; /* Removed 2rem padding to kill bottom wedge */
+  min-height: 100vh !important; 
+  height: auto !important; 
   display: block !important;
   transition: margin-left 220ms ease !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
+  background: transparent !important;
 }
 
 body.sidebar-collapsed .main-content {
   margin-left: var(--sidebar-w-collapsed, 72px) !important;
 }
 
-/* Content wrapper */
+/* Content wrapper - Removed constraints so pages (like Home.jsx) manage their own width */
 .content-wrapper {
-  max-width: 1200px;
-  margin: 0 auto !important;
-  padding: 24px !important;
   width: 100%;
-  /* ADD THESE LINES TO KILL ANY INHERITED BORDERS */
+  margin: 0 !important;
+  padding: 0 !important; /* Removed 24px padding to kill side wedges */
   border: none !important;
   outline: none !important;
   background: transparent !important;
 }
 
-.content-wrapper.wide {
-  max-width: none;
-}
-
 /* ============================================
-   CURSOR SYSTEM
+   CURSOR SYSTEM & OVERLAYS
    ============================================ */
 
 .cursor-layer {
@@ -210,7 +201,7 @@ main.full-screen {
   margin: 0 !important;
   padding: 0 !important;
   z-index: 10000 !important;
-  background: rgba(42, 42, 62, 0.95) !important;
+  background: var(--surface-0-alpha, rgba(42, 42, 62, 0.95)) !important;
   overflow-y: auto !important;
 }
 
@@ -245,14 +236,9 @@ main.full-screen {
 @media (max-width: 768px) {
   .navbar {
     height: 56px !important;
-    padding: 0 16px !important;
   }
   
   .main-content {
     padding-top: 56px !important;
-  }
-  
-  .content-wrapper {
-    padding: 16px !important;
   }
 }
