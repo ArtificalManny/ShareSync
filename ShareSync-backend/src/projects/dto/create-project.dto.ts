@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // CREATE PROJECT DTO (schema-aligned + backwards compatible)
 // - Accepts emoji (preferred) OR icon (legacy). Service will normalize.
+// - Accepts privacy (frontend) OR visibility (preferred). Service will normalize.
 // - Keeps current fields intact to avoid breaking frontend.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -24,7 +25,10 @@ import {
 import { Type } from 'class-transformer';
 import { ProjectVisibility } from '../schemas/project.schema';
 
-// Keep settings DTO local to avoid import loops with update dto
+// ═══════════════════════════════════════════════════════════════════════════════
+// NESTED DTOs
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export class CreateProjectSettingsDto {
   @ApiPropertyOptional()
   @IsString()
@@ -74,6 +78,17 @@ export class CreateProjectSettingsDto {
   @IsString({ each: true })
   @IsOptional()
   taskPriorities?: string[];
+
+  // ✅ ADDED: Support for isPublic/isListed from frontend
+  @ApiPropertyOptional({ description: 'Whether project is publicly viewable' })
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean;
+
+  @ApiPropertyOptional({ description: 'Whether project appears in Discover/search' })
+  @IsBoolean()
+  @IsOptional()
+  isListed?: boolean;
 }
 
 export class CreateProjectGoalDto {
@@ -104,7 +119,28 @@ export class CreateProjectGoalDto {
   status?: 'normal' | 'at_risk' | 'achieved';
 }
 
+// ✅ ADDED: Member invite DTO for initial project creation
+export class CreateProjectMemberDto {
+  @ApiProperty({ description: 'Email address of member to invite' })
+  @IsString()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiPropertyOptional({ description: 'Role for the member', default: 'Member' })
+  @IsString()
+  @IsOptional()
+  role?: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN DTO
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export class CreateProjectDto {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // REQUIRED FIELDS
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @ApiProperty({
     description: 'Project name',
     example: 'ShareSync MVP',
@@ -117,6 +153,10 @@ export class CreateProjectDto {
   @MaxLength(100)
   name: string;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIONAL FIELDS - CORE
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @ApiPropertyOptional({
     description: 'Project description',
     example: 'Building the best project management tool',
@@ -127,7 +167,38 @@ export class CreateProjectDto {
   @MaxLength(2000)
   description?: string;
 
-  // ✅ Preferred field (schema)
+  // ✅ ADDED: Legacy "title" field (frontend sends both name and title)
+  @ApiPropertyOptional({
+    description: 'Legacy title field (alias for name)',
+    example: 'ShareSync MVP',
+  })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  // ✅ ADDED: Category field from frontend
+  @ApiPropertyOptional({
+    description: 'Project category',
+    example: 'SaaS',
+  })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  // ✅ ADDED: Status field from frontend (initial status)
+  @ApiPropertyOptional({
+    description: 'Initial project status',
+    example: 'In Progress',
+  })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIONAL FIELDS - VISUAL
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // Preferred field (schema)
   @ApiPropertyOptional({
     description: 'Project emoji (preferred)',
     example: '🚀',
@@ -137,7 +208,7 @@ export class CreateProjectDto {
   @IsOptional()
   emoji?: string;
 
-  // ✅ Legacy field (frontend/backward compatibility)
+  // Legacy field (frontend/backward compatibility)
   @ApiPropertyOptional({
     description: 'Legacy project icon (emoji string)',
     example: '🚀',
@@ -159,14 +230,40 @@ export class CreateProjectDto {
   })
   color?: string;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIONAL FIELDS - VISIBILITY / PRIVACY
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @ApiPropertyOptional({
-    description: 'Project visibility',
+    description: 'Project visibility (preferred)',
     enum: ProjectVisibility,
     default: ProjectVisibility.PRIVATE,
   })
   @IsEnum(ProjectVisibility)
   @IsOptional()
   visibility?: ProjectVisibility;
+
+  // ✅ ADDED: "privacy" alias (frontend sends this instead of visibility)
+  @ApiPropertyOptional({
+    description: 'Project privacy (legacy alias for visibility)',
+    example: 'Private',
+  })
+  @IsString()
+  @IsOptional()
+  privacy?: string;
+
+  // ✅ ADDED: Direct isPublic flag from frontend
+  @ApiPropertyOptional({
+    description: 'Whether project is publicly viewable',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIONAL FIELDS - ORGANIZATION
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @ApiPropertyOptional({
     description: 'Project tags',
@@ -189,4 +286,14 @@ export class CreateProjectDto {
   @Type(() => CreateProjectGoalDto)
   @IsOptional()
   goals?: CreateProjectGoalDto[];
+
+  // ✅ ADDED: Initial members to invite on project creation
+  @ApiPropertyOptional({ 
+    type: [CreateProjectMemberDto],
+    description: 'Members to invite on project creation'
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateProjectMemberDto)
+  @IsOptional()
+  members?: CreateProjectMemberDto[];
 }

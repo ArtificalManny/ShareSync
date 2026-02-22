@@ -3,8 +3,9 @@
 // PROJECTS SERVICE: Business Logic for Project Management
 // - SAFE PATCH: updateMetrics() now merges instead of overwriting metrics object
 // - SAFE PATCH: create() normalizes emoji/icon + ensures settings/goals defaults
+// - SAFE PATCH: create() now handles privacy→visibility, title, category, members
 // - PHASE 3: helper triggers for follower notifications (ship updates / milestones)
-//   (optional NotificationsService injection to avoid boot-time quagmires)
+// - PHASE 4: Discovery feed support
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -22,6 +23,7 @@ import {
   Project,
   ProjectDocument,
   ProjectStatus,
+  ProjectVisibility,
   MemberRole,
   ProjectMember,
 } from './schemas/project.schema';
@@ -183,20 +185,71 @@ export class ProjectsService {
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIELD NORMALIZATION (handles frontend→backend field mapping)
+    // ═══════════════════════════════════════════════════════════════════════════
+
     // ✅ Normalize emoji/icon safely:
-    // - preferred: dto.emoji
-    // - fallback: dto.icon
-    // - default: 📁
     const emoji = (dto.emoji || dto.icon || '📁').trim();
 
+    // ✅ Normalize visibility from privacy field
+    // Frontend sends: "Private" | "Public" | "Listed"
+    // Backend expects: ProjectVisibility enum
+    let visibility: ProjectVisibility = ProjectVisibility.PRIVATE;
+    
+    if (dto.visibility) {
+      visibility = dto.visibility;
+    } else if (dto.privacy) {
+      const privacyLower = String(dto.privacy).toLowerCase();
+      if (privacyLower === 'public') {
+        visibility = ProjectVisibility.PUBLIC;
+      } else if (privacyLower === 'listed') {
+        visibility = ProjectVisibility.LISTED;
+      } else {
+        visibility = ProjectVisibility.PRIVATE;
+      }
+    }
+
+    // ✅ Use title as name fallback (frontend sends both)
+    const projectName = dto.name || dto.title || 'Untitled Project';
+
+    // ✅ Handle isPublic flag from frontend
+    const isPublic = dto.isPublic === true || 
+                     visibility === ProjectVisibility.PUBLIC || 
+                     visibility === ProjectVisibility.LISTED;
+
+    // ✅ Merge settings with isPublic/isListed from various sources
+    const settings = {
+      ...(dto.settings || {}),
+      isPublic: dto.settings?.isPublic ?? isPublic,
+      isListed: dto.settings?.isListed ?? (visibility === ProjectVisibility.LISTED),
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CREATE PROJECT DOCUMENT
+    // ═══════════════════════════════════════════════════════════════════════════
+
     const project = new this.projectModel({
-      ...dto,
+      // Core fields from DTO
+      name: projectName,
+      description: dto.description,
       emoji,
-      icon: dto.icon || emoji, // keep legacy icon populated
+      icon: dto.icon || emoji,
+      color: dto.color || '#7C3AED',
+      visibility,
+      tags: dto.tags || [],
+      
+      // Category and status from frontend
+      category: dto.category || null,
+      status: dto.status ? this.normalizeStatus(dto.status) : ProjectStatus.ACTIVE,
+
+      // Ownership
       ownerId: new Types.ObjectId(userId),
       members: [],
+
+      // Nested objects
       goals: dto.goals || [],
-      settings: dto.settings || {},
+      settings,
 
       // Ensure full metrics object exists for Pulse / sorting
       metrics: {
@@ -209,22 +262,84 @@ export class ProjectsService {
         weeklyShips: 0,
         momentumTrend: 0,
         activeSprintId: null,
+        totalShips: 0,
+        memberCount: 1, // Owner counts as 1
+        likes: 0,
+        comments: 0,
       },
 
       // Phase 3: safe default
       followersCount: 0,
+
+      // Phase 4: Discover fields
+      streakDays: 0,
+      trendingScore: 0,
     });
 
     const saved = await project.save();
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // POST-CREATION: Handle member invites (if provided)
+    // ═══════════════════════════════════════════════════════════════════════════
+    if (dto.members && Array.isArray(dto.members) && dto.members.length > 0) {
+      this.logger.log(`Processing ${dto.members.length} member invites for project ${saved._id}`);
+      
+      this.eventEmitter.emit('project.members.invited', {
+        projectId: saved._id,
+        invitedBy: userId,
+        members: dto.members,
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EMIT EVENTS
+    // ═══════════════════════════════════════════════════════════════════════════
 
     this.eventEmitter.emit('project.created', {
       projectId: saved._id,
       userId,
       projectName: saved.name,
+      visibility: saved.visibility,
+      isPublic,
     });
 
-    this.logger.log(`Project created: ${saved._id}`);
+    this.logger.log(`Project created: ${saved._id} (visibility: ${visibility})`);
     return saved;
+  }
+
+  // ✅ Helper to normalize status string from frontend
+  // Uses string literals that match the enum values for safety
+  private normalizeStatus(status: string): ProjectStatus {
+    const statusLower = String(status).toLowerCase().replace(/\s+/g, '_');
+    
+    // Map common frontend values to enum
+    // Using explicit enum values to avoid TypeScript errors
+    switch (statusLower) {
+      case 'active':
+      case 'in_progress':
+      case 'in progress':
+        return ProjectStatus.ACTIVE;
+      
+      case 'planning':
+        // If PLANNING exists, use it; otherwise fall back to ACTIVE
+        return (ProjectStatus as any).PLANNING || ProjectStatus.ACTIVE;
+      
+      case 'on_hold':
+      case 'on hold':
+      case 'paused':
+        // If ON_HOLD exists, use it; otherwise fall back to ACTIVE
+        return (ProjectStatus as any).ON_HOLD || (ProjectStatus as any).PAUSED || ProjectStatus.ACTIVE;
+      
+      case 'completed':
+      case 'done':
+        return ProjectStatus.COMPLETED;
+      
+      case 'archived':
+        return ProjectStatus.ARCHIVED;
+      
+      default:
+        return ProjectStatus.ACTIVE;
+    }
   }
 
   async findById(projectId: string): Promise<ProjectDocument> {
@@ -312,13 +427,13 @@ export class ProjectsService {
       else if (dto.status === ProjectStatus.COMPLETED) project.completedAt = new Date();
     }
 
-    // Merge settings safely (don’t overwrite object)
+    // Merge settings safely (don't overwrite object)
     if ((dto as any).settings) {
       (project as any).settings = { ...(project as any).settings, ...(dto as any).settings };
       delete (dto as any).settings;
     }
 
-    // Goals overwrite (simple + safe). If you want patch-by-id later, we can add.
+    // Goals overwrite
     if ((dto as any).goals) {
       (project as any).goals = (dto as any).goals;
       delete (dto as any).goals;
@@ -387,8 +502,7 @@ export class ProjectsService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // PHASE 3: SHIP + MILESTONE TRIGGERS (safe helpers)
-  // These can be called from Threads/Milestones/Ships modules later.
+  // PHASE 3: SHIP + MILESTONE TRIGGERS
   // ─────────────────────────────────────────────────────────────────────────────
 
   async recordShipUpdate(args: {
@@ -399,23 +513,24 @@ export class ProjectsService {
   }): Promise<{ success: true }> {
     const project = await this.findByIdWithAccess(args.projectId, args.userId);
 
-    // Only members/admins/owner can post ships (spectators can't)
     if (!this.canEdit(project, args.userId)) {
       throw new ForbiddenException('You do not have permission to post updates for this project');
     }
 
-    // Increment weeklyShips + bump lastActivityAt
     await this.projectModel.updateOne(
       { _id: new Types.ObjectId(args.projectId) },
       {
-        $inc: { 'metrics.weeklyShips': 1 },
-        $set: { 'metrics.lastActivityAt': new Date() },
+        $inc: { 'metrics.weeklyShips': 1, 'metrics.totalShips': 1 },
+        $set: { 
+          'metrics.lastActivityAt': new Date(),
+          lastShip: args.shipTitle,
+          lastShipAt: new Date(),
+        },
       },
     );
 
     const projectName = args.projectNameOverride || project.name;
 
-    // Emit event for future event-driven wiring
     this.eventEmitter.emit('project.ship.posted', {
       projectId: args.projectId,
       projectName,
@@ -423,7 +538,6 @@ export class ProjectsService {
       triggeredBy: args.userId,
     });
 
-    // Optional direct notify (keeps us moving even before event listener wiring)
     if (this.notifications?.notifyFollowersShipUpdate) {
       await this.notifications.notifyFollowersShipUpdate({
         projectId: args.projectId,
@@ -448,7 +562,6 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to post milestones for this project');
     }
 
-    // Bump activity timestamp
     await this.projectModel.updateOne(
       { _id: new Types.ObjectId(args.projectId) },
       {
@@ -516,6 +629,12 @@ export class ProjectsService {
       invitedBy: new Types.ObjectId(userId),
     } as ProjectMember);
 
+    // Update member count
+    await this.projectModel.updateOne(
+      { _id: new Types.ObjectId(projectId) },
+      { $set: { 'metrics.memberCount': project.members.length + 1 } }, // +1 for owner
+    );
+
     const updated = await project.save();
 
     this.eventEmitter.emit('project.member.added', {
@@ -547,6 +666,13 @@ export class ProjectsService {
     if (memberIndex === -1) throw new NotFoundException('Member not found in project');
 
     project.members.splice(memberIndex, 1);
+
+    // Update member count
+    await this.projectModel.updateOne(
+      { _id: new Types.ObjectId(projectId) },
+      { $set: { 'metrics.memberCount': project.members.length + 1 } }, // +1 for owner
+    );
+
     const updated = await project.save();
 
     this.eventEmitter.emit('project.member.removed', {
@@ -585,22 +711,11 @@ export class ProjectsService {
     return project.save();
   }
 
-  // ✅ ADDED: Update user-specific notification preferences
   async updateMemberPreferences(projectId: string, userId: string, preferences: any): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    let memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
-    
-    // If the user is the Owner but isn't in the members array yet, add them so we can store preferences
-    if (memberIndex === -1 && project.ownerId.toString() === userId) {
-      project.members.push({
-        userId: new Types.ObjectId(userId),
-        role: MemberRole.OWNER,
-        joinedAt: new Date(),
-        preferences: {}
-      } as any);
-      memberIndex = project.members.length - 1;
-    } else if (memberIndex === -1) {
+    const memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
+    if (memberIndex === -1) {
       throw new BadRequestException('You are not a member of this project');
     }
 
@@ -634,7 +749,6 @@ export class ProjectsService {
   async getPulseData(projectId: string, userId: string): Promise<PulseData> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    // Ensure metrics object exists even for legacy docs
     const metrics = (project as any).metrics || {
       momentum: 0,
       velocity: 0,
