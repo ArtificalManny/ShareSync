@@ -1,7 +1,14 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC NAVBAR v4.0 - Adaptive Light/Dark Theme & Micro-interactions
+// SHARESYNC NAVBAR v4.1 - With CreateProject Modal Integration
 // Phase C: Momentum + Phase E: Social Proof + Phase F: Sound
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES in v4.1:
+// - Added ProjectsCreate modal integration
+// - Single "+ New" button opens create project modal
+// - Removed duplicate standalone "+" button
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -42,6 +49,9 @@ import { InlineOnlineIndicator } from "./social/OnlineIndicator";
 
 import { NavbarSoundToggle } from "./ui/SoundToggle";
 import { useTeamActivitySound } from "../sounds/NotificationSounds";
+
+// ✅ NEW: Import ProjectsCreate modal
+import ProjectsCreate from "../pages/ProjectsCreate";
 
 const DEFAULT_PIC = "/default-profile.png";
 
@@ -203,7 +213,7 @@ const MomentumBadge = () => {
     <div className="relative" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
       <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${config.bg} border border-slate-200 dark:border-[#27272a] transition-all duration-300 ${isFireMode ? "animate-pulse border-orange-300 dark:border-orange-500/30" : ""}`}>
         {Icon && <Icon className={`w-3.5 h-3.5 ${config.color}`} />}
-        <span className={`text-xs font-bold ${config.color}`}>{isFireMode ? "🔥" : `L${glowLevel}`}</span>
+        <span className={`text-xs font-bold ${config.color}`}>{isFireMode ? "��" : `L${glowLevel}`}</span>
       </div>
       {showTooltip && (
         <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-white dark:bg-[#111113] border border-slate-200 dark:border-[#1f1f23] shadow-xl dark:shadow-none z-50 whitespace-nowrap animate-in fade-in slide-in-from-top-2 duration-200">
@@ -295,6 +305,9 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const chat = typeof useChat === "function" ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
 
+  // ✅ NEW: State for CreateProject modal
+  const [showCreateProject, setShowCreateProject] = useState(false);
+
   const { glowLevel, isFireMode } = useMomentumContext();
   const { notifications: shipNotifications, addNotification: addShipNotification, dismissNotification: dismissShipNotification } = useShipNotifications();
   const { toasts: achievementToasts, addToast: addAchievementToast, dismissToast: dismissAchievementToast } = useAchievementToasts();
@@ -334,6 +347,16 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
+  };
+
+  // ✅ NEW: Handler for when project is created
+  const handleProjectCreated = (project) => {
+    // Navigate to the new project
+    const id = project?._id || project?.id || project?.projectId;
+    if (id) {
+      navigate(`/projects/${id}`);
+    }
+    setShowCreateProject(false);
   };
 
   const navbarGlowStyle = useMemo(() => {
@@ -380,10 +403,18 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
 
           <div className="flex items-center gap-1">
             <div className="hidden sm:block mr-2"><MomentumBadge /></div>
-            <button className={`w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white flex items-center justify-center hover:from-violet-600 hover:to-violet-700 hover:shadow-lg hover:shadow-violet-200 dark:hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all duration-200 mr-1 ${isFireMode ? "animate-pulse shadow-md shadow-orange-200 dark:shadow-none" : "shadow-sm shadow-violet-200 dark:shadow-none"}`} style={{ background: isFireMode ? "linear-gradient(135deg, #F97316 0%, #8B5CF6 100%)" : "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" }}>
+            
+            {/* ✅ CHANGED: Single "+ New" button that opens CreateProject modal */}
+            <button 
+              onClick={() => setShowCreateProject(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white hover:from-violet-600 hover:to-violet-700 hover:shadow-lg hover:shadow-violet-200 dark:hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all duration-200 mr-1 ${isFireMode ? "animate-pulse shadow-md shadow-orange-200 dark:shadow-none" : "shadow-sm shadow-violet-200 dark:shadow-none"}`} 
+              style={{ background: isFireMode ? "linear-gradient(135deg, #F97316 0%, #8B5CF6 100%)" : "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" }}
+            >
               <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">New</span>
             </button>
-            <QuickCapture />
+            
+            {/* QuickCapture removed - was rendering duplicate non-functional button */}
             <FocusModeToggle />
             <div className="h-5 w-px bg-slate-200 dark:bg-[#1f1f23] mx-1 hidden sm:block transition-colors duration-200" />
             <NavbarSoundToggle />
@@ -403,6 +434,15 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           </div>
         </div>
       </header>
+      
+      {/* ✅ NEW: CreateProject Modal */}
+      {showCreateProject && (
+        <ProjectsCreate 
+          onClose={() => setShowCreateProject(false)}
+          onProjectCreated={handleProjectCreated}
+        />
+      )}
+      
       <ShipNotification notifications={shipNotifications} onDismissNotification={dismissShipNotification} position="top-right" maxVisible={3} autoDismiss={6000} />
       <AchievementToast toasts={achievementToasts} onDismissToast={dismissAchievementToast} position="top-right" maxVisible={2} autoDismiss={5000} />
     </>

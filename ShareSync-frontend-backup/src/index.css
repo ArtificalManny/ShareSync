@@ -364,3 +364,86 @@ button[type="submit"] {
 .status-offline { color: #94A3B8; }
 .status-busy { color: #F59E0B; }
 .status-dnd { color: #EF4444; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NUCLEAR SIDEBAR FIX - Override palette.override.css !important rules
+   The Gallery Walk - White sidebar enforcement
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar,
+.sidebar.mobile-open,
+div.sidebar,
+#app-sidebar,
+aside#app-sidebar,
+[id="app-sidebar"] {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  border-right: 1px solid #E2E8F0 !important;
+}
+
+/* Ensure sidebar children don't inherit dark backgrounds */
+.sidebar > aside,
+.sidebar > div,
+#app-sidebar > * {
+  background: transparent !important;
+}
+
+/* Keep the inner aside white */
+#app-sidebar {
+  background: #FFFFFF !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR TEXT FIX - Ensure dark text on white background
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar,
+.sidebar *,
+#app-sidebar,
+#app-sidebar * {
+  --tw-text-opacity: 1 !important;
+}
+
+/* Primary text - dark slate */
+.sidebar .text-white,
+.sidebar [class*="text-white"],
+#app-sidebar .text-white,
+#app-sidebar [class*="text-white"] {
+  color: #1E293B !important;
+}
+
+/* Muted text - medium slate */
+.sidebar .text-slate-400,
+.sidebar .text-zinc-400,
+.sidebar [class*="text-slate-4"],
+.sidebar [class*="text-zinc-4"],
+#app-sidebar .text-slate-400,
+#app-sidebar .text-zinc-400 {
+  color: #64748B !important;
+}
+
+/* Icon colors - visible on white */
+.sidebar svg,
+#app-sidebar svg {
+  color: inherit;
+}
+
+/* Ensure nav labels are visible */
+.sidebar span,
+.sidebar label,
+.sidebar p,
+#app-sidebar span,
+#app-sidebar label,
+#app-sidebar p {
+  color: #334155 !important;
+}
+
+/* Active nav item - violet accent */
+.sidebar .bg-violet-50,
+.sidebar [class*="bg-violet"],
+#app-sidebar .bg-violet-50 {
+  background-color: #F5F3FF !important;
+}
+
+.sidebar .text-violet-600,
+#app-sidebar .text-violet-600 {
+  color: #7C3AED !important;
+}

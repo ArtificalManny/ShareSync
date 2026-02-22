@@ -1,100 +1,219 @@
-/* ========= Sidebar Skin (Gallery Walk Light Theme) ========= */
-:root {
-  --sidebar-w: 248px;
-  --sidebar-w-collapsed: 72px;
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR LAYOUT CSS v5.0 - "The Gallery Walk" Light Theme
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   This file handles the LAYOUT and POSITIONING of the sidebar wrapper.
+   The actual sidebar styling is in Sidebar.jsx component.
+   
+   CHANGE: Removed all dark backgrounds to match light gallery theme.
+   
+   NO BACKEND CHANGES - Pure CSS
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-  --sb-bg: #FFFFFF;
-  --sb-border: #E2E8F0;
-  --sb-text: #475569;
-  --sb-muted: #94A3B8;
-  --sb-hover: #F8FAFC;
-  --sb-active: #EEF2FF;
-
-  --sb-neon: #8B5CF6; /* Electric Violet */
-  --sb-count-bg: #8B5CF6;
-  --sb-count-fg: #fff;
-
-  --sidebar-width: var(--sidebar-w);
-}
-
-body.has-sidebar { --sidebar-width: var(--sidebar-w); }
-body.has-sidebar.sidebar-collapsed { --sidebar-width: var(--sidebar-w-collapsed); }
-
-.with-sidebar { margin-left: var(--sidebar-width); transition: margin-left 220ms ease; }
-
-.ss-sidebar {
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR WRAPPER - Layout Only (No Background!)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar {
   position: fixed;
-  inset: 0 auto 0 0;
-  width: var(--sidebar-width);
-  background: var(--sb-bg);
-  border-right: none !important;
-  display: flex;
-  flex-direction: column;
+  left: 0;
+  top: 0;
+  height: 100vh;
   z-index: 40;
-  transition: width 220ms ease, box-shadow 220ms ease;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-behavior: smooth;
+  /* NO background here - let the Sidebar component control its own bg */
 }
 
-.ss-sidebar.is-collapsed { width: var(--sidebar-w-collapsed); }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    width: 260px;
+    /* Light shadow for mobile overlay */
+    box-shadow: 4px 0 24px rgba(139, 92, 246, 0.1);
+  }
 
-/* BEAUTIFUL CUSTOM SCROLLBAR */
-.ss-sidebar::-webkit-scrollbar { width: 6px; }
-.ss-sidebar::-webkit-scrollbar-track { background: transparent; }
-.ss-sidebar::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 3px; transition: background 0.3s ease; }
-.ss-sidebar:hover::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.4); }
-.ss-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.6); }
-
-.ss-sidebar { scrollbar-width: thin; scrollbar-color: rgba(139, 92, 246, 0.3) transparent; }
-.ss-sidebar:hover { scrollbar-color: rgba(139, 92, 246, 0.5) transparent; }
-
-/* FADE INDICATORS */
-.ss-sidebar::before { content: ''; position: sticky; top: 0; left: 0; right: 0; height: 16px; background: linear-gradient(to bottom, var(--sb-bg) 0%, transparent 100%); pointer-events: none; z-index: 10; opacity: 0; transition: opacity 0.3s ease; }
-.ss-sidebar::after { content: ''; position: sticky; bottom: 0; left: 0; right: 0; height: 16px; background: linear-gradient(to top, var(--sb-bg) 0%, transparent 100%); pointer-events: none; z-index: 10; opacity: 1; transition: opacity 0.3s ease; }
-.ss-sidebar:hover::before { opacity: 1; }
-.ss-sidebar:hover::after { opacity: 1; }
-
-.sb-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .75rem .5rem .5rem .75rem;border-bottom: none !important; flex-shrink: 0; position: relative; z-index: 11; }
-.sb-brand { display: flex; align-items: center; gap: .5rem; min-width: 0; }
-.sb-logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #8B5CF6, #6366F1); color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 700; box-shadow: 0 4px 12px rgba(139,92,246,.2); }
-.sb-title { font-weight: 700; color: #1E293B; font-size: .95rem; white-space: nowrap; }
-
-.sb-toggle { appearance: none; background: transparent; border: 1px solid var(--sb-border); border-radius: .5rem; padding: .4rem .45rem; line-height: 0; color: var(--sb-muted); cursor: pointer; }
-.sb-toggle:hover { background: #F1F5F9; color: #1E293B; }
-.sb-toggle:focus-visible { outline: 2px solid #8B5CF6; outline-offset: 2px; }
-
-.sb-nav { padding: .5rem; display: grid; gap: .25rem; }
-
-.sb-item { position: relative; display: grid; grid-template-columns: 32px 1fr auto auto; align-items: center; gap: .625rem; padding: .5rem .5rem .5rem .25rem; border-radius: .6rem; color: var(--sb-text); text-decoration: none; outline: none; }
-.sb-item:hover { background: var(--sb-hover); color: #1E293B; }
-.sb-item:focus-visible { outline: 2px solid #8B5CF6; outline-offset: 2px; }
-.sb-item--collapsed { grid-template-columns: 32px; justify-items: center; padding-right: .25rem; }
-.sb-item--active { background: var(--sb-active); color: #7C3AED; font-weight: 600; }
-
-.sb-item .sb-item-leftbar { position: absolute; left: 0; top: 8%; bottom: 8%; width: 3px; border-radius: 2px; background: transparent; box-shadow: none; transition: all 220ms ease; }
-.sb-item--active .sb-item-leftbar { background: linear-gradient(180deg, var(--sb-neon), #6366F1); box-shadow: 0 0 8px rgba(139,92,246,.4); }
-
-.sb-ico { display: grid; place-items: center; color: currentColor; opacity: .92; }
-.sb-label { font-size: .92rem; color: currentColor; white-space: nowrap; }
-
-.sb-count { margin-left: .25rem; background: var(--sb-count-bg); color: var(--sb-count-fg); border-radius: 999px; padding: 0 .45rem; line-height: 1.4; font-size: .72rem; font-weight: 600; }
-.sb-kbd { margin-left: .35rem; font-size: .7rem; color: var(--sb-muted); border: 1px solid var(--sb-border); border-bottom-width: 2px; padding: .05rem .35rem; border-radius: .35rem; }
-
-.sb-spacer { flex: 1 1 auto; }
-.sb-user { display: flex; align-items: center; gap: .6rem; padding: .6rem .75rem .8rem; border-top: 1px solid var(--sb-border); flex-shrink: 0; position: relative; z-index: 11; }
-.sb-user-avatar { flex: 0 0 auto; }
-.sb-user-text { min-width: 0; }
-.sb-user-name { font-size: .9rem; font-weight: 700; color: #1E293B; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sb-user-sub { font-size: .72rem; font-weight: 500; color: var(--sb-muted); }
-
-@media (prefers-reduced-motion: reduce) {
-  .with-sidebar, .ss-sidebar, .sb-item .sb-item-leftbar { transition: none !important; }
-  .ss-sidebar { scroll-behavior: auto; }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
 }
 
-@media (max-width: 1024px) {
-  .ss-sidebar { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .ss-sidebar::-webkit-scrollbar { display: none; }
-  .ss-sidebar::before, .ss-sidebar::after { display: none; }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR TOGGLE BUTTON
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 50;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
+}
+
+.sidebar-toggle:hover {
+  background: #F8FAFC;
+  border-color: #8B5CF6;
+  color: #8B5CF6;
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR OVERLAY (Mobile)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.2);
+  z-index: 35;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT AREA OFFSET
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.main-content {
+  margin-left: 260px;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  /* NO dark borders or backgrounds */
+  background: transparent;
+}
+
+/* Collapsed sidebar state */
+body.sidebar-collapsed .main-content {
+  margin-left: 72px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAVBAR POSITIONING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  height: 64px;
+  z-index: 30;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  transition: left 0.3s ease;
+}
+
+body.sidebar-collapsed .navbar {
+  left: 72px;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    left: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONTENT WRAPPER - No Dark Borders!
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.content-wrapper {
+  padding-top: 64px; /* Account for fixed navbar */
+  min-height: 100vh;
+  /* Explicitly remove any borders */
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR ITEM ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar-item {
+  transition: all 0.2s ease;
+}
+
+.sidebar-item:hover {
+  transform: translateX(2px);
+}
+
+/* Active nav indicator animation */
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #8B5CF6;
+  border-radius: 0 4px 4px 0;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDEBAR LOGO ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.sidebar-logo {
+  transition: all 0.3s ease;
+}
+
+.sidebar-logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   XP RING ANIMATION STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.xp-ring-progress {
+  transition: filter 0.3s ease;
+}
+
+/* Glow effect on ring based on momentum level */
+[data-momentum="3"] .xp-ring-progress,
+[data-momentum="4"] .xp-ring-progress {
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+}
+
+[data-momentum="5"] .xp-ring-progress {
+  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.5)) 
+          drop-shadow(0 0 20px rgba(249, 115, 22, 0.3));
 }

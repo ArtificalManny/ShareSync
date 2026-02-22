@@ -1,13 +1,13 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.0 - "The Gallery Walk" Light Theme
+// SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
 // Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// DESIGN CHANGE: Removed dark: prefixes to enforce unified light theme.
-// ALL FUNCTIONALITY PRESERVED - Only visual classes changed.
-//
-// NO BACKEND CHANGES
+// CHANGES in v5.1:
+// - Removed toggle buttons (>> << arrows) completely per user request
+// - Removed auto-hide indicator wedge
+// - Cleaner minimal header
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 import {
   User as UserIcon,
   Settings,
-  ChevronsLeft,
   Trophy,
   Flame,
   Terminal,
@@ -83,12 +82,11 @@ function resolveAvatarUrl(u) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOMENTUM LEVEL INDICATOR - Light Theme (dark: prefixes removed)
+   MOMENTUM LEVEL INDICATOR - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
 
-  // Light theme colors only
   const levelConfig = {
     0: { icon: null, color: "text-slate-400", bg: "bg-slate-50", label: "Idle" },
     1: { icon: Zap, color: "text-violet-500", bg: "bg-violet-50", label: "Warming" },
@@ -201,9 +199,7 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
         {isFireMode && <div className="absolute inset-0 rounded-full animate-fire-ring" style={{ width: size + 8, height: size + 8, top: -4, left: -4, border: "2px solid rgb(249 115 22 / 0.4)" }} />}
 
         <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
-          {/* Track - Light gray (was dark:stroke-[#27272a]) */}
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
-          {/* Progress - Violet */}
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
         </svg>
 
@@ -257,7 +253,7 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER - Light Theme (ALL functionality preserved)
+   SHIP COUNTER - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
@@ -332,15 +328,10 @@ function HoverTriggerZone({ onHover, onLeave }) {
 
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
-   ALL FUNCTIONALITY PRESERVED:
-   - Auto-hide mode
-   - Collapse/expand
-   - Momentum integration
-   - Flow state awareness
-   - User profile card
-   - Navigation items
-   - Leaderboard
-   - Online indicator
+   v5.1 CHANGES:
+   - REMOVED all toggle buttons (>> << arrows)
+   - REMOVED auto-hide indicator wedge
+   - Clean minimal header
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -348,11 +339,13 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  const [autoHideEnabled, setAutoHideEnabled] = useState(() => {
+  // Auto-hide is now disabled by default and not user-controllable via UI
+  // Users can still toggle via localStorage if they want
+  const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
 
-  const [userCollapsed, setUserCollapsed] = useState(() => {
+  const [userCollapsed] = useState(() => {
     try { return localStorage.getItem(LS_KEY) === "1"; } catch { return false; }
   });
 
@@ -398,20 +391,6 @@ export default function Sidebar({ user }) {
     return () => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); };
   }, []);
 
-  const handleToggle = () => {
-    if (autoHideEnabled) {
-      setAutoHideEnabled(false);
-      setUserCollapsed(false);
-    } else {
-      setUserCollapsed(!userCollapsed);
-    }
-  };
-
-  const handleToggleAutoHide = () => {
-    setAutoHideEnabled(!autoHideEnabled);
-    if (!autoHideEnabled) setUserCollapsed(false);
-  };
-
   const localUser = useMemo(() => getUserFromLocalStorage(), []);
   const effectiveUser = user || localUser;
 
@@ -445,8 +424,8 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4">
+        {/* Header - CLEANED UP: No toggle buttons */}
+        <div className="flex items-center justify-center p-4">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
               <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
@@ -455,16 +434,7 @@ export default function Sidebar({ user }) {
               <span className="text-sm font-bold text-slate-800">ShareSync</span>
             </div>
           )}
-          <div className="flex items-center gap-1">
-            {!collapsed && (
-              <button onClick={handleToggleAutoHide} className={`p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${autoHideEnabled ? "bg-violet-50 text-violet-500" : ""}`} title={autoHideEnabled ? "Disable auto-hide (Instagram mode)" : "Enable auto-hide (Instagram mode)"}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-              </button>
-            )}
-            <button onClick={handleToggle} className={`p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "mx-auto" : ""}`} title={autoHideEnabled ? "Disable auto-hide" : collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-              <ChevronsLeft className={`w-4 h-4 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`} />
-            </button>
-          </div>
+          {/* Toggle buttons REMOVED per user request */}
         </div>
 
         {/* Progress Ring */}
@@ -529,8 +499,7 @@ export default function Sidebar({ user }) {
           </div>
         </div>
 
-        {/* Auto-hide indicator */}
-        {autoHideEnabled && collapsed && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-violet-400 rounded-l-full" />}
+        {/* Auto-hide indicator REMOVED per user request */}
       </aside>
 
       {/* Backdrop for auto-hide */}
