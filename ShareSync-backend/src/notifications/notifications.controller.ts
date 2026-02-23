@@ -1,181 +1,218 @@
 // src/notifications/notifications.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS CONTROLLER: REST API
+// NOTIFICATIONS CONTROLLER: REST API for notification management
+// Phase 9: Complete endpoint coverage
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
+  Body,
   Param,
   Query,
   UseGuards,
   Req,
-  HttpStatus,
   HttpCode,
-  Logger,
+  HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiParam,
-  ApiQuery,
-} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
-import { NotificationQueryDto } from './dto/query-notifications.dto';
-import { NotificationType } from './schemas/notification.schema';
+import { NotificationQueryDto } from './dto/notification.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-@ApiTags('Notifications')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class NotificationsController {
-  private readonly logger = new Logger(NotificationsController.name);
-
   constructor(
     private readonly notificationsService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET /notifications - List notifications for current user
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @Get()
-  @ApiOperation({ summary: 'Get notifications for current user' })
-  @ApiQuery({ name: 'unreadOnly', required: false, type: Boolean })
-  @ApiQuery({ name: 'type', required: false, enum: NotificationType })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'offset', required: false, type: Number })
   async getNotifications(@Req() req: any, @Query() query: NotificationQueryDto) {
-    const result = await this.notificationsService.findByUser(req.user.userId, query);
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const result = await this.notificationsService.findByUser(userId, query);
+
     return {
       success: true,
-      data: result.notifications,
-      meta: {
-        total: result.total,
-        unread: result.unread,
-      },
+      data: result,
     };
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET /notifications/unread-count - Get unread count
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('unread-count')
-  @ApiOperation({ summary: 'Get unread notification count' })
   async getUnreadCount(@Req() req: any) {
-    const count = await this.notificationsService.getUnreadCount(req.user.userId);
-    const byType = await this.notificationsService.getCountByType(req.user.userId);
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const count = await this.notificationsService.getUnreadCount(userId);
 
     return {
       success: true,
-      data: {
-        total: count,
-        byType,
-      },
+      data: { unread: count },
     };
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET /notifications/count-by-type - Get counts grouped by type
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('count-by-type')
+  async getCountByType(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const counts = await this.notificationsService.getCountByType(userId);
+
+    return {
+      success: true,
+      data: counts,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PATCH /notifications/:id/read - Mark single notification as read
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @Patch(':id/read')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark a notification as read' })
-  @ApiParam({ name: 'id', description: 'Notification ID' })
-  async markAsRead(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.userId;
+  async markAsRead(@Req() req: any, @Param('id') notificationId: string) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    await this.notificationsService.markAsRead(notificationId, userId);
 
-    await this.notificationsService.markAsRead(id, userId);
-
-    // Emit read event (gateway listens and pushes realtime if wired)
-    this.eventEmitter.emit('notification.read', { userId, notificationId: id });
-
-    // Emit updated count
-    const unread = await this.notificationsService.getUnreadCount(userId);
-    this.eventEmitter.emit('notification.count', { userId, unread });
-
-    return { success: true };
-  }
-
-  @Patch('read-all')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark all notifications as read' })
-  async markAllAsRead(@Req() req: any) {
-    const userId = req.user.userId;
-
-    const count = await this.notificationsService.markAllAsRead(userId);
-
-    this.eventEmitter.emit('notification.read_all', { userId, markedCount: count });
-
-    // After read-all, unread should be 0 (but we compute to be safe)
-    const unread = await this.notificationsService.getUnreadCount(userId);
-    this.eventEmitter.emit('notification.count', { userId, unread });
+    // Emit event for WebSocket sync
+    this.eventEmitter.emit('notification.read', { userId, notificationId });
 
     return {
       success: true,
-      data: { markedCount: count },
+      message: 'Notification marked as read',
     };
   }
 
-  @Patch(':id/click')
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PATCH /notifications/read-all - Mark all notifications as read
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Patch('read-all')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark a notification as clicked' })
-  @ApiParam({ name: 'id', description: 'Notification ID' })
-  async markAsClicked(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.userId;
+  async markAllAsRead(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const markedCount = await this.notificationsService.markAllAsRead(userId);
 
-    await this.notificationsService.markAsClicked(id, userId);
-
-    // Click implies read in your service; update count
-    const unread = await this.notificationsService.getUnreadCount(userId);
-    this.eventEmitter.emit('notification.count', { userId, unread });
-
-    return { success: true };
-  }
-
-  @Patch(':id/dismiss')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Dismiss a notification' })
-  @ApiParam({ name: 'id', description: 'Notification ID' })
-  async dismiss(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.userId;
-
-    await this.notificationsService.dismiss(id, userId);
-
-    const unread = await this.notificationsService.getUnreadCount(userId);
-    this.eventEmitter.emit('notification.count', { userId, unread });
-
-    return { success: true };
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete a notification' })
-  @ApiParam({ name: 'id', description: 'Notification ID' })
-  async delete(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.userId;
-
-    await this.notificationsService.delete(id, userId);
-
-    this.eventEmitter.emit('notification.deleted', { userId, notificationId: id });
-
-    const unread = await this.notificationsService.getUnreadCount(userId);
-    this.eventEmitter.emit('notification.count', { userId, unread });
-
-    return { success: true };
-  }
-
-  @Delete('read')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete all read notifications' })
-  async deleteAllRead(@Req() req: any) {
-    const userId = req.user.userId;
-
-    const count = await this.notificationsService.deleteAllRead(userId);
-
-    // Deleting read notifications doesn't change unread, but we can still emit count
-    const unread = await this.notificationsService.getUnreadCount(userId);
-    this.eventEmitter.emit('notification.count', { userId, unread });
+    // Emit event for WebSocket sync
+    this.eventEmitter.emit('notification.read_all', { userId, markedCount });
 
     return {
       success: true,
-      data: { deletedCount: count },
+      message: `Marked ${markedCount} notifications as read`,
+      data: { markedCount },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PATCH /notifications/:id/clicked - Mark as clicked (also marks read)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Patch(':id/clicked')
+  @HttpCode(HttpStatus.OK)
+  async markAsClicked(@Req() req: any, @Param('id') notificationId: string) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    await this.notificationsService.markAsClicked(notificationId, userId);
+
+    return {
+      success: true,
+      message: 'Notification marked as clicked',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PATCH /notifications/:id/dismiss - Dismiss notification
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Patch(':id/dismiss')
+  @HttpCode(HttpStatus.OK)
+  async dismiss(@Req() req: any, @Param('id') notificationId: string) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    await this.notificationsService.dismiss(notificationId, userId);
+
+    return {
+      success: true,
+      message: 'Notification dismissed',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DELETE /notifications/:id - Delete single notification
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async delete(@Req() req: any, @Param('id') notificationId: string) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    await this.notificationsService.delete(notificationId, userId);
+
+    // Emit event for WebSocket sync
+    this.eventEmitter.emit('notification.deleted', { userId, notificationId });
+
+    return {
+      success: true,
+      message: 'Notification deleted',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DELETE /notifications/read - Delete all read notifications
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Delete('read')
+  @HttpCode(HttpStatus.OK)
+  async deleteAllRead(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const deletedCount = await this.notificationsService.deleteAllRead(userId);
+
+    return {
+      success: true,
+      message: `Deleted ${deletedCount} read notifications`,
+      data: { deletedCount },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // POST /notifications/test - Create test notification (dev only)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('test')
+  @HttpCode(HttpStatus.CREATED)
+  async createTestNotification(@Req() req: any, @Body() body: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    // Only allow in development
+    if (process.env.NODE_ENV === 'production') {
+      return {
+        success: false,
+        message: 'Test notifications not available in production',
+      };
+    }
+
+    const notification = await this.notificationsService.notify({
+      userId,
+      type: body?.type || 'system',
+      title: body?.title || 'Test Notification',
+      body: body?.body || 'This is a test notification',
+      icon: body?.icon || '🧪',
+      priority: body?.priority || 'normal',
+      data: body?.data || {},
+    });
+
+    return {
+      success: true,
+      data: notification,
     };
   }
 }

@@ -1,0 +1,266 @@
+// src/subscriptions/subscriptions.controller.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUBSCRIPTIONS CONTROLLER - REST API for subscription management
+// Phase 5: Stripe integration endpoints (Stripe optional until configured)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  Headers,
+  RawBodyRequest,
+  BadRequestException,
+  Logger,
+  HttpCode,
+} from '@nestjs/common';
+import { Request } from 'express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { SubscriptionsService, PLAN_CONFIGS } from './subscriptions.service';
+import {
+  CreateCheckoutDto,
+  UpdateBudgetCapDto,
+  UpdateBillingDetailsDto,
+} from './dto';
+
+@ApiTags('Subscriptions')
+@Controller('subscriptions')
+export class SubscriptionsController {
+  private readonly logger = new Logger(SubscriptionsController.name);
+
+  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET CURRENT SUBSCRIPTION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('current')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user subscription' })
+  @ApiResponse({ status: 200, description: 'Returns current subscription' })
+  async getCurrentSubscription(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+    const subscription = await this.subscriptionsService.getOrCreateSubscription(userId);
+
+    return {
+      success: true,
+      data: {
+        plan: subscription.plan,
+        status: subscription.status,
+        billingInterval: subscription.billingInterval,
+        usage: subscription.usage,
+        limits: subscription.limits,
+        currentPeriodStart: subscription.currentPeriodStart,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        cancelAt: subscription.cancelAt,
+        budgetCapCents: subscription.budgetCapCents,
+        budgetCapEnabled: subscription.budgetCapEnabled,
+        activeMembers: subscription.activeMembers,
+      },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET USAGE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('usage')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current usage and limits' })
+  async getUsage(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+    const usageData = await this.subscriptionsService.getUsageAndLimits(userId);
+
+    return {
+      success: true,
+      data: usageData,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET PLANS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('plans')
+  @ApiOperation({ summary: 'Get all available plans' })
+  async getPlans() {
+    return {
+      success: true,
+      data: PLAN_CONFIGS,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CREATE CHECKOUT SESSION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('checkout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create Stripe checkout session' })
+  @ApiResponse({ status: 200, description: 'Returns checkout URL' })
+  async createCheckout(
+    @Req() req: any,
+    @Body() dto: CreateCheckoutDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.subscriptionsService.createCheckoutSession(userId, dto);
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CREATE PORTAL SESSION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('portal')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create Stripe billing portal session' })
+  @ApiResponse({ status: 200, description: 'Returns portal URL' })
+  async createPortal(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.subscriptionsService.createPortalSession(userId);
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CANCEL SUBSCRIPTION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel subscription at period end' })
+  async cancelSubscription(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.subscriptionsService.cancelSubscription(userId);
+
+    return {
+      success: true,
+      message: 'Subscription will be canceled at the end of the billing period',
+      data: result,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RESUME SUBSCRIPTION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('resume')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resume canceled subscription' })
+  async resumeSubscription(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+    await this.subscriptionsService.resumeSubscription(userId);
+
+    return {
+      success: true,
+      message: 'Subscription resumed',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UPDATE BUDGET CAP
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Patch('budget-cap')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update budget cap settings' })
+  async updateBudgetCap(
+    @Req() req: any,
+    @Body() dto: UpdateBudgetCapDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    await this.subscriptionsService.updateBudgetCap(userId, dto);
+
+    return {
+      success: true,
+      message: 'Budget cap updated',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UPDATE BILLING DETAILS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Patch('billing-details')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update billing details' })
+  async updateBillingDetails(
+    @Req() req: any,
+    @Body() dto: UpdateBillingDetailsDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    await this.subscriptionsService.updateBillingDetails(userId, dto);
+
+    return {
+      success: true,
+      message: 'Billing details updated',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STRIPE WEBHOOK
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('webhook')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Stripe webhook handler' })
+  async handleWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
+  ) {
+    // Delegate to service which handles Stripe availability check
+    const result = await this.subscriptionsService.handleWebhookRequest(
+      req.rawBody,
+      signature,
+    );
+
+    return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CHECK LIMIT (internal API for other services)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('check-limit/:resource')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check if resource limit allows action' })
+  async checkLimit(
+    @Req() req: any,
+    @Param('resource') resource: 'projects' | 'storage' | 'aiCalls',
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const result = await this.subscriptionsService.checkLimit(userId, resource);
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+}

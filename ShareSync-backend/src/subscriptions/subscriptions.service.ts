@@ -2,19 +2,18 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SUBSCRIPTIONS SERVICE - Business logic + Stripe integration
 // Phase 5: Fair pricing with $39/month Team plan
+// NOTE: Stripe is OPTIONAL - service works without it for local development
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
   Injectable,
   BadRequestException,
-  NotFoundException,
   Logger,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import Stripe from 'stripe';
 import {
   Subscription,
   SubscriptionDocument,
@@ -31,14 +30,79 @@ import {
 } from './dto';
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// STRIPE TYPE DEFINITIONS (so we don't need the package installed)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Minimal Stripe types for compilation without the stripe package
+interface StripeCustomer {
+  id: string;
+}
+
+interface StripeCheckoutSession {
+  id: string;
+  url: string | null;
+  subscription: string | null;
+  metadata?: Record<string, string>;
+}
+
+interface StripeSubscription {
+  id: string;
+  status: string;
+  current_period_start: number;
+  current_period_end: number;
+  cancel_at: number | null;
+  cancel_at_period_end: boolean;
+  metadata?: Record<string, string>;
+}
+
+interface StripeInvoice {
+  id: string;
+  subscription: string | null;
+}
+
+interface StripeBillingPortalSession {
+  url: string;
+}
+
+interface StripeEvent {
+  type: string;
+  data: {
+    object: any;
+  };
+}
+
+// Stripe client interface
+interface StripeClient {
+  customers: {
+    create: (params: any) => Promise<StripeCustomer>;
+  };
+  checkout: {
+    sessions: {
+      create: (params: any) => Promise<StripeCheckoutSession>;
+    };
+  };
+  subscriptions: {
+    update: (id: string, params: any) => Promise<StripeSubscription>;
+  };
+  billingPortal: {
+    sessions: {
+      create: (params: any) => Promise<StripeBillingPortalSession>;
+    };
+  };
+  webhooks: {
+    constructEvent: (payload: any, signature: string, secret: string) => StripeEvent;
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PLAN CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface PlanConfig {
   name: string;
   description: string;
-  priceMonthly: number; // in cents
-  priceYearly: number;  // in cents
+  priceMonthly: number;
+  priceYearly: number;
   limits: {
     projects: number;
     membersPerProject: number;
@@ -58,7 +122,7 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
     limits: {
       projects: 10,
       membersPerProject: 5,
-      storageBytes: 1 * 1024 * 1024 * 1024, // 1GB
+      storageBytes: 1 * 1024 * 1024 * 1024,
       aiCallsPerMonth: 100,
       maxWorkspaces: 3,
     },
@@ -73,12 +137,12 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
   [SubscriptionPlan.TEAM]: {
     name: 'Team',
     description: 'For serious teams',
-    priceMonthly: 3900, // $39/month
-    priceYearly: 39000, // $390/year (2 months free)
+    priceMonthly: 3900,
+    priceYearly: 39000,
     limits: {
       projects: 50,
       membersPerProject: 25,
-      storageBytes: 10 * 1024 * 1024 * 1024, // 10GB
+      storageBytes: 10 * 1024 * 1024 * 1024,
       aiCallsPerMonth: 1000,
       maxWorkspaces: 10,
     },
@@ -95,12 +159,12 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
   [SubscriptionPlan.ENTERPRISE]: {
     name: 'Enterprise',
     description: 'For large organizations',
-    priceMonthly: 0, // Custom pricing
+    priceMonthly: 0,
     priceYearly: 0,
     limits: {
-      projects: -1, // Unlimited
+      projects: -1,
       membersPerProject: -1,
-      storageBytes: 100 * 1024 * 1024 * 1024, // 100GB
+      storageBytes: 100 * 1024 * 1024 * 1024,
       aiCallsPerMonth: -1,
       maxWorkspaces: -1,
     },
@@ -119,32 +183,57 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
 @Injectable()
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
-  private stripe: Stripe | null = null;
+  private stripe: StripeClient | null = null;
+  private stripeAvailable = false;
 
   constructor(
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     private readonly eventEmitter: EventEmitter2,
   ) {
-    // Initialize Stripe if key is available
+    this.initializeStripe();
+  }
+
+  /**
+   * Initialize Stripe if available
+   */
+  private async initializeStripe(): Promise<void> {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (stripeKey) {
-      this.stripe = new Stripe(stripeKey, {
-        apiVersion: '2023-10-16',
-      });
-      this.logger.log('Stripe initialized successfully');
-    } else {
-      this.logger.warn('STRIPE_SECRET_KEY not set - payment features disabled');
+    
+    if (!stripeKey) {
+      this.logger.warn('STRIPE_SECRET_KEY not set - payment features disabled. This is OK for development.');
+      return;
     }
+
+    try {
+      // Dynamically import Stripe only if key is available
+      const Stripe = await import('stripe').catch(() => null);
+      
+      if (Stripe) {
+        this.stripe = new Stripe.default(stripeKey, {
+          apiVersion: '2023-10-16',
+        }) as unknown as StripeClient;
+        this.stripeAvailable = true;
+        this.logger.log('Stripe initialized successfully');
+      } else {
+        this.logger.warn('Stripe package not installed - payment features disabled');
+      }
+    } catch (error) {
+      this.logger.warn('Failed to initialize Stripe - payment features disabled:', error);
+    }
+  }
+
+  /**
+   * Check if Stripe is available
+   */
+  isStripeAvailable(): boolean {
+    return this.stripeAvailable && this.stripe !== null;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SUBSCRIPTION MANAGEMENT
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Get or create a subscription for a user
-   */
   async getOrCreateSubscription(userId: string): Promise<SubscriptionDocument> {
     let subscription = await this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId),
@@ -174,25 +263,16 @@ export class SubscriptionsService {
     return subscription;
   }
 
-  /**
-   * Get subscription by user ID
-   */
   async getByUserId(userId: string): Promise<SubscriptionDocument | null> {
     return this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId),
     });
   }
 
-  /**
-   * Get subscription by Stripe customer ID
-   */
   async getByStripeCustomerId(customerId: string): Promise<SubscriptionDocument | null> {
     return this.subscriptionModel.findOne({ stripeCustomerId: customerId });
   }
 
-  /**
-   * Get subscription by Stripe subscription ID
-   */
   async getByStripeSubscriptionId(subscriptionId: string): Promise<SubscriptionDocument | null> {
     return this.subscriptionModel.findOne({ stripeSubscriptionId: subscriptionId });
   }
@@ -201,9 +281,6 @@ export class SubscriptionsService {
   // USAGE & LIMITS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Check if a resource usage is within limits
-   */
   async checkLimit(
     userId: string,
     resource: 'projects' | 'storage' | 'aiCalls',
@@ -231,16 +308,12 @@ export class SubscriptionsService {
         throw new BadRequestException(`Unknown resource: ${resource}`);
     }
 
-    // -1 means unlimited
     const allowed = limit === -1 || (current + amount) <= limit;
     const remaining = limit === -1 ? Infinity : Math.max(0, limit - current);
 
     return { allowed, current, limit, remaining };
   }
 
-  /**
-   * Increment usage for a resource
-   */
   async incrementUsage(
     userId: string,
     resource: 'projects' | 'storage' | 'aiCalls',
@@ -257,9 +330,6 @@ export class SubscriptionsService {
     );
   }
 
-  /**
-   * Decrement usage for a resource
-   */
   async decrementUsage(
     userId: string,
     resource: 'projects' | 'storage',
@@ -271,9 +341,6 @@ export class SubscriptionsService {
     );
   }
 
-  /**
-   * Reset monthly AI call usage
-   */
   async resetMonthlyAiCalls(userId: string): Promise<void> {
     await this.subscriptionModel.updateOne(
       { userId: new Types.ObjectId(userId) },
@@ -286,9 +353,6 @@ export class SubscriptionsService {
     );
   }
 
-  /**
-   * Get current usage and limits
-   */
   async getUsageAndLimits(userId: string): Promise<{
     usage: SubscriptionDocument['usage'];
     limits: SubscriptionDocument['limits'];
@@ -306,26 +370,24 @@ export class SubscriptionsService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // STRIPE CHECKOUT
+  // STRIPE CHECKOUT (requires Stripe)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Create a Stripe checkout session for upgrading
-   */
   async createCheckoutSession(
     userId: string,
     dto: CreateCheckoutDto,
   ): Promise<{ url: string; sessionId: string }> {
-    if (!this.stripe) {
-      throw new InternalServerErrorException('Payment system not configured');
+    if (!this.isStripeAvailable()) {
+      throw new InternalServerErrorException(
+        'Payment system not configured. Please set STRIPE_SECRET_KEY and install the stripe package.',
+      );
     }
 
     const subscription = await this.getOrCreateSubscription(userId);
 
-    // Create or get Stripe customer
     let customerId = subscription.stripeCustomerId;
     if (!customerId) {
-      const customer = await this.stripe.customers.create({
+      const customer = await this.stripe!.customers.create({
         metadata: {
           userId,
           shareSync: 'true',
@@ -339,19 +401,16 @@ export class SubscriptionsService {
       );
     }
 
-    // Get price ID based on plan and interval
     const priceId = this.getPriceId(dto.plan, dto.interval || CheckoutInterval.MONTHLY);
     if (!priceId) {
       throw new BadRequestException(`No price configured for plan: ${dto.plan}`);
     }
 
-    // Build URLs
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const successUrl = dto.successUrl || `${frontendUrl}/settings?subscription=success`;
     const cancelUrl = dto.cancelUrl || `${frontendUrl}/settings?subscription=canceled`;
 
-    // Create checkout session
-    const session = await this.stripe.checkout.sessions.create({
+    const session = await this.stripe!.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       line_items: [
@@ -388,11 +447,8 @@ export class SubscriptionsService {
     };
   }
 
-  /**
-   * Create a billing portal session for managing subscription
-   */
   async createPortalSession(userId: string): Promise<{ url: string }> {
-    if (!this.stripe) {
+    if (!this.isStripeAvailable()) {
       throw new InternalServerErrorException('Payment system not configured');
     }
 
@@ -404,7 +460,7 @@ export class SubscriptionsService {
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-    const session = await this.stripe.billingPortal.sessions.create({
+    const session = await this.stripe!.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
       return_url: `${frontendUrl}/settings`,
     });
@@ -412,11 +468,8 @@ export class SubscriptionsService {
     return { url: session.url };
   }
 
-  /**
-   * Cancel subscription at period end
-   */
   async cancelSubscription(userId: string): Promise<{ cancelAt: Date | null }> {
-    if (!this.stripe) {
+    if (!this.isStripeAvailable()) {
       throw new InternalServerErrorException('Payment system not configured');
     }
 
@@ -426,7 +479,7 @@ export class SubscriptionsService {
       throw new BadRequestException('No active subscription to cancel');
     }
 
-    const stripeSubscription = await this.stripe.subscriptions.update(
+    const stripeSubscription = await this.stripe!.subscriptions.update(
       subscription.stripeSubscriptionId,
       { cancel_at_period_end: true },
     );
@@ -445,11 +498,8 @@ export class SubscriptionsService {
     return { cancelAt };
   }
 
-  /**
-   * Resume a canceled subscription
-   */
   async resumeSubscription(userId: string): Promise<void> {
-    if (!this.stripe) {
+    if (!this.isStripeAvailable()) {
       throw new InternalServerErrorException('Payment system not configured');
     }
 
@@ -459,7 +509,7 @@ export class SubscriptionsService {
       throw new BadRequestException('No subscription to resume');
     }
 
-    await this.stripe.subscriptions.update(
+    await this.stripe!.subscriptions.update(
       subscription.stripeSubscriptionId,
       { cancel_at_period_end: false },
     );
@@ -477,51 +527,90 @@ export class SubscriptionsService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Handle Stripe webhook events
+   * Handle webhook request from controller
    */
-  async handleWebhook(event: Stripe.Event): Promise<void> {
+  async handleWebhookRequest(
+    rawBody: Buffer | undefined,
+    signature: string,
+  ): Promise<{ received: boolean }> {
+    if (!this.isStripeAvailable()) {
+      this.logger.warn('Webhook received but Stripe not configured');
+      return { received: true };
+    }
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      this.logger.error('STRIPE_WEBHOOK_SECRET not configured');
+      throw new BadRequestException('Webhook not configured');
+    }
+
+    if (!signature) {
+      throw new BadRequestException('Missing stripe-signature header');
+    }
+
+    if (!rawBody) {
+      throw new BadRequestException('Missing request body');
+    }
+
+    let event: StripeEvent;
+
+    try {
+      event = this.stripe!.webhooks.constructEvent(
+        rawBody,
+        signature,
+        webhookSecret,
+      );
+    } catch (err: any) {
+      this.logger.error(`Webhook signature verification failed: ${err.message}`);
+      throw new BadRequestException(`Webhook Error: ${err.message}`);
+    }
+
+    await this.handleWebhook(event);
+
+    return { received: true };
+  }
+
+  /**
+   * Process Stripe webhook event
+   */
+  async handleWebhook(event: StripeEvent): Promise<void> {
     this.logger.log(`Processing webhook: ${event.type}`);
 
     try {
       switch (event.type) {
-        // Checkout completed - activate subscription
         case 'checkout.session.completed': {
-          const session = event.data.object as Stripe.Checkout.Session;
+          const session = event.data.object as StripeCheckoutSession;
           await this.handleCheckoutCompleted(session);
           break;
         }
 
-        // Subscription created
         case 'customer.subscription.created': {
-          const subscription = event.data.object as Stripe.Subscription;
-          await this.handleSubscriptionCreated(subscription);
+          const subscription = event.data.object as StripeSubscription;
+          this.logger.log(`Subscription created: ${subscription.id}`);
           break;
         }
 
-        // Subscription updated
         case 'customer.subscription.updated': {
-          const subscription = event.data.object as Stripe.Subscription;
+          const subscription = event.data.object as StripeSubscription;
           await this.handleSubscriptionUpdated(subscription);
           break;
         }
 
-        // Subscription deleted/canceled
         case 'customer.subscription.deleted': {
-          const subscription = event.data.object as Stripe.Subscription;
+          const subscription = event.data.object as StripeSubscription;
           await this.handleSubscriptionDeleted(subscription);
           break;
         }
 
-        // Invoice paid - renewal successful
         case 'invoice.paid': {
-          const invoice = event.data.object as Stripe.Invoice;
+          const invoice = event.data.object as StripeInvoice;
           await this.handleInvoicePaid(invoice);
           break;
         }
 
-        // Invoice payment failed
         case 'invoice.payment_failed': {
-          const invoice = event.data.object as Stripe.Invoice;
+          const invoice = event.data.object as StripeInvoice;
           await this.handleInvoicePaymentFailed(invoice);
           break;
         }
@@ -535,7 +624,7 @@ export class SubscriptionsService {
     }
   }
 
-  private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  private async handleCheckoutCompleted(session: StripeCheckoutSession): Promise<void> {
     const userId = session.metadata?.userId;
     const plan = session.metadata?.plan as CheckoutPlan;
     const interval = session.metadata?.interval as CheckoutInterval;
@@ -545,7 +634,6 @@ export class SubscriptionsService {
       return;
     }
 
-    // Map checkout plan to subscription plan
     const subscriptionPlan = plan === CheckoutPlan.TEAM
       ? SubscriptionPlan.TEAM
       : SubscriptionPlan.ENTERPRISE;
@@ -562,19 +650,13 @@ export class SubscriptionsService {
     );
   }
 
-  private async handleSubscriptionCreated(stripeSubscription: Stripe.Subscription): Promise<void> {
-    // Subscription created - usually handled by checkout.session.completed
-    this.logger.log(`Subscription created: ${stripeSubscription.id}`);
-  }
-
-  private async handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionUpdated(stripeSubscription: StripeSubscription): Promise<void> {
     const subscription = await this.getByStripeSubscriptionId(stripeSubscription.id);
     if (!subscription) {
       this.logger.warn(`No subscription found for Stripe ID: ${stripeSubscription.id}`);
       return;
     }
 
-    // Map Stripe status to our status
     let status: SubscriptionStatus;
     switch (stripeSubscription.status) {
       case 'active':
@@ -618,14 +700,13 @@ export class SubscriptionsService {
     );
   }
 
-  private async handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription): Promise<void> {
+  private async handleSubscriptionDeleted(stripeSubscription: StripeSubscription): Promise<void> {
     const subscription = await this.getByStripeSubscriptionId(stripeSubscription.id);
     if (!subscription) {
       this.logger.warn(`No subscription found for Stripe ID: ${stripeSubscription.id}`);
       return;
     }
 
-    // Downgrade to free
     const freeLimits = PLAN_CONFIGS[SubscriptionPlan.FREE].limits;
 
     await this.subscriptionModel.updateOne(
@@ -653,13 +734,12 @@ export class SubscriptionsService {
     this.logger.log(`Subscription ${stripeSubscription.id} canceled and downgraded to free`);
   }
 
-  private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaid(invoice: StripeInvoice): Promise<void> {
     if (!invoice.subscription) return;
 
-    const subscription = await this.getByStripeSubscriptionId(invoice.subscription as string);
+    const subscription = await this.getByStripeSubscriptionId(invoice.subscription);
     if (!subscription) return;
 
-    // Ensure status is active
     await this.subscriptionModel.updateOne(
       { _id: subscription._id },
       { status: SubscriptionStatus.ACTIVE },
@@ -668,10 +748,10 @@ export class SubscriptionsService {
     this.logger.log(`Invoice paid for subscription ${invoice.subscription}`);
   }
 
-  private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaymentFailed(invoice: StripeInvoice): Promise<void> {
     if (!invoice.subscription) return;
 
-    const subscription = await this.getByStripeSubscriptionId(invoice.subscription as string);
+    const subscription = await this.getByStripeSubscriptionId(invoice.subscription);
     if (!subscription) return;
 
     await this.subscriptionModel.updateOne(
@@ -691,9 +771,6 @@ export class SubscriptionsService {
   // BUDGET CAP
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Update budget cap settings
-   */
   async updateBudgetCap(userId: string, dto: UpdateBudgetCapDto): Promise<void> {
     const update: any = {};
 
@@ -711,9 +788,6 @@ export class SubscriptionsService {
     );
   }
 
-  /**
-   * Update billing details
-   */
   async updateBillingDetails(userId: string, dto: UpdateBillingDetailsDto): Promise<void> {
     const update: any = {};
 
@@ -733,16 +807,10 @@ export class SubscriptionsService {
   // PLAN INFO
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /**
-   * Get plan configuration
-   */
   getPlanConfig(plan: SubscriptionPlan): PlanConfig {
     return PLAN_CONFIGS[plan];
   }
 
-  /**
-   * Get all plan configurations
-   */
   getAllPlanConfigs(): Record<SubscriptionPlan, PlanConfig> {
     return PLAN_CONFIGS;
   }
@@ -752,7 +820,6 @@ export class SubscriptionsService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   private getPriceId(plan: CheckoutPlan, interval: CheckoutInterval): string | null {
-    // Price IDs from Stripe Dashboard - set via environment variables
     const priceIds: Record<string, string | undefined> = {
       'team_monthly': process.env.STRIPE_TEAM_MONTHLY_PRICE_ID,
       'team_yearly': process.env.STRIPE_TEAM_YEARLY_PRICE_ID,

@@ -1,133 +1,103 @@
-import { Injectable } from '@nestjs/common';
+// src/notifications/sms.service.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMS SERVICE: Phone verification and SMS notifications
+// Phase 9: Stub implementation - integrate with Twilio/SNS when ready
+// ═══════════════════════════════════════════════════════════════════════════════
 
-type TwilioClient = {
-  messages: {
-    create: (args: { body: string; from?: string; to: string }) => Promise<any>;
-  };
-};
-
-type SmsChannelState = {
-  verified?: boolean;
-  optIn?: boolean;
-  phoneNumber?: string;
-};
-
-type UserLike = {
-  phoneNumber?: string;
-  notificationChannels?: {
-    sms?: SmsChannelState;
-  };
-  notificationPrefs?: {
-    channels?: {
-      sms?: boolean;
-    };
-  };
-};
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class SmsService {
-  private client?: TwilioClient;
+  private readonly logger = new Logger(SmsService.name);
+  private readonly enabled: boolean;
 
   constructor() {
+    // Check if SMS is configured
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-    if (accountSid && authToken) {
-      try {
-        // Optional dependency: won't break build if twilio isn't installed yet
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const twilio = require('twilio');
-        this.client = twilio(accountSid, authToken);
-      } catch (_err) {
-        // Intentionally silent-ish: SMS remains disabled
-        console.warn('Twilio package not installed - SMS notifications disabled');
-        this.client = undefined;
-      }
+    this.enabled = Boolean(accountSid && authToken && fromNumber);
+
+    if (!this.enabled) {
+      this.logger.warn('SMS not configured (TWILIO_* env vars missing) - SMS features disabled');
     }
   }
 
   /**
-   * PHASE 4 RULE:
-   * - No SMS until user has verified + opted in
-   * - Keep in-app as primary; SMS is best-effort + gated
+   * Send verification code to phone number
+   * Returns the code that was sent (for verification)
    */
-  async sendNotification(user: UserLike, notification: any): Promise<void> {
-    const to = this.resolvePhone(user);
+  async verifyPhoneNumber(phoneNumber: string): Promise<string> {
+    const code = this.generateCode6();
 
-    // If no phone, or not verified/opted-in, do nothing (SAFE)
-    if (!to || !this.isSmsAllowed(user)) return;
+    if (!this.enabled) {
+      this.logger.warn(`[DEV] SMS disabled - verification code for ${phoneNumber}: ${code}`);
+      return code;
+    }
 
-    if (!this.client) {
-      // Not configured -> silently skip
-      console.warn('Twilio not configured - SMS notification skipped');
+    try {
+      await this.sendSms(phoneNumber, `Your ShareSync verification code is: ${code}`);
+      return code;
+    } catch (error) {
+      this.logger.error('Failed to send SMS verification:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send an SMS notification
+   */
+  async sendNotification(phoneNumber: string, message: string): Promise<boolean> {
+    if (!this.enabled) {
+      this.logger.warn(`[DEV] SMS disabled - would send to ${phoneNumber}: ${message}`);
+      return false;
+    }
+
+    try {
+      await this.sendSms(phoneNumber, message);
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to send SMS notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Internal: Send SMS via Twilio (or other provider)
+   */
+  private async sendSms(to: string, body: string): Promise<void> {
+    // Twilio integration
+    let twilio: any;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      twilio = require('twilio');
+    } catch {
+      this.logger.warn('Twilio package not installed - SMS sending skipped');
       return;
     }
 
-    const message = `${this.getEmojiForType(notification?.type)} ${notification?.title || 'Update'}\n${notification?.message || ''}`.trim();
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-    try {
-      await this.client.messages.create({
-        body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to,
-      });
-    } catch (error) {
-      console.error('Failed to send SMS:', error);
-    }
-  }
-
-  /**
-   * Verification send (code generation).
-   * Note: storing/validating the code is handled elsewhere in Phase 4 (controller/service).
-   */
-  async verifyPhoneNumber(phoneNumber: string): Promise<string> {
-    if (!this.client) {
-      throw new Error('Twilio not configured');
+    if (!accountSid || !authToken || !fromNumber) {
+      this.logger.warn('Twilio credentials not configured');
+      return;
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const client = twilio(accountSid, authToken);
 
-    await this.client.messages.create({
-      body: `Your ShareSync verification code is: ${code}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+    await client.messages.create({
+      body,
+      from: fromNumber,
+      to,
     });
 
-    return code;
+    this.logger.log(`SMS sent to ${to}`);
   }
 
-  private resolvePhone(user: UserLike): string | null {
-    const p =
-      user?.notificationChannels?.sms?.phoneNumber ||
-      user?.phoneNumber ||
-      null;
-
-    if (!p) return null;
-    return String(p).trim();
-  }
-
-  private isSmsAllowed(user: UserLike): boolean {
-    const verified = Boolean(user?.notificationChannels?.sms?.verified);
-    const optIn = Boolean(user?.notificationChannels?.sms?.optIn);
-
-    // Optional global/channel prefs (default false if undefined to be strict)
-    const channelEnabled = user?.notificationPrefs?.channels?.sms;
-    const channelOk = channelEnabled === undefined ? true : Boolean(channelEnabled);
-
-    return verified && optIn && channelOk;
-  }
-
-  private getEmojiForType(type: string): string {
-    const emojiMap: Record<string, string> = {
-      mention: '@',
-      deadline_reminder: '⏰',
-      announcement_created: '📢',
-      task_assigned: '📋',
-      file_uploaded: '📎',
-      comment_added: '💬',
-      project_invite: '👋',
-      follow_created: '⭐',
-    };
-    return emojiMap[type] || '🔔';
+  private generateCode6(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
   }
 }

@@ -1,10 +1,10 @@
 // src/subscriptions/index.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// Export all subscription components
+// Export subscription components
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export * from './subscriptions.module';
-export * from './subscriptions.service';
-export * from './subscriptions.controller';
+export { SubscriptionsModule } from './subscriptions.module';
+export { SubscriptionsService, PLAN_CONFIGS } from './subscriptions.service';
+export { SubscriptionsController } from './subscriptions.controller';
 export * from './schemas/subscription.schema';
 export * from './dto';

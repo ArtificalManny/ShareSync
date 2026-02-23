@@ -1,6 +1,7 @@
 // src/projects/schemas/project.schema.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT SCHEMA - MongoDB/Mongoose schema for projects
+// Phase 4: Includes invites support for invites.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
@@ -22,8 +23,8 @@ export enum ProjectStatus {
 export enum ProjectVisibility {
   PRIVATE = 'private',
   PUBLIC = 'public',
-  LISTED = 'listed',      // Public + appears in Discover
-  TEAM = 'team',          // Visible to team/org members only
+  LISTED = 'listed',
+  TEAM = 'team',
 }
 
 export enum MemberRole {
@@ -32,6 +33,16 @@ export enum MemberRole {
   MEMBER = 'member',
   VIEWER = 'viewer',
   GUEST = 'guest',
+}
+
+// Alias for invites.service.ts compatibility
+export type ProjectRole = MemberRole;
+
+export enum InviteStatus {
+  PENDING = 'pending',
+  ACCEPTED = 'accepted',
+  REVOKED = 'revoked',
+  EXPIRED = 'expired',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,6 +73,43 @@ export class ProjectMember {
 
 export const ProjectMemberSchema = SchemaFactory.createForClass(ProjectMember);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROJECT INVITE SCHEMA (for invites.service.ts)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Schema({ _id: false })
+export class ProjectInvite {
+  @Prop({ type: String, required: true })
+  email: string;
+
+  @Prop({ type: String, enum: MemberRole, default: MemberRole.MEMBER })
+  role: MemberRole;
+
+  @Prop({ type: String, required: true })
+  token: string;
+
+  @Prop({ type: String, enum: InviteStatus, default: InviteStatus.PENDING })
+  status: InviteStatus | 'pending' | 'accepted' | 'revoked' | 'expired';
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  invitedBy?: Types.ObjectId;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date })
+  expiresAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  acceptedByUserId?: Types.ObjectId;
+}
+
+export const ProjectInviteSchema = SchemaFactory.createForClass(ProjectInvite);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROJECT METRICS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 @Schema({ _id: false })
 export class ProjectMetrics {
   @Prop({ type: Number, default: 0 })
@@ -91,7 +139,6 @@ export class ProjectMetrics {
   @Prop({ type: Types.ObjectId, ref: 'Sprint', default: null })
   activeSprintId?: Types.ObjectId;
 
-  // Phase 4: Discover metrics
   @Prop({ type: Number, default: 0 })
   totalShips: number;
 
@@ -106,6 +153,10 @@ export class ProjectMetrics {
 }
 
 export const ProjectMetricsSchema = SchemaFactory.createForClass(ProjectMetrics);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROJECT SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @Schema({ _id: false })
 export class ProjectSettings {
@@ -136,7 +187,6 @@ export class ProjectSettings {
   @Prop({ type: [String], default: ['low', 'medium', 'high', 'critical'] })
   taskPriorities?: string[];
 
-  // Visibility settings
   @Prop({ type: Boolean, default: false })
   isPublic?: boolean;
 
@@ -145,6 +195,10 @@ export class ProjectSettings {
 }
 
 export const ProjectSettingsSchema = SchemaFactory.createForClass(ProjectSettings);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROJECT GOAL
+// ═══════════════════════════════════════════════════════════════════════════════
 
 @Schema({ _id: false })
 export class ProjectGoal {
@@ -233,12 +287,18 @@ export class Project {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   ownerId: Types.ObjectId;
 
-  // Legacy field - some older code uses 'owner' instead of 'ownerId'
   @Prop({ type: Types.ObjectId, ref: 'User', index: true })
   owner?: Types.ObjectId;
 
   @Prop({ type: [ProjectMemberSchema], default: [] })
   members: ProjectMember[];
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // INVITES (for invites.service.ts)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Prop({ type: [ProjectInviteSchema], default: [] })
+  invites: ProjectInvite[];
 
   // ─────────────────────────────────────────────────────────────────────────────
   // NESTED OBJECTS
@@ -300,16 +360,12 @@ export const ProjectSchema = SchemaFactory.createForClass(Project);
 // INDEXES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Text search index
 ProjectSchema.index({ name: 'text', description: 'text', tags: 'text' });
-
-// Common query patterns
 ProjectSchema.index({ ownerId: 1, status: 1 });
 ProjectSchema.index({ 'members.userId': 1 });
 ProjectSchema.index({ visibility: 1, 'settings.isListed': 1 });
 ProjectSchema.index({ status: 1, updatedAt: -1 });
 ProjectSchema.index({ trendingScore: -1, updatedAt: -1 });
 ProjectSchema.index({ streakDays: -1 });
-
-// Public token lookup
 ProjectSchema.index({ publicToken: 1 }, { sparse: true });
+ProjectSchema.index({ 'invites.token': 1 }, { sparse: true });

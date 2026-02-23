@@ -1,26 +1,64 @@
 // src/notifications/notifications.module.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS MODULE: wiring for REST + Gateway
-// Fixes boot crash: provides JwtService to NotificationsGateway via JwtModule.
-// Also registers mongoose schema + exports NotificationsService.
+// NOTIFICATIONS MODULE: Complete wiring for REST + Gateway + Channels
+// Phase 9: Full notification system with email/SMS verification
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
+// Controllers
 import { NotificationsController } from './notifications.controller';
+import { NotificationChannelsController } from './notification-channels.controller';
+
+// Services
 import { NotificationsService } from './notifications.service';
+import { NotificationChannelsService } from './notification-channels.service';
+import { EmailService } from './email.service';
+import { SmsService } from './sms.service';
+import { NotificationPolicy } from './notification-policy';
+
+// Gateway
 import { NotificationsGateway } from './notifications.gateway';
+
+// Schemas
 import { Notification, NotificationSchema } from './schemas/notification.schema';
+import {
+  NotificationVerification,
+  NotificationVerificationSchema,
+} from './schemas/notification-verification.schema';
+
+// User schema (for channel verification)
+import { User, UserSchema } from '../user/schemas/user.schema';
+
+// Optional: Project Follow schema (for follower notifications)
+// Import conditionally to avoid circular dependency issues
+let ProjectFollowImport: any = null;
+try {
+  const followModule = require('../follows/schemas/project-follow.schema');
+  ProjectFollowImport = {
+    name: followModule.ProjectFollow?.name || 'ProjectFollow',
+    schema: followModule.ProjectFollowSchema,
+  };
+} catch (e) {
+  // ProjectFollow not available, follower notifications will be disabled
+}
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Notification.name, schema: NotificationSchema }]),
+    // Core schemas
+    MongooseModule.forFeature([
+      { name: Notification.name, schema: NotificationSchema },
+      { name: NotificationVerification.name, schema: NotificationVerificationSchema },
+      { name: User.name, schema: UserSchema },
+      // Conditionally include ProjectFollow if available
+      ...(ProjectFollowImport ? [ProjectFollowImport] : []),
+    ]),
 
-    // Provide JwtService in this module context for NotificationsGateway
-    // IMPORTANT: Secret must match whatever your auth tokens are signed with.
+    // JWT for WebSocket authentication
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,14 +73,31 @@ import { Notification, NotificationSchema } from './schemas/notification.schema'
 
         return {
           secret,
-          // verify() does not require signOptions, but harmless to include
           signOptions: { expiresIn: '7d' },
         };
       },
     }),
+
+    // Event emitter for internal events
+    EventEmitterModule.forRoot(),
   ],
-  controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsGateway],
-  exports: [NotificationsService],
+  controllers: [
+    NotificationsController,
+    NotificationChannelsController,
+  ],
+  providers: [
+    NotificationsService,
+    NotificationsGateway,
+    NotificationChannelsService,
+    EmailService,
+    SmsService,
+    NotificationPolicy,
+  ],
+  exports: [
+    NotificationsService,
+    NotificationsGateway,
+    EmailService,
+    NotificationPolicy,
+  ],
 })
 export class NotificationsModule {}
