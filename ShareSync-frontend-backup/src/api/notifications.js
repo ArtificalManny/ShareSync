@@ -1,135 +1,236 @@
-import axios from 'axios';
+// src/api/notifications.js
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS API - Frontend client for notification endpoints
+// Phase 9: Complete notification system
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// ──────────────────────────────────────────────────────────────
-// Notifications API (frontend-safe)
-// - Keeps your existing exports (no breaking changes)
-// - Adds Step 5 aliases:
-//   fetchNotifications(), markNotificationRead(), markAllRead(), fetchUnreadCount()
-// - Adds: listNotifications({limit, unreadOnly})
-// - Makes baseURL tolerant if VITE_API_URL already includes "/api"
-// ──────────────────────────────────────────────────────────────
+import api from './client';
 
-function normalizeBaseURL(raw) {
-  const base = (raw || '').replace(/\/$/, '');
-  if (!base) return 'http://localhost:5050/api';
+/**
+ * Fetch notifications for current user
+ * @param {Object} options - Query options
+ * @param {number} options.limit - Max notifications to fetch
+ * @param {number} options.offset - Pagination offset
+ * @param {boolean} options.unreadOnly - Only fetch unread
+ * @param {string} options.type - Filter by notification type
+ */
+export async function fetchNotifications(options = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (options.limit) params.append('limit', String(options.limit));
+    if (options.offset) params.append('offset', String(options.offset));
+    if (options.unreadOnly) params.append('unreadOnly', 'true');
+    if (options.type) params.append('type', options.type);
 
-  // If env already ends with /api, keep it; otherwise append /api
-  if (base.endsWith('/api')) return base;
-  return `${base}/api`;
+    const query = params.toString();
+    const url = `/api/notifications${query ? `?${query}` : ''}`;
+    
+    const response = await api.get(url);
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] fetchNotifications error:', error);
+    throw error;
+  }
 }
 
-// Expect VITE_API_URL like: http://localhost:5050 OR http://localhost:5050/api
-const API_URL = normalizeBaseURL(import.meta.env.VITE_API_URL);
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Attach Bearer token if present (matches your AuthContext style)
-api.interceptors.request.use((config) => {
-  const token =
-    localStorage.getItem('authToken') ||
-    localStorage.getItem('accessToken') ||
-    localStorage.getItem('token');
-
-  if (token && !config.headers?.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
+/**
+ * Get unread notification count
+ */
+export async function fetchUnreadCount() {
+  try {
+    const response = await api.get('/api/notifications/unread-count');
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] fetchUnreadCount error:', error);
+    throw error;
   }
-  return config;
-});
-
-// ──────────────────────────────────────────────────────────────
-// NEW: tolerant list function used by NotificationCenter / Dropdown
-// ──────────────────────────────────────────────────────────────
-export const listNotifications = async ({ limit = 25, unreadOnly = false } = {}) => {
-  const response = await api.get(`/notifications`, {
-    params: { limit, unreadOnly },
-  });
-  return response.data;
-};
-
-// ──────────────────────────────────────────────────────────────
-// NEW: unread count helper (if your backend supports it)
-// If the route doesn't exist yet, this will throw and caller can fall back.
-// Typical route: GET /notifications/unread-count
-// ──────────────────────────────────────────────────────────────
-export const getUnreadCount = async () => {
-  const response = await api.get(`/notifications/unread-count`);
-  return response.data;
-};
-
-// ──────────────────────────────────────────────────────────────
-// Existing exports (kept)
-// ──────────────────────────────────────────────────────────────
-
-export const getNotifications = async (unreadOnly = false) => {
-  const response = await api.get(`/notifications`, {
-    params: { unreadOnly },
-  });
-  return response.data;
-};
-
-export const markNotificationAsRead = async (notificationId) => {
-  const response = await api.patch(`/notifications/${notificationId}/read`);
-  return response.data;
-};
-
-export const markAllNotificationsAsRead = async () => {
-  const response = await api.patch(`/notifications/read-all`);
-  return response.data;
-};
-
-export const deleteNotification = async (notificationId) => {
-  const response = await api.delete(`/notifications/${notificationId}`);
-  return response.data;
-};
-
-export const updateNotificationSettings = async (settings) => {
-  const response = await api.patch(`/users/me/notification-settings`, settings);
-  return response.data;
-};
-
-export const updatePhoneNumber = async (phoneNumber) => {
-  const response = await api.patch(`/users/me/phone`, { phoneNumber });
-  return response.data;
-};
-
-// ──────────────────────────────────────────────────────────────
-// Step 5 — New helper names (aliases)
-// These are intentionally thin wrappers around your existing exports.
-// No breaking changes for any current imports.
-// ──────────────────────────────────────────────────────────────
+}
 
 /**
- * fetchNotifications({ limit, unreadOnly })
- * Returns whatever the backend returns (commonly: { notifications, total, unread }).
+ * Get notification count grouped by type
  */
-export const fetchNotifications = async ({ limit = 25, unreadOnly = false } = {}) => {
-  return listNotifications({ limit, unreadOnly });
-};
+export async function fetchCountByType() {
+  try {
+    const response = await api.get('/api/notifications/count-by-type');
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] fetchCountByType error:', error);
+    throw error;
+  }
+}
 
 /**
- * markNotificationRead(id)
+ * Mark a single notification as read
+ * @param {string} notificationId 
  */
-export const markNotificationRead = async (id) => {
-  return markNotificationAsRead(id);
-};
+export async function markAsRead(notificationId) {
+  try {
+    const response = await api.patch(`/api/notifications/${notificationId}/read`);
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] markAsRead error:', error);
+    throw error;
+  }
+}
 
 /**
- * markAllRead()
+ * Mark all notifications as read
  */
-export const markAllRead = async () => {
-  return markAllNotificationsAsRead();
-};
+export async function markAllAsRead() {
+  try {
+    const response = await api.patch('/api/notifications/read-all');
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] markAllAsRead error:', error);
+    throw error;
+  }
+}
 
 /**
- * fetchUnreadCount()
- * Uses /notifications/unread-count when available.
- * If your backend returns { unread: number } or { count: number }, caller handles it.
+ * Mark a notification as clicked (also marks as read)
+ * @param {string} notificationId 
  */
-export const fetchUnreadCount = async () => {
-  return getUnreadCount();
+export async function markAsClicked(notificationId) {
+  try {
+    const response = await api.patch(`/api/notifications/${notificationId}/clicked`);
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] markAsClicked error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Dismiss a notification
+ * @param {string} notificationId 
+ */
+export async function dismissNotification(notificationId) {
+  try {
+    const response = await api.patch(`/api/notifications/${notificationId}/dismiss`);
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] dismissNotification error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a notification
+ * @param {string} notificationId 
+ */
+export async function deleteNotification(notificationId) {
+  try {
+    const response = await api.delete(`/api/notifications/${notificationId}`);
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] deleteNotification error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete all read notifications
+ */
+export async function deleteAllRead() {
+  try {
+    const response = await api.delete('/api/notifications/read');
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] deleteAllRead error:', error);
+    throw error;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHANNEL VERIFICATION (Phase 4 - Email/SMS opt-in)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Start email verification
+ * @param {string} email 
+ */
+export async function startEmailVerification(email) {
+  try {
+    const response = await api.post('/api/notifications/channels/email/start', { email });
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] startEmailVerification error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Verify email with code
+ * @param {string} email 
+ * @param {string} code 
+ */
+export async function verifyEmail(email, code) {
+  try {
+    const response = await api.post('/api/notifications/channels/email/verify', { email, code });
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] verifyEmail error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Start SMS verification
+ * @param {string} phoneNumber 
+ */
+export async function startSmsVerification(phoneNumber) {
+  try {
+    const response = await api.post('/api/notifications/channels/sms/start', { phoneNumber });
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] startSmsVerification error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Verify phone with code
+ * @param {string} phoneNumber 
+ * @param {string} code 
+ */
+export async function verifySms(phoneNumber, code) {
+  try {
+    const response = await api.post('/api/notifications/channels/sms/verify', { phoneNumber, code });
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] verifySms error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Set opt-in preference for a channel
+ * @param {'email' | 'sms'} channel 
+ * @param {boolean} optIn 
+ */
+export async function setChannelOptIn(channel, optIn) {
+  try {
+    const response = await api.patch(`/api/notifications/channels/${channel}/opt-in`, { optIn });
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] setChannelOptIn error:', error);
+    throw error;
+  }
+}
+
+export default {
+  fetchNotifications,
+  fetchUnreadCount,
+  fetchCountByType,
+  markAsRead,
+  markAllAsRead,
+  markAsClicked,
+  dismissNotification,
+  deleteNotification,
+  deleteAllRead,
+  startEmailVerification,
+  verifyEmail,
+  startSmsVerification,
+  verifySms,
+  setChannelOptIn,
 };

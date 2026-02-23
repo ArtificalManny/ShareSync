@@ -1,194 +1,316 @@
-// Public profile (read-only): avatar, streak, velocity, public projects grid
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import client from "../../api/client";
-import SectionHeader from "../../components/ui/SectionHeader.jsx";
-import PublicShareBar from "../../components/public/PublicShareBar.jsx";
-import FollowButton from "../../components/social/FollowButton.jsx";
-import ReactionBar from "../../components/social/ReactionBar.jsx";
-import { track } from "../../utils/telemetry";
-import { User, Flame, Gauge, FolderKanban } from "lucide-react";
+// src/pages/public/PublicProfile.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// PUBLIC PROFILE PAGE - View any user's public profile
+// Phase 8: Replaced mock data with real API calls
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const DEFAULT_PIC = "/default-profile.png";
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import client from '../../api/client';
+import { User, Flame, Trophy, Target, Calendar, MapPin, Briefcase, Globe } from 'lucide-react';
+
+const DEFAULT_AVATAR = '/default-profile.png';
 
 export default function PublicProfile() {
   const { username } = useParams();
-  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const [error, setError] = useState('');
   const abortRef = useRef(null);
 
   useEffect(() => {
-    track("public_page_viewed", { type: "profile", username });
-  }, [username]);
-
-  useEffect(() => {
-    async function load() {
-      if (abortRef.current) abortRef.current.abort();
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
-
-      setLoading(true); setErr(""); setUser(null); setProjects([]);
-
-      // Try several user endpoints (public → private)
-      const userEndpoints = [
-        `/public/users/${encodeURIComponent(username)}`,
-        `/users/by-username/${encodeURIComponent(username)}`,
-        `/users/${encodeURIComponent(username)}`,
-      ];
-
-      let userData = null;
-      for (const url of userEndpoints) {
-        try {
-          const res = await client.get(url, { signal: ctrl.signal });
-          if (res?.data) { userData = res.data; break; }
-        } catch (_) {}
+    async function loadProfile() {
+      // Cancel any previous request
+      if (abortRef.current) {
+        try { abortRef.current.abort(); } catch {}
       }
-      if (!userData) {
-        if (!ctrl.signal.aborted) { setErr("This profile is not public or does not exist."); setLoading(false); }
-        return;
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setLoading(true);
+      setError('');
+      setProfile(null);
+      setProjects([]);
+
+      try {
+        // Try multiple endpoints for user data
+        const userEndpoints = [
+          `/api/users/public/${encodeURIComponent(username)}`,
+          `/api/users/username/${encodeURIComponent(username)}`,
+          `/public/users/${encodeURIComponent(username)}`,
+        ];
+
+        let userData = null;
+        for (const url of userEndpoints) {
+          try {
+            const res = await client.get(url, { signal: controller.signal });
+            const data = res?.data?.data || res?.data;
+            if (data && (data._id || data.id || data.username)) {
+              userData = data;
+              break;
+            }
+          } catch (e) {
+            // Try next endpoint
+            if (e?.name === 'AbortError' || e?.name === 'CanceledError') throw e;
+          }
+        }
+
+        if (!userData) {
+          if (!controller.signal.aborted) {
+            setError('This profile is not public or does not exist.');
+            setLoading(false);
+          }
+          return;
+        }
+
+        setProfile(userData);
+
+        // Try to load public projects
+        const userId = userData._id || userData.id;
+        if (userId) {
+          const projectEndpoints = [
+            `/api/projects?owner=${encodeURIComponent(userId)}&visibility=public`,
+            `/api/projects?ownerId=${encodeURIComponent(userId)}&public=true`,
+            `/public/users/${encodeURIComponent(userId)}/projects`,
+          ];
+
+          for (const url of projectEndpoints) {
+            try {
+              const res = await client.get(url, { signal: controller.signal });
+              const list = res?.data?.data || res?.data?.projects || res?.data;
+              if (Array.isArray(list)) {
+                setProjects(list.filter(p => p.visibility === 'public' || p.publicEnabled));
+                break;
+              }
+            } catch (e) {
+              if (e?.name === 'AbortError' || e?.name === 'CanceledError') throw e;
+            }
+          }
+        }
+      } catch (e) {
+        if (e?.name === 'AbortError' || e?.name === 'CanceledError') return;
+        console.error('[PublicProfile] Load error:', e);
+        setError('Failed to load profile. Please try again.');
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
-      setUser(userData);
-
-      // Projects: prefer public list
-      const uid = userData._id || userData.id || userData.userId || username;
-      const projectEndpoints = [
-        `/public/users/${encodeURIComponent(uid)}/projects`,
-        `/projects?owner=${encodeURIComponent(uid)}&public=1`,
-        `/projects?owner=${encodeURIComponent(uid)}`,
-      ];
-
-      for (const url of projectEndpoints) {
-        try {
-          const res = await client.get(url, { signal: ctrl.signal });
-          if (Array.isArray(res?.data)) { setProjects(res.data); break; }
-        } catch (_) {}
-      }
-
-      if (!ctrl.signal.aborted) setLoading(false);
     }
-    load();
-    return () => abortRef.current?.abort?.();
+
+    if (username) {
+      loadProfile();
+    }
+
+    return () => {
+      if (abortRef.current) {
+        try { abortRef.current.abort(); } catch {}
+      }
+    };
   }, [username]);
 
-  const kpis = useMemo(() => {
-    const stats = user?.stats || {};
-    return {
-      velocity: Number(stats?.throughputPerWeek?.value ?? stats?.velocity ?? 0),
-      streak: Number(stats?.streak ?? 0),
-      ontime: Number(stats?.onTimePct ?? stats?.onTime ?? 0),
-    };
-  }, [user]);
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0c] flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-slate-500 dark:text-zinc-400">Loading profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0c] flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-slate-400 dark:text-zinc-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">Profile Not Found</h2>
+          <p className="text-slate-500 dark:text-zinc-400 mb-6">{error}</p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors"
+          >
+            Go Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // No profile data
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0c] flex items-center justify-center">
+        <p className="text-slate-500 dark:text-zinc-400">No profile data available.</p>
+      </div>
+    );
+  }
+
+  // Derive display values
+  const displayName = profile.displayName || profile.name || 
+    `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 
+    profile.username || username;
+  
+  const avatarUrl = profile.profilePicture || profile.avatarUrl || profile.avatar || DEFAULT_AVATAR;
+  const streak = profile.streakDays || profile.streak || 0;
+  const totalShips = profile.totalShips || profile.ships || 0;
+  const xp = profile.xp || profile.points || 0;
+  const level = profile.level || Math.floor(xp / 100) + 1;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
-      <div className="card rounded-2xl border border-border bg-surface shine accent-bar relative">
-        <span className="accent-bar__left" aria-hidden="true" />
-        <div className="px-4 sm:px-6 md:px-8 py-5">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+    <div 
+      className="min-h-screen p-6 lg:p-10 max-w-4xl mx-auto"
+      style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)' }}
+    >
+      {/* Profile Card */}
+      <div className="bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl p-8 shadow-lg shadow-violet-100/50 dark:shadow-none mb-8">
+        {/* Header */}
+        <div className="flex items-start gap-6 mb-8">
+          {/* Avatar */}
+          <div className="relative">
+            <div 
+              className="w-24 h-24 rounded-full p-1"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)' }}
+            >
               <img
-                src={user?.profilePicture || DEFAULT_PIC}
-                alt={user?.displayName || user?.firstName || username}
-                className="h-12 w-12 rounded-full border border-border object-cover"
-              />
-              <div className="min-w-0">
-                <h1 className="h1 truncate">{user?.displayName || user?.firstName || user?.username || username}</h1>
-                <div className="text-sm text-muted truncate">@{user?.username || username}</div>
-              </div>
-            </div>
-            <div className="shrink-0 flex items-center gap-2">
-              <FollowButton
-                targetId={user?._id || user?.id || user?.userId || username}
-                targetType="user"
-                initialFollowing={false}
-                size="sm"
+                src={avatarUrl}
+                alt={displayName}
+                className="w-full h-full rounded-full object-cover border-4 border-white dark:border-[#1f1f23]"
+                onError={(e) => { e.target.src = DEFAULT_AVATAR; }}
               />
             </div>
-          </div>
-
-          {/* KPIs */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <TinyKpi icon={Gauge} label="Velocity" value={`${kpis.velocity.toFixed ? kpis.velocity.toFixed(1) : kpis.velocity}×`} />
-            <TinyKpi icon={Flame} label="Streak" value={`${kpis.streak}d`} />
-            <TinyKpi icon={FolderKanban} label="On-time" value={`${kpis.ontime}%`} />
-          </div>
-
-          {/* Share + reactions */}
-          <div className="mt-4">
-            <PublicShareBar />
-          </div>
-          <div className="mt-3">
-            <ReactionBar
-              targetId={user?._id || user?.id || user?.userId || username}
-              targetType="user"
-              compact
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Projects */}
-      <div className="mt-6 card rounded-2xl border border-border bg-surface shine accent-bar relative">
-        <span className="accent-bar__left" aria-hidden="true" />
-        <div className="px-4 sm:px-6 md:px-8 py-4">
-          <SectionHeader icon="FolderKanban">Public Projects</SectionHeader>
-          {loading ? (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" aria-busy="true">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-24 rounded-xl border border-border bg-surface animate-pulse" />
-              ))}
+            {/* Level badge */}
+            <div 
+              className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md text-xs font-medium text-white"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)' }}
+            >
+              Lv {level}
             </div>
-          ) : projects.length === 0 ? (
-            <div className="mt-3 text-sm text-muted">No public projects yet.</div>
-          ) : (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {projects.map((p) => (
-                <Link
-                  key={p._id || p.id}
-                  className="rounded-xl border border-border bg-white/60 dark:bg-slate-900/40 p-3 hover:shadow focus-ring"
-                  to={`/p/${p._id || p.id}`}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold text-slate-800 dark:text-white mb-1">
+              {displayName}
+            </h1>
+            <p className="text-slate-500 dark:text-zinc-400 mb-3">@{profile.username || username}</p>
+            
+            {profile.bio && (
+              <p className="text-slate-600 dark:text-zinc-300 text-sm leading-relaxed mb-4">
+                {profile.bio}
+              </p>
+            )}
+
+            {/* Meta info */}
+            <div className="flex flex-wrap gap-4 text-sm text-slate-500 dark:text-zinc-400">
+              {profile.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" />
+                  {profile.location}
+                </span>
+              )}
+              {(profile.jobTitle || profile.company) && (
+                <span className="flex items-center gap-1.5">
+                  <Briefcase className="w-4 h-4" />
+                  {[profile.jobTitle, profile.company].filter(Boolean).join(' at ')}
+                </span>
+              )}
+              {profile.website && (
+                <a 
+                  href={profile.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 hover:underline"
                 >
-                  <div className="font-medium truncate">{p.title || "Untitled"}</div>
-                  <div className="text-xs text-muted truncate mt-0.5">{p.description || "—"}</div>
-                  <div className="text-[11px] text-muted mt-2">Updated {labelled(p.updatedAt || p.lastActivityAt)}</div>
-                </Link>
-              ))}
+                  <Globe className="w-4 h-4" />
+                  Website
+                </a>
+              )}
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-slate-50 dark:bg-[#111113] rounded-xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Flame className="w-5 h-5 text-orange-500" />
+            </div>
+            <div className="text-2xl font-semibold text-slate-800 dark:text-white">{streak}</div>
+            <div className="text-xs text-slate-500 dark:text-zinc-400">Day Streak</div>
+          </div>
+          
+          <div className="bg-slate-50 dark:bg-[#111113] rounded-xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Target className="w-5 h-5 text-violet-500" />
+            </div>
+            <div className="text-2xl font-semibold text-slate-800 dark:text-white">{totalShips}</div>
+            <div className="text-xs text-slate-500 dark:text-zinc-400">Ships</div>
+          </div>
+          
+          <div className="bg-slate-50 dark:bg-[#111113] rounded-xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Trophy className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="text-2xl font-semibold text-slate-800 dark:text-white">{xp.toLocaleString()}</div>
+            <div className="text-xs text-slate-500 dark:text-zinc-400">XP</div>
+          </div>
         </div>
       </div>
 
-      {!!err && !loading && (
-        <div className="mt-4 rounded-2xl border border-rose-200/60 bg-surface p-4 text-sm text-rose-600">
-          {err}
-        </div>
-      )}
-    </div>
-  );
-}
+      {/* Public Projects */}
+      <div className="bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-lg shadow-violet-100/50 dark:shadow-none">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-violet-500" />
+          Public Projects
+        </h2>
 
-function TinyKpi({ icon: Icon, label, value }) {
-  return (
-    <div className="rounded-xl border border-border bg-white/60 dark:bg-slate-900/40 px-3 py-2 flex items-center gap-2">
-      <Icon className="w-4 h-4 text-indigo-500" />
-      <div>
-        <div className="text-[11px] text-muted">{label}</div>
-        <div className="text-sm font-semibold tabular-nums">{value}</div>
+        {projects.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="w-12 h-12 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Target className="w-6 h-6 text-slate-400 dark:text-zinc-500" />
+            </div>
+            <p className="text-slate-500 dark:text-zinc-400 text-sm">No public projects yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {projects.map((project) => {
+              const projectId = project._id || project.id;
+              return (
+                <Link
+                  key={projectId}
+                  to={`/p/${projectId}`}
+                  className="block p-4 bg-slate-50 dark:bg-[#111113] rounded-xl border border-slate-100 dark:border-white/5 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{project.icon || project.emoji || '📁'}</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-slate-800 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors truncate">
+                        {project.name || project.title || 'Untitled'}
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-zinc-400 line-clamp-2 mt-1">
+                        {project.description || 'No description'}
+                      </p>
+                      {project.streakDays > 0 && (
+                        <div className="flex items-center gap-1 mt-2 text-xs text-orange-600 dark:text-orange-400">
+                          <Flame className="w-3.5 h-3.5" />
+                          <span>{project.streakDays} day streak</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
-}
-
-function labelled(ts) {
-  if (!ts) return "—";
-  const d = new Date(ts);
-  if (isNaN(+d)) return "—";
-  const diff = Date.now() - +d;
-  const day = 24 * 60 * 60 * 1000;
-  if (diff < day) return "today";
-  if (diff < 2 * day) return "yesterday";
-  return d.toLocaleDateString();
 }

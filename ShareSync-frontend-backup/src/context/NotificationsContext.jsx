@@ -1,147 +1,253 @@
 // src/context/NotificationsContext.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS CONTEXT (Optional Shared State)
-// - Keeps global unread count + notifications list in one place
-// - Loads initial list from API
-// - Listens to SocketContext event relay: 'notification:new'
-// - Safe-by-default: if backend/socket isn't ready, UI stays stable
+// NOTIFICATIONS CONTEXT - Real-time notification state management
+// Phase 9: WebSocket integration for live notifications
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from './AuthContext';
+import { useSocketContext } from './SocketContext';
 import {
-  listNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
+  fetchNotifications,
+  fetchUnreadCount,
+  markAsRead as apiMarkAsRead,
+  markAllAsRead as apiMarkAllAsRead,
+  deleteNotification as apiDeleteNotification,
 } from '../api/notifications';
-import { useSocketEvent } from './SocketContext';
 
 const NotificationsContext = createContext(null);
 
-function safeId(n) {
-  return n?.id || n?._id || null;
-}
-
-function normalizeNotification(n) {
-  const id = safeId(n) || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-  return {
-    id,
-    title: n?.title || n?.subject || 'Notification',
-    body: n?.body || n?.message || '',
-    ts: n?.ts || n?.createdAt || Date.now(),
-    read: Boolean(n?.read),
-    type: n?.type || n?.kind || 'generic',
-    meta: n?.meta || {},
-    raw: n,
-  };
-}
-
 export function NotificationsProvider({ children }) {
-  const [items, setItems] = useState([]);       // normalized
+  const { user, isAuthenticated } = useAuth();
+  const { subscribe, isConnected } = useSocketContext();
+
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [loadedOnce, setLoadedOnce] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const unreadCount = useMemo(
-    () => items.reduce((acc, n) => acc + (n.read ? 0 : 1), 0),
-    [items],
-  );
+  const offsetRef = useRef(0);
+  const mountedRef = useRef(true);
 
-  const refresh = useCallback(async ({ limit = 25, unreadOnly = false } = {}) => {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // INITIAL LOAD
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const loadNotifications = useCallback(async (reset = false) => {
+    if (!isAuthenticated) return;
+    if (loading) return;
+
     setLoading(true);
+
     try {
-      const data = await listNotifications({ limit, unreadOnly });
-      const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-      setItems(list.map(normalizeNotification));
-      setLoadedOnce(true);
-    } catch {
-      // Keep stable; do not throw
-      setItems((prev) => (loadedOnce ? prev : []));
-      setLoadedOnce(true);
+      const offset = reset ? 0 : offsetRef.current;
+      const limit = 25;
+
+      const result = await fetchNotifications({ limit, offset });
+      const items = result?.notifications || result?.items || [];
+
+      if (!mountedRef.current) return;
+
+      if (reset) {
+        setNotifications(items);
+        offsetRef.current = items.length;
+      } else {
+        setNotifications((prev) => {
+          // Dedupe by ID
+          const existingIds = new Set(prev.map((n) => n._id || n.id));
+          const newItems = items.filter((n) => !existingIds.has(n._id || n.id));
+          return [...prev, ...newItems];
+        });
+        offsetRef.current += items.length;
+      }
+
+      setHasMore(items.length === limit);
+
+      // Also update unread count
+      const countResult = await fetchUnreadCount();
+      const count =
+        typeof countResult === 'number'
+          ? countResult
+          : countResult?.unread ?? countResult?.count ?? 0;
+
+      if (mountedRef.current) {
+        setUnreadCount(count);
+      }
+    } catch (error) {
+      console.error('[NotificationsContext] loadNotifications error:', error);
     } finally {
-      setLoading(false);
-    }
-  }, [loadedOnce]);
-
-  // Initial load
-  useEffect(() => {
-    refresh({ limit: 25, unreadOnly: false });
-  }, [refresh]);
-
-  // Realtime push from socket: 'notification:new'
-  useSocketEvent('notification:new', (payload) => {
-    if (!payload) return;
-    const n = normalizeNotification(payload);
-
-    setItems((prev) => {
-      // Avoid duplicates if server re-sends or page refreshes
-      if (prev.some((x) => x.id === n.id)) return prev;
-      // Put newest on top
-      return [n, ...prev];
-    });
-  });
-
-  const markRead = useCallback(async (id) => {
-    if (!id) return;
-
-    // Optimistic
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-
-    try {
-      await markNotificationAsRead(id);
-    } catch {
-      // Best effort: keep optimistic state to avoid UI flicker/quagmire
-    }
-  }, []);
-
-  const toggleRead = useCallback(async (id) => {
-    if (!id) return;
-
-    let willBeRead = true;
-
-    setItems((prev) => {
-      const next = prev.map((n) => {
-        if (n.id !== id) return n;
-        const newRead = !n.read;
-        willBeRead = newRead;
-        return { ...n, read: newRead };
-      });
-      return next;
-    });
-
-    // Only call backend when turning read => true
-    if (willBeRead) {
-      try {
-        await markNotificationAsRead(id);
-      } catch {
-        // ignore
+      if (mountedRef.current) {
+        setLoading(false);
       }
     }
-  }, []);
+  }, [isAuthenticated, loading]);
 
-  const markAllRead = useCallback(async () => {
-    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  const refreshNotifications = useCallback(() => {
+    return loadNotifications(true);
+  }, [loadNotifications]);
 
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      loadNotifications(false);
+    }
+  }, [hasMore, loading, loadNotifications]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const markAsRead = useCallback(async (notificationId) => {
     try {
-      await markAllNotificationsAsRead();
-    } catch {
-      // keep optimistic state
+      await apiMarkAsRead(notificationId);
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          (n._id || n.id) === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
+        )
+      );
+
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('[NotificationsContext] markAsRead error:', error);
     }
   }, []);
 
-  const value = useMemo(() => ({
-    items,
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await apiMarkAllAsRead();
+
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true, readAt: new Date().toISOString() }))
+      );
+
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('[NotificationsContext] markAllAsRead error:', error);
+    }
+  }, []);
+
+  const removeNotification = useCallback(async (notificationId) => {
+    try {
+      await apiDeleteNotification(notificationId);
+
+      setNotifications((prev) => {
+        const notification = prev.find((n) => (n._id || n.id) === notificationId);
+        if (notification && !notification.isRead) {
+          setUnreadCount((c) => Math.max(0, c - 1));
+        }
+        return prev.filter((n) => (n._id || n.id) !== notificationId);
+      });
+    } catch (error) {
+      console.error('[NotificationsContext] removeNotification error:', error);
+    }
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // WEBSOCKET LISTENERS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!isAuthenticated || !subscribe) return;
+
+    // Listen for new notifications
+    const unsubNew = subscribe('notification:new', (data) => {
+      console.log('[NotificationsContext] notification:new received:', data);
+
+      setNotifications((prev) => {
+        // Avoid duplicates
+        const exists = prev.some((n) => (n._id || n.id) === (data._id || data.id));
+        if (exists) return prev;
+        return [data, ...prev];
+      });
+
+      setUnreadCount((prev) => prev + 1);
+    });
+
+    // Listen for read updates (from other tabs/devices)
+    const unsubRead = subscribe('notification:read', (data) => {
+      console.log('[NotificationsContext] notification:read received:', data);
+
+      if (data?.all) {
+        setNotifications((prev) =>
+          prev.map((n) => ({ ...n, isRead: true }))
+        );
+        setUnreadCount(0);
+      } else if (data?.id) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            (n._id || n.id) === data.id ? { ...n, isRead: true } : n
+          )
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    });
+
+    // Listen for count updates
+    const unsubCount = subscribe('notification:count', (data) => {
+      console.log('[NotificationsContext] notification:count received:', data);
+      if (typeof data?.unread === 'number') {
+        setUnreadCount(data.unread);
+      }
+    });
+
+    // Listen for deleted notifications
+    const unsubDeleted = subscribe('notification:deleted', (data) => {
+      console.log('[NotificationsContext] notification:deleted received:', data);
+      if (data?.id) {
+        setNotifications((prev) => {
+          const notification = prev.find((n) => (n._id || n.id) === data.id);
+          if (notification && !notification.isRead) {
+            setUnreadCount((c) => Math.max(0, c - 1));
+          }
+          return prev.filter((n) => (n._id || n.id) !== data.id);
+        });
+      }
+    });
+
+    return () => {
+      unsubNew?.();
+      unsubRead?.();
+      unsubCount?.();
+      unsubDeleted?.();
+    };
+  }, [isAuthenticated, subscribe]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // INITIAL LOAD ON AUTH
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    if (isAuthenticated) {
+      loadNotifications(true);
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+      offsetRef.current = 0;
+    }
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CONTEXT VALUE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const value = {
+    notifications,
     unreadCount,
     loading,
-    loadedOnce,
-
-    // actions
-    refresh,
-    markRead,
-    toggleRead,
-    markAllRead,
-
-    // low-level setter (rarely needed)
-    setItems,
-  }), [items, unreadCount, loading, loadedOnce, refresh, markRead, toggleRead, markAllRead]);
+    hasMore,
+    isConnected,
+    refreshNotifications,
+    loadMore,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+  };
 
   return (
     <NotificationsContext.Provider value={value}>
@@ -150,25 +256,12 @@ export function NotificationsProvider({ children }) {
   );
 }
 
-export function useNotificationsContext() {
-  const ctx = useContext(NotificationsContext);
-
-  // Safe fallback
-  if (!ctx) {
-    return {
-      items: [],
-      unreadCount: 0,
-      loading: false,
-      loadedOnce: false,
-      refresh: async () => {},
-      markRead: async () => {},
-      toggleRead: async () => {},
-      markAllRead: async () => {},
-      setItems: () => {},
-    };
+export function useNotifications() {
+  const context = useContext(NotificationsContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationsProvider');
   }
-
-  return ctx;
+  return context;
 }
 
 export default NotificationsContext;

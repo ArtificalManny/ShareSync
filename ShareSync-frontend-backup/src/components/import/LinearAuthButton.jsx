@@ -1,4 +1,4 @@
-import { toast } from "../ui/Toast";
+import { toast } from "../ui/toast";
 // src/components/import/LinearAuthButton.jsx
 import React, { useState } from "react";
 import { track } from "../../utils/telemetry";

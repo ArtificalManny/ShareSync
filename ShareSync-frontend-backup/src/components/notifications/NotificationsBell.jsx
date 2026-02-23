@@ -1,7 +1,23 @@
 // src/components/notifications/NotificationsBell.jsx
-import React, { useEffect, useMemo, useState } from "react";
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS BELL - Icon with unread badge and dropdown
+// Phase 9: Enhanced with context-based real-time updates
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Bell } from "lucide-react";
 import NotificationsDropdown from "./NotificationsDropdown";
+
+// Try to use context first, fall back to API polling
+let useNotificationsHook = null;
+try {
+  const ctx = require('../../context/NotificationsContext');
+  useNotificationsHook = ctx.useNotifications;
+} catch (e) {
+  // Context not available, will use API polling
+}
+
+// API imports for fallback
 import { fetchUnreadCount, fetchNotifications } from "../../api/notifications";
 
 // Safe normalization: backend might return { unread }, { count }, or a number
@@ -13,7 +29,52 @@ function parseUnreadCount(data) {
   return 0;
 }
 
-export default function NotificationsBell({
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTEXT-BASED BELL (preferred)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]" }) {
+  const [open, setOpen] = useState(false);
+  const { unreadCount, refreshNotifications } = useNotificationsHook();
+
+  const badgeVisible = useMemo(() => unreadCount > 0, [unreadCount]);
+
+  const handleToggle = useCallback(() => {
+    setOpen((o) => !o);
+  }, []);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="relative p-2 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all duration-200"
+        aria-label="Notifications"
+        title="Notifications"
+        onClick={handleToggle}
+      >
+        <Bell className="w-5 h-5" />
+        {badgeVisible && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1f1f23]">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      <NotificationsDropdown
+        open={open}
+        onClose={() => setOpen(false)}
+        widthClassName={dropdownWidthClassName}
+        anchorClassName="right-0"
+      />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POLLING-BASED BELL (fallback)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function NotificationsBellWithPolling({
   pollMs = 20000,
   dropdownWidthClassName = "w-[420px]",
 }) {
@@ -47,7 +108,7 @@ export default function NotificationsBell({
 
   useEffect(() => {
     const t = setInterval(() => {
-      // Don’t spam while dropdown is open — you can adjust if you want live updating
+      // Don't spam while dropdown is open
       if (!open) refreshUnread();
     }, pollMs);
 
@@ -59,20 +120,21 @@ export default function NotificationsBell({
     <div className="relative">
       <button
         type="button"
-        className="relative p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all duration-200"
+        className="relative p-2 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all duration-200"
         aria-label="Notifications"
         title="Notifications"
         onClick={() => {
           setOpen((o) => !o);
           // when opening, refresh count so the dot is accurate
-          // (we do NOT clear unread automatically)
           if (!open) refreshUnread();
         }}
       >
-        <Bell className="w-4 h-4" />
-        {badgeVisible ? (
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-energy-500 rounded-full ring-2 ring-surface-0" />
-        ) : null}
+        <Bell className="w-5 h-5" />
+        {badgeVisible && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#1f1f23]">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
       </button>
 
       <NotificationsDropdown
@@ -83,4 +145,23 @@ export default function NotificationsBell({
       />
     </div>
   );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORT: Auto-select based on context availability
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default function NotificationsBell(props) {
+  // If context hook is available, use context-based bell
+  if (useNotificationsHook) {
+    try {
+      return <NotificationsBellWithContext {...props} />;
+    } catch (e) {
+      // Context might not be in provider tree, fall back
+      console.warn('[NotificationsBell] Context not available, using polling fallback');
+    }
+  }
+
+  // Fall back to polling-based bell
+  return <NotificationsBellWithPolling {...props} />;
 }

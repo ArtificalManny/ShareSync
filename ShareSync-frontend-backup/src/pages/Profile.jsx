@@ -1,6 +1,7 @@
 // src/pages/Profile.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROFILE PAGE v4.0 - "The Gallery Walk" Light Theme
+// SHARESYNC PROFILE PAGE v4.1 - "The Gallery Walk" Light Theme
+// Phase 7: Added Profile Edit Modal
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Personal Gallery"
@@ -13,8 +14,6 @@
 // - Skill Bar Fill: Ocean Gradient
 // - "Core Verified" Badge: #2DD4BF bg, white text (teal)
 // - Edit Button: #3B82F6 (blue action)
-//
-// NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -31,6 +30,9 @@ import {
   Download,
   Star,
   Edit3,
+  X,
+  Save,
+  Loader2,
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 import UserAvatar from "../components/ui/UserAvatar";
@@ -133,6 +135,191 @@ function readAvatarOverride() {
     return null;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PROFILE EDIT MODAL - Phase 7
+───────────────────────────────────────────────────────────────────────── */
+const ProfileEditModal = ({ user, onClose, onSave }) => {
+  const [saving, setSaving] = useState(false);
+  const [editData, setEditData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    bio: user?.bio || '',
+    location: user?.location || '',
+    website: user?.website || '',
+    jobTitle: user?.jobTitle || '',
+    company: user?.company || '',
+  });
+
+  const handleChange = (field, value) => {
+    setEditData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await client.put('/users/me', editData);
+      toast({ title: 'Profile updated!', variant: 'success' });
+      onSave?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast({ 
+        title: 'Update failed', 
+        description: error?.response?.data?.message || error?.message || 'Could not save profile',
+        variant: 'error' 
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
+      <div className="w-full max-w-lg bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Edit Profile</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5 text-slate-500 dark:text-zinc-400" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* Name Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={editData.firstName}
+                onChange={(e) => handleChange('firstName', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="First name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={editData.lastName}
+                onChange={(e) => handleChange('lastName', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="Last name"
+              />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+              Bio
+            </label>
+            <textarea
+              value={editData.bio}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none"
+              placeholder="Tell others about yourself..."
+            />
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              value={editData.location}
+              onChange={(e) => handleChange('location', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+              placeholder="City, Country"
+            />
+          </div>
+
+          {/* Work Info Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Job Title
+              </label>
+              <input
+                type="text"
+                value={editData.jobTitle}
+                onChange={(e) => handleChange('jobTitle', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="e.g. Software Engineer"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Company
+              </label>
+              <input
+                type="text"
+                value={editData.company}
+                onChange={(e) => handleChange('company', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="Company name"
+              />
+            </div>
+          </div>
+
+          {/* Website */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+              Website
+            </label>
+            <input
+              type="url"
+              value={editData.website}
+              onChange={(e) => handleChange('website', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+              placeholder="https://yourwebsite.com"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all shadow-md disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    PROFILE PHOTO EDITOR - Light theme with Aurora ring
@@ -382,6 +569,9 @@ export default function Profile() {
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
   const [profileAnalytics, setProfileAnalytics] = useState(null);
+  
+  // Phase 7: Edit modal state
+  const [isEditing, setIsEditing] = useState(false);
 
   const isPublicRoute = useMemo(
     () => Boolean(routeUsername) && location.pathname.startsWith("/u/"),
@@ -471,6 +661,11 @@ export default function Profile() {
   const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
   const name = useMemo(() => resolveUserName(user), [user]);
 
+  // Phase 7: Handle edit profile
+  const handleEditProfile = () => {
+    setIsEditing(true);
+  };
+
   if (loading) {
     return (
       <div 
@@ -490,6 +685,15 @@ export default function Profile() {
       className="min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto"
       style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
     >
+      {/* Phase 7: Edit Modal */}
+      {isEditing && (
+        <ProfileEditModal 
+          user={user} 
+          onClose={() => setIsEditing(false)} 
+          onSave={load} 
+        />
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
@@ -529,9 +733,9 @@ export default function Profile() {
           {/* Edit button - Blue action */}
           {isOwnProfile && (
             <button 
+              onClick={handleEditProfile}
               className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all shadow-md shadow-blue-200 dark:shadow-blue-900/20 hover:shadow-lg"
               style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
-              onClick={() => window.location.href = '/settings'}
             >
               <Edit3 className="w-4 h-4" />
               Edit Profile
