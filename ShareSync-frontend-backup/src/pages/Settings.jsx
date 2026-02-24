@@ -6,7 +6,7 @@
 // THEME: "The Control Room" (Adaptive Light/Dark)
 //
 // NO BACKEND CHANGES. LOGIC PRESERVED EXACTLY.
-//
+// ADDED: BillingSettings integration.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -18,12 +18,13 @@ import {
   Beaker,
   Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles,
   Play, Zap, Clock, Film, Star, Moon, Sun, Eye, Settings as SettingsIcon,
-  AlertTriangle, Trash2
+  AlertTriangle, Trash2, CreditCard
 } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
 import ExperimentHistory from "../components/settings/ExperimentHistory";
 import WhatWorksAnalyzer from "../components/settings/WhatWorksAnalyzer";
 import PrivacyCard from "../components/settings/PrivacyCard";
+import BillingSettings from "../components/settings/BillingSettings";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLIDER COMPONENT - Adaptive
@@ -620,6 +621,16 @@ export default function Settings() {
 
           {/* PHASE 4: PRIVACY TRANSPARENCY */}
           <PrivacyCard />
+
+          {/* SUBSCRIPTION & BILLING */}
+          <SectionCard
+            icon={CreditCard}
+            iconBg="bg-fuchsia-100 dark:bg-fuchsia-500/10"
+            iconColor="text-fuchsia-600 dark:text-fuchsia-400"
+            title="Subscription & Billing"
+          >
+            <BillingSettings />
+          </SectionCard>
 
           {/* Appearance */}
           <SectionCard 

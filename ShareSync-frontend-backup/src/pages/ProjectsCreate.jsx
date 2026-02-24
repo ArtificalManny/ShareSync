@@ -14,9 +14,11 @@ import {
   ListChecks,
   Eye,
   MessageSquare,
+  Crown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
+import { getCurrentSubscription } from "../api/subscriptions";
 import { toast } from "../components/ui/toast";
 
 function isValidEmail(email) {
@@ -57,10 +59,6 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const [privacy, setPrivacy] = useState("Private");
 
   // ✅ Phase 0 (UI-only) settings
-  // Conceptual fields:
-  // visibility: "private" | "public"
-  // isListed: boolean
-  // spectatorMode: "view" | "suggest"
   const [isListed, setIsListed] = useState(false);
   const [spectatorMode, setSpectatorMode] = useState("view"); // "view" | "suggest"
 
@@ -69,6 +67,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const [members, setMembers] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [subData, setSubData] = useState(null);
 
   // Inline validation
   const [fieldErrors, setFieldErrors] = useState({
@@ -77,6 +76,18 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     memberEmail: "",
     form: "",
   });
+
+  // ✅ Fetch limits on mount
+  useEffect(() => {
+    getCurrentSubscription()
+      .then((data) => setSubData(data))
+      .catch((err) => console.error("Failed to load subscription data", err));
+  }, []);
+
+  const projectsUsed = subData?.usage?.projects || 0;
+  const projectsLimit = subData?.limits?.projects || -1;
+  const isUnlimited = projectsLimit === -1;
+  const isAtLimit = !isUnlimited && projectsUsed >= projectsLimit;
 
   // ✅ Load Phase 0 defaults once (UI-only)
   useEffect(() => {
@@ -91,8 +102,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   }, []);
 
   const canSubmit = useMemo(() => {
-    return !submitting;
-  }, [submitting]);
+    return !submitting && !isAtLimit;
+  }, [submitting, isAtLimit]);
 
   const clearFieldError = (key) => {
     setFieldErrors((prev) => ({ ...prev, [key]: "" }));
@@ -144,7 +155,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   async function handleSubmit(e) {
     e.preventDefault();
     e.stopPropagation();
-    if (submitting) return;
+    if (submitting || isAtLimit) return;
 
     // Reset form-level error
     setFieldErrors((prev) => ({ ...prev, form: "" }));
@@ -164,8 +175,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
       const trimmedTitle = title.trim();
       const trimmedDescription = description.trim();
 
-      // ✅ Phase 0: persist UI intent only (NO backend changes)
-      // This is safe and avoids breaking DTO validation in Nest.
+      // ✅ Phase 0: persist UI intent only
       savePhase0Prefs({
         privacy,
         isListed,
@@ -173,20 +183,14 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         updatedAt: new Date().toISOString(),
       });
 
-      // ✅ Compatibility payload:
-      // - Many backends use "name", your UI uses project.name
-      // - Some older code uses "title"
       const payload = {
         name: trimmedTitle,
         title: trimmedTitle,
         description: trimmedDescription,
-
         category: category.trim() || undefined,
         status,
         privacy,
         isPublic: privacy === "Public",
-
-        // Keep members as you built them
         members,
       };
 
@@ -204,7 +208,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
       // Let Projects.jsx update instantly (optimistic prepend)
       onProjectCreated?.(project);
 
-      // ✅ Navigate first, then close modal (avoids UI race)
+      // ✅ Navigate first, then close modal
       navigate(`/projects/${id}`);
       onClose?.();
     } catch (err) {
@@ -311,7 +315,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       `}
                       aria-required="true"
                       autoFocus
-                      disabled={submitting}
+                      disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.title ? (
                       <p className="mt-1 text-xs text-red-300">{fieldErrors.title}</p>
@@ -326,7 +330,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder="e.g., SaaS, Personal, School"
                       className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      disabled={submitting}
+                      disabled={submitting || isAtLimit}
                     />
                   </div>
 
@@ -336,7 +340,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
                       className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      disabled={submitting}
+                      disabled={submitting || isAtLimit}
                     >
                       <option>Not Started</option>
                       <option>In Progress</option>
@@ -360,7 +364,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none
                         ${fieldErrors.description ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
-                      disabled={submitting}
+                      disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.description ? (
                       <p className="mt-1 text-xs text-red-300">{fieldErrors.description}</p>
@@ -390,7 +394,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Private"}
-                    disabled={submitting}
+                    disabled={submitting || isAtLimit}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <Shield className="w-5 h-5 text-purple-400" />
@@ -410,7 +414,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Public"}
-                    disabled={submitting}
+                    disabled={submitting || isAtLimit}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <Globe className="w-5 h-5 text-blue-400" />
@@ -440,7 +444,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                           ? "border-emerald-500/40 bg-emerald-500/10"
                           : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                       }`}
-                      disabled={submitting}
+                      disabled={submitting || isAtLimit}
                       aria-pressed={isListed}
                     >
                       <div className="flex items-center gap-3">
@@ -475,7 +479,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                             ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
                             : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                         }`}
-                        disabled={submitting}
+                        disabled={submitting || isAtLimit}
                         aria-pressed={spectatorMode === "view"}
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -495,7 +499,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                             ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
                             : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                         }`}
-                        disabled={submitting}
+                        disabled={submitting || isAtLimit}
                         aria-pressed={spectatorMode === "suggest"}
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -544,7 +548,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all
                         ${fieldErrors.memberEmail ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
-                      disabled={submitting}
+                      disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.memberEmail ? (
                       <p className="mt-1 text-xs text-red-300">{fieldErrors.memberEmail}</p>
@@ -555,7 +559,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     value={memberRole}
                     onChange={(e) => setMemberRole(e.target.value)}
                     className="rounded-xl border border-purple-500/30 bg-slate-800/50 px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    disabled={submitting}
+                    disabled={submitting || isAtLimit}
                   >
                     <option>Member</option>
                     <option>Manager</option>
@@ -567,7 +571,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     onClick={addMember}
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-600/20 hover:bg-purple-600/30 px-3 py-3 text-sm font-medium text-white transition-all"
                     aria-label="Add member"
-                    disabled={submitting}
+                    disabled={submitting || isAtLimit}
                   >
                     <Plus className="w-4 h-4" />
                     Add
@@ -595,7 +599,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                           onClick={() => removeMember(m.email)}
                           className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                           aria-label={`Remove ${m.email}`}
-                          disabled={submitting}
+                          disabled={submitting || isAtLimit}
                         >
                           Remove
                         </button>
@@ -614,9 +618,19 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
           {/* Footer - Fixed (outside form) */}
           <div className="flex items-center justify-between gap-3 px-6 py-5 border-t border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-b-2xl">
             <div className="text-xs text-slate-400">
-              <Zap className="w-3 h-3 inline mr-1 text-purple-400" />
-              Press ESC to cancel
+              {subData && !isUnlimited ? (
+                <span className={isAtLimit ? "text-amber-400 font-medium flex items-center gap-1.5" : "flex items-center gap-1.5"}>
+                  {isAtLimit ? <AlertTriangle className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5 text-purple-400" />}
+                  You have used {projectsUsed} of {projectsLimit} free projects.
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-purple-400" />
+                  Press ESC to cancel
+                </span>
+              )}
             </div>
+            
             <div className="flex gap-3">
               <button
                 type="button"
@@ -627,27 +641,40 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 Cancel
               </button>
 
-              {/* ✅ FIX: bind this button to the form via form= */}
-              <button
-                type="submit"
-                form={formId}
-                className={`rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition-all ${
-                  submitting ? "opacity-70 cursor-wait" : "hover:scale-105"
-                }`}
-                disabled={!canSubmit}
-              >
-                {submitting ? (
-                  <>
-                    <div className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 inline mr-2" />
-                    Create Project
-                  </>
-                )}
-              </button>
+              {isAtLimit ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate("/settings");
+                  }}
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
+                >
+                  <Crown className="w-4 h-4 inline mr-2" />
+                  Upgrade to Team
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  form={formId}
+                  className={`rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition-all ${
+                    submitting ? "opacity-70 cursor-wait" : "hover:scale-105"
+                  }`}
+                  disabled={!canSubmit}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 inline mr-2" />
+                      Create Project
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </Dialog.Panel>

@@ -171,7 +171,34 @@ export default function VaultView({ projectId }) {
 
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"><Upload className="w-4 h-4" /><span>Upload</span></button>
+          
+          {/* THE SILENT CONSUMER: Upload Button + Mini Storage Indicator */}
+          <div className="relative flex flex-col group">
+            <button 
+              onClick={() => setIsUploadModalOpen(true)} 
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors relative z-10"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Upload</span>
+            </button>
+            {/* Tiny silent storage indicator underneath */}
+            <div 
+              className="absolute -bottom-1.5 left-1.5 right-1.5 h-1 rounded-full overflow-hidden bg-black/10 dark:bg-white/10"
+              title={`${formatBytes(data.storage.usedBytes)} / ${formatBytes(data.storage.limitBytes)} used`}
+            >
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  usagePercentage > 90 
+                    ? 'bg-error-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' 
+                    : usagePercentage > 75 
+                      ? 'bg-warning-500' 
+                      : 'bg-white/40'
+                }`} 
+                style={{ width: `${usagePercentage}%` }} 
+              />
+            </div>
+          </div>
+
           <button onClick={() => setIsFolderModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary text-sm hover:bg-surface-2 transition-colors"><FolderPlus className="w-4 h-4" /><span>New Folder</span></button>
         </div>
         

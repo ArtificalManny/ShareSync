@@ -1,12 +1,13 @@
 // src/components/settings/BillingSettings.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // BILLING SETTINGS - Subscription management in Settings page
+// FIXED: PricingModal import to use default export. Removed redundant h2 for nesting.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Crown, Zap, ExternalLink, AlertCircle } from 'lucide-react';
 import { getCurrentSubscription, createPortalSession } from '../../api/subscriptions';
-import { PricingModal } from '../subscription';
+import PricingModal from '../subscription/PricingModal';
 
 export default function BillingSettings() {
   const [subscription, setSubscription] = useState(null);
@@ -57,10 +58,6 @@ export default function BillingSettings() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
-        Subscription & Billing
-      </h2>
-
       {/* Current Plan Card */}
       <div className={`rounded-xl border p-5 ${
         isPremium
@@ -96,6 +93,7 @@ export default function BillingSettings() {
 
           {!isPremium && (
             <button
+              type="button"
               onClick={() => setShowPricing(true)}
               className="px-4 py-2 bg-violet-500 text-white rounded-lg font-medium hover:bg-violet-600 transition-colors"
             >
@@ -153,6 +151,7 @@ export default function BillingSettings() {
       {/* Manage Billing Button */}
       {isPremium && (
         <button
+          type="button"
           onClick={handleManageBilling}
           disabled={portalLoading}
           className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
