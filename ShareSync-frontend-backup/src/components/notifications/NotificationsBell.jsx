@@ -1,5 +1,5 @@
 // src/components/notifications/NotificationsBell.jsx
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Bell } from "lucide-react";
 import NotificationsDropdown from "./NotificationsDropdown";
 
@@ -21,11 +21,24 @@ function parseUnreadCount(data) {
 
 function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]" }) {
   const [open, setOpen] = useState(false);
-  const { unreadCount } = useNotificationsHook();
+  const dropdownRef = useRef(null);
+  
+  // Phase 9.1: Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const { unreadCount, notifications, markAsRead, markAllAsRead } = useNotificationsHook();
   const badgeVisible = useMemo(() => unreadCount > 0, [unreadCount]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         type="button"
         className="relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 transition-all duration-200 focus-visible:outline-none"
@@ -39,15 +52,36 @@ function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]" }) 
         )}
       </button>
 
-      <NotificationsDropdown open={open} onClose={() => setOpen(false)} widthClassName={dropdownWidthClassName} anchorClassName="right-0" />
+      {/* Phase 9.1: Pass context props explicitly to dropdown */}
+      <NotificationsDropdown 
+        open={open} 
+        onClose={() => setOpen(false)} 
+        widthClassName={dropdownWidthClassName} 
+        anchorClassName="right-0"
+        notifications={notifications}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
+      />
     </div>
   );
 }
 
 function NotificationsBellWithPolling({ pollMs = 20000, dropdownWidthClassName = "w-[420px]" }) {
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const [unread, setUnread] = useState(0);
   const badgeVisible = useMemo(() => unread > 0, [unread]);
+
+  // Phase 9.1: Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const refreshUnread = async () => {
     try {
@@ -69,7 +103,7 @@ function NotificationsBellWithPolling({ pollMs = 20000, dropdownWidthClassName =
   }, [open, pollMs]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         type="button"
         className="relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 transition-all duration-200 focus-visible:outline-none"

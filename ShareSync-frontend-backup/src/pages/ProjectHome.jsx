@@ -7,6 +7,7 @@
 // ⭐ ADD: Force-refresh view content on realtime task updates (pulseRefreshKey)
 // ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
 // ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
+// ⭐ THEME: Updated to Gallery Walk Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -117,10 +118,10 @@ const PROJECT_VIEWS = [
 
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-surface-0 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full border-2 border-brand-500/20 border-t-brand-500 animate-spin mx-auto mb-4" />
-        <p className="text-text-tertiary text-sm">Loading project...</p>
+        <div className="w-16 h-16 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin mx-auto mb-4" />
+        <p className="text-slate-500 text-sm">Loading project...</p>
       </div>
     </div>
   );
@@ -132,16 +133,16 @@ function LoadingState() {
 
 function ErrorState({ error, onRetry }) {
   return (
-    <div className="min-h-screen bg-surface-0 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-full bg-error-500/10 mx-auto mb-4 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-error-400" />
+        <div className="w-16 h-16 rounded-full bg-red-50 mx-auto mb-4 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-red-500" />
         </div>
-        <h2 className="text-xl font-semibold text-text-primary mb-2">Failed to load project</h2>
-        <p className="text-text-tertiary mb-6">{error}</p>
+        <h2 className="text-xl font-semibold text-slate-800 mb-2">Failed to load project</h2>
+        <p className="text-slate-500 mb-6">{error}</p>
         <button
           onClick={onRetry}
-          className="px-6 py-3 rounded-xl bg-brand-500 text-white font-medium hover:bg-brand-400 transition-colors"
+          className="px-6 py-3 rounded-xl bg-violet-500 text-white font-medium hover:bg-violet-600 transition-colors"
         >
           Try Again
         </button>
@@ -166,28 +167,28 @@ function ProjectHeader({
   const momentum = metrics?.momentum || 0;
 
   const getMomentumState = () => {
-    if (momentum >= 80) return { label: "On Fire", color: "text-warning-400" };
-    if (momentum >= 60) return { label: "Flowing", color: "text-success-400" };
-    if (momentum >= 30) return { label: "Building", color: "text-brand-400" };
-    return { label: "Warming Up", color: "text-text-tertiary" };
+    if (momentum >= 80) return { label: "On Fire", color: "text-amber-500" };
+    if (momentum >= 60) return { label: "Flowing", color: "text-emerald-500" };
+    if (momentum >= 30) return { label: "Building", color: "text-violet-500" };
+    return { label: "Warming Up", color: "text-slate-500" };
   };
 
   const state = getMomentumState();
 
   return (
-    <header className="px-10 py-6 border-b border-white/[0.06] bg-surface-0">
+    <header className="px-10 py-6 border-b border-slate-200 bg-white">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-text-tertiary mb-5">
+      <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
         <span
           onClick={onBackToProjects}
-          className="hover:text-text-secondary cursor-pointer transition-colors"
+          className="hover:text-slate-700 cursor-pointer transition-colors"
           role="button"
           tabIndex={0}
         >
           Projects
         </span>
         <ArrowRight className="w-3 h-3" />
-        <span className="text-text-secondary">{project?.name || "Project"}</span>
+        <span className="text-slate-700">{project?.name || "Project"}</span>
       </nav>
 
       {/* Main header */}
@@ -196,10 +197,10 @@ function ProjectHeader({
         <div className="flex items-start gap-5 flex-1 min-w-0">
           {/* Project icon */}
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg flex-shrink-0"
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0"
             style={{
-              backgroundColor: (project?.color || "#7C3AED") + "15",
-              boxShadow: `0 8px 32px ${project?.color || "#7C3AED"}20`,
+              backgroundColor: (project?.color || "#8b5cf6") + "15",
+              color: project?.color || "#8b5cf6",
             }}
           >
             {project?.icon || "📁"}
@@ -208,18 +209,18 @@ function ProjectHeader({
           {/* Project info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-semibold text-text-primary truncate">
+              <h1 className="text-2xl font-semibold text-slate-900 truncate">
                 {project?.name || "Untitled Project"}
               </h1>
               <button
                 onClick={() => setIsStarred(!isStarred)}
-                className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
               >
                 <Star
                   className={`w-5 h-5 transition-colors ${
                     isStarred
-                      ? "fill-warning-400 text-warning-400"
-                      : "text-text-tertiary hover:text-warning-400"
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-slate-400 hover:text-amber-400"
                   }`}
                 />
               </button>
@@ -230,14 +231,14 @@ function ProjectHeader({
               {/* Live indicator */}
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success-400"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="text-sm text-success-400 font-medium">Live</span>
+                <span className="text-sm text-emerald-600 font-medium">Live</span>
               </div>
 
               {/* Active members */}
-              <div className="flex items-center gap-2 text-sm text-text-tertiary">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Users className="w-4 h-4" />
                 <span>{activeUsers || 0} online</span>
               </div>
@@ -246,7 +247,7 @@ function ProjectHeader({
               <div className={`flex items-center gap-2 text-sm font-medium ${state.color}`}>
                 <Zap className="w-4 h-4" />
                 <span>{momentum}</span>
-                <span className="text-text-tertiary font-normal">· {state.label}</span>
+                <span className="text-slate-500 font-normal">· {state.label}</span>
               </div>
             </div>
           </div>
@@ -258,12 +259,12 @@ function ProjectHeader({
             onClick={() => onShipUpdate?.("Shipped an update")}
             className="
               flex items-center gap-2.5 px-5 py-2.5 rounded-xl
-              bg-gradient-to-r from-brand-500 to-purple-600
+              bg-gradient-to-r from-violet-500 to-fuchsia-500
               text-white font-medium text-sm
-              hover:from-brand-400 hover:to-purple-500
+              hover:from-violet-600 hover:to-fuchsia-600
               transition-all duration-200
-              shadow-lg shadow-brand-500/25
-              hover:shadow-xl hover:shadow-brand-500/30
+              shadow-md shadow-violet-500/20
+              hover:shadow-lg hover:shadow-violet-500/30
               hover:-translate-y-0.5 active:translate-y-0
             "
           >
@@ -274,9 +275,9 @@ function ProjectHeader({
           <button
             className="
             flex items-center gap-2 px-4 py-2.5 rounded-xl
-            bg-surface-1 border border-white/[0.08]
-            text-text-secondary text-sm
-            hover:bg-surface-2 hover:border-white/[0.12]
+            bg-white border border-slate-200 shadow-sm
+            text-slate-700 text-sm
+            hover:bg-slate-50 hover:border-slate-300
             transition-all duration-200
           "
           >
@@ -284,15 +285,15 @@ function ProjectHeader({
             <span>Activity</span>
           </button>
 
-          <div className="w-px h-6 bg-white/[0.08]" />
+          <div className="w-px h-6 bg-slate-200" />
 
-          <button className="p-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-tertiary hover:text-text-secondary hover:bg-surface-2 transition-all">
+          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all">
             <Share2 className="w-4 h-4" />
           </button>
 
           <button
             onClick={onSettings}
-            className="p-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-tertiary hover:text-text-secondary hover:bg-surface-2 transition-all"
+            className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -313,7 +314,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   const moreViews = views.slice(6);
 
   return (
-    <nav className="px-10 border-b border-white/[0.06] bg-surface-0/50 backdrop-blur-sm sticky top-0 z-10">
+    <nav className="px-10 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
       <div className="flex items-center gap-1 -mb-px">
         {visibleViews.map((view) => {
           const Icon = view.icon;
@@ -326,20 +327,20 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               className={`
                 relative flex items-center gap-2.5 px-5 py-4
                 text-sm font-medium transition-all duration-200
-                ${isActive ? "text-brand-400" : "text-text-tertiary hover:text-text-secondary"}
+                ${isActive ? "text-violet-600" : "text-slate-500 hover:text-slate-800"}
               `}
               title={view.description}
             >
-              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-brand-400" : ""}`} />
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600" : ""}`} />
               <span>{view.label}</span>
 
               {view.badge && (
-                <span className="px-1.5 py-0.5 rounded-md bg-brand-500/15 text-brand-400 text-xs font-medium">
+                <span className="px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs font-medium">
                   {view.badge}
                 </span>
               )}
 
-              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-brand-500 rounded-full" />}
+              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-violet-500 rounded-full" />}
             </button>
           );
         })}
@@ -348,7 +349,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           <div className="relative">
             <button
               onClick={() => setShowMore(!showMore)}
-              className="flex items-center gap-1.5 px-4 py-4 text-sm text-text-tertiary hover:text-text-secondary transition-colors"
+              className="flex items-center gap-1.5 px-4 py-4 text-sm text-slate-500 hover:text-slate-800 transition-colors"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -356,7 +357,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
             {showMore && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
-                <div className="absolute top-full right-0 mt-2 w-52 bg-surface-1 border border-white/[0.08] rounded-xl shadow-xl z-20 overflow-hidden">
+                <div className="absolute top-full right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden">
                   {moreViews.map((view) => {
                     const Icon = view.icon;
                     return (
@@ -366,12 +367,12 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                           onViewChange(view.id);
                           setShowMore(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-text-secondary hover:bg-white/[0.04] transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                       >
-                        <Icon className="w-4 h-4 text-text-tertiary" />
+                        <Icon className="w-4 h-4 text-slate-500" />
                         <span>{view.label}</span>
                         {view.badge && (
-                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-brand-500/15 text-brand-400 text-xs">
+                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs">
                             {view.badge}
                           </span>
                         )}
@@ -384,7 +385,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           </div>
         )}
 
-        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-text-tertiary hover:text-brand-400 transition-colors ml-1">
+        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-slate-500 hover:text-violet-600 transition-colors ml-1">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -394,29 +395,28 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SAFE PLACEHOLDER CARDS (prevents blank screens)
-// These can be replaced later with real implementations.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
   return (
-    <section className="glass-card p-5">
+    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold opacity-90">Momentum</h3>
-        <span className="text-xs opacity-60">Live</span>
+        <h3 className="text-sm font-semibold text-slate-800">Momentum</h3>
+        <span className="text-xs text-slate-500">Live</span>
       </header>
 
-      <div className="space-y-2 text-sm opacity-85">
+      <div className="space-y-2 text-sm text-slate-700">
         <div className="flex items-center justify-between">
-          <span className="text-xs opacity-70">Score</span>
-          <span className="text-xs opacity-90">{momentum}</span>
+          <span className="text-xs text-slate-500">Score</span>
+          <span className="text-xs font-medium">{momentum}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs opacity-70">Weekly ships</span>
-          <span className="text-xs opacity-90">{weeklyShips}</span>
+          <span className="text-xs text-slate-500">Weekly ships</span>
+          <span className="text-xs font-medium">{weeklyShips}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs opacity-70">Trend</span>
-          <span className="text-xs opacity-90">{trend ?? "—"}</span>
+          <span className="text-xs text-slate-500">Trend</span>
+          <span className="text-xs font-medium">{trend ?? "—"}</span>
         </div>
       </div>
     </section>
@@ -426,22 +426,22 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
 function PriorityStack({ moves }) {
   const items = Array.isArray(moves) ? moves : [];
   return (
-    <section className="glass-card p-5">
+    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold opacity-90">Priority Stack</h3>
-        <span className="text-xs opacity-60">Top moves</span>
+        <h3 className="text-sm font-semibold text-slate-800">Priority Stack</h3>
+        <span className="text-xs text-slate-500">Top moves</span>
       </header>
 
       {items.length > 0 ? (
         <ul className="space-y-2">
           {items.slice(0, 5).map((m, i) => (
-            <li key={m?._id || m?.id || i} className="text-xs opacity-80">
+            <li key={m?._id || m?.id || i} className="text-xs text-slate-700">
               {m?.title || m?.label || m?.text || "Critical move"}
             </li>
           ))}
         </ul>
       ) : (
-        <div className="text-xs opacity-70">No critical moves yet (placeholder)</div>
+        <div className="text-xs text-slate-500">No critical moves yet (placeholder)</div>
       )}
     </section>
   );
@@ -450,10 +450,10 @@ function PriorityStack({ moves }) {
 function ActiveGoalsCard({ objectives, onObjectiveClick }) {
   const items = Array.isArray(objectives) ? objectives : [];
   return (
-    <section className="glass-card p-5">
+    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold opacity-90">Active Goals</h3>
-        <span className="text-xs opacity-60">Focus</span>
+        <h3 className="text-sm font-semibold text-slate-800">Active Goals</h3>
+        <span className="text-xs text-slate-500">Focus</span>
       </header>
 
       {items.length > 0 ? (
@@ -463,7 +463,7 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
               <button
                 type="button"
                 onClick={() => onObjectiveClick?.(g)}
-                className="text-left w-full text-xs opacity-85 hover:opacity-100 transition"
+                className="text-left w-full text-xs text-slate-700 hover:text-slate-900 transition"
               >
                 {g?.title || g?.name || g?.label || "Objective"}
               </button>
@@ -471,7 +471,7 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
           ))}
         </ul>
       ) : (
-        <div className="text-xs opacity-70">No active goals yet (placeholder)</div>
+        <div className="text-xs text-slate-500">No active goals yet (placeholder)</div>
       )}
     </section>
   );
@@ -546,7 +546,7 @@ export default function ProjectHome() {
   // DEV-only: flip to false whenever you want a clean UI again
   const SHOW_DEBUG = import.meta?.env?.DEV === true;
 
-  // Mount log (you asked where to put this)
+  // Mount log
   useEffect(() => {
     console.log("[ProjectHome] mounted id:", id);
   }, [id]);
@@ -610,7 +610,6 @@ export default function ProjectHome() {
     shipUpdate,
     isHealthy,
     hasWarnings,
-    // These may or may not exist in your hook - will use fallbacks
     tasks,
     milestones,
     events,
@@ -722,9 +721,9 @@ export default function ProjectHome() {
   }, []);
 
   const handleAddMilestone = useCallback(() => {
-  console.log("Add milestone");
-  setShowAddMilestone(true);
-}, []);
+    console.log("Add milestone");
+    setShowAddMilestone(true);
+  }, []);
 
   const handleAddEvent = useCallback(() => {
     console.log("Add event");
@@ -752,7 +751,7 @@ export default function ProjectHome() {
   // Error state
   if (error) return <ErrorState error={error?.message || String(error)} onRetry={refresh} />;
 
-  // SAFETY: If hook did not throw an error but project is missing, show readable fallback (prevents black screen)
+  // SAFETY: If hook did not throw an error but project is missing, show readable fallback
   if (!project) {
     return (
       <ErrorState
@@ -763,7 +762,6 @@ export default function ProjectHome() {
   }
 
   const renderViewContent = () => {
-    // Wrap view render in try/catch so a crashing child view doesn't nuke the whole page
     try {
       switch (activeView) {
         case "pulse":
@@ -832,12 +830,11 @@ export default function ProjectHome() {
             />
           );
 
-        // ✅ THE FIX: We are now explicitly passing projectId={id} down to VaultView!
         case "vault":
           return <VaultView projectId={id} files={files || []} onUpload={handleUpload} onFileClick={handleFileClick} onNewFolder={handleNewFolder} />;
 
         default:
-          return <div className="p-10 text-center text-text-tertiary">View not found</div>;
+          return <div className="p-10 text-center text-slate-500">View not found</div>;
       }
     } catch (e) {
       console.error("[ProjectHome] renderViewContent crash:", e);
@@ -851,10 +848,10 @@ export default function ProjectHome() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-0 text-text-primary">
+    <div className="min-h-screen bg-slate-50 text-slate-800">
       {/* DEV Debug strip (non-invasive). Remove anytime. */}
       {SHOW_DEBUG && (
-        <div className="px-10 py-3 border-b border-white/[0.06] bg-surface-0/70 text-xs text-text-tertiary flex flex-wrap gap-3">
+        <div className="px-10 py-3 border-b border-slate-200 bg-white/70 text-xs text-slate-500 flex flex-wrap gap-3">
           <span>ProjectHome OK</span>
           <span>· id: {String(id)}</span>
           <span>· view: {String(activeView)}</span>
@@ -887,11 +884,11 @@ export default function ProjectHome() {
       <KeyboardShortcuts />
 
        {showAddMilestone && (
-  <AddMilestoneModal
-    projectId={id}
-    onClose={() => setShowAddMilestone(false)}
-  />
-)}
+        <AddMilestoneModal
+          projectId={id}
+          onClose={() => setShowAddMilestone(false)}
+        />
+      )}
 
     </div>
   );

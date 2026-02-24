@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC NAVBAR v4.1 - With CreateProject Modal Integration
 // CLEANED: Completely removed hover background boxes to prevent "smudges" on glass
+// ADDED: SubscriptionButton integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -34,6 +35,7 @@ import { NavbarSoundToggle } from "./ui/SoundToggle";
 import { useTeamActivitySound } from "../sounds/NotificationSounds";
 
 import ProjectsCreate from "../pages/ProjectsCreate";
+import SubscriptionButton from "./subscription/SubscriptionButton";
 
 const DEFAULT_PIC = "/default-profile.png";
 
@@ -160,7 +162,7 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
   );
 };
 
-// ✅ PURE ICON HOVER: No background boxes. Just color change and scale.
+// PURE ICON HOVER: No background boxes. Just color change and scale.
 const IconButton = ({ children, onClick, className = "", badge = null, title = "" }) => (
   <button onClick={onClick} title={title} className={`relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}>
     {children}
@@ -285,6 +287,10 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             
             <NavbarSoundToggle />
             <BackgroundColorPicker />
+            
+            {/* INJECTED SUBSCRIPTION BUTTON HERE */}
+            <SubscriptionButton />
+            
             <NotificationCenter />
             
             <IconButton onClick={() => navigate("/messages")} badge={unreadTotal > 0 && <UnreadBadge count={unreadTotal} />} title="Messages">

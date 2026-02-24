@@ -185,7 +185,7 @@ export default function PricingModal({
   const isCanceling = !!cancelAt;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-24 sm:pt-32">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
@@ -193,7 +193,7 @@ export default function PricingModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[75vh] sm:max-h-[80vh] overflow-auto">
         {/* Close button */}
         <button
           onClick={onClose}
