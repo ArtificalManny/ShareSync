@@ -90,7 +90,6 @@ import "./styles/layout-system.css";
 import "./styles/entrance.css";
 import "./styles/heartbeat.css";
 import "./styles/palette.override.css";
-import "./styles/wedge-hotfix.css";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
 import { Menu, X } from "lucide-react";
@@ -222,7 +221,7 @@ const MessageProvider = lazy(() =>
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
-// import useBrandTheme from "./hooks/useBrandTheme.js";
+import useBrandTheme from "./hooks/useBrandTheme.js";
 
 function ScrollToHash() {
   const location = useLocation();
@@ -396,12 +395,9 @@ function AuthenticatedApp({ children, userData }) {
                                   {FOCUS_DOCK_V1 ? (
                                     <FocusProvider>
                                       <ContextTracker />
-
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
+                                      <Suspense fallback={null}>
                                         <WelcomeBack />
-                                      </Suspense> */}
-
+                                      </Suspense>
                                       <Suspense fallback={null}>
                                         <ContextIndicator />
                                       </Suspense>
@@ -413,12 +409,9 @@ function AuthenticatedApp({ children, userData }) {
                                   ) : (
                                     <>
                                       <ContextTracker />
-
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
+                                      <Suspense fallback={null}>
                                         <WelcomeBack />
-                                      </Suspense> */}
-
+                                      </Suspense>
                                       <Suspense fallback={null}>
                                         <ContextIndicator />
                                       </Suspense>
@@ -484,9 +477,9 @@ function AppRoutes() {
               <Sidebar />
             </div>
           </Suspense>
-
-          {/* IMPORTANT: do NOT wrap Navbar in another .navbar div (it already renders a .navbar header) */}
-          <Navbar user={authUser} onLogout={logout} />
+          <div className="navbar">
+            <Navbar user={authUser} onLogout={logout} />
+          </div>
         </>
       )}
 
@@ -752,13 +745,12 @@ function AppRoutes() {
 
 const App = () => {
   // ⭐ WEDGE FIX: We disable the floating container wrapper that pushes your app inward
-  // Temporarily disable brand theme hook entirely while debugging shell/background issues
-  // const { containerAttrs } = useBrandTheme({
-  //   enabled: false,
-  //   applyToDocument: false,
-  //   defaultBrand: "v2",
-  //   defaultAccent: "pandora",
-  // });
+  const { containerAttrs } = useBrandTheme({
+    enabled: false, // Forces off the experimental floating wrapper
+    applyToDocument: false, // Stops it from painting the html/body dark behind the app
+    defaultBrand: "v2",
+    defaultAccent: "pandora",
+  });
 
   return (
     <ErrorBoundary>

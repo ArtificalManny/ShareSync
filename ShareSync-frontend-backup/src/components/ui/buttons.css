@@ -5,6 +5,7 @@
    CHANGES IN v4.0:
    - Updated to light theme colors
    - All functionality preserved exactly
+   - Added GPU render fix for frosted glass hover bugs
    - NO BACKEND CHANGES
    
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -27,6 +28,11 @@
   font-family: inherit;
   white-space: nowrap;
   overflow: hidden;
+
+  /* GPU Render Bug Fix: Prevents bounding boxes over frosted glass */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .btn:focus-visible {
@@ -89,11 +95,11 @@
 .btn--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 .btn--primary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0) translateZ(0);
   box-shadow: 0 2px 6px rgba(139, 92, 246, 0.25);
 }
 
@@ -143,7 +149,7 @@
 .btn--success:hover:not(:disabled) {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* Warning - Amber gradient */
@@ -156,7 +162,7 @@
 .btn--warning:hover:not(:disabled) {
   background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* Danger - Red gradient */
@@ -169,7 +175,7 @@
 .btn--danger:hover:not(:disabled) {
   background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* Live - Cyan gradient */
@@ -182,7 +188,7 @@
 .btn--live:hover:not(:disabled) {
   background: linear-gradient(135deg, #0891B2 0%, #0E7490 100%);
   box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* Energy - Coral/Rose gradient */
@@ -195,7 +201,7 @@
 .btn--energy:hover:not(:disabled) {
   background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%);
   box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* Proton - Legacy purple */
@@ -208,7 +214,7 @@
 .btn--proton:hover:not(:disabled) {
   background: linear-gradient(135deg, #9333EA 0%, #7E22CE 100%);
   box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

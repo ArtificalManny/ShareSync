@@ -447,3 +447,59 @@ aside#app-sidebar,
 #app-sidebar .text-violet-600 {
   color: #7C3AED !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THE FINAL NAVBAR GHOST BUSTER (Appended safely to the bottom)
+   This guarantees that no legacy file (like button.css) can inject a solid 
+   background color onto your frosted glass navbar icons.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+header.navbar button:not(.bg-gradient-to-br):hover,
+header.navbar a:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   WEBKIT GPU RENDER BUG FIX (Backdrop-filter + Transform)
+   This prevents the browser from drawing solid grey bounding boxes when hovering
+   scaled icons over the frosted glass navbar.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+header.navbar button,
+header.navbar a,
+header.navbar .nav-icon {
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  transform: translateZ(0);
+}
+
+header.navbar button:hover,
+header.navbar a:hover,
+header.navbar .nav-icon:hover {
+  /* Safely handles the hover scale while enforcing hardware acceleration */
+  transform: scale(1.1) translateZ(0) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THE WEDGE KILLER (Full-Bleed App Layout)
+   This strips border-radius from all top-level React wrappers and forces the 
+   global background to match the light theme, eliminating corner dark spots.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+html, 
+body, 
+#root, 
+.app-layout, 
+.main-layout, 
+.app-container {
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #F8FAFC !important; /* Matches your Gallery Walk light theme */
+  background-color: #F8FAFC !important;
+}
+
+/* If a specific inner wrapper is causing it, this catches it */
+#root > div {
+  border-radius: 0 !important;
+}

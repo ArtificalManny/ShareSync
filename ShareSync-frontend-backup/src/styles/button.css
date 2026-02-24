@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
    SHARESYNC BUTTONS v4.0 - The Luminous Journey
    Merged legacy .ui-btn support with new Blueprint classes
-   UPDATED: Phase 3 Variable Mapping
+   UPDATED: Phase 3 Variable Mapping + WebKit GPU Glitch Fix
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .ui-btn, .btn {
@@ -23,6 +23,11 @@
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
+
+  /* GPU Render Bug Fix: Prevents bounding boxes over frosted glass */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .ui-btn:disabled, .btn:disabled {
@@ -49,7 +54,7 @@
 .btn-primary:hover:not(:disabled), .ui-btn--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%);
   box-shadow: 0 6px 20px rgba(var(--brand-500-rgb), 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -65,7 +70,7 @@
 .btn-blue:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 100%);
   box-shadow: 0 6px 20px rgba(var(--blue-500-rgb), 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

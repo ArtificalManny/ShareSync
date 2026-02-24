@@ -1,0 +1,42 @@
+/* Frontend-only wedge hotfix
+   Purpose: force shell/layout surfaces to stay light and square during mount + entrance animations.
+   Safe to remove later once root cause is fully isolated.
+*/
+
+html,
+body,
+#root,
+.layout-skin,
+.app-container {
+  background: #f8fafc !important;
+  border-radius: 0 !important;
+}
+
+.navbar {
+  border-radius: 0 !important;
+  background: #ffffff !important;
+}
+
+.main-content,
+.content-wrapper {
+  border-radius: 0 !important;
+  background: #f8fafc !important;
+}
+
+/* During entrance animation, prevent any transient dark shell bleed-through */
+body.app-entrance-active .navbar,
+body.app-entrance-active .main-content,
+body.app-entrance-active .content-wrapper,
+body[data-entrance-phase] .navbar,
+body[data-entrance-phase] .main-content,
+body[data-entrance-phase] .content-wrapper {
+  border-radius: 0 !important;
+  background: #f8fafc !important;
+}
+
+/* If any motion wrapper briefly inherits a dark bg while scaling, this helps */
+body.app-entrance-active [class*="app-container"],
+body.app-entrance-active [class*="layout"],
+body.app-entrance-active [class*="shell"] {
+  border-radius: 0 !important;
+}

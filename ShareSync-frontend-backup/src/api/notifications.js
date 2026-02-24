@@ -6,14 +6,6 @@
 
 import api from './client';
 
-/**
- * Fetch notifications for current user
- * @param {Object} options - Query options
- * @param {number} options.limit - Max notifications to fetch
- * @param {number} options.offset - Pagination offset
- * @param {boolean} options.unreadOnly - Only fetch unread
- * @param {string} options.type - Filter by notification type
- */
 export async function fetchNotifications(options = {}) {
   try {
     const params = new URLSearchParams();
@@ -33,9 +25,6 @@ export async function fetchNotifications(options = {}) {
   }
 }
 
-/**
- * Get unread notification count
- */
 export async function fetchUnreadCount() {
   try {
     const response = await api.get('/api/notifications/unread-count');
@@ -46,9 +35,6 @@ export async function fetchUnreadCount() {
   }
 }
 
-/**
- * Get notification count grouped by type
- */
 export async function fetchCountByType() {
   try {
     const response = await api.get('/api/notifications/count-by-type');
@@ -59,10 +45,6 @@ export async function fetchCountByType() {
   }
 }
 
-/**
- * Mark a single notification as read
- * @param {string} notificationId 
- */
 export async function markAsRead(notificationId) {
   try {
     const response = await api.patch(`/api/notifications/${notificationId}/read`);
@@ -73,9 +55,6 @@ export async function markAsRead(notificationId) {
   }
 }
 
-/**
- * Mark all notifications as read
- */
 export async function markAllAsRead() {
   try {
     const response = await api.patch('/api/notifications/read-all');
@@ -86,10 +65,6 @@ export async function markAllAsRead() {
   }
 }
 
-/**
- * Mark a notification as clicked (also marks as read)
- * @param {string} notificationId 
- */
 export async function markAsClicked(notificationId) {
   try {
     const response = await api.patch(`/api/notifications/${notificationId}/clicked`);
@@ -100,10 +75,6 @@ export async function markAsClicked(notificationId) {
   }
 }
 
-/**
- * Dismiss a notification
- * @param {string} notificationId 
- */
 export async function dismissNotification(notificationId) {
   try {
     const response = await api.patch(`/api/notifications/${notificationId}/dismiss`);
@@ -114,10 +85,6 @@ export async function dismissNotification(notificationId) {
   }
 }
 
-/**
- * Delete a notification
- * @param {string} notificationId 
- */
 export async function deleteNotification(notificationId) {
   try {
     const response = await api.delete(`/api/notifications/${notificationId}`);
@@ -128,9 +95,6 @@ export async function deleteNotification(notificationId) {
   }
 }
 
-/**
- * Delete all read notifications
- */
 export async function deleteAllRead() {
   try {
     const response = await api.delete('/api/notifications/read');
@@ -141,14 +105,6 @@ export async function deleteAllRead() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CHANNEL VERIFICATION (Phase 4 - Email/SMS opt-in)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Start email verification
- * @param {string} email 
- */
 export async function startEmailVerification(email) {
   try {
     const response = await api.post('/api/notifications/channels/email/start', { email });
@@ -159,11 +115,6 @@ export async function startEmailVerification(email) {
   }
 }
 
-/**
- * Verify email with code
- * @param {string} email 
- * @param {string} code 
- */
 export async function verifyEmail(email, code) {
   try {
     const response = await api.post('/api/notifications/channels/email/verify', { email, code });
@@ -174,10 +125,6 @@ export async function verifyEmail(email, code) {
   }
 }
 
-/**
- * Start SMS verification
- * @param {string} phoneNumber 
- */
 export async function startSmsVerification(phoneNumber) {
   try {
     const response = await api.post('/api/notifications/channels/sms/start', { phoneNumber });
@@ -188,11 +135,6 @@ export async function startSmsVerification(phoneNumber) {
   }
 }
 
-/**
- * Verify phone with code
- * @param {string} phoneNumber 
- * @param {string} code 
- */
 export async function verifySms(phoneNumber, code) {
   try {
     const response = await api.post('/api/notifications/channels/sms/verify', { phoneNumber, code });
@@ -203,17 +145,33 @@ export async function verifySms(phoneNumber, code) {
   }
 }
 
-/**
- * Set opt-in preference for a channel
- * @param {'email' | 'sms'} channel 
- * @param {boolean} optIn 
- */
 export async function setChannelOptIn(channel, optIn) {
   try {
     const response = await api.patch(`/api/notifications/channels/${channel}/opt-in`, { optIn });
     return response.data?.data || response.data;
   } catch (error) {
     console.error('[notifications] setChannelOptIn error:', error);
+    throw error;
+  }
+}
+
+// ✅ FIXED: Added missing exports to unblock NotificationSettings.jsx
+export async function updateNotificationSettings(settings) {
+  try {
+    const response = await api.patch('/api/notifications/settings', settings);
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] updateNotificationSettings error:', error);
+    throw error;
+  }
+}
+
+export async function updatePhoneNumber(phoneNumber) {
+  try {
+    const response = await api.patch('/api/notifications/channels/sms/phone', { phoneNumber });
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error('[notifications] updatePhoneNumber error:', error);
     throw error;
   }
 }
@@ -233,4 +191,6 @@ export default {
   startSmsVerification,
   verifySms,
   setChannelOptIn,
+  updateNotificationSettings,
+  updatePhoneNumber,
 };

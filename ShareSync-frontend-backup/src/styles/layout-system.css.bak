@@ -19,21 +19,8 @@ body,
   gap: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
-}
-
-/* Keep root layers full-height so no dark backing peeks through */
-html,
-body,
-#root {
-  width: 100% !important;
-  min-height: 100% !important;
-  background: #f8fafc !important;
-}
-
-.app-container {
-  width: 100% !important;
-  min-height: 100vh !important;
-  background: #f8fafc !important;
+  height: auto !important; 
+  min-height: auto !important; 
 }
 
 /* REMOVED: Hardcoded blue body background. theme.css handles this now. */
@@ -70,15 +57,13 @@ footer {
   left: var(--sidebar-w, 248px) !important;
   right: 0 !important;
   height: 64px !important;
+  /* REMOVED: Hardcoded dark blue background so Tailwind can work */
   z-index: 110 !important; 
   display: flex !important;
   align-items: center !important;
   padding: 0 !important; 
   margin: 0 !important;
   transition: left 220ms ease !important;
-  background: #ffffff !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
 }
 
 body.sidebar-collapsed .navbar {
@@ -111,8 +96,7 @@ body.sidebar-collapsed .navbar {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  background: #f8fafc !important;
-  border-radius: 0 !important;
+  background: transparent !important;
 }
 
 body.sidebar-collapsed .main-content {
@@ -126,9 +110,7 @@ body.sidebar-collapsed .main-content {
   padding: 0 !important; /* Removed 24px padding to kill side wedges */
   border: none !important;
   outline: none !important;
-  background: #f8fafc !important;
-  border-radius: 0 !important;
-  min-height: calc(100vh - 64px) !important;
+  background: transparent !important;
 }
 
 /* ============================================
@@ -259,46 +241,4 @@ main.full-screen {
   .main-content {
     padding-top: 56px !important;
   }
-
-  .content-wrapper {
-    min-height: calc(100vh - 56px) !important;
-  }
-}
-
-/* ============================================
-   WEDGE KILLER - SHELL BACKGROUND GUARANTEE
-   ============================================ */
-
-html,
-body,
-#root,
-.layout-skin,
-.app-container {
-  background: #f8fafc !important;
-  border-radius: 0 !important;
-}
-
-.navbar,
-.main-content,
-.content-wrapper {
-  border-radius: 0 !important;
-}
-
-.navbar {
-  background: #ffffff !important;
-}
-
-.main-content,
-.content-wrapper {
-  background: #f8fafc !important;
-}
-
-/* Defensive during entrance animation */
-body.app-entrance-active .navbar,
-body.app-entrance-active .main-content,
-body.app-entrance-active .content-wrapper,
-body.app-entrance-active .layout-skin,
-body.app-entrance-active .app-container {
-  background: #f8fafc !important;
-  border-radius: 0 !important;
 }

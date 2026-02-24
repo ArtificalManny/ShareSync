@@ -300,3 +300,63 @@ body.app-entrance-active .sidebar-item:nth-child(5) { animation-delay: 600ms; }
 body:not(.app-entrance-active) .entrance-skip-btn {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   WEDGE KILLER V3 - Force full-bleed light shell during app entrance + normal state
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+html, body, #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  background: #f8fafc !important;
+  border-radius: 0 !important;
+  overflow-x: hidden !important;
+}
+
+/* Body state during entrance should never reveal a dark backdrop */
+body.app-entrance-active {
+  background: #f8fafc !important;
+}
+
+/* Kill any floating-frame / gallery-shell wrapper effects */
+.app-container,
+.main-content,
+.content-wrapper,
+.navbar,
+.sidebar,
+[class*="layout"],
+[class*="shell"],
+[class*="frame"] {
+  border-radius: 0 !important;
+}
+
+/* Ensure top-level app wrappers are transparent/light, not dark */
+.app-container,
+.main-content,
+.content-wrapper {
+  background: #f8fafc !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+/* Top chrome should fill edge-to-edge visually */
+.navbar {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: #f8fafc !important; /* or transparent if your navbar styles paint inner bar */
+}
+
+/* Sidebar container can expose dark edges if it has its own shell */
+.sidebar {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+/* Framer motion / transformed wrappers sometimes inherit a dark backdrop */
+body.app-entrance-active [style*="transform"] {
+  border-radius: 0 !important;
+}

@@ -1,6 +1,7 @@
 // src/components/home/MissionCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM v3.0 - PHASE 7: Visual Cohesion + Ship Ceremony
+// FIXED: Mission Card Icon Hover State (Bright pop instead of muddy grey)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from "react";
@@ -63,19 +64,19 @@ export default function MissionCard({ project, onClick, onShipped }) {
                 transition-all duration-300
                 ${
                   isThisShipped
-                    ? "bg-success/10"
+                    ? "bg-success/10 text-success"
                     : isThisShipping
-                    ? "bg-brand/20"
-                    : "bg-surface-2 group-hover:bg-brand/10"
+                    ? "bg-brand/20 text-brand"
+                    : "bg-surface-2 group-hover:bg-white dark:group-hover:bg-slate-800 group-hover:shadow-md group-hover:scale-110 group-hover:text-blue-500 text-text-secondary"
                 }
               `}
             >
               {isThisShipped ? (
-                <CheckCircle2 className="w-4 h-4 text-success" />
+                <CheckCircle2 className="w-4 h-4" />
               ) : isThisShipping ? (
-                <Rocket className="w-4 h-4 text-brand animate-pulse" />
+                <Rocket className="w-4 h-4 animate-pulse" />
               ) : (
-                <span className="text-lg">{project.emoji || "◎"}</span>
+                <span className="text-lg transition-colors duration-300">{project.emoji || "◎"}</span>
               )}
             </div>
 
