@@ -8,6 +8,7 @@ import {
   getFollowStatus,
 } from "../../api/follows";
 import FollowPrefsModal from "./FollowPrefsModal";
+import useSocket from "../../hooks/useSocket"; // ✅ Hooked into Realtime Pub/Sub
 
 export default function FollowButton({
   projectId,
@@ -21,6 +22,9 @@ export default function FollowButton({
   const [isFollowing, setIsFollowing] = useState(false);
   const [preferences, setPreferences] = useState(null);
   const [prefsOpen, setPrefsOpen] = useState(false);
+
+  // ✅ Pull in socket methods for the spectator feed
+  const { joinRoom, leaveRoom } = useSocket();
 
   const btnSize = useMemo(() => {
     if (size === "md") return "px-4 py-2.5 text-sm";
@@ -54,8 +58,14 @@ export default function FollowButton({
         const nextFollowing = Boolean(res?.isFollowing);
         setIsFollowing(nextFollowing);
         setPreferences(res?.preferences || null);
+
+        // ✅ Join or leave the spectator room on initial load
+        if (nextFollowing) {
+          joinRoom(`public:project:${projectId}`);
+        } else {
+          leaveRoom(`public:project:${projectId}`);
+        }
       } catch (e) {
-        // Safe: treat as not following if endpoint fails (prevents Discover from breaking)
         if (!alive) return;
         setIsFollowing(false);
         setPreferences(null);
@@ -70,7 +80,7 @@ export default function FollowButton({
     return () => {
       alive = false;
     };
-  }, [projectId]);
+  }, [projectId, joinRoom, leaveRoom]);
 
   async function onToggleFollow(e) {
     e?.preventDefault?.();
@@ -85,14 +95,19 @@ export default function FollowButton({
         await unfollowProject(projectId);
         setIsFollowing(false);
         setPreferences(null);
+        
+        // ✅ Disconnect from the spectator stream
+        leaveRoom(`public:project:${projectId}`);
         toast({ title: `Unfollowed ${projectName}`, variant: "success" });
       } else {
         const res = await followProject(projectId);
         setIsFollowing(true);
         setPreferences(res?.preferences || preferences || null);
+        
+        // ✅ Instantly connect to the live spectator stream
+        joinRoom(`public:project:${projectId}`);
         toast({ title: `Now following ${projectName}`, variant: "success" });
 
-        // Open prefs right after following (nice UX, optional)
         setPrefsOpen(true);
       }
     } catch (err) {
@@ -143,7 +158,6 @@ export default function FollowButton({
           <span>{label}</span>
         </button>
 
-        {/* Prefs gear (only visible when following) */}
         {isFollowing && (
           <button
             type="button"
