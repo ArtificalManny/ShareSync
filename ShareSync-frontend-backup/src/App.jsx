@@ -4,6 +4,7 @@
 // PHASE F: The Sound of Progress
 // PHASE N: Command & Control System
 // PHASE 2A: WebSocket Socket Provider ⭐ NEW
+// PHASE 3: React Query Caching Layer ⭐ NEW
 // ALIVE AWARE: Adaptive Density + Fatigue Detection + Context Memory
 // ═══════════════════════════════════════════════════════════════════════════════
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
@@ -14,6 +15,9 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+
+// ⭐ PHASE 3: React Query
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
 import Navbar from "./components/Navbar";
@@ -223,6 +227,17 @@ const MessageProvider = lazy(() =>
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
 // import useBrandTheme from "./hooks/useBrandTheme.js";
+
+// ⭐ INITIALIZE QUERY CLIENT
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: true,
+      staleTime: 1000 * 60 * 2, // 2 minutes default cache
+    },
+  },
+});
 
 function ScrollToHash() {
   const location = useLocation();
@@ -762,26 +777,28 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <SoundProvider>
-          <NewToastProvider>
-            <ToastProvider>
-              <OldToastProvider>
-                <Router>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <LayoutSkin>
-                      {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
-                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
-                        <AuthCheck />
-                      </div>
-                    </LayoutSkin>
-                  </Suspense>
-                </Router>
-              </OldToastProvider>
-            </ToastProvider>
-          </NewToastProvider>
-        </SoundProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <SoundProvider>
+            <NewToastProvider>
+              <ToastProvider>
+                <OldToastProvider>
+                  <Router>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <LayoutSkin>
+                        {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
+                        <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
+                          <AuthCheck />
+                        </div>
+                      </LayoutSkin>
+                    </Suspense>
+                  </Router>
+                </OldToastProvider>
+              </ToastProvider>
+            </NewToastProvider>
+          </SoundProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };

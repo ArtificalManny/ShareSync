@@ -5,6 +5,7 @@
 // + PHASE N: User room auto-join (user:{userId})
 // + Notifications event relay preserved (notification:new)
 // + STEP 6: Public project spectator rooms (public:project:{projectId})
+// ⭐ PHASE 4: Optimistic UI & React Query Cache Invalidation
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, {
@@ -15,6 +16,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import useSocket from '../hooks/useSocket';
 import { useAuth } from './AuthContext';
 
@@ -31,6 +33,7 @@ const SocketContext = createContext(null);
 export function SocketProvider({ children }) {
   const { user } = useAuth();
   const userId = user?._id || user?.id || null;
+  const queryClient = useQueryClient();
 
   // Track which rooms we're in
   const [activeRooms, setActiveRooms] = useState([]);
@@ -86,8 +89,27 @@ export function SocketProvider({ children }) {
       'public:project:update': (data) => {
         eventHandlers['public:project:update']?.forEach((handler) => handler(data));
       },
+
+      // ⭐ PHASE 4: React Query Cache Invalidation Listeners
+      'task.completed': (data) => {
+        // Silently tell React Query to fetch fresh Moves and Activities
+        queryClient.invalidateQueries({ queryKey: ['movesToday'] });
+        
+        // Dispatch window event for legacy components not using React Query yet
+        window.dispatchEvent(new CustomEvent('task.completed', { detail: data }));
+        eventHandlers['task.completed']?.forEach((handler) => handler(data));
+      },
+      
+      'presence.updated': (data) => {
+        // Silently tell React Query to fetch fresh Intelligence data (co-working multiplier)
+        queryClient.invalidateQueries({ queryKey: ['intelligence'] });
+        
+        // Dispatch window event for legacy components
+        window.dispatchEvent(new CustomEvent('presence.updated', { detail: data }));
+        eventHandlers['presence.updated']?.forEach((handler) => handler(data));
+      }
     }),
-    [eventHandlers],
+    [eventHandlers, queryClient],
   );
 
   // Initialize socket with user rooms

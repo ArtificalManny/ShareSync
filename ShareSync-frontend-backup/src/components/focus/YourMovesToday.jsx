@@ -1,6 +1,7 @@
 // src/components/focus/YourMovesToday.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE H: Your 3 Moves Today - Cross-Project Focus View
+// ⭐ PHASE 4: Optimistic UI Implementation
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Shows the user's top 3 highest-leverage moves across ALL their projects.
@@ -11,10 +12,12 @@
 // - Real-time refresh on ships/changes
 // - Impact summary footer
 // - Urgency indicators
+// - ⭐ INSTANT Optimistic UI via React Query Mutate
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Target, 
   Zap, 
@@ -33,53 +36,72 @@ export default function YourMovesToday({
   showHeader = true,
   showFooter = true,
   showRefresh = true,
+  moves = null, // From React Query hook in Home.jsx
+  isLoading = false,
+  onRefresh,
   onMoveClick,
   onViewAll,
   className = '',
 }) {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Try context first, fall back to hook
-  let focusData;
+  // Try context first, fall back to hook, fall back to props
+  let focusData = { moves: [], topMoves: [], impactSummary: {}, hasUrgentMoves: false };
   try {
-    focusData = useFocusEngine();
+    const contextData = useFocusEngine();
+    if (contextData && Object.keys(contextData).length > 0) {
+      focusData = contextData;
+    }
   } catch {
     // Context not available, use hook directly
     focusData = useUserFocusMoves({ count: maxMoves });
   }
 
-  const {
-    topMoves = [],
-    moves = [],
-    impactSummary = {},
-    loading,
-    error,
-    isRefreshing,
-    refresh,
-    completeMove,
-    snoozeMove,
-    hasUrgentMoves,
-  } = focusData;
-
-  const displayMoves = (topMoves.length > 0 ? topMoves : moves).slice(0, maxMoves);
+  // Use props (React Query data) if provided, otherwise use focus engine hooks
+  const displayMovesSource = moves || (focusData.topMoves?.length > 0 ? focusData.topMoves : focusData.moves);
+  const displayMoves = displayMovesSource?.slice(0, maxMoves) || [];
+  
+  const loading = isLoading || focusData.loading;
+  const isRefreshing = focusData.isRefreshing || isManualRefreshing;
+  const error = focusData.error;
 
   const handleRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
-    await refresh?.();
+    if (onRefresh) await onRefresh();
+    else if (focusData.refresh) await focusData.refresh();
     setTimeout(() => setIsManualRefreshing(false), 500);
-  }, [refresh]);
+  }, [onRefresh, focusData]);
 
+  // ⭐ PHASE 4: Optimistic Completion
   const handleComplete = useCallback(async (moveId) => {
-    if (completeMove) {
-      await completeMove(moveId);
+    // 1. Snapshot the previous value
+    const previousMoves = queryClient.getQueryData(['movesToday', maxMoves, null]);
+    
+    // 2. Optimistically update to the new value (Remove the task instantly)
+    queryClient.setQueryData(['movesToday', maxMoves, null], (old) => {
+      if (!old) return [];
+      return old.filter(move => (move.id || move._id) !== moveId);
+    });
+
+    try {
+      // 3. Fire the actual server request
+      if (focusData.completeMove) {
+        await focusData.completeMove(moveId);
+      }
+      // Note: If you have a REST endpoint directly mapped here, you would call `axios.patch(...)` instead.
+    } catch (err) {
+      // 4. If the mutation fails, roll back to the previous value
+      queryClient.setQueryData(['movesToday', maxMoves, null], previousMoves);
+      console.error("Optimistic update failed, rolled back UI.", err);
     }
-  }, [completeMove]);
+  }, [focusData, queryClient, maxMoves]);
 
   const handleSnooze = useCallback(async (moveId, hours) => {
-    if (snoozeMove) {
-      await snoozeMove(moveId, hours);
+    if (focusData.snoozeMove) {
+      await focusData.snoozeMove(moveId, hours);
     }
-  }, [snoozeMove]);
+  }, [focusData]);
 
   const isCompact = variant === 'compact' || variant === 'sidebar';
 
@@ -87,15 +109,15 @@ export default function YourMovesToday({
     <div className={`
       ${isCompact ? 'p-4' : 'p-6'} rounded-xl
       bg-surface-1 border border-white/[0.06]
-      ${hasUrgentMoves ? 'border-l-2 border-l-warning' : ''}
+      ${focusData.hasUrgentMoves ? 'border-l-2 border-l-warning' : ''}
       ${className}
     `}>
       {/* Header */}
       {showHeader && (
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${hasUrgentMoves ? 'bg-warning/10' : 'bg-brand/10'}`}>
-              {hasUrgentMoves ? (
+            <div className={`p-2 rounded-lg ${focusData.hasUrgentMoves ? 'bg-warning/10' : 'bg-brand/10'}`}>
+              {focusData.hasUrgentMoves ? (
                 <AlertCircle className="w-4 h-4 text-warning" />
               ) : (
                 <Target className="w-4 h-4 text-brand" />
@@ -105,7 +127,7 @@ export default function YourMovesToday({
               <h3 className="text-sm font-medium text-text-secondary">
                 Your 3 Moves Today
               </h3>
-              {hasUrgentMoves && (
+              {focusData.hasUrgentMoves && (
                 <p className="text-[10px] text-warning">Action needed</p>
               )}
             </div>
@@ -170,11 +192,11 @@ export default function YourMovesToday({
         <div className="space-y-2">
           {displayMoves.map((move, index) => (
             <MoveCard
-              key={move.id}
+              key={move.id || move._id}
               move={move}
               rank={index + 1}
               onClick={onMoveClick}
-              onComplete={handleComplete}
+              onComplete={() => handleComplete(move.id || move._id)}
               onSnooze={handleSnooze}
               showProject={true}
               showActions={!isCompact}
@@ -194,14 +216,14 @@ export default function YourMovesToday({
               Complete all {displayMoves.length} to unlock
             </span>
             <div className="flex items-center gap-3">
-              {impactSummary.totalUnblocks > 0 && (
+              {focusData.impactSummary?.totalUnblocks > 0 && (
                 <span className="text-xs text-cyan-400">
-                  Unblock {impactSummary.totalUnblocks} teammates
+                  Unblock {focusData.impactSummary.totalUnblocks} teammates
                 </span>
               )}
               <span className="flex items-center gap-1 text-xs font-medium text-brand">
                 <Zap className="w-3.5 h-3.5" />
-                +{impactSummary.totalMomentum || displayMoves.reduce((s, m) => s + m.momentum, 0)} momentum
+                +{(focusData.impactSummary?.totalMomentum || 0) || displayMoves.reduce((s, m) => s + (m.momentum || 10), 0)} momentum
               </span>
             </div>
           </div>

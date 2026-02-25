@@ -189,33 +189,6 @@ function computeStreakComparison(summary, activities) {
   };
 }
 
-function computeIntelligencePanel(summary, activities) {
-  const hour = new Date().getHours();
-  const peakWindowStart = 14; // 2pm default
-  const peakWindowEnd = 16; // 4pm default
-
-  const now = Date.now();
-  const last2h = activities.filter((a) => now - a.createdAt <= 2 * 60 * 60 * 1000);
-  const myShips = last2h.filter((a) =>
-    String(a.type).toLowerCase().includes("ship")
-  ).length;
-
-  const productivity = summary?.focus ?? 65;
-  const coWorkingMultiplier = last2h.length >= 8 ? 2.1 : 1.2;
-
-  const inPeak = hour >= peakWindowStart && hour < peakWindowEnd;
-
-  return {
-    peakWindowStart,
-    peakWindowEnd,
-    productivity,
-    coWorkingMultiplier,
-    isCoWorking: coWorkingMultiplier > 1.5,
-    inPeak,
-    myShipsLast2h: myShips,
-  };
-}
-
 export function useHomeRealtime() {
   const [projects, setProjects] = useState([]);
   const [activitiesRaw, setActivitiesRaw] = useState([]);
@@ -353,7 +326,7 @@ export function useHomeRealtime() {
     };
   }, [loadOnce, safeSet]);
 
-  // Instant UI updates from your existing local ship event
+  // Event listeners for WebSocket simulations & local state triggers
   useEffect(() => {
     const onLocalShip = (evt) => {
       const detail = evt?.detail || {};
@@ -370,15 +343,21 @@ export function useHomeRealtime() {
       };
 
       safeSet(setActivitiesRaw, (prev) => [synthetic, ...(Array.isArray(prev) ? prev : [])]);
-
-      // Also update last-good so polling failures don't wipe local events
       lastGoodRef.current.activities = [synthetic, ...(Array.isArray(lastGoodRef.current.activities) ? lastGoodRef.current.activities : [])];
       safeSet(setIsConnected, true);
     };
 
+    // Keep this for components that don't rely on React Query caching yet
+    const onTaskCompleted = () => loadOnce();
+
     window.addEventListener("local-ship", onLocalShip);
-    return () => window.removeEventListener("local-ship", onLocalShip);
-  }, [safeSet]);
+    window.addEventListener("task.completed", onTaskCompleted);
+    
+    return () => {
+      window.removeEventListener("local-ship", onLocalShip);
+      window.removeEventListener("task.completed", onTaskCompleted);
+    };
+  }, [safeSet, loadOnce]);
 
   const activities = useMemo(() => normalizeActivities(activitiesRaw), [activitiesRaw]);
   const missions = useMemo(() => toMissions(projects), [projects]);
@@ -409,12 +388,6 @@ export function useHomeRealtime() {
     [computedSummary, activities]
   );
 
-  const intelligence = useMemo(
-    () => computeIntelligencePanel(computedSummary, activities),
-    [computedSummary, activities]
-  );
-
-  // Shipped stats derived from activities (so it stays “real”)
   const shippedStats = useMemo(() => {
     const last7d = activities.filter((a) => minutesSince(a.createdAt) <= 7 * 24 * 60);
 
@@ -443,9 +416,8 @@ export function useHomeRealtime() {
     summary: computedSummary,
     teamPulse,
     streakComparison,
-    intelligence,
     shippedStats,
     refreshAll: loadOnce,
-    isConnected, // ✅ optional for UI if you want to show "Offline"
+    isConnected,
   };
 }

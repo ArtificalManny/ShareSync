@@ -17,7 +17,7 @@ function normalizeTask(t) {
 }
 
 /** Create a task in a project
- *  Accepts schedule fields: { title, ..., dueDate?, completedAt?, scheduleState? }
+ * Accepts schedule fields: { title, ..., dueDate?, completedAt?, scheduleState? }
  */
 export async function createTask(projectId, payload) {
   if (!projectId) throw new Error('projectId is required');
@@ -27,7 +27,7 @@ export async function createTask(projectId, payload) {
 }
 
 /** Patch/update a task in a project
- *  Accepts schedule fields in patch.
+ * Accepts schedule fields in patch.
  */
 export async function patchTask(projectId, taskId, patch) {
   if (!projectId) throw new Error('projectId is required');
@@ -37,7 +37,7 @@ export async function patchTask(projectId, taskId, patch) {
 }
 
 /** List tasks for a project (optional: cursor/limit, state filters, etc.)
- *  Returns { items, nextCursor } with normalized tasks.
+ * Returns { items, nextCursor } with normalized tasks.
  */
 export async function listTasks(projectId, params = {}) {
   if (!projectId) throw new Error('projectId is required');
@@ -51,4 +51,15 @@ export async function listTasks(projectId, params = {}) {
   return { items, nextCursor: data?.nextCursor ?? null };
 }
 
-export default { createTask, patchTask, listTasks };
+/** Get user priority tasks ("Your 3 Moves Today")
+ */
+export async function getPriorityTasks(limit = 3, projectId = null) {
+  const params = { limit };
+  if (projectId) params.projectId = projectId;
+  
+  const { data } = await client.get('/tasks/priorities', { params });
+  const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+  return items.map(normalizeTask);
+}
+
+export default { createTask, patchTask, listTasks, getPriorityTasks };

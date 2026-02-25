@@ -16,8 +16,6 @@
 // - Progress Bars: Ocean Gradient (blue → cyan → teal)
 // - Accent Bar: Aurora Gradient
 //
-// NO BACKEND CHANGES
-//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -47,6 +45,10 @@ import { useFocusEngine } from "../contexts/FocusEngineContext";
 
 import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
+
+// ⭐ PHASE 3: React Query Custom Hooks
+import { useMovesToday } from "../hooks/useMovesToday";
+import { useIntelligence } from "../hooks/useIntelligence";
 
 /* ───────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet-tinted shadows
@@ -231,11 +233,18 @@ export default function Home() {
     summary,
     teamPulse,
     streakComparison,
-    intelligence,
+    intelligence: fallbackIntelligence, // Used if React Query fails or is loading
     shippedStats,
     refreshAll,
     isConnected,
   } = useHomeRealtime();
+
+  // ⭐ PHASE 3: Fetching cached Realtime Data via React Query
+  const { data: movesData, isLoading: loadingMoves, refetch: refetchMoves } = useMovesToday(3);
+  const { data: queryIntelligence, isLoading: loadingIntelligence } = useIntelligence();
+
+  // Merge intelligence seamlessly
+  const currentIntelligence = queryIntelligence || fallbackIntelligence;
 
   // Entrance highlight
   useEntranceHighlight?.(() => {
@@ -310,8 +319,9 @@ export default function Home() {
       );
 
       setTimeout(() => refreshAll?.(), 800);
+      setTimeout(() => refetchMoves(), 800); // Fetch next move silently
     },
-    [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll]
+    [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll, refetchMoves]
   );
 
   // Section card classes with violet-tinted shadows
@@ -420,7 +430,7 @@ export default function Home() {
       <MomentumStatusBanner />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          YOUR MOVES TODAY
+          YOUR MOVES TODAY (Powered by React Query)
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-8">
         <YourMovesToday
@@ -429,6 +439,9 @@ export default function Home() {
           showHeader={true}
           showFooter={true}
           showRefresh={true}
+          moves={movesData}
+          isLoading={loadingMoves}
+          onRefresh={() => refetchMoves()}
           onMoveClick={handleFocusMoveClick}
           onViewAll={() => console.log("View all moves")}
         />
@@ -507,13 +520,14 @@ export default function Home() {
           <IntelligencePanel
             isBalanced={false}
             onBalanceClick={() => handleOpenPanel("balance")}
-            peakWindowStart={intelligence.peakWindowStart}
-            peakWindowEnd={intelligence.peakWindowEnd}
-            productivity={intelligence.productivity}
-            coWorkingMultiplier={intelligence.coWorkingMultiplier}
-            isCoWorking={intelligence.isCoWorking}
+            peakWindowStart={currentIntelligence?.peakWindowStart || "14:00"}
+            peakWindowEnd={currentIntelligence?.peakWindowEnd || "16:00"}
+            productivity={currentIntelligence?.productivity || 65}
+            coWorkingMultiplier={currentIntelligence?.coWorkingMultiplier || 1.2}
+            isCoWorking={currentIntelligence?.isCoWorking || false}
             momentumLevel={glowLevel}
             isFireMode={isFireMode}
+            isLoading={loadingIntelligence}
           />
 
           <LiveActivityFeed
