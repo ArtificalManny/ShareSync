@@ -96,4 +96,34 @@ export class RealtimeGateway implements OnGatewayInit {
     await socket.leave(room);
     socket.emit('leftUser', { room });
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // ✅ NEW: Generic Room Handlers for Spectator Sockets (Phase 4)
+  // Catch strings emitted by useSocket's joinRoom/leaveRoom calls
+  // ─────────────────────────────────────────────────────────────
+
+  @SubscribeMessage('joinRoom')
+  async joinRoom(
+    @MessageBody() room: string,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    if (!room || typeof room !== 'string') return;
+    
+    // Safety check: Only allow generic joining for public spectator rooms 
+    // or standard project rooms to prevent unauthorized snooping
+    if (room.startsWith('public:project:') || room.startsWith('project:')) {
+      await socket.join(room);
+      socket.emit('joinedRoom', { room });
+    }
+  }
+
+  @SubscribeMessage('leaveRoom')
+  async leaveRoom(
+    @MessageBody() room: string,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    if (!room || typeof room !== 'string') return;
+    await socket.leave(room);
+    socket.emit('leftRoom', { room });
+  }
 }

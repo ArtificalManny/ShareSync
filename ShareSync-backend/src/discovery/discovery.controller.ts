@@ -50,24 +50,24 @@ export class DiscoveryController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // PERSONALIZED FEED (requires auth)
+  // ALGORITHMIC PERSONALIZED FEED (requires auth)
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('feed')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get personalized discovery feed' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiOperation({ summary: 'Get personalized algorithmic discovery feed' })
+  @ApiQuery({ name: 'cursor', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getPersonalizedFeed(
     @Req() req: any,
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit = 10,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     return this.discoveryService.getPersonalizedFeed(
       userId,
-      Number(page),
+      cursor,
       Number(limit),
     );
   }
@@ -98,7 +98,7 @@ export class DiscoveryController {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('sections')
-  @ApiOperation({ summary: 'Get discovery sections (Hot Streaks, Quiet but Promising, etc.)' })
+  @ApiOperation({ summary: 'Get discovery sections' })
   async getDiscoverySections() {
     return this.discoveryService.getDiscoverySections();
   }
