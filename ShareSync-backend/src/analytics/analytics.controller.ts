@@ -127,6 +127,20 @@ export class AnalyticsController {
   // USER ANALYTICS
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @Get('user/intelligence')
+  @ApiOperation({ summary: 'Get real-time user intelligence and co-working stats' })
+  @ApiQuery({ name: 'projectId', required: false })
+  async getIntelligence(@Req() req: any, @Query('projectId') projectId?: string) {
+    const intelligence = await this.analyticsService.getIntelligence(
+      req.user.userId || req.user.sub,
+      projectId
+    );
+    return {
+      success: true,
+      data: intelligence,
+    };
+  }
+
   @Get('user/productivity')
   @ApiOperation({ summary: 'Get current user productivity metrics' })
   async getUserProductivity(@Req() req: any, @Query() query: AnalyticsQueryDto) {

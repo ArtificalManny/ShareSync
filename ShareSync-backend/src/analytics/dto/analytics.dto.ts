@@ -11,6 +11,7 @@ import {
   IsMongoId,
   IsNumber,
   IsDate,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
@@ -74,6 +75,28 @@ export class EventQueryDto extends DateRangeDto {
 // ═══════════════════════════════════════════════════════════════════════════════
 // RESPONSE DTOs
 // ═══════════════════════════════════════════════════════════════════════════════
+
+export class IntelligenceDto {
+  @ApiProperty()
+  @IsString()
+  peakWindowStart: string;
+
+  @ApiProperty()
+  @IsString()
+  peakWindowEnd: string;
+
+  @ApiProperty()
+  @IsNumber()
+  productivity: number;
+
+  @ApiProperty()
+  @IsNumber()
+  coWorkingMultiplier: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  isCoWorking: boolean;
+}
 
 export class ProductivityMetricsDto {
   @ApiProperty()
