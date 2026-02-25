@@ -1,16 +1,20 @@
 // src/pages/Settings.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SETTINGS PAGE v4.1 - Light Theme & Dark Mode Adapted
+// SHARESYNC SETTINGS PAGE v4.2 - Wired to /api/settings
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Control Room" (Adaptive Light/Dark)
 //
-// NO BACKEND CHANGES. LOGIC PRESERVED EXACTLY.
-// ADDED: BillingSettings integration.
+// CHANGES in v4.2:
+// - Switched from getMe()/updateProfile()/updateNotifications
+//   to dedicated Settings API (GET/PUT /settings).
+// - Maps Nest Settings schema to existing React state.
+// - Keeps ALL UI + layout identical.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
-import { getMe, updateProfile, updateNotifications } from '../api/user';
+// OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
+import { getSettings, updateSettings } from '../api/settings';
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
@@ -48,7 +52,7 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
         <div className="h-3 rounded-full bg-slate-200 dark:bg-[#1f1f23] overflow-hidden">
           <div
             className="h-full transition-all duration-300"
-            style={{ 
+            style={{
               width: `${percentage}%`,
               background: 'linear-gradient(90deg, #7C3AED 0%, #3B82F6 50%, #06B6D4 100%)'
             }}
@@ -86,14 +90,14 @@ function Toggle({ label, checked, onChange, description }) {
           className="sr-only peer"
         />
         {/* Toggle track */}
-        <div 
+        <div
           className={`w-11 h-6 rounded-full transition-all border ${checked ? 'border-transparent' : 'border-slate-300 dark:border-[#27272a] bg-slate-200 dark:bg-[#1f1f23]'}`}
-          style={{ 
+          style={{
             background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' : undefined
           }}
         />
         {/* Toggle thumb */}
-        <div 
+        <div
           className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all"
           style={{ left: checked ? '24px' : '4px' }}
         />
@@ -151,10 +155,10 @@ function RadioGroup({ label, options, value, onChange, icon: Icon }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = false }) {
   return (
-    <div 
+    <div
       className={`rounded-2xl border p-6 ${
-        danger 
-          ? 'bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20' 
+        danger
+          ? 'bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20'
           : 'bg-white dark:bg-[#111113] border-slate-200 dark:border-[#1f1f23] shadow-sm dark:shadow-none'
       }`}
     >
@@ -203,7 +207,7 @@ export default function Settings() {
   const [mentorTone, setMentorTone] = useState('wise');
   const [mentorIntensity, setMentorIntensity] = useState(3);
 
-  // LAYER 5: Distraction Shield
+  // LAYER 5: Distraction Shield (stored in focus in backend)
   const [blockedApps, setBlockedApps] = useState(['slack', 'youtube', 'tiktok']);
   const [emergencyBreaksLeft, setEmergencyBreaksLeft] = useState(1);
 
@@ -252,56 +256,105 @@ export default function Settings() {
     localStorage.setItem('ss.theme', 'system');
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LOAD SETTINGS FROM /api/settings
+  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     let ignore = false;
     setLoading(true);
-    getMe()
-      .then((me) => {
-        if (ignore) return;
 
-        setPublicProfile(Boolean(me?.publicProfile ?? true));
-        setDiscoverable(Boolean(me?.discoverable ?? false));
+    getSettings()
+      .then((settings) => {
+        if (ignore || !settings) return;
 
-        const initialTheme = me?.appearance?.theme ?? localStorage.getItem('ss.theme') ?? 'dark'; // default to dark now
+        // Momentum
+        const momentum = settings.momentum || {};
+        setDailyShipsGoal(momentum.dailyGoal ?? 5);
+        setWeekendShipsCount(
+          momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true
+        );
+        setAllowStreakFreeze(
+          momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true
+        );
 
-        setTheme(initialTheme);
-        applyTheme(initialTheme);
-
-        const n = me?.notifications || {};
-        setEmailActivity(Boolean(n.emailActivity ?? true));
-        setEmailDigest(Boolean(n.emailDigest ?? true));
-        setTwoFA(Boolean(me?.security?.twoFA ?? false));
-
-        const mentor = me?.mentor || me?.preferences?.mentor || {};
-        setMentorEnabled(Boolean(mentor.enabled ?? true));
-        setMentorTone(mentor.tone || 'wise');
-        setMentorIntensity(mentor.intensity || 3);
-
-        const momentum = me?.momentum || {};
-        setDailyShipsGoal(momentum.dailyGoal || 5);
-        setWeekendShipsCount(Boolean(momentum.weekendCount ?? true));
-        setAllowStreakFreeze(Boolean(momentum.allowFreeze ?? true));
-
-        const focus = me?.focus || {};
-        setDeepWorkTarget(focus.dailyTarget || 4);
+        // Focus
+        const focus = settings.focus || {};
+        setDeepWorkTarget(focus.dailyTarget ?? 4);
         setAutoStartFocus(Boolean(focus.autoStart ?? false));
         setFocusStartTime(focus.startTime || '09:00');
 
-        setShowStreakTo(me?.social?.showStreakTo || 'friends');
-        setCelebratePublicly(Boolean(me?.social?.celebrate ?? true));
+        // Distraction shield bits (live under focus in schema)
+        setBlockedApps(Array.isArray(focus.blockedApps) ? focus.blockedApps : ['slack', 'youtube', 'tiktok']);
+        setEmergencyBreaksLeft(focus.emergencyBreaksLeft ?? 1);
 
-        setShowLegacyEverywhere(Boolean(me?.legacy?.showEverywhere ?? true));
-        setYearlyMontage(Boolean(me?.legacy?.yearlyVideo ?? false));
+        // Social
+        const social = settings.social || {};
+        setShowStreakTo(social.showStreakTo || 'friends');
+        setCelebratePublicly(Boolean(social.celebrate ?? true));
 
-        setUserMode(me?.appearance?.mode || 'pro');
+        const resolvedPublicProfile =
+          social.publicProfile ??
+          settings.publicProfile ??
+          true;
+        const resolvedDiscoverable =
+          social.discoverable ??
+          settings.discoverable ??
+          false;
+
+        setPublicProfile(Boolean(resolvedPublicProfile));
+        setDiscoverable(Boolean(resolvedDiscoverable));
+
+        // Mentor
+        const mentor = settings.mentor || {};
+        setMentorEnabled(Boolean(mentor.enabled ?? true));
+        setMentorTone(mentor.tone || 'wise');
+        setMentorIntensity(mentor.intensity ?? 3);
+
+        // Legacy
+        const legacy = settings.legacy || {};
+        setShowLegacyEverywhere(Boolean(legacy.showEverywhere ?? true));
+        setYearlyMontage(Boolean(legacy.yearlyVideo ?? false));
+
+        // Appearance
+        const appearance = settings.appearance || {};
+        const initialTheme =
+          appearance.theme ||
+          localStorage.getItem('ss.theme') ||
+          'dark'; // default to dark now
+        setTheme(initialTheme);
+        setUserMode(appearance.mode || 'pro');
+        applyTheme(initialTheme);
+
+        // Notifications
+        const notifications = settings.notifications || {};
+        setEmailActivity(Boolean(notifications.emailActivity ?? true));
+        setEmailDigest(Boolean(notifications.emailDigest ?? true));
+
+        // Security
+        const security = settings.security || {};
+        setTwoFA(Boolean(security.twoFA ?? false));
       })
-      .catch((e) => !ignore && setErrorMsg(String(e?.message || e)))
-      .finally(() => !ignore && setLoading(false));
+      .catch((e) => {
+        if (ignore) return;
+        // Prefer backend message if present
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          'Failed to load settings';
+        setErrorMsg(String(msg));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
     return () => {
       ignore = true;
     };
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SAVE SETTINGS -> PUT /api/settings
+  // ═══════════════════════════════════════════════════════════════════════════
   const handleSave = async (e) => {
     e?.preventDefault?.();
     setErrorMsg('');
@@ -309,10 +362,15 @@ export default function Settings() {
     setSaving(true);
 
     try {
-      await updateProfile({
+      const payload = {
+        // legacy flat fields for backward compatibility
         publicProfile,
         discoverable: Boolean(discoverable),
-        appearance: { theme, mode: userMode },
+
+        appearance: {
+          theme,
+          mode: userMode,
+        },
         mentor: {
           enabled: Boolean(mentorEnabled),
           tone: mentorTone,
@@ -327,22 +385,29 @@ export default function Settings() {
           dailyTarget: deepWorkTarget,
           autoStart: autoStartFocus,
           startTime: focusStartTime,
+          blockedApps,
+          emergencyBreaksLeft,
         },
         social: {
           showStreakTo,
           celebrate: celebratePublicly,
+          publicProfile,
+          discoverable: Boolean(discoverable),
         },
         legacy: {
           showEverywhere: showLegacyEverywhere,
           yearlyVideo: yearlyMontage,
         },
-        security: { twoFA },
-      });
+        notifications: {
+          emailActivity,
+          emailDigest,
+        },
+        security: {
+          twoFA,
+        },
+      };
 
-      await updateNotifications({
-        emailActivity,
-        emailDigest,
-      });
+      await updateSettings(payload);
 
       setOk('Settings saved successfully! 🎉');
       trackMentorSettings({
@@ -352,7 +417,11 @@ export default function Settings() {
         source: 'settings_save',
       });
     } catch (e) {
-      setErrorMsg(e?.response?.data?.message || e?.message || 'Failed to save settings');
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        'Failed to save settings';
+      setErrorMsg(String(msg));
     } finally {
       setSaving(false);
       setTimeout(() => setOk(''), 3000);
@@ -408,10 +477,10 @@ export default function Settings() {
         <form onSubmit={handleSave} className="space-y-6">
 
           {/* LAYER 1: Momentum Engine */}
-          <SectionCard 
-            icon={Target} 
-            iconBg="bg-violet-100 dark:bg-violet-500/10" 
-            iconColor="text-violet-600 dark:text-violet-400" 
+          <SectionCard
+            icon={Target}
+            iconBg="bg-violet-100 dark:bg-violet-500/10"
+            iconColor="text-violet-600 dark:text-violet-400"
             title="Momentum Engine"
           >
             <Slider
@@ -437,10 +506,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* LAYER 2: Focus DNA */}
-          <SectionCard 
-            icon={Brain} 
-            iconBg="bg-blue-100 dark:bg-blue-500/10" 
-            iconColor="text-blue-600 dark:text-blue-400" 
+          <SectionCard
+            icon={Brain}
+            iconBg="bg-blue-100 dark:bg-blue-500/10"
+            iconColor="text-blue-600 dark:text-blue-400"
             title="Focus DNA"
           >
             <Slider
@@ -461,10 +530,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* LAYER 3: Social Proof */}
-          <SectionCard 
-            icon={UsersIcon} 
-            iconBg="bg-cyan-100 dark:bg-cyan-500/10" 
-            iconColor="text-cyan-600 dark:text-cyan-400" 
+          <SectionCard
+            icon={UsersIcon}
+            iconBg="bg-cyan-100 dark:bg-cyan-500/10"
+            iconColor="text-cyan-600 dark:text-cyan-400"
             title="Social Proof"
           >
             <RadioGroup
@@ -492,10 +561,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* LAYER 4: AI Mentor Personality */}
-          <SectionCard 
-            icon={Sparkles} 
-            iconBg="bg-amber-100 dark:bg-amber-500/10" 
-            iconColor="text-amber-600 dark:text-amber-400" 
+          <SectionCard
+            icon={Sparkles}
+            iconBg="bg-amber-100 dark:bg-amber-500/10"
+            iconColor="text-amber-600 dark:text-amber-400"
             title="AI Mentor Personality"
           >
             <Toggle
@@ -528,20 +597,20 @@ export default function Settings() {
           </SectionCard>
 
           {/* Cursor Presence Settings */}
-          <SectionCard 
-            icon={Eye} 
-            iconBg="bg-emerald-100 dark:bg-emerald-500/10" 
-            iconColor="text-emerald-600 dark:text-emerald-400" 
+          <SectionCard
+            icon={Eye}
+            iconBg="bg-emerald-100 dark:bg-emerald-500/10"
+            iconColor="text-emerald-600 dark:text-emerald-400"
             title="Live Cursor Privacy"
           >
             <PresenceSettings />
           </SectionCard>
 
           {/* LAYER 6: Legacy Mode */}
-          <SectionCard 
-            icon={Heart} 
-            iconBg="bg-pink-100 dark:bg-pink-500/10" 
-            iconColor="text-pink-600 dark:text-pink-400" 
+          <SectionCard
+            icon={Heart}
+            iconBg="bg-pink-100 dark:bg-pink-500/10"
+            iconColor="text-pink-600 dark:text-pink-400"
             title="Legacy Mode"
           >
             <Toggle
@@ -567,10 +636,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* LAYER 7: Experience Mode */}
-          <SectionCard 
-            icon={Star} 
-            iconBg="bg-indigo-100 dark:bg-indigo-500/10" 
-            iconColor="text-indigo-600 dark:text-indigo-400" 
+          <SectionCard
+            icon={Star}
+            iconBg="bg-indigo-100 dark:bg-indigo-500/10"
+            iconColor="text-indigo-600 dark:text-indigo-400"
             title="Experience Mode"
           >
             <div className="grid grid-cols-2 gap-4">
@@ -609,10 +678,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* PHASE 4: SETTINGS LAB */}
-          <SectionCard 
-            icon={Beaker} 
-            iconBg="bg-teal-100 dark:bg-teal-500/10" 
-            iconColor="text-teal-600 dark:text-teal-400" 
+          <SectionCard
+            icon={Beaker}
+            iconBg="bg-teal-100 dark:bg-teal-500/10"
+            iconColor="text-teal-600 dark:text-teal-400"
             title="Settings Lab"
           >
             <ExperimentHistory />
@@ -633,10 +702,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* Appearance */}
-          <SectionCard 
-            icon={SettingsIcon} 
-            iconBg="bg-slate-200 dark:bg-zinc-800" 
-            iconColor="text-slate-600 dark:text-zinc-300" 
+          <SectionCard
+            icon={SettingsIcon}
+            iconBg="bg-slate-200 dark:bg-zinc-800"
+            iconColor="text-slate-600 dark:text-zinc-300"
             title="Appearance"
           >
             <div>
@@ -657,10 +726,10 @@ export default function Settings() {
           </SectionCard>
 
           {/* DANGER ZONE */}
-          <SectionCard 
-            icon={AlertTriangle} 
-            iconBg="bg-red-100 dark:bg-red-500/20" 
-            iconColor="text-red-600 dark:text-red-500" 
+          <SectionCard
+            icon={AlertTriangle}
+            iconBg="bg-red-100 dark:bg-red-500/20"
+            iconColor="text-red-600 dark:text-red-500"
             title="Danger Zone"
             danger
           >
