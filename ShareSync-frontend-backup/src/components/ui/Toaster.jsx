@@ -1,53 +1,44 @@
+// src/components/ui/Toaster.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 7.2: Toaster Adapter
+// Maintained for backward compatibility, mapping legacy gradient classes
+// to the new high-contrast "Gallery Walk" theme.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React from "react";
 import ToastHost, { toast as rawToast } from "./toast";
 
-/**
- * Map our semantic variants to strong, high-contrast styles.
- * These classNames lean on gradients we added and force readable text.
- */
 const VARIANT_CLASS = {
-  success: "bg-grad-success text-white shadow-md",
-  error:   "bg-grad-error text-white shadow-md",
-  warning: "bg-grad-orange-cta text-white shadow-md",
-  xp:      "bg-grad-xp text-white shadow-md",
-  info:    "bg-grad-deepblue text-white shadow-md",
+  success: "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-md",
+  error:   "bg-red-50 border-red-200 text-red-700 shadow-md",
+  warning: "bg-amber-50 border-amber-200 text-amber-700 shadow-md",
+  xp:      "bg-violet-50 border-violet-200 text-violet-700 shadow-[0_4px_20px_rgba(139,92,246,0.15)]",
+  info:    "bg-slate-50 border-slate-200 text-slate-800 shadow-md",
 };
 
-/**
- * Safer toast() that auto-applies accessible colors for our common variants.
- * You can still pass your own className to override/extend.
- */
 export function toast(opts = {}) {
   const variant = opts.variant || "info";
-  const cls =
-    VARIANT_CLASS[variant] ||
-    "bg-surface text-[rgb(var(--text))] border border-border";
+  const cls = VARIANT_CLASS[variant] || VARIANT_CLASS.info;
+  
   return rawToast({
     ...opts,
-    // ensure className merges: caller last so they can override if needed
     className: [cls, opts.className].filter(Boolean).join(" "),
   });
 }
 
-/**
- * Convenience helper for XP celebration to keep a consistent copy & style.
- * Usage: toastXp({ amount: 10, reason: 'on-time completion' })
- */
 export function toastXp({ amount = 10, reason = "on-time completion" } = {}) {
   const title = `+${amount} XP`;
   const description = `Awarded for ${reason}.`;
-  toast({
+  
+  // We explicitly call rawToast here so it triggers the framer motion
+  // animation defined in our updated toast.jsx
+  rawToast({
     title,
     description,
-    variant: "xp",
+    variant: "xp", // We'll map this back to 'insight' in toast.jsx or handle it manually
   });
 }
 
-/**
- * Legacy default export stayed “Toaster”; apps can still import it.
- * Prefer: `import { ToastHost } from '../ui/toast'` for raw host,
- * but this keeps existing imports working.
- */
 export default function Toaster() {
   return <ToastHost />;
 }

@@ -1,15 +1,5 @@
 import React, { useEffect, useRef } from "react";
 
-/**
- * Modal
- * Props:
- *  - open: boolean
- *  - onClose: () => void
- *  - title?: string | ReactNode
- *  - children: ReactNode
- *  - initialFocusRef?: React.RefObject (focus on open)
- *  - className?: string (panel extra classes)
- */
 export default function Modal({
   open,
   onClose,
@@ -21,7 +11,6 @@ export default function Modal({
   const overlayRef = useRef(null);
   const panelRef = useRef(null);
 
-  // Lock scroll & focus management
   useEffect(() => {
     if (!open) return;
     const prevOverflow = document.body.style.overflow;
@@ -33,7 +22,6 @@ export default function Modal({
     };
   }, [open, initialFocusRef]);
 
-  // ESC to close
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -51,7 +39,6 @@ export default function Modal({
         ref={overlayRef}
         className="modal-overlay"
         onClick={(e) => {
-          // Close only when clicking the overlay (not the panel)
           if (e.target === overlayRef.current) onClose?.();
         }}
         aria-hidden="true"
@@ -61,15 +48,15 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
-        className={`modal-panel focus:outline-none ${className}`}
+        className={`modal-panel focus:outline-none bg-white/95 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.2),0_0_0_1px_rgba(0,0,0,0.05)] ring-1 ring-white/50 rounded-2xl ${className}`}
         tabIndex={-1}
       >
         {title ? (
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <div className="text-sm font-semibold">{title}</div>
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="text-sm font-semibold text-slate-800">{title}</div>
             <button
               type="button"
-              className="text-sm rounded-md px-2 py-1 hover:bg-surface"
+              className="text-xs font-medium rounded-lg px-2.5 py-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors active:scale-95"
               onClick={() => onClose?.()}
             >
               Close
@@ -77,7 +64,7 @@ export default function Modal({
           </div>
         ) : null}
 
-        <div className="p-4">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </>
   );

@@ -1,13 +1,8 @@
 // src/components/projects/ProjectTasks.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 7: Visual Cohesion - Task List Component
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Features:
-// - Empty state with encouraging copy
-// - Progress bars use purple intensity
-// - Consistent with design token system
-//
+// PHASE 7.1: Contrast Audit - Task List Component
+// OPTICAL TWEAKS: Muted completion states, timestamps, and drag handles so 
+// the active task titles grab immediate attention.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
@@ -17,70 +12,59 @@ import {
 } from 'lucide-react';
 import { EmptyTasks, AllTasksComplete } from '../ui/EmptyState';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS COLOR - Phase 7: Purple intensity
-───────────────────────────────────────────────────────────────────────── */
 const getProgressFillClass = (percentage) => {
-  if (percentage >= 100) return 'bg-success';
-  if (percentage >= 67) return 'bg-brand-400';
-  if (percentage >= 34) return 'bg-brand';
-  return 'bg-brand-700';
+  if (percentage >= 100) return 'bg-emerald-500';
+  if (percentage >= 67) return 'bg-violet-400';
+  if (percentage >= 34) return 'bg-violet-500';
+  return 'bg-violet-600';
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   TASK ITEM
-───────────────────────────────────────────────────────────────────────── */
 function TaskItem({ task, onToggle, onEdit, onDelete }) {
-  const [showActions, setShowActions] = useState(false);
   const isComplete = task.status === 'completed' || task.completed;
 
   return (
     <div 
       className={`
-        group flex items-center gap-3 p-3 rounded-lg
-        bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
+        group flex items-center gap-3 p-3 rounded-xl
+        bg-white border border-slate-200/60
+        hover:border-violet-200/60 hover:shadow-sm
         transition-all duration-200
-        ${isComplete ? 'opacity-60' : ''}
+        ${isComplete ? 'opacity-60 bg-slate-50 border-slate-100 hover:border-slate-200' : ''}
       `}
     >
-      {/* Drag Handle */}
-      <button className="opacity-0 group-hover:opacity-50 hover:opacity-100 cursor-grab">
-        <GripVertical className="w-4 h-4 text-text-tertiary" />
+      <button className="opacity-0 group-hover:opacity-40 hover:!opacity-80 cursor-grab p-1">
+        <GripVertical strokeWidth={1.5} className="w-4 h-4 text-slate-400" />
       </button>
 
-      {/* Checkbox */}
       <button 
         onClick={() => onToggle?.(task)}
         className="flex-shrink-0"
       >
         {isComplete ? (
-          <CheckCircle2 className="w-5 h-5 text-success" />
+          <CheckCircle2 strokeWidth={1.5} className="w-5 h-5 text-emerald-500" />
         ) : (
-          <Circle className="w-5 h-5 text-text-tertiary hover:text-brand transition-colors" />
+          <Circle strokeWidth={1.5} className="w-5 h-5 text-slate-300 hover:text-violet-500 transition-colors" />
         )}
       </button>
 
-      {/* Task Content */}
       <div className="flex-1 min-w-0">
         <h4 className={`
-          text-sm font-medium truncate
-          ${isComplete ? 'text-text-tertiary line-through' : 'text-text-primary'}
+          text-[14px] font-medium truncate leading-tight
+          ${isComplete ? 'text-slate-400 line-through' : 'text-slate-800'}
         `}>
           {task.title || task.name}
         </h4>
         {task.dueDate && (
-          <div className="flex items-center gap-1 mt-0.5 text-xs text-text-tertiary">
-            <Clock className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] font-medium text-slate-400">
+            <Clock strokeWidth={1.5} className="w-3 h-3 relative -top-[0.5px]" />
             <span>{task.dueDate}</span>
           </div>
         )}
       </div>
 
-      {/* Progress (if subtasks) */}
       {task.subtasks?.length > 0 && (
-        <div className="w-20 hidden sm:block">
-          <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+        <div className="w-24 hidden sm:block shrink-0 px-4">
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(task.progress || 0)}`}
               style={{ width: `${task.progress || 0}%` }}
@@ -89,31 +73,26 @@ function TaskItem({ task, onToggle, onEdit, onDelete }) {
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button 
           onClick={() => onEdit?.(task)}
-          className="p-1.5 rounded-md hover:bg-surface-3 text-text-tertiary hover:text-text-primary transition-colors"
+          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
         >
-          <Edit3 className="w-3.5 h-3.5" />
+          <Edit3 strokeWidth={1.5} className="w-4 h-4" />
         </button>
         <button 
           onClick={() => onDelete?.(task)}
-          className="p-1.5 rounded-md hover:bg-error/10 text-text-tertiary hover:text-error transition-colors"
+          className="p-1.5 rounded-md hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 strokeWidth={1.5} className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Chevron */}
-      <ChevronRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+      <ChevronRight strokeWidth={1.5} className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   ADD TASK INPUT
-───────────────────────────────────────────────────────────────────────── */
 function AddTaskInput({ onAdd }) {
   const [value, setValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -132,15 +111,15 @@ function AddTaskInput({ onAdd }) {
       <button
         onClick={() => setIsExpanded(true)}
         className="
-          flex items-center gap-2 w-full p-3 rounded-lg
-          border border-dashed border-white/[0.08]
-          text-text-tertiary hover:text-text-secondary
-          hover:border-white/[0.12] hover:bg-surface-1
+          flex items-center gap-2 w-full p-3.5 rounded-xl
+          border border-dashed border-slate-200
+          text-slate-500 hover:text-slate-800
+          hover:border-slate-300 hover:bg-slate-50
           transition-all duration-200
         "
       >
-        <Plus className="w-4 h-4" />
-        <span className="text-sm">Add task</span>
+        <Plus strokeWidth={2} className="w-4 h-4" />
+        <span className="text-sm font-medium">Add task</span>
       </button>
     );
   }
@@ -154,21 +133,22 @@ function AddTaskInput({ onAdd }) {
         placeholder="What needs to be done?"
         autoFocus
         className="
-          flex-1 px-3 py-2.5 rounded-lg text-sm
-          bg-surface-1 border border-white/[0.1]
-          text-text-primary placeholder:text-text-tertiary
-          focus:border-brand/50 focus:outline-none
-          transition-colors
+          flex-1 px-4 py-2.5 rounded-xl text-sm font-medium
+          bg-white border border-slate-200 shadow-sm
+          text-slate-900 placeholder:text-slate-400
+          focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none
+          transition-all duration-200
         "
       />
       <button
         type="submit"
         disabled={!value.trim()}
         className="
-          px-4 py-2.5 rounded-lg text-sm font-medium
-          bg-brand text-white
-          hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed
-          transition-colors
+          px-5 py-2.5 rounded-xl text-sm font-semibold
+          bg-violet-600 text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]
+          hover:bg-violet-700 active:translate-y-[1px] active:shadow-none
+          disabled:opacity-50 disabled:cursor-not-allowed
+          transition-all duration-200
         "
       >
         Add
@@ -177,8 +157,8 @@ function AddTaskInput({ onAdd }) {
         type="button"
         onClick={() => { setIsExpanded(false); setValue(''); }}
         className="
-          px-3 py-2.5 rounded-lg text-sm
-          text-text-tertiary hover:text-text-primary
+          px-4 py-2.5 rounded-xl text-sm font-medium
+          text-slate-500 hover:text-slate-800 hover:bg-slate-50
           transition-colors
         "
       >
@@ -188,9 +168,6 @@ function AddTaskInput({ onAdd }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────────────────────────────────────── */
 export default function ProjectTasks({ 
   tasks = [], 
   projectName,
@@ -204,7 +181,6 @@ export default function ProjectTasks({
   const completedTasks = tasks.filter(t => t.status === 'completed' || t.completed);
   const allComplete = tasks.length > 0 && activeTasks.length === 0;
 
-  // No tasks at all
   if (tasks.length === 0) {
     return (
       <div className="space-y-4">
@@ -217,7 +193,6 @@ export default function ProjectTasks({
     );
   }
 
-  // All tasks complete - celebration!
   if (allComplete && !showCompleted) {
     return (
       <div className="space-y-4">
@@ -229,7 +204,6 @@ export default function ProjectTasks({
 
   return (
     <div className="space-y-4">
-      {/* Active Tasks */}
       {activeTasks.length > 0 && (
         <div className="space-y-2">
           {activeTasks.map(task => (
@@ -244,13 +218,11 @@ export default function ProjectTasks({
         </div>
       )}
 
-      {/* Add Task */}
       <AddTaskInput onAdd={onAddTask} />
 
-      {/* Completed Tasks */}
       {showCompleted && completedTasks.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-white/[0.06]">
-          <h3 className="text-xs text-text-tertiary uppercase tracking-wider mb-3">
+        <div className="mt-8 pt-6 border-t border-slate-200/60">
+          <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">
             Completed ({completedTasks.length})
           </h3>
           <div className="space-y-2">

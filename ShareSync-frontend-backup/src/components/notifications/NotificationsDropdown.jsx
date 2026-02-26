@@ -1,7 +1,7 @@
 // src/components/notifications/NotificationsDropdown.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS DROPDOWN - Full notification list with actions
-// Phase 9: Real-time updates via context
+// NOTIFICATIONS DROPDOWN - Depth Audit
+// Replaced flat shadow-xl with realistic floating elevation drop shadow.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useCallback } from 'react';
@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationsContext';
 
-// Native replacement for date-fns to avoid dependency errors
 function formatTimeAgo(dateInput) {
   if (!dateInput) return '';
   const seconds = Math.floor((new Date() - new Date(dateInput)) / 1000);
@@ -49,10 +48,6 @@ function formatTimeAgo(dateInput) {
   return 'just now';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATION ICON MAPPING
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const NOTIFICATION_ICONS = {
   task_assigned: { icon: Target, color: 'text-blue-500', bg: 'bg-blue-500/10' },
   task_completed: { icon: Check, color: 'text-teal-500', bg: 'bg-teal-500/10' },
@@ -74,10 +69,6 @@ function getNotificationIcon(type) {
   const key = String(type || '').toLowerCase();
   return NOTIFICATION_ICONS[key] || NOTIFICATION_ICONS.default;
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// NOTIFICATION ITEM
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function NotificationItem({ notification, onMarkRead, onRemove, onClick }) {
   const { icon: IconComponent, color, bg } = getNotificationIcon(notification.type);
@@ -105,12 +96,10 @@ function NotificationItem({ notification, onMarkRead, onRemove, onClick }) {
       `}
       onClick={handleClick}
     >
-      {/* Icon */}
       <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
-        <IconComponent className={`w-4 h-4 ${color}`} />
+        <IconComponent strokeWidth={1.5} className={`w-4 h-4 shrink-0 ${color}`} />
       </div>
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className={`text-sm ${notification.isRead ? 'text-slate-600 dark:text-zinc-400' : 'text-slate-800 dark:text-zinc-200 font-medium'}`}>
@@ -128,7 +117,6 @@ function NotificationItem({ notification, onMarkRead, onRemove, onClick }) {
         </p>
       </div>
 
-      {/* Actions (show on hover) */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {!notification.isRead && (
           <button
@@ -136,10 +124,10 @@ function NotificationItem({ notification, onMarkRead, onRemove, onClick }) {
               e.stopPropagation();
               onMarkRead(notification._id || notification.id);
             }}
-            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 active:scale-95"
             title="Mark as read"
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check strokeWidth={1.5} className="w-3.5 h-3.5 shrink-0" />
           </button>
         )}
         <button
@@ -147,19 +135,15 @@ function NotificationItem({ notification, onMarkRead, onRemove, onClick }) {
             e.stopPropagation();
             onRemove(notification._id || notification.id);
           }}
-          className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500"
+          className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500 active:scale-95"
           title="Remove"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 strokeWidth={1.5} className="w-3.5 h-3.5 shrink-0" />
         </button>
       </div>
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN DROPDOWN
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function NotificationsDropdown({
   open,
@@ -180,36 +164,28 @@ export default function NotificationsDropdown({
     removeNotification,
   } = useNotifications();
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
-
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         onClose();
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open, onClose]);
 
-  // Close on escape
   useEffect(() => {
     if (!open) return;
-
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
     };
-
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onClose]);
 
   const handleNotificationClick = useCallback((notification) => {
-    // Navigate based on notification data
     const data = notification.data || {};
-
     if (data.projectId && data.taskId) {
       navigate(`/projects/${data.projectId}/tasks/${data.taskId}`);
     } else if (data.projectId) {
@@ -217,7 +193,6 @@ export default function NotificationsDropdown({
     } else if (data.conversationId) {
       navigate(`/messages/${data.conversationId}`);
     }
-
     onClose();
   }, [navigate, onClose]);
 
@@ -237,16 +212,15 @@ export default function NotificationsDropdown({
       ref={dropdownRef}
       className={`
         absolute top-full mt-2 ${anchorClassName} ${widthClassName}
-        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
-        rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-black/50
-        z-50 overflow-hidden
+        bg-white/95 dark:bg-[#1f1f23]/95 backdrop-blur-xl border border-slate-200/60 dark:border-white/10
+        shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_24px_60px_-15px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)]
+        rounded-xl z-50 overflow-hidden
         animate-in fade-in slide-in-from-top-2 duration-200
       `}
     >
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/10">
         <div className="flex items-center gap-2">
-          <Bell className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
+          <Bell strokeWidth={1.5} className="w-4 h-4 shrink-0 text-slate-500 dark:text-zinc-400" />
           <h3 className="text-sm font-semibold text-slate-800 dark:text-white">Notifications</h3>
           {unreadCount > 0 && (
             <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-500 text-white rounded-full">
@@ -259,23 +233,22 @@ export default function NotificationsDropdown({
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-50 dark:hover:bg-white/5 rounded transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-50 dark:hover:bg-white/5 rounded transition-colors active:scale-95"
               title="Mark all as read"
             >
-              <CheckCheck className="w-3.5 h-3.5" />
+              <CheckCheck strokeWidth={1.5} className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Mark all read</span>
             </button>
           )}
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors active:scale-95"
           >
-            <X className="w-4 h-4" />
+            <X strokeWidth={1.5} className="w-4 h-4 shrink-0" />
           </button>
         </div>
       </div>
 
-      {/* Notification List */}
       <div
         className="max-h-[400px] overflow-y-auto"
         onScroll={handleScroll}
@@ -283,7 +256,7 @@ export default function NotificationsDropdown({
         {notifications.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
-              <Bell className="w-6 h-6 text-slate-400 dark:text-zinc-500" />
+              <Bell strokeWidth={1.5} className="w-6 h-6 text-slate-400 dark:text-zinc-500 shrink-0" />
             </div>
             <p className="text-sm text-slate-500 dark:text-zinc-400">No notifications yet</p>
             <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
@@ -304,14 +277,14 @@ export default function NotificationsDropdown({
 
             {loading && (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
+                <Loader2 strokeWidth={1.5} className="w-5 h-5 shrink-0 text-violet-500 animate-spin" />
               </div>
             )}
 
             {!loading && hasMore && (
               <button
                 onClick={loadMore}
-                className="w-full py-2 text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                className="w-full py-2 text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors active:scale-95"
               >
                 Load more
               </button>
@@ -320,14 +293,13 @@ export default function NotificationsDropdown({
         )}
       </div>
 
-      {/* Footer */}
       <div className="px-4 py-2 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20">
         <button
           onClick={() => {
             navigate('/notifications');
             onClose();
           }}
-          className="w-full text-center text-xs text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors py-1"
+          className="w-full text-center font-medium text-xs text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors py-1 active:scale-95"
         >
           View all notifications
         </button>

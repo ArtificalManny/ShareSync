@@ -1,9 +1,8 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC NAVBAR v4.2
-// CLEANED: Completely removed hover background boxes to prevent "smudges" on glass
-// ⭐ THEME: Global Semantic Theme enabled
-// ⭐ ANIMATION: Added the "Signature Moment" rotating Sun/Moon toggle
+// SHARESYNC NAVBAR v4.3 - Depth Audit
+// Added inset top highlight to glass navbar. Upgraded Dropdown menu with
+// floating diffuse shadow instead of flat shadow-xl.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -38,9 +37,6 @@ import { useTeamActivitySound } from "../sounds/NotificationSounds";
 import ProjectsCreate from "../pages/ProjectsCreate";
 import SubscriptionButton from "./subscription/SubscriptionButton";
 
-// ⭐ Global Theme Hook
-import { useTheme } from "../contexts/ThemeContext.jsx";
-
 const DEFAULT_PIC = "/default-profile.png";
 
 function getAvatarOverride() {
@@ -71,12 +67,12 @@ const MomentumBadge = () => {
 
   const config = useMemo(() => {
     const configs = {
-      0: { icon: null, color: "text-text-tertiary", bg: "bg-transparent", show: false },
-      1: { icon: Zap, color: "text-brand-500", bg: "bg-brand-50/50 dark:bg-brand-500/10", show: true },
-      2: { icon: Zap, color: "text-brand-600 dark:text-brand-400", bg: "bg-brand-100/50 dark:bg-brand-500/20", show: true },
-      3: { icon: TrendingUp, color: "text-brand-600 dark:text-brand-400", bg: "bg-brand-100/50 dark:bg-brand-500/20", show: true },
-      4: { icon: TrendingUp, color: "text-info-500 dark:text-info-400", bg: "bg-info-50/50 dark:bg-info-500/10", show: true },
-      5: { icon: Flame, color: "text-energy-500", bg: "bg-energy-50/50 dark:bg-energy-500/10", show: true },
+      0: { icon: null, color: "text-slate-400 dark:text-zinc-500", bg: "bg-transparent", show: false },
+      1: { icon: Zap, color: "text-violet-500 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10", show: true },
+      2: { icon: Zap, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-100 dark:bg-violet-500/20", show: true },
+      3: { icon: TrendingUp, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-100 dark:bg-violet-500/20", show: true },
+      4: { icon: TrendingUp, color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10", show: true },
+      5: { icon: Flame, color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10", show: true },
     };
     return configs[glowLevel] || configs[0];
   }, [glowLevel]);
@@ -86,14 +82,14 @@ const MomentumBadge = () => {
 
   return (
     <div className="relative" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
-      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${config.bg} border border-border-subtle transition-all duration-300 ${isFireMode ? "animate-pulse border-energy-500/30" : ""}`}>
-        {Icon && <Icon className={`w-3.5 h-3.5 ${config.color}`} />}
+      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${config.bg} border border-slate-200 dark:border-white/10 transition-all duration-300 ${isFireMode ? "animate-pulse border-orange-300 dark:border-orange-500/30" : ""}`}>
+        {Icon && <Icon strokeWidth={1.5} className={`w-3.5 h-3.5 shrink-0 ${config.color}`} />}
         <span className={`text-xs font-bold ${config.color}`}>{isFireMode ? "🔥" : `L${glowLevel}`}</span>
       </div>
       {showTooltip && (
-        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-background-elevated border border-border-subtle shadow-xl z-50 whitespace-nowrap animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-none z-50 whitespace-nowrap animate-in fade-in slide-in-from-top-2 duration-200">
           <div className={`text-xs font-bold ${config.color}`}>{glowState.charAt(0).toUpperCase() + glowState.slice(1)}</div>
-          <div className="text-[10px] font-medium text-text-tertiary mt-0.5">{message}</div>
+          <div className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 mt-0.5">{message}</div>
         </div>
       )}
     </div>
@@ -125,7 +121,7 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
         const dataUrl = String(reader.result || "");
         try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
         applyUserEverywhere({ avatarUrl: dataUrl });
-        toast({ title: "Photo updated (local)", description: "Backend upload isn't enabled yet — UI will still show your new photo.", variant: "success" });
+        toast({ title: "Photo updated (local)", description: "Backend upload isn't enabled yet.", variant: "success" });
         setShowMenu(false);
         onUploadComplete?.();
       };
@@ -139,25 +135,25 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
 
   return (
     <div className="relative" ref={menuRef}>
-      <button onClick={() => setShowMenu(!showMenu)} className="flex items-center outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-full transition-transform duration-200 hover:scale-105">
-        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-brand-400 transition-colors duration-200">
+      <button onClick={() => setShowMenu(!showMenu)} className="flex items-center outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95">
+        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-300 dark:hover:border-violet-500/50 transition-colors duration-200">
           <UserAvatar size={32} name={displayName} avatarUrl={avatarUrl} ringClassName="ring-0" />
         </div>
       </button>
       {showMenu && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-background-elevated border border-border-subtle rounded-xl shadow-xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-          <Link to="/profile" className="flex items-center gap-3 p-3 hover:bg-surface-2 border-b border-border-subtle transition-colors" onClick={() => setShowMenu(false)}>
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-xl border border-slate-200/60 dark:border-white/10 rounded-xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_24px_60px_-15px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+          <Link to="/profile" className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 border-b border-slate-100 dark:border-white/5 transition-colors" onClick={() => setShowMenu(false)}>
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <UserAvatar size={40} name={displayName} avatarUrl={avatarUrl} ringClassName="ring-0" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-text-primary truncate transition-colors">{displayName}</p>
-              <p className="text-xs font-medium text-text-tertiary transition-colors">View profile</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-white truncate transition-colors">{displayName}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 transition-colors">View profile</p>
             </div>
           </Link>
-          <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-3 hover:bg-surface-2 text-left transition-colors focus-visible:outline-none">
-            <Camera className="w-4 h-4 text-text-muted" />
-            <span className="text-sm font-medium text-text-secondary transition-colors">{uploading ? "Loading..." : "Change photo"}</span>
+          <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 text-left transition-colors focus-visible:outline-none">
+            <Camera strokeWidth={1.5} className="w-4 h-4 text-slate-400 dark:text-zinc-500 shrink-0" />
+            <span className="text-sm font-medium text-slate-600 dark:text-zinc-300 transition-colors">{uploading ? "Loading..." : "Change photo"}</span>
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
         </div>
@@ -166,15 +162,14 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
   );
 };
 
-// PURE ICON HOVER: No background boxes. Just color change and scale.
 const IconButton = ({ children, onClick, className = "", badge = null, title = "" }) => (
-  <button onClick={onClick} title={title} className={`relative p-2 text-text-tertiary hover:text-brand-500 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}>
+  <button onClick={onClick} title={title} className={`relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 active:scale-95 active:translate-y-[1px] focus-visible:outline-none transition-all duration-200 ${className}`}>
     {children}
     {badge}
   </button>
 );
 
-export default function Navbar({ user, onLogout }) {
+export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -182,9 +177,6 @@ export default function Navbar({ user, onLogout }) {
   const unreadTotal = chat?.unreadTotal || 0;
 
   const [showCreateProject, setShowCreateProject] = useState(false);
-
-  // ⭐ Global Theme Hook
-  const { isDarkMode, toggleTheme } = useTheme();
 
   const { glowLevel, isFireMode } = useMomentumContext();
   const { notifications: shipNotifications, addNotification: addShipNotification, dismissNotification: dismissShipNotification } = useShipNotifications();
@@ -245,7 +237,7 @@ export default function Navbar({ user, onLogout }) {
   return (
     <>
       <header
-        className={`navbar sticky top-0 z-40 h-14 bg-background-primary/80 backdrop-blur-md border-b border-border-subtle px-4 lg:px-6 transition-colors duration-500`}
+        className={`navbar sticky top-0 z-40 h-14 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-lg border-b border-slate-200/60 dark:border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-4 lg:px-6 transition-all duration-500`}
         style={navbarGlowStyle}
         data-momentum={glowLevel}
       >
@@ -253,26 +245,26 @@ export default function Navbar({ user, onLogout }) {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 flex items-center justify-center transition-colors duration-200">
-                <Layout className="w-4 h-4 text-text-tertiary" />
+                <Layout strokeWidth={1.5} className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
-              <span className="text-sm font-bold text-text-primary transition-colors duration-200">{getPageName()}</span>
+              <ChevronRight strokeWidth={1.5} className="w-3.5 h-3.5 text-slate-300 dark:text-zinc-600" />
+              <span className="text-sm font-bold text-slate-800 dark:text-white transition-colors duration-200">{getPageName()}</span>
             </div>
-            <div className="hidden lg:block h-5 w-px bg-border-subtle mx-2 transition-colors duration-200" />
+            <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-white/10 mx-2 transition-colors duration-200" />
             <form onSubmit={handleSearch} className="hidden md:flex items-center relative group">
-              <Search className="absolute left-3 w-4 h-4 text-text-tertiary group-focus-within:text-brand-500 transition-colors duration-200" />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search everything..." className="bg-transparent border border-transparent hover:border-border-default rounded-lg pl-9 pr-4 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:bg-background-elevated focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-52 focus:w-72 transition-all duration-300" />
+              <Search strokeWidth={1.5} className="absolute left-3 w-4 h-4 text-slate-400 dark:text-zinc-500 group-focus-within:text-violet-500 transition-colors duration-200" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search everything..." className="bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-[#0F172A] focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 w-52 focus:w-72 transition-all duration-300 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] focus:shadow-none" />
             </form>
           </div>
 
           <div className="flex-1 flex items-center justify-center px-4">
             <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 transition-colors duration-200">
               <SeasonBadge />
-              <div className="w-px h-4 bg-border-subtle transition-colors duration-200" />
+              <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
               <NextMicroStep />
-              <div className="w-px h-4 bg-border-subtle transition-colors duration-200" />
+              <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
               <TeamPresence />
-              <div className="w-px h-4 bg-border-subtle transition-colors duration-200" />
+              <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
               <InlineOnlineIndicator />
             </div>
           </div>
@@ -282,15 +274,15 @@ export default function Navbar({ user, onLogout }) {
             
             <button 
               onClick={() => setShowCreateProject(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-brand text-white hover:scale-105 transition-all duration-200 mr-1 ${isFireMode ? "animate-pulse shadow-md" : "shadow-sm hover:shadow-brand"}`} 
-              style={{ background: isFireMode ? "linear-gradient(135deg, #F97316 0%, #8B5CF6 100%)" : "" }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white hover:from-violet-600 hover:to-violet-700 hover:scale-105 active:scale-95 active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all duration-200 mr-1 ${isFireMode ? "animate-pulse shadow-md shadow-orange-200 dark:shadow-none" : "shadow-[0_1px_2px_rgba(0,0,0,0.1),0_2px_4px_rgba(139,92,246,0.2)] dark:shadow-none"}`} 
+              style={{ background: isFireMode ? "linear-gradient(135deg, #F97316 0%, #8B5CF6 100%)" : "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" }}
             >
-              <Plus className="w-4 h-4" />
+              <Plus strokeWidth={2} className="w-4 h-4 shrink-0" />
               <span className="text-sm font-medium hidden sm:inline">New</span>
             </button>
             
             <FocusModeToggle />
-            <div className="h-5 w-px bg-border-subtle mx-1 hidden sm:block transition-colors duration-200" />
+            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block transition-colors duration-200" />
             
             <NavbarSoundToggle />
             <BackgroundColorPicker />
@@ -300,33 +292,19 @@ export default function Navbar({ user, onLogout }) {
             <NotificationCenter />
             
             <IconButton onClick={() => navigate("/messages")} badge={unreadTotal > 0 && <UnreadBadge count={unreadTotal} />} title="Messages">
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle strokeWidth={1.5} className="w-4 h-4 shrink-0" />
             </IconButton>
             
-            {/* ⭐ ANIMATED THEME TOGGLE: Signature Cross-fade & Rotate */}
-            <button 
-              onClick={toggleTheme} 
-              title={isDarkMode ? "Light mode" : "Dark mode"}
-              className="relative p-2 w-8 h-8 flex items-center justify-center text-text-tertiary hover:text-brand-500 focus-visible:outline-none transition-all duration-200 rounded-lg hover:bg-surface-2 overflow-hidden"
-            >
-              <Sun 
-                className={`absolute w-4 h-4 transition-all duration-500 ease-in-out ${
-                  isDarkMode ? "opacity-0 -rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"
-                }`} 
-              />
-              <Moon 
-                className={`absolute w-4 h-4 transition-all duration-500 ease-in-out ${
-                  isDarkMode ? "opacity-100 rotate-0 scale-100" : "opacity-0 rotate-90 scale-50"
-                }`} 
-              />
-            </button>
+            <IconButton onClick={toggleDarkMode} title={isDarkMode ? "Light mode" : "Dark mode"}>
+              {isDarkMode ? <Sun strokeWidth={1.5} className="w-4 h-4 shrink-0" /> : <Moon strokeWidth={1.5} className="w-4 h-4 shrink-0" />}
+            </IconButton>
             
-            <div className="h-5 w-px bg-border-subtle mx-1 transition-colors duration-200" />
+            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 transition-colors duration-200" />
             
             <ProfileDropdown user={user} onUploadComplete={() => {}} />
             
-            <IconButton onClick={onLogout} className="hover:text-error-500" title="Sign out">
-              <LogOut className="w-4 h-4" />
+            <IconButton onClick={onLogout} className="hover:text-red-500 dark:hover:text-red-400" title="Sign out">
+              <LogOut strokeWidth={1.5} className="w-4 h-4 shrink-0" />
             </IconButton>
           </div>
         </div>

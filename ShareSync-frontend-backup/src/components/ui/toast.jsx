@@ -1,15 +1,19 @@
+// src/components/ui/toast.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 7.2: Toast Notification Audit
+// UPGRADED: Replaced linear CSS slide with Framer Motion spring physics.
+// The toast now physically "pops" onto the screen for a better reward feel.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CheckCircle2, TriangleAlert, Info, X, Sparkles, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import haptic from '../../utils/haptics';
 
 const ToastCtx = createContext({ push: () => {} });
 
 let idCounter = 1;
 
-/**
- * Main toast function
- * Usage: toast({ title: 'Hello', description: 'World', variant: 'success' })
- */
 export function toast(input = {}) {
   const opts = typeof input === 'string' ? { title: input } : input || {};
   const { 
@@ -33,7 +37,6 @@ export function toast(input = {}) {
   
   window.dispatchEvent(ev);
   
-  // Haptic feedback based on variant
   if (variant === 'success') haptic.success();
   else if (variant === 'error') haptic.error();
   else if (variant === 'warning') haptic.warning();
@@ -42,7 +45,6 @@ export function toast(input = {}) {
   return ev.detail.id;
 }
 
-// Convenience methods
 toast.success = (msg, opts = {}) => 
   toast({ 
     title: typeof msg === 'string' ? msg : (msg?.title || 'Success'), 
@@ -75,7 +77,6 @@ toast.info = (msg, opts = {}) =>
     ...opts 
   });
 
-// Special toast for AI insights
 toast.insight = (msg, opts = {}) => 
   toast({ 
     title: typeof msg === 'string' ? msg : (msg?.title || '💡 Insight'), 
@@ -96,11 +97,11 @@ const ICON_MAP = {
 };
 
 const VARIANT_STYLES = {
-  success: 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400',
-  error: 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400',
-  warning: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400',
-  default: 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/90 dark:border-slate-700/60 dark:text-slate-300',
-  insight: 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-500/10 dark:border-purple-500/20 dark:text-purple-400',
+  success: 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-[0_4px_20px_rgba(16,185,129,0.15)]',
+  error: 'bg-red-50 border-red-200 text-red-700 shadow-[0_4px_20px_rgba(239,68,68,0.15)]',
+  warning: 'bg-amber-50 border-amber-200 text-amber-700 shadow-[0_4px_20px_rgba(245,158,11,0.15)]',
+  default: 'bg-slate-50 border-slate-200 text-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.08)]',
+  insight: 'bg-violet-50 border-violet-200 text-violet-700 shadow-[0_4px_20px_rgba(139,92,246,0.15)]',
 };
 
 export function ToastHost() {
@@ -134,85 +135,81 @@ export function ToastHost() {
       aria-atomic="false" 
       role="region" 
       aria-label="Notifications"
-      className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
-      style={{ maxWidth: '400px', width: '90vw' }}
+      className="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"
+      style={{ maxWidth: '380px', width: '90vw' }}
     >
-      {toasts.map((t, index) => {
-        const Icon = ICON_MAP[t.variant] || ICON_MAP.default;
-        const variantClass = VARIANT_STYLES[t.variant] || VARIANT_STYLES.default;
+      <AnimatePresence>
+        {toasts.map((t) => {
+          const Icon = ICON_MAP[t.variant] || ICON_MAP.default;
+          const variantClass = VARIANT_STYLES[t.variant] || VARIANT_STYLES.default;
 
-        return (
-          <div
-            key={t.id}
-            role="status"
-            tabIndex={0}
-            className={`
-              modern-card p-4 shadow-lg pointer-events-auto
-              animate-slide-up border-l-4
-              ${variantClass}
-              cursor-pointer hover:shadow-xl transition-all
-            `}
-            style={{ animationDelay: `${index * 100}ms` }}
-            onClick={() => remove(t.id)}
-          >
-            <div className="flex items-start gap-3">
-              {/* Icon */}
-              <div className="flex-shrink-0 mt-0.5">
-                <Icon className="w-5 h-5" />
+          return (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              layout
+              role="status"
+              className={`
+                relative overflow-hidden rounded-xl p-4 pointer-events-auto border
+                ${variantClass}
+                cursor-pointer hover:shadow-lg transition-shadow active:scale-[0.98]
+              `}
+              onClick={() => remove(t.id)}
+            >
+              <div className="flex items-start gap-3 relative z-10">
+                <div className="flex-shrink-0 mt-0.5">
+                  <Icon strokeWidth={2} className="w-5 h-5" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  {t.title && (
+                    <div className="font-semibold text-[14px] leading-tight mb-1">
+                      {t.title}
+                    </div>
+                  )}
+                  {t.description && (
+                    <div className="text-[13px] font-medium opacity-90 leading-snug">
+                      {t.description}
+                    </div>
+                  )}
+                  {t.action && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        t.action.onClick();
+                        remove(t.id);
+                      }}
+                      className="text-xs font-bold underline hover:no-underline mt-2 opacity-90"
+                    >
+                      {t.action.label} →
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -mr-2 -mt-1 rounded-md hover:bg-black/5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(t.id);
+                  }}
+                >
+                  <X strokeWidth={2} className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                {t.title && (
-                  <div className="font-semibold text-sm mb-0.5">
-                    {t.title}
-                  </div>
-                )}
-                {t.description && (
-                  <div className="text-xs opacity-90">
-                    {t.description}
-                  </div>
-                )}
-                {t.action && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      t.action.onClick();
-                      remove(t.id);
-                    }}
-                    className="text-xs font-medium underline hover:no-underline mt-2"
-                  >
-                    {t.action.label} →
-                  </button>
-                )}
-              </div>
-
-              {/* Close button */}
-              <button
-                className="flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity"
-                aria-label="Dismiss notification"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  remove(t.id);
-                }}
-                title="Dismiss"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Progress bar */}
-            {t.duration > 0 && (
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-1 bg-current opacity-20 origin-left"
-                style={{
-                  animation: `shrink ${t.duration}ms linear`,
-                }}
-              />
-            )}
-          </div>
-        );
-      })}
+              {t.duration > 0 && (
+                <div 
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-current opacity-20 origin-left"
+                  style={{ animation: `shrink ${t.duration}ms linear` }}
+                />
+              )}
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
       
       <style>{`
         @keyframes shrink {

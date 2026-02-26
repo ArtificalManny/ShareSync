@@ -1,15 +1,7 @@
 // src/components/projects/ProjectListItem.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
-// ═══════════════════════════════════════════════════════════════════════════════
-// 3-ZONE PATTERN (Asana-style consistent scanning):
-//
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │ ZONE 1: Identity      │ ZONE 2: Status              │ ZONE 3: Action        │
-// │ ──────────────────    │ ──────────────────          │ ──────────────────    │
-// │ Icon + Title          │ Status pill + Last updated  │ Members + Chevron     │
-// │ (+ public badge)      │                             │                       │
-// └─────────────────────────────────────────────────────────────────────────────┘
+// DESIGN SYSTEM v2.1 - Optical Alignment Audit
+// Added strokeWidth={1.5} to icons and fixed visual weights across all 3 zones.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useRef } from "react";
@@ -18,7 +10,6 @@ import AvatarGroup from "../ui/AvatarGroup.jsx";
 import useRecentFlag from "../../hooks/useRecentFlag";
 import { formatRelativeTime } from "../../utils/formatters";
 
-// Lazy prefetch for performance
 let _prefetchStats = null;
 async function prefetchStats(projectId) {
   try {
@@ -50,7 +41,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
   const statusConfig = useMemo(() => getStatusConfig(status), [status]);
   const hasRecent = useRecentFlag(lastActivityAt, recentWindowMs);
 
-  // Debounced prefetch on hover/focus
   const hoverTimer = useRef(null);
   const handleEnter = () => {
     if (!id) return;
@@ -81,12 +71,7 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
       `}
       aria-label={`Open project ${title}`}
     >
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 1: Identity (What project is this?)
-          Icon + Title + Public badge
-      ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        {/* Icon with recent indicator */}
         <div className="relative shrink-0">
           <div className={`
             w-10 h-10 rounded-lg flex items-center justify-center
@@ -94,69 +79,56 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
             transition-colors duration-200
           `}>
             {emoji ? (
-              <span className="text-lg">{emoji}</span>
+              <span className="text-xl">{emoji}</span>
             ) : icon?.kind === "emoji" ? (
-              <span className="text-lg">{icon.value}</span>
+              <span className="text-xl">{icon.value}</span>
             ) : (
-              <Folder className="w-4 h-4 text-text-tertiary group-hover:text-brand" />
+              <Folder strokeWidth={1.5} className="w-5 h-5 shrink-0 text-text-tertiary group-hover:text-brand" />
             )}
           </div>
           
-          {/* Recent activity dot */}
           {hasRecent && (
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-success border-2 border-surface-1" />
           )}
         </div>
 
-        {/* Title + Public badge */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-text-primary truncate group-hover:text-brand transition-colors">
+            <h3 className="text-sm font-medium text-text-primary leading-tight truncate group-hover:text-brand transition-colors">
               {title}
             </h3>
             {publicEnabled && (
               <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-3 text-text-tertiary shrink-0">
-                <Link2 className="w-3 h-3" />
+                <Link2 strokeWidth={1.5} className="w-3 h-3 shrink-0 relative -top-[0.5px]" />
                 Public
               </span>
             )}
           </div>
           
-          {/* Description preview (if exists) */}
           {project?.description && (
-            <p className="text-xs text-text-tertiary mt-0.5 truncate">
+            <p className="text-xs text-text-tertiary mt-1 truncate leading-tight">
               {project.description}
             </p>
           )}
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 2: Status (How is it going?)
-          Status pill + Last updated time
-      ═══════════════════════════════════════════════════════════════════ */}
       <div className="hidden sm:flex items-center gap-3 shrink-0">
-        {/* Status pill - simple text, color-coded */}
         <span className={`
+          flex items-center
           text-xs font-medium px-2 py-0.5 rounded
           ${statusConfig.pillClass}
         `}>
           {status}
         </span>
         
-        {/* Last updated */}
-        <span className="flex items-center gap-1 text-xs text-text-tertiary">
-          <Clock className="w-3 h-3" />
+        <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+          <Clock strokeWidth={1.5} className="w-3.5 h-3.5 shrink-0 relative -top-[0.5px]" />
           {rel || "—"}
         </span>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          ZONE 3: Action (Who's involved? Navigate)
-          Member avatars + Chevron
-      ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Member avatars */}
         <AvatarGroup
           users={members}
           max={3}
@@ -164,9 +136,8 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
           highlightFirstRecent={hasRecent}
         />
 
-        {/* Chevron */}
-        <ChevronRight className="
-          w-4 h-4 text-text-tertiary
+        <ChevronRight strokeWidth={1.5} className="
+          w-4 h-4 shrink-0 text-text-tertiary
           opacity-0 group-hover:opacity-100
           transition-opacity duration-200
         " />
@@ -174,10 +145,6 @@ export default function ProjectListItem({ project, onClick, recentWindowMs = 10 
     </button>
   );
 }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════════════════════════════════════════ */
 
 function normalizeMembers(list) {
   return list.map((u, i) => ({
@@ -226,7 +193,6 @@ function getStatusConfig(status) {
       pillClass: "bg-surface-3 text-text-tertiary",
     };
   }
-  // Default: In Progress
   return {
     borderClass: "",
     pillClass: "bg-brand/10 text-brand",

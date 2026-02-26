@@ -1,13 +1,8 @@
 // src/pages/ProjectHome.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT HOME: Mission Control with Premium View Navigation
-// Integrates existing hooks/context with new Pulse/Stack/Flow/etc. views
-// ⭐ FIX: Added validation for project ID to prevent /projects/undefined issue
-// ⭐ FIX: RoadmapView now receives projectId for API integration
-// ⭐ ADD: Force-refresh view content on realtime task updates (pulseRefreshKey)
-// ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
-// ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
-// ⭐ THEME: Updated to Phase 4 Semantic "OLED/Gallery" System
+// PROJECT HOME: Phase 5 - Skeletons & Micro-interactions
+// REPLACED: Generic spinner with high-fidelity structural skeleton.
+// ADDED: active:scale-[0.98] transition-transform duration-75 to all raw buttons.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -42,17 +37,10 @@ import {
   Rocket,
   Activity,
   Users,
-  Clock,
   Zap,
-  Target,
-  TrendingUp,
-  CheckCircle2,
-  AlertTriangle,
-  Play,
-  Flame,
-  Eye,
   ArrowRight,
   Sparkles,
+  AlertTriangle
 } from "lucide-react";
 
 // Hooks
@@ -81,24 +69,17 @@ import { applyTaskUpdated } from "../utils/taskRealtime";
 // Pulse
 import PulseWidget from "../components/pulse/PulseWidget";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// VIEW COMPONENTS - Import all the new views
-// ═══════════════════════════════════════════════════════════════════════════════
+// Views
 import StackPanel from "../features/stack/StackPanel";
 import FlowBoard from "../features/flow/FlowBoard";
 import RoadmapPanel from "../components/roadmap/RoadmapPanel";
 import RhythmView from "../components/views/RhythmView";
-// ✅ FIXED IMPORT: Now pointing to our newly built live component
 import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// VIEW CONFIGURATION - Premium ShareSync-branded names
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const PROJECT_VIEWS = [
   { id: "pulse", label: "Pulse", icon: Gauge, description: "Project heartbeat" },
@@ -113,36 +94,71 @@ const PROJECT_VIEWS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LOADING STATE
+// HIGH FIDELITY SKELETON (Replaces Spinner)
 // ═══════════════════════════════════════════════════════════════════════════════
-
-function LoadingState() {
+function ProjectHomeSkeleton() {
   return (
-    <div className="min-h-screen bg-background-secondary flex items-center justify-center transition-colors duration-500">
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-full border-2 border-brand-500/20 border-t-brand-500 animate-spin mx-auto mb-4" />
-        <p className="text-text-tertiary text-sm">Loading project...</p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header Skeleton */}
+      <div className="px-10 py-6 border-b border-slate-200 bg-white">
+        <div className="w-32 h-4 bg-slate-200 rounded-md animate-pulse mb-6" />
+        <div className="flex items-start justify-between gap-8">
+          <div className="flex items-start gap-6 flex-1">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 animate-pulse shrink-0" />
+            <div className="flex-1 space-y-4 pt-1">
+              <div className="w-64 h-8 bg-slate-200 rounded-lg animate-pulse" />
+              <div className="flex gap-4">
+                <div className="w-20 h-4 bg-slate-100 rounded animate-pulse" />
+                <div className="w-24 h-4 bg-slate-100 rounded animate-pulse" />
+                <div className="w-32 h-4 bg-slate-100 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="w-32 h-10 bg-slate-200 rounded-xl animate-pulse" />
+            <div className="w-24 h-10 bg-slate-100 rounded-xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      {/* Nav Skeleton */}
+      <div className="px-10 border-b border-slate-200 bg-white/80 flex gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="w-20 h-12 flex items-center">
+            <div className="w-full h-4 bg-slate-200 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+
+      {/* Grid Skeleton (Pulse View) */}
+      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+        <div className="w-full h-24 bg-slate-200/50 rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-4 h-48 bg-slate-200/50 rounded-2xl animate-pulse" />
+          <div className="col-span-8 h-48 bg-slate-200/50 rounded-2xl animate-pulse" />
+        </div>
+        <div className="grid grid-cols-3 gap-8">
+          <div className="h-64 bg-slate-200/50 rounded-2xl animate-pulse" />
+          <div className="h-64 bg-slate-200/50 rounded-2xl animate-pulse" />
+          <div className="h-64 bg-slate-200/50 rounded-2xl animate-pulse" />
+        </div>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ERROR STATE
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function ErrorState({ error, onRetry }) {
   return (
-    <div className="min-h-screen bg-background-secondary flex items-center justify-center p-6 transition-colors duration-500">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
       <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-full bg-error-50 dark:bg-error-900/20 mx-auto mb-4 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-error-500" />
+        <div className="w-16 h-16 rounded-full bg-red-50 mx-auto mb-4 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-red-500" />
         </div>
-        <h2 className="text-xl font-semibold text-text-primary mb-2">Failed to load project</h2>
-        <p className="text-text-secondary mb-6">{error}</p>
+        <h2 className="text-xl font-semibold text-slate-800 mb-2">Failed to load project</h2>
+        <p className="text-slate-500 mb-6">{error}</p>
         <button
           onClick={onRetry}
-          className="px-6 py-3 rounded-xl bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors"
+          className="px-6 py-3 rounded-xl bg-violet-500 text-white font-semibold hover:bg-violet-600 active:scale-[0.98] transition-all duration-75"
         >
           Try Again
         </button>
@@ -150,10 +166,6 @@ function ErrorState({ error, onRetry }) {
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT HEADER (Simplified, clean)
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function ProjectHeader({
   project,
@@ -167,37 +179,31 @@ function ProjectHeader({
   const momentum = metrics?.momentum || 0;
 
   const getMomentumState = () => {
-    if (momentum >= 80) return { label: "On Fire", color: "text-energy-500" };
-    if (momentum >= 60) return { label: "Flowing", color: "text-success-500" };
-    if (momentum >= 30) return { label: "Building", color: "text-brand-500" };
-    return { label: "Warming Up", color: "text-text-tertiary" };
+    if (momentum >= 80) return { label: "On Fire", color: "text-amber-500" };
+    if (momentum >= 60) return { label: "Flowing", color: "text-emerald-500" };
+    if (momentum >= 30) return { label: "Building", color: "text-violet-500" };
+    return { label: "Warming Up", color: "text-slate-500" };
   };
 
   const state = getMomentumState();
 
   return (
-    <header className="px-10 py-6 border-b border-border-subtle bg-background-elevated transition-colors duration-500">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-text-tertiary mb-5">
-        <span
+    <header className="px-10 py-6 border-b border-slate-200/60 bg-white">
+      <nav className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+        <button
           onClick={onBackToProjects}
-          className="hover:text-text-primary cursor-pointer transition-colors"
-          role="button"
-          tabIndex={0}
+          className="hover:text-slate-700 font-medium active:scale-[0.98] transition-transform duration-75 focus-visible:outline-none"
         >
           Projects
-        </span>
-        <ArrowRight className="w-3 h-3" />
-        <span className="text-text-secondary">{project?.name || "Project"}</span>
+        </button>
+        <ArrowRight strokeWidth={1.5} className="w-4 h-4 shrink-0 relative -top-[0.5px]" />
+        <span className="text-slate-800 font-medium">{project?.name || "Project"}</span>
       </nav>
 
-      {/* Main header */}
       <div className="flex items-start justify-between gap-8">
-        {/* Left: Project identity */}
-        <div className="flex items-start gap-5 flex-1 min-w-0">
-          {/* Project icon */}
+        <div className="flex items-start gap-6 flex-1 min-w-0">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0"
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm flex-shrink-0"
             style={{
               backgroundColor: (project?.color || "#8b5cf6") + "15",
               color: project?.color || "#8b5cf6",
@@ -206,105 +212,97 @@ function ProjectHeader({
             {project?.icon || "📁"}
           </div>
 
-          {/* Project info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-semibold text-text-primary truncate transition-colors duration-500">
+            <div className="flex items-center gap-4 mb-2">
+              <h1 className="text-3xl font-semibold text-slate-900 truncate tracking-tight">
                 {project?.name || "Untitled Project"}
               </h1>
               <button
                 onClick={() => setIsStarred(!isStarred)}
-                className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
+                className="p-2 rounded-lg hover:bg-slate-50 active:scale-[0.90] transition-all duration-75 focus-visible:outline-none"
               >
                 <Star
+                  strokeWidth={1.5}
                   className={`w-5 h-5 transition-colors ${
                     isStarred
                       ? "fill-amber-400 text-amber-400"
-                      : "text-text-tertiary hover:text-amber-400"
+                      : "text-slate-400 hover:text-amber-400"
                   }`}
                 />
               </button>
             </div>
 
-            {/* Status badges */}
-            <div className="flex items-center gap-5">
-              {/* Live indicator */}
+            <div className="flex items-center gap-6 mt-1">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="text-sm text-success-600 dark:text-success-400 font-medium transition-colors duration-500">Live</span>
+                <span className="text-[13px] text-emerald-600 font-semibold uppercase tracking-wide">Live</span>
               </div>
 
-              {/* Active members */}
-              <div className="flex items-center gap-2 text-sm text-text-tertiary transition-colors duration-500">
-                <Users className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 text-sm text-slate-500 font-medium">
+                <Users strokeWidth={1.5} className="w-4 h-4 shrink-0 relative -top-[0.5px]" />
                 <span>{activeUsers || 0} online</span>
               </div>
 
-              {/* Momentum */}
-              <div className={`flex items-center gap-2 text-sm font-medium ${state.color} transition-colors duration-500`}>
-                <Zap className="w-4 h-4" />
+              <div className={`flex items-center gap-1.5 text-sm font-semibold ${state.color}`}>
+                <Zap strokeWidth={1.5} className="w-4 h-4 shrink-0 relative -top-[0.5px]" />
                 <span>{momentum}</span>
-                <span className="text-text-tertiary font-normal">· {state.label}</span>
+                <span className="text-slate-400 font-medium">· {state.label}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => onShipUpdate?.("Shipped an update")}
             className="
-              flex items-center gap-2.5 px-5 py-2.5 rounded-xl
-              bg-gradient-brand
-              text-white font-medium text-sm
-              hover:scale-105
-              transition-all duration-200
-              shadow-md shadow-brand-500/20
-              hover:shadow-lg hover:shadow-brand-500/30
+              flex items-center gap-2 px-5 py-2.5 rounded-xl
+              bg-gradient-to-r from-violet-500 to-fuchsia-500
+              text-white font-semibold text-sm
+              hover:from-violet-600 hover:to-fuchsia-600
+              shadow-[0_1px_2px_rgba(0,0,0,0.1),0_4px_12px_rgba(139,92,246,0.2)]
+              active:scale-[0.98] active:shadow-none
+              transition-all duration-75 focus-visible:outline-none
             "
           >
-            <Rocket className="w-4 h-4" />
+            <Rocket strokeWidth={1.5} className="w-4 h-4 shrink-0 relative -top-[0.5px]" />
             <span>Ship Update</span>
           </button>
 
           <button
             className="
             flex items-center gap-2 px-4 py-2.5 rounded-xl
-            bg-background-elevated border border-border-subtle shadow-sm
-            text-text-secondary text-sm
-            hover:bg-surface-2 hover:border-border-default
-            transition-all duration-200
+            bg-white border border-slate-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.05)]
+            text-slate-700 font-medium text-sm
+            hover:bg-slate-50 hover:border-slate-300
+            active:scale-[0.98] active:shadow-none
+            transition-all duration-75 focus-visible:outline-none
           "
           >
-            <Activity className="w-4 h-4" />
+            <Activity strokeWidth={1.5} className="w-4 h-4 shrink-0 relative -top-[0.5px]" />
             <span>Activity</span>
           </button>
 
-          <div className="w-px h-6 bg-border-subtle transition-colors duration-500" />
+          <div className="w-px h-8 bg-slate-200/60 mx-1" />
 
-          <button className="p-2.5 rounded-xl bg-background-elevated border border-border-subtle shadow-sm text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all">
-            <Share2 className="w-4 h-4" />
+          <button className="p-2.5 rounded-xl bg-white border border-slate-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.05)] text-slate-500 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.95] active:shadow-none transition-all duration-75 focus-visible:outline-none">
+            <Share2 strokeWidth={1.5} className="w-4 h-4 shrink-0" />
           </button>
 
           <button
             onClick={onSettings}
-            className="p-2.5 rounded-xl bg-background-elevated border border-border-subtle shadow-sm text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all"
+            className="p-2.5 rounded-xl bg-white border border-slate-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.05)] text-slate-500 hover:text-slate-800 hover:bg-slate-50 active:scale-[0.95] active:shadow-none transition-all duration-75 focus-visible:outline-none"
           >
-            <Settings className="w-4 h-4" />
+            <Settings strokeWidth={1.5} className="w-4 h-4 shrink-0" />
           </button>
         </div>
       </div>
     </header>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// VIEW NAVIGATION
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   const [showMore, setShowMore] = useState(false);
@@ -313,8 +311,8 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   const moreViews = views.slice(6);
 
   return (
-    <nav className="px-10 border-b border-border-subtle bg-background-elevated/80 backdrop-blur-md sticky top-0 z-10 transition-colors duration-500">
-      <div className="flex items-center gap-1 -mb-px">
+    <nav className="px-10 border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="flex items-center gap-2 -mb-px">
         {visibleViews.map((view) => {
           const Icon = view.icon;
           const isActive = activeView === view.id;
@@ -324,22 +322,22 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               key={view.id}
               onClick={() => onViewChange(view.id)}
               className={`
-                relative flex items-center gap-2.5 px-5 py-4
-                text-sm font-medium transition-all duration-200
-                ${isActive ? "text-brand-500" : "text-text-tertiary hover:text-text-primary"}
+                relative flex items-center gap-2 px-5 py-4
+                text-sm font-semibold transition-all duration-75 active:scale-[0.98] focus-visible:outline-none
+                ${isActive ? "text-violet-600" : "text-slate-500 hover:text-slate-800"}
               `}
               title={view.description}
             >
-              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-brand-500" : ""}`} />
+              <Icon strokeWidth={1.5} className={`w-4 h-4 shrink-0 relative -top-[0.5px] transition-colors ${isActive ? "text-violet-600" : ""}`} />
               <span>{view.label}</span>
 
               {view.badge && (
-                <span className="px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 text-xs font-medium transition-colors duration-500">
+                <span className="px-2 py-0.5 rounded-md bg-violet-100 text-violet-600 text-[10px] font-bold relative -top-[0.5px]">
                   {view.badge}
                 </span>
               )}
 
-              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-brand-500 rounded-full" />}
+              {isActive && <div className="absolute bottom-0 left-4 right-4 h-[3px] bg-violet-600 rounded-t-full" />}
             </button>
           );
         })}
@@ -348,15 +346,15 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           <div className="relative">
             <button
               onClick={() => setShowMore(!showMore)}
-              className="flex items-center gap-1.5 px-4 py-4 text-text-tertiary hover:text-text-primary transition-colors"
+              className="flex items-center gap-2 px-4 py-4 text-sm text-slate-500 hover:text-slate-800 transition-all duration-75 active:scale-[0.95] focus-visible:outline-none"
             >
-              <MoreHorizontal className="w-4 h-4" />
+              <MoreHorizontal strokeWidth={1.5} className="w-4 h-4 shrink-0" />
             </button>
 
             {showMore && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
-                <div className="absolute top-full right-0 mt-2 w-52 bg-background-elevated border border-border-subtle rounded-xl shadow-xl z-20 overflow-hidden">
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-slate-200/60 rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.05)] z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   {moreViews.map((view) => {
                     const Icon = view.icon;
                     return (
@@ -366,12 +364,12 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                           onViewChange(view.id);
                           setShowMore(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-text-secondary hover:bg-surface-2 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors focus-visible:outline-none"
                       >
-                        <Icon className="w-4 h-4 text-text-tertiary" />
+                        <Icon strokeWidth={1.5} className="w-4 h-4 shrink-0 text-slate-400" />
                         <span>{view.label}</span>
                         {view.badge && (
-                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 text-xs transition-colors duration-500">
+                          <span className="ml-auto px-2 py-0.5 rounded-md bg-violet-100 text-violet-600 text-[10px] font-bold">
                             {view.badge}
                           </span>
                         )}
@@ -384,38 +382,35 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           </div>
         )}
 
-        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-text-tertiary hover:text-brand-500 transition-colors ml-1">
-          <Plus className="w-4 h-4" />
+        <button className="flex items-center gap-2 px-4 py-4 text-sm text-slate-500 hover:text-violet-600 transition-all duration-75 active:scale-[0.95] ml-2 focus-visible:outline-none">
+          <Plus strokeWidth={2} className="w-4 h-4 shrink-0" />
         </button>
       </div>
     </nav>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SAFE PLACEHOLDER CARDS (prevents blank screens)
-// ═══════════════════════════════════════════════════════════════════════════════
-
+// SAFE PLACEHOLDER CARDS
 function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
   return (
-    <section className="bg-background-elevated border border-border-subtle rounded-2xl p-5 shadow-sm transition-colors duration-500">
-      <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-text-primary">Momentum</h3>
-        <span className="text-xs text-text-tertiary">Live</span>
+    <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+      <header className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-slate-800">Momentum</h3>
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Live</span>
       </header>
 
-      <div className="space-y-2 text-sm text-text-secondary">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-text-tertiary">Score</span>
-          <span className="text-xs font-medium text-text-primary">{momentum}</span>
+          <span className="text-[13px] font-medium text-slate-500">Score</span>
+          <span className="text-sm font-bold text-slate-800">{momentum}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-text-tertiary">Weekly ships</span>
-          <span className="text-xs font-medium text-text-primary">{weeklyShips}</span>
+          <span className="text-[13px] font-medium text-slate-500">Weekly ships</span>
+          <span className="text-sm font-bold text-slate-800">{weeklyShips}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-text-tertiary">Trend</span>
-          <span className="text-xs font-medium text-text-primary">{trend ?? "—"}</span>
+          <span className="text-[13px] font-medium text-slate-500">Trend</span>
+          <span className="text-sm font-bold text-slate-800">{trend ?? "—"}</span>
         </div>
       </div>
     </section>
@@ -425,22 +420,22 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
 function PriorityStack({ moves }) {
   const items = Array.isArray(moves) ? moves : [];
   return (
-    <section className="bg-background-elevated border border-border-subtle rounded-2xl p-5 shadow-sm transition-colors duration-500">
-      <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-text-primary">Priority Stack</h3>
-        <span className="text-xs text-text-tertiary">Top moves</span>
+    <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+      <header className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-slate-800">Priority Stack</h3>
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Top moves</span>
       </header>
 
       {items.length > 0 ? (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {items.slice(0, 5).map((m, i) => (
-            <li key={m?._id || m?.id || i} className="text-xs text-text-secondary">
+            <li key={m?._id || m?.id || i} className="text-[14px] font-medium text-slate-700 leading-tight">
               {m?.title || m?.label || m?.text || "Critical move"}
             </li>
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-text-tertiary">No critical moves yet (placeholder)</div>
+        <div className="text-[13px] text-slate-500">No critical moves yet (placeholder)</div>
       )}
     </section>
   );
@@ -449,20 +444,20 @@ function PriorityStack({ moves }) {
 function ActiveGoalsCard({ objectives, onObjectiveClick }) {
   const items = Array.isArray(objectives) ? objectives : [];
   return (
-    <section className="bg-background-elevated border border-border-subtle rounded-2xl p-5 shadow-sm transition-colors duration-500">
-      <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-text-primary">Active Goals</h3>
-        <span className="text-xs text-text-tertiary">Focus</span>
+    <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+      <header className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-slate-800">Active Goals</h3>
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Focus</span>
       </header>
 
       {items.length > 0 ? (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {items.slice(0, 5).map((g, i) => (
             <li key={g?._id || g?.id || i}>
               <button
                 type="button"
                 onClick={() => onObjectiveClick?.(g)}
-                className="text-left w-full text-xs text-text-secondary hover:text-text-primary transition"
+                className="text-left w-full text-[14px] font-medium text-slate-700 hover:text-violet-600 transition-colors focus-visible:outline-none"
               >
                 {g?.title || g?.name || g?.label || "Objective"}
               </button>
@@ -470,15 +465,11 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-text-tertiary">No active goals yet (placeholder)</div>
+        <div className="text-[13px] text-slate-500">No active goals yet (placeholder)</div>
       )}
     </section>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PULSE VIEW - Main Overview Dashboard
-// ═══════════════════════════════════════════════════════════════════════════════
 
 function PulseView({
   project,
@@ -492,13 +483,11 @@ function PulseView({
   tasks = [],
 }) {
   return (
-    <div className="p-10 max-w-[1600px] mx-auto">
-      {/* Row 0: Pulse mini widget */}
+    <div className="p-8 max-w-[1600px] mx-auto">
       <div className="mb-8">
         <PulseWidget tasks={tasks} />
       </div>
 
-      {/* Row 1: Momentum + Priority Stack */}
       <div className="grid grid-cols-12 gap-8 mb-8">
         <div className="col-span-4">
           <MomentumCard
@@ -512,14 +501,12 @@ function PulseView({
         </div>
       </div>
 
-      {/* Row 2: Sprint + Foresight + Activity */}
       <div className="grid grid-cols-3 gap-8 mb-8">
         <SprintCard sprint={sprint} onAction={onSprintAction} />
         <ForesightCard metrics={metrics} />
         <LiveActivityCard activities={activity} />
       </div>
 
-      {/* Row 3: Team Capacity + Active Goals */}
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-5">
           <TeamCapacityCard metrics={metrics} />
@@ -532,31 +519,21 @@ function PulseView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  // DEV-only: flip to false whenever you want a clean UI again
   const SHOW_DEBUG = import.meta?.env?.DEV === true;
 
-  // Mount log
   useEffect(() => {
     console.log("[ProjectHome] mounted id:", id);
   }, [id]);
 
-  // purely UI-only layout knob (no backend impact)
-  const pagePad = isMobile ? "p-6" : "p-10";
+  const pagePad = isMobile ? "p-4" : "p-8";
   const pageWrap = `${pagePad} max-w-[1600px] mx-auto`;
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ⭐ FIX: VALIDATION - Redirect if project ID is missing or invalid
-  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     if (!id || id === "undefined" || id === "null") {
       console.error("[ProjectHome] Invalid project ID detected:", id);
@@ -569,31 +546,25 @@ export default function ProjectHome() {
     }
   }, [id, navigate]);
 
-  // Early return while redirecting (show loading state briefly)
+  // Use our new high-fidelity skeleton instead of a spinner
   if (!id || id === "undefined" || id === "null") {
-    return <LoadingState />;
+    return <ProjectHomeSkeleton />;
   }
 
-  // View state
   const [activeView, setActiveView] = useState("pulse");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
 
-  // Presence
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
   const { projectStats } = usePresence({ autoDetectIdle: true });
   const { triggerPulse } = useGlobalPulse();
 
-  // Realtime
   const { joinProjectRoom, leaveProjectRoom, subscribe } = useSocketContext();
 
-  // Local "live" tasks patched by socket events (keeps hook untouched)
   const [liveTasks, setLiveTasks] = useState([]);
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
-
   const [showAddMilestone, setShowAddMilestone] = useState(false);
 
-  // Project data from your existing hook
   const {
     project,
     metrics,
@@ -616,17 +587,6 @@ export default function ProjectHome() {
     files,
   } = useProjectOverview(id);
 
-  // Render heartbeat log (helps debug silent black screens)
-  useEffect(() => {
-    console.log("[ProjectHome] render-state", {
-      id,
-      loading,
-      hasError: Boolean(error),
-      hasProject: Boolean(project),
-      activeView,
-    });
-  }, [id, loading, error, project, activeView]);
-
   const baseTasks = useMemo(() => {
     if (Array.isArray(tasks)) return tasks;
     if (Array.isArray(tasks?.items)) return tasks.items;
@@ -637,17 +597,13 @@ export default function ProjectHome() {
     setLiveTasks(baseTasks);
   }, [baseTasks]);
 
-  // Join project room + listen for realtime task updates
   useEffect(() => {
     if (!id) return;
-
-    console.log("[ProjectHome.jsx] joining room (APP):", id);
     joinProjectRoom(id);
 
     const handler = (payload) => {
       const payloadProjectId = payload?.projectId?.toString?.() || payload?.projectId;
       if (payloadProjectId && payloadProjectId !== id) return;
-
       setLiveTasks((prev) => applyTaskUpdated(prev, payload));
       setPulseRefreshKey((k) => k + 1);
     };
@@ -662,14 +618,12 @@ export default function ProjectHome() {
     };
   }, [id, joinProjectRoom, leaveProjectRoom, subscribe]);
 
-  // Join/leave project presence
   useEffect(() => {
     if (!id) return;
     joinProject(id);
     return () => leaveProject(id);
   }, [id, joinProject, leaveProject]);
 
-  // Handle ship update
   const handleShipUpdate = useCallback(
     async (description) => {
       try {
@@ -685,181 +639,71 @@ export default function ProjectHome() {
     [shipUpdate, flashShip, triggerPulse]
   );
 
-  // Navigation handlers
-  const handleSettings = useCallback(() => {
-    navigate(`/projects/${id}/settings`);
-  }, [navigate, id]);
-
-  const handleBackToProjects = useCallback(() => {
-    navigate("/projects");
-  }, [navigate]);
-
-  const handleObjectiveClick = useCallback(
-    (objective) => {
-      navigate(`/projects/${id}/objectives/${objective.id}`);
-    },
-    [navigate, id]
-  );
+  const handleSettings = useCallback(() => navigate(`/projects/${id}/settings`), [navigate, id]);
+  const handleBackToProjects = useCallback(() => navigate("/projects"), [navigate]);
+  const handleObjectiveClick = useCallback((objective) => navigate(`/projects/${id}/objectives/${objective.id}`), [navigate, id]);
 
   const handleSprintAction = useCallback(
     (action) => {
-      if (action === "start") {
-        console.log("Start sprint");
-      } else if (action === "continue") {
-        navigate(`/projects/${id}/sprint`);
-      } else if (action === "review") {
-        console.log("Review sprint");
-      }
+      if (action === "continue") navigate(`/projects/${id}/sprint`);
     },
     [navigate, id]
   );
 
-  // VIEW-SPECIFIC HANDLERS (placeholders)
-  const handleMilestoneClick = useCallback((milestone) => {
-    console.log("Milestone clicked:", milestone?._id || milestone?.id);
-  }, []);
+  const handleMilestoneClick = useCallback((milestone) => console.log("Milestone clicked:", milestone?._id || milestone?.id), []);
+  const handleAddMilestone = useCallback(() => setShowAddMilestone(true), []);
+  const handleAddEvent = useCallback(() => {}, []);
+  const handleEventClick = useCallback((event) => {}, []);
+  const handleUpload = useCallback(() => {}, []);
+  const handleFileClick = useCallback((file) => {}, []);
+  const handleNewFolder = useCallback(() => {}, []);
 
-  const handleAddMilestone = useCallback(() => {
-    console.log("Add milestone");
-    setShowAddMilestone(true);
-  }, []);
-
-  const handleAddEvent = useCallback(() => {
-    console.log("Add event");
-  }, []);
-
-  const handleEventClick = useCallback((event) => {
-    console.log("Event clicked:", event.id);
-  }, []);
-
-  const handleUpload = useCallback(() => {
-    console.log("Upload file");
-  }, []);
-
-  const handleFileClick = useCallback((file) => {
-    console.log("File clicked:", file.id);
-  }, []);
-
-  const handleNewFolder = useCallback(() => {
-    console.log("Create folder");
-  }, []);
-
-  // Loading state
-  if (loading) return <LoadingState />;
-
-  // Error state
+  // Show our high fidelity skeleton while data fetches
+  if (loading) return <ProjectHomeSkeleton />;
   if (error) return <ErrorState error={error?.message || String(error)} onRetry={refresh} />;
-
-  // SAFETY: If hook did not throw an error but project is missing, show readable fallback
-  if (!project) {
-    return (
-      <ErrorState
-        error={"Project data is missing (project is null). Check /api/projects/:id request + console errors."}
-        onRetry={refresh}
-      />
-    );
-  }
+  if (!project) return <ErrorState error={"Project data is missing."} onRetry={refresh} />;
 
   const renderViewContent = () => {
     try {
       switch (activeView) {
         case "pulse":
-          return (
-            <PulseView
-              project={project}
-              metrics={metrics}
-              criticalMoves={criticalMoves}
-              objectives={objectives}
-              sprint={sprint}
-              activity={activity}
-              onObjectiveClick={handleObjectiveClick}
-              onSprintAction={handleSprintAction}
-              tasks={liveTasks}
-            />
-          );
-
+          return <PulseView project={project} metrics={metrics} criticalMoves={criticalMoves} objectives={objectives} sprint={sprint} activity={activity} onObjectiveClick={handleObjectiveClick} onSprintAction={handleSprintAction} tasks={liveTasks} />;
         case "stack":
-          return (
-            <div className={pageWrap}>
-              <StackPanel projectId={id} limit={10} milestoneIdFilter={selectedMilestoneId} />
-            </div>
-          );
-
+          return <div className={pageWrap}><StackPanel projectId={id} limit={10} milestoneIdFilter={selectedMilestoneId} /></div>;
         case "flow":
-          return (
-            <div className={pageWrap}>
-              <FlowBoard projectId={id} milestoneIdFilter={selectedMilestoneId} />
-            </div>
-          );
-
+          return <div className={pageWrap}><FlowBoard projectId={id} milestoneIdFilter={selectedMilestoneId} /></div>;
         case "roadmap":
-          return (
-            <RoadmapPanel
-              projectId={id}
-              liveTasks={liveTasks}
-              selectedMilestoneId={selectedMilestoneId}
-              onMilestoneClick={(milestoneId, milestone) => {
-                console.log("Milestone clicked:", milestoneId, milestone);
-                setSelectedMilestoneId(milestoneId);
-                handleMilestoneClick?.(milestone);
-              }}
-              onAddMilestone={handleAddMilestone}
-            />
-          );
-
+          return <RoadmapPanel projectId={id} liveTasks={liveTasks} selectedMilestoneId={selectedMilestoneId} onMilestoneClick={(milestoneId, milestone) => { setSelectedMilestoneId(milestoneId); handleMilestoneClick?.(milestone); }} onAddMilestone={handleAddMilestone} />;
         case "rhythm":
           return <RhythmView projectId={id} events={events || []} onAddEvent={handleAddEvent} onEventClick={handleEventClick} />;
-
         case "insights":
-          return (
-            <div className={pageWrap}>
-              <InsightsTab projectId={id} />
-            </div>
-          );
-
+          return <div className={pageWrap}><InsightsTab projectId={id} /></div>;
         case "suggestions":
           return <SuggestionsPanel projectId={id} project={project} />;
-
         case "threads":
-          return (
-            <ThreadsView
-              projectId={id}
-              threads={threads || []}
-              onOpenFullChat={() => navigate("/messages", { state: { projectId: id } })}
-            />
-          );
-
+          return <ThreadsView projectId={id} threads={threads || []} onOpenFullChat={() => navigate("/messages", { state: { projectId: id } })} />;
         case "vault":
           return <VaultView projectId={id} files={files || []} onUpload={handleUpload} onFileClick={handleFileClick} onNewFolder={handleNewFolder} />;
-
         default:
-          return <div className="p-10 text-center text-text-tertiary">View not found</div>;
+          return <div className="p-8 text-center text-slate-500 font-medium">View not found</div>;
       }
     } catch (e) {
       console.error("[ProjectHome] renderViewContent crash:", e);
-      return (
-        <ErrorState
-          error={e?.message || "A view crashed during render. Check console stack trace for file + line."}
-          onRetry={refresh}
-        />
-      );
+      return <ErrorState error={e?.message || "A view crashed during render."} onRetry={refresh} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background-secondary text-text-primary transition-colors duration-500">
-      {/* DEV Debug strip (non-invasive). Remove anytime. */}
+    <div className="min-h-screen bg-slate-50 text-slate-800">
       {SHOW_DEBUG && (
-        <div className="px-10 py-3 border-b border-border-subtle bg-surface-1/70 text-xs text-text-tertiary flex flex-wrap gap-3 transition-colors duration-500">
+        <div className="px-8 py-3 border-b border-slate-200/60 bg-white/70 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex flex-wrap gap-4">
           <span>ProjectHome OK</span>
           <span>· id: {String(id)}</span>
           <span>· view: {String(activeView)}</span>
           <span>· tasks: {String(Array.isArray(liveTasks) ? liveTasks.length : 0)}</span>
-          <span>· socket room joined: check console</span>
         </div>
       )}
 
-      {/* Header */}
       <ProjectHeader
         project={project}
         metrics={metrics}
@@ -869,16 +713,11 @@ export default function ProjectHome() {
         onBackToProjects={handleBackToProjects}
       />
 
-      {/* View Navigation */}
       <ViewNavigation activeView={activeView} onViewChange={setActiveView} />
 
-      {/* View Content */}
       <main key={pulseRefreshKey}>{renderViewContent()}</main>
 
-      {/* Global Pulse Bar */}
       <GlobalPulseBar position="bottom" color="brand" />
-
-      {/* Utilities */}
       <QuickActionsManager />
       <KeyboardShortcuts />
 
@@ -888,7 +727,6 @@ export default function ProjectHome() {
           onClose={() => setShowAddMilestone(false)}
         />
       )}
-
     </div>
   );
 }

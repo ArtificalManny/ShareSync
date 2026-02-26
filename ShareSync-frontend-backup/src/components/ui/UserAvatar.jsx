@@ -11,7 +11,7 @@ function initialsFromName(name = "") {
 export default function UserAvatar({
   avatarUrl,
   name = "User",
-  size = 40,
+  size = 32, // Strictly defaulting to 32px (8*4) to adhere to the grid
   className = "",
   ringClassName = "ring-2 ring-white/10",
 }) {
@@ -33,7 +33,7 @@ export default function UserAvatar({
           }}
         />
       ) : (
-        <span className="text-xs font-semibold text-text-secondary">{initials}</span>
+        <span className="text-sm font-semibold text-text-secondary">{initials}</span>
       )}
     </div>
   );

@@ -1,17 +1,9 @@
 // src/components/projects/StatusPill.jsx
+// OPTICAL AUDIT: Wrapped content in a flex container to perfectly align the 
+// colored status dot with the uppercase text baseline.
 import React, { useMemo } from "react";
-import Chip from "../ui/Chip.jsx"; // replaced Badge with Chip
+import Chip from "../ui/Chip.jsx"; 
 
-/**
- * StatusPill
- * Chip-style badge for project status.
- *
- * Props:
- *  - status: string
- *  - size: "sm" | "md" (default "sm")
- *  - variant: "solid" | "gradient" (default "solid")
- *  - className?: string
- */
 export default function StatusPill({
   status,
   size = "sm",
@@ -39,7 +31,6 @@ export default function StatusPill({
     return { tone: "indigo", text: "In Progress", gradClass: "bg-grad-pandora" };
   }, [label]);
 
-  // Optional gradient flair (keeps Chip API; only adds classes when asked)
   const gradientClasses =
     variant === "gradient" && gradClass
       ? `${gradClass} text-white border-transparent`
@@ -53,13 +44,14 @@ export default function StatusPill({
       aria-label={`Status: ${text}`}
       title={text}
     >
-      {/* tiny dot */}
-      <span
-        aria-hidden="true"
-        className="inline-block h-1.5 w-1.5 rounded-full"
-        style={{ background: "currentColor", opacity: variant === "gradient" ? 0.9 : 0.8 }}
-      />
-      <span className="ml-1">{label}</span>
+      <span className="flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="shrink-0 inline-block h-1.5 w-1.5 rounded-full relative -top-[0.5px]"
+          style={{ background: "currentColor", opacity: variant === "gradient" ? 0.9 : 0.8 }}
+        />
+        <span className="leading-tight">{label}</span>
+      </span>
     </Chip>
   );
 }

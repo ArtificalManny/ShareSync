@@ -1,6 +1,8 @@
 // src/components/nav/SidebarItem.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SIDEBAR NAV ITEM v5.0 - "The Gallery Walk" Light Theme
+// SIDEBAR NAV ITEM v5.1 - Optical Alignment Audit
+// OPTICAL TWEAKS: Added strokeWidth={1.5}, shrink-0, and relative -top-[0.5px]
+// to perfectly align the icon's visual weight with the text baseline.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from "react";
@@ -35,23 +37,26 @@ export default function SidebarItem({
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full" />
           )}
           
-          {/* Icon */}
+          {/* Icon (Optically aligned) */}
           {Icon && (
-            <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
-              isActive ? "text-violet-600" : "text-slate-400 group-hover:text-slate-600"
-            }`} />
+            <Icon 
+              strokeWidth={1.5}
+              className={`w-5 h-5 shrink-0 relative -top-[0.5px] transition-colors ${
+                isActive ? "text-violet-600" : "text-slate-400 group-hover:text-slate-600"
+              }`} 
+            />
           )}
           
           {/* Label */}
           {!collapsed && (
-            <span className="flex-1 truncate text-sm">{label}</span>
+            <span className="flex-1 truncate text-sm leading-tight">{label}</span>
           )}
           
           {/* Count badge */}
           {count !== undefined && count > 0 && !collapsed && (
             <span className={`
               min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium 
-              flex items-center justify-center
+              flex items-center justify-center relative -top-[0.5px]
               ${isActive 
                 ? "bg-violet-200 text-violet-700" 
                 : "bg-slate-200 text-slate-600"

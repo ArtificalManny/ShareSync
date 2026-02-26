@@ -1,24 +1,14 @@
 // src/components/common/Card.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC CARD v4.0 - "The Gallery Walk" + Soft Glow Gradient Option
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// UNIFIED CARD SYSTEM - Used across all page types
-// 
-// CHANGES IN v4.0:
-// - Added gradient prop for soft glow backgrounds
-// - Added accentBar prop for gradient side indicators
-// - Light theme colors with violet-tinted shadows
-// - All existing functionality preserved
-// - NO BACKEND CHANGES
-//
+// SHARESYNC CARD v4.1 - Depth Audit
+// OPTICAL TWEAKS: Replaced flat shadow-sm with multi-layered realistic shadows.
+// Softened borders and added a subtle white ring to simulate material thickness.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from "react";
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
-// Soft glow gradient backgrounds
 const GRADIENT_BACKGROUNDS = {
   none: '',
   softGlow: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)',
@@ -29,7 +19,6 @@ const GRADIENT_BACKGROUNDS = {
   softRose: 'linear-gradient(180deg, #FFFFFF 0%, #FFF1F2 100%)',
 };
 
-// Accent bar gradient options
 const ACCENT_GRADIENTS = {
   aurora: 'linear-gradient(180deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
   sunset: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
@@ -41,14 +30,11 @@ const ACCENT_GRADIENTS = {
   danger: 'linear-gradient(180deg, #F87171 0%, #EF4444 100%)',
 };
 
-/**
- * Card - Base card component with light theme styling
- */
 export default function Card({
   children,
   className = '',
-  gradient = 'none',      // NEW: Soft glow background
-  accentBar = null,       // NEW: Left accent bar variant
+  gradient = 'none',
+  accentBar = null,
   hover = true,
   padding = true,
   rounded = 'xl',
@@ -74,10 +60,10 @@ export default function Card({
       className={cn(
         'relative overflow-hidden transition-all duration-200',
         !gradientBackground && 'bg-white',
-        border && 'border border-slate-200',
-        shadow && 'shadow-sm',
+        border && 'border border-slate-200/60 ring-1 ring-white/50',
+        shadow && 'shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]',
         roundedClasses[rounded] || roundedClasses.xl,
-        hover && 'hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60',
+        hover && 'hover:shadow-[0_8px_24px_rgba(139,92,246,0.08),0_2px_8px_rgba(139,92,246,0.04)] hover:border-violet-200/80',
         onClick && 'cursor-pointer',
         className
       )}
@@ -85,7 +71,6 @@ export default function Card({
       onClick={onClick}
       {...rest}
     >
-      {/* Accent bar */}
       {accentGradient && (
         <div 
           className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
@@ -93,7 +78,6 @@ export default function Card({
         />
       )}
       
-      {/* Content */}
       <div className={cn(
         padding && 'p-6',
         accentGradient && 'pl-5'
@@ -103,10 +87,6 @@ export default function Card({
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CARD SUBCOMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export function CardHeader({ children, className = '', ...rest }) {
   return (
@@ -136,7 +116,7 @@ export function CardTitle({
   children, 
   as: Tag = 'h3', 
   className = '',
-  gradient = null,  // NEW: Gradient text option
+  gradient = null,
   ...rest 
 }) {
   const gradientStyle = gradient ? {
@@ -294,10 +274,6 @@ export function CardProgress({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// GRADIENT CARD VARIANTS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export function GlowCard({ children, variant = 'softViolet', ...props }) {
   return (
     <Card gradient={variant} {...props}>
@@ -313,10 +289,6 @@ export function AccentCard({ children, accent = 'brand', ...props }) {
     </Card>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// STAT CARD
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export function StatCard({
   label,

@@ -1,69 +1,68 @@
 /* Spacing tokens + light utilities
    ------------------------------------------------------------------------- */
-   :root {
-    /* Fluid base spacing (scales a bit with viewport) */
-    --g-section: clamp(24px, 3vw, 40px);
-    --g-card:    clamp(12px, 1.6vw, 20px);
-    --g-gap:     clamp(8px,  1.25vw, 16px);
-  
-    /* Divider color uses your token if present, with a safe fallback */
-    --rule-color: color-mix(in srgb, var(--border, #e2e8f0) 85%, transparent);
-  }
-  
-  /* Section rhythm helpers (don’t fight Tailwind; opt-in only) */
-  .section       { margin-block: var(--g-section); }
-  .section-top   { margin-block-start: var(--g-section); }
-  .section-bottom{ margin-block-end: var(--g-section); }
-  
-  /* Card padding helper (useful for raw wrappers) */
-  .card-pad { padding: var(--g-card); }
-  
-  /* Simple vertical stack (gap only; no layout opinion) */
-  .stack    { display: flex; flex-direction: column; gap: var(--g-gap); }
-  .stack-sm { display: flex; flex-direction: column; gap: calc(var(--g-gap) * 0.66); }
-  .stack-lg { display: flex; flex-direction: column; gap: calc(var(--g-gap) * 1.5); }
-  
-  /* Horizontal cluster (wraps by default) */
-  .cluster    { display: flex; flex-wrap: wrap; align-items: center; gap: var(--g-gap); }
-  .cluster-sm { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--g-gap) * 0.66); }
-  .cluster-lg { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--g-gap) * 1.5); }
-  
-  /* Generic gap utilities for places Tailwind gap-* isn’t available */
-  .gap-xs { gap: 6px; }
-  .gap-sm { gap: calc(var(--g-gap) * 0.66); }
-  .gap    { gap: var(--g-gap); }
-  .gap-lg { gap: calc(var(--g-gap) * 1.5); }
-  
-  /* A thin “rule” divider (used in ProjectHome header already) */
-  .rule {
-    height: 1px;
-    width: 100%;
-    border: 0;
-    background:
-      linear-gradient(90deg, transparent 0%, var(--rule-color) 15%, var(--rule-color) 85%, transparent 100%);
-    margin-block: calc(var(--g-card) - 6px);
-  }
-  
-  /* Muted rule variant */
-  .rule--muted {
-    --rule-color: color-mix(in srgb, var(--border, #e2e8f0) 60%, transparent);
-  }
-  
-  /* Narrow/wide content helpers (optional) */
-  .container-narrow {
-    max-width: 720px;
-    margin-inline: auto;
-    padding-inline: 1rem;
-  }
-  .container-wide {
-    max-width: 1200px;
-    margin-inline: auto;
-    padding-inline: 1rem;
-  }
-  
-  /* Dark mode tweak for the rule color */
-  :root.dark .rule,
-  .dark .rule {
-    --rule-color: color-mix(in srgb, var(--border, #334155) 85%, transparent);
-  }
-  
+:root {
+  /* STRICT 8-PT GRID FOUNDATION (Removed loose clamp() calculations) */
+  --g-section: 48px; /* Multiples of 8/16 */
+  --g-card:    24px;
+  --g-gap:     16px;
+
+  /* Divider color uses your token if present, with a safe fallback */
+  --rule-color: color-mix(in srgb, var(--border, #e2e8f0) 85%, transparent);
+}
+
+/* Section rhythm helpers (don’t fight Tailwind; opt-in only) */
+.section       { margin-block: var(--g-section); }
+.section-top   { margin-block-start: var(--g-section); }
+.section-bottom{ margin-block-end: var(--g-section); }
+
+/* Card padding helper (useful for raw wrappers) */
+.card-pad { padding: var(--g-card); }
+
+/* Simple vertical stack (gap only; no layout opinion) */
+.stack    { display: flex; flex-direction: column; gap: var(--g-gap); }
+.stack-sm { display: flex; flex-direction: column; gap: 8px; }
+.stack-lg { display: flex; flex-direction: column; gap: 24px; }
+
+/* Horizontal cluster (wraps by default) */
+.cluster    { display: flex; flex-wrap: wrap; align-items: center; gap: var(--g-gap); }
+.cluster-sm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cluster-lg { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
+
+/* Generic gap utilities for places Tailwind gap-* isn’t available */
+.gap-xs { gap: 4px; }
+.gap-sm { gap: 8px; }
+.gap    { gap: var(--g-gap); }
+.gap-lg { gap: 24px; }
+
+/* A thin “rule” divider (used in ProjectHome header already) */
+.rule {
+  height: 1px;
+  width: 100%;
+  border: 0;
+  background:
+    linear-gradient(90deg, transparent 0%, var(--rule-color) 15%, var(--rule-color) 85%, transparent 100%);
+  margin-block: 16px;
+}
+
+/* Muted rule variant */
+.rule--muted {
+  --rule-color: color-mix(in srgb, var(--border, #e2e8f0) 60%, transparent);
+}
+
+/* Narrow/wide content helpers (optional) */
+.container-narrow {
+  max-width: 720px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+.container-wide {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+/* Dark mode tweak for the rule color */
+:root.dark .rule,
+.dark .rule {
+  --rule-color: color-mix(in srgb, var(--border, #334155) 85%, transparent);
+}

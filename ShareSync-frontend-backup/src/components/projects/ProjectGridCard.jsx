@@ -1,23 +1,13 @@
 // src/components/projects/ProjectGridCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 7: Visual Cohesion - Grid Card (matches Projects.jsx ProjectCard)
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// This is the GRID version of project cards (vertical layout)
-// Used in: Projects page grid view
-//
-// IMPROVEMENTS:
-// - Richer visual hierarchy
-// - Better emoji display (larger, more prominent)
-// - Progress uses purple intensity
-// - Consistent with MissionCard quality
-//
+// PHASE 7.1: Contrast Audit - Grid Card
+// OPTICAL TWEAKS: Pushed secondary descriptions and metadata to text-slate-500 
+// to ensure the project title (text-slate-900) remains the dominant focal point.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
 import { Flame, Users, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-// Phase 7: Purple intensity progress
 const getProgressFillClass = (percentage) => {
   if (percentage >= 100) return 'bg-success';
   if (percentage >= 67) return 'bg-brand-400';
@@ -46,88 +36,83 @@ const ProjectGridCard = ({ project, onProjectClick, onStartSprint }) => {
       onClick={() => onProjectClick?.(project._id || project.id)}
       className={`
         group p-5 rounded-xl cursor-pointer
-        bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
+        bg-white border border-slate-200/60
+        hover:shadow-[0_8px_24px_rgba(139,92,246,0.06),0_2px_8px_rgba(139,92,246,0.04)] hover:border-violet-200/80
         transition-all duration-200
-        ${project.isAtRisk ? 'border-l-2 border-l-warning' : ''}
+        ${project.isAtRisk ? 'border-l-2 border-l-red-500' : ''}
       `}
     >
-      {/* Header: Emoji + Streak */}
       <div className="flex justify-between items-start mb-4">
         <div className={`
           w-12 h-12 rounded-xl flex items-center justify-center text-2xl
           transition-all duration-200
           ${isComplete 
-            ? 'bg-success/10' 
-            : 'bg-surface-2 group-hover:bg-brand/10 group-hover:scale-105'
+            ? 'bg-emerald-50 text-emerald-600' 
+            : 'bg-slate-50 group-hover:bg-violet-50 group-hover:scale-105'
           }
         `}>
           {isComplete ? (
-            <CheckCircle2 className="w-6 h-6 text-success" />
+            <CheckCircle2 strokeWidth={1.5} className="w-6 h-6 text-emerald-500" />
           ) : (
             <span>{project.emoji || getSeasonEmoji(project.season)}</span>
           )}
         </div>
         
-        {/* Streak - only prominent when earned */}
         {streak > 0 && (
           <div className={`
-            flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
+            flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold
             ${isImpressiveStreak 
-              ? 'bg-brand/10 text-brand' 
-              : 'bg-surface-2 text-text-tertiary'
+              ? 'bg-amber-50 text-amber-600 border border-amber-200/60' 
+              : 'bg-slate-50 text-slate-500 border border-slate-200'
             }
           `}>
-            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-brand' : 'text-text-tertiary'}`} />
+            <Flame strokeWidth={2} className={`w-3.5 h-3.5 ${isImpressiveStreak ? 'text-amber-500' : 'text-slate-400'}`} />
             <span>{streak}d</span>
           </div>
         )}
       </div>
 
-      {/* Title + Description */}
       <h3 className={`
-        text-base font-semibold mb-1 transition-colors
+        text-base font-semibold mb-1 transition-colors leading-tight
         ${isComplete 
-          ? 'text-text-tertiary line-through' 
-          : 'text-text-primary group-hover:text-brand'
+          ? 'text-slate-400 line-through' 
+          : 'text-slate-900 group-hover:text-violet-600'
         }
       `}>
         {project.name || project.title}
       </h3>
-      <p className="text-sm text-text-secondary line-clamp-2 mb-4">
-        {project.description}
+      <p className="text-[13px] text-slate-500 leading-snug line-clamp-2 mb-5">
+        {project.description || "No description provided."}
       </p>
 
-      {/* Next Step */}
       {hasNextStep ? (
-        <div className="bg-surface-2 rounded-lg p-3 mb-4">
-          <div className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">
+        <div className="bg-slate-50/80 rounded-lg p-3.5 mb-5 border border-slate-100">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             Next step
           </div>
-          <div className="text-sm text-text-primary truncate">
+          <div className="text-[13px] font-medium text-slate-700 truncate">
             {project.nextMicroStep}
           </div>
         </div>
       ) : (
-        <div className="bg-surface-2 rounded-lg p-3 mb-4 border border-dashed border-white/[0.08]">
-          <div className="flex items-center gap-2 text-text-tertiary">
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span className="text-xs">Add a next step</span>
+        <div className="bg-slate-50/50 rounded-lg p-3.5 mb-5 border border-dashed border-slate-200">
+          <div className="flex items-center gap-2 text-slate-400">
+            <AlertCircle strokeWidth={1.5} className="w-4 h-4" />
+            <span className="text-[13px] font-medium">Add a next step</span>
           </div>
         </div>
       )}
 
-      {/* Velocity Progress - PHASE 7: Purple intensity */}
-      <div className="mb-4">
+      <div className="mb-5">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] text-text-tertiary uppercase tracking-wider">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Velocity
           </span>
-          <span className={`text-xs font-medium ${isComplete ? 'text-success' : 'text-text-primary'}`}>
+          <span className={`text-xs font-bold ${isComplete ? 'text-emerald-600' : 'text-slate-700'}`}>
             {velocity}%
           </span>
         </div>
-        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-500 ${getProgressFillClass(velocity)}`}
             style={{ width: `${Math.min(velocity, 100)}%` }}
@@ -135,11 +120,10 @@ const ProjectGridCard = ({ project, onProjectClick, onStartSprint }) => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
-        <div className="flex items-center gap-1.5 text-text-tertiary">
-          <Users className="w-3.5 h-3.5" />
-          <span className="text-xs">
+      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Users strokeWidth={1.5} className="w-4 h-4 relative -top-[0.5px]" />
+          <span className="text-xs font-medium">
             {project.metrics?.openTasks?.value || project.taskCount || 0} tasks
           </span>
         </div>
@@ -147,9 +131,9 @@ const ProjectGridCard = ({ project, onProjectClick, onStartSprint }) => {
         <button 
           onClick={(e) => { e.stopPropagation(); onStartSprint?.(project); }}
           className="
-            px-3 py-1.5 rounded-lg text-xs font-medium
-            bg-brand text-white
-            hover:bg-brand-600 hover:shadow-glow-brand
+            px-4 py-1.5 rounded-lg text-xs font-semibold
+            bg-violet-600 text-white shadow-[0_1px_2px_rgba(0,0,0,0.05)]
+            hover:bg-violet-700 active:translate-y-[1px] active:shadow-none
             transition-all duration-200
           "
         >

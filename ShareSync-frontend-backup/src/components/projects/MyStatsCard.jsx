@@ -1,17 +1,14 @@
 // src/components/projects/MyStatsCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM v2.0 - "Breathing Card System"
-// ═══════════════════════════════════════════════════════════════════════════════
-// 3-ELEMENT RULE APPLIED:
-// 1) Title  2) Chart  3) (implicit) day labels
+// DESIGN SYSTEM v2.1 - Optical Alignment Audit
+// Added BarChart2 icon to header to provide visual anchor and save space.
+// perfectly aligned with the section title.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { memo, useMemo } from "react";
+import { BarChart2 } from "lucide-react";
 import Card from "../common/Card";
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MINI CHART
-───────────────────────────────────────────────────────────────────────── */
 function Chart({ labels, values }) {
   const max = useMemo(() => Math.max(1, ...values), [values]);
   
@@ -47,9 +44,6 @@ function Chart({ labels, values }) {
 
 const MemoChart = memo(Chart);
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────────────────────────────────────── */
 function MyStatsCardBase({ stats }) {
   const data = useMemo(
     () =>
@@ -70,8 +64,9 @@ function MyStatsCardBase({ stats }) {
     >
       <h3 
         id="mystats-title" 
-        className="text-sm font-medium text-text-secondary mb-4"
+        className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-4 leading-tight"
       >
+        <BarChart2 strokeWidth={1.5} className="w-4 h-4 shrink-0 relative -top-[0.5px]" />
         My Stats
       </h3>
       <MemoChart labels={data.labels} values={data.values} />
