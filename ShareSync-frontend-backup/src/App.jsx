@@ -6,6 +6,7 @@
 // PHASE 2A: WebSocket Socket Provider ⭐ NEW
 // PHASE 3: React Query Caching Layer ⭐ NEW
 // ALIVE AWARE: Adaptive Density + Fatigue Detection + Context Memory
+// ⭐ PHASE 4 (THEME): Global Semantic Variables + Signature Moment Animation
 // ═══════════════════════════════════════════════════════════════════════════════
 import React, { useContext, Suspense, lazy, useState, useEffect } from "react";
 import {
@@ -18,6 +19,9 @@ import {
 
 // ⭐ PHASE 3: React Query
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// ⭐ GLOBAL THEME PROVIDER
+import { ThemeProvider } from "./contexts/ThemeContext.jsx";
 
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
 import Navbar from "./components/Navbar";
@@ -226,7 +230,6 @@ const MessageProvider = lazy(() =>
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
-// import useBrandTheme from "./hooks/useBrandTheme.js";
 
 // ⭐ INITIALIZE QUERY CLIENT
 const queryClient = new QueryClient({
@@ -253,8 +256,8 @@ function ScrollToHash() {
 
 function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-950">
-      <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-screen bg-background-primary transition-colors duration-500">
+      <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -290,7 +293,7 @@ function PublicOnlyRoute({ children }) {
 function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
   return (
     <button
-      className="sidebar-toggle"
+      className="sidebar-toggle text-text-secondary hover:text-text-primary transition-colors"
       onClick={() => setSidebarOpen(!sidebarOpen)}
       aria-label="Toggle Sidebar"
     >
@@ -411,12 +414,6 @@ function AuthenticatedApp({ children, userData }) {
                                   {FOCUS_DOCK_V1 ? (
                                     <FocusProvider>
                                       <ContextTracker />
-
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
-                                        <WelcomeBack />
-                                      </Suspense> */}
-
                                       <Suspense fallback={null}>
                                         <ContextIndicator />
                                       </Suspense>
@@ -428,12 +425,6 @@ function AuthenticatedApp({ children, userData }) {
                                   ) : (
                                     <>
                                       <ContextTracker />
-
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
-                                        <WelcomeBack />
-                                      </Suspense> */}
-
                                       <Suspense fallback={null}>
                                         <ContextIndicator />
                                       </Suspense>
@@ -500,7 +491,6 @@ function AppRoutes() {
             </div>
           </Suspense>
 
-          {/* IMPORTANT: do NOT wrap Navbar in another .navbar div (it already renders a .navbar header) */}
           <Navbar user={authUser} onLogout={logout} />
         </>
       )}
@@ -510,7 +500,7 @@ function AppRoutes() {
         <div className="content-wrapper border-none shadow-none !rounded-none !m-0 !p-0">
           <Suspense
             fallback={
-              <div className="px-6 py-10 text-center text-slate-500">
+              <div className="px-6 py-10 text-center text-text-tertiary">
                 Loading...
               </div>
             }
@@ -766,38 +756,31 @@ function AppRoutes() {
 }
 
 const App = () => {
-  // ⭐ WEDGE FIX: We disable the floating container wrapper that pushes your app inward
-  // Temporarily disable brand theme hook entirely while debugging shell/background issues
-  // const { containerAttrs } = useBrandTheme({
-  //   enabled: false,
-  //   applyToDocument: false,
-  //   defaultBrand: "v2",
-  //   defaultAccent: "pandora",
-  // });
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SoundProvider>
-            <NewToastProvider>
-              <ToastProvider>
-                <OldToastProvider>
-                  <Router>
-                    <Suspense fallback={<LoadingSpinner />}>
-                      <LayoutSkin>
-                        {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
-                        <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
-                          <AuthCheck />
-                        </div>
-                      </LayoutSkin>
-                    </Suspense>
-                  </Router>
-                </OldToastProvider>
-              </ToastProvider>
-            </NewToastProvider>
-          </SoundProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <SoundProvider>
+              <NewToastProvider>
+                <ToastProvider>
+                  <OldToastProvider>
+                    <Router>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <LayoutSkin>
+                          {/* ⭐ THEME APPLIED & SIGNATURE MOMENT ADDED (transition-all duration-500 ease-in-out) */}
+                          <div className="app-container w-full min-h-screen bg-background-secondary text-text-primary !rounded-none !m-0 !p-0 !border-0 transition-all duration-500 ease-in-out">
+                            <AuthCheck />
+                          </div>
+                        </LayoutSkin>
+                      </Suspense>
+                    </Router>
+                  </OldToastProvider>
+                </ToastProvider>
+              </NewToastProvider>
+            </SoundProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

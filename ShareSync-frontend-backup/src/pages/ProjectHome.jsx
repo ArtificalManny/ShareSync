@@ -7,7 +7,7 @@
 // ⭐ ADD: Force-refresh view content on realtime task updates (pulseRefreshKey)
 // ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
 // ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
-// ⭐ THEME: Updated to Gallery Walk Light Theme
+// ⭐ THEME: Updated to Phase 4 Semantic "OLED/Gallery" System
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -118,10 +118,10 @@ const PROJECT_VIEWS = [
 
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-background-secondary flex items-center justify-center transition-colors duration-500">
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin mx-auto mb-4" />
-        <p className="text-slate-500 text-sm">Loading project...</p>
+        <div className="w-16 h-16 rounded-full border-2 border-brand-500/20 border-t-brand-500 animate-spin mx-auto mb-4" />
+        <p className="text-text-tertiary text-sm">Loading project...</p>
       </div>
     </div>
   );
@@ -133,16 +133,16 @@ function LoadingState() {
 
 function ErrorState({ error, onRetry }) {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background-secondary flex items-center justify-center p-6 transition-colors duration-500">
       <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-full bg-red-50 mx-auto mb-4 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-red-500" />
+        <div className="w-16 h-16 rounded-full bg-error-50 dark:bg-error-900/20 mx-auto mb-4 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-error-500" />
         </div>
-        <h2 className="text-xl font-semibold text-slate-800 mb-2">Failed to load project</h2>
-        <p className="text-slate-500 mb-6">{error}</p>
+        <h2 className="text-xl font-semibold text-text-primary mb-2">Failed to load project</h2>
+        <p className="text-text-secondary mb-6">{error}</p>
         <button
           onClick={onRetry}
-          className="px-6 py-3 rounded-xl bg-violet-500 text-white font-medium hover:bg-violet-600 transition-colors"
+          className="px-6 py-3 rounded-xl bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors"
         >
           Try Again
         </button>
@@ -167,28 +167,28 @@ function ProjectHeader({
   const momentum = metrics?.momentum || 0;
 
   const getMomentumState = () => {
-    if (momentum >= 80) return { label: "On Fire", color: "text-amber-500" };
-    if (momentum >= 60) return { label: "Flowing", color: "text-emerald-500" };
-    if (momentum >= 30) return { label: "Building", color: "text-violet-500" };
-    return { label: "Warming Up", color: "text-slate-500" };
+    if (momentum >= 80) return { label: "On Fire", color: "text-energy-500" };
+    if (momentum >= 60) return { label: "Flowing", color: "text-success-500" };
+    if (momentum >= 30) return { label: "Building", color: "text-brand-500" };
+    return { label: "Warming Up", color: "text-text-tertiary" };
   };
 
   const state = getMomentumState();
 
   return (
-    <header className="px-10 py-6 border-b border-slate-200 bg-white">
+    <header className="px-10 py-6 border-b border-border-subtle bg-background-elevated transition-colors duration-500">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
+      <nav className="flex items-center gap-2 text-sm text-text-tertiary mb-5">
         <span
           onClick={onBackToProjects}
-          className="hover:text-slate-700 cursor-pointer transition-colors"
+          className="hover:text-text-primary cursor-pointer transition-colors"
           role="button"
           tabIndex={0}
         >
           Projects
         </span>
         <ArrowRight className="w-3 h-3" />
-        <span className="text-slate-700">{project?.name || "Project"}</span>
+        <span className="text-text-secondary">{project?.name || "Project"}</span>
       </nav>
 
       {/* Main header */}
@@ -209,18 +209,18 @@ function ProjectHeader({
           {/* Project info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-semibold text-slate-900 truncate">
+              <h1 className="text-2xl font-semibold text-text-primary truncate transition-colors duration-500">
                 {project?.name || "Untitled Project"}
               </h1>
               <button
                 onClick={() => setIsStarred(!isStarred)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
               >
                 <Star
                   className={`w-5 h-5 transition-colors ${
                     isStarred
                       ? "fill-amber-400 text-amber-400"
-                      : "text-slate-400 hover:text-amber-400"
+                      : "text-text-tertiary hover:text-amber-400"
                   }`}
                 />
               </button>
@@ -231,23 +231,23 @@ function ProjectHeader({
               {/* Live indicator */}
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success-500"></span>
                 </span>
-                <span className="text-sm text-emerald-600 font-medium">Live</span>
+                <span className="text-sm text-success-600 dark:text-success-400 font-medium transition-colors duration-500">Live</span>
               </div>
 
               {/* Active members */}
-              <div className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="flex items-center gap-2 text-sm text-text-tertiary transition-colors duration-500">
                 <Users className="w-4 h-4" />
                 <span>{activeUsers || 0} online</span>
               </div>
 
               {/* Momentum */}
-              <div className={`flex items-center gap-2 text-sm font-medium ${state.color}`}>
+              <div className={`flex items-center gap-2 text-sm font-medium ${state.color} transition-colors duration-500`}>
                 <Zap className="w-4 h-4" />
                 <span>{momentum}</span>
-                <span className="text-slate-500 font-normal">· {state.label}</span>
+                <span className="text-text-tertiary font-normal">· {state.label}</span>
               </div>
             </div>
           </div>
@@ -259,13 +259,12 @@ function ProjectHeader({
             onClick={() => onShipUpdate?.("Shipped an update")}
             className="
               flex items-center gap-2.5 px-5 py-2.5 rounded-xl
-              bg-gradient-to-r from-violet-500 to-fuchsia-500
+              bg-gradient-brand
               text-white font-medium text-sm
-              hover:from-violet-600 hover:to-fuchsia-600
+              hover:scale-105
               transition-all duration-200
-              shadow-md shadow-violet-500/20
-              hover:shadow-lg hover:shadow-violet-500/30
-              hover:-translate-y-0.5 active:translate-y-0
+              shadow-md shadow-brand-500/20
+              hover:shadow-lg hover:shadow-brand-500/30
             "
           >
             <Rocket className="w-4 h-4" />
@@ -275,9 +274,9 @@ function ProjectHeader({
           <button
             className="
             flex items-center gap-2 px-4 py-2.5 rounded-xl
-            bg-white border border-slate-200 shadow-sm
-            text-slate-700 text-sm
-            hover:bg-slate-50 hover:border-slate-300
+            bg-background-elevated border border-border-subtle shadow-sm
+            text-text-secondary text-sm
+            hover:bg-surface-2 hover:border-border-default
             transition-all duration-200
           "
           >
@@ -285,15 +284,15 @@ function ProjectHeader({
             <span>Activity</span>
           </button>
 
-          <div className="w-px h-6 bg-slate-200" />
+          <div className="w-px h-6 bg-border-subtle transition-colors duration-500" />
 
-          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all">
+          <button className="p-2.5 rounded-xl bg-background-elevated border border-border-subtle shadow-sm text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all">
             <Share2 className="w-4 h-4" />
           </button>
 
           <button
             onClick={onSettings}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all"
+            className="p-2.5 rounded-xl bg-background-elevated border border-border-subtle shadow-sm text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-all"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -314,7 +313,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   const moreViews = views.slice(6);
 
   return (
-    <nav className="px-10 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+    <nav className="px-10 border-b border-border-subtle bg-background-elevated/80 backdrop-blur-md sticky top-0 z-10 transition-colors duration-500">
       <div className="flex items-center gap-1 -mb-px">
         {visibleViews.map((view) => {
           const Icon = view.icon;
@@ -327,20 +326,20 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               className={`
                 relative flex items-center gap-2.5 px-5 py-4
                 text-sm font-medium transition-all duration-200
-                ${isActive ? "text-violet-600" : "text-slate-500 hover:text-slate-800"}
+                ${isActive ? "text-brand-500" : "text-text-tertiary hover:text-text-primary"}
               `}
               title={view.description}
             >
-              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600" : ""}`} />
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-brand-500" : ""}`} />
               <span>{view.label}</span>
 
               {view.badge && (
-                <span className="px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs font-medium">
+                <span className="px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 text-xs font-medium transition-colors duration-500">
                   {view.badge}
                 </span>
               )}
 
-              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-violet-500 rounded-full" />}
+              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-brand-500 rounded-full" />}
             </button>
           );
         })}
@@ -349,7 +348,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           <div className="relative">
             <button
               onClick={() => setShowMore(!showMore)}
-              className="flex items-center gap-1.5 px-4 py-4 text-sm text-slate-500 hover:text-slate-800 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-4 text-text-tertiary hover:text-text-primary transition-colors"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -357,7 +356,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
             {showMore && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
-                <div className="absolute top-full right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden">
+                <div className="absolute top-full right-0 mt-2 w-52 bg-background-elevated border border-border-subtle rounded-xl shadow-xl z-20 overflow-hidden">
                   {moreViews.map((view) => {
                     const Icon = view.icon;
                     return (
@@ -367,12 +366,12 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                           onViewChange(view.id);
                           setShowMore(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-text-secondary hover:bg-surface-2 transition-colors"
                       >
-                        <Icon className="w-4 h-4 text-slate-500" />
+                        <Icon className="w-4 h-4 text-text-tertiary" />
                         <span>{view.label}</span>
                         {view.badge && (
-                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs">
+                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 text-xs transition-colors duration-500">
                             {view.badge}
                           </span>
                         )}
@@ -385,7 +384,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           </div>
         )}
 
-        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-slate-500 hover:text-violet-600 transition-colors ml-1">
+        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-text-tertiary hover:text-brand-500 transition-colors ml-1">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -399,24 +398,24 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
 
 function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <section className="bg-background-elevated border border-border-subtle rounded-2xl p-5 shadow-sm transition-colors duration-500">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-800">Momentum</h3>
-        <span className="text-xs text-slate-500">Live</span>
+        <h3 className="text-sm font-semibold text-text-primary">Momentum</h3>
+        <span className="text-xs text-text-tertiary">Live</span>
       </header>
 
-      <div className="space-y-2 text-sm text-slate-700">
+      <div className="space-y-2 text-sm text-text-secondary">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-500">Score</span>
-          <span className="text-xs font-medium">{momentum}</span>
+          <span className="text-xs text-text-tertiary">Score</span>
+          <span className="text-xs font-medium text-text-primary">{momentum}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-500">Weekly ships</span>
-          <span className="text-xs font-medium">{weeklyShips}</span>
+          <span className="text-xs text-text-tertiary">Weekly ships</span>
+          <span className="text-xs font-medium text-text-primary">{weeklyShips}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-500">Trend</span>
-          <span className="text-xs font-medium">{trend ?? "—"}</span>
+          <span className="text-xs text-text-tertiary">Trend</span>
+          <span className="text-xs font-medium text-text-primary">{trend ?? "—"}</span>
         </div>
       </div>
     </section>
@@ -426,22 +425,22 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
 function PriorityStack({ moves }) {
   const items = Array.isArray(moves) ? moves : [];
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <section className="bg-background-elevated border border-border-subtle rounded-2xl p-5 shadow-sm transition-colors duration-500">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-800">Priority Stack</h3>
-        <span className="text-xs text-slate-500">Top moves</span>
+        <h3 className="text-sm font-semibold text-text-primary">Priority Stack</h3>
+        <span className="text-xs text-text-tertiary">Top moves</span>
       </header>
 
       {items.length > 0 ? (
         <ul className="space-y-2">
           {items.slice(0, 5).map((m, i) => (
-            <li key={m?._id || m?.id || i} className="text-xs text-slate-700">
+            <li key={m?._id || m?.id || i} className="text-xs text-text-secondary">
               {m?.title || m?.label || m?.text || "Critical move"}
             </li>
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-slate-500">No critical moves yet (placeholder)</div>
+        <div className="text-xs text-text-tertiary">No critical moves yet (placeholder)</div>
       )}
     </section>
   );
@@ -450,10 +449,10 @@ function PriorityStack({ moves }) {
 function ActiveGoalsCard({ objectives, onObjectiveClick }) {
   const items = Array.isArray(objectives) ? objectives : [];
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <section className="bg-background-elevated border border-border-subtle rounded-2xl p-5 shadow-sm transition-colors duration-500">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-800">Active Goals</h3>
-        <span className="text-xs text-slate-500">Focus</span>
+        <h3 className="text-sm font-semibold text-text-primary">Active Goals</h3>
+        <span className="text-xs text-text-tertiary">Focus</span>
       </header>
 
       {items.length > 0 ? (
@@ -463,7 +462,7 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
               <button
                 type="button"
                 onClick={() => onObjectiveClick?.(g)}
-                className="text-left w-full text-xs text-slate-700 hover:text-slate-900 transition"
+                className="text-left w-full text-xs text-text-secondary hover:text-text-primary transition"
               >
                 {g?.title || g?.name || g?.label || "Objective"}
               </button>
@@ -471,7 +470,7 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-slate-500">No active goals yet (placeholder)</div>
+        <div className="text-xs text-text-tertiary">No active goals yet (placeholder)</div>
       )}
     </section>
   );
@@ -834,7 +833,7 @@ export default function ProjectHome() {
           return <VaultView projectId={id} files={files || []} onUpload={handleUpload} onFileClick={handleFileClick} onNewFolder={handleNewFolder} />;
 
         default:
-          return <div className="p-10 text-center text-slate-500">View not found</div>;
+          return <div className="p-10 text-center text-text-tertiary">View not found</div>;
       }
     } catch (e) {
       console.error("[ProjectHome] renderViewContent crash:", e);
@@ -848,10 +847,10 @@ export default function ProjectHome() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-background-secondary text-text-primary transition-colors duration-500">
       {/* DEV Debug strip (non-invasive). Remove anytime. */}
       {SHOW_DEBUG && (
-        <div className="px-10 py-3 border-b border-slate-200 bg-white/70 text-xs text-slate-500 flex flex-wrap gap-3">
+        <div className="px-10 py-3 border-b border-border-subtle bg-surface-1/70 text-xs text-text-tertiary flex flex-wrap gap-3 transition-colors duration-500">
           <span>ProjectHome OK</span>
           <span>· id: {String(id)}</span>
           <span>· view: {String(activeView)}</span>

@@ -2,9 +2,9 @@
    SHARESYNC DESIGN TOKENS v4.0 - "The Gallery Walk" Color System
    ═══════════════════════════════════════════════════════════════════════════════
    
-   PHILOSOPHY: 
-   - Auth pages = Dark atmospheric entrance (dramatic purple/teal glow)
-   - App pages = Light airy gallery (white/slate with fluorescent accents)
+   PHILOSOPHY (APPLE AESTHETIC): 
+   - Light Mode: Pure white backgrounds, frosted glass surfaces, stark text.
+   - Dark Mode: OLED Blacks, deep charcoal surfaces, crisp off-white text.
    
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -64,29 +64,29 @@
   --amber-700:  #D97706;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     SEMANTIC: LIGHT MODE (App Pages Default)
+     SEMANTIC: LIGHT MODE (The White iPhone)
      ═══════════════════════════════════════════════════════════════════════════ */
   
   /* Backgrounds */
-  --bg-primary: var(--slate-50);
-  --bg-secondary: var(--slate-100);
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F5F5F7;
   --bg-elevated: #FFFFFF;
 
   /* Surfaces */
-  --surface-0: var(--slate-50);
-  --surface-1: #FFFFFF;
-  --surface-2: var(--slate-50);
+  --surface-0: #FFFFFF;
+  --surface-1: #F5F5F7;
+  --surface-2: #E5E5EA;
 
   /* Text (Accessibility Adjusted) */
-  --text-primary: var(--slate-800);
-  --text-secondary: var(--slate-600);
-  --text-tertiary: var(--slate-500);
-  --text-muted: var(--slate-500); /* Adjusted from 400 for contrast */
+  --text-primary: #1D1D1F;
+  --text-secondary: #86868B;
+  --text-tertiary: #A1A1A6;
+  --text-muted: #D2D2D7; 
   --text-inverse: #FFFFFF;
 
   /* Borders */
-  --border-subtle: var(--slate-200);
-  --border-default: var(--slate-300);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.12);
   --border-brand: var(--violet-300);
 
   /* Brand Colors */
@@ -131,23 +131,30 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE OVERRIDES (The Grand Entrance)
+   DARK MODE OVERRIDES (The OLED iPhone)
    ═══════════════════════════════════════════════════════════════════════════════ */
 .dark, [data-theme="dark"], .auth-layout {
-  --bg-primary: var(--slate-900);
-  --surface-0: var(--slate-900);
-  --surface-1: rgba(30, 41, 59, 0.8);
-  --surface-2: rgba(51, 65, 85, 0.6);
+  /* True Blacks & Deep Charcoals */
+  --bg-primary: #000000;
+  --bg-secondary: #1C1C1E;
+  --bg-elevated: #2C2C2E;
 
-  --text-primary: var(--slate-50);
-  --text-secondary: var(--slate-300);
-  --text-tertiary: var(--slate-400);
-  --text-muted: var(--slate-500);
+  --surface-0: #000000;
+  --surface-1: #1C1C1E;
+  --surface-2: #2C2C2E;
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
+  /* Crisp Off-White Text */
+  --text-primary: #F5F5F7;
+  --text-secondary: #86868B;
+  --text-tertiary: #6E6E73;
+  --text-muted: #48484A;
+
+  /* Translucent Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.15);
   --border-brand: rgba(139, 92, 246, 0.4);
 
+  /* Deepened Shadows for OLED */
   --shadow-sm: 0 4px 12px rgba(0,0,0,0.5);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.6);
   --shadow-brand: 0 4px 14px rgba(139, 92, 246, 0.25);

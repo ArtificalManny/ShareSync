@@ -431,7 +431,7 @@ export default function Sidebar({ user }) {
               <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
                 <span className="text-xs font-bold text-white">S</span>
               </div>
-              <span className="text-sm font-bold text-slate-800">ShareSync</span>
+              <span className="text-sm font-bold text-slate-800">OpenShare</span>
             </div>
           )}
           {/* Toggle buttons REMOVED per user request */}

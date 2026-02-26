@@ -3,24 +3,24 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * SHARESYNC DESIGN SYSTEM v4.2 - "The Gallery Walk" + Phase 1 Blueprint
  * ═══════════════════════════════════════════════════════════════════════════════
- * 
- * UPDATED IN v4.2:
+ * * UPDATED IN v4.2:
  * - Added light mode colors from palette.css
  * - Mapped CSS variables to Tailwind classes
  * - Preserved ALL existing momentum/gamification features
- * 
- * COLOR PHILOSOPHY:
+ * - ⭐ ADDED: darkMode: 'class' to enable global ThemeContext syncing
+ * - ⭐ ADDED: background semantic aliases for Navbar & App root
+ * * COLOR PHILOSOPHY:
  * • Deep Violet (#8B5CF6 → #7C3AED) = Brand, creativity, transformation
  * • Ocean Blue (#3B82F6) = Actions, Save buttons, toggles ON
  * • Aurora Teal (#2DD4BF) = Success, achievement, growth
  * • Soft Slate = Light mode neutral foundation
- * 
- * NO BACKEND CHANGES - Pure configuration
- * 
- * ═══════════════════════════════════════════════════════════════════════════════
+ * * NO BACKEND CHANGES - Pure configuration
+ * * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 export default {
+  // ⭐ CRITICAL FIX: This tells Tailwind to listen to our ThemeContext.jsx
+  darkMode: 'class', 
   content: [
     "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
@@ -237,6 +237,13 @@ export default {
            SEMANTIC ALIASES (Reference tokens.css)
            ═══════════════════════════════════════════════════════════════════ */
         
+        /* ⭐ CRITICAL FIX: The missing background mapping for App.jsx & Navbar.jsx */
+        background: {
+          primary: "var(--bg-primary, #FFFFFF)",
+          secondary: "var(--bg-secondary, #F5F5F7)",
+          elevated: "var(--bg-elevated, #FFFFFF)",
+        },
+
         /* Surface Hierarchy */
         surface: {
           0: "var(--surface-0, #F8FAFC)",

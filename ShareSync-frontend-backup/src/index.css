@@ -101,13 +101,14 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  /* CHANGED: Force light mode for "The Gallery Walk" */
-  color-scheme: light;
+  /* CHANGED: Allow both light and dark native OS interfaces */
+  color-scheme: light dark;
 }
 
 /* Body defaults with momentum support */
 body {
-  background: var(--surface-0);
+  /* CHANGED: Switched to bg-secondary so it respects our Theme Provider */
+  background: var(--bg-secondary);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
@@ -261,36 +262,28 @@ body[data-momentum-fire="true"] .text-glow {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   "THE GALLERY WALK" - LIGHT MODE ENFORCEMENT
-   ═══════════════════════════════════════════════════════════════════════════════
-   
-   This section ensures the app maintains the unified light theme aesthetic.
-   The sidebar and main content should feel like one cohesive "gallery" space.
-   
-   NOTE: Auth pages (Login, etc.) still use their own dark "Grand Entrance" 
-   theme via AuthLayout.jsx - this only affects the main app.
-   
+   "THE GALLERY WALK" - THEME ENFORCEMENT (FIXED FOR DARK MODE)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Override system dark mode preference for main app */
+/* We replaced the hardcoded #FFFFFF colors with our new semantic tokens */
 :root {
-  --gallery-bg: #F8FAFC;
-  --gallery-bg-accent: #EEF2FF;
-  --gallery-text: #1E293B;
-  --gallery-text-muted: #64748B;
-  --gallery-border: #E2E8F0;
+  --gallery-bg: var(--bg-secondary);
+  --gallery-bg-accent: var(--surface-2);
+  --gallery-text: var(--text-primary);
+  --gallery-text-muted: var(--text-muted);
+  --gallery-border: var(--border-subtle);
   --gallery-shadow: 0 4px 24px rgba(139, 92, 246, 0.06);
 }
 
-/* Ensure light backgrounds on key structural elements */
+/* Ensure background uses dynamic tokens */
 .app-layout,
 .main-layout {
   background-color: var(--gallery-bg);
 }
 
-/* Sidebar "Gallery Wall" styling reinforcement */
+/* Sidebar styling respects tokens */
 #app-sidebar {
-  background-color: #FFFFFF;
+  background-color: var(--bg-elevated);
   border-right-color: var(--gallery-border);
 }
 
@@ -300,19 +293,19 @@ body[data-momentum-fire="true"] .text-glow {
   border-color: transparent;
 }
 
-/* Ensure cards use light theme */
+/* Ensure cards use dynamic theme */
 .card,
 .bento-card,
 [class*="Card"] {
-  background-color: #FFFFFF;
+  background-color: var(--surface-1);
   border-color: var(--gallery-border);
 }
 
-/* Light mode input fields */
+/* Dynamic input fields */
 input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
-  background-color: #FFFFFF;
+  background-color: var(--bg-primary);
   border-color: var(--gallery-border);
   color: var(--gallery-text);
 }
@@ -324,7 +317,7 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-/* Buttons maintain their gradient colors but on light bg */
+/* Buttons maintain their gradient colors */
 .btn-primary,
 button[type="submit"] {
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
@@ -334,29 +327,30 @@ button[type="submit"] {
 [role="menu"],
 [role="listbox"],
 .dropdown-menu {
-  background-color: #FFFFFF;
+  background-color: var(--bg-elevated);
   border-color: var(--gallery-border);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
-/* Modal overlays - lighter backdrop */
+/* Modal overlays */
 .modal-backdrop,
 [class*="backdrop"] {
-  background-color: rgba(15, 23, 42, 0.3);
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
 /* Modal content */
 .modal-content,
 [role="dialog"] > div {
-  background-color: #FFFFFF;
+  background-color: var(--bg-elevated);
   border-color: var(--gallery-border);
 }
 
-/* Tooltips - keep dark for contrast */
+/* Tooltips */
 [role="tooltip"],
 .tooltip {
-  background-color: #1E293B;
-  color: #FFFFFF;
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
 }
 
 /* Status indicators maintain their semantic colors */
@@ -364,142 +358,3 @@ button[type="submit"] {
 .status-offline { color: #94A3B8; }
 .status-busy { color: #F59E0B; }
 .status-dnd { color: #EF4444; }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   NUCLEAR SIDEBAR FIX - Override palette.override.css !important rules
-   The Gallery Walk - White sidebar enforcement
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.sidebar,
-.sidebar.mobile-open,
-div.sidebar,
-#app-sidebar,
-aside#app-sidebar,
-[id="app-sidebar"] {
-  background: #FFFFFF !important;
-  background-color: #FFFFFF !important;
-  border-right: 1px solid #E2E8F0 !important;
-}
-
-/* Ensure sidebar children don't inherit dark backgrounds */
-.sidebar > aside,
-.sidebar > div,
-#app-sidebar > * {
-  background: transparent !important;
-}
-
-/* Keep the inner aside white */
-#app-sidebar {
-  background: #FFFFFF !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SIDEBAR TEXT FIX - Ensure dark text on white background
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.sidebar,
-.sidebar *,
-#app-sidebar,
-#app-sidebar * {
-  --tw-text-opacity: 1 !important;
-}
-
-/* Primary text - dark slate */
-.sidebar .text-white,
-.sidebar [class*="text-white"],
-#app-sidebar .text-white,
-#app-sidebar [class*="text-white"] {
-  color: #1E293B !important;
-}
-
-/* Muted text - medium slate */
-.sidebar .text-slate-400,
-.sidebar .text-zinc-400,
-.sidebar [class*="text-slate-4"],
-.sidebar [class*="text-zinc-4"],
-#app-sidebar .text-slate-400,
-#app-sidebar .text-zinc-400 {
-  color: #64748B !important;
-}
-
-/* Icon colors - visible on white */
-.sidebar svg,
-#app-sidebar svg {
-  color: inherit;
-}
-
-/* Ensure nav labels are visible */
-.sidebar span,
-.sidebar label,
-.sidebar p,
-#app-sidebar span,
-#app-sidebar label,
-#app-sidebar p {
-  color: #334155 !important;
-}
-
-/* Active nav item - violet accent */
-.sidebar .bg-violet-50,
-.sidebar [class*="bg-violet"],
-#app-sidebar .bg-violet-50 {
-  background-color: #F5F3FF !important;
-}
-
-.sidebar .text-violet-600,
-#app-sidebar .text-violet-600 {
-  color: #7C3AED !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   THE FINAL NAVBAR GHOST BUSTER (Appended safely to the bottom)
-   This guarantees that no legacy file (like button.css) can inject a solid 
-   background color onto your frosted glass navbar icons.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-header.navbar button:not(.bg-gradient-to-br):hover,
-header.navbar a:hover {
-  background: transparent !important;
-  background-color: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   WEBKIT GPU RENDER BUG FIX (Backdrop-filter + Transform)
-   This prevents the browser from drawing solid grey bounding boxes when hovering
-   scaled icons over the frosted glass navbar.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-header.navbar button,
-header.navbar a,
-header.navbar .nav-icon {
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
-  transform: translateZ(0);
-}
-
-header.navbar button:hover,
-header.navbar a:hover,
-header.navbar .nav-icon:hover {
-  /* Safely handles the hover scale while enforcing hardware acceleration */
-  transform: scale(1.1) translateZ(0) !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   THE WEDGE KILLER (Full-Bleed App Layout)
-   This strips border-radius from all top-level React wrappers and forces the 
-   global background to match the light theme, eliminating corner dark spots.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-html, 
-body, 
-#root, 
-.app-layout, 
-.main-layout, 
-.app-container {
-  border-radius: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: #F8FAFC !important; /* Matches your Gallery Walk light theme */
-  background-color: #F8FAFC !important;
-}
-
-/* If a specific inner wrapper is causing it, this catches it */
-#root > div {
-  border-radius: 0 !important;
-}

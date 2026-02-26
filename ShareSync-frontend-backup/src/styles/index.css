@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC - Main Stylesheet v4.0 "The Gallery Walk" (Adaptive)
+   SHARESYNC - Main Stylesheet v4.2 "OLED Migration"
    ═══════════════════════════════════════════════════════════════════════════════
    
    Import order matters! Organized for proper cascade:
@@ -19,70 +19,70 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    1. MASTER COLOR PALETTE (Must be first!)
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/palette.css';
+@import './palette.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    2. DESIGN TOKENS (References palette)
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/tokens.css';
+@import './tokens.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    3. THEME APPLICATION
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/theme.css';
+@import './theme.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    4. GRADIENT SYSTEM
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/gradients.css';
+@import './gradients.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    5. COLOR SYSTEM (Legacy - may contain additional colors)
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/colors.css';
+@import './colors.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    6. MOMENTUM GLOW SYSTEM (Phase 1)
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/momentum-glow.css';
+@import './momentum-glow.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    7. ENTRANCE ANIMATIONS (Phase A)
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/entrance.css';
+@import './entrance.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    8. HEARTBEAT SYSTEM (Phase A) - Momentum-responsive body
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/heartbeat.css';
+@import './heartbeat.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    9. PHASE C: MOMENTUM ENGINE STYLES
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/momentum-engine.css';
+@import './momentum-engine.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    10. LIVING CARDS (Phase B)
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/living-cards.css';
+@import './living-cards.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    11. COMPONENT STYLES
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/card.css';
-@import './styles/button.css';
-@import './styles/input.css';
-@import './styles/avatar.css';
-@import './styles/badge.css';
-@import './styles/modal.css';
-@import './styles/dropdown.css';
-@import './styles/tooltip.css';
+@import './card.css';
+@import './button.css';
+@import './input.css';
+@import './avatar.css';
+@import './badge.css';
+@import './modal.css';
+@import './dropdown.css';
+@import './tooltip.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    12. UTILITIES
 ───────────────────────────────────────────────────────────────────────────── */
-@import './styles/utilities.css';
-@import './styles/animations.css';
+@import './utilities.css';
+@import './animations.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    13. TAILWIND
@@ -101,19 +101,20 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  /* Added for Phase 2: Ensures native browser UI elements match the active theme */
+  /* Syncs native browser UI (scrollbars, form elements) with our theme */
   color-scheme: light dark;
 }
 
-/* Body defaults with momentum support */
+/* Body defaults with semantic theme support */
 body {
-  background: var(--surface-0);
+  /* Swapped hardcoded values for semantic tokens */
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
   
-  /* Smooth transitions for momentum changes and theme toggles */
-  transition: background 0.3s ease-out, color 0.3s ease-out;
+  /* Smooth transitions for theme toggles - The "Apple" feel */
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -141,12 +142,15 @@ body {
 #app-sidebar {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  background-color: var(--bg-elevated);
+  border-right: 1px solid var(--border-subtle);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    BENTO CARD ENHANCEMENTS
    ═══════════════════════════════════════════════════════════════════════════════ */
 .bento-card {
+  /* Swapped surface-1 for semantic variable */
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
@@ -176,13 +180,14 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
+  /* Uses neutral slate for light mode, zinc-800 for dark mode */
   background: var(--slate-300);
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb,
 html[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #27272a; /* zinc-800 */
+  background: #27272a; /* OLED Neutral Zinc */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -191,7 +196,7 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb {
 
 .dark ::-webkit-scrollbar-thumb:hover,
 html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46; /* zinc-700 */
+  background: #3f3f46;
 }
 
 /* Firefox */
@@ -221,25 +226,25 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
 
 /* Glow utilities */
 .shadow-glow-brand {
-  box-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
+  box-shadow: 0 0 20px rgba(var(--brand-500-rgb), 0.3);
 }
 
 .shadow-glow-cyan {
-  box-shadow: 0 0 20px rgba(var(--palette-cyan-500-rgb), 0.3);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
 }
 
 .shadow-glow-energy {
-  box-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
+  box-shadow: 0 0 20px rgba(var(--energy-500-rgb), 0.3);
 }
 
 /* Momentum-responsive text glow */
 body[data-momentum="4"] .text-glow,
 body[data-momentum="5"] .text-glow {
-  text-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
+  text-shadow: 0 0 20px rgba(var(--brand-500-rgb), 0.3);
 }
 
 body[data-momentum-fire="true"] .text-glow {
-  text-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
+  text-shadow: 0 0 20px rgba(var(--energy-500-rgb), 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
