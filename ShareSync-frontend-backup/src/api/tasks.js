@@ -62,4 +62,23 @@ export async function getPriorityTasks(limit = 3, projectId = null) {
   return items.map(normalizeTask);
 }
 
-export default { createTask, patchTask, listTasks, getPriorityTasks };
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ Priority 1: Smart task suggestions for onboarding
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Get smart task suggestions based on archetype
+ *  Backend returns suggested tasks the user can pick from during onboarding.
+ */
+export async function getSmartSuggestions(archetype = null) {
+  try {
+    const params = archetype ? { archetype } : {};
+    const { data } = await client.get('/tasks/suggestions', { params });
+    const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    return items;
+  } catch (err) {
+    console.warn('[tasks] getSmartSuggestions failed:', err?.message);
+    return [];
+  }
+}
+
+export default { createTask, patchTask, listTasks, getPriorityTasks, getSmartSuggestions };

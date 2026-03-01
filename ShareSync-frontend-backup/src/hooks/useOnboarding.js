@@ -1,6 +1,7 @@
 // src/hooks/useOnboarding.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 9: Onboarding State Management
+// Priority 1: Added setData for flexible updates
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback } from 'react';
@@ -98,6 +99,14 @@ export default function useOnboarding() {
     }));
   }, []);
 
+  // ✅ Priority 1: Generic data setter for flexible updates
+  const setData = useCallback((patch) => {
+    setState(prev => ({
+      ...prev,
+      data: { ...prev.data, ...(typeof patch === 'function' ? patch(prev.data) : patch) },
+    }));
+  }, []);
+
   const completeOnboarding = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -137,6 +146,7 @@ export default function useOnboarding() {
     setArchetype,
     setFirstTask,
     setCommitment,
+    setData,           // ✅ Priority 1: new
     completeOnboarding,
     resetOnboarding,
   };

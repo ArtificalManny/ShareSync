@@ -50,6 +50,7 @@ import TrendCharts from "../components/growth/TrendCharts";
 
 // Growth Hook
 import { useGrowthTrack } from "../hooks/useGrowthTrack";
+import ProfileStrength from "../components/profile/ProfileStrength";
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -792,6 +793,8 @@ export default function Profile() {
             </div>
             <SkillBar value={reliability} />
           </div>
+          {/* ✅ Priority 1: Profile Strength */}
+          {isOwnProfile && <ProfileStrength onEditClick={handleEditProfile} />}
 
           {isOwnProfile && <EvolutionMoments moments={evolution} loading={growthLoading} />}
         </div>

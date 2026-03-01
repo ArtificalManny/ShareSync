@@ -148,7 +148,9 @@ export function MomentumProvider({ children }) {
   
   // Record activity and update momentum
   const recordActivity = useCallback((type, metadata = {}) => {
-    const points = MOMENTUM_CONFIG.points[type] || 0;
+    let points = MOMENTUM_CONFIG.points[type] || 0;
+    // Priority 3.3: 2x XP during active focus block
+    try { if (localStorage.getItem('ss.focusBlock.active') === '1') points *= 2; } catch {}
     const now = Date.now();
     
     // Add activity to history

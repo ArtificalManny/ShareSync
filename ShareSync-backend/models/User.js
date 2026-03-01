@@ -15,6 +15,9 @@ const UserSchema = new mongoose.Schema({
   // ✅ Public profile toggle
   publicProfile: { type: Boolean, default: false },
 
+  // ✅ Priority 3.2: Activity sharing for Momentum Contagion
+  activitySharingEnabled: { type: Boolean, default: true },
+
   // ============================================
   // ✅ GAMIFICATION SYSTEM
   // ============================================
@@ -351,7 +354,7 @@ UserSchema.methods.addXP = function(amount, reason) {
         id: `level-${this.gamification.level}`,
         name: `Level ${this.gamification.level} Achiever`,
         description: `Reached level ${this.gamification.level}`,
-        icon: '🏆',
+        icon: '��',
         tier: this.gamification.level >= 20 ? 'platinum' : 
               this.gamification.level >= 10 ? 'gold' : 'silver',
       });

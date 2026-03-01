@@ -340,6 +340,20 @@ export class User extends Document {
   tokenVersion: number;
 
   // ============================================
+  // ✅ PRIORITY 1: ONBOARDING (NEW — Zero-State Revolution)
+  // Safe additive fields with sensible defaults.
+  // ============================================
+
+  @Prop({ default: false })
+  onboardingCompleted: boolean;
+
+  @Prop()
+  firstLoginAt?: Date;
+
+  @Prop()
+  firstShipAt?: Date;
+
+  // ============================================
   // TRACKING (existing)
   // ============================================
   @Prop({ default: null })

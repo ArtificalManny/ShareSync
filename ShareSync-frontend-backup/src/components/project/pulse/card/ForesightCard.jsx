@@ -22,7 +22,7 @@ export default function ForesightCard({ metrics, overview, loading }) {
             <div className="opacity-90">{next}</div>
           </div>
         ) : (
-          <div className="opacity-70">Placeholder foresight (wire later)</div>
+          <div className="opacity-70">AI predictions unlock after 7 days of activity.</div>
         )}
 
         {Array.isArray(risks) && risks.length > 0 && (

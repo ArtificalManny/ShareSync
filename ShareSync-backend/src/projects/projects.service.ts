@@ -6,6 +6,7 @@
 // - SAFE PATCH: create() now handles privacy→visibility, title, category, members
 // - PHASE 3: helper triggers for follower notifications (ship updates / milestones)
 // - PHASE 4: Discovery feed support
+// - PRIORITY 1: createFromTemplate + getFeaturedProjects (Zero-State Revolution)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -33,6 +34,9 @@ import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 
 // ✅ Phase 3: follower notifications (optional injection)
 import { NotificationsService } from '../notifications/notifications.service';
+
+// ✅ Priority 1: project templates
+import { getProjectTemplate, TemplateType, ProjectTemplate } from './templates/project-templates';
 
 export interface ProjectQueryOptions {
   status?: ProjectStatus;
@@ -792,5 +796,131 @@ export class ProjectsService {
     if (project.ownerId.toString() === userId) return true;
     const member = project.members.find((m) => m.userId.toString() === userId);
     return member?.role === MemberRole.ADMIN;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PRIORITY 1: TEMPLATE & FEATURED PROJECTS (Zero-State Revolution)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * POST /projects/from-template
+   * Creates a project from a predefined template (personal, team, learning).
+   * Returns the created project. Tasks are created via event emission so
+   * the tasks service handles them (avoids circular dependency).
+   */
+  async createFromTemplate(
+    userId: string,
+    templateType: TemplateType,
+  ): Promise<{ project: ProjectDocument; taskCount: number }> {
+    const template: ProjectTemplate = getProjectTemplate(templateType);
+
+    this.logger.log(`Creating project from template "${templateType}" for user ${userId}`);
+
+    // Create the project using the existing create() method
+    // This ensures all normalization, events, and metrics init happen correctly
+    const project = await this.create(userId, {
+      name: template.name,
+      description: template.description,
+      emoji: template.emoji,
+      icon: template.emoji,
+      color: template.color,
+      category: template.category,
+      tags: [templateType, 'template'],
+      visibility: ProjectVisibility.PRIVATE,
+    } as any);
+
+    // Emit event with template tasks so TasksService can create them
+    // This avoids injecting TasksService here (which would be circular)
+    this.eventEmitter.emit('project.template.tasks.create', {
+      projectId: project._id.toString(),
+      userId,
+      tasks: template.tasks,
+    });
+
+    this.logger.log(`Template project created: ${project._id} with ${template.tasks.length} tasks queued`);
+
+    return {
+      project,
+      taskCount: template.tasks.length,
+    };
+  }
+
+  /**
+   * GET /projects/featured
+   * Returns public projects sorted by momentum/activity for the Discover empty state.
+   * Falls back to seed data descriptions if no public projects exist.
+   */
+  async getFeaturedProjects(limit: number = 6): Promise<any[]> {
+    // Try to find real public projects first
+    const publicProjects = await this.projectModel
+      .find({
+        $or: [
+          { visibility: ProjectVisibility.PUBLIC },
+          { visibility: ProjectVisibility.LISTED },
+          { 'settings.isPublic': true },
+        ],
+        status: { $ne: ProjectStatus.ARCHIVED },
+      })
+      .sort({ 'metrics.momentum': -1, 'metrics.lastActivityAt': -1 })
+      .limit(limit)
+      .lean()
+      .exec();
+
+    if (publicProjects.length > 0) {
+      return publicProjects.map((p: any) => ({
+        id: p._id,
+        name: p.name,
+        description: p.description || '',
+        emoji: p.emoji || '📁',
+        color: p.color || '#7C3AED',
+        category: p.category || null,
+        metrics: {
+          momentum: p.metrics?.momentum || 0,
+          totalTasks: p.metrics?.totalTasks || 0,
+          completedTasks: p.metrics?.completedTasks || 0,
+          memberCount: p.metrics?.memberCount || 1,
+          weeklyShips: p.metrics?.weeklyShips || 0,
+        },
+        tags: p.tags || [],
+        updatedAt: p.updatedAt,
+      }));
+    }
+
+    // Fallback: return seed data so Discover page never looks empty
+    return [
+      {
+        id: 'seed-1',
+        name: 'OpenShare Core',
+        description: 'Building the future of project management',
+        emoji: '🚀',
+        color: '#7C3AED',
+        category: 'Job',
+        metrics: { momentum: 85, totalTasks: 47, completedTasks: 38, memberCount: 3, weeklyShips: 12 },
+        tags: ['engineering', 'product'],
+        isSeed: true,
+      },
+      {
+        id: 'seed-2',
+        name: 'Design System v2',
+        description: 'Unified component library and design tokens',
+        emoji: '🎨',
+        color: '#EC4899',
+        category: 'Job',
+        metrics: { momentum: 72, totalTasks: 23, completedTasks: 18, memberCount: 2, weeklyShips: 6 },
+        tags: ['design', 'ui'],
+        isSeed: true,
+      },
+      {
+        id: 'seed-3',
+        name: 'Learn TypeScript',
+        description: 'From zero to confident in 30 days',
+        emoji: '📚',
+        color: '#3B82F6',
+        category: 'School',
+        metrics: { momentum: 64, totalTasks: 15, completedTasks: 10, memberCount: 1, weeklyShips: 4 },
+        tags: ['learning', 'typescript'],
+        isSeed: true,
+      },
+    ];
   }
 }

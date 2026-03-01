@@ -150,6 +150,15 @@ try {
   console.log('⚠️ Ecosystem routes not loaded:', e.message);
 }
 
+// ⭐ Priority 3.4: Pulse Check Routes
+try {
+  const pulseRoutes = require('./src/routes/pulse');
+  app.use('/api/pulse', apiLimiter, pulseRoutes);
+  console.log('✅ Pulse Check routes loaded (Priority 3.4)');
+} catch (e) {
+  console.log('⚠️ Pulse Check routes not loaded:', e.message);
+}
+
 // Project routes
 try {
   const projectRoutes = require('./routes/projects');
@@ -257,10 +266,10 @@ httpServer.listen(PORT, () => {
   console.log(`🌐 CORS: ${process.env.NODE_ENV === 'production' ? 'RESTRICTED' : 'ENABLED (all origins)'}`);
   console.log(`🔒 Security: Helmet enabled`);
   console.log(`⚡ Compression: Enabled`);
-  console.log(`🛡️  Rate Limiting: Active`);
-  console.log(`�� Performance Monitoring: Active`);
+  console.log(`��️  Rate Limiting: Active`);
+  console.log(`📊 Performance Monitoring: Active`);
   console.log(`🧠 AI Recommendations: Active`);
-  console.log(`�� Burnout Detection: Active (daily 6 AM)`);
+  console.log(`🏥 Burnout Detection: Active (daily 6 AM)`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('='.repeat(70));
   console.log('');

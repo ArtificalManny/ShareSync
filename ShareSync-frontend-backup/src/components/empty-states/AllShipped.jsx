@@ -442,7 +442,7 @@ export default function AllShipped({
   
   // Full celebratory variant
   return (
-    <div className={className}>
+    <div className={`card-hero ${className}`}>
       {/* Epic confetti */}
       {confettiTriggered && (
         <EpicConfetti trigger={confettiTriggered} intensity={confettiIntensity} />

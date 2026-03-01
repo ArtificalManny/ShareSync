@@ -1,5 +1,5 @@
 // src/tasks/tasks.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { TasksService } from './tasks.service';
@@ -19,6 +19,9 @@ import { ProjectAccessGuard } from '../common/guards/project-access.guard';
 // ✅ Realtime (Socket emit layer)
 import { RealtimeModule } from '../realtime/realtime.module';
 
+// ✅ Priority 1: UserService needed for first-task/first-ship XP bonus tracking
+import { UserModule } from '../user/user.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -31,6 +34,9 @@ import { RealtimeModule } from '../realtime/realtime.module';
 
     // ✅ Allows TasksService to inject RealtimeService safely
     RealtimeModule,
+
+    // ✅ Priority 1: forwardRef avoids circular dependency (UserModule ↔ TasksModule)
+    forwardRef(() => UserModule),
   ],
   controllers: [
     ProjectTasksController,

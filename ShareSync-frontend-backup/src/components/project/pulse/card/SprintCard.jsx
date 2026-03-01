@@ -15,7 +15,7 @@ export default function SprintCard({ sprint, onAction, project, overview, loadin
         {name ? (
           <div className="opacity-90">{name}</div>
         ) : (
-          <div className="opacity-70">No sprint data yet (placeholder)</div>
+          <div className="opacity-70">Ready to sprint? Set a 2-week goal to track velocity.</div>
         )}
 
         {onAction && (

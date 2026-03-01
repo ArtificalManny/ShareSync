@@ -1,0 +1,290 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STREAK FLAMES CSS — Priority 3.5
+   ═══════════════════════════════════════════════════════════════════════════════
+   5 Tiers:
+     Tier 0: Empty/grey (streak = 0)
+     Tier 1: Small ember (1-3 days) — orange
+     Tier 2: Growing flame (4-7 days) — orange-red
+     Tier 3: Full fire (8-14 days) — red-orange with particles
+     Tier 4: Blue flame (15-30 days) — rare
+     Tier 5: Violet/legendary (30+ days) — purple with particles
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BASE FLAME CONTAINER
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.streak-flame__body {
+  position: relative;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  transition: all 0.5s ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER 0 — EMPTY (streak = 0)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame--tier-0 .streak-flame__body {
+  background: linear-gradient(180deg, #94A3B8 0%, #CBD5E1 100%);
+  opacity: 0.4;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER 1 — SMALL EMBER (1-3 days)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame--tier-1 .streak-flame__body {
+  background: linear-gradient(180deg, #F97316 0%, #FB923C 40%, #FDBA74 100%);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+  animation: ember-flicker 2s ease-in-out infinite;
+}
+
+@keyframes ember-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1); opacity: 0.85; }
+  25% { transform: scaleY(1.04) scaleX(0.97); opacity: 0.9; }
+  50% { transform: scaleY(0.97) scaleX(1.02); opacity: 1; }
+  75% { transform: scaleY(1.02) scaleX(0.98); opacity: 0.88; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER 2 — GROWING FLAME (4-7 days)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame--tier-2 .streak-flame__body {
+  background: linear-gradient(180deg, #EA580C 0%, #F97316 30%, #FB923C 60%, #FDE68A 100%);
+  box-shadow:
+    0 0 12px rgba(234, 88, 12, 0.35),
+    0 0 24px rgba(249, 115, 22, 0.15);
+  animation: flame-grow 1.8s ease-in-out infinite;
+}
+
+@keyframes flame-grow {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  20% { transform: scaleY(1.08) scaleX(0.94); }
+  40% { transform: scaleY(0.95) scaleX(1.04); }
+  60% { transform: scaleY(1.1) scaleX(0.96); }
+  80% { transform: scaleY(0.98) scaleX(1.02); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER 3 — FULL FIRE (8-14 days) + PARTICLES
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame--tier-3 .streak-flame__body {
+  background: linear-gradient(180deg, #DC2626 0%, #EA580C 25%, #F97316 50%, #FBBF24 80%, #FDE68A 100%);
+  box-shadow:
+    0 0 16px rgba(220, 38, 38, 0.4),
+    0 0 32px rgba(234, 88, 12, 0.2),
+    0 0 48px rgba(249, 115, 22, 0.1);
+  animation: full-fire 1.4s ease-in-out infinite;
+}
+
+@keyframes full-fire {
+  0%, 100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+  15% { transform: scaleY(1.12) scaleX(0.92); filter: brightness(1.05); }
+  30% { transform: scaleY(0.94) scaleX(1.06); filter: brightness(0.98); }
+  45% { transform: scaleY(1.15) scaleX(0.9); filter: brightness(1.1); }
+  60% { transform: scaleY(0.96) scaleX(1.03); filter: brightness(1); }
+  75% { transform: scaleY(1.08) scaleX(0.95); filter: brightness(1.05); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER 4 — BLUE FLAME (15-30 days)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame--tier-4 .streak-flame__body {
+  background: linear-gradient(180deg, #1D4ED8 0%, #3B82F6 25%, #60A5FA 50%, #93C5FD 80%, #BFDBFE 100%);
+  box-shadow:
+    0 0 16px rgba(59, 130, 246, 0.45),
+    0 0 32px rgba(29, 78, 216, 0.25),
+    0 0 48px rgba(96, 165, 250, 0.15);
+  animation: blue-fire 1.6s ease-in-out infinite;
+}
+
+@keyframes blue-fire {
+  0%, 100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+  20% { transform: scaleY(1.1) scaleX(0.93); filter: brightness(1.08); }
+  40% { transform: scaleY(0.95) scaleX(1.05); filter: brightness(1.02); }
+  60% { transform: scaleY(1.13) scaleX(0.91); filter: brightness(1.12); }
+  80% { transform: scaleY(0.97) scaleX(1.03); filter: brightness(1); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER 5 — VIOLET/LEGENDARY (30+ days)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame--tier-5 .streak-flame__body {
+  background: linear-gradient(180deg, #7C3AED 0%, #8B5CF6 20%, #A78BFA 45%, #C4B5FD 70%, #DDD6FE 100%);
+  box-shadow:
+    0 0 20px rgba(124, 58, 237, 0.5),
+    0 0 40px rgba(139, 92, 246, 0.3),
+    0 0 60px rgba(167, 139, 250, 0.15);
+  animation: legendary-fire 1.2s ease-in-out infinite;
+}
+
+@keyframes legendary-fire {
+  0%, 100% { transform: scaleY(1) scaleX(1); filter: brightness(1) saturate(1); }
+  15% { transform: scaleY(1.14) scaleX(0.9); filter: brightness(1.1) saturate(1.1); }
+  30% { transform: scaleY(0.93) scaleX(1.07); filter: brightness(1.05) saturate(1.05); }
+  45% { transform: scaleY(1.18) scaleX(0.88); filter: brightness(1.15) saturate(1.15); }
+  60% { transform: scaleY(0.95) scaleX(1.04); filter: brightness(1.02) saturate(1); }
+  75% { transform: scaleY(1.1) scaleX(0.93); filter: brightness(1.08) saturate(1.08); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PARTICLE SYSTEM (tiers 3, 4, 5 only)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame__particles {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.streak-flame__particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-float 2s ease-out infinite;
+}
+
+/* Stagger particles */
+.streak-flame__particle:nth-child(1) { left: 20%; bottom: 50%; animation-delay: 0s; }
+.streak-flame__particle:nth-child(2) { left: 50%; bottom: 55%; animation-delay: 0.4s; }
+.streak-flame__particle:nth-child(3) { left: 70%; bottom: 45%; animation-delay: 0.8s; }
+.streak-flame__particle:nth-child(4) { left: 35%; bottom: 60%; animation-delay: 1.2s; }
+.streak-flame__particle:nth-child(5) { left: 60%; bottom: 50%; animation-delay: 1.6s; }
+
+/* Tier 3 particles — orange/red */
+.streak-flame--tier-3 .streak-flame__particle {
+  width: 3px;
+  height: 3px;
+  background: #F97316;
+}
+
+/* Tier 4 particles — blue */
+.streak-flame--tier-4 .streak-flame__particle {
+  width: 3px;
+  height: 3px;
+  background: #60A5FA;
+}
+
+/* Tier 5 particles — violet, slightly larger */
+.streak-flame--tier-5 .streak-flame__particle {
+  width: 4px;
+  height: 4px;
+  background: #A78BFA;
+}
+
+@keyframes particle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  15% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) translateX(var(--drift, 4px)) scale(0.3);
+  }
+}
+
+/* Drift variations for each particle */
+.streak-flame__particle:nth-child(1) { --drift: -6px; }
+.streak-flame__particle:nth-child(2) { --drift: 3px; }
+.streak-flame__particle:nth-child(3) { --drift: 7px; }
+.streak-flame__particle:nth-child(4) { --drift: -4px; }
+.streak-flame__particle:nth-child(5) { --drift: 5px; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   GLOW RING (tiers 4 + 5 only)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame__glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.streak-flame--tier-4 .streak-flame__glow {
+  opacity: 1;
+  border: 1.5px solid rgba(59, 130, 246, 0.25);
+  animation: glow-pulse-blue 2.5s ease-in-out infinite;
+}
+
+.streak-flame--tier-5 .streak-flame__glow {
+  opacity: 1;
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  animation: glow-pulse-violet 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse-blue {
+  0%, 100% { transform: scale(1); opacity: 0.6; border-color: rgba(59, 130, 246, 0.2); }
+  50% { transform: scale(1.15); opacity: 1; border-color: rgba(59, 130, 246, 0.4); }
+}
+
+@keyframes glow-pulse-violet {
+  0%, 100% { transform: scale(1); opacity: 0.6; border-color: rgba(139, 92, 246, 0.25); }
+  50% { transform: scale(1.2); opacity: 1; border-color: rgba(139, 92, 246, 0.5); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   STREAK BADGE (count overlay on flame)
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame__badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  z-index: 2;
+}
+
+.streak-flame--tier-0 .streak-flame__badge { display: none; }
+.streak-flame--tier-1 .streak-flame__badge { background: linear-gradient(135deg, #F97316, #EA580C); }
+.streak-flame--tier-2 .streak-flame__badge { background: linear-gradient(135deg, #EA580C, #DC2626); }
+.streak-flame--tier-3 .streak-flame__badge { background: linear-gradient(135deg, #DC2626, #B91C1C); }
+.streak-flame--tier-4 .streak-flame__badge { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
+.streak-flame--tier-5 .streak-flame__badge { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TIER LABEL
+───────────────────────────────────────────────────────────────────────── */
+.streak-flame__tier-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.streak-flame--tier-0 .streak-flame__tier-label { color: #94A3B8; }
+.streak-flame--tier-1 .streak-flame__tier-label { color: #F97316; }
+.streak-flame--tier-2 .streak-flame__tier-label { color: #EA580C; }
+.streak-flame--tier-3 .streak-flame__tier-label { color: #DC2626; }
+.streak-flame--tier-4 .streak-flame__tier-label { color: #3B82F6; }
+.streak-flame--tier-5 .streak-flame__tier-label { color: #8B5CF6; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION
+───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .streak-flame__body,
+  .streak-flame__particle,
+  .streak-flame__glow,
+  .streak-flame__badge {
+    animation: none !important;
+  }
+  .streak-flame__particle {
+    display: none;
+  }
+}

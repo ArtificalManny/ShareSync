@@ -1,7 +1,14 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.2 - "The Gallery Walk" (8-Point Grid Alignment)
-// Mathematically aligned spacing: w-64 (256px), padding multiples of 4.
+// SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
+// Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES in v5.1:
+// - Removed toggle buttons (>> << arrows) completely per user request
+// - Removed auto-hide indicator wedge
+// - Cleaner minimal header
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
@@ -74,6 +81,9 @@ function resolveAvatarUrl(u) {
   return u?.avatarUrl || u?.profilePicture || u?.avatar || u?.photoUrl || u?.profile?.avatarUrl || u?.profile?.photoUrl || null;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MOMENTUM LEVEL INDICATOR - Light Theme
+───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
 
@@ -99,22 +109,25 @@ function MomentumLevelIndicator({ collapsed = false }) {
   }
 
   return (
-    <div className={`mx-4 px-4 py-3 rounded-xl transition-all duration-500 ${config.bg} border border-slate-200 ${isFireMode ? "border-orange-300" : ""}`}>
-      <div className="flex items-center gap-3">
+    <div className={`mx-3 px-3 py-2 rounded-xl transition-all duration-500 ${config.bg} border border-slate-200 ${isFireMode ? "border-orange-300" : ""}`}>
+      <div className="flex items-center gap-2">
         {Icon && (
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${glowLevel >= 3 ? "bg-white/80" : "bg-white"} ${isFireMode ? "animate-bounce" : ""}`}>
-            <Icon className={`w-4 h-4 ${config.color}`} />
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors duration-300 ${glowLevel >= 3 ? "bg-white/80" : "bg-white"} ${isFireMode ? "animate-bounce" : ""}`}>
+            <Icon className={`w-3.5 h-3.5 ${config.color}`} />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className={`text-sm font-semibold ${config.color} transition-colors duration-300`}>{config.label}</div>
-          <div className="text-xs text-slate-500 truncate font-medium transition-colors duration-300">Level {glowLevel}</div>
+          <div className={`text-xs font-semibold ${config.color} transition-colors duration-300`}>{config.label}</div>
+          <div className="text-[10px] text-slate-500 truncate font-medium transition-colors duration-300">Level {glowLevel}</div>
         </div>
       </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PROGRESS RING - Light Theme (ALL animations preserved)
+───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const entrance = useEntrance();
@@ -193,13 +206,13 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
         <div className="absolute inset-0 flex items-center justify-center">
           {isLevelingUp ? (
             <div className="text-center level-up-number">
-              <div className="text-[10px] text-violet-500 uppercase tracking-wider font-bold">Level Up!</div>
-              <span className="text-xl font-bold text-violet-600">{level}</span>
+              <div className="text-[8px] text-violet-500 uppercase tracking-wider font-bold">Level Up!</div>
+              <span className="text-lg font-bold text-violet-600">{level}</span>
             </div>
           ) : isFireMode ? (
-            <span className="text-xl animate-pulse">🔥</span>
+            <span className="text-lg animate-pulse">🔥</span>
           ) : (
-            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-sm" : "text-xl"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
+            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
               {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
             </span>
           )}
@@ -207,8 +220,8 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
       </div>
 
       {!collapsed && showStreak && (
-        <div className={`mt-4 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all duration-300 ${isImpressiveStreak ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-500 border border-transparent"}`}>
-          <Flame className={`w-4 h-4 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
+        <div className={`mt-3 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${isImpressiveStreak ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-500 border border-transparent"}`}>
+          <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
           <span>{streak}d</span>
         </div>
       )}
@@ -239,6 +252,9 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   SHIP COUNTER - Light Theme
+───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -259,57 +275,72 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   if (collapsed) {
     const progress = Math.min(1, current / target);
     return (
-      <div className="mx-auto mt-4 w-8 h-2 bg-slate-200 rounded-full overflow-hidden">
+      <div className="mx-auto mt-4 w-8 h-1 bg-slate-200 rounded-full overflow-hidden">
         <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${progress * 100}%` }} />
       </div>
     );
   }
 
   return (
-    <div className={`mx-4 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 transition-all duration-200 ${isAnimating ? "ring-2 ring-violet-200" : ""}`}>
+    <div className={`mx-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 transition-all duration-200 ${isAnimating ? "ring-2 ring-violet-200" : ""}`}>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ships today</span>
-        <span className={`text-sm font-bold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ships today</span>
+        <span className={`text-xs font-bold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
           {displayCurrent}/{target}
         </span>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-1">
         {[...Array(target)].map((_, i) => (
-          <div key={i} className={`h-2 flex-1 rounded-full transition-all duration-300 ${i < current ? "bg-violet-500" : "bg-slate-200"} ${i === justFilledIndex ? "scale-y-150 bg-violet-400" : "scale-y-100"}`} style={{ transitionDelay: i === justFilledIndex ? "0ms" : `${i * 50}ms` }} />
+          <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i < current ? "bg-violet-500" : "bg-slate-200"} ${i === justFilledIndex ? "scale-y-150 bg-violet-400" : "scale-y-100"}`} style={{ transitionDelay: i === justFilledIndex ? "0ms" : `${i * 50}ms` }} />
         ))}
       </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   COLLAPSIBLE SECTION - Light Theme
+───────────────────────────────────────────────────────────────────────── */
 function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   if (sidebarCollapsed) return null;
 
   return (
-    <div className="mx-4">
+    <div className="mx-3">
       <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-4 h-4 text-slate-400" />}
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</span>
+          {Icon && <Icon className="w-3.5 h-3.5 text-slate-400" />}
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
         </div>
-        {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        {isOpen ? <ChevronUp className="w-3 h-3 text-slate-400" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
       </button>
       {isOpen && <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-200">{children}</div>}
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   HOVER TRIGGER ZONE (Auto-hide functionality preserved)
+───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
   return <div className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer" onMouseEnter={onHover} onMouseLeave={onLeave} style={{ background: "transparent" }} />;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
+   v5.1 CHANGES:
+   - REMOVED all toggle buttons (>> << arrows)
+   - REMOVED auto-hide indicator wedge
+   - Clean minimal header
+───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
   const { shouldCollapseSidebar, isInFlow } = useFlowState();
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
+  // Auto-hide is now disabled by default and not user-controllable via UI
+  // Users can still toggle via localStorage if they want
   const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
@@ -322,7 +353,18 @@ export default function Sidebar({ user }) {
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
-  const collapsed = autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed;
+  // Priority 3.3: Focus Block auto-collapse
+  const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
+  useEffect(() => {
+    const checkFocusBlock = () => {
+      try { setFocusBlockCollapse(localStorage.getItem('ss.focusBlock.active') === '1'); } catch {}
+    };
+    checkFocusBlock();
+    window.addEventListener('focus-block-change', checkFocusBlock);
+    return () => window.removeEventListener('focus-block-change', checkFocusBlock);
+  }, []);
+
+  const collapsed = autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed || focusBlockCollapse;
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, userCollapsed ? "1" : "0");
@@ -385,7 +427,7 @@ export default function Sidebar({ user }) {
           sidebar-item h-screen flex flex-col 
           bg-white border-r border-slate-200
           transition-all duration-300 ease-out
-          ${collapsed ? "w-[72px]" : "w-64"}
+          ${collapsed ? "w-[72px]" : "w-[260px]"}
           ${isInFlow ? "opacity-90" : "opacity-100"}
           ${autoHideEnabled ? "fixed left-0 top-0 z-50 shadow-xl" : ""}
           translate-x-0
@@ -393,30 +435,36 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        <div className="flex items-center justify-center p-6">
+        {/* Header - CLEANED UP: No toggle buttons */}
+        <div className="flex items-center justify-center p-4">
           {!collapsed && (
-            <div className="flex items-center gap-3">
-              <div className={`sidebar-logo w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
-                <span className="text-sm font-bold text-white">S</span>
+            <div className="flex items-center gap-2.5">
+              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
+                <span className="text-xs font-bold text-white">S</span>
               </div>
-              <span className="text-base font-bold text-slate-800">OpenShare</span>
+              <span className="text-sm font-bold text-slate-800">OpenShare</span>
             </div>
           )}
+          {/* Toggle buttons REMOVED per user request */}
         </div>
 
+        {/* Progress Ring */}
         <ProgressRing collapsed={collapsed} />
 
+        {/* Momentum Indicator */}
         <div className="mb-4">
           <MomentumLevelIndicator collapsed={collapsed} />
         </div>
 
+        {/* League Indicator */}
         {!collapsed && (
-          <div className="mx-4 mb-4">
+          <div className="mx-3 mb-4">
             <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
           </div>
         )}
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto overflow-x-hidden">
+        {/* Navigation */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
@@ -443,25 +491,29 @@ export default function Sidebar({ user }) {
           )}
         </nav>
 
-        <div className="p-4">
-          <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
+        {/* User Profile Card */}
+        <div className="p-3">
+          <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
             <div className="relative">
               <UserAvatar size={32} name={me.name} avatarUrl={me.avatarUrl} />
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-slate-800 truncate transition-colors">{me.name}</div>
-                <div className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 transition-colors">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 transition-colors">
+                  <ShieldCheck className="w-3 h-3" />
                   <span>Online</span>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Auto-hide indicator REMOVED per user request */}
       </aside>
 
+      {/* Backdrop for auto-hide */}
       {autoHideEnabled && !collapsed && <div className="fixed inset-0 bg-slate-900/20 z-40 transition-opacity duration-300" onClick={() => setIsHovering(false)} />}
     </>
   );

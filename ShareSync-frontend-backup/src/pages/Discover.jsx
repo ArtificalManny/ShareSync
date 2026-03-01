@@ -14,6 +14,7 @@ import ActivityFeed from '../components/ecosystem/ActivityFeed';
 import Achievements from '../components/ecosystem/Achievements';
 import ProjectsOverview from '../components/ecosystem/ProjectsOverview';
 import BurnoutAlert from '../components/ecosystem/BurnoutAlert';
+import FeaturedProjects from '../components/ecosystem/FeaturedProjects';
 
 export default function Discover() {
   const isMobile = useIsMobile();
@@ -124,14 +125,19 @@ export default function Discover() {
         <div className="space-y-6">
           {/* 🚨 NEW: Safe Empty State Rendering */}
           {feed.length === 0 && initialLoadDone && !loading ? (
-            <div className="text-center py-16 px-6 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl bg-white/50 dark:bg-surface-0/50">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-surface-2 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <Globe className="w-8 h-8 text-slate-400 dark:text-text-tertiary" />
+            <div className="space-y-8">
+              {/* ✅ Priority 1: Featured projects for empty feed */}
+              <FeaturedProjects maxVisible={3} />
+
+              <div className="text-center py-16 px-6 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl bg-white/50 dark:bg-surface-0/50">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-surface-2 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <Globe className="w-8 h-8 text-slate-400 dark:text-text-tertiary" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary mb-2">It's quiet out here...</h3>
+                <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary max-w-sm mx-auto">
+                  No public projects found in the network yet. Make sure your projects are set to <strong>Public</strong> to see them in the algorithmic feed!
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary mb-2">It's quiet out here...</h3>
-              <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary max-w-sm mx-auto">
-                No public projects found in the network yet. Make sure your projects are set to <strong>Public</strong> to see them in the algorithmic feed!
-              </p>
             </div>
           ) : (
             <ActivityFeed activities={feed} />

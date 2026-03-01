@@ -432,7 +432,7 @@ export default function LiveActivityFeed({
   // Sidebar variant
   if (variant === 'sidebar') {
     return (
-      <div className={`rounded-xl bg-surface-1 border border-white/[0.06] overflow-hidden ${className}`}>
+      <div className={`card-surface rounded-xl bg-surface-1 border border-white/[0.06] overflow-hidden ${className}`}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full flex items-center justify-between p-4 hover:bg-surface-2 transition-colors"
@@ -492,7 +492,7 @@ export default function LiveActivityFeed({
   return (
     <div
       className={`
-        rounded-xl bg-surface-1 border border-white/[0.06] overflow-hidden
+        card-surface rounded-xl bg-surface-1 border border-white/[0.06] overflow-hidden
         ${isFireMode ? 'border-energy-500/10' : ''}
         ${className}
       `}

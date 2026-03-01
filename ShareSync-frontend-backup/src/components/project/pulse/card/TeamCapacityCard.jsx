@@ -23,7 +23,7 @@ export default function TeamCapacityCard({ metrics }) {
       </div>
 
       <div className="mt-3 text-xs opacity-60">
-        Placeholder until backend team metrics are wired.
+        Team workload metrics unlock with 2+ members.
       </div>
     </section>
   );

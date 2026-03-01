@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER CONTROLLER - Profile and settings management
 // Phase 7: Added PUT /me, GET/PUT /me/settings endpoints
+// Priority 1: Added GET /me/onboarding, PATCH /me/onboarding/complete, GET /me/profile-strength
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -186,6 +187,42 @@ export class UserController {
       success: true,
       data: updated,
     };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PRIORITY 1: GET /users/me/onboarding - Get onboarding status
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/onboarding')
+  async getOnboardingStatus(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const status = await this.users.getOnboardingStatus(userId);
+    return { success: true, data: status };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PRIORITY 1: PATCH /users/me/onboarding/complete - Mark onboarding done
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/onboarding/complete')
+  async completeOnboarding(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    await this.users.completeOnboarding(userId);
+    return { success: true, message: 'Onboarding marked as completed' };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ✅ PRIORITY 1: GET /users/me/profile-strength - Profile completion %
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/profile-strength')
+  async getProfileStrength(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const strength = await this.users.getProfileStrength(userId);
+    return { success: true, data: strength };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

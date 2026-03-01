@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER SERVICE - User management and settings
 // Phase 7: Added getSettings, updateSettings, exportUserData, deleteAccount, etc.
+// Priority 1: Added onboarding status, profile strength, first-ship tracking
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -72,6 +73,35 @@ function deepMergePreferences(existing: any, incoming: any) {
       },
     },
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✅ PRIORITY 1 HELPER: Safe display name resolver
+// Falls back through: displayName → firstName+lastName → username → email prefix
+// NEVER returns "User" or empty string.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function resolveDisplayName(user: any): string {
+  // 1. displayName (if explicitly set and not blank/generic)
+  const dn = (user.displayName || '').trim();
+  if (dn && dn.toLowerCase() !== 'user' && dn.toLowerCase() !== 'demo user') return dn;
+
+  // 2. firstName + lastName
+  const first = (user.firstName || '').trim();
+  const last = (user.lastName || '').trim();
+  const full = `${first} ${last}`.trim();
+  if (full && full.toLowerCase() !== 'user' && full.toLowerCase() !== 'demo user') return full;
+
+  // 3. username
+  const un = (user.username || '').trim();
+  if (un) return un;
+
+  // 4. email prefix
+  const email = (user.email || '').trim();
+  if (email && email.includes('@')) return email.split('@')[0];
+
+  // 5. Absolute fallback (should never hit this)
+  return 'New User';
 }
 
 @Injectable()
@@ -209,6 +239,8 @@ export class UserService {
       preferences: (user as any).preferences || {},
       publicProfile: (user as any).publicProfile ?? true,
       discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
+      // ✅ Priority 1: Include resolved display name in settings response
+      displayName: resolveDisplayName(user),
     };
   }
 
@@ -320,6 +352,11 @@ export class UserService {
     if (diffDays === 1) { (user as any).streakDays = ((user as any).streakDays || 0) + 1; } 
     else if (diffDays !== 0) { (user as any).streakDays = 1; }
 
+    // ✅ Priority 1: Record firstLoginAt on very first login
+    if (!(user as any).firstLoginAt) {
+      (user as any).firstLoginAt = now;
+    }
+
     (user as any).lastLogin = now;
     const saved = await user.save();
     return saved as any;
@@ -383,5 +420,170 @@ export class UserService {
     }
 
     await this.userModel.findByIdAndDelete(userId).exec();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ PRIORITY 1: ONBOARDING & PROFILE STRENGTH (Zero-State Revolution)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Resolve the best display name for any user document.
+   * Exported as a static-like method so controllers/other services can use it.
+   */
+  getDisplayName(user: any): string {
+    return resolveDisplayName(user);
+  }
+
+  /**
+   * GET /users/me/onboarding
+   * Returns the user's onboarding progress for the frontend OnboardingContext.
+   */
+  async getOnboardingStatus(userId: string): Promise<{
+    onboardingCompleted: boolean;
+    firstLoginAt: Date | null;
+    firstShipAt: Date | null;
+    hasProjects: boolean;
+    hasTasks: boolean;
+    displayName: string;
+  }> {
+    const user = await this.userModel.findById(userId).lean().exec();
+    if (!user) throw new NotFoundException('User not found');
+
+    // Check if user has any projects
+    let hasProjects = false;
+    try {
+      const userProjects = await this.projects.findAll(userId);
+      hasProjects = userProjects.length > 0;
+    } catch (e) {
+      // If projects service fails, don't block onboarding
+      hasProjects = false;
+    }
+
+    return {
+      onboardingCompleted: (user as any).onboardingCompleted ?? false,
+      firstLoginAt: (user as any).firstLoginAt || null,
+      firstShipAt: (user as any).firstShipAt || null,
+      hasProjects,
+      hasTasks: ((user as any).totalTasksCompleted || 0) > 0 || ((user as any).totalShips || 0) > 0,
+      displayName: resolveDisplayName(user),
+    };
+  }
+
+  /**
+   * PATCH /users/me/onboarding
+   * Marks onboarding as completed. Additive only — never un-completes.
+   */
+  async completeOnboarding(userId: string): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new NotFoundException('User not found');
+
+    (user as any).onboardingCompleted = true;
+    const saved = await user.save();
+    return saved as any;
+  }
+
+  /**
+   * GET /users/me/profile-strength
+   * Calculates profile completion percentage based on filled fields + activity.
+   */
+  async getProfileStrength(userId: string): Promise<{
+    percentage: number;
+    completed: string[];
+    missing: { key: string; label: string; points: number }[];
+  }> {
+    const user = await this.userModel.findById(userId).lean().exec();
+    if (!user) throw new NotFoundException('User not found');
+
+    const u = user as any;
+    const completed: string[] = [];
+    const missing: { key: string; label: string; points: number }[] = [];
+
+    // Define criteria: key, label, points, check function
+    const criteria: Array<{ key: string; label: string; points: number; check: () => boolean }> = [
+      {
+        key: 'avatar',
+        label: 'Add a profile photo',
+        points: 15,
+        check: () => !!(u.profilePicture && u.profilePicture.trim()),
+      },
+      {
+        key: 'bio',
+        label: 'Write a short bio',
+        points: 10,
+        check: () => !!(u.bio && u.bio.trim()),
+      },
+      {
+        key: 'name',
+        label: 'Set your full name',
+        points: 10,
+        check: () => {
+          const first = (u.firstName || '').trim();
+          const last = (u.lastName || '').trim();
+          return !!(first && last && first.toLowerCase() !== 'user');
+        },
+      },
+      {
+        key: 'location',
+        label: 'Add your location',
+        points: 5,
+        check: () => !!(u.location && u.location.trim()),
+      },
+      {
+        key: 'jobTitle',
+        label: 'Add your role or title',
+        points: 5,
+        check: () => !!(u.jobTitle && u.jobTitle.trim()),
+      },
+      {
+        key: 'firstProject',
+        label: 'Create your first project',
+        points: 20,
+        check: () => (u.projects && u.projects.length > 0),
+      },
+      {
+        key: 'firstShip',
+        label: 'Complete your first task',
+        points: 20,
+        check: () => (u.totalTasksCompleted || 0) > 0 || (u.totalShips || 0) > 0,
+      },
+      {
+        key: 'streak',
+        label: 'Build a 3-day streak',
+        points: 15,
+        check: () => (u.streakDays || 0) >= 3,
+      },
+    ];
+
+    let totalPossible = 0;
+    let totalEarned = 0;
+
+    for (const c of criteria) {
+      totalPossible += c.points;
+      if (c.check()) {
+        completed.push(c.key);
+        totalEarned += c.points;
+      } else {
+        missing.push({ key: c.key, label: c.label, points: c.points });
+      }
+    }
+
+    const percentage = totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 0;
+
+    return { percentage, completed, missing };
+  }
+
+  /**
+   * Called when user completes their very first task.
+   * Records the timestamp for time-to-first-ship metric.
+   */
+  async recordFirstShip(userId: string): Promise<void> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) return;
+
+    // Only record once — don't overwrite
+    if (!(user as any).firstShipAt) {
+      (user as any).firstShipAt = new Date();
+      await user.save();
+    }
   }
 }

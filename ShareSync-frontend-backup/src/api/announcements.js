@@ -25,12 +25,17 @@ export const createAnnouncement = async (projectId, data) => {
   return response.data;
 };
 
-export const markAnnouncementAsRead = async (announcementId) => {
-  const response = await api.patch(`/api/projects/_/announcements/${announcementId}/read`);
+export const addCommentToAnnouncement = async (projectId, announcementId, text) => {
+  const response = await api.post(`/api/projects/${projectId}/announcements/${announcementId}/comments`, { text });
   return response.data;
 };
 
-export const deleteAnnouncement = async (announcementId) => {
-  const response = await api.delete(`/api/projects/_/announcements/${announcementId}`);
+export const markAnnouncementAsRead = async (projectId, announcementId) => {
+  const response = await api.patch(`/api/projects/${projectId}/announcements/${announcementId}/read`);
+  return response.data;
+};
+
+export const deleteAnnouncement = async (projectId, announcementId) => {
+  const response = await api.delete(`/api/projects/${projectId}/announcements/${announcementId}`);
   return response.data;
 };

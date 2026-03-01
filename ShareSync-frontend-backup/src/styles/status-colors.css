@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PRIORITY 2.2: Semantic Status Color Strips
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   Left-edge color coding for instant visual scanning.
+   Apply to any card: <div class="card-action status-active">
+   
+   Colors:
+   - Active/In Progress: Violet  (#7C3AED)
+   - Completed/Shipped:  Mint    (#14B8A6)
+   - Urgent/Blocked:     Coral   (#F43F5E)
+   - Upcoming/Scheduled: Cyan    (#22D3EE)
+   - Learning/Growth:    Amber   (#F59E0B)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Base: ensure relative positioning for the pseudo-element */
+.status-active,
+.status-complete,
+.status-urgent,
+.status-upcoming,
+.status-growth {
+  position: relative;
+  overflow: hidden;
+}
+
+/* The color strip: 3px left border via pseudo-element */
+.status-active::after,
+.status-complete::after,
+.status-urgent::after,
+.status-upcoming::after,
+.status-growth::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  transition: opacity 0.2s ease;
+}
+
+/* ── Active / In Progress ── */
+.status-active::after {
+  background: #7C3AED;
+}
+
+/* ── Completed / Shipped ── */
+.status-complete::after {
+  background: #14B8A6;
+}
+
+/* ── Urgent / Blocked ── */
+.status-urgent::after {
+  background: #F43F5E;
+}
+
+/* ── Upcoming / Scheduled ── */
+.status-upcoming::after {
+  background: #22D3EE;
+}
+
+/* ── Learning / Growth ── */
+.status-growth::after {
+  background: #F59E0B;
+}
+
+/* ── Urgent has a subtle bg tint too ── */
+.status-urgent {
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.03) 0%, transparent 20%) !important;
+}
+
+:is(.dark) .status-urgent,
+[data-theme="dark"] .status-urgent {
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.06) 0%, transparent 20%) !important;
+}
+
+/* ── Completed gets a subtle tint ── */
+.status-complete {
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.03) 0%, transparent 20%) !important;
+}
+
+:is(.dark) .status-complete,
+[data-theme="dark"] .status-complete {
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.05) 0%, transparent 20%) !important;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .status-active::after,
+  .status-complete::after,
+  .status-urgent::after,
+  .status-upcoming::after,
+  .status-growth::after {
+    transition: none;
+  }
+}

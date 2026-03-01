@@ -38,6 +38,9 @@ import EmptySearch from '../components/empty-states/EmptySearch';
 // Use API helpers that already unwrap backend shapes correctly
 import { getProjects } from '../api/projects';
 
+// ✅ Priority 2.3: Upgraded project card
+import ProjectCardV2 from '../components/projects/ProjectCardV2';
+
 /* ─────────────────────────────────────────────────────────────────────────
    HELPER: Safely get project ID (handles both _id and id)
 ───────────────────────────────────────────────────────────────────────── */
@@ -80,7 +83,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
       case 'shipping': return '🚀';
       case 'exploring': return '🌱';
       case 'maintaining': return '🛠';
-      default: return '📁';
+      default: return '��';
     }
   };
 
@@ -585,11 +588,10 @@ const Projects = () => {
         viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map(project => (
-              <ProjectCard
+              <ProjectCardV2
                 key={getProjectId(project) || `project-${project.name}`}
                 project={project}
-                onProjectClick={handleProjectClick}
-                onStartSprint={handleStartSprint}
+                onClick={(p) => handleProjectClick(getProjectId(p))}
               />
             ))}
           </div>

@@ -44,6 +44,8 @@ export class AnnouncementsService {
 
     return this.announcementModel
       .find(query)
+      .populate('authorId', 'name username avatarUrl') // Pull user details for UI
+      .populate('comments.authorId', 'name username avatarUrl') // Pull comment author details
       .sort({ pinned: -1, createdAt: -1 })
       .exec();
   }
@@ -60,10 +62,31 @@ export class AnnouncementsService {
       type: input.type || 'info',
       pinned: Boolean(input.pinned),
       attachments: input.attachments || [],
+      comments: [],
       readBy: [],
     });
 
-    return doc;
+    return doc.populate('authorId', 'name username avatarUrl');
+  }
+
+  // NEW: Add a comment to an announcement thread
+  public async addComment(announcementId: string, authorId: string, text: string) {
+    const annId = this.toObjectId(announcementId, 'announcementId');
+    const authId = this.toObjectId(authorId, 'authorId');
+
+    const updated = await this.announcementModel.findByIdAndUpdate(
+      annId,
+      {
+        $push: { comments: { authorId: authId, text, createdAt: new Date() } }
+      },
+      { new: true }
+    )
+    .populate('authorId', 'name username avatarUrl')
+    .populate('comments.authorId', 'name username avatarUrl')
+    .exec();
+
+    if (!updated) throw new NotFoundException('Announcement not found');
+    return updated;
   }
 
   public async markAsRead(announcementId: string, userId: string) {

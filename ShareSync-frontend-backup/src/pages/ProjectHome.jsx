@@ -77,6 +77,7 @@ import * as SuggestionsPanelModule from "../components/suggestions/SuggestionsPa
 // Realtime
 import { useSocketContext } from "../context/SocketContext";
 import { applyTaskUpdated } from "../utils/taskRealtime";
+import { getStatusColor } from "../utils/statusColor";
 
 // Pulse
 import PulseWidget from "../components/pulse/PulseWidget";
@@ -314,9 +315,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   const moreViews = views.slice(6);
 
   return (
-    // OPTICAL AUDIT: Removed bg-white/80 and backdrop-blur to prevent slate-50 background 
-    // from bleeding through and creating a muddy gray. Made font weights heavier.
-    <nav className="px-10 border-b border-slate-200 bg-white sticky top-0 z-20 shadow-sm">
+    <nav className="px-10 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
       <div className="flex items-center gap-1 -mb-px">
         {visibleViews.map((view) => {
           const Icon = view.icon;
@@ -328,21 +327,21 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               onClick={() => onViewChange(view.id)}
               className={`
                 relative flex items-center gap-2.5 px-5 py-4
-                text-sm font-semibold transition-all duration-200
-                ${isActive ? "text-violet-600" : "text-slate-600 hover:text-slate-900"}
+                text-sm font-medium transition-all duration-200
+                ${isActive ? "text-violet-600" : "text-slate-500 hover:text-slate-800"}
               `}
               title={view.description}
             >
-              <Icon strokeWidth={isActive ? 2 : 1.5} className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600" : ""}`} />
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600" : ""}`} />
               <span>{view.label}</span>
 
               {view.badge && (
-                <span className="px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-[11px] font-bold">
+                <span className="px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs font-medium">
                   {view.badge}
                 </span>
               )}
 
-              {isActive && <div className="absolute bottom-0 left-4 right-4 h-[3px] bg-violet-600 rounded-t-full" />}
+              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-violet-500 rounded-full" />}
             </button>
           );
         })}
@@ -351,9 +350,9 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           <div className="relative">
             <button
               onClick={() => setShowMore(!showMore)}
-              className="flex items-center gap-1.5 px-4 py-4 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-4 text-sm text-slate-500 hover:text-slate-800 transition-colors"
             >
-              <MoreHorizontal strokeWidth={1.5} className="w-4 h-4" />
+              <MoreHorizontal className="w-4 h-4" />
             </button>
 
             {showMore && (
@@ -369,12 +368,12 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                           onViewChange(view.id);
                           setShowMore(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-violet-600 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                       >
-                        <Icon strokeWidth={1.5} className="w-4 h-4 text-slate-500" />
+                        <Icon className="w-4 h-4 text-slate-500" />
                         <span>{view.label}</span>
                         {view.badge && (
-                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-[11px] font-bold">
+                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs">
                             {view.badge}
                           </span>
                         )}
@@ -387,8 +386,8 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
           </div>
         )}
 
-        <button className="flex items-center gap-1.5 px-3 py-4 text-sm font-semibold text-slate-600 hover:text-violet-600 transition-colors ml-1">
-          <Plus strokeWidth={2} className="w-4 h-4" />
+        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-slate-500 hover:text-violet-600 transition-colors ml-1">
+          <Plus className="w-4 h-4" />
         </button>
       </div>
     </nav>
@@ -437,7 +436,7 @@ function PriorityStack({ moves }) {
       {items.length > 0 ? (
         <ul className="space-y-2">
           {items.slice(0, 5).map((m, i) => (
-            <li key={m?._id || m?.id || i} className="text-xs text-slate-700">
+            <li key={m?._id || m?.id || i} className={`text-xs text-slate-700 pl-3 py-1.5 rounded-lg ${getStatusColor(m)}`}>
               {m?.title || m?.label || m?.text || "Critical move"}
             </li>
           ))}

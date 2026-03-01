@@ -1,0 +1,118 @@
+/* src/styles/focus-block.css
+   ═══════════════════════════════════════════════════════════════════════════
+   Priority 3.3: Focus Block Styles
+   Timer bar animation, badge pulse, muted-state overlay
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Pulsing dot (timer indicator) ── */
+@keyframes focus-block-pulse-anim {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.5; 
+    transform: scale(0.85); 
+  }
+}
+
+.focus-block-pulse {
+  animation: focus-block-pulse-anim 2s ease-in-out infinite;
+}
+
+/* ── Badge subtle pulse ── */
+@keyframes focus-badge-pulse-anim {
+  0%, 100% { 
+    opacity: 1; 
+  }
+  50% { 
+    opacity: 0.7; 
+  }
+}
+
+.focus-block-badge-pulse {
+  animation: focus-badge-pulse-anim 3s ease-in-out infinite;
+}
+
+/* ── Timer progress bar smooth animation ── */
+.focus-timer-bar {
+  transition: width 1s linear;
+}
+
+/* ── Timer bar glow at 90% ── */
+@keyframes focus-timer-urgency {
+  0%, 100% { 
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); 
+  }
+}
+
+.focus-timer-bar[style*="width: 9"] {
+  animation: focus-timer-urgency 1s ease-in-out infinite;
+}
+
+/* ── Muted state overlay (applied to notification areas during focus) ── */
+.focus-muted-overlay {
+  position: relative;
+}
+
+.focus-muted-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.6);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+
+.dark .focus-muted-overlay::after {
+  background: rgba(9, 9, 11, 0.6);
+}
+
+/* ── Focus block active — whole-page subtle vignette ── */
+body.focus-block-active .home-page {
+  position: relative;
+}
+
+body.focus-block-active .home-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(139, 92, 246, 0.03) 100%);
+}
+
+/* ── Timer entry animation ── */
+@keyframes focus-timer-enter {
+  0% { 
+    opacity: 0; 
+    transform: translateX(-10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+.focus-block-timer {
+  animation: focus-timer-enter 0.3s ease-out;
+}
+
+/* ── Completion flash ── */
+@keyframes focus-complete-flash {
+  0% { 
+    background-color: rgba(139, 92, 246, 0.2); 
+  }
+  100% { 
+    background-color: transparent; 
+  }
+}
+
+.focus-block-complete-flash {
+  animation: focus-complete-flash 1s ease-out forwards;
+}

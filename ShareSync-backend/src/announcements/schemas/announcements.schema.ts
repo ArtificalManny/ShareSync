@@ -26,6 +26,17 @@ export class Announcement {
   @Prop({ type: [String], default: [] })
   attachments: string[];
 
+  // NEW: Threaded comments support
+  @Prop({ 
+    type: [{ 
+      authorId: { type: Types.ObjectId, ref: 'User' }, 
+      text: String, 
+      createdAt: { type: Date, default: Date.now } 
+    }], 
+    default: [] 
+  })
+  comments: { authorId: Types.ObjectId; text: string; createdAt: Date }[];
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   readBy: Types.ObjectId[];
 

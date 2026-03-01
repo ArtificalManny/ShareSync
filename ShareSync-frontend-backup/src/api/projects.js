@@ -1,7 +1,7 @@
 // src/api/projects.js - Hardened create + consistent unwrapping + better errors
 // ⭐ FIX: Added ID normalization to ensure all projects have valid id/_id fields
+// ✅ Priority 1: Added createProjectFromTemplate
 import api from './client';
-import { withApiPrefix } from "./withApiPrefix";
 
 // ============================================
 // HELPERS
@@ -221,7 +221,7 @@ export const createProject = async (projectData) => {
       throw err;
     }
 
-    const response = await api.post(withApiPrefix("/projects"), payload);
+    const response = await api.post('/projects', payload);
 
     // unwrap tolerant of {data}, {project}, etc.
     const created = unwrap(response);
@@ -331,6 +331,23 @@ export const deleteShip = async (projectId, shipId) => {
     return unwrap(response);
   } catch (err) {
     throw normalizeError(err, "Failed to delete ship");
+  }
+};
+
+// ============================================
+// ✅ PRIORITY 1: Create project from template
+// ============================================
+
+export const createProjectFromTemplate = async (templateId, overrides = {}) => {
+  try {
+    const response = await api.post('/projects/from-template', {
+      templateId,
+      ...overrides,
+    });
+    const created = unwrap(response);
+    return normalizeCreatedProject(created);
+  } catch (err) {
+    throw normalizeError(err, "Failed to create project from template");
   }
 };
 

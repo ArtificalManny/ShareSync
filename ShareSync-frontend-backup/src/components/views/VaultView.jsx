@@ -228,10 +228,33 @@ export default function VaultView({ projectId }) {
         ))}
 
         {!loading && data.folders.length === 0 && data.files.length === 0 && (
-          <div className="py-20 text-center border border-dashed border-white/[0.1] rounded-2xl bg-surface-1/30 mt-8">
-            <Archive className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-text-primary mb-2">Vault is empty</h3>
-            <p className="text-sm text-text-tertiary mb-6">Upload files or create folders to organize your assets securely.</p>
+          <div className="mt-8 space-y-6">
+            {/* ✅ Priority 1: Category quick-start cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Documents', emoji: '📄', desc: 'Specs, notes, guides', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
+                { label: 'Design', emoji: '🎨', desc: 'Mockups, wireframes', bg: 'bg-pink-500/10', border: 'border-pink-500/20', text: 'text-pink-400' },
+                { label: 'Media', emoji: '🎬', desc: 'Images, videos, audio', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400' },
+                { label: 'Code', emoji: '💻', desc: 'Scripts, configs, exports', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-400' },
+              ].map((cat) => (
+                <button
+                  key={cat.label}
+                  onClick={() => setIsFolderModalOpen(true)}
+                  className={`p-5 rounded-2xl ${cat.bg} border border-dashed ${cat.border} text-center hover:scale-[1.02] transition-all duration-200 cursor-pointer`}
+                >
+                  <div className="text-3xl mb-2">{cat.emoji}</div>
+                  <h4 className={`text-sm font-semibold ${cat.text} mb-1`}>{cat.label}</h4>
+                  <p className="text-xs text-text-tertiary">{cat.desc}</p>
+                </button>
+              ))}
+            </div>
+
+            {/* Original empty state */}
+            <div className="py-16 text-center border border-dashed border-white/[0.1] rounded-2xl bg-surface-1/30">
+              <Archive className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-text-primary mb-2">Vault is empty</h3>
+              <p className="text-sm text-text-tertiary mb-6">Upload files or create folders to organize your assets securely.</p>
+            </div>
           </div>
         )}
       </div>

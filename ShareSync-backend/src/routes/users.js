@@ -292,4 +292,56 @@ router.get('/momentum', requireAuth, calculateMomentumIndex);
 // GET /api/users/weekly-narrative -> get weekly narrative
 router.get('/weekly-narrative', requireAuth, getWeeklyNarrative);
 
+// ============================================
+// ✅ Priority 3.2: ACTIVITY SHARING TOGGLE
+// ============================================
+
+// PUT /api/users/me/activity-sharing -> toggle activity sharing
+router.put('/me/activity-sharing', requireAuth, async (req, res) => {
+  try {
+    const User = require('../../models/User');
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { enabled } = req.body;
+
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ message: 'enabled must be a boolean' });
+    }
+
+    user.activitySharingEnabled = enabled;
+    await user.save();
+
+    res.json({
+      message: 'Activity sharing preference updated',
+      activitySharingEnabled: user.activitySharingEnabled,
+    });
+  } catch (error) {
+    console.error('Toggle activity sharing error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/users/me/activity-sharing -> get current preference
+router.get('/me/activity-sharing', requireAuth, async (req, res) => {
+  try {
+    const User = require('../../models/User');
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      activitySharingEnabled: user.activitySharingEnabled ?? true,
+    });
+  } catch (error) {
+    console.error('Get activity sharing error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

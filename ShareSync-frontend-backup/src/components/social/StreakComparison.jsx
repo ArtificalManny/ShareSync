@@ -1,5 +1,15 @@
 // src/components/social/StreakComparison.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
+// Priority 3.5: Ship Streaks Redesign
+//
+// CHANGES FROM PREVIOUS VERSION:
+// 1. Import StreakFlameVisual from social/StreakFlame (new)
+// 2. Rewrote CatchUpMessage with honest 4-case logic
+// 3. Added StreakFlameVisual in both compact + default variants
+// 4. ALL existing sub-components preserved exactly as-is
+//
+// ZERO BACKEND CHANGES
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
@@ -9,12 +19,16 @@ import {
   Crown,
   Target,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 import { useMomentumContext } from '../../contexts/MomentumContext';
 
+// ✅ Priority 3.5: Animated flame visualization
+import StreakFlameVisual, { getTier, getTierConfig } from './StreakFlame';
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// MOCK DATA
+// MOCK DATA (unchanged)
 // ═══════════════════════════════════════════════════════════════════════════════
 const MOCK_STREAK_DATA = {
   yourStreak: 7,
@@ -42,7 +56,7 @@ const MOCK_STREAK_DATA = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// COMPARISON BAR
+// COMPARISON BAR (unchanged)
 // ═══════════════════════════════════════════════════════════════════════════════
 const ComparisonBar = ({ yourValue, compareValue, maxValue, label, color = 'brand' }) => {
   const yourPercent = Math.min((yourValue / maxValue) * 100, 100);
@@ -90,6 +104,9 @@ const ComparisonBar = ({ yourValue, compareValue, maxValue, label, color = 'bran
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// STREAK RANK (unchanged)
+// ═══════════════════════════════════════════════════════════════════════════════
 const StreakRank = ({ rank, total }) => {
   const getColor = () => {
     if (rank === 1) return 'text-warning-500';
@@ -114,6 +131,9 @@ const StreakRank = ({ rank, total }) => {
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEAM LEADER CARD (unchanged)
+// ═══════════════════════════════════════════════════════════════════════════════
 const TeamLeaderCard = ({ leader, yourStreak }) => {
   const daysAway = leader.streak - yourStreak;
   const isYouLeading = daysAway <= 0;
@@ -148,13 +168,29 @@ const TeamLeaderCard = ({ leader, yourStreak }) => {
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CATCH-UP MESSAGE — ✅ REWRITTEN for honest 4-case logic (Priority 3.5)
+// ═══════════════════════════════════════════════════════════════════════════════
 const CatchUpMessage = ({ yourStreak, teamAverage, teamBest }) => {
   const vsAverage = yourStreak - teamAverage;
-  const vsBest = teamBest.streak - yourStreak;
+  const vsBest = (teamBest?.streak ?? 0) - yourStreak;
 
   let message, icon, color;
 
-  if (vsBest <= 0) {
+  // ── CASE 1: Both zero — be honest, encourage start ──
+  if (yourStreak === 0 && teamAverage === 0) {
+    message = "Start your first streak today! Complete 1 task to begin.";
+    icon = Sparkles;
+    color = 'text-text-secondary';
+  }
+  // ── CASE 2: You're at zero but team is active — motivate ──
+  else if (yourStreak === 0 && teamAverage > 0) {
+    message = "Your team is on fire — join the streak!";
+    icon = Flame;
+    color = 'text-warning-500';
+  }
+  // ── CASE 3+: You have a streak — compare honestly ──
+  else if (vsBest <= 0) {
     message = "You're the streak champion! 👑";
     icon = Crown;
     color = 'text-warning-500';
@@ -167,7 +203,7 @@ const CatchUpMessage = ({ yourStreak, teamAverage, teamBest }) => {
     icon = TrendingUp;
     color = 'text-brand-400';
   } else {
-    message = `${Math.abs(Math.round(vsAverage))} days to catch up to average`;
+    message = `${Math.abs(Math.round(vsAverage))} more days to catch up!`;
     icon = Target;
     color = 'text-text-secondary';
   }
@@ -182,6 +218,9 @@ const CatchUpMessage = ({ yourStreak, teamAverage, teamBest }) => {
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT (preserved — with StreakFlameVisual added)
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function StreakComparison({
   // Data (legacy)
   data = MOCK_STREAK_DATA,
@@ -247,7 +286,9 @@ export default function StreakComparison({
 
   const maxStreak = Math.max(yourStreak, teamBest?.streak ?? yourStreak, yourBestStreak);
 
-  // Compact variant
+  // ═════════════════════════════════════════════════════════════════════════
+  // COMPACT VARIANT
+  // ═════════════════════════════════════════════════════════════════════════
   if (variant === 'compact') {
     return (
       <div
@@ -274,18 +315,24 @@ export default function StreakComparison({
           )}
         </div>
 
-        <div className="flex items-baseline gap-2 mb-3">
-          <span className={`text-3xl font-bold tabular-nums ${isFireMode ? 'text-energy-500' : 'text-warning-500'}`}>
-            {yourStreak}
-          </span>
-          <span className="text-sm text-text-tertiary">days</span>
-          <span className="text-xs text-text-tertiary ml-auto">Team avg: {Number(teamAverage).toFixed(1)}</span>
+        {/* ✅ Priority 3.5: Flame visual + streak count side by side */}
+        <div className="flex items-center gap-3 mb-3">
+          <StreakFlameVisual streak={yourStreak} size={44} showBadge={false} />
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-3xl font-bold tabular-nums ${isFireMode ? 'text-energy-500' : 'text-warning-500'}`}>
+                {yourStreak}
+              </span>
+              <span className="text-sm text-text-tertiary">days</span>
+            </div>
+            <span className="text-xs text-text-tertiary">Team avg: {Number(teamAverage).toFixed(1)}</span>
+          </div>
         </div>
 
         <ComparisonBar
           yourValue={yourStreak}
           compareValue={teamAverage}
-          maxValue={maxStreak}
+          maxValue={maxStreak || 1}
           label="Team Average"
           color={isFireMode ? 'warning' : 'brand'}
         />
@@ -297,7 +344,9 @@ export default function StreakComparison({
     );
   }
 
-  // Default variant (your existing UI, kept)
+  // ═════════════════════════════════════════════════════════════════════════
+  // DEFAULT VARIANT
+  // ═════════════════════════════════════════════════════════════════════════
   return (
     <div className={`p-4 rounded-xl bg-surface-1 border border-white/[0.06] ${className}`}>
       <div className="flex items-center justify-between mb-4">
@@ -315,21 +364,24 @@ export default function StreakComparison({
         )}
       </div>
 
+      {/* ✅ Priority 3.5: Flame visual + stats */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="flex items-baseline gap-1">
-            <span className={`text-3xl font-bold tabular-nums ${isFireMode ? 'text-energy-500' : 'text-warning-500'}`}>
-              {yourStreak}
-            </span>
-            <span className="text-sm text-text-tertiary">days</span>
+        <div className="flex items-center gap-3">
+          <StreakFlameVisual streak={yourStreak} size={52} showBadge={true} showLabel={true} />
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-3xl font-bold tabular-nums ${isFireMode ? 'text-energy-500' : 'text-warning-500'}`}>
+                {yourStreak}
+              </span>
+              <span className="text-sm text-text-tertiary">days</span>
+            </div>
+            <p className="text-xs text-text-tertiary mt-1">Team average: {Number(teamAverage).toFixed(1)} days</p>
           </div>
-          <p className="text-xs text-text-tertiary mt-1">Team average: {Number(teamAverage).toFixed(1)} days</p>
         </div>
 
-        {/* Chart intentionally left as-is (uses history if provided) */}
+        {/* Chart area (uses history if provided) — unchanged */}
         {showChart && history && (
           <div className="w-24">
-            {/* mini chart omitted for brevity in this version; your current chart can stay if you want it */}
             <div className="h-10 bg-surface-2 rounded-lg" />
           </div>
         )}
@@ -338,7 +390,7 @@ export default function StreakComparison({
       <ComparisonBar
         yourValue={yourStreak}
         compareValue={teamAverage}
-        maxValue={maxStreak}
+        maxValue={maxStreak || 1}
         label="Team Average"
         color={isFireMode ? 'warning' : 'brand'}
       />
@@ -364,6 +416,9 @@ export default function StreakComparison({
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// MINI VARIANT EXPORT (unchanged)
+// ═══════════════════════════════════════════════════════════════════════════════
 export function MiniStreakComparison({ data = MOCK_STREAK_DATA, onViewDetails, className = '' }) {
   return (
     <StreakComparison

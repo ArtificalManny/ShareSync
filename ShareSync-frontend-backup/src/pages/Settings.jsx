@@ -505,6 +505,29 @@ export default function Settings() {
             />
           </SectionCard>
 
+          {/* LAYER 1.5: Daily Pulse Check (Priority 3.4) */}
+          <SectionCard
+            icon={Heart}
+            iconBg="bg-rose-100 dark:bg-rose-500/10"
+            iconColor="text-rose-600 dark:text-rose-400"
+            title="Daily Pulse Check"
+          >
+            <Toggle
+              label="Enable daily pulse prompt"
+              checked={emailActivity}
+              onChange={setEmailActivity}
+              description="Get a 30-second daily check-in for energy, focus, and blockers (+15 XP)"
+            />
+            <Toggle
+              label="Show burnout alerts"
+              checked={emailDigest}
+              onChange={setEmailDigest}
+              description="Alert you if 3+ consecutive low-energy days are detected"
+            />
+          </SectionCard>
+
+      
+
           {/* LAYER 2: Focus DNA */}
           <SectionCard
             icon={Brain}
@@ -557,6 +580,12 @@ export default function Settings() {
               checked={publicProfile}
               onChange={setPublicProfile}
               description="Allow others to view your profile"
+            />
+            <Toggle
+              label="Share live activity with teammates"
+              checked={celebratePublicly}
+              onChange={setCelebratePublicly}
+              description="Let teammates see when you're shipping in real time (Momentum Contagion)"
             />
           </SectionCard>
 

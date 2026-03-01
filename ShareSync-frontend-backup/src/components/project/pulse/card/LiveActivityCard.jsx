@@ -27,7 +27,7 @@ export default function LiveActivityCard({ activities, overview, loading }) {
             ))}
           </ul>
         ) : (
-          <div className="opacity-70">No activity yet (placeholder)</div>
+          <div className="opacity-70">Activity will appear as your team ships updates.</div>
         )}
       </div>
     </section>
