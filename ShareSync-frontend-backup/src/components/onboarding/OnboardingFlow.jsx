@@ -1,6 +1,7 @@
 // src/components/onboarding/OnboardingFlow.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 9: Main Onboarding Flow Orchestrator
+// ✅ Priority 4.1: Added PersonaStep between Archetype and FirstTask
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
@@ -9,15 +10,23 @@ import useOnboarding from '../../hooks/useOnboarding';
 import OnboardingProgress, { OnboardingDots } from './OnboardingProgress';
 import WelcomeStep from './steps/WelcomeStep';
 import ArchetypeStep from './steps/ArchetypeStep';
+import PersonaStep from './PersonaStep';
 import FirstTaskStep from './steps/FirstTaskStep';
 import MomentumStep from './steps/MomentumStep';
 import api from '../../api/client';
+
+// ⭐ Priority 4.1: Persona context for saving selection
+import { usePersonaContext } from '../../context/PersonaContext';
 
 export default function OnboardingFlow({ onComplete }) {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   
+  // ⭐ Priority 4.1: Persona setter (safe — returns no-op if outside provider)
+  let personaCtx = { setPersona: () => {} };
+  try { personaCtx = usePersonaContext(); } catch (e) {}
+
   const {
     currentStep,
     data,
@@ -79,6 +88,16 @@ export default function OnboardingFlow({ onComplete }) {
     }
   };
 
+  // ⭐ Priority 4.1: Handle persona selection during onboarding
+  const handlePersonaSelect = (persona) => {
+    try {
+      personaCtx.setPersona(persona);
+    } catch (e) {
+      console.warn('[Onboarding] Failed to set persona:', e);
+    }
+    nextStep();
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
@@ -94,7 +113,17 @@ export default function OnboardingFlow({ onComplete }) {
           />
         );
       
+      // ⭐ Priority 4.1: Persona selection step (NEW)
       case 2:
+        return (
+          <PersonaStep
+            onSelect={handlePersonaSelect}
+            onSkip={nextStep}
+            initialPersona={personaCtx.persona}
+          />
+        );
+      
+      case 3:
         return (
           <FirstTaskStep
             archetype={data.archetype}
@@ -105,7 +134,7 @@ export default function OnboardingFlow({ onComplete }) {
           />
         );
       
-      case 3:
+      case 4:
         return (
           <MomentumStep
             archetype={data.archetype}
@@ -129,11 +158,11 @@ export default function OnboardingFlow({ onComplete }) {
       <div className="pt-8 pb-4">
         {/* Desktop */}
         <div className="hidden sm:block">
-          <OnboardingProgress currentStep={currentStep} />
+          <OnboardingProgress currentStep={currentStep} totalSteps={5} />
         </div>
         {/* Mobile */}
         <div className="sm:hidden">
-          <OnboardingDots currentStep={currentStep} />
+          <OnboardingDots currentStep={currentStep} totalSteps={5} />
         </div>
       </div>
       

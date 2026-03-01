@@ -18,6 +18,9 @@ const UserSchema = new mongoose.Schema({
   // ✅ Priority 3.2: Activity sharing for Momentum Contagion
   activitySharingEnabled: { type: Boolean, default: true },
 
+  // ✅ Priority 4.1: Persona Mode (Cross-Age Appeal System)
+  persona: { type: String, enum: ['student', 'creator', 'professional', 'teamlead'], default: 'creator' },
+
   // ============================================
   // ✅ GAMIFICATION SYSTEM
   // ============================================
@@ -346,7 +349,7 @@ UserSchema.methods.addXP = function(amount, reason) {
     this.gamification.level += 1;
     this.gamification.xpToNextLevel = this.calculateXPForNextLevel();
     
-    console.log(`🎉 ${this.username} leveled up to ${this.gamification.level}!`);
+    console.log(`�� ${this.username} leveled up to ${this.gamification.level}!`);
     
     // Award level-up badge if applicable
     if (this.gamification.level % 5 === 0) {
@@ -354,7 +357,7 @@ UserSchema.methods.addXP = function(amount, reason) {
         id: `level-${this.gamification.level}`,
         name: `Level ${this.gamification.level} Achiever`,
         description: `Reached level ${this.gamification.level}`,
-        icon: '��',
+        icon: '🏆',
         tier: this.gamification.level >= 20 ? 'platinum' : 
               this.gamification.level >= 10 ? 'gold' : 'silver',
       });

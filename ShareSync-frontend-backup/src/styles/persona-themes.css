@@ -1,0 +1,161 @@
+/* src/styles/persona-themes.css
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Priority 4.1: Persona Theme Overrides
+ * Applied via body.persona-{id} class managed by PersonaContext
+ *
+ * Philosophy:
+ * - Student: Warmer, rounder, more playful
+ * - Creator: Slightly warmer, medium rounding, expressive
+ * - Professional: Cooler, sharper, minimal
+ * - Team Lead: Neutral-cool, structured, authoritative
+ *
+ * SAFETY: All rules use body.persona-* prefix so they ONLY apply when a
+ * persona class is present. Default (no class) = no overrides.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── CSS Custom Properties per persona ──────────────────────────────────── */
+
+body.persona-student {
+  --persona-radius-sm: 0.75rem;    /* 12px — rounder */
+  --persona-radius-md: 1rem;       /* 16px */
+  --persona-radius-lg: 1.25rem;    /* 20px */
+  --persona-accent-hue: 270;       /* violet — playful */
+  --persona-accent: #8B5CF6;
+  --persona-accent-soft: rgba(139, 92, 246, 0.12);
+  --persona-anim-duration: 0.3s;   /* snappy, fun */
+  --persona-anim-intensity: 1;     /* full animations */
+  --persona-font-weight-heading: 700;
+  --persona-letter-spacing: -0.01em;
+}
+
+body.persona-creator {
+  --persona-radius-sm: 0.625rem;   /* 10px — slightly round */
+  --persona-radius-md: 0.875rem;   /* 14px */
+  --persona-radius-lg: 1.125rem;   /* 18px */
+  --persona-accent-hue: 280;       /* purple-pink — creative */
+  --persona-accent: #A855F7;
+  --persona-accent-soft: rgba(168, 85, 247, 0.1);
+  --persona-anim-duration: 0.4s;   /* smooth, flowing */
+  --persona-anim-intensity: 0.8;
+  --persona-font-weight-heading: 600;
+  --persona-letter-spacing: -0.005em;
+}
+
+body.persona-professional {
+  --persona-radius-sm: 0.375rem;   /* 6px — sharper */
+  --persona-radius-md: 0.5rem;     /* 8px */
+  --persona-radius-lg: 0.75rem;    /* 12px */
+  --persona-accent-hue: 250;       /* deep blue-violet — authoritative */
+  --persona-accent: #6D28D9;
+  --persona-accent-soft: rgba(109, 40, 217, 0.08);
+  --persona-anim-duration: 0.15s;  /* fast, crisp */
+  --persona-anim-intensity: 0.3;   /* minimal animations */
+  --persona-font-weight-heading: 600;
+  --persona-letter-spacing: 0;
+}
+
+body.persona-teamlead {
+  --persona-radius-sm: 0.5rem;     /* 8px — balanced */
+  --persona-radius-md: 0.75rem;    /* 12px */
+  --persona-radius-lg: 1rem;       /* 16px */
+  --persona-accent-hue: 260;       /* violet-blue — strategic */
+  --persona-accent: #7C3AED;
+  --persona-accent-soft: rgba(124, 58, 237, 0.1);
+  --persona-anim-duration: 0.2s;   /* business efficient */
+  --persona-anim-intensity: 0.5;   /* moderate animations */
+  --persona-font-weight-heading: 600;
+  --persona-letter-spacing: 0.005em;
+}
+
+
+/* ── Animation intensity scaling ────────────────────────────────────────── */
+
+/* Student: full, bouncy animations */
+body.persona-student .persona-animate {
+  transition-duration: var(--persona-anim-duration);
+  animation-duration: var(--persona-anim-duration);
+}
+
+/* Professional: minimal, fast transitions */
+body.persona-professional .persona-animate {
+  transition-duration: var(--persona-anim-duration);
+  animation-duration: var(--persona-anim-duration);
+}
+
+/* Professional: disable decorative animations entirely */
+body.persona-professional .persona-decorative {
+  animation: none !important;
+  transition: opacity 0.15s ease !important;
+}
+
+/* Student: add bounce to decorative elements */
+body.persona-student .persona-decorative {
+  animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+
+/* ── Card border-radius overrides ───────────────────────────────────────── */
+/* Only applies to elements that opt in with .persona-card class */
+
+body.persona-student .persona-card {
+  border-radius: var(--persona-radius-lg);
+}
+
+body.persona-creator .persona-card {
+  border-radius: var(--persona-radius-md);
+}
+
+body.persona-professional .persona-card {
+  border-radius: var(--persona-radius-sm);
+}
+
+body.persona-teamlead .persona-card {
+  border-radius: var(--persona-radius-md);
+}
+
+
+/* ── Celebration visibility helpers ─────────────────────────────────────── */
+
+/* Hide confetti/emoji rain for professionals */
+body.persona-professional .persona-celebration-full {
+  display: none;
+}
+
+/* Show full celebrations for students */
+body.persona-student .persona-celebration-full {
+  display: block;
+}
+
+/* Show subtle celebrations for creators */
+body.persona-creator .persona-celebration-subtle {
+  display: block;
+}
+
+body.persona-creator .persona-celebration-full {
+  display: none;
+}
+
+/* Team lead: show team-oriented celebrations only */
+body.persona-teamlead .persona-celebration-full {
+  display: none;
+}
+
+body.persona-teamlead .persona-celebration-subtle {
+  display: block;
+}
+
+
+/* ── Accent color overrides for opt-in elements ─────────────────────────── */
+
+.persona-accent-bg {
+  background-color: var(--persona-accent-soft);
+}
+
+.persona-accent-border {
+  border-color: var(--persona-accent);
+}
+
+.persona-accent-text {
+  color: var(--persona-accent);
+}

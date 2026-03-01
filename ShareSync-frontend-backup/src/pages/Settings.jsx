@@ -29,6 +29,8 @@ import ExperimentHistory from "../components/settings/ExperimentHistory";
 import WhatWorksAnalyzer from "../components/settings/WhatWorksAnalyzer";
 import PrivacyCard from "../components/settings/PrivacyCard";
 import BillingSettings from "../components/settings/BillingSettings";
+import PersonaPicker from "../components/settings/PersonaPicker";
+import CelebrationStylePicker from "../components/settings/CelebrationStylePicker";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLIDER COMPONENT - Adaptive
@@ -503,6 +505,26 @@ export default function Settings() {
               onChange={setAllowStreakFreeze}
               description="Life happens. Protect your streak once a month."
             />
+          </SectionCard>
+
+          {/* ⭐ Priority 4.1: Persona / Experience Mode */}
+          <SectionCard
+            icon={Sparkles}
+            iconBg="bg-fuchsia-100 dark:bg-fuchsia-500/10"
+            iconColor="text-fuchsia-600 dark:text-fuchsia-400"
+            title="Experience Persona"
+          >
+            <PersonaPicker />
+          </SectionCard>
+
+          {/* ⭐ Priority 4.2: Celebration Style */}
+          <SectionCard
+            icon={Play}
+            iconBg="bg-orange-100 dark:bg-orange-500/10"
+            iconColor="text-orange-600 dark:text-orange-400"
+            title="Celebration Style"
+          >
+            <CelebrationStylePicker />
           </SectionCard>
 
           {/* LAYER 1.5: Daily Pulse Check (Priority 3.4) */}

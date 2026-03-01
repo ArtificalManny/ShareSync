@@ -26,6 +26,28 @@ router.route('/')
   .get(getProjects)
   .post(createProject);
 
+// ── Priority 3.1: Smart Start AI endpoint ────────────────────────────────
+// POST /api/projects/smart-start
+// Takes { description, persona? }, returns AI-generated project plan
+router.post('/smart-start', async (req, res) => {
+  try {
+    const { generateProjectPlan } = require('../services/aiService');
+    const userId = req.user._id || req.user.id;
+    const { description, persona } = req.body;
+
+    const result = await generateProjectPlan(userId, description, persona);
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    res.status(status).json({
+      error: err.message || 'Failed to generate project plan'
+    });
+  }
+});
+
+router.route('/:id')
+
 router.route('/:id')
   .get(getProject)
   .put(updateProject)

@@ -71,6 +71,9 @@ import { AdaptiveDensityProvider } from "./components/adaptive";
 import useAhaMoment from "./hooks/useAhaMoment";
 import { BreakReminder } from "./components/adaptive";
 
+// ⭐ Priority 4.1: Persona System
+import { PersonaProvider } from "./context/PersonaContext";
+
 // CSS imports
 import "./index.css";
 import "./theme.css";
@@ -95,6 +98,13 @@ import "./styles/entrance.css";
 import "./styles/heartbeat.css";
 import "./styles/palette.override.css";
 import "./styles/wedge-hotfix.css";
+
+// ✅ Priority 4.1: Persona theme overrides
+import "./styles/persona-themes.css";
+
+// ✅ Priority 2: Card Depth System + Status Colors
+import "./styles/card-tiers.css";
+import "./styles/status-colors.css";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
 import { Menu, X } from "lucide-react";
@@ -166,6 +176,7 @@ const MentorDock = lazy(() => import("./components/mentor/MentorDock.jsx"));
 const LeaderboardDock = lazy(() => import("./components/momentum/LeaderboardDock.jsx"));
 const MessengerPanel = lazy(() => import("./components/messenger/MessengerPanel.jsx"));
 const ShipFlash = lazy(() => import("./components/effects/ShipFlash"));
+const CelebrationRouter = lazy(() => import("./components/celebrations/CelebrationRouter"));
 const PublicRoutes = lazy(() => import("./routes/publicRoutes.jsx"));
 
 // ⭐ DAY 8: Welcome Back Modal
@@ -375,6 +386,7 @@ function AuthenticatedApp({ children, userData }) {
 
   return (
     <Suspense fallback={<LoadingSpinner />}>
+      <PersonaProvider>
       <SocketProvider>
         <NotificationsProvider>
           <UserProvider>
@@ -449,6 +461,10 @@ function AuthenticatedApp({ children, userData }) {
                           onView={ahaMoment.viewInsight}
                           onDismiss={ahaMoment.dismissInsight}
                         />
+                        {/* ✅ Priority 4.2: Global Celebration Router */}
+                        <Suspense fallback={null}>
+                          <CelebrationRouter />
+                        </Suspense>
                       </MomentumProvider>
                     </ContextPreservationProvider>
                   </FlowStateProvider>
@@ -458,6 +474,7 @@ function AuthenticatedApp({ children, userData }) {
           </UserProvider>
         </NotificationsProvider>
       </SocketProvider>
+      </PersonaProvider>
     </Suspense>
   );
 }

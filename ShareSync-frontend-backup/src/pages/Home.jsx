@@ -306,6 +306,15 @@ export default function Home() {
 
       playShipSound(shipData);
 
+      // ✅ Priority 4.2: Fire persona-aware celebration (non-blocking)
+      import('../utils/fireCelebration').then(({ fireCelebration }) => {
+        fireCelebration('shipCeremony', {
+          xp: totalXP,
+          taskTitle: shippedMission?.title,
+          projectName: shippedMission?.title,
+        });
+      }).catch(() => {});
+
       setTimeout(() => playXP(totalXP), 400);
 
       if (isLastMission) {

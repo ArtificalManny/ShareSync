@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
 import { getCurrentSubscription } from "../api/subscriptions";
 import { toast } from "../components/ui/toast";
+import SmartStart from "../components/projects/SmartStart";
 
 function isValidEmail(email) {
   // Lightweight check (good UX). Backend should still validate.
@@ -67,6 +68,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const [members, setMembers] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [smartStartMode, setSmartStartMode] = useState(false);
   const [subData, setSubData] = useState(null);
 
   // Inline validation
@@ -289,12 +291,58 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 </div>
               ) : null}
 
-              {/* Project Basics */}
+              {/* ── Mode Toggle: Manual vs Smart Start ── */}
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Target className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Project Basics</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+                      {smartStartMode ? 'Smart Start' : 'Project Basics'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSmartStartMode(prev => !prev)}
+                    disabled={submitting || isAtLimit}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      smartStartMode
+                        ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                        : 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-purple-300 hover:border-purple-400'
+                    }`}
+                  >
+                    {smartStartMode ? (
+                      <>← Manual mode</>
+                    ) : (
+                      <><Sparkles className="w-3.5 h-3.5" /> Smart Start</>
+                    )}
+                  </button>
                 </div>
+
+                {smartStartMode ? (
+                  <SmartStart
+                    persona={null}
+                    onCancel={() => setSmartStartMode(false)}
+                    onAccept={(results) => {
+                      // Populate form with AI results
+                      if (results.tasks?.[0]?.title && !title.trim()) {
+                        // Don't override if user already typed a title
+                      }
+                      if (results.timeline) {
+                        setDescription(prev => {
+                          const aiSummary = `Timeline: ${results.timeline}\n\nAI-generated tasks (${results.tasks.length}):\n${results.tasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n')}`;
+                          return prev.trim() ? prev : aiSummary;
+                        });
+                      }
+                      setSmartStartMode(false);
+                      toast({
+                        title: 'Smart Start applied!',
+                        description: `${results.tasks.length} tasks ready. Review and create your project.`,
+                        variant: 'success',
+                      });
+                    }}
+                  />
+                ) : (
+                  <>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
@@ -375,6 +423,9 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     )}
                   </div>
                 </div>
+
+                </>
+                )}
               </section>
 
               {/* Privacy Settings */}
@@ -519,7 +570,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       </p>
                     ) : (
                       <p className="mt-3 text-xs text-slate-400">
-                        🔗 Unlisted public projects can still be shared via direct link.
+                        �� Unlisted public projects can still be shared via direct link.
                       </p>
                     )}
                   </div>

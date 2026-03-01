@@ -159,6 +159,18 @@ try {
   console.log('⚠️ Pulse Check routes not loaded:', e.message);
 }
 
+const focusRoutes = require('./src/routes/focus');
+app.use('/api/focus', apiLimiter, focusRoutes);
+
+// ⭐ Priority 4.1: Persona Mode Routes
+try {
+  const personaRoutes = require('./src/routes/persona');
+  app.use('/api/users', apiLimiter, personaRoutes);
+  console.log('✅ Persona routes loaded (Priority 4.1)');
+} catch (e) {
+  console.log('⚠️ Persona routes not loaded:', e.message);
+}
+
 // Project routes
 try {
   const projectRoutes = require('./routes/projects');
@@ -264,9 +276,9 @@ httpServer.listen(PORT, () => {
   console.log(`📍 Server: http://localhost:${PORT}`);
   console.log(`🔌 Socket: ws://localhost:${PORT}/socket.io`);
   console.log(`🌐 CORS: ${process.env.NODE_ENV === 'production' ? 'RESTRICTED' : 'ENABLED (all origins)'}`);
-  console.log(`🔒 Security: Helmet enabled`);
+  console.log(`�� Security: Helmet enabled`);
   console.log(`⚡ Compression: Enabled`);
-  console.log(`��️  Rate Limiting: Active`);
+  console.log(`🛡️  Rate Limiting: Active`);
   console.log(`📊 Performance Monitoring: Active`);
   console.log(`🧠 AI Recommendations: Active`);
   console.log(`🏥 Burnout Detection: Active (daily 6 AM)`);
