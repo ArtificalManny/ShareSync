@@ -5,7 +5,6 @@
 // + Realtime Socket Emits (Step 4)
 // + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
 // + ✅ Public Spectator Stream (public:project:{projectId}) (Step 6)
-// + ✅ Priority 1: First-task XP bonus, first-completion XP bonus, template task creation
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -14,12 +13,10 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Task,
   TaskDocument,
@@ -41,9 +38,6 @@ import {
 import { TaskEventType } from './events/task-events';
 import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 import { RealtimeService } from '../realtime/realtime.service';
-
-// ✅ Priority 1: UserService for first-task/first-ship tracking
-import { UserService } from '../user/user.service';
 
 export interface TaskQueryOptions {
   projectId?: string;
@@ -79,12 +73,6 @@ const VARIABLE_REWARDS = {
   MULTIPLIER_CHANCE: 0.08,  
 };
 
-// ✅ Priority 1: Onboarding XP bonuses
-const ONBOARDING_XP = {
-  FIRST_TASK_CREATED: 50,
-  FIRST_TASK_COMPLETED: 100,
-};
-
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
@@ -95,10 +83,6 @@ export class TasksService {
     private readonly projectsService: ProjectsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly realtime: RealtimeService,
-
-    // ✅ Priority 1: Inject UserService via forwardRef to avoid circular dependency
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService,
   ) {}
 
   private async emitPublicProjectUpdate(projectId: string, payload: any): Promise<void> {
@@ -173,35 +157,6 @@ export class TasksService {
         data: buildTaskSnapshot(saved),
         createdAt: new Date(),
       });
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // ✅ PRIORITY 1: First-task-created XP bonus (non-blocking)
-    // ═════════════════════════════════════════════════════════════════════════
-    try {
-      const user = await this.userService.findById(userId);
-      if (user) {
-        // Count user's total tasks (including this one just created)
-        const totalUserTasks = await this.taskModel.countDocuments({
-          $or: [
-            { reporterId: new Types.ObjectId(userId) },
-            { createdBy: new Types.ObjectId(userId) },
-          ],
-        });
-
-        // If this is their very first task, award bonus XP
-        if (totalUserTasks === 1) {
-          this.logger.log(`🎉 First task created by user ${userId}! Awarding +${ONBOARDING_XP.FIRST_TASK_CREATED} bonus XP`);
-          this.eventEmitter.emit('onboarding.first_task_created', {
-            userId,
-            taskId: saved._id.toString(),
-            bonusXP: ONBOARDING_XP.FIRST_TASK_CREATED,
-          });
-        }
-      }
-    } catch (err) {
-      // Non-blocking: don't fail task creation if bonus check fails
-      this.logger.warn(`First-task bonus check failed (non-blocking): ${err}`);
     }
 
     this.logger.log(`Task created: ${saved._id}`);
@@ -518,6 +473,8 @@ export class TasksService {
       throw new BadRequestException('Task is already completed');
     }
 
+    const project = await this.projectsService.findById(task.projectId.toString());
+
     const variableRewards = this.calculateVariableRewards(task.xpValue);
 
     task.status = TaskStatus.DONE;
@@ -565,6 +522,8 @@ export class TasksService {
       xpAwarded: totalXP,
       isLegendary: variableRewards.isLegendary,
       ceremonyTier: ceremonyTier as any,
+      taskTitle: task.title, // ADDED FOR TASK 1.2
+      projectName: project?.name || '', // ADDED FOR TASK 1.2
     });
 
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(task));
@@ -598,35 +557,6 @@ export class TasksService {
 
     this.eventEmitter.emit(EVENTS.TASK_COMPLETED, gamificationEvent);
     this.logger.log(`Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`);
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // ✅ PRIORITY 1: First-task-completed bonus + first-ship recording (non-blocking)
-    // ═════════════════════════════════════════════════════════════════════════
-    try {
-      const user = await this.userService.findById(userId);
-      if (user) {
-        const totalCompleted = await this.taskModel.countDocuments({
-          completedBy: new Types.ObjectId(userId),
-          status: TaskStatus.DONE,
-        });
-
-        // If this is their very first completion (count=1 because we just completed it)
-        if (totalCompleted === 1) {
-          this.logger.log(`🎉 First task completed by user ${userId}! Awarding +${ONBOARDING_XP.FIRST_TASK_COMPLETED} bonus XP`);
-          this.eventEmitter.emit('onboarding.first_task_completed', {
-            userId,
-            taskId: task._id.toString(),
-            bonusXP: ONBOARDING_XP.FIRST_TASK_COMPLETED,
-          });
-
-          // Record first-ship timestamp for aha moment metric
-          await this.userService.recordFirstShip(userId);
-        }
-      }
-    } catch (err) {
-      // Non-blocking: don't fail task completion if bonus check fails
-      this.logger.warn(`First-completion bonus check failed (non-blocking): ${err}`);
-    }
 
     return {
       task,
@@ -735,55 +665,6 @@ export class TasksService {
 
     return task.save();
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PRIORITY 1: EVENT LISTENER — Create template tasks when project created from template
-  // Listens for the event emitted by ProjectsService.createFromTemplate()
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @OnEvent('project.template.tasks.create')
-  async handleTemplateTasks(payload: {
-    projectId: string;
-    userId: string;
-    tasks: Array<{
-      title: string;
-      description: string;
-      priority: string;
-      tags: string[];
-    }>;
-  }): Promise<void> {
-    this.logger.log(`Creating ${payload.tasks.length} template tasks for project ${payload.projectId}`);
-
-    for (let i = 0; i < payload.tasks.length; i++) {
-      const templateTask = payload.tasks[i];
-      try {
-        const task = new this.taskModel({
-          title: templateTask.title,
-          description: templateTask.description,
-          priority: templateTask.priority || 'medium',
-          tags: templateTask.tags || [],
-          projectId: new Types.ObjectId(payload.projectId),
-          reporterId: new Types.ObjectId(payload.userId),
-          createdBy: new Types.ObjectId(payload.userId),
-          status: TaskStatus.TODO,
-          order: i,
-          xpValue: this.calculateBaseXP((templateTask.priority as TaskPriority) || TaskPriority.MEDIUM),
-        });
-
-        await task.save();
-        await this.projectsService.incrementTaskCount(payload.projectId);
-      } catch (err) {
-        this.logger.warn(`Failed to create template task "${templateTask.title}": ${err}`);
-        // Continue creating other tasks even if one fails
-      }
-    }
-
-    this.logger.log(`✅ Template tasks created for project ${payload.projectId}`);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PRIVATE HELPERS
-  // ─────────────────────────────────────────────────────────────────────────────
 
   private calculateBaseXP(priority: TaskPriority): number {
     const baseXP: Record<string, number> = {

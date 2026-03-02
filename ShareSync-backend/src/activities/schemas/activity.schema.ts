@@ -71,6 +71,7 @@ export class Activity {
   @Prop({
     type: {
       taskTitle: { type: String, required: false },
+      projectName: { type: String, required: false }, // ADDED FOR TASK 1.2
       fileName: { type: String, required: false },
       fileSize: { type: Number, required: false },
       recipientName: { type: String, required: false },
@@ -82,6 +83,7 @@ export class Activity {
   })
   metadata?: {
     taskTitle?: string;
+    projectName?: string; // ADDED FOR TASK 1.2
     fileName?: string;
     fileSize?: number;
     recipientName?: string;

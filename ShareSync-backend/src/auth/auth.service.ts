@@ -1,7 +1,7 @@
 // src/auth/auth.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH SERVICE — Complete authentication logic
-// ⭐ LIVE EMAIL ENABLED via Resend SDK
+// ⚠️ EMAIL SENDING IS STUBBED — Codes are logged to console for testing
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
@@ -10,26 +10,24 @@ import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { Resend } from 'resend';
 
 import { User, UserDocument } from '../user/schemas/user.schema';
 
 @Injectable()
 export class AuthService {
-  private resend: Resend;
-
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly jwt: JwtService,
-  ) {
-    // Initialize Resend with your API key from .env
-    this.resend = new Resend(process.env.RESEND_API_KEY || 'placeholder_key');
-  }
+  ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EXISTING METHODS — PRESERVED
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /**
+   * ✅ Used by JwtStrategy to load the user from JWT payload.sub
+   * Returns a "safe" user object (no password), or null if not found.
+   */
   public async validateUserById(userId: string) {
     if (!userId) return null;
 
@@ -43,8 +41,11 @@ export class AuthService {
     return user;
   }
 
+  /** Validate email/password and return the user (without password) */
   public async validateUser(email: string, password: string) {
     console.log('🔵 VALIDATE USER CALLED');
+    console.log('🔵 email type:', typeof email, 'value:', email);
+    console.log('🔵 password type:', typeof password, 'length:', password?.length);
 
     const user = await this.userModel
       .findOne({ email: email.toLowerCase() })
@@ -56,6 +57,7 @@ export class AuthService {
     const stored = user.password || '';
     let ok = false;
 
+    // If hashed with bcrypt, compare; else plain compare (dev-only).
     if (
       stored.startsWith('$2a$') ||
       stored.startsWith('$2b$') ||
@@ -72,18 +74,23 @@ export class AuthService {
     return safe;
   }
 
+  /** Issue JWT and return it along with the safe user object */
   public async login(email: string, password: string) {
     console.log('🔵 LOGIN SERVICE CALLED');
+    console.log('🔵 email type:', typeof email, 'value:', email);
+    console.log('🔵 password type:', typeof password, 'length:', password?.length);
 
     const user = await this.validateUser(email, password);
 
+    // ⭐ Check if user is verified (using isEmailVerified - existing field)
     if (user.isEmailVerified === false) {
+      // User exists but not verified - resend code and return special response
       await this.resendVerificationCode(String(user._id));
       return {
         success: false,
         needsVerification: true,
         userId: String(user._id),
-        message: 'Please verify your email. A new code has been sent.',
+        message: 'Please verify your email',
       };
     }
 
@@ -104,6 +111,13 @@ export class AuthService {
 
     console.log('🟢 LOGIN SUCCESS - Token generated');
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // ⭐ PHASE 1 FIX: Expanded user object in login response
+    //    Previously only returned: _id, email, firstName, lastName, username, roles
+    //    Now also includes: displayName, profilePicture, xp, level, streakDays,
+    //    longestStreak, totalShips, bio, achievements, badges
+    //    This ensures AuthContext stores a richer user object from the start.
+    // ═════════════════════════════════════════════════════════════════════════
     return {
       success: true,
       access_token,
@@ -113,15 +127,30 @@ export class AuthService {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         username: user.username || '',
+        displayName: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || '',
+        profilePicture: user.profilePicture || null,
+        xp: user.xp || 0,
+        level: user.level || 1,
+        streakDays: user.streakDays || 0,
+        longestStreak: user.longestStreak || 0,
+        totalShips: user.totalShips || 0,
+        totalTasksCompleted: user.totalTasksCompleted || 0,
+        bio: user.bio || '',
+        achievements: user.achievements || [],
+        badges: user.badges || [],
         roles: user.roles || [],
       },
     };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // REGISTER WITH LIVE EMAIL VERIFICATION
+  // NEW METHODS — REGISTER WITH EMAIL VERIFICATION
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Register a new user with email verification
+   * ⚠️ Does NOT send actual email — logs code to console for testing
+   */
   public async register(dto: {
     email: string;
     username: string;
@@ -130,7 +159,9 @@ export class AuthService {
     lastName: string;
   }): Promise<{ userId: string }> {
     console.log('🔵 REGISTER SERVICE CALLED');
+    console.log('🔵 email:', dto.email, 'username:', dto.username);
 
+    // Check if email/username already exists
     const existing = await this.userModel.findOne({
       $or: [
         { email: dto.email.toLowerCase() },
@@ -145,179 +176,174 @@ export class AuthService {
       throw new BadRequestException('Username already taken');
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 12);
+
+    // Generate 6-digit verification code
     const verificationCode = crypto.randomInt(100000, 999999).toString();
     const hashedCode = await bcrypt.hash(verificationCode, 10);
-    const codeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    const codeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+    // Create user (NOT verified yet)
+    // ═════════════════════════════════════════════════════════════════════════
+    // ⭐ PHASE 1 FIX: Now also sets displayName at registration time
+    //    so the Profile page can show the user's real name immediately.
+    // ═════════════════════════════════════════════════════════════════════════
     const user = await this.userModel.create({
       email: dto.email.toLowerCase(),
       username: dto.username.toLowerCase(),
       password: hashedPassword,
       firstName: dto.firstName,
       lastName: dto.lastName,
-      isEmailVerified: false,
+      displayName: `${dto.firstName} ${dto.lastName}`.trim(),
+      isEmailVerified: false,  // ⭐ Using existing field name
       verificationCode: hashedCode,
       verificationCodeExpiry: codeExpiry,
       tokenVersion: 0,
     });
 
-    // ⭐ LIVE EMAIL DISPATCH
-    try {
-      if (process.env.RESEND_API_KEY) {
-        await this.resend.emails.send({
-          from: process.env.EMAIL_FROM || 'OpenShare <onboarding@resend.dev>',
-          to: dto.email.toLowerCase(),
-          subject: 'Your OpenShare Verification Code',
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Welcome to OpenShare, ${dto.firstName}!</h2>
-              <p>Here is your 6-digit verification code to activate your account:</p>
-              <h1 style="font-size: 32px; letter-spacing: 5px; color: #8B5CF6;">${verificationCode}</h1>
-              <p>This code will expire in 15 minutes.</p>
-              <p>If you did not request this, please ignore this email.</p>
-            </div>
-          `,
-        });
-        console.log(`🟢 Verification email sent to ${dto.email}`);
-      } else {
-        console.log('⚠️ RESEND_API_KEY missing. Fallback STUB mode. Code:', verificationCode);
-      }
-    } catch (error) {
-      console.error('🔴 Failed to send verification email:', error);
-    }
+    // ⚠️ STUB: Log verification code instead of emailing
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📧 VERIFICATION CODE FOR', dto.email);
+    console.log('📧 CODE:', verificationCode);
+    console.log('�� EXPIRES:', codeExpiry.toISOString());
+    console.log('═══════════════════════════════════════════════════════════');
 
     return { userId: String(user._id) };
   }
 
+  /**
+   * Verify email with OTP code
+   * Returns JWT token immediately (no re-login required)
+   */
   public async verifyEmail(
     userId: string,
     code: string,
   ): Promise<{ user: any; token: string }> {
     console.log('🔵 VERIFY EMAIL CALLED');
+    console.log('🔵 userId:', userId, 'code:', code);
 
     const user = await this.userModel
       .findById(userId)
       .select('+verificationCode');
 
-    if (!user) throw new BadRequestException('Invalid user');
-    if (user.isEmailVerified) throw new BadRequestException('Email already verified');
+    if (!user) {
+      throw new BadRequestException('Invalid user');
+    }
+
+    if (user.isEmailVerified) {  // ⭐ Using existing field name
+      throw new BadRequestException('Email already verified');
+    }
 
     if (!user.verificationCode || new Date() > user.verificationCodeExpiry) {
       throw new BadRequestException('Verification code expired');
     }
 
     const isValid = await bcrypt.compare(code, user.verificationCode);
-    if (!isValid) throw new BadRequestException('Invalid verification code');
+    if (!isValid) {
+      throw new BadRequestException('Invalid verification code');
+    }
 
-    user.isEmailVerified = true;
+    // Update user as verified
+    user.isEmailVerified = true;  // ⭐ Using existing field name
     user.verificationCode = undefined;
     user.verificationCodeExpiry = undefined;
     await user.save();
 
+    // Generate JWT
     const token = await this.generateToken(user);
+
     console.log('🟢 EMAIL VERIFIED - Token generated');
 
-    return { user: this.sanitizeUser(user), token };
+    return {
+      user: this.sanitizeUser(user),
+      token,
+    };
   }
 
+  /**
+   * Resend verification code
+   */
   public async resendVerificationCode(userId: string): Promise<void> {
     console.log('🔵 RESEND VERIFICATION CODE CALLED');
 
     const user = await this.userModel.findById(userId);
 
-    if (!user) throw new BadRequestException('User not found');
-    if (user.isEmailVerified) throw new BadRequestException('Email already verified');
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
 
+    if (user.isEmailVerified) {  // ⭐ Using existing field name
+      throw new BadRequestException('Email already verified');
+    }
+
+    // Generate new 6-digit code
     const verificationCode = crypto.randomInt(100000, 999999).toString();
     const hashedCode = await bcrypt.hash(verificationCode, 10);
-    const codeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    const codeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     user.verificationCode = hashedCode;
     user.verificationCodeExpiry = codeExpiry;
     await user.save();
 
-    // ⭐ LIVE EMAIL DISPATCH
-    try {
-      if (process.env.RESEND_API_KEY) {
-        await this.resend.emails.send({
-          from: process.env.EMAIL_FROM || 'OpenShare <onboarding@resend.dev>',
-          to: user.email,
-          subject: 'Your new OpenShare Verification Code',
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <p>Here is your new 6-digit verification code:</p>
-              <h1 style="font-size: 32px; letter-spacing: 5px; color: #8B5CF6;">${verificationCode}</h1>
-              <p>This code will expire in 15 minutes.</p>
-            </div>
-          `,
-        });
-        console.log(`🟢 New verification email sent to ${user.email}`);
-      } else {
-        console.log('⚠️ RESEND_API_KEY missing. Fallback STUB mode. Code:', verificationCode);
-      }
-    } catch (error) {
-      console.error('🔴 Failed to send resend email:', error);
-    }
+    // ⚠️ STUB: Log verification code instead of emailing
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📧 NEW VERIFICATION CODE FOR', user.email);
+    console.log('📧 CODE:', verificationCode);
+    console.log('📧 EXPIRES:', codeExpiry.toISOString());
+    console.log('═══════════════════════════════════════════════════════════');
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LIVE FORGOT/RESET PASSWORD
+  // NEW METHODS — FORGOT/RESET PASSWORD
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Request password reset
+   * ⚠️ Does NOT send actual email — logs reset URL to console for testing
+   * Always returns success (security: don't reveal if email exists)
+   */
   public async forgotPassword(email: string): Promise<void> {
     console.log('🔵 FORGOT PASSWORD CALLED');
+    console.log('🔵 email:', email);
 
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
 
+    // Silently return if user doesn't exist (security)
     if (!user) {
       console.log('🟡 User not found, returning silently for security');
       return;
     }
 
+    // Generate secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = await bcrypt.hash(resetToken, 10);
-    const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+    // Save to user - ⭐ Using EXISTING field names
     user.passwordResetToken = hashedToken;
     user.passwordResetExpires = tokenExpiry;
     await user.save();
 
+    // ⚠️ STUB: Log reset URL instead of emailing
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-
-    // ⭐ LIVE EMAIL DISPATCH
-    try {
-      if (process.env.RESEND_API_KEY) {
-        await this.resend.emails.send({
-          from: process.env.EMAIL_FROM || 'OpenShare <onboarding@resend.dev>',
-          to: user.email,
-          subject: 'Reset your OpenShare Password',
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Password Reset Request</h2>
-              <p>We received a request to reset your OpenShare password. Click the button below to choose a new password:</p>
-              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #8B5CF6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 16px 0;">Reset Password</a>
-              <p>If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #64748B;">${resetUrl}</p>
-              <p>This link expires in 15 minutes.</p>
-              <p>If you did not request a password reset, you can safely ignore this email.</p>
-            </div>
-          `,
-        });
-        console.log(`🟢 Password reset email sent to ${user.email}`);
-      } else {
-        console.log('⚠️ RESEND_API_KEY missing. Fallback STUB mode. Reset URL:', resetUrl);
-      }
-    } catch (error) {
-      console.error('🔴 Failed to send password reset email:', error);
-    }
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔑 PASSWORD RESET FOR', user.email);
+    console.log('🔑 RESET URL:', resetUrl);
+    console.log('🔑 TOKEN:', resetToken);
+    console.log('🔑 EXPIRES:', tokenExpiry.toISOString());
+    console.log('═══════════════════════════════════════════════════════════');
   }
 
+  /**
+   * Validate reset token without consuming it
+   */
   public async validateResetToken(
     token: string,
   ): Promise<{ valid: boolean; email?: string }> {
     console.log('🔵 VALIDATE RESET TOKEN CALLED');
 
+    // ⭐ Using EXISTING field name: passwordResetExpires
     const users = await this.userModel
       .find({
         passwordResetExpires: { $gt: new Date() },
@@ -328,6 +354,7 @@ export class AuthService {
       if (user.passwordResetToken) {
         const isValid = await bcrypt.compare(token, user.passwordResetToken);
         if (isValid) {
+          // Mask email for privacy
           const maskedEmail = this.maskEmail(user.email);
           return { valid: true, email: maskedEmail };
         }
@@ -337,9 +364,14 @@ export class AuthService {
     return { valid: false };
   }
 
+  /**
+   * Reset password with token
+   * Invalidates all existing sessions
+   */
   public async resetPassword(token: string, newPassword: string): Promise<void> {
     console.log('🔵 RESET PASSWORD CALLED');
 
+    // ⭐ Using EXISTING field name: passwordResetExpires
     const users = await this.userModel
       .find({
         passwordResetExpires: { $gt: new Date() },
@@ -358,25 +390,43 @@ export class AuthService {
       }
     }
 
-    if (!targetUser) throw new BadRequestException('Invalid or expired reset token');
+    if (!targetUser) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
 
+    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
+    // Update user - ⭐ Using EXISTING field names
     targetUser.password = hashedPassword;
     targetUser.passwordResetToken = undefined;
     targetUser.passwordResetExpires = undefined;
+
+    // IMPORTANT: Invalidate all existing tokens/sessions
     targetUser.tokenVersion = (targetUser.tokenVersion || 0) + 1;
 
     await targetUser.save();
+
     console.log('🟢 PASSWORD RESET SUCCESSFUL for', targetUser.email);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NEW METHODS — USERNAME CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Check if username is available
+   */
   public async isUsernameAvailable(username: string): Promise<boolean> {
     const existing = await this.userModel.findOne({
       username: username.toLowerCase(),
     });
     return !existing;
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HELPER METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   private async generateToken(
     user: UserDocument,

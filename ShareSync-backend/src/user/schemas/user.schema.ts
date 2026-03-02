@@ -7,7 +7,13 @@ type ThemeMode = 'light' | 'dark' | 'system';
 export type DigestFrequency = 'daily' | 'weekly' | 'off';
 export type NotificationChannel = 'email' | 'sms' | 'inApp';
 
-@Schema({ timestamps: true })
+// ═══════════════════════════════════════════════════════════════════════════════
+// ⭐ PHASE 1 FIX: Added toJSON/toObject with virtuals: true
+//    so the virtual 'name' getter (firstName + lastName) is included
+//    in every API response that serializes a User document.
+//    Previously the 'name' virtual existed but was silently dropped from JSON.
+// ═══════════════════════════════════════════════════════════════════════════════
+@Schema({ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } })
 export class User extends Document {
   // ============================================
   // BASIC INFO (existing)
@@ -338,20 +344,6 @@ export class User extends Document {
   // ⭐ NEW: Token versioning for session invalidation
   @Prop({ default: 0 })
   tokenVersion: number;
-
-  // ============================================
-  // ✅ PRIORITY 1: ONBOARDING (NEW — Zero-State Revolution)
-  // Safe additive fields with sensible defaults.
-  // ============================================
-
-  @Prop({ default: false })
-  onboardingCompleted: boolean;
-
-  @Prop()
-  firstLoginAt?: Date;
-
-  @Prop()
-  firstShipAt?: Date;
 
   // ============================================
   // TRACKING (existing)
