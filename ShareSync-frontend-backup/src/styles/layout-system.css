@@ -111,7 +111,7 @@ body.sidebar-collapsed .navbar {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  background: #f8fafc !important;
+  background: transparent !important; /* Changed to let app-canvas shine through */
   border-radius: 0 !important;
 }
 
@@ -126,7 +126,7 @@ body.sidebar-collapsed .main-content {
   padding: 0 !important; /* Removed 24px padding to kill side wedges */
   border: none !important;
   outline: none !important;
-  background: #f8fafc !important;
+  background: transparent !important; /* Changed to let app-canvas shine through */
   border-radius: 0 !important;
   min-height: calc(100vh - 64px) !important;
 }
@@ -274,7 +274,6 @@ body,
 #root,
 .layout-skin,
 .app-container {
-  background: #f8fafc !important;
   border-radius: 0 !important;
 }
 
@@ -288,17 +287,31 @@ body,
   background: #ffffff !important;
 }
 
-.main-content,
-.content-wrapper {
-  background: #f8fafc !important;
-}
-
 /* Defensive during entrance animation */
 body.app-entrance-active .navbar,
 body.app-entrance-active .main-content,
 body.app-entrance-active .content-wrapper,
 body.app-entrance-active .layout-skin,
 body.app-entrance-active .app-container {
-  background: #f8fafc !important;
   border-radius: 0 !important;
+}
+
+/* ============================================
+   PHASE 2: GLOBAL APP CANVAS (Gallery Walk)
+   ============================================ */
+.app-canvas { 
+  background-color: #FAFAF9 !important; 
+  background-image: 
+    radial-gradient(at 20% 0%, rgba(124,58,237,0.03) 0%, transparent 50%), 
+    radial-gradient(at 80% 100%, rgba(45,212,191,0.03) 0%, transparent 50%), 
+    radial-gradient(at 50% 50%, rgba(124,58,237,0.01) 0%, transparent 70%) !important; 
+  min-height: 100vh; 
+}
+
+:is(.dark) .app-canvas,
+[data-theme="dark"] .app-canvas { 
+  background-color: #0F0D1A !important; 
+  background-image: 
+    radial-gradient(at 20% 0%, rgba(124,58,237,0.08) 0%, transparent 50%), 
+    radial-gradient(at 80% 100%, rgba(45,212,191,0.05) 0%, transparent 50%) !important; 
 }

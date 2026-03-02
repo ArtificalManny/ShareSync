@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC PROFILE PAGE v4.1 - "The Gallery Walk" Light Theme
 // Phase 7: Added Profile Edit Modal
+// ⭐ Phase 1 Fix: Added error state with retry button
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Personal Gallery"
@@ -33,9 +34,11 @@ import {
   X,
   Save,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 import UserAvatar from "../components/ui/UserAvatar";
+import { resolveDisplayName } from "../utils/resolveDisplayName";
 
 // Analytics Components
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
@@ -72,42 +75,8 @@ function levelForXp(xp = 0) {
 }
 
 function resolveUserName(user) {
-  const first =
-    user?.firstName ||
-    user?.firstname ||
-    user?.givenName ||
-    user?.profile?.firstName ||
-    user?.profile?.givenName ||
-    "";
-
-  const last =
-    user?.lastName ||
-    user?.lastname ||
-    user?.familyName ||
-    user?.profile?.lastName ||
-    user?.profile?.familyName ||
-    "";
-
-  const fullFromParts = `${String(first).trim()} ${String(last).trim()}`.trim();
-
-  const fullFallback =
-    user?.name ||
-    user?.fullName ||
-    user?.displayName ||
-    user?.profile?.name ||
-    user?.profile?.displayName ||
-    "";
-
-  const usernameFallback = user?.username || user?.handle || user?.email || "User";
-
-  return {
-    firstName: String(first || "").trim(),
-    lastName: String(last || "").trim(),
-    fullName:
-      fullFromParts ||
-      String(fullFallback || "").trim() ||
-      String(usernameFallback || "").trim(),
-  };
+  // Delegates to shared utility — never returns "User" as fallback
+  return resolveDisplayName(user);
 }
 
 function safeParseJSON(v) {
@@ -574,6 +543,9 @@ export default function Profile() {
   // Phase 7: Edit modal state
   const [isEditing, setIsEditing] = useState(false);
 
+  // ⭐ PHASE 1 FIX: Error state with retry capability
+  const [error, setError] = useState(false);
+
   const isPublicRoute = useMemo(
     () => Boolean(routeUsername) && location.pathname.startsWith("/u/"),
     [routeUsername, location.pathname]
@@ -581,6 +553,8 @@ export default function Profile() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    // ⭐ PHASE 1 FIX: Clear error state at the start of each load attempt
+    setError(false);
     try {
       if (isPublicRoute) {
         const u = await getPublicUser(routeUsername);
@@ -627,6 +601,8 @@ export default function Profile() {
     } catch (e) {
       console.error('[Profile] Failed to load user data:', e);
       console.error('[Profile] Error details:', e?.response?.data || e?.message);
+      // ⭐ PHASE 1 FIX: Set error state so we can show retry UI
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -676,6 +652,40 @@ export default function Profile() {
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-slate-500 dark:text-zinc-500">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  {/* ═══════════════════════════════════════════════════════════════════════
+      ⭐ PHASE 1 FIX: Error state with branded retry UI
+      Shows when getMe() fails instead of falling back to "Anonymous".
+      Matches the app's visual style with violet accent.
+  ═══════════════════════════════════════════════════════════════════════ */}
+  if (error) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+      >
+        <div className="flex flex-col items-center text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-6">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
+            Could not load profile
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6 max-w-xs">
+            We had trouble loading your profile data. Check your connection and try again.
+          </p>
+          <button
+            onClick={load}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-md hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </button>
         </div>
       </div>
     );

@@ -1,0 +1,160 @@
+/* src/styles/mobile-overrides.css */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Priority 5.5: Mobile responsiveness overrides
+   - Hide desktop sidebar below md
+   - Show bottom nav on mobile
+   - Increase touch targets to 44px min
+   - Handle safe-area-inset for notched phones
+   - Adjust modal heights for mobile keyboards
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hide desktop sidebar on mobile ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  #app-sidebar,
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Remove sidebar margin from main content */
+  .main-content {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  /* Adjust main content padding for mobile */
+  .content-wrapper {
+    padding: 0 !important;
+  }
+
+  /* Hide desktop navbar on mobile (MobileHeader replaces it) */
+  /* Only uncomment if you want MobileHeader to fully replace Navbar:
+  .navbar {
+    display: none !important;
+  }
+  */
+}
+
+/* ── Safe area insets (notched phones) ───────────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+/* ── Minimum touch target sizes ──────────────────────────────────────────── */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exempt small inline elements */
+  .touch-exempt,
+  kbd,
+  .inline-badge {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
+/* ── Mobile page padding ─────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .home-page {
+    padding: 16px !important;
+    padding-bottom: 80px !important; /* room for bottom nav */
+  }
+
+  /* Reduce section gaps on mobile */
+  .home-page .grid {
+    gap: 12px;
+  }
+
+  /* Full-width cards on mobile */
+  .home-page .col-span-12.xl\:col-span-8,
+  .home-page .col-span-12.xl\:col-span-4 {
+    grid-column: span 12;
+  }
+
+  /* Stat cards — 2 columns on mobile */
+  .home-page .grid-cols-2.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  /* Reduce card padding on mobile */
+  .home-page .p-6 {
+    padding: 16px;
+  }
+  .home-page .p-5 {
+    padding: 14px;
+  }
+}
+
+/* ── Tablet adjustments ──────────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .home-page {
+    padding: 20px !important;
+  }
+}
+
+/* ── Modal adjustments for mobile keyboards ──────────────────────────────── */
+@media (max-width: 767px) {
+  /* Modals should not exceed viewport minus keyboard */
+  .modal-content,
+  [role="dialog"] > div {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  /* Slide-up sheets should respect keyboard */
+  .slide-up-sheet {
+    max-height: 85vh;
+    max-height: 85dvh; /* dynamic viewport height for keyboard */
+  }
+}
+
+/* ── Slide-out panel mobile ──────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Make slide-out panels full-width on mobile */
+  .fixed.right-0.max-w-\[480px\] {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* ── Scrollbar hiding on mobile ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Bottom nav spacing helper ───────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .pb-mobile-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}

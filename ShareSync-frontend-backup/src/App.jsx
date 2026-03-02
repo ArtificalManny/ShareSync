@@ -22,7 +22,7 @@ import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 // ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
 import { ToastProvider as NewToastProvider } from "./components/common/Toast";
-import ErrorBoundary from "./ErrorBoundary";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // ⭐ PHASE 2A: Socket Provider for real-time features
 import { SocketProvider } from "./context/SocketContext";
@@ -98,6 +98,7 @@ import "./styles/entrance.css";
 import "./styles/heartbeat.css";
 import "./styles/palette.override.css";
 import "./styles/wedge-hotfix.css";
+import "./styles/mobile-overrides.css";
 
 // ✅ Priority 4.1: Persona theme overrides
 import "./styles/persona-themes.css";
@@ -177,6 +178,8 @@ const LeaderboardDock = lazy(() => import("./components/momentum/LeaderboardDock
 const MessengerPanel = lazy(() => import("./components/messenger/MessengerPanel.jsx"));
 const ShipFlash = lazy(() => import("./components/effects/ShipFlash"));
 const CelebrationRouter = lazy(() => import("./components/celebrations/CelebrationRouter"));
+const ShortcutProvider = lazy(() => import("./components/shortcuts/ShortcutProvider"));
+const ShortcutGuide = lazy(() => import("./components/shortcuts/ShortcutGuide"));
 const PublicRoutes = lazy(() => import("./routes/publicRoutes.jsx"));
 
 // ⭐ DAY 8: Welcome Back Modal
@@ -392,6 +395,8 @@ function AuthenticatedApp({ children, userData }) {
           <UserProvider>
             <MessageProvider>
               <SprintProvider>
+                <Suspense fallback={null}>
+                  <ShortcutProvider>
                 <CommandControlLayer projects={[]}>
                   <FlowStateProvider>
                     <ContextPreservationProvider>
@@ -465,10 +470,16 @@ function AuthenticatedApp({ children, userData }) {
                         <Suspense fallback={null}>
                           <CelebrationRouter />
                         </Suspense>
+                        {/* ✅ Priority 5.4: Shortcut Guide Modal */}
+                        <Suspense fallback={null}>
+                          <ShortcutGuide />
+                        </Suspense>
                       </MomentumProvider>
                     </ContextPreservationProvider>
                   </FlowStateProvider>
                 </CommandControlLayer>
+                  </ShortcutProvider>
+                </Suspense>
               </SprintProvider>
             </MessageProvider>
           </UserProvider>

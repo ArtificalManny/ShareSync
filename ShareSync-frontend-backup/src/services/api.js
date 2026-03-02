@@ -3,6 +3,49 @@
 
 import http from "../utils/http";
 
+// ⭐ TASK 1.4: Global API Error Interceptor
+if (http.interceptors) {
+  http.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      const status = error.response ? error.response.status : null;
+      const originalRequest = error.config;
+
+      if (!status) {
+        // Network error / Offline
+        console.warn('[API] Connection lost.');
+        window.dispatchEvent(new CustomEvent('toast:show', { 
+          detail: { type: 'error', message: 'Connection lost. Reconnecting...' } 
+        }));
+      } else if (status === 401) {
+        // Unauthorized - Trigger logout or redirect
+        console.warn('[API] 401 Unauthorized');
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      } else if (status === 404) {
+        // Not Found
+        console.warn('[API] 404 Not Found:', originalRequest.url);
+        window.dispatchEvent(new CustomEvent('toast:show', { 
+          detail: { type: 'info', message: 'This feature is coming soon.' } 
+        }));
+      } else if (status >= 500) {
+        // Server Error
+        console.error('[API] 500 Server Error:', originalRequest.url);
+        window.dispatchEvent(new CustomEvent('toast:show', { 
+          detail: { type: 'error', message: 'Something went wrong. Retrying...' } 
+        }));
+        
+        // Auto-retry logic for 500 errors (1 retry max)
+        if (originalRequest && !originalRequest._retry) {
+          originalRequest._retry = true;
+          return http(originalRequest);
+        }
+      }
+
+      return Promise.reject(error);
+    }
+  );
+}
+
 // --- AUDIT ---
 async function listAudit({ scope = "user", userId, projectId, limit = 20, cursor } = {}) {
   const { data } = await http.get("/audit", {

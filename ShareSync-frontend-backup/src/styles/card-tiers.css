@@ -1,44 +1,68 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   PRIORITY 2: Card Depth System — 3 Visual Tiers
+   PRIORITY 2: Card Depth System — 3 Visual Tiers (PHASE 2 UPDATE)
    ═══════════════════════════════════════════════════════════════════════════════
    
-   Tier 1: .card-surface  — Informational, passive (metrics, activity, storage)
-   Tier 2: .card-action   — Interactive, primary (tasks, projects, moves)
-   Tier 3: .card-hero     — High priority, attention-demanding (critical, celebrations)
+   Tier 1: .card-surface  — Glass morphism passive cards
+   Tier 2: .card-elevated — Elevated widgets and featured cards
+   Tier 3: .card-active   — Interactive / Active cards
    
-   Light theme first, dark mode overrides via dark: prefix or media query.
+   Legacy: .card-action, .card-hero (Kept for backwards compatibility)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TIER 1: SURFACE CARDS
-   No shadow, 1px border, subtle background
+   NEW TIER 1: SURFACE CARDS (Phase 2 Glass Morphism)
 ───────────────────────────────────────────────────────────────────────── */
-.card-surface {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 0.75rem;
-  box-shadow: none;
-  transition: all 0.2s ease;
-}
+.card-surface { 
+  background: rgba(255, 255, 255, 0.72); 
+  backdrop-filter: blur(20px); 
+  -webkit-backdrop-filter: blur(20px); 
+  border: 1px solid rgba(255, 255, 255, 0.18); 
+  border-radius: 16px; 
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03); 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+} 
 
-.card-surface:hover {
-  border-color: #CBD5E1;
+.card-surface:hover { 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06); 
+  transform: translateY(-2px); 
+  border-color: rgba(124, 58, 237, 0.15); 
 }
 
 :is(.dark) .card-surface,
-[data-theme="dark"] .card-surface {
-  background: #1f1f23;
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-:is(.dark) .card-surface:hover,
-[data-theme="dark"] .card-surface:hover {
-  border-color: rgba(255, 255, 255, 0.1);
+[data-theme="dark"] .card-surface { 
+  background: rgba(30, 27, 46, 0.72); 
+  border: 1px solid rgba(255, 255, 255, 0.06); 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TIER 2: ACTION CARDS
-   Subtle shadow, white bg, violet left accent on hover
+   NEW TIER 2: ELEVATED CARDS (Phase 2)
+───────────────────────────────────────────────────────────────────────── */
+.card-elevated { 
+  background: rgba(255, 255, 255, 0.85); 
+  backdrop-filter: blur(24px); 
+  border: 1px solid rgba(255, 255, 255, 0.25); 
+  border-radius: 20px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 24px 48px rgba(0,0,0,0.04); 
+}
+
+:is(.dark) .card-elevated,
+[data-theme="dark"] .card-elevated { 
+  background: rgba(30, 27, 46, 0.85); 
+  border: 1px solid rgba(255, 255, 255, 0.08); 
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   NEW TIER 3: ACTIVE CARDS (Phase 2)
+───────────────────────────────────────────────────────────────────────── */
+.card-active { 
+  background: linear-gradient(135deg, rgba(124,58,237,0.05), rgba(45,212,191,0.05)); 
+  border: 1px solid rgba(124, 58, 237, 0.2); 
+  border-radius: 20px; 
+  box-shadow: 0 0 0 1px rgba(124,58,237,0.1), 0 8px 32px rgba(124,58,237,0.1); 
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   LEGACY: ACTION CARDS
 ───────────────────────────────────────────────────────────────────────── */
 .card-action {
   background: #FFFFFF;
@@ -92,8 +116,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TIER 3: HERO CARDS
-   Deeper shadow, subtle gradient bg, pulse for urgent items
+   LEGACY: HERO CARDS
 ───────────────────────────────────────────────────────────────────────── */
 .card-hero {
   background: linear-gradient(135deg, #FFFFFF 0%, #F5F3FF 100%);
@@ -167,7 +190,8 @@
 ───────────────────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .card-action,
-  .card-hero {
+  .card-hero,
+  .card-surface {
     transition: none;
     transform: none !important;
   }

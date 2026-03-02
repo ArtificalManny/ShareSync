@@ -312,6 +312,7 @@ export default function Home() {
           xp: totalXP,
           taskTitle: shippedMission?.title,
           projectName: shippedMission?.title,
+          teamName: 'Team',
         });
       }).catch(() => {});
 

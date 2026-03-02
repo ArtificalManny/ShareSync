@@ -33,7 +33,7 @@ export default function LayoutSkin({ children, className = "" }) {
 
   return (
     <div 
-      className={`layout-skin min-h-screen ${className}`}
+      className={`layout-skin app-canvas min-h-screen ${className}`}
       style={{
         // Ensure proper stacking context
         isolation: "isolate",

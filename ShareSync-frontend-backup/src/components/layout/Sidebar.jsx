@@ -18,6 +18,8 @@ import {
 
 import SidebarItem from "./nav/SidebarItem";
 import Avatar from "./ui/Avatar";
+import { useAuth } from "../../context/AuthContext";
+import { resolveDisplayName } from "../../utils/resolveDisplayName";
 
 const LS_KEY = "ss.sidebar.collapsed";
 
@@ -146,13 +148,22 @@ export default function Sidebar() {
     document.body.classList.toggle("sidebar-collapsed", collapsed);
   }, [collapsed]);
 
-  const me = { name: "Manny", status: "online" };
+  // ✅ Priority 6.2: Use real authenticated user data (never "Demo User")
+  let authUser = null;
+  try { authUser = useAuth()?.user; } catch (e) { /* safe if outside provider */ }
+  const resolvedName = resolveDisplayName(authUser);
+  const me = {
+    name: resolvedName.fullName,
+    initials: resolvedName.initials,
+    status: authUser ? "online" : "offline",
+    avatarUrl: authUser?.avatarUrl || authUser?.profilePicture || authUser?.avatar || null,
+  };
 
   return (
     <aside
       id="app-sidebar"
       className={`
-        h-screen flex flex-col
+        h-screen hidden md:flex flex-col
         bg-white dark:bg-[#111113] border-r border-slate-200 dark:border-[#1f1f23]
         transition-all duration-300 ease-out
         ${collapsed ? 'w-[72px]' : 'w-[260px]'}
@@ -217,7 +228,7 @@ export default function Sidebar() {
             ${collapsed ? 'justify-center' : ''}
           `}
         >
-          <Avatar name={me.name} size={32} status={me.status} />
+          <Avatar name={me.name} size={32} status={me.status} src={me.avatarUrl} />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium text-slate-900 dark:text-white truncate transition-colors duration-200">
@@ -225,7 +236,7 @@ export default function Sidebar() {
               </div>
               <div className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 transition-colors duration-200">
                 <ShieldCheck className="w-3 h-3" />
-                <span>Online</span>
+                <span className="capitalize">{me.status}</span>
               </div>
             </div>
           )}

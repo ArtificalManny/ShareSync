@@ -102,8 +102,12 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
           </span>
         </div>
 
-        {/* Accent bar */}
-        <div className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`} aria-hidden="true" />
+        {/* Accent bar - Injects project.color override if available */}
+        <div 
+          className={`absolute left-0 top-0 h-full w-1 origin-left bg-gradient-to-b ${accent.bar} transition-transform duration-300 ease-out group-hover:scale-x-[1.4]`} 
+          aria-hidden="true" 
+          style={project.color ? { background: project.color } : {}}
+        />
 
         {/* Sweep */}
         <div className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 transition duration-700 ease-out group-hover:opacity-100 group-hover:translate-x-full" aria-hidden="true" />

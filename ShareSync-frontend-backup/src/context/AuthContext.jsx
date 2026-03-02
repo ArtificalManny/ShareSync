@@ -81,6 +81,37 @@ export function AuthProvider({ children }) {
 
           // keep compatibility keys in sync
           writeTokenEverywhere(token);
+
+          // ═══════════════════════════════════════════════════════════════════
+          // ⭐ PHASE 1 FIX: Fetch full user profile after token verification
+          //    The /auth/verify endpoint only returns decoded JWT payload
+          //    (sub, email, firstName, lastName, username, tokenVersion).
+          //    The /auth/me endpoint returns the FULL user document from MongoDB
+          //    (including xp, level, streakDays, profilePicture, achievements, etc.)
+          //
+          //    This ensures the AuthContext user object has ALL fields so any
+          //    component reading from context gets complete data — not just
+          //    the minimal JWT payload that was causing "Anonymous" fallbacks.
+          //
+          //    Wrapped in try-catch: if /auth/me fails, we gracefully keep
+          //    the basic JWT data — the app still works, just with less info.
+          // ═══════════════════════════════════════════════════════════════════
+          try {
+            // Ensure Authorization header is set for the /auth/me call
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+            const meResponse = await api.get(withApiPrefix("/auth/me"));
+            const mePayload = meResponse.data?.data ?? meResponse.data;
+
+            if (mePayload && typeof mePayload === 'object' && (mePayload._id || mePayload.email)) {
+              console.log("[AuthContext] ✅ Full profile loaded:", mePayload.email || mePayload.username);
+              setUser(mePayload);
+              localStorage.setItem("ss.user", JSON.stringify(mePayload));
+            }
+          } catch (meError) {
+            console.warn("[AuthContext] Could not fetch full profile, using JWT data:", meError?.message);
+            // Graceful degradation — keep the basic JWT user data
+          }
         } else {
           console.log("[AuthContext] Token invalid");
           clearTokenEverywhere();
@@ -112,7 +143,7 @@ export function AuthProvider({ children }) {
         password,
       });
 
-      console.log("[AuthContext] 🔵 Login response:", response.data);
+      console.log("[AuthContext] �� Login response:", response.data);
 
       // ✅ Unwrap TransformInterceptor format: { success, data, timestamp }
       const payload = response.data?.data ?? response.data;
@@ -136,6 +167,10 @@ export function AuthProvider({ children }) {
 
       // ✅ Write token in all expected keys
       writeTokenEverywhere(token);
+
+      // ⭐ PHASE 1 FIX: Set Authorization header immediately after login
+      //    so subsequent API calls (like fetching full profile) work.
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       localStorage.setItem("ss.user", JSON.stringify(userData));
       setUser(userData);
@@ -194,6 +229,7 @@ export function AuthProvider({ children }) {
 
       if (token && userData) {
         writeTokenEverywhere(token);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem("ss.user", JSON.stringify(userData));
         setUser(userData);
         console.log("[AuthContext] 🎉 Registration successful (legacy flow)!");
@@ -238,6 +274,7 @@ export function AuthProvider({ children }) {
 
       if (token && userData) {
         writeTokenEverywhere(token);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem("ss.user", JSON.stringify(userData));
         setUser(userData);
         console.log("[AuthContext] 🎉 Email verified!");
@@ -321,6 +358,8 @@ export function AuthProvider({ children }) {
     console.log("[AuthContext] 🔴 Logging out...");
     clearTokenEverywhere();
     localStorage.removeItem("ss.user");
+    // ⭐ PHASE 1 FIX: Also clear the Authorization header on logout
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
     setAuthError(null);
     window.location.href = "/login";

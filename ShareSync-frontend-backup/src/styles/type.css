@@ -55,3 +55,44 @@ body {
 /* Nice little helpers */
 .lead    { font-size: 16px; line-height: 24px; color: rgb(var(--muted)); }
 .eyebrow { font-size: 12px; line-height: 16px; letter-spacing: .06em; text-transform: uppercase; color: rgb(var(--muted)); }
+
+/* =========================================================================
+   PHASE 2: GALLERY WALK TYPOGRAPHY SCALES (Inter)
+   ========================================================================= */
+.page-title { 
+  font-family: 'Inter', sans-serif; 
+  font-size: 28px; 
+  font-weight: 700; 
+  letter-spacing: -0.02em; 
+}
+.section-header { 
+  font-family: 'Inter', sans-serif; 
+  font-size: 14px; 
+  font-weight: 600; 
+  letter-spacing: 0.05em; 
+  text-transform: uppercase; 
+  color: #6B7280; 
+}
+.card-title { 
+  font-family: 'Inter', sans-serif; 
+  font-size: 16px; 
+  font-weight: 600; 
+}
+.body-text { 
+  font-family: 'Inter', sans-serif; 
+  font-size: 14px; 
+  font-weight: 400; 
+  color: #4B5563; 
+}
+.caption-text { 
+  font-family: 'Inter', sans-serif; 
+  font-size: 12px; 
+  font-weight: 500; 
+  color: #9CA3AF; 
+}
+.xp-callout { 
+  font-family: 'Inter', sans-serif; 
+  font-size: 13px; 
+  font-weight: 700; 
+  color: #7C3AED; 
+}

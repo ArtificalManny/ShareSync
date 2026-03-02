@@ -15,6 +15,7 @@ import Achievements from '../components/ecosystem/Achievements';
 import ProjectsOverview from '../components/ecosystem/ProjectsOverview';
 import BurnoutAlert from '../components/ecosystem/BurnoutAlert';
 import FeaturedProjects from '../components/ecosystem/FeaturedProjects';
+import { formatActivityItems } from '../utils/formatActivityText';
 
 export default function Discover() {
   const isMobile = useIsMobile();
@@ -140,7 +141,7 @@ export default function Discover() {
               </div>
             </div>
           ) : (
-            <ActivityFeed activities={feed} />
+            <ActivityFeed activities={formatActivityItems(feed)} />
           )}
           
           <div ref={loaderRef} className="w-full flex justify-center py-8">
