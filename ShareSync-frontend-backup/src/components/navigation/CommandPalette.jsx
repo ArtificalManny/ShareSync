@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE N: Premium Command Palette (Cmd+K)
 // Inspired by Linear, Raycast, Superhuman
+// ⭐ PHASE 8.2: Responsive Design - Full Screen on Mobile + Event Listener
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -259,16 +260,10 @@ function fuzzyMatch(text, query) {
   const textLower = text.toLowerCase();
   const queryLower = query.toLowerCase();
   
-  // Exact match gets highest score
   if (textLower === queryLower) return 1000;
-  
-  // Starts with query
   if (textLower.startsWith(queryLower)) return 500 + (queryLower.length / textLower.length) * 100;
-  
-  // Contains query
   if (textLower.includes(queryLower)) return 200 + (queryLower.length / textLower.length) * 50;
   
-  // Fuzzy character matching
   let queryIndex = 0;
   let score = 0;
   let consecutiveBonus = 0;
@@ -283,14 +278,12 @@ function fuzzyMatch(text, query) {
     }
   }
   
-  if (queryIndex < queryLower.length) return 0; // Didn't match all query chars
-  
+  if (queryIndex < queryLower.length) return 0;
   return score;
 }
 
 function searchCommands(commands, query) {
   if (!query.trim()) {
-    // No query - show recent and highlighted commands first
     return commands.filter(cmd => 
       cmd.category === 'recent' || cmd.highlight
     ).slice(0, 8);
@@ -334,15 +327,9 @@ export default function CommandPalette({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [animatingOut, setAnimatingOut] = useState(false);
 
-  // Get all commands
   const commands = useMemo(() => getCommands(context), [context]);
-  
-  // Search/filter commands
-  const filteredCommands = useMemo(() => 
-    searchCommands(commands, query), [commands, query]
-  );
+  const filteredCommands = useMemo(() => searchCommands(commands, query), [commands, query]);
 
-  // Group by category
   const groupedCommands = useMemo(() => {
     const groups = {};
     filteredCommands.forEach(cmd => {
@@ -353,7 +340,6 @@ export default function CommandPalette({
     return groups;
   }, [filteredCommands]);
 
-  // Flat list for keyboard navigation
   const flatList = useMemo(() => {
     const flat = [];
     Object.keys(groupedCommands).forEach(cat => {
@@ -362,7 +348,6 @@ export default function CommandPalette({
     return flat;
   }, [groupedCommands]);
 
-  // Reset on open
   useEffect(() => {
     if (isOpen) {
       setQuery('');
@@ -372,18 +357,15 @@ export default function CommandPalette({
     }
   }, [isOpen]);
 
-  // Reset selection when results change
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
 
-  // Scroll selected item into view
   useEffect(() => {
     const selectedEl = listRef.current?.querySelector(`[data-index="${selectedIndex}"]`);
     selectedEl?.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
-  // Handle close with animation
   const handleClose = useCallback(() => {
     setAnimatingOut(true);
     setTimeout(() => {
@@ -392,11 +374,8 @@ export default function CommandPalette({
     }, 150);
   }, [onClose]);
 
-  // Execute command
   const executeCommand = useCallback((cmd) => {
     handleClose();
-    
-    // Small delay to let animation complete
     setTimeout(() => {
       switch (cmd.action) {
         case 'navigate':
@@ -414,7 +393,6 @@ export default function CommandPalette({
     }, 100);
   }, [navigate, onAction, handleClose]);
 
-  // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
     switch (e.key) {
       case 'ArrowDown':
@@ -452,37 +430,25 @@ export default function CommandPalette({
 
   return (
     <>
-      {/* Backdrop */}
       <div 
-        className={`
-          fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm
-          transition-opacity duration-150
-          ${animatingOut ? 'opacity-0' : 'opacity-100'}
-        `}
+        className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity duration-150 ${animatingOut ? 'opacity-0' : 'opacity-100'}`}
         onClick={handleClose}
       />
 
-      {/* Modal */}
-      <div className={`
-        fixed inset-0 z-[101] flex items-start justify-center pt-[15vh]
-        pointer-events-none
-      `}>
+      <div className={`fixed inset-0 z-[101] flex items-start justify-center pt-0 md:pt-[15vh] pointer-events-none`}>
         <div className={`
-          w-full max-w-2xl mx-4
-          pointer-events-auto
+          w-full h-[100dvh] md:h-auto max-w-2xl mx-0 md:mx-4
+          pointer-events-auto flex flex-col
           transition-all duration-150
-          ${animatingOut 
-            ? 'opacity-0 scale-95 translate-y-2' 
-            : 'opacity-100 scale-100 translate-y-0'
-          }
+          ${animatingOut ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'}
         `}>
           <div className="
-            bg-surface-1 border border-white/[0.1] rounded-2xl
+            bg-surface-1 border-0 md:border border-white/[0.1] rounded-none md:rounded-2xl
             shadow-2xl shadow-black/50
-            overflow-hidden
+            overflow-hidden flex flex-col h-full md:h-auto
           ">
             {/* Search Input */}
-            <div className="relative border-b border-white/[0.06]">
+            <div className="relative border-b border-white/[0.06] shrink-0">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
               <input
                 ref={inputRef}
@@ -491,30 +457,21 @@ export default function CommandPalette({
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a command or search..."
-                className="
-                  w-full py-4 pl-14 pr-4
-                  bg-transparent text-text-primary text-lg
-                  placeholder-text-tertiary
-                  focus:outline-none
-                "
+                className="w-full py-5 md:py-4 pl-14 pr-4 bg-transparent text-text-primary text-lg placeholder-text-tertiary focus:outline-none"
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck="false"
               />
-              
-              {/* Shortcut hint */}
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <kbd className="px-2 py-1 rounded bg-surface-2 text-xs text-text-tertiary border border-white/[0.06]">
-                  Esc
-                </kbd>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-2">
+                <kbd className="px-2 py-1 rounded bg-surface-2 text-xs text-text-tertiary border border-white/[0.06]">Esc</kbd>
               </div>
             </div>
 
             {/* Results */}
             <div 
               ref={listRef}
-              className="max-h-[400px] overflow-y-auto py-2"
+              className="flex-1 md:max-h-[400px] overflow-y-auto py-2"
             >
               {flatList.length === 0 ? (
                 <div className="py-12 text-center">
@@ -525,108 +482,38 @@ export default function CommandPalette({
               ) : (
                 Object.entries(groupedCommands).map(([category, cmds]) => {
                   const categoryConfig = COMMAND_CATEGORIES[category] || { label: category };
-                  
                   return (
                     <div key={category}>
-                      {/* Category Header */}
-                      <div className="px-4 py-2">
-                        <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">
-                          {categoryConfig.label}
-                        </span>
+                      <div className="px-4 py-2 mt-2">
+                        <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">{categoryConfig.label}</span>
                       </div>
-
-                      {/* Commands */}
                       {cmds.map((cmd) => {
                         flatIndex++;
                         const isSelected = flatIndex === selectedIndex;
                         const Icon = cmd.icon;
-
                         return (
                           <button
                             key={cmd.id}
                             data-index={flatIndex}
                             onClick={() => executeCommand(cmd)}
                             onMouseEnter={() => setSelectedIndex(flatIndex)}
-                            className={`
-                              w-full flex items-center gap-3 px-4 py-2.5
-                              transition-colors
-                              ${isSelected 
-                                ? 'bg-brand/10' 
-                                : 'hover:bg-surface-2/50'
-                              }
-                              ${cmd.destructive ? 'text-error-500' : ''}
-                            `}
+                            className={`w-full flex items-center gap-3 px-4 py-3 md:py-2.5 transition-colors ${isSelected ? 'bg-brand/10' : 'hover:bg-surface-2/50'} ${cmd.destructive ? 'text-error-500' : ''}`}
                           >
-                            {/* Icon */}
-                            <div className={`
-                              w-9 h-9 rounded-lg flex items-center justify-center shrink-0
-                              ${cmd.highlight 
-                                ? 'bg-brand/20' 
-                                : cmd.destructive 
-                                  ? 'bg-error-500/10' 
-                                  : 'bg-surface-2'
-                              }
-                            `}
-                              style={cmd.color ? { backgroundColor: `${cmd.color}20` } : {}}
-                            >
-                              <Icon className={`
-                                w-4 h-4
-                                ${cmd.highlight 
-                                  ? 'text-brand' 
-                                  : cmd.destructive 
-                                    ? 'text-error-500' 
-                                    : cmd.color 
-                                      ? '' 
-                                      : 'text-text-secondary'
-                                }
-                              `} 
-                                style={cmd.color ? { color: cmd.color } : {}}
-                              />
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cmd.highlight ? 'bg-brand/20' : cmd.destructive ? 'bg-error-500/10' : 'bg-surface-2'}`} style={cmd.color ? { backgroundColor: `${cmd.color}20` } : {}}>
+                              <Icon className={`w-4 h-4 ${cmd.highlight ? 'text-brand' : cmd.destructive ? 'text-error-500' : cmd.color ? '' : 'text-text-secondary'}`} style={cmd.color ? { color: cmd.color } : {}} />
                             </div>
-
-                            {/* Label */}
                             <div className="flex-1 text-left min-w-0">
-                              <div className={`
-                                text-sm font-medium truncate
-                                ${cmd.destructive 
-                                  ? 'text-error-500' 
-                                  : isSelected 
-                                    ? 'text-text-primary' 
-                                    : 'text-text-secondary'
-                                }
-                              `}>
-                                {cmd.label}
-                              </div>
-                              {cmd.sublabel && (
-                                <div className="text-xs text-text-tertiary truncate">
-                                  {cmd.sublabel}
-                                </div>
-                              )}
+                              <div className={`text-sm font-medium truncate ${cmd.destructive ? 'text-error-500' : isSelected ? 'text-text-primary' : 'text-text-secondary'}`}>{cmd.label}</div>
+                              {cmd.sublabel && <div className="text-xs text-text-tertiary truncate">{cmd.sublabel}</div>}
                             </div>
-
-                            {/* Shortcut */}
                             {cmd.shortcut && (
-                              <div className="flex items-center gap-1 shrink-0">
+                              <div className="hidden md:flex items-center gap-1 shrink-0">
                                 {formatShortcut(cmd.shortcut).split('').map((char, i) => (
-                                  <kbd 
-                                    key={i}
-                                    className="
-                                      min-w-[20px] h-5 px-1.5
-                                      flex items-center justify-center
-                                      rounded bg-surface-2 border border-white/[0.06]
-                                      text-[10px] text-text-tertiary font-medium
-                                    "
-                                  >
-                                    {char}
-                                  </kbd>
+                                  <kbd key={i} className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded bg-surface-2 border border-white/[0.06] text-[10px] text-text-tertiary font-medium">{char}</kbd>
                                 ))}
                               </div>
                             )}
-
-                            {/* Arrow indicator */}
-                            {isSelected && (
-                              <ArrowRight className="w-4 h-4 text-brand shrink-0" />
-                            )}
+                            {isSelected && <ArrowRight className="w-4 h-4 text-brand shrink-0" />}
                           </button>
                         );
                       })}
@@ -637,30 +524,21 @@ export default function CommandPalette({
             </div>
 
             {/* Footer */}
-            <div className="
-              px-4 py-3 border-t border-white/[0.06]
-              flex items-center justify-between
-              bg-surface-2/30
-            ">
+            <div className="hidden md:flex px-4 py-3 border-t border-white/[0.06] items-center justify-between bg-surface-2/30">
               <div className="flex items-center gap-4 text-xs text-text-tertiary">
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.06]">↑↓</kbd>
-                  Navigate
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.06]">↵</kbd>
-                  Select
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.06]">Esc</kbd>
-                  Close
-                </span>
+                <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.06]">↑↓</kbd> Navigate</span>
+                <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.06]">↵</kbd> Select</span>
+                <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.06]">Esc</kbd> Close</span>
               </div>
-              
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-brand" />
                 <span className="text-xs text-text-tertiary">ShareSync</span>
               </div>
+            </div>
+            
+            {/* Mobile Footer helper */}
+            <div className="md:hidden px-4 py-4 border-t border-white/[0.06] flex items-center justify-center bg-surface-2/30 mb-[env(safe-area-inset-bottom)]">
+              <button onClick={handleClose} className="px-6 py-2 rounded-full bg-surface-3 text-sm font-medium text-text-primary">Cancel</button>
             </div>
           </div>
         </div>
@@ -678,7 +556,6 @@ export function CommandPaletteProvider({ children, projects = [], onAction }) {
   const [recentPages, setRecentPages] = useState([]);
   const location = useLocation();
 
-  // Track recent pages
   useEffect(() => {
     const pageTitle = document.title || location.pathname;
     setRecentPages(prev => {
@@ -690,7 +567,6 @@ export function CommandPaletteProvider({ children, projects = [], onAction }) {
     });
   }, [location.pathname]);
 
-  // Global shortcut to open
   useKeyboardShortcut('cmd+k', () => setIsOpen(true), {
     id: 'open-command-palette',
     description: 'Open command palette',
@@ -698,12 +574,18 @@ export function CommandPaletteProvider({ children, projects = [], onAction }) {
     allowInInput: true,
   });
 
-  // Also support ctrl+k on non-Mac
   useKeyboardShortcut('ctrl+k', () => setIsOpen(true), {
     id: 'open-command-palette-alt',
     hidden: true,
     allowInInput: true,
   });
+
+  // ⭐ PHASE 8.2: Listen for custom event from MobileTabBar
+  useEffect(() => {
+    const handleCustomOpen = () => setIsOpen(true);
+    window.addEventListener('open-command-palette', handleCustomOpen);
+    return () => window.removeEventListener('open-command-palette', handleCustomOpen);
+  }, []);
 
   const context = useMemo(() => ({
     projects,

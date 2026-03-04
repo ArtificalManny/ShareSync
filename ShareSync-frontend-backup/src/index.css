@@ -1,8 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
    SHARESYNC - Main Stylesheet v4.0 "The Gallery Walk" (Adaptive)
+   ⭐ Phase 1: The "Grounded" Canvas (Luminance drop via --gallery-bg)
+   ⭐ Phase 2 UI Overhaul: Typographic Signal-to-Noise
    ═══════════════════════════════════════════════════════════════════════════════
    
    Import order matters! Organized for proper cascade:
+   0. Phase 2 Font Imports (JetBrains Mono & IBM Plex Mono)
    1. Palette (raw color values - FIRST)
    2. Design tokens (semantic variables)
    3. Theme application
@@ -15,6 +18,9 @@
    NO BACKEND CHANGES - Pure CSS
    
    ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ⭐ PHASE 2: Data Integrity Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
 
 /* ─────────────────────────────────────────────────────────────────────────────
    1. MASTER COLOR PALETTE (Must be first!)
@@ -101,14 +107,21 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  /* CHANGED: Allow both light and dark native OS interfaces */
-  color-scheme: light dark;
+  /* CHANGED: Force light mode for "The Gallery Walk" */
+  color-scheme: light;
+}
+
+/* ⭐ Phase 2: The "Authority" Heading Protocol
+   Applies tight tracking and bold weight universally to top-level headers.
+*/
+h1, h2 {
+  letter-spacing: -0.025em;
+  font-weight: 600;
 }
 
 /* Body defaults with momentum support */
 body {
-  /* CHANGED: Switched to bg-secondary so it respects our Theme Provider */
-  background: var(--bg-secondary);
+  background: var(--surface-0);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
@@ -262,28 +275,38 @@ body[data-momentum-fire="true"] .text-glow {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   "THE GALLERY WALK" - THEME ENFORCEMENT (FIXED FOR DARK MODE)
+   "THE GALLERY WALK" - LIGHT MODE ENFORCEMENT
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   This section ensures the app maintains the unified light theme aesthetic.
+   The sidebar and main content should feel like one cohesive "gallery" space.
+   
+   NOTE: Auth pages (Login, etc.) still use their own dark "Grand Entrance" 
+   theme via AuthLayout.jsx - this only affects the main app.
+   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* We replaced the hardcoded #FFFFFF colors with our new semantic tokens */
+/* Override system dark mode preference for main app 
+   ⭐ Phase 1: Deepened --gallery-bg to #F1F5F9 (slate-100) to create a 5% luminance drop
+*/
 :root {
-  --gallery-bg: var(--bg-secondary);
-  --gallery-bg-accent: var(--surface-2);
-  --gallery-text: var(--text-primary);
-  --gallery-text-muted: var(--text-muted);
-  --gallery-border: var(--border-subtle);
+  --gallery-bg: #F1F5F9; 
+  --gallery-bg-accent: #EEF2FF;
+  --gallery-text: #1E293B;
+  --gallery-text-muted: #64748B;
+  --gallery-border: #E2E8F0;
   --gallery-shadow: 0 4px 24px rgba(139, 92, 246, 0.06);
 }
 
-/* Ensure background uses dynamic tokens */
+/* Ensure light backgrounds on key structural elements */
 .app-layout,
 .main-layout {
   background-color: var(--gallery-bg);
 }
 
-/* Sidebar styling respects tokens */
+/* Sidebar "Gallery Wall" styling reinforcement */
 #app-sidebar {
-  background-color: var(--bg-elevated);
+  background-color: #FFFFFF;
   border-right-color: var(--gallery-border);
 }
 
@@ -293,19 +316,19 @@ body[data-momentum-fire="true"] .text-glow {
   border-color: transparent;
 }
 
-/* Ensure cards use dynamic theme */
+/* Ensure cards use light theme */
 .card,
 .bento-card,
 [class*="Card"] {
-  background-color: var(--surface-1);
+  background-color: #FFFFFF;
   border-color: var(--gallery-border);
 }
 
-/* Dynamic input fields */
+/* Light mode input fields */
 input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
-  background-color: var(--bg-primary);
+  background-color: #FFFFFF;
   border-color: var(--gallery-border);
   color: var(--gallery-text);
 }
@@ -317,7 +340,7 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-/* Buttons maintain their gradient colors */
+/* Buttons maintain their gradient colors but on light bg */
 .btn-primary,
 button[type="submit"] {
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
@@ -327,30 +350,29 @@ button[type="submit"] {
 [role="menu"],
 [role="listbox"],
 .dropdown-menu {
-  background-color: var(--bg-elevated);
+  background-color: #FFFFFF;
   border-color: var(--gallery-border);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* Modal overlays */
+/* Modal overlays - lighter backdrop */
 .modal-backdrop,
 [class*="backdrop"] {
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(15, 23, 42, 0.3);
 }
 
 /* Modal content */
 .modal-content,
 [role="dialog"] > div {
-  background-color: var(--bg-elevated);
+  background-color: #FFFFFF;
   border-color: var(--gallery-border);
 }
 
-/* Tooltips */
+/* Tooltips - keep dark for contrast */
 [role="tooltip"],
 .tooltip {
-  background-color: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 1px solid var(--border-subtle);
+  background-color: #1E293B;
+  color: #FFFFFF;
 }
 
 /* Status indicators maintain their semantic colors */
@@ -358,3 +380,88 @@ button[type="submit"] {
 .status-offline { color: #94A3B8; }
 .status-busy { color: #F59E0B; }
 .status-dnd { color: #EF4444; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ⭐ PHASE 3: The "Launch" Sequence (Behavioral Loops)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* 3.1 The "Glossy Aurora" Button */
+.btn-aurora-gloss {
+  position: relative;
+  overflow: hidden;
+  background: var(--palette-gradient-aurora, linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%));
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  border: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+}
+
+/* Glass reflection overlay */
+.btn-aurora-gloss::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* The sweeping shimmer effect */
+.btn-aurora-gloss::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 60%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  transition: none;
+  pointer-events: none;
+}
+
+.btn-aurora-gloss:hover::after {
+  transform: translateX(100%);
+  transition: transform 0.6s ease-in-out;
+}
+
+.btn-aurora-gloss:hover {
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Depress slightly to mimic physical resistance */
+.btn-aurora-gloss:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+/* 3.2 The Dopamine Confirmation (Success State) Pulse */
+@keyframes xp-pulse-violet {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+}
+
+.xp-pulse-violet {
+  animation: xp-pulse-violet 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

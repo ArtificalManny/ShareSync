@@ -1,8 +1,11 @@
 // src/components/social/LiveActivityFeed.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
+// ⭐ PHASE 8.1: Performance Optimization - List Virtualization using @tanstack/react-virtual
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Activity,
   Rocket,
@@ -224,9 +227,7 @@ const LiveActivitySummary = ({ activities }) => {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Normalize injected activity (from useHomeRealtime) -> ActivityFeedItem shape
-// Expected injected item: { id, type, actorName, projectName, createdAt, raw }
-// Output:
-// { id, type, user: { name }, timestamp, target, description, reactions, comments }
+// ═══════════════════════════════════════════════════════════════════════════════
 function normalizeInjected(items) {
   const arr = Array.isArray(items) ? items : [];
   return arr.map((a, idx) => {
@@ -289,7 +290,7 @@ export default function LiveActivityFeed({
   injectedItems = null, // ✅ real-time injection (array)
 
   // Options
-  maxItems = 20,
+  maxItems = 50, // Increased max items to showcase virtualization efficiency
   showFilters = true,
   showSummary = true,
   showHeader = true,
@@ -325,25 +326,30 @@ export default function LiveActivityFeed({
     return normalizeInjected(injectedItems);
   }, [usingInjected, injectedItems]);
 
-  // Normalize initialActivities too (in case parent passes already-normalized, this is safe)
+  // Normalize initialActivities too
   const baseNormalized = useMemo(() => {
-    // If initialActivities already match ActivityFeedItem shape, keep them.
-    // We detect by presence of `user` + `timestamp`.
     const arr = Array.isArray(initialActivities) ? initialActivities : [];
     const already = arr.every((a) => a && a.user && a.timestamp);
     if (already) return arr;
-    // If someone passes "injected" shape as initial, normalize it:
     return normalizeInjected(arr);
   }, [initialActivities]);
 
   // Build displayed list
   const displayedActivities = useMemo(() => {
     if (usingInjected) {
-      // Merge initial base + injected, dedupe/sort
       return dedupeAndSort([...baseNormalized, ...injectedNormalized], maxItems);
     }
     return dedupeAndSort(activities, maxItems);
   }, [usingInjected, baseNormalized, injectedNormalized, activities, maxItems]);
+
+  // Filter
+  const filteredActivities = useMemo(() => {
+    if (filter === 'all') return displayedActivities;
+    if (filter === 'achievement') {
+      return displayedActivities.filter((a) => ['achievement', 'level_up', 'streak'].includes(a.type));
+    }
+    return displayedActivities.filter((a) => a.type === filter);
+  }, [displayedActivities, filter]);
 
   // Initial load (mock fallback only)
   useEffect(() => {
@@ -355,7 +361,7 @@ export default function LiveActivityFeed({
     if (initialActivities.length === 0) {
       setLoading(true);
       setTimeout(() => {
-        const mockActivities = Array.from({ length: 10 }, (_, i) =>
+        const mockActivities = Array.from({ length: 15 }, (_, i) =>
           generateMockActivity(`initial-${i}`)
         ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
@@ -400,7 +406,6 @@ export default function LiveActivityFeed({
       return;
     }
 
-    // If top item changed AND user is scrolled down, increment badge
     if (topId && topId !== prevTop) {
       if (feedRef.current && feedRef.current.scrollTop > 50) {
         setNewCount((prev) => prev + 1);
@@ -408,15 +413,6 @@ export default function LiveActivityFeed({
       prevTopIdRef.current = topId;
     }
   }, [usingInjected, displayedActivities]);
-
-  // Filter
-  const filteredActivities = useMemo(() => {
-    if (filter === 'all') return displayedActivities;
-    if (filter === 'achievement') {
-      return displayedActivities.filter((a) => ['achievement', 'level_up', 'streak'].includes(a.type));
-    }
-    return displayedActivities.filter((a) => a.type === filter);
-  }, [displayedActivities, filter]);
 
   const handleScrollToTop = () => {
     feedRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -428,6 +424,14 @@ export default function LiveActivityFeed({
       setNewCount(0);
     }
   };
+
+  // Virtualizer Setup for main feed
+  const rowVirtualizer = useVirtualizer({
+    count: loading ? 5 : filteredActivities.length,
+    getScrollElement: () => feedRef.current,
+    estimateSize: () => 64, // Estimate ~64px height per item
+    overscan: 5,
+  });
 
   // Sidebar variant
   if (variant === 'sidebar') {
@@ -536,27 +540,69 @@ export default function LiveActivityFeed({
           {newCount > 0 && <NewActivityIndicator count={newCount} onClick={handleScrollToTop} />}
         </AnimatePresence>
 
-        <div className="p-2 space-y-1">
-          {loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <ActivityFeedItemSkeleton key={i} variant={variant === 'compact' ? 'compact' : 'default'} />
-            ))
-          ) : filteredActivities.length > 0 ? (
-            filteredActivities.map((activity, index) => (
-              <ActivityFeedItem
-                key={activity.id}
-                activity={activity}
-                variant={variant === 'compact' ? 'compact' : 'default'}
-                isNew={index === 0 && newCount > 0}
-                animate={index < 5}
-                onClick={() => onActivityClick?.(activity)}
-              />
-            ))
+        <div className="p-2">
+          {filteredActivities.length === 0 && !loading ? (
+             <div className="text-center py-8">
+               <Sparkles className="w-8 h-8 text-text-tertiary mx-auto mb-3" />
+               <p className="text-sm text-text-secondary">No activity yet</p>
+               <p className="text-xs text-text-tertiary mt-1">Be the first to ship something!</p>
+             </div>
           ) : (
-            <div className="text-center py-8">
-              <Sparkles className="w-8 h-8 text-text-tertiary mx-auto mb-3" />
-              <p className="text-sm text-text-secondary">No activity yet</p>
-              <p className="text-xs text-text-tertiary mt-1">Be the first to ship something!</p>
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                // Determine if loading skeletal states
+                if (loading) {
+                  return (
+                    <div
+                      key={virtualItem.key}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualItem.index}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualItem.start}px)`,
+                        paddingBottom: '4px' // Replaces space-y-1 margin
+                      }}
+                    >
+                      <ActivityFeedItemSkeleton variant={variant === 'compact' ? 'compact' : 'default'} />
+                    </div>
+                  );
+                }
+
+                // Normal items
+                const activity = filteredActivities[virtualItem.index];
+                return (
+                  <div
+                    key={virtualItem.key}
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualItem.index}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                      paddingBottom: '4px' // Replaces space-y-1 margin
+                    }}
+                  >
+                    <ActivityFeedItem
+                      activity={activity}
+                      variant={variant === 'compact' ? 'compact' : 'default'}
+                      isNew={virtualItem.index === 0 && newCount > 0}
+                      animate={virtualItem.index < 5}
+                      onClick={() => onActivityClick?.(activity)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

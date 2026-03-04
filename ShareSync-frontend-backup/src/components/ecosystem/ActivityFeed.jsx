@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   Rocket, CheckCircle, FileText, DollarSign, Users, 
   MessageCircle, TrendingUp, Clock, Sparkles
@@ -14,18 +15,43 @@ const activityColors = {
 
 const iconMap = { Rocket, CheckCircle, TrendingUp, MessageCircle, DollarSign, Sparkles, Users, FileText };
 
+/* ─────────────────────────────────────────────────────────────────────────
+   ANIMATION VARIANTS (PHASE 3)
+───────────────────────────────────────────────────────────────────────── */
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 12 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } 
+  }
+};
+
 export default function ActivityFeed({ activities = [] }) {
   if (!activities || activities.length === 0) return null;
 
   return (
-    <div className="space-y-5">
+    <motion.div 
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-5"
+    >
       {activities.map((activity) => {
         
         if (activity.type === 'interstitial') {
           return (
-            <div key={activity.id} className="py-2 animate-in fade-in zoom-in-95 duration-500">
+            <motion.div variants={item} key={activity.id} className="py-2">
               {activity.component}
-            </div>
+            </motion.div>
           );
         }
 
@@ -33,9 +59,10 @@ export default function ActivityFeed({ activities = [] }) {
         const colorClass = activityColors[activity.color] || activityColors.purple;
         
         return (
-          <div
+          <motion.div
+            variants={item}
             key={activity.id}
-            className="group flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-white/[0.12] shadow-sm hover:shadow-md hover:shadow-violet-100/50 dark:hover:shadow-none transition-all duration-300 cursor-pointer hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-4"
+            className="group flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-white/[0.12] shadow-sm hover:shadow-md hover:shadow-violet-100/50 dark:hover:shadow-none transition-all duration-300 cursor-pointer hover:-translate-y-0.5"
           >
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
               <Icon className="w-6 h-6" />
@@ -65,9 +92,9 @@ export default function ActivityFeed({ activities = [] }) {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

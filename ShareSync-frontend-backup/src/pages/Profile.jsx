@@ -2,7 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC PROFILE PAGE v4.1 - "The Gallery Walk" Light Theme
 // Phase 7: Added Profile Edit Modal
-// ⭐ Phase 1 Fix: Added error state with retry button
+// ⭐ Phase 2: Typographic Signal-to-Noise (Tracking tightest & Mono tabular nums)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Personal Gallery"
@@ -149,7 +149,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
       <div className="w-full max-w-lg bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Edit Profile</h2>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white tracking-tightest">Edit Profile</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
@@ -442,7 +442,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg shadow-md"
           style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)' }}
         >
-          <span className="text-xs font-medium text-white">Rank {levelForXp(user?.xp)}</span>
+          <span className="text-xs font-medium text-white font-mono tabular-nums">Rank {levelForXp(user?.xp)}</span>
         </div>
       </div>
       
@@ -452,7 +452,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       {isEditing && (
         <div className="fixed inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
           <div className="w-full max-w-sm p-6 bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
-            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-6 text-center">Update Photo?</h3>
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-6 text-center tracking-tightest">Update Photo?</h3>
             <div 
               className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 p-0.5 shadow-lg"
               style={{ background: auroraGradient }}
@@ -495,7 +495,7 @@ const StatCard = ({ value, label, color = "text-slate-800 dark:text-zinc-100", g
     }}
   >
     <div 
-      className={`text-3xl font-semibold ${gradient ? '' : color}`}
+      className={`text-3xl font-semibold font-mono tabular-nums ${gradient ? '' : color}`}
       style={gradient ? {
         background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
         WebkitBackgroundClip: 'text',
@@ -657,11 +657,6 @@ export default function Profile() {
     );
   }
 
-  {/* ═══════════════════════════════════════════════════════════════════════
-      ⭐ PHASE 1 FIX: Error state with branded retry UI
-      Shows when getMe() fails instead of falling back to "Anonymous".
-      Matches the app's visual style with violet accent.
-  ═══════════════════════════════════════════════════════════════════════ */}
   if (error) {
     return (
       <div 
@@ -672,7 +667,7 @@ export default function Profile() {
           <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-6">
             <span className="text-3xl">⚠️</span>
           </div>
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white mb-2 tracking-tightest">
             Could not load profile
           </h2>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6 max-w-xs">
@@ -712,13 +707,13 @@ export default function Profile() {
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
         
         <div className="text-center mt-8">
-          <h1 className="text-4xl font-semibold text-slate-800 dark:text-white mb-3">
+          <h1 className="text-4xl font-semibold text-slate-800 dark:text-white mb-3 tracking-tightest">
             {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
           </h1>
           
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <span className="text-sm text-slate-500 dark:text-zinc-400">
-              ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
+              ID: <span className="font-mono tabular-nums">{user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}</span>
             </span>
             
             {/* Core Verified Badge - Teal (#2DD4BF) */}
@@ -778,7 +773,7 @@ export default function Profile() {
               <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                  <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
+                  <span className="text-sm font-medium text-teal-700 dark:text-teal-400 font-mono tabular-nums">
                     +{skillProfile.overallGrowth}% growth this quarter
                   </span>
                 </div>
@@ -796,7 +791,7 @@ export default function Profile() {
               <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Operational Trust</h3>
             </div>
             <div className="flex items-end gap-2 mb-4">
-              <span className="text-4xl font-semibold text-slate-800 dark:text-white">{reliability}%</span>
+              <span className="text-4xl font-semibold text-slate-800 dark:text-white font-mono tabular-nums">{reliability}%</span>
               <span className="text-xs text-teal-600 dark:text-teal-400 font-medium mb-1">
                 {reliability >= 70 ? "Excellent" : reliability >= 40 ? "Good" : "Building"}
               </span>
@@ -909,9 +904,9 @@ export default function Profile() {
                     <div key={metric} className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-slate-700 dark:text-zinc-300 capitalize">{metric}</p>
-                        <p className="text-xs text-slate-400 dark:text-zinc-500">{latest}/100</p>
+                        <p className="text-xs text-slate-400 dark:text-zinc-500 font-mono tabular-nums">{latest}/100</p>
                       </div>
-                      <span className={`text-sm font-medium ${isPositive ? "text-teal-600 dark:text-teal-400" : "text-red-500 dark:text-red-400"}`}>
+                      <span className={`text-sm font-medium font-mono tabular-nums ${isPositive ? "text-teal-600 dark:text-teal-400" : "text-red-500 dark:text-red-400"}`}>
                         {isPositive ? "+" : ""}{growth}%
                       </span>
                     </div>

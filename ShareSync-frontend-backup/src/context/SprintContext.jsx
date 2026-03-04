@@ -32,6 +32,7 @@ const defaultState = {
   startTime: null, // ms epoch
   endTime: null,   // ms epoch
   remainingMs: defaultDurationMin * 60 * 1000,
+  isFocusMode: false, // ⭐ PHASE 6.2: Focus Mode State
 };
 
 const SprintContext = createContext({
@@ -43,6 +44,7 @@ const SprintContext = createContext({
   reset: (_opts) => {},
   setIntent: (_t) => {},
   setDuration: (_m) => {},
+  toggleFocusMode: (_val) => {}, // ⭐ PHASE 6.2
   // event subscription
   addOnComplete: (_cb) => () => {},
   // helpers
@@ -81,9 +83,10 @@ const loadFromStorage = () => {
           remainingMs: 0,
           startTime: parsed.startTime ?? null,
           endTime: parsed.endTime ?? null,
+          isFocusMode: false, // Force false on reload to prevent getting trapped
         };
       }
-      return { ...parsed, remainingMs: left };
+      return { ...parsed, remainingMs: left, isFocusMode: false };
     }
 
     // If paused or idle, ensure remaining matches duration bounds
@@ -93,12 +96,12 @@ const loadFromStorage = () => {
         0,
         parsed.durationMin * 60 * 1000
       );
-      return { ...parsed, remainingMs: expected };
+      return { ...parsed, remainingMs: expected, isFocusMode: false };
     }
 
     // Completed state: keep remaining at 0
     if (parsed.status === "completed") {
-      return { ...parsed, remainingMs: 0 };
+      return { ...parsed, remainingMs: 0, isFocusMode: false };
     }
 
     return null;
@@ -279,6 +282,37 @@ export const SprintProvider = ({ children }) => {
     });
   }, []);
 
+  // ⭐ PHASE 6.2: Toggle Focus Mode
+  const toggleFocusMode = useCallback((val) => {
+    setState((prev) => ({
+      ...prev,
+      isFocusMode: typeof val === "boolean" ? val : !prev.isFocusMode,
+    }));
+  }, []);
+
+  // ⭐ PHASE 6.2: Global 'F' Shortcut Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore if typing inside an input/textarea or composing characters
+      if (
+        e.target.tagName === "INPUT" ||
+        e.target.tagName === "TEXTAREA" ||
+        e.isComposing
+      ) {
+        return;
+      }
+
+      // Check for standalone 'f' or 'F' keypress
+      if (e.key.toLowerCase() === "f" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setState((prev) => ({ ...prev, isFocusMode: !prev.isFocusMode }));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Restore running tick on mount (e.g., after refresh)
   useEffect(() => {
     if (state.status === "running") startTick();
@@ -375,7 +409,8 @@ export const SprintProvider = ({ children }) => {
     reset,
     setIntent,
     setDuration,
-    addOnComplete, // ⬅️ exposed
+    toggleFocusMode, // ⬅️ exposed
+    addOnComplete,
     formatRemaining: () => formatMMSS(state.remainingMs),
     isActive: state.status === "running" || state.status === "paused",
   };

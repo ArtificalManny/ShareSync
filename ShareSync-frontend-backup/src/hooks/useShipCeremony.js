@@ -1,14 +1,14 @@
 // src/hooks/useShipCeremony.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHIP CEREMONY - Orchestration Hook
+// ⭐ Phase 4: Ruthless Efficiency (Zero-delay execution flow)
 // ═══════════════════════════════════════════════════════════════════════════════
 // Manages the entire ship ceremony flow:
-// 1. Button state transformation
-// 2. Card animation trigger
-// 3. Sound effect
-// 4. API call
-// 5. Socket broadcast
-// 6. Success/error handling
+// 1. Button state transformation (Immediate)
+// 2. API call (Concurrent)
+// 3. Sound effect (Upon completion)
+// 4. Socket broadcast
+// 5. Success/error handling
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useCallback } from 'react';
@@ -47,15 +47,9 @@ export default function useShipCeremony({
     initShipSound();
     
     try {
-      // Phase 1: Preparing
-      setPhase(PHASES.PREPARING);
-      setShippingItemId(itemId);
-      
-      // Small delay for button transformation to be visible
-      await new Promise(r => setTimeout(r, 150));
-      
-      // Phase 2: Shipping (API call)
+      // Phase 4 Audit: Skip 'PREPARING' artificial delay. Go straight to shipping UI while API executes.
       setPhase(PHASES.SHIPPING);
+      setShippingItemId(itemId);
       
       // Call the actual ship function
       if (onShip) {
@@ -84,8 +78,8 @@ export default function useShipCeremony({
         duration: 3000,
       });
       
-      // Wait for card animation to complete before cleanup
-      await new Promise(r => setTimeout(r, 500));
+      // Wait for card slide-off animation to complete before cleanup
+      await new Promise(r => setTimeout(r, 400));
       
       // Notify parent to remove the item
       if (onComplete) {

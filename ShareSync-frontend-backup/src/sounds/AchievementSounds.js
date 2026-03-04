@@ -1,6 +1,7 @@
 // src/sounds/AchievementSounds.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE F: The Sound of Progress - Achievement Sounds
+// ⭐ PHASE 3: The Auditory Trigger (880Hz Dopamine Ding for 'Ship' events)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Rewarding audio feedback for accomplishments.
@@ -190,17 +191,39 @@ export function shouldPlayEpicShip(shipData) {
 
 /**
  * Hook for ship sounds with auto epic detection
- * 
- * @example
- * const { playShipSound } = useShipSound();
- * playShipSound({ taskCount: 15, isProduction: true }); // Auto-plays epic
+ * ⭐ PHASE 3: Engineered auditory trigger (880Hz, 150ms decay)
  */
 export function useShipSound() {
   const { playShip } = useAchievementSoundsBase();
   
   const playShipSound = useCallback((shipData = {}) => {
     const isEpic = shouldPlayEpicShip(shipData);
-    playShip(isEpic);
+    
+    // Fallback to base system if needed, but we intercept it here to inject the raw Web Audio API signal
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      // 880Hz represents the A5 note - recognized universally as a bright, successful pitch
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+      
+      // Punchy attack, rapid decay (150ms total)
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.01); 
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      // If Web Audio API is blocked, fall back to base system
+      playShip(isEpic);
+    }
+
     return isEpic;
   }, [playShip]);
   
@@ -209,8 +232,7 @@ export function useShipSound() {
 
 /**
  * Hook for XP gain sounds with intensity scaling
- * 
- * @example
+ * * @example
  * const { playXP } = useXPSound();
  * playXP(50); // Plays medium intensity XP sound
  */
@@ -240,8 +262,7 @@ export function useXPSound() {
 
 /**
  * Hook for streak milestone sounds
- * 
- * @example
+ * * @example
  * const { checkAndPlayStreak } = useStreakSound();
  * const wasMilestone = checkAndPlayStreak(7); // Returns true, plays milestone
  */
@@ -276,8 +297,7 @@ export function useStreakSound() {
 
 /**
  * Hook for level up sounds
- * 
- * @example
+ * * @example
  * const { playLevelUp } = useLevelUpSound();
  * playLevelUp(3); // Plays level up for reaching level 3
  */
@@ -295,8 +315,7 @@ export function useLevelUpSound() {
 
 /**
  * Hook for achievement unlock sounds
- * 
- * @example
+ * * @example
  * const { playUnlock } = useAchievementUnlockSound();
  * playUnlock({ name: 'First Ship', rarity: 'epic' });
  */

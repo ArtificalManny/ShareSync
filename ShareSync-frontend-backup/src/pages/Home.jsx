@@ -1,18 +1,20 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC HOME PAGE v4.0 - "The Gallery Walk" Light Theme
+// ⭐ Phase 2: Typographic Signal-to-Noise (Tracking tightest & Mono tabular nums)
+// ⭐ Phase 4: Ruthless Efficiency (Tesla Visual Spec applied to Cockpit)
 // ═══════════════════════════════════════════════════════════════════════════════
 // 
 // THEME: "The Light Gallery" - Mission Control
 // 
 // COLOR MAP:
 // - Page Background: #F8FAFC → #EEF2FF gradient (via CSS)
-// - Section Cards: #FFFFFF with violet-tinted shadows
+// - Section Cards: #FFFFFF with precise ring borders
 // - Headings: #1E293B (slate-800)
 // - Body Text: #475569 (slate-600)
 // - Muted Text: #94A3B8 (slate-400)
-// - Card Border: #E2E8F0 (slate-200)
-// - Card Shadow: violet-tinted (rgba(139, 92, 246, 0.06))
+// - Card Border: ring-1 ring-slate-200
+// - Card Shadow: shadow-[0_0_15px_rgba(139,92,246,0.1)]
 // - Progress Bars: Ocean Gradient (blue → cyan → teal)
 // - Accent Bar: Aurora Gradient
 //
@@ -53,9 +55,9 @@ import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
 
 /* ───────────────────────────────────────────────────────────────────────────
-   STAT CARD - Light theme with violet-tinted shadows
+   STAT CARD - Tesla Visual Spec (Machined Readout)
 ─────────────────────────────────────────────────────────────────────────── */
-const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400", description }) => {
+const StatCard = ({ label, value, description }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -65,19 +67,14 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
      className={`
         card-surface
         relative p-5 rounded-xl
-        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
-        hover:border-violet-200 dark:hover:border-violet-500/30
-        shadow-sm hover:shadow-lg
+        bg-white dark:bg-[#1f1f23] ring-1 ring-slate-200 dark:ring-white/10
+        hover:ring-violet-200 dark:hover:ring-violet-500/30
+        shadow-[0_0_15px_rgba(139,92,246,0.1)]
         transition-all duration-200 cursor-default
         momentum-responsive-card momentum-card
         ${isHovered ? "transform -translate-y-0.5" : ""}
-        ${isFireMode ? "border-orange-200 dark:border-orange-500/30 hover:border-orange-300" : ""}
+        ${isFireMode ? "ring-orange-200 dark:ring-orange-500/30 hover:ring-orange-300" : ""}
       `}
-      style={{
-        boxShadow: isHovered 
-          ? '0 8px 32px rgba(139, 92, 246, 0.12)' 
-          : '0 4px 24px rgba(139, 92, 246, 0.06)'
-      }}
       data-momentum={glowLevel}
       onMouseEnter={() => {
         setShowTooltip(true);
@@ -90,8 +87,8 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
     >
       <div
         className={`
-          text-2xl font-semibold transition-all duration-200
-          ${color}
+          text-2xl font-semibold font-mono tabular-nums transition-all duration-200
+          text-slate-900 dark:text-white
           ${isHovered ? "scale-105" : "scale-100"}
         `}
       >
@@ -103,7 +100,7 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
         <div
           className="
             absolute bottom-full mb-2 left-0 w-56
-            p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg
+            p-3 bg-white dark:bg-zinc-800 ring-1 ring-slate-200 dark:ring-white/10 rounded-lg
             shadow-xl z-50
             animate-in fade-in slide-in-from-bottom-2 duration-200
           "
@@ -139,7 +136,7 @@ const SectionHeader = ({
     <div className="flex justify-between items-center mb-6">
       <div className="flex items-center gap-2">
         <Icon className={`w-4 h-4 ${isFireMode ? "text-orange-500" : iconColor}`} />
-        <h2 className="text-sm font-medium text-slate-600 dark:text-zinc-300">{title}</h2>
+        <h2 className="text-sm font-medium text-slate-600 dark:text-zinc-300 tracking-tightest">{title}</h2>
         {showMomentum && isFireMode && (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 animate-pulse">
             🔥
@@ -172,9 +169,9 @@ const MomentumStatusBanner = () => {
 
   // Light theme badge colors per Part 4 color map
   const config = {
-    3: { bg: "bg-violet-50 dark:bg-violet-500/10", border: "border-violet-200 dark:border-violet-500/20", icon: TrendingUp, color: "text-violet-700 dark:text-violet-400" },
-    4: { bg: "bg-blue-50 dark:bg-blue-500/10", border: "border-blue-200 dark:border-blue-500/20", icon: Rocket, color: "text-blue-700 dark:text-blue-400" },
-    5: { bg: "bg-orange-50 dark:bg-orange-500/10", border: "border-orange-200 dark:border-orange-500/20", icon: Flame, color: "text-orange-700 dark:text-orange-400" },
+    3: { bg: "bg-violet-50 dark:bg-violet-500/10", border: "ring-1 ring-violet-200 dark:ring-violet-500/20", icon: TrendingUp, color: "text-violet-700 dark:text-violet-400" },
+    4: { bg: "bg-blue-50 dark:bg-blue-500/10", border: "ring-1 ring-blue-200 dark:ring-blue-500/20", icon: Rocket, color: "text-blue-700 dark:text-blue-400" },
+    5: { bg: "bg-orange-50 dark:bg-orange-500/10", border: "ring-1 ring-orange-200 dark:ring-orange-500/20", icon: Flame, color: "text-orange-700 dark:text-orange-400" },
   };
 
   const currentConfig = config[glowLevel] || config[3];
@@ -184,7 +181,7 @@ const MomentumStatusBanner = () => {
     <div
       className={`
         mb-6 px-4 py-3 rounded-xl
-        ${currentConfig.bg} border ${currentConfig.border}
+        ${currentConfig.bg} ${currentConfig.border}
         flex items-center justify-between
         ${isFireMode ? "animate-pulse" : ""}
       `}
@@ -198,7 +195,7 @@ const MomentumStatusBanner = () => {
           <div className="text-xs text-slate-500 dark:text-zinc-400">{message}</div>
         </div>
       </div>
-      <div className={`text-2xl font-bold tabular-nums ${currentConfig.color}`}>L{glowLevel}</div>
+      <div className={`text-2xl font-bold font-mono tabular-nums ${currentConfig.color}`}>L{glowLevel}</div>
     </div>
   );
 };
@@ -337,12 +334,12 @@ export default function Home() {
     [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll]
   );
 
-  // Section card classes with violet-tinted shadows
+  // Section card classes with Tesla spec (ring + glow)
   const sectionCardClasses = useMemo(() => {
-    const base = "p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 momentum-responsive-card momentum-card";
-    const shadow = "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
-    if (isFireMode) return `${base} ${shadow} border-orange-200 dark:border-orange-500/30`;
-    if (glowLevel >= 4) return `${base} ${shadow} border-violet-200 dark:border-violet-500/30`;
+    const base = "p-6 rounded-xl bg-white dark:bg-[#1f1f23] ring-1 ring-slate-200 dark:ring-white/10 momentum-responsive-card momentum-card";
+    const shadow = "shadow-[0_0_15px_rgba(139,92,246,0.1)]";
+    if (isFireMode) return `${base} ${shadow} ring-orange-200 dark:ring-orange-500/30`;
+    if (glowLevel >= 4) return `${base} ${shadow} ring-violet-200 dark:ring-violet-500/30`;
     return `${base} ${shadow}`;
   }, [glowLevel, isFireMode]);
 
@@ -355,10 +352,10 @@ export default function Home() {
         className={`
           flex items-center gap-1.5
           px-2 py-1 rounded-full
-          border text-[10px] font-medium
+          ring-1 text-[10px] font-medium
           ${live 
-            ? "bg-teal-50 dark:bg-teal-500/10 border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400" 
-            : "bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400"
+            ? "bg-teal-50 dark:bg-teal-500/10 ring-teal-200 dark:ring-teal-500/20 text-teal-700 dark:text-teal-400" 
+            : "bg-slate-100 dark:bg-zinc-800 ring-slate-200 dark:ring-white/10 text-slate-500 dark:text-zinc-400"
           }
         `}
         title={live ? "Connected to live updates" : "Offline (showing last known data)"}
@@ -386,13 +383,13 @@ export default function Home() {
             </span>
 
             {focusEngine.hasUrgentMoves && (
-              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200 dark:border-amber-500/20">
+              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-medium ring-1 ring-amber-200 dark:ring-amber-500/20">
                 ⚠️ Urgent moves pending
               </span>
             )}
           </div>
 
-          <h1 className="text-4xl font-semibold text-slate-800 dark:text-zinc-100">
+          <h1 className="text-4xl font-semibold text-slate-800 dark:text-zinc-100 tracking-tightest">
             Mission{" "}
             <span className={`${isFireMode ? "text-orange-500" : "text-slate-400 dark:text-zinc-500"} transition-colors duration-500`}>
               Control
@@ -405,7 +402,7 @@ export default function Home() {
             <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Momentum</p>
             <div
               className={`
-                text-xl font-semibold
+                text-xl font-semibold font-mono tabular-nums
                 ${isFireMode ? "text-orange-500" : glowLevel >= 3 ? "text-violet-600 dark:text-violet-400" : "text-slate-800 dark:text-zinc-200"}
               `}
             >
@@ -418,7 +415,7 @@ export default function Home() {
 
           <div className="text-right">
             <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Global Rank</p>
-            <p className="text-xl font-semibold text-slate-800 dark:text-zinc-200">Top 2%</p>
+            <p className="text-xl font-semibold text-slate-800 dark:text-zinc-200 font-mono tabular-nums">Top 2%</p>
           </div>
         </div>
       </header>
@@ -606,25 +603,21 @@ export default function Home() {
               <StatCard
                 label="Ships"
                 value={summary.ships}
-                color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
                 description="Total validated deployments in the last 7 days (derived from real activity)."
               />
               <StatCard
                 label="Streak"
                 value={`${summary.streakDays}D`}
-                color="text-amber-600 dark:text-amber-500"
                 description="Current streak (from backend summary if available; otherwise derived from activity)."
               />
               <StatCard
                 label="Focus"
                 value={`${summary.focus}%`}
-                color="text-teal-600 dark:text-teal-400"
                 description="Focus estimate (backend if available; otherwise derived from activity types)."
               />
               <StatCard
                 label="Efficiency"
                 value={`${summary.efficiency >= 0 ? "+" : ""}${summary.efficiency}%`}
-                color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
                 description="Change vs previous period (derived until backend becomes authoritative)."
               />
             </div>
@@ -655,7 +648,7 @@ export default function Home() {
         `}
       >
         <div className="flex justify-between items-center mb-8">
-          <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">
+          <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300 tracking-tightest">
             {panelContent === "balance" ? "Team Balance" : "Mission Telemetry"}
           </h3>
           <button 

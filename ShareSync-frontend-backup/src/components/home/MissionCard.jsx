@@ -2,6 +2,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM v3.0 - PHASE 7: Visual Cohesion + Ship Ceremony
 // FIXED: Mission Card Icon Hover State (Bright pop instead of muddy grey)
+// ⭐ PHASE 3: Added 'btn-aurora-gloss' materiality to the primary Ship button
+// ⭐ PHASE 4: Ruthless Efficiency (Tesla Spec: ring borders, high-contrast text)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from "react";
@@ -53,8 +55,10 @@ export default function MissionCard({ project, onClick, onShipped }) {
         className={`
           group relative p-4 rounded-xl cursor-pointer
           card-action ${getStatusColor(project)}
-          bg-surface-1 border border-white/[0.06]
-          hover:bg-surface-2 hover:border-white/[0.1]
+          bg-white dark:bg-[#1f1f23] 
+          ring-1 ring-slate-200 dark:ring-white/10
+          hover:ring-violet-200 dark:hover:ring-violet-500/30
+          shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.1)]
           transition-all duration-200
         `}
       >
@@ -67,10 +71,10 @@ export default function MissionCard({ project, onClick, onShipped }) {
                 transition-all duration-300
                 ${
                   isThisShipped
-                    ? "bg-success/10 text-success"
+                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
                     : isThisShipping
-                    ? "bg-brand/20 text-brand"
-                    : "bg-surface-2 group-hover:bg-white dark:group-hover:bg-slate-800 group-hover:shadow-md group-hover:scale-110 group-hover:text-blue-500 text-text-secondary"
+                    ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400"
+                    : "bg-slate-50 dark:bg-zinc-800 group-hover:bg-white dark:group-hover:bg-zinc-700 group-hover:shadow-md group-hover:scale-110 group-hover:text-blue-500 text-slate-500"
                 }
               `}
             >
@@ -86,11 +90,11 @@ export default function MissionCard({ project, onClick, onShipped }) {
             <div className="min-w-0">
               <h4
                 className={`
-                  text-sm font-medium truncate transition-colors
+                  text-sm font-medium truncate transition-colors tracking-tightest
                   ${
                     isThisShipped
-                      ? "text-text-tertiary line-through"
-                      : "text-text-primary group-hover:text-brand"
+                      ? "text-slate-400 dark:text-zinc-500 line-through"
+                      : "text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400"
                   }
                 `}
               >
@@ -102,7 +106,7 @@ export default function MissionCard({ project, onClick, onShipped }) {
                   className="ml-2 align-middle"
                 />
               </h4>
-              <div className="flex items-center gap-1.5 mt-0.5 text-xs text-text-tertiary">
+              <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
                 <Clock className="w-3 h-3" />
                 <span>{project.eta}</span>
                 <span className="opacity-50">·</span>
@@ -114,7 +118,7 @@ export default function MissionCard({ project, onClick, onShipped }) {
           {/* ZONE 2 */}
           <div className="hidden sm:flex items-center gap-3 w-32">
             <div className="flex-1">
-              <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden ring-1 ring-inset ring-slate-200 dark:ring-white/5">
                 <div
                   className={`
                     h-full rounded-full
@@ -127,8 +131,8 @@ export default function MissionCard({ project, onClick, onShipped }) {
             </div>
             <span
               className={`
-                text-xs font-medium w-8 text-right
-                ${progressValue >= 100 ? "text-success" : "text-text-secondary"}
+                text-xs font-medium font-mono tabular-nums w-8 text-right
+                ${progressValue >= 100 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-zinc-400"}
               `}
             >
               {progressValue}%
@@ -137,10 +141,11 @@ export default function MissionCard({ project, onClick, onShipped }) {
 
           {/* ZONE 3 */}
           <div className="flex items-center gap-2 shrink-0">
-            <ShipButton onClick={handleShip} phase={currentPhase} size="sm" />
+            {/* Phase 3 & 4: The primary ship action, elevated to a high-value object with zero friction */}
+            <ShipButton onClick={handleShip} phase={currentPhase} size="sm" className="btn-aurora-gloss" />
             <ChevronRight
               className="
-                w-4 h-4 text-text-tertiary
+                w-4 h-4 text-slate-400 dark:text-zinc-500
                 opacity-0 group-hover:opacity-100
                 transition-opacity duration-200
               "

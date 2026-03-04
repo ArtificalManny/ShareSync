@@ -8,6 +8,7 @@
 // ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
 // ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
 // ⭐ THEME: Updated to Gallery Walk Light Theme
+// ⭐ ADD: Announcements tab integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -53,6 +54,7 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
+  Megaphone,
 } from "lucide-react";
 
 // Hooks
@@ -89,10 +91,10 @@ import StackPanel from "../features/stack/StackPanel";
 import FlowBoard from "../features/flow/FlowBoard";
 import RoadmapPanel from "../components/roadmap/RoadmapPanel";
 import RhythmView from "../components/views/RhythmView";
-// ✅ FIXED IMPORT: Now pointing to our newly built live component
 import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
+import Announcements from "../components/project/Announcements";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -109,6 +111,7 @@ const PROJECT_VIEWS = [
   { id: "rhythm", label: "Rhythm", icon: Calendar, description: "Schedule & tempo" },
   { id: "insights", label: "Insights", icon: BarChart3, description: "AI analytics" },
   { id: "suggestions", label: "Suggestions", icon: Sparkles, description: "AI next moves" },
+  { id: "announcements", label: "Announcements", icon: Megaphone, description: "Project broadcasts" },
   { id: "threads", label: "Threads", icon: MessageCircle, badge: 3, description: "Conversations" },
   { id: "vault", label: "Vault", icon: Archive, description: "Files & assets" },
 ];
@@ -821,6 +824,13 @@ export default function ProjectHome() {
 
         case "suggestions":
           return <SuggestionsPanel projectId={id} project={project} />;
+          
+        case "announcements":
+          return (
+            <div className={pageWrap}>
+              <Announcements projectId={id} announcements={announcements} />
+            </div>
+          );
 
         case "threads":
           return (

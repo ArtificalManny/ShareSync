@@ -431,3 +431,19 @@
 .fade-swap > .swap-b[aria-hidden="true"] {
   opacity: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PHASE 3: LOADING SKELETONS (TASK 3.5)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(124,58,237,0.04) 25%, rgba(124,58,237,0.08) 50%, rgba(124,58,237,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

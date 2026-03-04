@@ -4,6 +4,7 @@
 // Opened by pressing ? key. Shows all shortcuts in a categorized grid.
 // Reads from config/shortcuts.js (single source of truth).
 // Uses the ShortcutProvider context for open/close state.
+// ⭐ PHASE 7.4: Premium Glass Morphism Upgrade
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useCallback, useMemo } from 'react';
@@ -30,24 +31,24 @@ function KeyBadge({ shortcutKey }) {
           inline-flex items-center justify-center
           min-w-[24px] h-6 px-1.5
           rounded-md
-          bg-slate-100 dark:bg-white/10
-          border border-slate-200 dark:border-white/15
+          bg-white/80 dark:bg-white/10 backdrop-blur-md
+          border border-slate-200/50 dark:border-white/15
           text-[11px] font-semibold
           text-slate-600 dark:text-zinc-300
-          shadow-sm
+          shadow-[0_2px_4px_rgba(0,0,0,0.05)]
         ">
           {parts[0].toUpperCase()}
         </kbd>
-        <span className="text-[10px] text-slate-400 dark:text-zinc-600">then</span>
+        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">then</span>
         <kbd className="
           inline-flex items-center justify-center
           min-w-[24px] h-6 px-1.5
           rounded-md
-          bg-slate-100 dark:bg-white/10
-          border border-slate-200 dark:border-white/15
+          bg-white/80 dark:bg-white/10 backdrop-blur-md
+          border border-slate-200/50 dark:border-white/15
           text-[11px] font-semibold
           text-slate-600 dark:text-zinc-300
-          shadow-sm
+          shadow-[0_2px_4px_rgba(0,0,0,0.05)]
         ">
           {parts[1].toUpperCase()}
         </kbd>
@@ -73,11 +74,11 @@ function KeyBadge({ shortcutKey }) {
               inline-flex items-center justify-center
               min-w-[24px] h-6 px-1.5
               rounded-md
-              bg-slate-100 dark:bg-white/10
-              border border-slate-200 dark:border-white/15
+              bg-white/80 dark:bg-white/10 backdrop-blur-md
+              border border-slate-200/50 dark:border-white/15
               text-[11px] font-semibold
               text-slate-600 dark:text-zinc-300
-              shadow-sm
+              shadow-[0_2px_4px_rgba(0,0,0,0.05)]
             "
           >
             {char}
@@ -97,11 +98,11 @@ function KeyBadge({ shortcutKey }) {
             inline-flex items-center justify-center
             min-w-[24px] h-6 px-1.5
             rounded-md
-            bg-slate-100 dark:bg-white/10
-            border border-slate-200 dark:border-white/15
+            bg-white/80 dark:bg-white/10 backdrop-blur-md
+            border border-slate-200/50 dark:border-white/15
             text-[11px] font-semibold
             text-slate-600 dark:text-zinc-300
-            shadow-sm
+            shadow-[0_2px_4px_rgba(0,0,0,0.05)]
           "
         >
           {key}
@@ -144,9 +145,9 @@ export default function ShortcutGuide() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Premium Glass Backdrop */}
       <div
-        className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+        className="fixed inset-0 z-[200] bg-slate-900/40 dark:bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={closeGuide}
       />
 
@@ -156,26 +157,27 @@ export default function ShortcutGuide() {
           className="
             w-full max-w-3xl max-h-[80vh]
             pointer-events-auto
-            rounded-2xl overflow-hidden
-            bg-white dark:bg-[#1a1a1e]
-            border border-slate-200 dark:border-white/10
-            shadow-2xl shadow-black/20
-            animate-in fade-in slide-in-from-bottom-4 duration-200
+            rounded-3xl overflow-hidden
+            bg-white/90 dark:bg-[#1f1f23]/90 backdrop-blur-2xl
+            border border-slate-200/50 dark:border-white/10
+            shadow-[0_20px_40px_rgba(0,0,0,0.1),_0_0_0_1px_rgba(139,92,246,0.05)] 
+            dark:shadow-[0_20px_40px_rgba(0,0,0,0.3),_0_0_0_1px_rgba(139,92,246,0.1)]
+            animate-in fade-in slide-in-from-bottom-8 duration-300
             flex flex-col
           "
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center">
-                <Keyboard className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
+          <div className="flex items-center justify-between px-8 py-6 border-b border-slate-200/50 dark:border-white/10">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-500/20 dark:to-violet-500/5 flex items-center justify-center shadow-sm border border-violet-200/50 dark:border-violet-500/20">
+                <Keyboard className="w-5 h-5 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-white">
                   Keyboard Shortcuts
                 </h2>
-                <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mt-0.5">
                   Navigate ShareSync at the speed of thought
                 </p>
               </div>
@@ -183,41 +185,44 @@ export default function ShortcutGuide() {
 
             <button
               onClick={closeGuide}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              className="p-2.5 rounded-xl bg-slate-100/50 dark:bg-white/5 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
             >
-              <X className="w-4 h-4 text-slate-400" />
+              <X className="w-5 h-5 text-slate-500 dark:text-zinc-400" />
             </button>
           </div>
 
           {/* Content — scrollable */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
               {Object.entries(categories).map(([catKey, category]) => (
                 <div key={catKey}>
                   {/* Category label */}
-                  <h3 className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-3">
-                    {category.label}
-                  </h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest">
+                      {category.label}
+                    </h3>
+                    <div className="h-px flex-1 bg-gradient-to-r from-violet-200/50 to-transparent dark:from-violet-500/20" />
+                  </div>
 
                   {/* Shortcuts list */}
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {category.shortcuts.map((shortcut) => (
                       <div
                         key={shortcut.action}
                         className="
                           flex items-center justify-between
-                          py-2 px-3 -mx-3
-                          rounded-lg
-                          hover:bg-slate-50 dark:hover:bg-white/[0.03]
-                          transition-colors
+                          py-2.5 px-3 -mx-3
+                          rounded-xl
+                          hover:bg-slate-100/50 dark:hover:bg-white/[0.04]
+                          transition-colors group
                         "
                       >
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm text-slate-700 dark:text-zinc-200">
+                          <span className="text-sm font-medium text-slate-700 dark:text-zinc-200 transition-colors group-hover:text-slate-900 dark:group-hover:text-white">
                             {shortcut.label}
                           </span>
                           {shortcut.description && (
-                            <span className="text-xs text-slate-400 dark:text-zinc-600 ml-2 hidden lg:inline">
+                            <span className="text-xs font-medium text-slate-400 dark:text-zinc-500 ml-2 hidden lg:inline">
                               {shortcut.description}
                             </span>
                           )}
@@ -235,15 +240,16 @@ export default function ShortcutGuide() {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
-            <p className="text-[11px] text-slate-400 dark:text-zinc-500">
-              Press <KeyBadge shortcutKey="?" /> anytime to show this guide
+          <div className="px-8 py-4 bg-slate-50/80 dark:bg-black/20 border-t border-slate-200/50 dark:border-white/10 flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-2">
+              Press <KeyBadge shortcutKey="shift+?" /> anytime to show this guide
             </p>
             <button
               onClick={closeGuide}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              className="px-4 py-2 rounded-xl text-sm font-bold text-white shadow-md shadow-violet-200 dark:shadow-none hover:scale-105 active:scale-95 transition-all"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
             >
-              Done
+              Close Guide
             </button>
           </div>
         </div>

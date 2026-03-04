@@ -1,8 +1,7 @@
 // src/components/ui/Button.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC BUTTON v4.2 - Interactive Depth Audit
-// ADDED: Framer Motion whileTap physics and base class active scaling so buttons
-// physically depress into the screen when clicked.
+// SHARESYNC BUTTON v4.0 - "The Gallery Walk" Light Theme + Signature Gradients
+// UPDATED (Task 2.6): Tied `glow` to Phase 2 `xpGlow` animation system.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useMemo } from "react";
@@ -12,7 +11,7 @@ import { Check, X } from "lucide-react";
 const cn = (...a) => a.filter(Boolean).join(" ");
 
 const SIZE = {
-  xs: "is-sm", 
+  xs: "is-sm", // mapped to legacy sizing
   sm: "is-sm",
   md: "is-md",
   lg: "is-lg",
@@ -20,14 +19,17 @@ const SIZE = {
 };
 
 const VARIANT = {
+  // mapped to our new button.css Blueprint classes
   primary: "btn-primary",
   blue: "btn-blue",
   outline: "btn-outline",
+  
+  // legacy fallbacks
   sunset: "btn-primary", 
   ocean: "btn-blue",
   aurora: "btn-primary",
-  ghost: "ui-btn--ghost shadow-none",
-  soft: "btn--soft shadow-none",
+  ghost: "ui-btn--ghost",
+  soft: "btn--soft",
   success: "btn-primary",
   warning: "btn-primary",
   danger: "btn-primary",
@@ -67,20 +69,17 @@ export default function Button({
   const isBusy = derivedState === "loading";
   const isDisabled = Boolean(disabled) || isBusy;
 
-  // Base physics: active:scale-[0.98] transition-all duration-75
   const classes = cn(
-    "btn transition-all duration-75 active:scale-[0.98] active:shadow-none shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
+    "btn transition-all duration-200",
     SIZE[size] || SIZE.md,
     VARIANT[variant] || VARIANT.primary,
-    glow && "shadow-glow-brand",
+    glow && "animate-[xpGlow_2s_infinite]", // ⭐ Connected to Phase 2 glow system
     fullWidth && "w-full",
-    isDisabled && "shadow-none active:scale-100 active:translate-y-0",
     className
   );
 
   const whileHover = motionEnabled && !isDisabled ? { scale: 1.02 } : undefined;
-  // Fallback physics if framer motion isn't intercepting the click
-  const whileTap = motionEnabled && !isDisabled ? { scale: 0.96 } : undefined;
+  const whileTap = motionEnabled && !isDisabled ? { scale: 0.98 } : undefined;
 
   return (
     <MotionAs
@@ -116,7 +115,7 @@ export default function Button({
             className="flex items-center justify-center absolute inset-0"
             aria-hidden="true"
           >
-            <Check strokeWidth={1.5} className="w-4 h-4 shrink-0" />
+            <Check className="w-4 h-4" />
           </motion.span>
         ) : derivedState === "error" ? (
           <motion.span
@@ -127,7 +126,7 @@ export default function Button({
             className="flex items-center justify-center absolute inset-0"
             aria-hidden="true"
           >
-            <X strokeWidth={1.5} className="w-4 h-4 shrink-0" />
+            <X className="w-4 h-4" />
           </motion.span>
         ) : (
           <motion.span
@@ -137,9 +136,9 @@ export default function Button({
             exit={{ opacity: 0.95 }}
             className={cn("flex items-center gap-2", isBusy && "opacity-0")}
           >
-            {leftIcon && <span className="shrink-0">{leftIcon}</span>}
-            <span className="leading-tight">{children}</span>
-            {rightIcon && <span className="shrink-0">{rightIcon}</span>}
+            {leftIcon && <span>{leftIcon}</span>}
+            <span>{children}</span>
+            {rightIcon && <span>{rightIcon}</span>}
           </motion.span>
         )}
       </AnimatePresence>

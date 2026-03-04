@@ -1,4 +1,8 @@
 // /src/hooks/useCommandPalette.js
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 6.1: UNIFIED COMMAND PALETTE HOOK
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, {
   createContext,
   useCallback,
@@ -7,26 +11,13 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { Home, Folder, Search, Settings, User, Plus } from "lucide-react";
 
-/**
- * CommandPaletteProvider
- */
 const Ctx = createContext({
   isOpen: false,
   open: () => {},
   close: () => {},
   toggle: () => {},
 });
-
-export const commands = [
-  { name: "Go to Home", icon: Home, to: "/home", shortcut: "⌘H" },
-  { name: "Go to Projects", icon: Folder, to: "/projects", shortcut: "⌘P" },
-  { name: "Search", icon: Search, action: () => document.getElementById("search")?.focus(), shortcut: "⌘K" },
-  { name: "Settings", icon: Settings, to: "/settings", shortcut: "⌘," },
-  { name: "Profile", icon: User, to: "/profile", shortcut: "⌘U" },
-  { name: "Create Project", icon: Plus, action: () => window.dispatchEvent(new CustomEvent("open-create-project")), shortcut: "⌘N" },
-];
 
 export function CommandPaletteProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,28 +26,38 @@ export function CommandPaletteProvider({ children }) {
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
 
+  // Prevent background scrolling when open
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    if (isOpen) document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
   }, [isOpen]);
 
+  // Global Keyboard Listener
   useEffect(() => {
     const onKey = (e) => {
+      // 1. Avoid triggering during IME composition (important for international users)
       if (e.isComposing) return;
+
+      // 2. Check for Cmd+K or Ctrl+K
       const isK = e.key?.toLowerCase?.() === "k";
       const shortcut = isK && (e.metaKey || e.ctrlKey) && !e.altKey;
-      if (!shortcut) {
-        if (e.key === "Escape" && isOpen) {
-          e.preventDefault();
-          close();
-        }
+
+      if (shortcut) {
+        e.preventDefault();
+        toggle();
         return;
       }
-      e.preventDefault();
-      toggle();
+
+      // 3. Close on Escape
+      if (e.key === "Escape" && isOpen) {
+        e.preventDefault();
+        close();
+      }
     };
 
     window.addEventListener("keydown", onKey, { capture: true });
@@ -69,5 +70,9 @@ export function CommandPaletteProvider({ children }) {
 }
 
 export function useCommandPalette() {
-  return useContext(Ctx);
+  const context = useContext(Ctx);
+  if (!context) {
+    console.error("useCommandPalette must be used within a CommandPaletteProvider");
+  }
+  return context;
 }

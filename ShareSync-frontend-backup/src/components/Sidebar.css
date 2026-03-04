@@ -153,7 +153,7 @@ body.sidebar-collapsed .navbar {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SIDEBAR ITEM ANIMATIONS
+   SIDEBAR ITEM ANIMATIONS & ACTIVE STATE (PHASE 2)
    ═══════════════════════════════════════════════════════════════════════════════ */
 .sidebar-item {
   transition: all 0.2s ease;
@@ -164,15 +164,24 @@ body.sidebar-collapsed .navbar {
 }
 
 /* Active nav indicator animation */
-.sidebar-item.active::before {
+.sidebar-item.active,
+.nav-item-active {
+  background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(124,58,237,0.05));
+  border-radius: 10px;
+  color: #7C3AED;
+  font-weight: 600;
+}
+
+.sidebar-item.active::before,
+.nav-item-active::before {
   content: '';
   position: absolute;
   left: 0;
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 24px;
-  background: #8B5CF6;
+  height: 20px;
+  background: #7C3AED;
   border-radius: 0 4px 4px 0;
   animation: slideIn 0.2s ease;
 }

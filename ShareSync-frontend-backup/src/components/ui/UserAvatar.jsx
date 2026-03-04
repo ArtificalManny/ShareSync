@@ -19,7 +19,7 @@ export default function UserAvatar({
 
   return (
     <div
-      className={`relative rounded-full overflow-hidden bg-surface-2 flex items-center justify-center ${ringClassName} ${className}`}
+      className={`relative rounded-full overflow-hidden bg-surface-2 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:ring-2 hover:ring-brand hover:ring-offset-2 hover:z-10 ${ringClassName} ${className}`}
       style={{ width: size, height: size }}
       title={name}
     >

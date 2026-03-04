@@ -6,6 +6,7 @@
    - Increase touch targets to 44px min
    - Handle safe-area-inset for notched phones
    - Adjust modal heights for mobile keyboards
+   ⭐ PHASE 8.2: MobileTabBar Pad & Strict Tap Targets
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Hide desktop sidebar on mobile ──────────────────────────────────────── */
@@ -19,19 +20,14 @@
   .main-content {
     margin-left: 0 !important;
     padding-left: 0 !important;
+    /* Ensure nothing is hidden behind the new MobileTabBar */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; 
   }
 
   /* Adjust main content padding for mobile */
   .content-wrapper {
     padding: 0 !important;
   }
-
-  /* Hide desktop navbar on mobile (MobileHeader replaces it) */
-  /* Only uncomment if you want MobileHeader to fully replace Navbar:
-  .navbar {
-    display: none !important;
-  }
-  */
 }
 
 /* ── Safe area insets (notched phones) ───────────────────────────────────── */
@@ -43,14 +39,15 @@
   }
 }
 
-/* ── Minimum touch target sizes ──────────────────────────────────────────── */
+/* ── Minimum touch target sizes (Apple HIG & Android Material) ────────────── */
 @media (pointer: coarse) {
   button,
   a,
   [role="button"],
   input[type="checkbox"],
   input[type="radio"],
-  select {
+  select,
+  .nav-item {
     min-height: 44px;
     min-width: 44px;
   }
@@ -68,7 +65,6 @@
 @media (max-width: 767px) {
   .home-page {
     padding: 16px !important;
-    padding-bottom: 80px !important; /* room for bottom nav */
   }
 
   /* Reduce section gaps on mobile */

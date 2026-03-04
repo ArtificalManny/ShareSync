@@ -30,7 +30,7 @@
     "axios": "^1.13.4",
     "canvas-confetti": "^1.9.4",
     "chart.js": "^4.4.3",
-    "framer-motion": "^12.26.2",
+    "framer-motion": "^12.34.4",
     "html2canvas": "^1.4.1",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.395.0",

@@ -1,10 +1,10 @@
 // src/components/onboarding/FirstMission.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIORITY 1: "First Mission" prompt — shown on Home when user has no tasks
-// Guides new users to create their first task with smart suggestions
+// ⭐ Phase 4: Ruthless Efficiency (1-Click Inline Entry / Zero Friction)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Rocket, Zap, CheckCircle2, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { getSmartSuggestions } from '../../api/tasks';
@@ -23,7 +23,9 @@ export default function FirstMission({ onMissionCreated, projectId }) {
   const onboarding = useOnboardingContext();
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIndex, setSelectedIndex] = useState(null);
+  
+  // Phase 4: Single input state mapping
+  const [inputValue, setInputValue] = useState("");
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState(false);
 
@@ -49,22 +51,22 @@ export default function FirstMission({ onMissionCreated, projectId }) {
     return () => { cancelled = true; };
   }, [onboarding?.data?.archetype]);
 
-  // ── Handle selection ───────────────────────────────────────────────────
-  const handleSelect = useCallback(async (index) => {
-    if (creating || created) return;
-    setSelectedIndex(index);
+  // ── Handle Immediate Submit (Phase 4 Zero-Friction) ────────────────────
+  const handleImmediateSubmit = async (titleToSubmit) => {
+    const finalTitle = titleToSubmit || inputValue;
+    if (!finalTitle.trim() || creating || created) return;
+    
     setCreating(true);
 
-    const suggestion = suggestions[index];
     try {
       // Tell onboarding context about the first task
-      onboarding?.setFirstTask?.(suggestion);
+      onboarding?.setFirstTask?.({ title: finalTitle.trim(), description: '' });
 
-      // Signal parent to create the task
+      // Signal parent to create the task immediately
       if (onMissionCreated) {
         await onMissionCreated({
-          title: suggestion.title,
-          description: suggestion.description || '',
+          title: finalTitle.trim(),
+          description: '',
           projectId: projectId || null,
         });
       }
@@ -72,22 +74,26 @@ export default function FirstMission({ onMissionCreated, projectId }) {
       setCreated(true);
     } catch (err) {
       console.error('[FirstMission] Failed to create task:', err);
-      setSelectedIndex(null);
     } finally {
       setCreating(false);
     }
-  }, [suggestions, creating, created, onMissionCreated, projectId, onboarding]);
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    handleImmediateSubmit();
+  };
 
   // ── Don't render if onboarding is complete and user already has tasks ──
   // Parent controls visibility; this component just renders its UI
 
   if (created) {
     return (
-      <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-500/10 dark:to-emerald-500/10 border border-teal-200 dark:border-teal-500/20 text-center">
+      <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-500/10 dark:to-emerald-500/10 ring-1 ring-teal-200 dark:ring-teal-500/20 text-center shadow-[0_0_15px_rgba(20,184,166,0.15)]">
         <div className="w-14 h-14 rounded-2xl bg-teal-100 dark:bg-teal-500/20 flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="w-7 h-7 text-teal-600 dark:text-teal-400" />
         </div>
-        <h3 className="text-xl font-semibold text-teal-800 dark:text-teal-300 mb-2">
+        <h3 className="text-xl font-semibold text-teal-800 dark:text-teal-300 mb-2 tracking-tightest">
           First mission created! 🎉
         </h3>
         <p className="text-sm text-teal-600 dark:text-teal-400 mb-6">
@@ -106,75 +112,62 @@ export default function FirstMission({ onMissionCreated, projectId }) {
   }
 
   return (
-    <div className="p-6 rounded-2xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
-      style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.08)' }}
-    >
+    <div className="p-6 rounded-2xl bg-white dark:bg-[#1f1f23] ring-1 ring-slate-200 dark:ring-white/10 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
-        >
-          <Rocket className="w-5 h-5 text-white" />
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-900 dark:bg-white shadow-sm">
+          <Rocket className="w-5 h-5 text-white dark:text-slate-900" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Pick Your First Mission</h3>
-          <p className="text-xs text-slate-500 dark:text-zinc-400">Choose one to get on the board and start earning XP</p>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white tracking-tightest">What's your first mission?</h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400">Press enter to immediately deploy to the system.</p>
         </div>
-        <div className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20">
+        <div className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 ring-1 ring-violet-200 dark:ring-violet-500/20">
           <Sparkles className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
           <span className="text-[10px] font-bold text-violet-700 dark:text-violet-400">+25 XP</span>
         </div>
       </div>
 
-      {/* Suggestions grid */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Phase 4: Zero Friction Inline Form */}
+      <form onSubmit={handleFormSubmit} className="relative flex items-center mb-5">
+        <input 
+          autoFocus
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="e.g. Write API endpoints..."
+          className="w-full bg-slate-50 dark:bg-zinc-800/50 ring-1 ring-slate-200 dark:ring-white/10 text-slate-900 dark:text-white text-base px-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all placeholder:text-slate-400"
+          disabled={creating}
+        />
+        <button 
+          type="submit"
+          disabled={!inputValue.trim() || creating}
+          className="absolute right-2 top-2 bottom-2 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-50 flex items-center gap-2 font-medium text-sm shadow-sm"
+        >
+          {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Ship</>}
+        </button>
+      </form>
+
+      {/* 1-Click Fast Fill Pills */}
+      <div className="flex flex-wrap gap-2">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-white/5 animate-pulse">
-              <div className="h-4 bg-slate-200 dark:bg-zinc-700 rounded w-3/4 mb-2" />
-              <div className="h-3 bg-slate-100 dark:bg-zinc-800 rounded w-full" />
-            </div>
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-8 w-32 bg-slate-100 dark:bg-zinc-800 animate-pulse rounded-lg" />
           ))
         ) : (
           suggestions.map((s, i) => (
             <button
               key={i}
-              onClick={() => handleSelect(i)}
+              type="button"
+              onClick={() => handleImmediateSubmit(s.title)}
               disabled={creating}
-              className={`
-                p-4 rounded-xl text-left transition-all duration-200 border
-                ${selectedIndex === i
-                  ? 'bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/30 ring-2 ring-violet-200 dark:ring-violet-500/20'
-                  : 'bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-white/5 hover:border-violet-200 dark:hover:border-violet-500/20 hover:bg-violet-50/50 dark:hover:bg-violet-500/5'
-                }
-                disabled:opacity-50
-              `}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-50 dark:bg-zinc-800/50 ring-1 ring-slate-200 dark:ring-white/10 text-slate-600 dark:text-zinc-300 hover:ring-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all disabled:opacity-50"
             >
-              <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">{s.emoji || '⚡'}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-800 dark:text-white truncate">{s.title}</div>
-                  {s.description && (
-                    <div className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 line-clamp-2">{s.description}</div>
-                  )}
-                </div>
-                {creating && selectedIndex === i && (
-                  <Loader2 className="w-4 h-4 text-violet-500 animate-spin mt-0.5 shrink-0" />
-                )}
-              </div>
+              <span>{s.emoji}</span>
+              <span>{s.title}</span>
             </button>
           ))
         )}
-      </div>
-
-      {/* Skip option */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={() => navigate('/projects')}
-          className="text-xs text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
-        >
-          or create your own from scratch →
-        </button>
       </div>
     </div>
   );

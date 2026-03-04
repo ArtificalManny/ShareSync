@@ -1,12 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * SHARESYNC DESIGN SYSTEM v4.3 - "The Gallery Walk" (Crisp Alignment Update)
+ * SHARESYNC DESIGN SYSTEM v4.2 - "The Gallery Walk" + Phase 1 & 2 Blueprints
  * ═══════════════════════════════════════════════════════════════════════════════
- * * UPDATED IN v4.3:
- * - Enforced strict 4pt/8pt mathematical grid for typography.
- * - Locked border radii to exact multiples of 4px.
- * - Preserved ALL colors, momentum glows, and animations.
+ * * UPDATED IN v4.2:
+ * - Added light mode colors from palette.css
+ * - Mapped CSS variables to Tailwind classes
+ * - Preserved ALL existing momentum/gamification features
+ * ⭐ PHASE 2: Injected "Data Integrity" Mono Stack and Authority Tracking
+ * * COLOR PHILOSOPHY:
+ * • Deep Violet (#8B5CF6 → #7C3AED) = Brand, creativity, transformation
+ * • Ocean Blue (#3B82F6) = Actions, Save buttons, toggles ON
+ * • Aurora Teal (#2DD4BF) = Success, achievement, growth
+ * • Soft Slate = Light mode neutral foundation
+ * * NO BACKEND CHANGES - Pure configuration
  * * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -17,13 +24,35 @@ export default {
   ],
   theme: {
     extend: {
+      /**
+       * ─────────────────────────────────────────────────────────────────────────
+       * TYPOGRAPHY
+       * ─────────────────────────────────────────────────────────────────────────
+       */
       fontFamily: {
         sans: ["Inter var", "Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        // ⭐ Phase 2: Data Integrity Font Stack
+        mono: ["JetBrains Mono", "IBM Plex Mono", "monospace"],
         display: ["Inter Tight", "Inter var", "Inter", "system-ui", "sans-serif"],
       },
 
+      /**
+       * ⭐ Phase 2: Custom Letter Spacing for Authority Headings
+       */
+      letterSpacing: {
+        'tightest': '-0.025em',
+      },
+
+      /**
+       * ─────────────────────────────────────────────────────────────────────────
+       * COLOR SYSTEM - Gallery Walk Palette
+       * References CSS variables from palette.css
+       * ─────────────────────────────────────────────────────────────────────────
+       */
       colors: {
+        /* ═══════════════════════════════════════════════════════════════════
+           VIOLET - Primary Brand (Electric Violet)
+           ═══════════════════════════════════════════════════════════════════ */
         violet: {
           50:  "var(--palette-violet-50, #F5F3FF)",
           100: "var(--palette-violet-100, #EDE9FE)",
@@ -36,6 +65,10 @@ export default {
           800: "var(--palette-violet-800, #5B21B6)",
           900: "var(--palette-violet-900, #4C1D95)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           BLUE - Actions (Ocean Blue)
+           ═══════════════════════════════════════════════════════════════════ */
         blue: {
           50:  "var(--palette-blue-50, #EFF6FF)",
           100: "var(--palette-blue-100, #DBEAFE)",
@@ -48,6 +81,10 @@ export default {
           800: "var(--palette-blue-800, #1E40AF)",
           900: "var(--palette-blue-900, #1E3A8A)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           TEAL - Success (Aurora Teal)
+           ═══════════════════════════════════════════════════════════════════ */
         teal: {
           50:  "var(--palette-teal-50, #F0FDFA)",
           100: "var(--palette-teal-100, #CCFBF1)",
@@ -60,6 +97,10 @@ export default {
           800: "var(--palette-teal-800, #115E59)",
           900: "var(--palette-teal-900, #134E4A)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           SLATE - Neutral Foundation (Soft Slate)
+           ═══════════════════════════════════════════════════════════════════ */
         slate: {
           50:  "var(--palette-slate-50, #F8FAFC)",
           100: "var(--palette-slate-100, #F1F5F9)",
@@ -73,6 +114,10 @@ export default {
           900: "var(--palette-slate-900, #0F172A)",
           950: "var(--palette-slate-950, #0B0F19)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           EMERALD - Alternate Success
+           ═══════════════════════════════════════════════════════════════════ */
         emerald: {
           50:  "var(--palette-emerald-50, #ECFDF5)",
           100: "var(--palette-emerald-100, #D1FAE5)",
@@ -85,6 +130,10 @@ export default {
           800: "var(--palette-emerald-800, #065F46)",
           900: "var(--palette-emerald-900, #064E3B)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           AMBER - Warnings
+           ═══════════════════════════════════════════════════════════════════ */
         amber: {
           50:  "var(--palette-amber-50, #FFFBEB)",
           100: "var(--palette-amber-100, #FEF3C7)",
@@ -97,6 +146,10 @@ export default {
           800: "var(--palette-amber-800, #92400E)",
           900: "var(--palette-amber-900, #78350F)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           ORANGE - Energy/Fire Mode
+           ═══════════════════════════════════════════════════════════════════ */
         orange: {
           50:  "var(--palette-orange-50, #FFF7ED)",
           100: "var(--palette-orange-100, #FFEDD5)",
@@ -109,6 +162,10 @@ export default {
           800: "var(--palette-orange-800, #9A3412)",
           900: "var(--palette-orange-900, #7C2D12)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           ROSE - Critical/Notifications
+           ═══════════════════════════════════════════════════════════════════ */
         rose: {
           50:  "var(--palette-rose-50, #FFF1F2)",
           100: "var(--palette-rose-100, #FFE4E6)",
@@ -121,6 +178,10 @@ export default {
           800: "var(--palette-rose-800, #9F1239)",
           900: "var(--palette-rose-900, #881337)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           RED - Errors Only
+           ═══════════════════════════════════════════════════════════════════ */
         red: {
           50:  "var(--palette-red-50, #FEF2F2)",
           100: "var(--palette-red-100, #FEE2E2)",
@@ -133,6 +194,10 @@ export default {
           800: "var(--palette-red-800, #991B1B)",
           900: "var(--palette-red-900, #7F1D1D)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           CYAN - Live/Real-time
+           ═══════════════════════════════════════════════════════════════════ */
         cyan: {
           50:  "var(--palette-cyan-50, #ECFEFF)",
           100: "var(--palette-cyan-100, #CFFAFE)",
@@ -145,21 +210,39 @@ export default {
           800: "var(--palette-cyan-800, #155E75)",
           900: "var(--palette-cyan-900, #164E63)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           INDIGO - Purple-Blue blend
+           ═══════════════════════════════════════════════════════════════════ */
         indigo: {
           400: "var(--palette-indigo-400, #818CF8)",
           500: "var(--palette-indigo-500, #6366F1)",
           600: "var(--palette-indigo-600, #4F46E5)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           FUCHSIA - Pink-Purple blend
+           ═══════════════════════════════════════════════════════════════════ */
         fuchsia: {
           400: "var(--palette-fuchsia-400, #E879F9)",
           500: "var(--palette-fuchsia-500, #D946EF)",
           600: "var(--palette-fuchsia-600, #C026D3)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           PINK
+           ═══════════════════════════════════════════════════════════════════ */
         pink: {
           400: "var(--palette-pink-400, #F472B6)",
           500: "var(--palette-pink-500, #EC4899)",
           600: "var(--palette-pink-600, #DB2777)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           SEMANTIC ALIASES (Reference tokens.css)
+           ═══════════════════════════════════════════════════════════════════ */
+        
+        /* Surface Hierarchy */
         surface: {
           0: "var(--surface-0, #F8FAFC)",
           1: "var(--surface-1, #FFFFFF)",
@@ -167,6 +250,8 @@ export default {
           3: "var(--surface-3, #F1F5F9)",
           4: "var(--surface-4, #E2E8F0)",
         },
+
+        /* Brand (Violet) */
         brand: {
           DEFAULT: "var(--brand-500, #8B5CF6)",
           50:  "var(--brand-50, #F5F3FF)",
@@ -180,12 +265,16 @@ export default {
           800: "var(--brand-800, #5B21B6)",
           900: "var(--brand-900, #4C1D95)",
         },
+
+        /* Live (Cyan) */
         live: {
           DEFAULT: "var(--cyan-500, #06B6D4)",
           400: "var(--cyan-400, #22D3EE)",
           500: "var(--cyan-500, #06B6D4)",
           600: "var(--cyan-600, #0891B2)",
         },
+
+        /* Success (Teal/Emerald) */
         success: {
           DEFAULT: "var(--success-500, #14B8A6)",
           50:  "var(--success-50, #F0FDFA)",
@@ -195,6 +284,8 @@ export default {
           light: "var(--teal-400, #2DD4BF)",
           dark: "var(--teal-700, #0F766E)",
         },
+
+        /* Warning (Amber) */
         warning: {
           DEFAULT: "var(--warning-500, #F59E0B)",
           50:  "var(--warning-50, #FFFBEB)",
@@ -205,6 +296,8 @@ export default {
           light: "var(--amber-400, #FBBF24)",
           dark: "var(--amber-700, #B45309)",
         },
+
+        /* Error (Red) */
         error: {
           DEFAULT: "var(--error-500, #EF4444)",
           50:  "var(--error-50, #FEF2F2)",
@@ -214,12 +307,16 @@ export default {
           light: "var(--red-400, #F87171)",
           dark: "var(--red-700, #B91C1C)",
         },
+
+        /* Energy (Orange/Coral) */
         energy: {
           DEFAULT: "var(--energy-500, #F97316)",
           400: "var(--energy-400, #FB923C)",
           500: "var(--energy-500, #F97316)",
           600: "var(--energy-600, #EA580C)",
         },
+
+        /* Info (Blue) */
         info: {
           DEFAULT: "var(--info-500, #3B82F6)",
           50:  "var(--blue-50, #EFF6FF)",
@@ -227,11 +324,17 @@ export default {
           500: "var(--info-500, #3B82F6)",
           600: "var(--blue-600, #2563EB)",
         },
+
+        /* Danger alias */
         danger: {
           DEFAULT: "var(--error-500, #EF4444)",
           light: "var(--red-400, #F87171)",
           dark: "var(--red-700, #B91C1C)",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           MOMENTUM STATE COLORS (Preserved from v4.1)
+           ═══════════════════════════════════════════════════════════════════ */
         momentum: {
           fire: "var(--momentum-fire, #EF4444)",
           "fire-glow": "var(--momentum-fire-glow, rgba(239, 68, 68, 0.4))",
@@ -249,16 +352,23 @@ export default {
           "attention-glow": "var(--momentum-attention-glow, rgba(107, 114, 128, 0.4))",
           "attention-subtle": "var(--momentum-attention-subtle, rgba(107, 114, 128, 0.15))",
         },
+
+        /* ═══════════════════════════════════════════════════════════════════
+           XP & GAMIFICATION (Preserved from v4.1)
+           ═══════════════════════════════════════════════════════════════════ */
         xp: {
           gold: "var(--xp-gold, #FFD700)",
           "gold-glow": "var(--xp-gold-glow, rgba(255, 215, 0, 0.5))",
           "gold-subtle": "var(--xp-gold-subtle, rgba(255, 215, 0, 0.15))",
         },
+
         legendary: {
           start: "var(--legendary-start, #FFD700)",
           mid: "var(--legendary-mid, #EF4444)",
           end: "var(--legendary-end, #8B5CF6)",
         },
+
+        /* Progress */
         progress: {
           track: "var(--progress-track, #E2E8F0)",
           fill: "var(--progress-fill, #8B5CF6)",
@@ -267,6 +377,8 @@ export default {
           high: "var(--violet-600, #7C3AED)",
           complete: "var(--success-500, #10B981)",
         },
+
+        /* Text Hierarchy */
         text: {
           primary: "var(--text-primary, #1E293B)",
           secondary: "var(--text-secondary, #475569)",
@@ -274,6 +386,8 @@ export default {
           muted: "var(--text-muted, #94A3B8)",
           inverse: "var(--text-inverse, #FFFFFF)",
         },
+
+        /* Border */
         border: {
           DEFAULT: "var(--border-default, #CBD5E1)",
           subtle: "var(--border-subtle, #E2E8F0)",
@@ -281,6 +395,8 @@ export default {
           brand: "var(--border-brand, #C4B5FD)",
           focus: "var(--border-focus, #8B5CF6)",
         },
+
+        /* Accent (Fuchsia) */
         accent: {
           400: "var(--accent-400, #E879F9)",
           500: "var(--accent-500, #D946EF)",
@@ -290,38 +406,42 @@ export default {
 
       /**
        * ─────────────────────────────────────────────────────────────────────────
-       * STRICT TYPOGRAPHY SCALE (8-Point Grid Compliant)
-       * Line heights are enforced to strict multiples of 4 or 8.
+       * TYPOGRAPHY SCALE
        * ─────────────────────────────────────────────────────────────────────────
        */
       fontSize: {
         'xs':   ['12px', { lineHeight: '16px', letterSpacing: '0.01em' }],
         'sm':   ['14px', { lineHeight: '20px', letterSpacing: '0em' }],
-        'base': ['16px', { lineHeight: '24px', letterSpacing: '0em' }],
-        'lg':   ['18px', { lineHeight: '28px', letterSpacing: '-0.01em' }],
+        'base': ['15px', { lineHeight: '24px', letterSpacing: '0em' }],
+        'lg':   ['17px', { lineHeight: '28px', letterSpacing: '-0.01em' }],
         'xl':   ['20px', { lineHeight: '28px', letterSpacing: '-0.01em' }],
         '2xl':  ['24px', { lineHeight: '32px', letterSpacing: '-0.02em' }],
-        '3xl':  ['32px', { lineHeight: '40px', letterSpacing: '-0.02em' }],
-        '4xl':  ['36px', { lineHeight: '48px', letterSpacing: '-0.02em' }],
-        '5xl':  ['48px', { lineHeight: '48px', letterSpacing: '-0.03em' }],
-        '6xl':  ['64px', { lineHeight: '64px', letterSpacing: '-0.03em' }],
+        '3xl':  ['30px', { lineHeight: '36px', letterSpacing: '-0.02em' }],
+        '4xl':  ['36px', { lineHeight: '40px', letterSpacing: '-0.02em' }],
+        '5xl':  ['48px', { lineHeight: '1',    letterSpacing: '-0.03em' }],
+        '6xl':  ['60px', { lineHeight: '1',    letterSpacing: '-0.03em' }],
       },
 
       /**
        * ─────────────────────────────────────────────────────────────────────────
-       * STRICT BORDER RADIUS (Multiples of 4)
+       * BORDER RADIUS
        * ─────────────────────────────────────────────────────────────────────────
        */
       borderRadius: {
-        'xs':  '4px',
-        'sm':  '8px',
-        'md':  '12px',
-        'lg':  '16px',
-        'xl':  '20px',
-        '2xl': '24px',
-        '3xl': '32px',
+        'xs':  'var(--radius-xs, 4px)',
+        'sm':  'var(--radius-sm, 6px)',
+        'md':  'var(--radius-md, 10px)',
+        'lg':  'var(--radius-lg, 14px)',
+        'xl':  'var(--radius-xl, 18px)',
+        '2xl': 'var(--radius-2xl, 22px)',
+        '3xl': '28px',
       },
 
+      /**
+       * ─────────────────────────────────────────────────────────────────────────
+       * SHADOWS & GLOWS
+       * ─────────────────────────────────────────────────────────────────────────
+       */
       boxShadow: {
         'sm':   'var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04))',
         'md':   'var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.04))',
@@ -329,6 +449,8 @@ export default {
         'xl':   'var(--shadow-xl, 0 20px 25px rgba(0, 0, 0, 0.05))',
         'card': 'var(--shadow-card, 0 4px 24px rgba(0, 0, 0, 0.06))',
         'focus': 'var(--ring-focus, 0 0 0 3px rgba(139, 92, 246, 0.15))',
+        
+        /* Signature Glows */
         'glow-brand':   'var(--glow-brand, 0 0 20px rgba(139, 92, 246, 0.2))',
         'glow-brand-strong': 'var(--glow-brand-strong, 0 0 30px rgba(139, 92, 246, 0.3))',
         'glow-blue':    '0 0 20px rgba(59, 130, 246, 0.2)',
@@ -337,22 +459,34 @@ export default {
         'glow-warning': 'var(--glow-warning, 0 0 20px rgba(245, 158, 11, 0.2))',
         'glow-error':   'var(--glow-error, 0 0 20px rgba(239, 68, 68, 0.2))',
         'glow-energy':  'var(--glow-energy, 0 0 20px rgba(244, 63, 94, 0.2))',
+        
+        /* Momentum Glow Levels */
         'momentum-1': 'var(--momentum-glow-1, 0 0 30px rgba(139, 92, 246, 0.05))',
         'momentum-2': 'var(--momentum-glow-2, 0 0 45px rgba(139, 92, 246, 0.08))',
         'momentum-3': 'var(--momentum-glow-3, 0 0 60px rgba(139, 92, 246, 0.12))',
         'momentum-4': 'var(--momentum-glow-4, 0 0 80px rgba(139, 92, 246, 0.18))',
         'momentum-5': 'var(--momentum-glow-5, 0 0 100px rgba(139, 92, 246, 0.25))',
+        
+        /* XP & Achievement Glows */
         'glow-xp': 'var(--glow-xp, 0 0 20px #FFD700, 0 0 40px rgba(255, 215, 0, 0.3))',
         'glow-legendary': 'var(--glow-legendary, 0 0 30px #FFD700, 0 0 60px #EF4444)',
+        
+        /* Light mode card shadows */
         'violet-sm': '0 2px 8px rgba(139, 92, 246, 0.08)',
         'violet-md': '0 4px 14px rgba(139, 92, 246, 0.12)',
         'violet-lg': '0 8px 24px rgba(139, 92, 246, 0.15)',
         'blue-sm': '0 2px 8px rgba(59, 130, 246, 0.08)',
         'blue-md': '0 4px 14px rgba(59, 130, 246, 0.12)',
         'blue-lg': '0 8px 24px rgba(59, 130, 246, 0.15)',
+        
         'inner-brand': 'inset 0 0 0 1px var(--border-brand)',
       },
 
+      /**
+       * ─────────────────────────────────────────────────────────────────────────
+       * ANIMATIONS (All preserved from v4.1)
+       * ─────────────────────────────────────────────────────────────────────────
+       */
       animation: {
         'fade-in':     'fadeIn 0.2s ease-out',
         'fade-up':     'fadeUp 0.3s ease-out',
@@ -438,6 +572,11 @@ export default {
         },
       },
 
+      /**
+       * ─────────────────────────────────────────────────────────────────────────
+       * TRANSITIONS
+       * ─────────────────────────────────────────────────────────────────────────
+       */
       transitionDuration: {
         '0':   '0ms',
         '75':  '75ms',
@@ -455,6 +594,11 @@ export default {
         'standard': 'cubic-bezier(0.2, 0.8, 0.2, 1)',
       },
 
+      /**
+       * ─────────────────────────────────────────────────────────────────────────
+       * BACKGROUND IMAGE (Gradients)
+       * ─────────────────────────────────────────────────────────────────────────
+       */
       backgroundImage: {
         'gradient-brand': 'var(--gradient-brand, linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%))',
         'gradient-blue': 'var(--palette-gradient-blue, linear-gradient(135deg, #3B82F6 0%, #2563EB 100%))',

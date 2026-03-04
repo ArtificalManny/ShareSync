@@ -1,6 +1,6 @@
 // src/pages/Discover.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// ALGORITHMIC FEED - PHASE 3: LIVE WIRING (With Empty State Fallback)
+// ALGORITHMIC FEED - PHASE 5.3: Categorized Discover Dashboard
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -10,10 +10,7 @@ import { useIsMobile } from '../hooks/useMobile';
 import { getAlgorithmicFeed } from '../api/discovery';
 
 import TeamStories from '../components/ecosystem/TeamStories';
-import ActivityFeed from '../components/ecosystem/ActivityFeed';
-import Achievements from '../components/ecosystem/Achievements';
-import ProjectsOverview from '../components/ecosystem/ProjectsOverview';
-import BurnoutAlert from '../components/ecosystem/BurnoutAlert';
+import DiscoverDashboard from '../components/discover/DiscoverSections'; // ⭐ PHASE 5.3: New Dashboard View
 import FeaturedProjects from '../components/ecosystem/FeaturedProjects';
 import { formatActivityItems } from '../utils/formatActivityText';
 
@@ -35,36 +32,16 @@ export default function Discover() {
     setLoading(true);
 
     try {
-      const { items, nextCursor } = await getAlgorithmicFeed({ 
-        cursor: cursorRef.current, 
-        limit: 10 
-      });
+      const { items, nextCursor } = await getAlgorithmicFeed({ cursor: cursorRef.current, limit: 10 });
       
       cursorRef.current = nextCursor;
       hasMoreRef.current = !!nextCursor;
 
       setFeed(prev => {
         const newFeed = [...prev];
-        const currentLength = prev.filter(i => i.type !== 'interstitial').length;
-        
-        // Only inject interstitials if there are actual items returned
         if (items && items.length > 0) {
-          items.forEach((item, idx) => {
-            const absoluteIndex = currentLength + idx + 1;
-            
-            // 🎰 VARIABLE REWARD SLOTS
-            if (absoluteIndex === 7) {
-              newFeed.push({ id: `interstitial-7`, type: 'interstitial', component: <Achievements /> });
-            } else if (absoluteIndex === 15) {
-              newFeed.push({ id: `interstitial-15`, type: 'interstitial', component: <ProjectsOverview /> });
-            } else if (absoluteIndex === 22) {
-              newFeed.push({ id: `interstitial-22`, type: 'interstitial', component: <BurnoutAlert demoMode={true} /> });
-            }
-            
-            newFeed.push(item);
-          });
+          items.forEach(item => newFeed.push(item));
         }
-        
         return newFeed;
       });
 
@@ -103,7 +80,7 @@ export default function Discover() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] pb-24 transition-colors">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
         
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/20">
@@ -124,24 +101,23 @@ export default function Discover() {
         </div>
 
         <div className="space-y-6">
-          {/* 🚨 NEW: Safe Empty State Rendering */}
+          {/* Empty State Rendering */}
           {feed.length === 0 && initialLoadDone && !loading ? (
             <div className="space-y-8">
-              {/* ✅ Priority 1: Featured projects for empty feed */}
               <FeaturedProjects maxVisible={3} />
-
-              <div className="text-center py-16 px-6 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl bg-white/50 dark:bg-surface-0/50">
-                <div className="w-16 h-16 bg-slate-100 dark:bg-surface-2 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <Globe className="w-8 h-8 text-slate-400 dark:text-text-tertiary" />
+              <div className="text-center py-16 px-6 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl bg-white/50 dark:bg-[#1f1f23]/50">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <Globe className="w-8 h-8 text-slate-400 dark:text-zinc-500" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary mb-2">It's quiet out here...</h3>
-                <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary max-w-sm mx-auto">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-zinc-100 mb-2">It's quiet out here...</h3>
+                <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
                   No public projects found in the network yet. Make sure your projects are set to <strong>Public</strong> to see them in the algorithmic feed!
                 </p>
               </div>
             </div>
           ) : (
-            <ActivityFeed activities={formatActivityItems(feed)} />
+            // ⭐ PHASE 5.3: Rich Dashboard Layout
+            <DiscoverDashboard feed={formatActivityItems(feed)} />
           )}
           
           <div ref={loaderRef} className="w-full flex justify-center py-8">

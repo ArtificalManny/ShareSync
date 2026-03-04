@@ -5,11 +5,11 @@
 // - Listens for 'celebration-preview' window events (from CelebrationStylePicker)
 // - Reads persona from localStorage (same source of truth as PersonaContext)
 // - Routes to the correct persona-specific celebration component
-//
-// Mount this ONCE at the app level (e.g. inside AuthenticatedApp in App.jsx)
+// PHASE 3: Added Full-Screen Level Up Particle Overlay
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getCelebrationConfig, INTENSITY_DURATION, DEFAULT_OVERRIDES } from '../../config/celebrationConfig';
 import ConfettiBlast from './ConfettiBlast';
 import SubtleGlow from './SubtleGlow';
@@ -78,6 +78,52 @@ function getMessage(eventType, persona, data) {
   };
 
   return labels[eventType]?.[persona] || labels[eventType]?.creator || 'Done';
+}
+
+// ⭐ PHASE 3: Full-Screen Level Up Overlay 
+function LevelUpOverlay({ show, duration, message, onComplete }) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, duration || 3000);
+    return () => clearTimeout(timer);
+  }, [duration, onComplete]);
+
+  if (!show) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center bg-violet-900/20 backdrop-blur-[2px]"
+      >
+        <motion.div
+          initial={{ scale: 0.8, y: 50 }}
+          animate={{ scale: 1, y: 0 }}
+          transition={{ type: "spring", bounce: 0.5 }}
+          className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 drop-shadow-[0_0_20px_rgba(139,92,246,0.6)]"
+        >
+          {message}
+        </motion.div>
+        
+        {/* Simple ambient particle effect */}
+        {[...Array(24)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 1, x: 0, y: 0, scale: 0 }}
+            animate={{
+              opacity: 0,
+              x: (Math.random() - 0.5) * 600,
+              y: (Math.random() - 0.5) * 600,
+              scale: Math.random() * 2 + 0.5
+            }}
+            transition={{ duration: 1.5 + Math.random(), ease: "easeOut" }}
+            className="absolute w-2 h-2 rounded-full bg-violet-400 blur-[1px]"
+          />
+        ))}
+      </motion.div>
+    </AnimatePresence>
+  );
 }
 
 export default function CelebrationRouter() {
@@ -165,6 +211,18 @@ export default function CelebrationRouter() {
   if (!celebration) return null;
 
   const { config, eventType, data, duration, persona } = celebration;
+
+  // ⭐ PHASE 3: Check for Full-Screen Level Up Intercept
+  if (eventType === 'levelUp') {
+    return (
+      <LevelUpOverlay
+        show={true}
+        duration={duration}
+        message={getMessage(eventType, persona, data)}
+        onComplete={dismiss}
+      />
+    );
+  }
 
   // ── Route to correct component based on persona ────────────────────
   switch (persona) {

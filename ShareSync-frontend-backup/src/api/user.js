@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER API - Frontend client for user profile and settings
 // Compatible with Settings.jsx and Profile.jsx requirements
+// FIXED: Removed leading '/api' from all endpoints to prevent '/api/api/' 404s
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import api from './client';
@@ -12,13 +13,13 @@ import api from './client';
 export async function getMe() {
   try {
     // Try to get user profile
-    const userResponse = await api.get('/api/users/me');
+    const userResponse = await api.get('/users/me');
     const user = userResponse.data?.data || userResponse.data;
 
     // Also try to get settings (may be separate or merged)
     let settings = {};
     try {
-      const settingsResponse = await api.get('/api/settings');
+      const settingsResponse = await api.get('/settings');
       settings = settingsResponse.data?.data || settingsResponse.data || {};
     } catch (e) {
       // Settings endpoint may not exist yet, use user data
@@ -54,7 +55,7 @@ export async function getMe() {
  */
 export async function getPublicUser(username) {
   try {
-    const response = await api.get(`/api/users/public/${username}`);
+    const response = await api.get(`/users/public/${username}`);
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Failed to get public user:', error);
@@ -69,7 +70,7 @@ export async function updateProfile(updates) {
   try {
     // Check if updates is FormData (for file uploads)
     if (updates instanceof FormData) {
-      const response = await api.post('/api/users/me/avatar', updates, {
+      const response = await api.post('/users/me/avatar', updates, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return response.data?.data || response.data;
@@ -95,7 +96,7 @@ export async function updateProfile(updates) {
     // Update settings if any settings fields present
     if (Object.keys(settingsUpdate).length > 0) {
       try {
-        await api.put('/api/settings', settingsUpdate);
+        await api.put('/settings', settingsUpdate);
       } catch (e) {
         console.debug('Settings update failed, falling back to profile update');
         // Fall back to including in profile update
@@ -105,7 +106,7 @@ export async function updateProfile(updates) {
 
     // Update profile
     if (Object.keys(profileUpdate).length > 0) {
-      const response = await api.patch('/api/users/me', profileUpdate);
+      const response = await api.patch('/users/me', profileUpdate);
       return response.data?.data || response.data;
     }
 
@@ -122,12 +123,12 @@ export async function updateProfile(updates) {
 export async function updateNotifications(notifications) {
   try {
     // Try settings endpoint first
-    const response = await api.patch('/api/settings/notifications', notifications);
+    const response = await api.patch('/settings/notifications', notifications);
     return response.data?.data || response.data;
   } catch (e) {
     // Fall back to user endpoint
     console.debug('Settings notifications update failed, trying user endpoint');
-    const response = await api.patch('/api/users/me', {
+    const response = await api.patch('/users/me', {
       notificationSettings: notifications,
     });
     return response.data?.data || response.data;
@@ -139,10 +140,10 @@ export async function updateNotifications(notifications) {
  */
 export async function updatePrivacy(privacy) {
   try {
-    const response = await api.patch('/api/settings/privacy', privacy);
+    const response = await api.patch('/settings/privacy', privacy);
     return response.data?.data || response.data;
   } catch (e) {
-    const response = await api.patch('/api/users/me', {
+    const response = await api.patch('/users/me', {
       privacySettings: privacy,
     });
     return response.data?.data || response.data;
@@ -153,7 +154,7 @@ export async function updatePrivacy(privacy) {
  * Get user by ID (public profile)
  */
 export async function getUserById(userId) {
-  const response = await api.get(`/api/users/${userId}`);
+  const response = await api.get(`/users/${userId}`);
   return response.data?.data || response.data;
 }
 
@@ -161,7 +162,7 @@ export async function getUserById(userId) {
  * Get user by username
  */
 export async function getUserByUsername(username) {
-  const response = await api.get(`/api/users/username/${username}`);
+  const response = await api.get(`/users/username/${username}`);
   return response.data?.data || response.data;
 }
 
@@ -169,7 +170,7 @@ export async function getUserByUsername(username) {
  * Search users
  */
 export async function searchUsers(query, limit = 10) {
-  const response = await api.get('/api/users/search', {
+  const response = await api.get('/users/search', {
     params: { q: query, limit },
   });
   return response.data?.data || response.data || [];
@@ -182,7 +183,7 @@ export async function updateAvatar(file) {
   const formData = new FormData();
   formData.append('avatar', file);
 
-  const response = await api.post('/api/users/me/avatar', formData, {
+  const response = await api.post('/users/me/avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data?.data || response.data;
@@ -192,7 +193,7 @@ export async function updateAvatar(file) {
  * Delete user avatar
  */
 export async function deleteAvatar() {
-  const response = await api.delete('/api/users/me/avatar');
+  const response = await api.delete('/users/me/avatar');
   return response.data;
 }
 
@@ -200,7 +201,7 @@ export async function deleteAvatar() {
  * Change password
  */
 export async function changePassword(currentPassword, newPassword) {
-  const response = await api.post('/api/users/me/change-password', {
+  const response = await api.post('/users/me/change-password', {
     currentPassword,
     newPassword,
   });
@@ -211,7 +212,7 @@ export async function changePassword(currentPassword, newPassword) {
  * Export user data (GDPR)
  */
 export async function exportUserData() {
-  const response = await api.get('/api/users/me/export', {
+  const response = await api.get('/users/me/export', {
     responseType: 'blob',
   });
   return response.data;
@@ -221,7 +222,7 @@ export async function exportUserData() {
  * Delete user account
  */
 export async function deleteAccount(confirmation) {
-  const response = await api.delete('/api/users/me', {
+  const response = await api.delete('/users/me', {
     data: { confirmation },
   });
   return response.data;

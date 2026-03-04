@@ -106,6 +106,27 @@ export function normalizeProjects(projects) {
   return projects.map(normalizeProject).filter(Boolean);
 }
 
+// ⭐ PHASE 2: Round-robin color assignment for new projects
+export const PROJECT_COLORS = [
+  '#7C3AED', // violet
+  '#2DD4BF', // teal
+  '#F59E0B', // amber
+  '#3B82F6', // blue
+  '#EC4899', // pink
+  '#10B981', // emerald
+  '#F97316', // orange
+  '#6366F1'  // indigo
+];
+
+/**
+ * Get the next color in the sequence based on the number of existing projects
+ * @param {number} existingCount - Number of projects the user currently has
+ * @returns {string} - Hex color string
+ */
+export function getNextProjectColor(existingCount = 0) {
+  return PROJECT_COLORS[existingCount % PROJECT_COLORS.length];
+}
+
 export default {
   getProjectId,
   hasValidProjectId,
@@ -113,4 +134,6 @@ export default {
   navigateToProject,
   normalizeProject,
   normalizeProjects,
+  PROJECT_COLORS,
+  getNextProjectColor
 };
