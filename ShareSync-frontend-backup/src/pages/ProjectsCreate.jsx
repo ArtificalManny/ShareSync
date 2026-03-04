@@ -346,7 +346,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-purple-300 mb-2">
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
                       Project Title <span className="text-fuchsia-400">*</span>
                     </label>
                     <input
@@ -357,7 +357,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         clearFieldError("title");
                       }}
                       placeholder="e.g., OpenShare Mobile App"
-                      className={`w-full rounded-xl border bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500
+                      style={{ color: "#ffffff", backgroundColor: "#1e293b" }}
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-400
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all
                         ${fieldErrors.title ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
@@ -371,33 +372,35 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-purple-300 mb-2">Category</label>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">Category</label>
                     <input
                       type="text"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder="e.g., SaaS, Personal, School"
-                      className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ color: "#ffffff", backgroundColor: "#1e293b" }}
+                      className="w-full rounded-xl border border-purple-500/30 px-4 py-3 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       disabled={submitting || isAtLimit}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-purple-300 mb-2">Initial Status</label>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">Initial Status</label>
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
-                      className="w-full rounded-xl border border-purple-500/30 bg-slate-800/50 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ color: "#ffffff", backgroundColor: "#1e293b" }}
+                      className="w-full rounded-xl border border-purple-500/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       disabled={submitting || isAtLimit}
                     >
-                      <option>Not Started</option>
-                      <option>In Progress</option>
-                      <option>Completed</option>
+                      <option style={{ color: "#ffffff", backgroundColor: "#0f172a" }}>Not Started</option>
+                      <option style={{ color: "#ffffff", backgroundColor: "#0f172a" }}>In Progress</option>
+                      <option style={{ color: "#ffffff", backgroundColor: "#0f172a" }}>Completed</option>
                     </select>
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-purple-300 mb-2">
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
                       Description <span className="text-fuchsia-400">*</span>
                     </label>
                     <textarea
@@ -408,7 +411,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       }}
                       placeholder="What are you building? What problem does it solve? What's your goal?"
                       rows={4}
-                      className={`w-full rounded-xl border bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500
+                      style={{ color: "#ffffff", backgroundColor: "#1e293b" }}
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-400
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none
                         ${fieldErrors.description ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
@@ -417,7 +421,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     {fieldErrors.description ? (
                       <p className="mt-1 text-xs text-red-300">{fieldErrors.description}</p>
                     ) : (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-400 mt-1">
                         💡 Tip: A clear description helps your team understand the vision
                       </p>
                     )}
@@ -570,7 +574,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       </p>
                     ) : (
                       <p className="mt-3 text-xs text-slate-400">
-                        �� Unlisted public projects can still be shared via direct link.
+                        🔗 Unlisted public projects can still be shared via direct link.
                       </p>
                     )}
                   </div>
@@ -595,7 +599,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         clearFieldError("memberEmail");
                       }}
                       placeholder="teammate@email.com"
-                      className={`w-full rounded-xl border bg-slate-800/50 px-4 py-3 text-white placeholder-slate-500
+                      style={{ color: "#ffffff", backgroundColor: "#1e293b" }}
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-400
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all
                         ${fieldErrors.memberEmail ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
@@ -609,12 +614,13 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   <select
                     value={memberRole}
                     onChange={(e) => setMemberRole(e.target.value)}
-                    className="rounded-xl border border-purple-500/30 bg-slate-800/50 px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    style={{ color: "#ffffff", backgroundColor: "#1e293b" }}
+                    className="rounded-xl border border-purple-500/30 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     disabled={submitting || isAtLimit}
                   >
-                    <option>Member</option>
-                    <option>Manager</option>
-                    <option>Viewer</option>
+                    <option style={{ color: "#ffffff", backgroundColor: "#0f172a" }}>Member</option>
+                    <option style={{ color: "#ffffff", backgroundColor: "#0f172a" }}>Manager</option>
+                    <option style={{ color: "#ffffff", backgroundColor: "#0f172a" }}>Viewer</option>
                   </select>
 
                   <button
@@ -659,7 +665,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   </div>
                 )}
 
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   💡 Tip: You can invite more members after creating the project
                 </p>
               </section>
