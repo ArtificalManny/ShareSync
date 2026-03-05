@@ -1,104 +1,117 @@
-// src/components/project/Announcements.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 8.2: Live Announcements & Threads (Gallery Walk Theme)
-// WIRED: Connected to backend API. Moderation intercepts bad content.
-// THREADS: Added comment viewing and posting capability directly on posts.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import React, { useState, useEffect } from 'react';
-import { Megaphone, Plus, X, ChevronDown, ChevronUp, MessageCircle, Paperclip, Send } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Megaphone, Plus, X, ChevronDown, ChevronUp, MessageCircle, Paperclip, FileText, Loader2 } from 'lucide-react';
 import TrustBadge from '../trust/TrustBadge';
 import { useIsMobile } from '../../hooks/useMobile';
-import { toast } from '../ui/toast';
-import { getAnnouncements, createAnnouncement, addCommentToAnnouncement } from '../../api/announcements';
+import { getAnnouncements, createAnnouncement } from '../../api/announcements';
 
 const Announcements = ({ projectId, currentUserId }) => {
   const isMobile = useIsMobile();
+  
   const [announcements, setAnnouncements] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(true);
   
-  // Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Thread State
-  const [activeCommentId, setActiveCommentId] = useState(null);
-  const [commentText, setCommentText] = useState('');
+  const loadAnnouncements = async () => {
+    if (!projectId) return;
+    try {
+      setLoading(true);
+      const data = await getAnnouncements(projectId);
 
-  // Fetch initial data
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      if (!projectId) return;
-      try {
-        setIsLoading(true);
-        const data = await getAnnouncements(projectId);
-        setAnnouncements(data || []);
-      } catch (err) {
-        toast.error("Failed to load announcements");
-      } finally {
-        setIsLoading(false);
+      // 🛡️ SAFE ARRAY EXTRACTION:
+      // No matter what weird shape the backend or Axios interceptor returns,
+      // we guarantee `announcements` is an array so .map() never crashes.
+      let safeArray = [];
+      if (Array.isArray(data)) {
+        safeArray = data;
+      } else if (data && Array.isArray(data.data)) {
+        safeArray = data.data;
+      } else if (data && Array.isArray(data.announcements)) {
+        safeArray = data.announcements;
       }
-    };
-    fetchAnnouncements();
+
+      setAnnouncements(safeArray);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load announcements:', err);
+      setError('Failed to load announcements');
+      setAnnouncements([]); // Fallback to empty array
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAnnouncements();
   }, [projectId]);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
 
   const handleCreateAnnouncement = async (e) => {
     e.preventDefault();
     if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) return;
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      const created = await createAnnouncement(projectId, {
-        title: newAnnouncement.title,
-        message: newAnnouncement.content, // Maps to backend schema
-      });
+      const formData = new FormData();
+      formData.append('title', newAnnouncement.title);
+      formData.append('message', newAnnouncement.content); // Backend expects 'message'
+      formData.append('pinned', 'false');
       
-      setAnnouncements([created, ...announcements]);
+      if (selectedFile) {
+        formData.append('file', selectedFile);
+      }
+
+      await createAnnouncement(projectId, formData);
+
+      // Reset Modal
       setNewAnnouncement({ title: '', content: '' });
+      setSelectedFile(null);
       setShowCreateModal(false);
-      toast.success("Announcement posted & team notified");
+      
+      // Refresh Feed
+      await loadAnnouncements();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Post rejected. Check content policy.");
+      console.error('Failed to create announcement:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handlePostComment = async (announcementId) => {
-    if (!commentText.trim()) return;
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Just now';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffHours = Math.abs(now - date) / 36e5;
     
-    try {
-      const updatedAnnouncement = await addCommentToAnnouncement(projectId, announcementId, commentText);
-      
-      // Update local state to show new comment
-      setAnnouncements(announcements.map(ann => 
-        ann._id === announcementId ? updatedAnnouncement : ann
-      ));
-      
-      setCommentText('');
-      setActiveCommentId(null);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Comment rejected by moderation filter.");
+    if (diffHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
-  };
-
-  const handleAttachFile = () => {
-    toast.info("AWS S3 integration pending. File attachments coming soon!");
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   return (
-    <div className="bg-white border border-slate-200/60 rounded-xl shadow-[0_4px_24px_rgba(139,92,246,0.06)] overflow-hidden">
+    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl shadow-xl">
       {/* Header */}
-      <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+      <div className="p-4 border-b border-slate-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center">
-              <Megaphone strokeWidth={1.5} className="w-5 h-5 text-amber-500" />
+            <div className="w-10 h-10 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl flex items-center justify-center">
+              <Megaphone className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-800 leading-tight">Announcements</h3>
+              <h3 className="font-bold text-white">Announcements</h3>
               <TrustBadge type="private" size="xs" inline />
             </div>
           </div>
@@ -107,17 +120,17 @@ const Announcements = ({ projectId, currentUserId }) => {
             {!isMobile && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-3 py-2 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-2 shadow-sm"
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-white"
               >
-                <Plus strokeWidth={2} className="w-4 h-4" />
-                New Post
+                <Plus className="w-4 h-4" />
+                New
               </button>
             )}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-2 hover:bg-slate-200/50 text-slate-500 rounded-lg transition-colors active:scale-95"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-300"
             >
-              {expanded ? <ChevronUp strokeWidth={1.5} className="w-5 h-5" /> : <ChevronDown strokeWidth={1.5} className="w-5 h-5" />}
+              {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -125,169 +138,149 @@ const Announcements = ({ projectId, currentUserId }) => {
 
       {/* Announcements List */}
       {expanded && (
-        <div className="p-5 space-y-4 bg-white">
-          {isLoading ? (
-             <div className="text-center py-8 animate-pulse">
-               <div className="w-12 h-12 bg-slate-100 rounded-full mx-auto mb-3" />
-               <div className="h-4 w-32 bg-slate-100 rounded mx-auto" />
-             </div>
+        <div className="p-4 space-y-3">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-400 text-sm">{error}</p>
+              <button onClick={loadAnnouncements} className="mt-2 text-xs text-purple-400 hover:underline">Try Again</button>
+            </div>
           ) : announcements.length === 0 ? (
             <div className="text-center py-8">
-              <Megaphone strokeWidth={1.5} className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm font-medium text-slate-500">No announcements yet</p>
+              <Megaphone className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">No announcements yet</p>
             </div>
           ) : (
-            announcements.map((ann) => (
-              <div
-                key={ann._id || ann.id}
-                className={`p-5 rounded-xl border transition-all ${
-                  ann.pinned
-                    ? 'bg-amber-50/30 border-amber-200'
-                    : 'bg-white border-slate-200/60 hover:shadow-md'
-                }`}
-              >
-                {/* Main Post */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-xs font-bold text-slate-500">
-                       {ann.authorId?.avatarUrl ? <img src={ann.authorId.avatarUrl} alt="avatar" className="w-full h-full object-cover"/> : ann.authorId?.name?.charAt(0) || '?'}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-[15px] text-slate-900 leading-tight">{ann.title}</h4>
-                      <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500 mt-0.5">
-                        <span className="text-slate-700">{ann.authorId?.name || 'Unknown'}</span>
+            announcements.map((announcement) => {
+              const id = announcement._id || announcement.id;
+              const title = announcement.title;
+              const content = announcement.message || announcement.content;
+              const authorName = announcement.authorId?.firstName || announcement.authorId?.username || announcement.author || 'Team Member';
+              const timestamp = formatDate(announcement.createdAt || announcement.timestamp);
+              const isPinned = announcement.pinned;
+              const attachments = announcement.attachments || [];
+
+              return (
+                <div
+                  key={id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    isPinned
+                      ? 'bg-orange-500/10 border-orange-500/30'
+                      : 'bg-slate-900/50 border-slate-700/50 hover:border-purple-500/30'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-bold text-white mb-1">{title}</h4>
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <span>{authorName}</span>
                         <span>•</span>
-                        <span>{new Date(ann.createdAt).toLocaleDateString()}</span>
+                        <span>{timestamp}</span>
                       </div>
                     </div>
+                    {isPinned && (
+                      <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs font-semibold rounded-full">
+                        Pinned
+                      </span>
+                    )}
                   </div>
-                  {ann.pinned && (
-                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider rounded-md border border-amber-200">
-                      Pinned
-                    </span>
+                  <p className="text-sm text-slate-300 whitespace-pre-wrap">{content}</p>
+
+                  {attachments.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {attachments.map((url, i) => (
+                        <a 
+                          key={i} 
+                          href={url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700 hover:bg-slate-700 hover:border-purple-500/30 transition-all text-xs text-purple-300"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Attachment {i + 1}
+                        </a>
+                      ))}
+                    </div>
                   )}
                 </div>
-                
-                <p className="text-[14px] text-slate-700 leading-relaxed mb-4">{ann.message || ann.content}</p>
-
-                {/* Attachments UI (Static for now) */}
-                {ann.attachments && ann.attachments.length > 0 && (
-                   <div className="flex flex-wrap gap-2 mb-4">
-                     {ann.attachments.map((file, idx) => (
-                       <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600">
-                         <Paperclip className="w-3 h-3" /> {file}
-                       </div>
-                     ))}
-                   </div>
-                )}
-
-                <div className="border-t border-slate-100 pt-3 mt-2">
-                  <button 
-                    onClick={() => setActiveCommentId(activeCommentId === ann._id ? null : ann._id)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-violet-600 transition-colors"
-                  >
-                    <MessageCircle strokeWidth={2} className="w-4 h-4" />
-                    {ann.comments?.length || 0} Comments
-                  </button>
-                </div>
-
-                {/* Threaded Comments Section */}
-                {activeCommentId === ann._id && (
-                  <div className="mt-4 pl-4 border-l-2 border-slate-100 space-y-4">
-                    {ann.comments?.map((comment, idx) => (
-                      <div key={idx} className="flex gap-3">
-                        <div className="w-6 h-6 rounded-full bg-slate-200 shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                          {comment.authorId?.name?.charAt(0) || '?'}
-                        </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex-1">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-bold text-slate-700">{comment.authorId?.name || 'User'}</span>
-                            <span className="text-[10px] text-slate-400">{new Date(comment.createdAt).toLocaleTimeString()}</span>
-                          </div>
-                          <p className="text-[13px] text-slate-600 leading-snug">{comment.text}</p>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Add Comment Input */}
-                    <div className="flex gap-2 items-center mt-2">
-                      <input 
-                        type="text" 
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Reply to thread..." 
-                        className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                      />
-                      <button 
-                        onClick={() => handlePostComment(ann._id)}
-                        className="p-2 bg-violet-100 text-violet-600 rounded-lg hover:bg-violet-200 transition-colors"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white border border-slate-200/60 rounded-2xl p-6 max-w-lg w-full shadow-[0_24px_60px_-15px_rgba(0,0,0,0.15)] animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-800">Broadcast to Team</h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">New Announcement</h2>
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors active:scale-95"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setSelectedFile(null);
+                }}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400"
               >
-                <X strokeWidth={1.5} className="w-5 h-5" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAnnouncement} className="space-y-5">
+            <form onSubmit={handleCreateAnnouncement} className="space-y-4">
               <div>
-                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Subject</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
                 <input
                   type="text"
                   value={newAnnouncement.title}
                   onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                  placeholder="What's the update?"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all font-medium"
+                  placeholder="What's the announcement?"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   autoFocus
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Message</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Details</label>
                 <textarea
                   value={newAnnouncement.content}
                   onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                  placeholder="Type your message here..."
-                  rows={5}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none transition-all"
+                  placeholder="Add more details..."
+                  rows={4}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  disabled={isSubmitting}
                 />
               </div>
-              
-              <div className="flex items-center justify-between pt-2">
-                <button 
-                  type="button"
-                  onClick={handleAttachFile}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  <Paperclip className="w-4 h-4" /> Attach File
-                </button>
 
+              <div className="pt-2">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                  className="hidden" 
+                />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white rounded-xl font-bold text-[14px] active:scale-[0.98] transition-all shadow-sm flex items-center gap-2"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 rounded-xl text-sm font-medium text-slate-300 transition-colors w-full justify-center"
                 >
-                  {isSubmitting ? 'Scanning & Posting...' : 'Post Announcement'}
+                  <Paperclip className="w-4 h-4" />
+                  {selectedFile ? selectedFile.name : 'Attach File (Optional)'}
                 </button>
               </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg text-white hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2"
+              >
+                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+                {isSubmitting ? 'Posting...' : 'Post Announcement'}
+              </button>
             </form>
           </div>
         </div>
