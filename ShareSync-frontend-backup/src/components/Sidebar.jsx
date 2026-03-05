@@ -2,7 +2,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
 // Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
-// ⭐ PHASE 3: The Dopamine Receiver (Endowed Progress visual pulse)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // CHANGES in v5.1:
@@ -31,6 +30,7 @@ import {
 
 import SidebarItem from "./nav/SidebarItem";
 import UserAvatar from "./ui/UserAvatar";
+import Logo from "./ui/Logo"; // ✅ Imported the new OpenShare Kinetic Monogram
 import { useFlowState } from "../contexts/FlowStateContext";
 import { useMomentumContext } from "../contexts/MomentumContext";
 import { useEntrance } from "./onboarding/AppEntrance";
@@ -144,26 +144,12 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 
   const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
-  
-  // Phase 3: The visual success state loop
-  const [isShipPulsing, setIsShipPulsing] = useState(false);
   const [isPulsing, setIsPulsing] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState("normal");
 
   const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
   const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
-
-  // ⭐ Phase 3: Listen for the local ship event and trigger the violet dopamine pulse
-  useEffect(() => {
-    const handleLocalShip = () => {
-      setIsShipPulsing(true);
-      setTimeout(() => setIsShipPulsing(false), 800);
-    };
-
-    window.addEventListener("local-ship", handleLocalShip);
-    return () => window.removeEventListener("local-ship", handleLocalShip);
-  }, []);
 
   useEffect(() => {
     if (!isComplete) return;
@@ -208,22 +194,14 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 
   return (
     <div className="flex flex-col items-center py-6">
-      <div 
-        className={`relative rounded-full transition-transform duration-300
-          ${isShipPulsing ? "xp-pulse-violet" : ""}
-          ${isPulsing ? "animate-bounce-subtle" : ""} 
-          ${isLevelingUp ? "scale-110" : "scale-100"} 
-          ${isAnimatingRing ? "progress-ring-entrance" : ""} 
-        `} 
-        data-momentum={glowLevel}
-      >
+      <div className={`relative ${isPulsing ? "animate-bounce-subtle" : ""} ${isLevelingUp ? "scale-110" : "scale-100"} ${isAnimatingRing ? "progress-ring-entrance" : ""} transition-transform duration-300`} data-momentum={glowLevel}>
         {isPulsing && <div className={`absolute inset-0 rounded-full ${pulseIntensity === "strong" ? "ring-pulse-strong" : "ring-pulse"}`} style={{ width: size, height: size }} />}
         {isLevelingUp && <div className="absolute inset-0 rounded-full level-up-flash" style={{ width: size, height: size, background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)" }} />}
         {isFireMode && <div className="absolute inset-0 rounded-full animate-fire-ring" style={{ width: size + 8, height: size + 8, top: -4, left: -4, border: "2px solid rgb(249 115 22 / 0.4)" }} />}
 
-        <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing || isShipPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
+        <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing || isShipPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center">
@@ -235,7 +213,7 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
           ) : isFireMode ? (
             <span className="text-lg animate-pulse">🔥</span>
           ) : (
-            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating || isShipPulsing ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
+            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
               {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
             </span>
           )}
@@ -458,14 +436,14 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header - CLEANED UP: No toggle buttons */}
+        {/* ✅ Header - CLEANED UP: Replaced text 'S' with Kinetic Monogram Logo */}
         <div className="flex items-center justify-center p-4">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
-                <span className="text-xs font-bold text-white">S</span>
+              <div className={`sidebar-logo flex items-center justify-center transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] animate-pulse" : "drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]"}`}>
+                <Logo size={28} />
               </div>
-              <span className="text-sm font-bold text-slate-800">OpenShare</span>
+              <span className="text-base font-bold text-slate-800 tracking-tight">OpenShare</span>
             </div>
           )}
           {/* Toggle buttons REMOVED per user request */}
