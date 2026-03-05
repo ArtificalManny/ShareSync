@@ -17,6 +17,9 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ProjectFollowModule } from '../follows/project-follow.module';
 
+// ✅ Inject the SMS Engine for Phone Verification
+import { SmsModule } from '../notifications/sms.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
@@ -31,6 +34,9 @@ import { ProjectFollowModule } from '../follows/project-follow.module';
     // ✅ Add these so UploadsService + ProjectFollowService are available
     forwardRef(() => UploadsModule),
     forwardRef(() => ProjectFollowModule),
+
+    // ✅ Bring in SMS Engine
+    SmsModule,
   ],
   controllers: [UserController],
   providers: [UserService],

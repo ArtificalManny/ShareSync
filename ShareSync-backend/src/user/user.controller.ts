@@ -2,7 +2,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER CONTROLLER - Profile and settings management
 // Phase 7: Added PUT /me, GET/PUT /me/settings endpoints
-// Priority 1: Added GET /me/onboarding, PATCH /me/onboarding/complete, GET /me/profile-strength
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -152,6 +151,54 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // PHONE VERIFICATION ENDPOINTS (Lap 3)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/phone/send-code')
+  async sendPhoneCode(@Req() req: any, @Body() body: { phoneNumber: string }) {
+    const id = req?.user?.sub || req?.user?.id;
+    
+    if (!body?.phoneNumber) {
+      throw new BadRequestException('phoneNumber is required');
+    }
+
+    await this.users.requestPhoneVerification(id, body.phoneNumber);
+
+    return {
+      success: true,
+      message: 'Verification code sent',
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/phone/verify-code')
+  async verifyPhoneCode(@Req() req: any, @Body() body: { code: string }) {
+    const id = req?.user?.sub || req?.user?.id;
+    
+    if (!body?.code) {
+      throw new BadRequestException('Verification code is required');
+    }
+
+    const isValid = await this.users.confirmPhoneVerification(id, body.code);
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    // Emit realtime update so frontend knows phone is verified
+    this.realtime.emitToUser(id, 'user:settingsUpdated', {
+      userId: id,
+      ts: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      message: 'Phone number verified successfully',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // GET /users/me/settings - Get user settings (Phase 7)
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -187,42 +234,6 @@ export class UserController {
       success: true,
       data: updated,
     };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PRIORITY 1: GET /users/me/onboarding - Get onboarding status
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me/onboarding')
-  async getOnboardingStatus(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-    const status = await this.users.getOnboardingStatus(userId);
-    return { success: true, data: status };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PRIORITY 1: PATCH /users/me/onboarding/complete - Mark onboarding done
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Patch('me/onboarding/complete')
-  async completeOnboarding(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-    await this.users.completeOnboarding(userId);
-    return { success: true, message: 'Onboarding marked as completed' };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PRIORITY 1: GET /users/me/profile-strength - Profile completion %
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me/profile-strength')
-  async getProfileStrength(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-    const strength = await this.users.getProfileStrength(userId);
-    return { success: true, data: strength };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

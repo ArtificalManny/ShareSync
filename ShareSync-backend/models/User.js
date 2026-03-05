@@ -6,6 +6,11 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  
+  // ⭐ PHONE VERIFICATION FIELDS (NEW)
+  phoneNumber: { type: String },
+  isPhoneVerified: { type: Boolean, default: false },
+
   profilePicture: { type: String, default: '' },
   age: { type: Number },
   bannerPicture: { type: String, default: 'https://via.placeholder.com/1200x300' },
@@ -349,7 +354,7 @@ UserSchema.methods.addXP = function(amount, reason) {
     this.gamification.level += 1;
     this.gamification.xpToNextLevel = this.calculateXPForNextLevel();
     
-    console.log(`�� ${this.username} leveled up to ${this.gamification.level}!`);
+    console.log(`🎉 ${this.username} leveled up to ${this.gamification.level}!`);
     
     // Award level-up badge if applicable
     if (this.gamification.level % 5 === 0) {
@@ -357,7 +362,7 @@ UserSchema.methods.addXP = function(amount, reason) {
         id: `level-${this.gamification.level}`,
         name: `Level ${this.gamification.level} Achiever`,
         description: `Reached level ${this.gamification.level}`,
-        icon: '🏆',
+        icon: '��',
         tier: this.gamification.level >= 20 ? 'platinum' : 
               this.gamification.level >= 10 ? 'gold' : 'silver',
       });
@@ -632,7 +637,7 @@ UserSchema.methods.logEnergy = function(energyLevel, mood, context) {
 };
 
 /**
- * Generate daily energy summary
+ * Generate daily summary
  */
 UserSchema.methods.generateDailySummary = function() {
   const today = new Date().toDateString();

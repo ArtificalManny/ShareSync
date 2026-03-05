@@ -1,7 +1,7 @@
 // src/notifications/sms.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // SMS SERVICE: Phone verification and SMS notifications
-// Phase 9: Stub implementation - integrate with Twilio/SNS when ready
+// Phase 9: Fully integrated Twilio Verify & Notification Engine
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -10,46 +10,87 @@ import { Injectable, Logger } from '@nestjs/common';
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
   private readonly enabled: boolean;
+  private readonly verifyEnabled: boolean;
+  private client: any = null;
 
   constructor() {
     // Check if SMS is configured
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+    const verifySid = process.env.TWILIO_VERIFY_SERVICE_SID;
 
     this.enabled = Boolean(accountSid && authToken && fromNumber);
+    this.verifyEnabled = Boolean(accountSid && authToken && verifySid);
 
-    if (!this.enabled) {
-      this.logger.warn('SMS not configured (TWILIO_* env vars missing) - SMS features disabled');
+    if (!this.enabled && !this.verifyEnabled) {
+      this.logger.warn('SMS not configured (TWILIO_* env vars missing) - SMS features operating in DEV MOCK mode');
+    }
+
+    if (this.enabled || this.verifyEnabled) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const twilio = require('twilio');
+        this.client = twilio(accountSid, authToken);
+      } catch {
+        this.logger.warn('Twilio package not installed - SMS sending skipped');
+        this.enabled = false;
+        this.verifyEnabled = false;
+      }
     }
   }
 
   /**
-   * Send verification code to phone number
-   * Returns the code that was sent (for verification)
+   * Send verification code to phone number (Uses Twilio Verify API)
    */
   async verifyPhoneNumber(phoneNumber: string): Promise<string> {
-    const code = this.generateCode6();
-
-    if (!this.enabled) {
-      this.logger.warn(`[DEV] SMS disabled - verification code for ${phoneNumber}: ${code}`);
-      return code;
+    if (!this.verifyEnabled || !this.client) {
+      const code = this.generateCode6();
+      this.logger.warn(`[DEV] SMS verify disabled - mock verification code for ${phoneNumber}: ${code}`);
+      return code; // Return mock code for development fallback
     }
 
     try {
-      await this.sendSms(phoneNumber, `Your ShareSync verification code is: ${code}`);
-      return code;
+      const verifySid = process.env.TWILIO_VERIFY_SERVICE_SID;
+      const verification = await this.client.verify.v2
+        .services(verifySid)
+        .verifications.create({ to: phoneNumber, channel: 'sms' });
+        
+      this.logger.log(`Verification SMS sent to ${phoneNumber}. Status: ${verification.status}`);
+      return 'pending';
     } catch (error) {
-      this.logger.error('Failed to send SMS verification:', error);
+      this.logger.error('Failed to send SMS verification via Twilio:', error);
       throw error;
     }
   }
 
   /**
-   * Send an SMS notification
+   * Check verification code (Uses Twilio Verify API)
+   */
+  async checkVerificationCode(phoneNumber: string, code: string): Promise<boolean> {
+    if (!this.verifyEnabled || !this.client) {
+      this.logger.warn(`[DEV] SMS verify disabled - auto-approving code ${code} for ${phoneNumber}`);
+      return true; // Auto-approve in dev environment if Twilio isn't set up
+    }
+
+    try {
+      const verifySid = process.env.TWILIO_VERIFY_SERVICE_SID;
+      const verificationCheck = await this.client.verify.v2
+        .services(verifySid)
+        .verificationChecks.create({ to: phoneNumber, code });
+        
+      return verificationCheck.status === 'approved';
+    } catch (error) {
+      this.logger.error('Failed to check Twilio verification code:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send a standard SMS notification (Non-OTP)
    */
   async sendNotification(phoneNumber: string, message: string): Promise<boolean> {
-    if (!this.enabled) {
+    if (!this.enabled || !this.client) {
       this.logger.warn(`[DEV] SMS disabled - would send to ${phoneNumber}: ${message}`);
       return false;
     }
@@ -64,37 +105,18 @@ export class SmsService {
   }
 
   /**
-   * Internal: Send SMS via Twilio (or other provider)
+   * Internal: Send SMS via Twilio Messages API
    */
   private async sendSms(to: string, body: string): Promise<void> {
-    // Twilio integration
-    let twilio: any;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      twilio = require('twilio');
-    } catch {
-      this.logger.warn('Twilio package not installed - SMS sending skipped');
-      return;
-    }
-
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-    if (!accountSid || !authToken || !fromNumber) {
-      this.logger.warn('Twilio credentials not configured');
-      return;
-    }
-
-    const client = twilio(accountSid, authToken);
-
-    await client.messages.create({
+    await this.client.messages.create({
       body,
       from: fromNumber,
       to,
     });
 
-    this.logger.log(`SMS sent to ${to}`);
+    this.logger.log(`Standard SMS sent to ${to}`);
   }
 
   private generateCode6(): string {

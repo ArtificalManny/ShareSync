@@ -45,6 +45,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresenceModule } from './presence/presence.module';
+import { SmsModule } from './notifications/sms.module'; // ✅ SMS Engine Wired In
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 3: GAMIFICATION MODULE
@@ -68,7 +69,6 @@ import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
 import { InsightsModule } from './insights/insights.module';
 import { VaultModule } from './vault/vault.module';
-import { AnnouncementsModule } from './announcements/announcements.module'; // <-- ADDED ANNOUNCEMENTS
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 5: POLISH & SCALE MODULES
@@ -191,6 +191,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ─────────────────────────────────────────────────────────────────────────
     MessagesModule,
     NotificationsModule,
+    SmsModule, // ✅
 
     // ✅ Phase 3: spectator follows
     ProjectFollowModule,
@@ -212,7 +213,6 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     ThreadsModule,
     InsightsModule,
     VaultModule,
-    AnnouncementsModule, // <-- ADDED ANNOUNCEMENTS
 
     // ✅ DISCOVERY (Public project feed)
     DiscoveryModule,
