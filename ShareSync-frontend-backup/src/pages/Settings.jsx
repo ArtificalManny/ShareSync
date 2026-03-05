@@ -10,11 +10,13 @@
 //   to dedicated Settings API (GET/PUT /settings).
 // - Maps Nest Settings schema to existing React state.
 // - Keeps ALL UI + layout identical.
+// - Added Phone Verification (Lap 4)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
 // OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { getSettings, updateSettings } from '../api/settings';
+import { sendPhoneVerificationCode, verifyPhoneCode } from '../api/users'; // ✅ Added Lap 4 API
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
@@ -22,7 +24,7 @@ import {
   Beaker,
   Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles,
   Play, Zap, Clock, Film, Star, Moon, Sun, Eye, Settings as SettingsIcon,
-  AlertTriangle, Trash2, CreditCard
+  AlertTriangle, Trash2, CreditCard, Phone, CheckCircle // ✅ Added Phone and CheckCircle icons
 } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
 import ExperimentHistory from "../components/settings/ExperimentHistory";
@@ -226,6 +228,13 @@ export default function Settings() {
   const [emailDigest, setEmailDigest] = useState(true);
   const [twoFA, setTwoFA] = useState(false);
 
+  // ✅ MOBILE VERIFICATION STATE (Lap 4)
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneStatus, setPhoneStatus] = useState('idle'); // 'idle' | 'pending' | 'verified'
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const otpRefs = useRef([]);
+
   const mqlRef = useRef(null);
 
   const applyTheme = (mode) => {
@@ -268,6 +277,14 @@ export default function Settings() {
     getSettings()
       .then((settings) => {
         if (ignore || !settings) return;
+
+        // ✅ Initialize Phone State
+        if (settings.phoneNumber) {
+          setPhoneNumber(settings.phoneNumber);
+        }
+        if (settings.isPhoneVerified) {
+          setPhoneStatus('verified');
+        }
 
         // Momentum
         const momentum = settings.momentum || {};
@@ -353,6 +370,72 @@ export default function Settings() {
       ignore = true;
     };
   }, []);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ PHONE VERIFICATION HANDLERS (Lap 4)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const handleRequestPhoneCode = async () => {
+    if (!phoneNumber.trim()) {
+      toast({ title: "Phone number required", variant: "error" });
+      return;
+    }
+    setPhoneLoading(true);
+    setErrorMsg('');
+    try {
+      await sendPhoneVerificationCode(phoneNumber);
+      setPhoneStatus('pending');
+      toast({ title: "Code sent!", description: "Check your messages.", variant: "success" });
+    } catch (e) {
+      const msg = e?.response?.data?.message || e.message || "Failed to send verification code.";
+      toast({ title: "Verification Failed", description: msg, variant: "error" });
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = value.substring(value.length - 1); // Keep only last digit
+    setOtpCode(newOtp);
+
+    // Auto-advance
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyPhoneCode = async () => {
+    const code = otpCode.join('');
+    if (code.length < 6) return;
+    
+    setPhoneLoading(true);
+    try {
+      await verifyPhoneCode(code);
+      setPhoneStatus('verified');
+      toast({ title: "Phone verified successfully!", variant: "success" });
+    } catch (e) {
+      const msg = e?.response?.data?.message || e.message || "Invalid code.";
+      toast({ title: "Verification Failed", description: msg, variant: "error" });
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  // Auto-verify when all 6 digits are typed
+  useEffect(() => {
+    if (otpCode.every(digit => digit !== '') && phoneStatus === 'pending') {
+      handleVerifyPhoneCode();
+    }
+  }, [otpCode, phoneStatus]);
+
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SAVE SETTINGS -> PUT /api/settings
@@ -750,6 +833,88 @@ export default function Settings() {
             title="Subscription & Billing"
           >
             <BillingSettings />
+          </SectionCard>
+
+          {/* ✅ MOBILE CONNECT SECTION (Lap 4 UI) */}
+          <SectionCard
+            icon={Phone}
+            iconBg="bg-blue-100 dark:bg-blue-500/10"
+            iconColor="text-blue-600 dark:text-blue-400"
+            title="Mobile Connect"
+          >
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500 dark:text-zinc-400">
+                Link your phone to receive real-time SMS alerts when your team ships features.
+              </p>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={phoneStatus === 'verified' || phoneStatus === 'pending'}
+                  className={`flex-1 rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${
+                    phoneStatus === 'verified'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400'
+                      : 'border-slate-200 bg-white text-slate-900 dark:border-[#1f1f23] dark:bg-[#09090B] dark:text-white'
+                  }`}
+                />
+
+                {phoneStatus === 'verified' ? (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-medium">
+                    <CheckCircle className="w-5 h-5" />
+                    Verified
+                  </div>
+                ) : phoneStatus === 'pending' ? (
+                  <button
+                    type="button"
+                    onClick={() => setPhoneStatus('idle')}
+                    className="px-4 py-3 rounded-xl border border-slate-200 dark:border-[#1f1f23] text-sm font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRequestPhoneCode}
+                    disabled={phoneLoading}
+                    className="px-6 py-3 rounded-xl text-white text-sm font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+                  >
+                    {phoneLoading ? 'Sending...' : 'Send Code'}
+                  </button>
+                )}
+              </div>
+
+              {/* 6-Digit OTP Expansion */}
+              {phoneStatus === 'pending' && (
+                <div className="pt-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                  <p className="text-sm font-medium text-slate-700 dark:text-zinc-300 mb-3 text-center">
+                    Enter the 6-digit code sent to your phone
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    {otpCode.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (otpRefs.current[index] = el)}
+                        type="text"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        className="w-12 h-14 text-center text-xl font-bold rounded-xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#09090B] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all shadow-sm"
+                      />
+                    ))}
+                  </div>
+                  {phoneLoading && (
+                    <p className="text-xs text-center text-slate-500 dark:text-zinc-500 mt-3 animate-pulse">
+                      Verifying...
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </SectionCard>
 
           {/* Appearance */}
