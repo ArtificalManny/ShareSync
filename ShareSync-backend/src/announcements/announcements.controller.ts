@@ -9,7 +9,10 @@ import {
   Param,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express'; // ✅ Needed for file uploads
 
 import { AnnouncementsService } from './announcements.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -36,6 +39,7 @@ export class AnnouncementsController {
   }
 
   @Post()
+  @UseInterceptors(FileInterceptor('file')) // ✅ Intercept incoming file named 'file'
   async createAnnouncement(
     @Param('projectId') projectId: string,
     @Request() req: any,
@@ -44,9 +48,10 @@ export class AnnouncementsController {
       title: string;
       message: string;
       type?: string;
-      pinned?: boolean;
+      pinned?: boolean | string;
       attachments?: string[];
     },
+    @UploadedFile() file?: Express.Multer.File, // ✅ Extract file from request
   ) {
     const authorId =
       String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
@@ -55,6 +60,7 @@ export class AnnouncementsController {
       projectId,
       authorId,
       ...body,
+      file, // ✅ Pass file down to service
     });
   }
 

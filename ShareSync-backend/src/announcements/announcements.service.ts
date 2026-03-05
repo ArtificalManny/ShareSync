@@ -1,9 +1,10 @@
 // src/announcements/announcements.service.ts
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 import { Announcement, AnnouncementDocument } from './schemas/announcements.schema';
+import { UploadsService } from '../uploads/uploads.service'; // ✅ Import UploadsService
 
 export type GetAnnouncementsOptions = {
   pinnedOnly?: boolean;
@@ -15,8 +16,9 @@ export type CreateAnnouncementInput = {
   title: string;
   message: string;
   type?: string;
-  pinned?: boolean;
+  pinned?: boolean | string; // Multer sends form-data as strings
   attachments?: string[];
+  file?: Express.Multer.File; // ✅ Accept optional file object
 };
 
 @Injectable()
@@ -24,6 +26,7 @@ export class AnnouncementsService {
   constructor(
     @InjectModel(Announcement.name)
     private readonly announcementModel: Model<AnnouncementDocument>,
+    @Optional() private readonly uploadsService?: UploadsService, // ✅ Inject UploadsService securely
   ) {}
 
   private toObjectId(id: string, label: string): Types.ObjectId {
@@ -44,8 +47,8 @@ export class AnnouncementsService {
 
     return this.announcementModel
       .find(query)
-      .populate('authorId', 'name username avatarUrl') // Pull user details for UI
-      .populate('comments.authorId', 'name username avatarUrl') // Pull comment author details
+      // ✅ Populate author info so frontend can display name/avatar
+      .populate('authorId', 'firstName lastName username profilePicture') 
       .sort({ pinned: -1, createdAt: -1 })
       .exec();
   }
@@ -54,39 +57,34 @@ export class AnnouncementsService {
     const projectObjectId = this.toObjectId(input.projectId, 'projectId');
     const authorObjectId = this.toObjectId(input.authorId, 'authorId');
 
+    const finalAttachments: string[] = input.attachments ? [...input.attachments] : [];
+
+    // ✅ Process file attachment if one was uploaded
+    if (input.file && this.uploadsService) {
+      try {
+        const storedFile = await this.uploadsService.uploadFile(input.file);
+        if (storedFile && storedFile.url) {
+          finalAttachments.push(storedFile.url);
+        }
+      } catch (err) {
+        console.error('Failed to upload announcement attachment:', err);
+        // Continue creating announcement even if upload fails
+      }
+    }
+
     const doc = await this.announcementModel.create({
       projectId: projectObjectId,
       authorId: authorObjectId,
       title: input.title,
       message: input.message,
       type: input.type || 'info',
-      pinned: Boolean(input.pinned),
-      attachments: input.attachments || [],
-      comments: [],
+      pinned: input.pinned === true || input.pinned === 'true', // Handle form-data strings
+      attachments: finalAttachments,
       readBy: [],
     });
 
-    return doc.populate('authorId', 'name username avatarUrl');
-  }
-
-  // NEW: Add a comment to an announcement thread
-  public async addComment(announcementId: string, authorId: string, text: string) {
-    const annId = this.toObjectId(announcementId, 'announcementId');
-    const authId = this.toObjectId(authorId, 'authorId');
-
-    const updated = await this.announcementModel.findByIdAndUpdate(
-      annId,
-      {
-        $push: { comments: { authorId: authId, text, createdAt: new Date() } }
-      },
-      { new: true }
-    )
-    .populate('authorId', 'name username avatarUrl')
-    .populate('comments.authorId', 'name username avatarUrl')
-    .exec();
-
-    if (!updated) throw new NotFoundException('Announcement not found');
-    return updated;
+    // ✅ Return populated document so UI updates immediately with author info
+    return this.announcementModel.findById(doc._id).populate('authorId', 'firstName lastName username profilePicture').exec();
   }
 
   public async markAsRead(announcementId: string, userId: string) {

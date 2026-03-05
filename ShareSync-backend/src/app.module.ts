@@ -45,7 +45,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresenceModule } from './presence/presence.module';
-import { SmsModule } from './notifications/sms.module'; // ✅ SMS Engine Wired In
+import { AnnouncementsModule } from './announcements/announcements.module'; // ✅ Added Announcements Module
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 3: GAMIFICATION MODULE
@@ -191,7 +191,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ─────────────────────────────────────────────────────────────────────────
     MessagesModule,
     NotificationsModule,
-    SmsModule, // ✅
+    AnnouncementsModule, // ✅ Added Announcements Module
 
     // ✅ Phase 3: spectator follows
     ProjectFollowModule,
