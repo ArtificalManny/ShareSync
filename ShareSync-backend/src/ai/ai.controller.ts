@@ -2,12 +2,39 @@ import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/comm
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIService } from './ai.service';
-import { SuggestionType } from './dto';
+import { SuggestionType, ChatRequestDto } from './dto';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
 export class AIController {
   constructor(private readonly aiService: AIService) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // NEW ENDPOINTS (For MentorDock & AISuggestionCard)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post('chat')
+  async chat(@Body() body: ChatRequestDto) {
+    const contextData = {
+      scope: body.scope,
+      projectId: body.projectId,
+      items: body.items,
+    };
+
+    const text = await this.aiService.generateChatResponse(body.prompt, contextData);
+    return { text };
+  }
+
+  @Get('suggestion')
+  async getSingleSuggestion() {
+    const suggestion = await this.aiService.generateSingleSuggestion();
+    // Wrap it in the exact JSON format your React AISuggestionCard expects
+    return { suggestion };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PREVIOUS ENDPOINTS (Preserved completely)
+  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('suggestions')
   async getSuggestions(
