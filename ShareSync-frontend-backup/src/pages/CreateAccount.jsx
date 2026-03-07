@@ -3,6 +3,7 @@
 // GLASS FORTRESS - Create Account Page
 // Two-step flow: Data Collection → OTP Verification
 // Frontend-only polish:
+// - Added OpenShare Kinetic Monogram Logo
 // - Fix alignment (Last name now matches First name icon/padding)
 // - Inputs less "boxed" (rounded-xl + ring)
 // - ShareSync → OpenShare copy (Terms)
@@ -17,6 +18,7 @@ import {
   AtSign, ArrowLeft
 } from "lucide-react";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
+import Logo from "../components/ui/Logo";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PASSWORD STRENGTH METER
@@ -146,6 +148,11 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* OpenShare Kinetic Monogram */}
+      <div className="flex justify-center mb-2 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
+        <Logo size={48} />
+      </div>
+
       <div className="text-center">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 ring-1 ring-purple-500/20 flex items-center justify-center">
           <Mail className="w-8 h-8 text-purple-400" />
@@ -356,6 +363,11 @@ export default function CreateAccount() {
             onSubmit={handleSubmitData}
             className="space-y-4"
           >
+            {/* OpenShare Kinetic Monogram */}
+            <div className="flex justify-center mb-6 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
+              <Logo size={48} />
+            </div>
+
             <AuthError>{error}</AuthError>
 
             <div className="grid grid-cols-2 gap-3">
@@ -614,4 +626,3 @@ export default function CreateAccount() {
     </AuthLayout>
   );
 }
-

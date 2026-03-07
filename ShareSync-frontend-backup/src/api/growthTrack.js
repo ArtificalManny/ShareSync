@@ -16,7 +16,7 @@ export async function getSkillProfile(userId) {
     return response.data;
   } catch (error) {
     console.error('[GrowthTrack API] Skills error:', error);
-    return getMockSkillProfile(userId);
+    return null;
   }
 }
 
@@ -31,7 +31,7 @@ export async function getEvolutionMoments(userId) {
     return response.data;
   } catch (error) {
     console.error('[GrowthTrack API] Evolution error:', error);
-    return getMockEvolutionMoments(userId);
+    return [];
   }
 }
 
@@ -46,7 +46,7 @@ export async function getGrowthSuggestions(userId) {
     return response.data;
   } catch (error) {
     console.error('[GrowthTrack API] Suggestions error:', error);
-    return getMockGrowthSuggestions(userId);
+    return [];
   }
 }
 
@@ -65,7 +65,7 @@ export async function getGrowthTrends(userId, metric = 'all', weeks = 12) {
     return response.data;
   } catch (error) {
     console.error('[GrowthTrack API] Trends error:', error);
-    return getMockGrowthTrends(userId, metric, weeks);
+    return null;
   }
 }
 

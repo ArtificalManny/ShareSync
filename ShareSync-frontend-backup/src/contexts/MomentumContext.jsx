@@ -1,10 +1,11 @@
 // src/contexts/MomentumContext.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE C: Momentum Engine + PHASE F: Sound Integration
+// PHASE C: Momentum Engine + PHASE F: Sound Integration + OPTIMISTIC UI
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Provides momentum state and activity tracking throughout the app.
 // ⭐ PHASE F: Plays sounds on momentum level changes and fire mode activation
+// ⭐ OPTIMISTIC: Supports instant XP injection/reversion before API resolves
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -145,6 +146,37 @@ export function MomentumProvider({ children }) {
     }
     // Note: deactivation sound is played in the deactivation logic below
   }, [isFireMode, playFireModeActivate]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIMISTIC UI METHODS
+  // ─────────────────────────────────────────────────────────────────────────────
+  
+  const addOptimisticXP = useCallback((points = 10) => {
+    setScore(prev => {
+      const newScore = prev + points;
+      const newLevel = calculateLevel(newScore);
+      if (newLevel !== glowLevel) {
+        setGlowLevel(newLevel);
+      }
+      return newScore;
+    });
+    playTick(glowLevel);
+  }, [glowLevel, calculateLevel, playTick]);
+
+  const revertOptimisticXP = useCallback((points = 10) => {
+    setScore(prev => {
+      const newScore = Math.max(0, prev - points);
+      const newLevel = calculateLevel(newScore);
+      if (newLevel !== glowLevel) {
+        setGlowLevel(newLevel);
+        if (newLevel < 5 && isFireMode) {
+          setIsFireMode(false);
+          playFireModeDeactivate();
+        }
+      }
+      return newScore;
+    });
+  }, [glowLevel, isFireMode, calculateLevel, playFireModeDeactivate]);
   
   // Record activity and update momentum
   const recordActivity = useCallback((type, metadata = {}) => {
@@ -292,6 +324,8 @@ export function MomentumProvider({ children }) {
     recordTeamActivity,
     setLevel,
     resetMomentum,
+    addOptimisticXP,       // ✅ Exported optimistic method
+    revertOptimisticXP,    // ✅ Exported reversion method
     
     // Config
     thresholds: MOMENTUM_CONFIG.thresholds,
@@ -310,6 +344,8 @@ export function MomentumProvider({ children }) {
     recordTeamActivity,
     setLevel, 
     resetMomentum,
+    addOptimisticXP,
+    revertOptimisticXP,
   ]);
   
   return (
@@ -344,6 +380,8 @@ export function useMomentumContext() {
       recordTeamActivity: () => {},
       setLevel: () => {},
       resetMomentum: () => {},
+      addOptimisticXP: () => {},
+      revertOptimisticXP: () => {},
       thresholds: MOMENTUM_CONFIG.thresholds,
       maxLevel: 5,
     };

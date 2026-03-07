@@ -1,5 +1,6 @@
 // src/components/project/ProjectHeader.jsx
 import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Activity, Flame, Brain, Cloud, CloudRain, Sun, Zap, Plus } from 'lucide-react';
 import "./project-header.css";
 import Button from "../ui/Button";
@@ -184,6 +185,7 @@ function StreakFireBadge({ streak = 0 }) {
 }
 
 export default function ProjectHeader({
+  projectId, // Added explicitly for layoutId targeting
   name = "Untitled Project",
   status = "In Progress",
   isPublic = false,
@@ -192,7 +194,6 @@ export default function ProjectHeader({
   onStartFocus,
   onDownloadICS,
   icon = "U",
-  // NEW: Enhanced features
   stats,
   shippedAt,
   membersCount = 0
@@ -213,7 +214,6 @@ export default function ProjectHeader({
     return Math.round(streakPoints + velocityPoints + onTimePoints + activityPoints);
   };
 
-  // Determine mood from recent activity
   const determineMood = () => {
     if (shippedAt && Date.now() - new Date(shippedAt).getTime() < 86400000) {
       return 'celebrating';
@@ -233,7 +233,12 @@ export default function ProjectHeader({
     status === "In Progress" ? "good" : status === "Paused" ? "warn" : "muted";
 
   return (
-    <section className="project-header panel-neon specular" role="region" aria-label="Project header">
+    <motion.section 
+      layoutId={projectId ? `project-container-${projectId}` : undefined}
+      className="project-header panel-neon specular" 
+      role="region" 
+      aria-label="Project header"
+    >
       <div className="ph-inner">
         {/* Left cluster with DNA Pulse */}
         <div className="ph-left">
@@ -301,6 +306,6 @@ export default function ProjectHeader({
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }

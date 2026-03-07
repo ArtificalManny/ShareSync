@@ -60,20 +60,20 @@ const InsightsTab = ({ projectId }) => {
       {/* Header & Controls */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-zinc-100">Project Insights</h2>
-          <p className="text-sm text-zinc-400">Velocity, cycle time, and team health.</p>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Project Insights</h2>
+          <p className="text-sm text-slate-500 dark:text-zinc-400">Velocity, cycle time, and team health.</p>
         </div>
         
         {/* Time Range Selector */}
-        <div className="flex bg-[#18181b] border border-[#27272a] rounded-lg p-1">
+        <div className="flex bg-slate-100 dark:bg-[#18181b] border border-slate-200 dark:border-[#27272a] rounded-lg p-1">
           {['7d', '14d', '30d'].map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
                 range === r 
-                  ? 'bg-zinc-800 text-zinc-100 shadow-sm' 
-                  : 'text-zinc-500 hover:text-zinc-300'
+                  ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-sm' 
+                  : 'text-slate-500 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300'
               }`}
             >
               {r.toUpperCase()}
@@ -84,13 +84,13 @@ const InsightsTab = ({ projectId }) => {
 
       {/* AI Insights Banner (Optional but awesome) */}
       {aiInsights && aiInsights.length > 0 && (
-        <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4 flex gap-4 items-start">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-xl p-4 flex gap-4 items-start">
           <div className="bg-emerald-500/20 p-2 rounded-lg text-emerald-400">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
           </div>
           <div>
-            <h4 className="text-zinc-100 font-semibold text-sm">{aiInsights[0].title}</h4>
-            <p className="text-zinc-400 text-sm mt-1">{aiInsights[0].description}</p>
+            <h4 className="text-slate-800 dark:text-zinc-100 font-semibold text-sm">{aiInsights[0].title}</h4>
+            <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1">{aiInsights[0].description}</p>
           </div>
         </div>
       )}

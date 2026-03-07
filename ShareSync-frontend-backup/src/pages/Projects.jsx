@@ -1,21 +1,18 @@
 // src/pages/Projects.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC PROJECTS PAGE v4.0 - "The Gallery Walk" Light Theme
-// ⭐ Phase 2: Typographic Signal-to-Noise (Tracking tightest & Mono tabular nums)
-// ⭐ Phase 3: The "Launch" Sequence (Glossy Aurora buttons)
-// ⭐ Phase 4: Ruthless Efficiency (Tesla Spec: ring borders, high-contrast text)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Working Studio"
 //
 // COLOR MAP:
-// - Page Background: #F1F5F9 (slate-100) via index.css
-// - Project Cards: #FFFFFF with ring borders
-// - Card Border: ring-1 ring-slate-200
-// - Card Shadow: shadow-[0_0_15px_rgba(139,92,246,0.1)]
+// - Page Background: #F8FAFC (clean canvas)
+// - Project Cards: #FFFFFF with violet-tinted shadows
+// - Card Hover: violet shadow lift effect
+// - Card Border: #E2E8F0 (slate-200)
 // - Project Icon Background: #EEF2FF (soft violet tint)
 // - Velocity Bar: Ocean Gradient (blue → cyan → teal)
-// - "Start Sprint" Button: Aurora Gloss
+// - "Start Sprint" Button: #3B82F6 (blue-500)
 // - Filter Pills Active: #8B5CF6 bg, white text
 // - Filter Pills Inactive: #F1F5F9 bg, #64748B text
 //
@@ -75,7 +72,7 @@ const VelocityBar = ({ percentage }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROJECT CARD - Grid View (Tesla Spec: Machined Readout)
+   PROJECT CARD - Grid View (Light theme with violet shadows)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -112,25 +109,32 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
       onClick={handleClick}
       className={`
         group p-5 rounded-xl cursor-pointer
-        bg-white dark:bg-[#1f1f23] 
-        ring-1 ring-slate-200 dark:ring-white/10
-        hover:ring-violet-200 dark:hover:ring-violet-500/30
-        shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.1)]
+        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+        hover:border-violet-200 dark:hover:border-violet-500/30
         transition-all duration-200
         ${project.isAtRisk ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : ''}
       `}
+      style={{
+        boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)',
+        borderTop: `3px solid ${project.color || '#8B5CF6'}`,
+      }}
       onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.12)';
         e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 24px rgba(139, 92, 246, 0.06)';
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       {/* Header: Emoji + Streak */}
       <div className="flex justify-between items-start mb-4">
         {/* Project Icon Background: #EEF2FF (soft violet tint) */}
-        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
-          {getSeasonEmoji(project.season)}
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform"
+          style={{ backgroundColor: `${project.color || '#8B5CF6'}15`, color: project.color || '#8B5CF6' }}
+        >
+          {project.icon || project.emoji || getSeasonEmoji(project.season)}
         </div>
 
         {streak > 0 && (
@@ -142,13 +146,13 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
             }
           `}>
             <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}`} />
-            <span className="font-mono tabular-nums">{streak}d</span>
+            <span>{streak}d</span>
           </div>
         )}
       </div>
 
       {/* Title + Description */}
-      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors tracking-tightest">
+      <h3 className="text-base font-semibold text-slate-800 dark:text-zinc-100 mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
         {project.name}
       </h3>
       <p className="text-sm text-slate-500 dark:text-zinc-400 line-clamp-2 mb-4">
@@ -157,7 +161,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
 
       {/* Next Step */}
       {hasNextStep ? (
-        <div className="bg-slate-50 dark:bg-[#111113] ring-1 ring-slate-100 dark:ring-white/5 rounded-lg p-3 mb-4">
+        <div className="bg-slate-50 dark:bg-[#111113] border border-slate-100 dark:border-white/5 rounded-lg p-3 mb-4">
           <div className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
             Next step
           </div>
@@ -180,7 +184,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
           <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
             Velocity
           </span>
-          <span className={`text-xs font-medium font-mono tabular-nums ${velocity >= 100 ? 'text-teal-600 dark:text-teal-400' : 'text-slate-700 dark:text-zinc-300'}`}>
+          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-teal-600 dark:text-teal-400' : 'text-slate-700 dark:text-zinc-300'}`}>
             {velocity}%
           </span>
         </div>
@@ -191,15 +195,29 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
       <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/10">
         <div className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500">
           <Users className="w-3.5 h-3.5" />
-          <span className="text-xs font-mono tabular-nums">
+          <span className="text-xs">
             {project.metrics?.openTasks?.value || 0} tasks
           </span>
         </div>
 
-        {/* Start Sprint Button - Glossy Aurora */}
+        {/* Start Sprint Button - Blue (#3B82F6) */}
         <button
           onClick={handleStartSprint}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium btn-aurora-gloss"
+          className="
+            px-3 py-1.5 rounded-lg text-xs font-medium
+            text-white
+            hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900/20
+            transition-all duration-200
+          "
+          style={{
+            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)';
+          }}
         >
           Start Sprint
         </button>
@@ -209,7 +227,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROJECT ROW - List View (Tesla Spec)
+   PROJECT ROW - List View (Light theme)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
@@ -244,19 +262,29 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
       onClick={handleClick}
       className="
         group flex items-center justify-between p-4 rounded-xl cursor-pointer
-        bg-white dark:bg-[#1f1f23] 
-        ring-1 ring-slate-200 dark:ring-white/10
-        hover:ring-violet-200 dark:hover:ring-violet-500/30
-        shadow-sm hover:shadow-[0_0_15px_rgba(139,92,246,0.1)]
+        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+        hover:border-violet-200 dark:hover:border-violet-500/30
         transition-all duration-200
       "
+      style={{
+        boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 20px rgba(139, 92, 246, 0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(139, 92, 246, 0.04)';
+      }}
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg flex items-center justify-center text-xl">
-          {getSeasonEmoji(project.season)}
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+          style={{ backgroundColor: `${project.color || '#8B5CF6'}15`, color: project.color || '#8B5CF6' }}
+        >
+          {project.icon || project.emoji || getSeasonEmoji(project.season)}
         </div>
         <div>
-          <h3 className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors tracking-tightest">
+          <h3 className="text-sm font-medium text-slate-800 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
             {project.name}
           </h3>
           <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -272,18 +300,23 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
             ${isImpressiveStreak ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}
           `}>
             <Flame className="w-3.5 h-3.5" />
-            <span className="font-medium font-mono tabular-nums">{streak}d</span>
+            <span className="font-medium">{streak}d</span>
           </div>
         )}
 
         <button
           onClick={handleStartSprint}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium btn-aurora-gloss"
+          className="
+            px-3 py-1.5 rounded-lg text-xs font-medium
+            bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300
+            hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white
+            transition-all duration-200
+          "
         >
           Launch
         </button>
 
-        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronRight className="w-4 h-4 text-slate-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
   );
@@ -428,7 +461,7 @@ const Projects = () => {
     <div 
       className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto"
       style={{
-        background: 'var(--gallery-bg, #F1F5F9)'
+        background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%))'
       }}
     >
       {/* ═══════════════════════════════════════════════════════════════════
@@ -442,7 +475,7 @@ const Projects = () => {
               Project Deck
             </span>
           </div>
-          <h1 className="text-4xl font-semibold text-slate-800 dark:text-white tracking-tightest">
+          <h1 className="text-4xl font-semibold text-slate-800 dark:text-white">
             Projects
           </h1>
         </div>
@@ -455,10 +488,10 @@ const Projects = () => {
               type="text"
               placeholder="Search projects..."
               className="
-                bg-white dark:bg-[#1f1f23] ring-1 ring-slate-200 dark:ring-white/10 rounded-lg
-                pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-zinc-200
+                bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-lg
+                pl-10 pr-4 py-2.5 text-sm text-slate-700 dark:text-zinc-200
                 placeholder:text-slate-400 dark:placeholder:text-zinc-600
-                focus:ring-2 focus:ring-violet-500 focus:outline-none
+                focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20
                 w-56 transition-all focus:w-72
               "
               value={searchQuery}
@@ -472,8 +505,20 @@ const Projects = () => {
             className="
               flex items-center gap-2 px-4 py-2.5 rounded-lg
               text-white text-sm font-medium
-              transition-all duration-200 btn-aurora-gloss
+              transition-all duration-200
             "
+            style={{
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
+              boxShadow: '0 4px 14px rgba(139, 92, 246, 0.25)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.35)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(139, 92, 246, 0.25)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Project</span>
@@ -514,7 +559,7 @@ const Projects = () => {
             className={`
               p-2 rounded-md transition-all
               ${viewMode === 'grid'
-                ? 'bg-white dark:bg-[#1f1f23] text-slate-900 dark:text-zinc-200 shadow-sm ring-1 ring-slate-200/50 dark:ring-white/10'
+                ? 'bg-white dark:bg-[#1f1f23] text-slate-800 dark:text-zinc-200 shadow-sm border border-slate-200/50 dark:border-white/10'
                 : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300'
               }
             `}
@@ -526,7 +571,7 @@ const Projects = () => {
             className={`
               p-2 rounded-md transition-all
               ${viewMode === 'list'
-                ? 'bg-white dark:bg-[#1f1f23] text-slate-900 dark:text-zinc-200 shadow-sm ring-1 ring-slate-200/50 dark:ring-white/10'
+                ? 'bg-white dark:bg-[#1f1f23] text-slate-800 dark:text-zinc-200 shadow-sm border border-slate-200/50 dark:border-white/10'
                 : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300'
               }
             `}

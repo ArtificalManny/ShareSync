@@ -1,14 +1,13 @@
 // src/components/AISuggestionCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM v2.0 - "Breathing Card System"
-// ═══════════════════════════════════════════════════════════════════════════════
-// 3-ELEMENT RULE APPLIED:
-// 1) Title + icon  2) Suggestion text  3) Refresh button
+// FIXED: Now uses the authorized API client to talk to the new NestJS AI Module
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
 import Card from './common/Card';
 import { Sparkles, RefreshCw } from 'lucide-react';
+import { getAiSuggestion } from '../api/ai';
 
 const CACHE_KEY = 'ai_suggestion_v1';
 
@@ -32,9 +31,8 @@ export default function AISuggestionCard() {
         }
       }
 
-      const res = await fetch('/api/ai/suggestion', { credentials: 'include' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      // Hit our new NestJS endpoint securely
+      const data = await getAiSuggestion();
 
       const suggestion =
         (data?.suggestion && typeof data.suggestion === 'string')
@@ -44,6 +42,7 @@ export default function AISuggestionCard() {
       setText(suggestion);
       sessionStorage.setItem(CACHE_KEY, suggestion);
     } catch (e) {
+      console.error('[AISuggestionCard] Error fetching suggestion:', e);
       setErr('Failed to load suggestion.');
       const fallback = 'Try finishing one tiny task to build momentum.';
       setText(fallback);
@@ -70,7 +69,7 @@ export default function AISuggestionCard() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-warning" />
-          <h3 className="text-sm font-medium text-text-primary">AI Suggestion</h3>
+          <h3 className="text-sm font-medium text-text-primary">AI Coach</h3>
         </div>
         <button
           type="button"

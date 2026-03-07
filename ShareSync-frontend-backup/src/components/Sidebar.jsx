@@ -8,6 +8,8 @@
 // - Removed toggle buttons (>> << arrows) completely per user request
 // - Removed auto-hide indicator wedge
 // - Cleaner minimal header
+// - Added canvas-confetti for 7-day streak celebration
+// - Added permanent subtle pulse for 3-day streak
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -27,10 +29,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import confetti from "canvas-confetti"; // ✅ Added for Variable Rewards
 
 import SidebarItem from "./nav/SidebarItem";
 import UserAvatar from "./ui/UserAvatar";
-import Logo from "./ui/Logo"; // ✅ Imported the new OpenShare Kinetic Monogram
+import Logo from "./ui/Logo";
 import { useFlowState } from "../contexts/FlowStateContext";
 import { useMomentumContext } from "../contexts/MomentumContext";
 import { useEntrance } from "./onboarding/AppEntrance";
@@ -144,12 +147,27 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 
   const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
+  const prevStreakRef = useRef(streak); // ✅ Track streak for confetti
   const [isPulsing, setIsPulsing] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState("normal");
 
   const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
   const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
+
+  // ✅ Trigger Confetti on 7-Day Streak
+  useEffect(() => {
+    if (streak >= 7 && streak > (prevStreakRef.current || 0)) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { x: 0.1, y: 0.4 }, // Originates from the left sidebar area
+        colors: ['#8B5CF6', '#10B981', '#3B82F6', '#F59E0B'],
+        zIndex: 100
+      });
+    }
+    prevStreakRef.current = streak;
+  }, [streak]);
 
   useEffect(() => {
     if (!isComplete) return;
@@ -198,6 +216,11 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
         {isPulsing && <div className={`absolute inset-0 rounded-full ${pulseIntensity === "strong" ? "ring-pulse-strong" : "ring-pulse"}`} style={{ width: size, height: size }} />}
         {isLevelingUp && <div className="absolute inset-0 rounded-full level-up-flash" style={{ width: size, height: size, background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)" }} />}
         {isFireMode && <div className="absolute inset-0 rounded-full animate-fire-ring" style={{ width: size + 8, height: size + 8, top: -4, left: -4, border: "2px solid rgb(249 115 22 / 0.4)" }} />}
+        
+        {/* ✅ Permanent 3-Day Streak Pulse (Emerald glow) */}
+        {streak >= 3 && !isLevelingUp && !isPulsing && !isFireMode && (
+          <div className="absolute inset-0 rounded-full animate-pulse opacity-50 ring-2 ring-emerald-400/40" style={{ width: size, height: size }} />
+        )}
 
         <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
@@ -436,17 +459,16 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* ✅ Header - CLEANED UP: Replaced text 'S' with Kinetic Monogram Logo */}
-        <div className="flex items-center justify-center p-4">
-          {!collapsed && (
-            <div className="flex items-center gap-2.5">
-              <div className={`sidebar-logo flex items-center justify-center transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] animate-pulse" : "drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]"}`}>
-                <Logo size={28} />
-              </div>
-              <span className="text-base font-bold text-slate-800 tracking-tight">OpenShare</span>
+        {/* Header - FIXED: Logo stays visible, text hides smoothly */}
+        <div className="flex items-center justify-center p-4 min-h-[64px]">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className={`sidebar-logo shrink-0 flex items-center justify-center transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] animate-pulse" : "drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]"}`}>
+              <Logo size={28} />
             </div>
-          )}
-          {/* Toggle buttons REMOVED per user request */}
+            {!collapsed && (
+              <span className="text-base font-bold text-slate-800 tracking-tight whitespace-nowrap">OpenShare</span>
+            )}
+          </div>
         </div>
 
         {/* Progress Ring */}
@@ -510,8 +532,6 @@ export default function Sidebar({ user }) {
             )}
           </div>
         </div>
-
-        {/* Auto-hide indicator REMOVED per user request */}
       </aside>
 
       {/* Backdrop for auto-hide */}

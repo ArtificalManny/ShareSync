@@ -1,12 +1,13 @@
 // src/components/ui/Button.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC BUTTON v4.0 - "The Gallery Walk" Light Theme + Signature Gradients
-// UPDATED (Task 2.6): Tied `glow` to Phase 2 `xpGlow` animation system.
+// OPTIMIZED: Injects `aurora-fast` animation safely when in Fire Mode.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useMemo } from "react";
+import React, { useMemo, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X } from "lucide-react";
+import { MomentumContext } from "../../contexts/MomentumContext"; // ✅ Added for FireMode detection
 
 const cn = (...a) => a.filter(Boolean).join(" ");
 
@@ -65,16 +66,25 @@ export default function Button({
 }) {
   const MotionAs = useMemo(() => getMotionComponent(As), [As]);
 
+  // ✅ Safely extract fire mode (won't crash if rendered outside provider)
+  const momentum = useContext(MomentumContext);
+  const isFireMode = momentum?.isFireMode || false;
+
   const derivedState = loading ? "loading" : state;
   const isBusy = derivedState === "loading";
   const isDisabled = Boolean(disabled) || isBusy;
+
+  // Determine if this is a gradient button that should spin faster in Fire Mode
+  const isPrimary = variant === "primary" || variant === "sunset" || variant === "aurora";
+  const auroraFastClass = isFireMode && isPrimary ? "aurora-fast" : "";
 
   const classes = cn(
     "btn transition-all duration-200",
     SIZE[size] || SIZE.md,
     VARIANT[variant] || VARIANT.primary,
-    glow && "animate-[xpGlow_2s_infinite]", // ⭐ Connected to Phase 2 glow system
+    glow && "shadow-glow-brand",
     fullWidth && "w-full",
+    auroraFastClass,
     className
   );
 
@@ -91,6 +101,9 @@ export default function Button({
       transition={{ type: "spring", stiffness: 420, damping: 30 }}
       {...rest}
     >
+      {/* ✅ Injected CSS strictly for the faster fire-mode animation */}
+      <style>{`.aurora-fast { animation-duration: 1.5s !important; }`}</style>
+
       <AnimatePresence mode="wait">
         {derivedState === "loading" ? (
           <motion.span

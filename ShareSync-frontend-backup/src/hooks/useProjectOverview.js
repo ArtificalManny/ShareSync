@@ -29,13 +29,21 @@ export function useProjectOverview(projectId, options = {}) {
 
     try {
       setError(null);
-      // ✅ FIX: Replaced the broken `getProjectOverview` wrapper with a direct
-      // call to the correct `/pulse` endpoint that actually exists on the backend.
+      // Try pulse endpoint first for rich data
       const res = await apiRequest(`/projects/${projectId}/pulse`);
       const payload = res?.data ?? res;
       setData(payload);
     } catch (err) {
-      setError(err?.message || "Failed to load project overview");
+      // Pulse failed — fall back to basic project endpoint
+      console.warn("[useProjectOverview] Pulse failed, falling back to basic project data:", err?.message);
+      try {
+        const fallback = await apiRequest(`/projects/${projectId}`);
+        const fallbackPayload = fallback?.data ?? fallback;
+        // Wrap in the shape the rest of the hook expects
+        setData({ project: fallbackPayload, tasks: fallbackPayload?.tasks || [], activity: [], milestones: [], events: [], threads: [], files: [] });
+      } catch (fallbackErr) {
+        setError(fallbackErr?.message || "Failed to load project");
+      }
     } finally {
       setLoading(false);
     }

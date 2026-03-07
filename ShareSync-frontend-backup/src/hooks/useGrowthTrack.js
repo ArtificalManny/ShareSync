@@ -41,8 +41,20 @@ export function useGrowthTrack(userId) {
       setSuggestions(sugg);
       setTrends(trend);
     } catch (err) {
-      setError(err.message || 'Failed to load growth data');
+      console.warn('[useGrowthTrack] Growth data unavailable:', err?.message);
+      // Set everything to null so Profile shows "unlock" empty state
+      // instead of fake/mock analytics
+      setSkillProfile(null);
+      setEvolution([]);
+      setSuggestions([]);
+      setTrends(null);
+      setError(null); // Don't show error — just show empty state
     } finally {
+```
+
+Save that. Now we also need to check if the API functions themselves return mock data. Run this:
+```
+cat /Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup/src/api/growthTrack.js
       setLoading(false);
     }
   }, [userId]);

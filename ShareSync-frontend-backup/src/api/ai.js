@@ -1,9 +1,20 @@
-// /src/api/ai.js
-import client from './client'
+import client from './client';
 
-// Posts metrics to backend and returns { suggestion }
-export async function fetchAISuggestion(payload) {
-  // If your client baseURL isn't '/api', change to '/api/ai/suggestion'
-  const { data } = await client.post('/ai/suggestion', payload)
-  return data
+/**
+ * Sends a chat prompt to the AI Coach
+ * @param {Object} payload - { prompt: string, projectId?: string, scope?: string, items?: any[] }
+ */
+export async function askAiChat(payload) {
+  const res = await client.post('/ai/chat', payload);
+  return res.data; // { text: "AI response here..." }
 }
+
+/**
+ * Fetches a single, context-aware productivity suggestion
+ */
+export async function getAiSuggestion() {
+  const res = await client.get('/ai/suggestion');
+  return res.data; // { suggestion: "Your suggestion here..." }
+}
+
+export default { askAiChat, getAiSuggestion };

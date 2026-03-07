@@ -1,6 +1,7 @@
 // src/pages/ForgotPassword.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Forgot Password Page
+// Added OpenShare Kinetic Monogram Logo
 // Shows success state after sending (for security, always says "if exists")
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout, AuthButton, AuthError } from '../layouts/AuthLayout';
+import Logo from "../components/ui/Logo";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -88,6 +90,11 @@ export default function ForgotPassword() {
             onSubmit={handleSubmit}
             className="space-y-4"
           >
+            {/* OpenShare Kinetic Monogram */}
+            <div className="flex justify-center mb-6 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
+              <Logo size={48} />
+            </div>
+
             <AuthError>{error}</AuthError>
 
             {/* Email */}
@@ -134,6 +141,11 @@ export default function ForgotPassword() {
             animate={{ opacity: 1, x: 0 }}
             className="text-center space-y-6"
           >
+            {/* OpenShare Kinetic Monogram */}
+            <div className="flex justify-center mb-2 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
+              <Logo size={48} />
+            </div>
+
             {/* Success icon */}
             <motion.div
               initial={{ scale: 0 }}

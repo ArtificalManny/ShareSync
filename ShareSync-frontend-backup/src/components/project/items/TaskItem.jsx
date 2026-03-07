@@ -1,6 +1,7 @@
 // src/components/project/items/TaskItem.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
+// OPTIMISTIC UI: Instantly updates state on click before API resolves
 // ═══════════════════════════════════════════════════════════════════════════════
 // 3-ZONE PATTERN (Asana-style consistent scanning):
 //
@@ -12,8 +13,9 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from "react";
+import React, { useState } from "react";
 import { CheckCircle2, PencilLine, ClipboardList, ChevronRight } from "lucide-react";
+import { useMomentumContext } from "../../../contexts/MomentumContext";
 
 export default function TaskItem({ event, when, isFresh = false, onClick, className = "" }) {
   const u = event || {};
@@ -21,8 +23,18 @@ export default function TaskItem({ event, when, isFresh = false, onClick, classN
   const title = u.title || u.meta?.title || u.text || "Task";
   const whenText = when || (u.createdAt ? new Date(u.createdAt).toLocaleString() : "");
 
-  // Status configuration
-  const isCompleted = t.includes("completed");
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIMISTIC UI STATE
+  // ─────────────────────────────────────────────────────────────────────────────
+  const [optimisticCompleted, setOptimisticCompleted] = useState(false);
+  const momentumContext = useMomentumContext();
+  
+  // Safely extract context methods (prevents crashes if context is missing)
+  const addOptimisticXP = momentumContext?.addOptimisticXP;
+  const revertOptimisticXP = momentumContext?.revertOptimisticXP;
+
+  // Status configuration (incorporating optimistic state)
+  const isCompleted = t.includes("completed") || optimisticCompleted;
   const isUpdated = t.includes("updated");
 
   const status = isCompleted
@@ -33,9 +45,43 @@ export default function TaskItem({ event, when, isFresh = false, onClick, classN
 
   const Icon = status.icon;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OPTIMISTIC CLICK HANDLER
+  // ─────────────────────────────────────────────────────────────────────────────
+  const handleItemClick = async (e) => {
+    if (!onClick) return;
+
+    // If it's already completed natively or optimistically, just fire the normal click
+    if (t.includes("completed") || optimisticCompleted) {
+      return onClick(e);
+    }
+
+    // 🔥 Optimistic Execution: Instantly update UI and XP
+    setOptimisticCompleted(true);
+    if (addOptimisticXP) addOptimisticXP(10); // Standard task completion XP
+
+    try {
+      // Fire the backend API call asynchronously
+      const result = await onClick(e);
+      
+      // If the parent explicitly returns a failure object, revert
+      if (result && result.success === false) {
+        throw new Error("Server rejected completion");
+      }
+    } catch (error) {
+      // ⚠️ Revert on Failure: If the API fails, undo the checkmark and XP silently
+      console.warn("Optimistic update failed, reverting UI:", error);
+      setOptimisticCompleted(false);
+      if (revertOptimisticXP) revertOptimisticXP(10);
+      
+      // Notify the user why the checkmark disappeared
+      window.alert("Failed to sync task. Please try again.");
+    }
+  };
+
   return (
     <div 
-      onClick={onClick}
+      onClick={handleItemClick}
       className={`
         group flex items-center gap-4 p-3 rounded-xl
         bg-surface-1 border border-white/[0.06]
@@ -87,7 +133,7 @@ export default function TaskItem({ event, when, isFresh = false, onClick, classN
         </span>
 
         {/* Fresh indicator (subtle dot) */}
-        {isFresh && (
+        {isFresh && !isCompleted && (
           <div className="w-1.5 h-1.5 rounded-full bg-brand" />
         )}
 

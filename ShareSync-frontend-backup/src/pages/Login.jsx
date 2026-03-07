@@ -4,6 +4,7 @@
 // Frontend-only polish:
 // - ShareSync → OpenShare copy
 // - Divider bg made transparent (less "boxed")
+// - Added OpenShare Kinetic Monogram Logo
 // - NO auth logic changed
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -12,6 +13,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
+import Logo from "../components/ui/Logo";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -63,6 +65,11 @@ export default function Login() {
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to continue shipping">
       <form onSubmit={onSubmit} className="space-y-4">
+        {/* OpenShare Kinetic Monogram */}
+        <div className="flex justify-center mb-6 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
+          <Logo size={48} />
+        </div>
+
         <AuthError>{error}</AuthError>
 
         {/* Email */}
@@ -190,4 +197,3 @@ export default function Login() {
     </AuthLayout>
   );
 }
-

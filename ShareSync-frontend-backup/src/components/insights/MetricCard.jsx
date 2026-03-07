@@ -12,13 +12,13 @@ const MetricCard = ({ title, value, trend, unit, invertTrendColors = false }) =>
   const trendBgClass = isPositiveTrend ? 'bg-emerald-400/10' : 'bg-rose-400/10';
 
   return (
-    <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5 flex flex-col justify-between">
-      <h3 className="text-zinc-400 text-sm font-medium tracking-wide mb-2">{title}</h3>
+    <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#27272a] rounded-xl p-5 flex flex-col justify-between" style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}>
+      <h3 className="text-slate-500 dark:text-zinc-400 text-sm font-medium tracking-wide mb-2">{title}</h3>
       
       <div className="flex items-end justify-between">
         <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-zinc-100">{value}</span>
-          {unit && <span className="text-zinc-500 text-sm font-medium">{unit}</span>}
+          <span className="text-3xl font-bold text-slate-800 dark:text-zinc-100">{value}</span>
+          {unit && <span className="text-slate-400 dark:text-zinc-500 text-sm font-medium">{unit}</span>}
         </div>
         
         <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold ${trendColorClass} ${trendBgClass}`}>

@@ -8,11 +8,12 @@
 // ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
 // ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
 // ⭐ THEME: Updated to Gallery Walk Light Theme
-// ⭐ ADD: Announcements tab integration
+// ⭐ LAYOUT: Framer Motion layoutId applied to ProjectHeader for spatial context
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "../components/ui/toast";
 
@@ -54,7 +55,6 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
-  Megaphone,
 } from "lucide-react";
 
 // Hooks
@@ -94,7 +94,6 @@ import RhythmView from "../components/views/RhythmView";
 import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
-import Announcements from "../components/project/Announcements";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -111,7 +110,6 @@ const PROJECT_VIEWS = [
   { id: "rhythm", label: "Rhythm", icon: Calendar, description: "Schedule & tempo" },
   { id: "insights", label: "Insights", icon: BarChart3, description: "AI analytics" },
   { id: "suggestions", label: "Suggestions", icon: Sparkles, description: "AI next moves" },
-  { id: "announcements", label: "Announcements", icon: Megaphone, description: "Project broadcasts" },
   { id: "threads", label: "Threads", icon: MessageCircle, badge: 3, description: "Conversations" },
   { id: "vault", label: "Vault", icon: Archive, description: "Files & assets" },
 ];
@@ -178,9 +176,13 @@ function ProjectHeader({
   };
 
   const state = getMomentumState();
+  const projectId = project?._id || project?.id;
 
   return (
-    <header className="px-10 py-6 border-b border-slate-200 bg-white">
+    <motion.header 
+      layoutId={projectId ? `project-container-${projectId}` : undefined}
+      className="px-10 py-6 border-b border-slate-200 bg-white"
+    >
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
         <span
@@ -303,7 +305,7 @@ function ProjectHeader({
           </button>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }
 
@@ -445,7 +447,7 @@ function PriorityStack({ moves }) {
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-slate-500">No critical moves yet (placeholder)</div>
+        <div className="text-xs text-slate-500">No critical moves yet — add your first priority above</div>
       )}
     </section>
   );
@@ -475,7 +477,7 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-slate-500">No active goals yet (placeholder)</div>
+        <div className="text-xs text-slate-500">No active goals yet — create one to focus your team</div>
       )}
     </section>
   );
@@ -681,7 +683,7 @@ export default function ProjectHome() {
         await shipUpdate({ description });
         flashShip();
         triggerPulse();
-        toast({ title: "🚀 Update Shipped!", variant: "success" });
+        toast({ title: "�� Update Shipped!", variant: "success" });
       } catch (e) {
         toast({ title: "Ship Failed", description: e?.message || "Unknown error", variant: "error" });
         throw e;
@@ -824,13 +826,6 @@ export default function ProjectHome() {
 
         case "suggestions":
           return <SuggestionsPanel projectId={id} project={project} />;
-          
-        case "announcements":
-          return (
-            <div className={pageWrap}>
-              <Announcements projectId={id} announcements={announcements} />
-            </div>
-          );
 
         case "threads":
           return (
