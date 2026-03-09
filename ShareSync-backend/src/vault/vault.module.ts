@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ModerationModule } from '../moderation/moderation.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { VaultFolder, VaultFolderSchema } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileSchema } from './schemas/vault-file.schema';
@@ -10,7 +11,8 @@ import { VaultController } from './vault.controller';
     MongooseModule.forFeature([
       { name: VaultFolder.name, schema: VaultFolderSchema },
       { name: VaultFile.name, schema: VaultFileSchema },
-    ])
+    ]),
+    ModerationModule,
   ],
   controllers: [VaultController],
   providers: [VaultService],

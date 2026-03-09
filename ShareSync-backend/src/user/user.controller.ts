@@ -31,6 +31,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 
 // ⚠️ If your UploadService lives somewhere else, update this import path.
 import { UploadsService } from '../uploads/uploads.service';
@@ -81,6 +82,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('me')
+  @UseInterceptors(TextModerationInterceptor)
   async patchMe(@Req() req: any, @Body() patch: UpdateUserDto) {
     const id = req?.user?.sub || req?.user?.id;
 
@@ -119,6 +121,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Put('me')
+  @UseInterceptors(TextModerationInterceptor)
   async updateMe(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     const id = req?.user?.sub || req?.user?.id;
 
@@ -147,54 +150,6 @@ export class UserController {
     return {
       success: true,
       data: updated,
-    };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PHONE VERIFICATION ENDPOINTS (Lap 3)
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Post('me/phone/send-code')
-  async sendPhoneCode(@Req() req: any, @Body() body: { phoneNumber: string }) {
-    const id = req?.user?.sub || req?.user?.id;
-    
-    if (!body?.phoneNumber) {
-      throw new BadRequestException('phoneNumber is required');
-    }
-
-    await this.users.requestPhoneVerification(id, body.phoneNumber);
-
-    return {
-      success: true,
-      message: 'Verification code sent',
-    };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('me/phone/verify-code')
-  async verifyPhoneCode(@Req() req: any, @Body() body: { code: string }) {
-    const id = req?.user?.sub || req?.user?.id;
-    
-    if (!body?.code) {
-      throw new BadRequestException('Verification code is required');
-    }
-
-    const isValid = await this.users.confirmPhoneVerification(id, body.code);
-
-    if (!isValid) {
-      throw new BadRequestException('Invalid or expired verification code');
-    }
-
-    // Emit realtime update so frontend knows phone is verified
-    this.realtime.emitToUser(id, 'user:settingsUpdated', {
-      userId: id,
-      ts: new Date().toISOString(),
-    });
-
-    return {
-      success: true,
-      message: 'Phone number verified successfully',
     };
   }
 

@@ -4,17 +4,16 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DiscoveryController } from './discovery.controller';
 import { DiscoveryService } from './discovery.service';
 
-// ✅ IMPORTANT: update this import path to match your project schema file.
-// Common patterns in your codebase might be:
-//   ../projects/schemas/project.schema
-//   ../projects/project.schema
-//   ../projects/schemas/project.schema.ts
 import { ProjectSchema } from '../projects/schemas/project.schema';
+// ⭐ UPGRADE: Item 8 - Import SuggestionSchema for Dasgupta Social Proof calculation
+import { SuggestionSchema } from '../suggestions/schemas/suggestion.schema';
 
 @Module({
   imports: [
-    // ✅ This is what makes @InjectModel('Project') work in DiscoveryService
-    MongooseModule.forFeature([{ name: 'Project', schema: ProjectSchema }]),
+    MongooseModule.forFeature([
+      { name: 'Project', schema: ProjectSchema },
+      { name: 'Suggestion', schema: SuggestionSchema }
+    ]),
   ],
   controllers: [DiscoveryController],
   providers: [DiscoveryService],

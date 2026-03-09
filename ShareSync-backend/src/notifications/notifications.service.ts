@@ -28,6 +28,11 @@ import {
   ProjectFollowDocument,
 } from '../follows/schemas/project-follow.schema';
 
+// ✅ Phase 12: Email + SMS fan-out
+import { EmailService } from './email.service';
+import { SmsService } from './sms.service';
+import { User, UserDocument } from '../user/schemas/user.schema';
+
 export interface NotificationPayload {
   userId: string;
   type: NotificationType;
@@ -57,6 +62,13 @@ export class NotificationsService {
     @Optional()
     @InjectModel(ProjectFollow.name)
     private readonly projectFollowModel?: Model<ProjectFollowDocument>,
+
+    // ✅ Phase 12: Email + SMS fan-out channels
+    @Optional() private readonly emailService?: EmailService,
+    @Optional() private readonly smsService?: SmsService,
+    @Optional()
+    @InjectModel(User.name)
+    private readonly userModel?: Model<UserDocument>,
   ) {}
 
   async create(dto: CreateNotificationDto): Promise<NotificationDocument> {
@@ -369,7 +381,82 @@ export class NotificationsService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   private emitNotification(notification: NotificationDocument): void {
+    // Channel 1: In-App (WebSocket) — always fires
     this.eventEmitter.emit('notification.created', notification);
+
+    // Channel 2 + 3: Email + SMS — async, non-blocking, preference-gated
+    this.fanOutToChannels(notification).catch((err) => {
+      this.logger.error('Fan-out to email/SMS failed (non-blocking):', err?.message);
+    });
+  }
+
+  /**
+   * ✅ Phase 12: Fan-out notification to email and SMS channels
+   * Respects user preferences. Non-blocking — failures are logged, not thrown.
+   */
+  private async fanOutToChannels(notification: NotificationDocument): Promise<void> {
+    if (!this.userModel) return;
+
+    const userId = notification.userId?.toString();
+    if (!userId) return;
+
+    let user: any;
+    try {
+      user = await this.userModel.findById(userId).lean();
+    } catch {
+      return; // User lookup failed — skip channels silently
+    }
+    if (!user) return;
+
+    const notifType = notification.type;
+    const priority = notification.priority;
+
+    // ── EMAIL ──────────────────────────────────────────────────────────────
+    // Send email for all notification types IF user has email enabled
+    if (this.emailService) {
+      try {
+        await this.emailService.sendNotification(user, {
+          type: notifType,
+          title: notification.title,
+          message: notification.body,
+          actionData: notification.actions?.[0] ? { url: notification.actions[0].url } : undefined,
+        });
+      } catch (err: any) {
+        this.logger.warn(`Email fan-out failed for user ${userId}: ${err?.message}`);
+      }
+    }
+
+    // ── SMS ────────────────────────────────────────────────────────────────
+    // Only send SMS for high-priority events to verified phone numbers
+    const smsEligibleTypes = [
+      'task_assigned',
+      'milestone_reached',
+      'project_milestone_reached',
+      'mention',
+      'message_mention',
+      'streak_at_risk',
+    ];
+
+    const isSmsEligible =
+      smsEligibleTypes.includes(notifType) ||
+      priority === NotificationPriority.HIGH ||
+      priority === NotificationPriority.URGENT;
+
+    if (this.smsService && isSmsEligible) {
+      const phone = user.phone || user.phoneNumber;
+      const phoneVerified = user.phoneVerified === true;
+      const smsEnabled = user.settings?.notifications?.smsEnabled !== false &&
+                         user.notificationPrefs?.channels?.sms !== false;
+
+      if (phone && phoneVerified && smsEnabled) {
+        try {
+          const smsBody = `ShareSync: ${notification.title} — ${notification.body}`.slice(0, 160);
+          await this.smsService.sendNotification(phone, smsBody);
+        } catch (err: any) {
+          this.logger.warn(`SMS fan-out failed for user ${userId}: ${err?.message}`);
+        }
+      }
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

@@ -16,9 +16,8 @@ import { RealtimeModule } from '../realtime/realtime.module';
 // (If either of these modules does not exist in your repo, delete that import line and we’ll adapt.)
 import { UploadsModule } from '../uploads/uploads.module';
 import { ProjectFollowModule } from '../follows/project-follow.module';
-
-// ✅ Inject the SMS Engine for Phone Verification
 import { SmsModule } from '../notifications/sms.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
@@ -35,8 +34,11 @@ import { SmsModule } from '../notifications/sms.module';
     forwardRef(() => UploadsModule),
     forwardRef(() => ProjectFollowModule),
 
-    // ✅ Bring in SMS Engine
+    // ✅ SMS Engine for Phone Verification
     SmsModule,
+
+    // ✅ Content moderation for bio/profile updates
+    ModerationModule,
   ],
   controllers: [UserController],
   providers: [UserService],

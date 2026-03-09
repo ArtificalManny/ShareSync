@@ -6,6 +6,7 @@ import { ThreadMessage, ThreadMessageSchema } from './schemas/thread-message.sch
 import { ThreadsService } from './threads.service';
 import { ThreadsController } from './threads.controller';
 import { ProjectsModule } from '../projects/projects.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ProjectsModule } from '../projects/projects.module';
       { name: ThreadMessage.name, schema: ThreadMessageSchema },
     ]),
     forwardRef(() => ProjectsModule),
+    ModerationModule,
   ],
   controllers: [ThreadsController],
   providers: [ThreadsService],

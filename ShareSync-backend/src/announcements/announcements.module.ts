@@ -3,12 +3,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AnnouncementsService } from './announcements.service';
 import { AnnouncementsController } from './announcements.controller';
 import { Announcement, AnnouncementSchema } from './schemas/announcements.schema';
-import { UploadsModule } from '../uploads/uploads.module'; // ✅ Imported UploadsModule
+import { UploadsModule } from '../uploads/uploads.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Announcement.name, schema: AnnouncementSchema }]),
-    UploadsModule, // ✅ Added to imports so UploadsService is available
+    UploadsModule,
+    ModerationModule,
   ],
   controllers: [AnnouncementsController],
   providers: [AnnouncementsService],

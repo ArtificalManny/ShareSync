@@ -10,11 +10,13 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 import { ThreadsService } from './threads.service';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
@@ -27,6 +29,7 @@ export class ThreadsController {
   constructor(private readonly threadsService: ThreadsService) {}
 
   @Post()
+  @UseInterceptors(TextModerationInterceptor)
   @ApiOperation({ summary: 'Create a new thread' })
   async create(@Req() req: any, @Body() dto: CreateThreadDto) {
     const userId = req.user?.sub || req.user?.userId;
@@ -67,6 +70,7 @@ export class ThreadsController {
   }
 
   @Put(':id')
+  @UseInterceptors(TextModerationInterceptor)
   @ApiOperation({ summary: 'Update a thread' })
   async update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateThreadDto) {
     const userId = req.user?.sub || req.user?.userId;

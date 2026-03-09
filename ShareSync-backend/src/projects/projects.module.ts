@@ -12,6 +12,7 @@ import { ProjectsService } from './projects.service';
 
 // ✅ Phase 3: follows (needed because ProjectsController injects ProjectFollowService)
 import { ProjectFollowModule } from '../follows/project-follow.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
@@ -19,6 +20,9 @@ import { ProjectFollowModule } from '../follows/project-follow.module';
 
     // ✅ allows DI of ProjectFollowService in ProjectsController
     ProjectFollowModule,
+
+    // ✅ Content moderation for project name/description
+    ModerationModule,
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService],

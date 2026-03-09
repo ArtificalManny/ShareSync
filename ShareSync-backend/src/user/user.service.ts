@@ -19,8 +19,6 @@ import { User, UserDocument } from './schemas/user.schema';
 import { ProjectsService } from '../projects/projects.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { buildActivitySummary } from '../utils/activitySummary';
-
-// ✅ Import SMS Service
 import { SmsService } from '../notifications/sms.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -87,7 +85,9 @@ export class UserService {
     private readonly projects: ProjectsService,
 
     private readonly activities: ActivitiesService,
-    private readonly smsService: SmsService, // ✅ Injected SMS Engine
+
+    // ✅ Phase 13: SMS for phone verification
+    private readonly smsService: SmsService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -181,8 +181,6 @@ export class UserService {
       lastName: (user as any).lastName || '',
       username: (user as any).username || '',
       email: (user as any).email || '',
-      phoneNumber: (user as any).phoneNumber || '', // ✅ Expose phone number to frontend settings
-      isPhoneVerified: (user as any).isPhoneVerified || false, // ✅ Expose verification status
       bio: (user as any).bio || '',
       timezone: (user as any).timezone || 'America/Los_Angeles',
       location: (user as any).location || '',
@@ -263,7 +261,7 @@ export class UserService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PHONE VERIFICATION (Lap 3)
+  // PHONE VERIFICATION (Phase 13)
   // ═══════════════════════════════════════════════════════════════════════════
 
   async requestPhoneVerification(userId: string, phoneNumber: string): Promise<void> {
@@ -291,14 +289,14 @@ export class UserService {
     if (!(user as any).phoneNumber) throw new BadRequestException('No phone number on record to verify.');
 
     // Check with Twilio
-    const isValid = await this.smsService.checkVerificationCode((user as any).phoneNumber, code);
-    
+    const isValid = await (this.smsService as any).checkVerificationCode((user as any).phoneNumber, code);
+
     if (isValid) {
       (user as any).isPhoneVerified = true;
       await user.save();
       return true;
     }
-    
+
     return false;
   }
 

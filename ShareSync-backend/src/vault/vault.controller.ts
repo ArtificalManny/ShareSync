@@ -2,6 +2,8 @@ import {
   Controller, Get, Post, Body, Param, Req, UseGuards, 
   UseInterceptors, UploadedFile, BadRequestException
 } from '@nestjs/common';
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
+import { ImageModerationService } from '../moderation/image-moderation.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -12,7 +14,10 @@ import { VaultService } from './vault.service';
 @Controller('vault')
 @UseGuards(JwtAuthGuard)
 export class VaultController {
-  constructor(private readonly vaultService: VaultService) {}
+  constructor(
+    private readonly vaultService: VaultService,
+    private readonly imageModerationService: ImageModerationService,
+  ) {}
 
   @Get('project/:projectId')
   async getProjectVault(@Req() req: any, @Param('projectId') projectId: string) {
@@ -22,6 +27,7 @@ export class VaultController {
   }
 
   @Post('folders')
+  @UseInterceptors(TextModerationInterceptor)
   async createFolder(
     @Req() req: any,
     @Body('projectId') projectId: string,
@@ -57,8 +63,20 @@ export class VaultController {
   ) {
     const userId = req.user?.sub || req.user?.userId;
     
-    if (!file) throw new BadRequestException('No file provided');
+   if (!file) throw new BadRequestException('No file provided');
     if (!projectId) throw new BadRequestException('Project ID is required');
+
+    // Image moderation — scan before storing
+    if (file.mimetype?.startsWith('image/') && file.buffer) {
+      const modResult = await this.imageModerationService.moderateImage(file.buffer);
+      if (modResult.action === 'block') {
+        throw new BadRequestException({
+          error: 'Content Policy Violation',
+          message: 'This image violates our community guidelines and cannot be uploaded.',
+          code: 'IMAGE_BLOCKED',
+        });
+      }
+    }
 
     const uploadedFile = await this.vaultService.uploadFile(projectId, userId, file, folderId);
     return { success: true, data: uploadedFile };

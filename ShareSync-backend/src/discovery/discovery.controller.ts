@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // DISCOVERY CONTROLLER - REST API for Discover feed
 // Phase 4: Instagram/Twitter-style discovery
+// ⭐ UPGRADE: Item 8 - Controller verified for Dasgupta-Informed Endpoints
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -24,10 +25,6 @@ import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger'
 export class DiscoveryController {
   constructor(private readonly discoveryService: DiscoveryService) {}
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MAIN DISCOVERY FEED (public)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Get()
   @UseGuards(RateLimitGuard)
   @ApiOperation({ summary: 'Get discovery feed' })
@@ -49,10 +46,6 @@ export class DiscoveryController {
     return this.discoveryService.getDiscoveryFeed(query);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ALGORITHMIC PERSONALIZED FEED (requires auth)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Get('feed')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -72,10 +65,6 @@ export class DiscoveryController {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // TRENDING
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Get('trending')
   @ApiOperation({ summary: 'Get trending projects' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -83,19 +72,11 @@ export class DiscoveryController {
     return this.discoveryService.getTrendingProjects(Number(limit));
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // CATEGORIES
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Get('categories')
   @ApiOperation({ summary: 'Get available categories' })
   async getCategories() {
     return this.discoveryService.getCategories();
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // DISCOVERY SECTIONS (for Jungle view)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('sections')
   @ApiOperation({ summary: 'Get discovery sections' })

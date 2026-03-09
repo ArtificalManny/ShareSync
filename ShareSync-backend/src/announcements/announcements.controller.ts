@@ -8,11 +8,10 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
   UseInterceptors,
-  UploadedFile,
+  Request,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express'; // ✅ Needed for file uploads
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 
 import { AnnouncementsService } from './announcements.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -39,7 +38,7 @@ export class AnnouncementsController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file')) // ✅ Intercept incoming file named 'file'
+  @UseInterceptors(TextModerationInterceptor)
   async createAnnouncement(
     @Param('projectId') projectId: string,
     @Request() req: any,
@@ -48,10 +47,9 @@ export class AnnouncementsController {
       title: string;
       message: string;
       type?: string;
-      pinned?: boolean | string;
+      pinned?: boolean;
       attachments?: string[];
     },
-    @UploadedFile() file?: Express.Multer.File, // ✅ Extract file from request
   ) {
     const authorId =
       String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
@@ -60,7 +58,6 @@ export class AnnouncementsController {
       projectId,
       authorId,
       ...body,
-      file, // ✅ Pass file down to service
     });
   }
 

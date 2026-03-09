@@ -2,7 +2,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECTS CONTROLLER: REST API Endpoints
 // + Phase 3: spectator follows (/projects/:id/follow)
-// + Priority 1: /projects/from-template, /projects/featured
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -16,6 +15,7 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
   Req,
   HttpStatus,
   HttpCode,
@@ -43,9 +43,7 @@ import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 import { ProjectFollowService } from '../follows/project-follow.service';
 import { FollowProjectDto } from '../follows/dto/follow-project.dto';
 import { UpdateFollowPrefsDto } from '../follows/dto/update-follow-prefs.dto';
-
-// ✅ Priority 1: template types
-import { TemplateType } from './templates/project-templates';
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLLER
@@ -97,55 +95,11 @@ export class ProjectsController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PRIORITY 1: TEMPLATE & FEATURED (MUST BE BEFORE :id ROUTES)
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @Post('from-template')
-  @ApiOperation({ summary: 'Create a project from a predefined template' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Template project created' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid template type' })
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async createFromTemplate(
-    @Req() req: any,
-    @Body() body: { templateType: TemplateType },
-  ) {
-    const userId = req.user?.sub || req.user?.userId;
-
-    if (!body.templateType || !['personal', 'team', 'learning'].includes(body.templateType)) {
-      return {
-        success: false,
-        error: 'Invalid templateType. Must be one of: personal, team, learning',
-      };
-    }
-
-    this.logger.log(`Creating template project: ${body.templateType} for user ${userId}`);
-    const result = await this.projectsService.createFromTemplate(userId, body.templateType);
-
-    return {
-      success: true,
-      data: result.project,
-      meta: { tasksQueued: result.taskCount },
-    };
-  }
-
-  @Get('featured')
-  @ApiOperation({ summary: 'Get featured public projects for Discover page' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Featured projects returned' })
-  async getFeaturedProjects(@Query('limit') limit?: string) {
-    const parsedLimit = limit ? Math.min(parseInt(limit, 10), 20) : 6;
-    const featured = await this.projectsService.getFeaturedProjects(parsedLimit);
-
-    return {
-      success: true,
-      data: featured,
-    };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
   // CREATE
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Post()
+  @UseInterceptors(TextModerationInterceptor)
   @ApiOperation({ summary: 'Create a new project' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Project created successfully' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input' })
@@ -308,6 +262,7 @@ export class ProjectsController {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Put(':id')
+  @UseInterceptors(TextModerationInterceptor)
   @ApiOperation({ summary: 'Update a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Project updated' })
