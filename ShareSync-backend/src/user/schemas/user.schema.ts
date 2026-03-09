@@ -87,6 +87,109 @@ export class User extends Document {
   publicProfile?: boolean;
 
   // ============================================
+  // ⭐ FIX: TOP-LEVEL SETTINGS OBJECTS
+  // Explicitly defined so Mongoose stops silently 
+  // dropping them during Settings page updates.
+  // ============================================
+
+  @Prop({ default: false })
+  discoverable?: boolean;
+
+  @Prop({
+    type: {
+      theme: { type: String, default: 'system' },
+      mode: { type: String, default: 'pro' },
+      accentColor: { type: String },
+      animations: { type: Boolean },
+      sounds: { type: Boolean }
+    },
+    default: undefined,
+  })
+  appearance?: {
+    theme?: 'system' | 'light' | 'dark';
+    mode?: 'kid' | 'pro';
+    accentColor?: string;
+    animations?: boolean;
+    sounds?: boolean;
+  };
+
+  @Prop({
+    type: {
+      enabled: { type: Boolean, default: true },
+      tone: { type: String, default: 'wise' },
+      intensity: { type: Number, default: 3 }
+    },
+    default: undefined,
+  })
+  mentor?: {
+    enabled?: boolean;
+    tone?: 'kind' | 'wise' | 'drill';
+    intensity?: number;
+  };
+
+  @Prop({
+    type: {
+      dailyGoal: { type: Number, default: 5 },
+      weekendCount: { type: Boolean, default: true },
+      allowFreeze: { type: Boolean, default: true }
+    },
+    default: undefined,
+  })
+  momentum?: {
+    dailyGoal?: number;
+    weekendCount?: boolean;
+    allowFreeze?: boolean;
+  };
+
+  @Prop({
+    type: {
+      dailyTarget: { type: Number, default: 4 },
+      autoStart: { type: Boolean, default: false },
+      startTime: { type: String, default: '09:00' }
+    },
+    default: undefined,
+  })
+  focus?: {
+    dailyTarget?: number;
+    autoStart?: boolean;
+    startTime?: string;
+  };
+
+  @Prop({
+    type: {
+      showStreakTo: { type: String, default: 'friends' },
+      celebrate: { type: Boolean, default: true }
+    },
+    default: undefined,
+  })
+  social?: {
+    showStreakTo?: 'nobody' | 'friends' | 'everyone';
+    celebrate?: boolean;
+  };
+
+  @Prop({
+    type: {
+      showEverywhere: { type: Boolean, default: true },
+      yearlyVideo: { type: Boolean, default: false }
+    },
+    default: undefined,
+  })
+  legacy?: {
+    showEverywhere?: boolean;
+    yearlyVideo?: boolean;
+  };
+
+  @Prop({
+    type: {
+      twoFA: { type: Boolean, default: false }
+    },
+    default: undefined,
+  })
+  security?: {
+    twoFA?: boolean;
+  };
+
+  // ============================================
   // PREFERENCES (NEW, but non-breaking)
   // Keep separate from your existing "settings" object to avoid breaking old UI.
   // ============================================

@@ -176,6 +176,7 @@ export class UserService {
 
     if (!user) throw new NotFoundException('User not found');
 
+    // ⭐ FIX: Stopped hardcoding default values. Now actively retrieving from db.
     return {
       firstName: (user as any).firstName || '',
       lastName: (user as any).lastName || '',
@@ -199,20 +200,20 @@ export class UserService {
         showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
         allowDMs: true,
       },
-      appearance: { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
-      mentor: { enabled: true, tone: 'wise', intensity: 3 },
-      momentum: { dailyGoal: 5, weekendCount: true, allowFreeze: true },
-      focus: {
+      appearance: (user as any).appearance || { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
+      mentor: (user as any).mentor || { enabled: true, tone: 'wise', intensity: 3 },
+      momentum: (user as any).momentum || { dailyGoal: 5, weekendCount: true, allowFreeze: true },
+      focus: (user as any).focus || {
         dailyTarget: (user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4,
         autoStart: (user as any).preferences?.focusMode?.autoEnable ?? false,
         startTime: '09:00',
       },
-      social: { showStreakTo: 'friends', celebrate: true },
-      legacy: { showEverywhere: true, yearlyVideo: false },
-      security: { twoFA: false },
+      social: (user as any).social || { showStreakTo: 'friends', celebrate: true },
+      legacy: (user as any).legacy || { showEverywhere: true, yearlyVideo: false },
+      security: (user as any).security || { twoFA: false },
       preferences: (user as any).preferences || {},
       publicProfile: (user as any).publicProfile ?? true,
-      discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
+      discoverable: (user as any).discoverable ?? (user as any).preferences?.privacy?.publicProfile ?? false,
     };
   }
 
@@ -237,8 +238,13 @@ export class UserService {
 
     if (settingsDto.privacySettings) { (user as any).publicProfile = settingsDto.privacySettings.profilePublic ?? (user as any).publicProfile; }
     if (settingsDto.publicProfile !== undefined) { (user as any).publicProfile = settingsDto.publicProfile; }
+    if (settingsDto.discoverable !== undefined) { (user as any).discoverable = settingsDto.discoverable; }
 
     if (settingsDto.appearance) {
+      // ⭐ FIX: Store appearance at top-level
+      (user as any).appearance = { ...((user as any).appearance || {}), ...settingsDto.appearance };
+      
+      // Preserve old preference mapping so we don't break existing UI dependencies
       const existing = (user as any).preferences ?? {};
       (user as any).preferences = { ...existing, theme: settingsDto.appearance.theme ?? existing.theme };
     }
@@ -246,6 +252,10 @@ export class UserService {
     const nestedFields = ['mentor', 'momentum', 'focus', 'social', 'legacy', 'security'];
     for (const field of nestedFields) {
       if (settingsDto[field] !== undefined) {
+        // ⭐ FIX: Now saving directly to the new top-level schema shelves we built!
+        (user as any)[field] = { ...((user as any)[field] || {}), ...settingsDto[field] };
+
+        // Keep saving into old preferences object just as a fallback 
         const existing = (user as any).preferences ?? {};
         (user as any).preferences = { ...existing, [field]: { ...(existing[field] || {}), ...settingsDto[field] } };
       }
