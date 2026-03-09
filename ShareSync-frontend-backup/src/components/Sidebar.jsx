@@ -2,15 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
 // Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// CHANGES in v5.1:
-// - Removed toggle buttons (>> << arrows) completely per user request
-// - Removed auto-hide indicator wedge
-// - Cleaner minimal header
-// - Added canvas-confetti for 7-day streak celebration
-// - Added permanent subtle pulse for 3-day streak
-//
+// ⭐ FIX: Restored official "S" Logo & "OpenShare" text mapping
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
@@ -29,11 +21,9 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import confetti from "canvas-confetti"; // ✅ Added for Variable Rewards
 
 import SidebarItem from "./nav/SidebarItem";
 import UserAvatar from "./ui/UserAvatar";
-import Logo from "./ui/Logo";
 import { useFlowState } from "../contexts/FlowStateContext";
 import { useMomentumContext } from "../contexts/MomentumContext";
 import { useEntrance } from "./onboarding/AppEntrance";
@@ -42,6 +32,8 @@ import useAnimatedNumber from "../hooks/useAnimatedNumber";
 import { MiniLeaderboard } from "./social/Leaderboard";
 import OnlineIndicator from "./social/OnlineIndicator";
 import { MiniLeagueIndicator } from "./social/MomentumLeague";
+
+import { getGamificationStats } from "../api/gamification";
 
 const LS_KEY = "ss.sidebar.collapsed";
 const LS_AUTOHIDE_KEY = "ss.sidebar.autohide";
@@ -86,7 +78,7 @@ function resolveAvatarUrl(u) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOMENTUM LEVEL INDICATOR - Light Theme
+   MOMENTUM LEVEL INDICATOR
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -130,9 +122,9 @@ function MomentumLevelIndicator({ collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - Light Theme (ALL animations preserved)
+   PROGRESS RING - LIVE DATA ENABLED
 ───────────────────────────────────────────────────────────────────────── */
-function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
+function ProgressRing({ progress: actualProgress = 0, level = 1, streak = 0, collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const entrance = useEntrance();
   const { progress: entranceProgress, isAnimatingRing, isComplete } = entrance || { progress: 100, isAnimatingRing: false, isComplete: true };
@@ -147,27 +139,12 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 
   const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
-  const prevStreakRef = useRef(streak); // ✅ Track streak for confetti
   const [isPulsing, setIsPulsing] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState("normal");
 
   const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
   const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
-
-  // ✅ Trigger Confetti on 7-Day Streak
-  useEffect(() => {
-    if (streak >= 7 && streak > (prevStreakRef.current || 0)) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { x: 0.1, y: 0.4 }, // Originates from the left sidebar area
-        colors: ['#8B5CF6', '#10B981', '#3B82F6', '#F59E0B'],
-        zIndex: 100
-      });
-    }
-    prevStreakRef.current = streak;
-  }, [streak]);
 
   useEffect(() => {
     if (!isComplete) return;
@@ -216,11 +193,6 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
         {isPulsing && <div className={`absolute inset-0 rounded-full ${pulseIntensity === "strong" ? "ring-pulse-strong" : "ring-pulse"}`} style={{ width: size, height: size }} />}
         {isLevelingUp && <div className="absolute inset-0 rounded-full level-up-flash" style={{ width: size, height: size, background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)" }} />}
         {isFireMode && <div className="absolute inset-0 rounded-full animate-fire-ring" style={{ width: size + 8, height: size + 8, top: -4, left: -4, border: "2px solid rgb(249 115 22 / 0.4)" }} />}
-        
-        {/* ✅ Permanent 3-Day Streak Pulse (Emerald glow) */}
-        {streak >= 3 && !isLevelingUp && !isPulsing && !isFireMode && (
-          <div className="absolute inset-0 rounded-full animate-pulse opacity-50 ring-2 ring-emerald-400/40" style={{ width: size, height: size }} />
-        )}
 
         <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
@@ -277,9 +249,9 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER - Light Theme
+   SHIP COUNTER
 ───────────────────────────────────────────────────────────────────────── */
-function ShipCounter({ current = 2, target = 5, collapsed = false }) {
+function ShipCounter({ current = 0, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
   const [isAnimating, setIsAnimating] = useState(false);
   const [justFilledIndex, setJustFilledIndex] = useState(-1);
@@ -297,7 +269,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   }, [current]);
 
   if (collapsed) {
-    const progress = Math.min(1, current / target);
+    const progress = Math.min(1, current / Math.max(target, 1));
     return (
       <div className="mx-auto mt-4 w-8 h-1 bg-slate-200 rounded-full overflow-hidden">
         <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${progress * 100}%` }} />
@@ -323,7 +295,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   COLLAPSIBLE SECTION - Light Theme
+   COLLAPSIBLE SECTION
 ───────────────────────────────────────────────────────────────────────── */
 function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -344,18 +316,14 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, c
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   HOVER TRIGGER ZONE (Auto-hide functionality preserved)
+   HOVER TRIGGER ZONE
 ───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
   return <div className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer" onMouseEnter={onHover} onMouseLeave={onLeave} style={{ background: "transparent" }} />;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
-   v5.1 CHANGES:
-   - REMOVED all toggle buttons (>> << arrows)
-   - REMOVED auto-hide indicator wedge
-   - Clean minimal header
+   MAIN SIDEBAR COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -363,8 +331,52 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  // Auto-hide is now disabled by default and not user-controllable via UI
-  // Users can still toggle via localStorage if they want
+  const [stats, setStats] = useState({
+    totalXP: 0,
+    level: 1,
+    progress: 0.0,
+    streakDays: 0,
+    shipsToday: 0,
+    dailyTarget: 5,
+    rank: null
+  });
+
+  const fetchLiveStats = async () => {
+    const data = await getGamificationStats();
+    if (data) {
+      const totalXP = data.totalXP || data.gamification?.totalXP || 0;
+      const level = data.level || data.gamification?.level || 1;
+      
+      let progress = data.progress;
+      if (typeof progress !== 'number') {
+        const xpBase = (level - 1) * 500;
+        const xpNext = level * 500;
+        progress = Math.max(0, Math.min(1, (totalXP - xpBase) / (xpNext - xpBase)));
+      }
+
+      setStats({
+        totalXP,
+        level,
+        progress,
+        streakDays: data.currentStreak || data.streakDays || data.gamification?.currentStreak || 0,
+        shipsToday: data.shipsToday || data.stats?.shipsThisWeek || 0,
+        dailyTarget: data.dailyTarget || 5,
+        rank: data.rank || null
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveStats();
+    const handleLocalUpdate = () => { setTimeout(fetchLiveStats, 500); };
+    window.addEventListener("local-ship", handleLocalUpdate);
+    const interval = setInterval(fetchLiveStats, 60000);
+    return () => {
+      window.removeEventListener("local-ship", handleLocalUpdate);
+      clearInterval(interval);
+    };
+  }, []);
+
   const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
@@ -377,7 +389,6 @@ export default function Sidebar({ user }) {
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
-  // Priority 3.3: Focus Block auto-collapse
   const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   useEffect(() => {
     const checkFocusBlock = () => {
@@ -459,34 +470,33 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header - FIXED: Logo stays visible, text hides smoothly */}
-        <div className="flex items-center justify-center p-4 min-h-[64px]">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className={`sidebar-logo shrink-0 flex items-center justify-center transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] animate-pulse" : "drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]"}`}>
-              <Logo size={28} />
+        {/* ⭐ OFFICIAL LOGO & BRANDING RESTORED HERE */}
+        <div className="flex items-center justify-center p-4">
+          {!collapsed && (
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 rounded-lg bg-[#0F1115] shadow-[0_0_15px_rgba(45,212,191,0.15)] border border-white/[0.05] flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 to-transparent" />
+                <svg className="w-4 h-4 text-teal-400 relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+              <span className="text-base font-bold text-slate-800 tracking-tight">OpenShare</span>
             </div>
-            {!collapsed && (
-              <span className="text-base font-bold text-slate-800 tracking-tight whitespace-nowrap">OpenShare</span>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Progress Ring */}
-        <ProgressRing collapsed={collapsed} />
+        <ProgressRing progress={stats.progress} level={stats.level} streak={stats.streakDays} collapsed={collapsed} />
 
-        {/* Momentum Indicator */}
         <div className="mb-4">
           <MomentumLevelIndicator collapsed={collapsed} />
         </div>
 
-        {/* League Indicator */}
         {!collapsed && (
           <div className="mx-3 mb-4">
-            <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
+            <MiniLeagueIndicator currentXP={stats.totalXP} rank={stats.rank} onClick={() => navigate("/leaderboard")} />
           </div>
         )}
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
@@ -497,7 +507,7 @@ export default function Sidebar({ user }) {
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
           
-          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
+          <div className="pt-4"><ShipCounter current={stats.shipsToday} target={stats.dailyTarget} collapsed={collapsed} /></div>
           
           {!collapsed && (
             <>
@@ -514,7 +524,6 @@ export default function Sidebar({ user }) {
           )}
         </nav>
 
-        {/* User Profile Card */}
         <div className="p-3">
           <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
             <div className="relative">
@@ -534,7 +543,6 @@ export default function Sidebar({ user }) {
         </div>
       </aside>
 
-      {/* Backdrop for auto-hide */}
       {autoHideEnabled && !collapsed && <div className="fixed inset-0 bg-slate-900/20 z-40 transition-opacity duration-300" onClick={() => setIsHovering(false)} />}
     </>
   );

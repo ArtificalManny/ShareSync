@@ -1,8 +1,9 @@
 // src/components/mentor/MentorDock.jsx
 import React, { useState, useRef, useEffect } from "react";
+import { Sparkles } from "lucide-react"; // ADDED: For modern AI iconography
 import { useToast } from "../../context/ToastContext";
 import { getTodayPlan } from "../../services/planner";
-import { askAiChat } from "../../api/ai"; // ADDED: New AI Client
+import { askAiChat } from "../../api/ai";
 
 const MentorDock = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,7 +11,6 @@ const MentorDock = () => {
   const [transcript, setTranscript] = useState("");
   const [plan, setPlan] = useState(null);
   
-  // ADDED: Chat State
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -19,7 +19,6 @@ const MentorDock = () => {
   const recognitionRef = useRef(null);
   const { addToast } = useToast();
 
-  // Scroll to bottom of chat when messages update
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -52,7 +51,6 @@ const MentorDock = () => {
     }
   }, [addToast]);
 
-  // ADDED: Send Message Handler (Wires up the actual AI)
   const handleSendMessage = async (textToSend = chatInput) => {
     if (!textToSend.trim() || isLoadingAI) return;
 
@@ -81,7 +79,6 @@ const MentorDock = () => {
     }
   };
 
-  // If voice transcript finishes, automatically send it to chat
   useEffect(() => {
     if (!isListening && transcript.trim().length > 0) {
        handleSendMessage(transcript);
@@ -107,8 +104,14 @@ const MentorDock = () => {
   return (
     <>
       <div className={`mentor-dock glass ${isOpen ? "open" : ""}`}>
-        <button className="mentor-toggle" onClick={() => setIsOpen(!isOpen)}>
-          <span className="icon">AI</span>
+        {/* THE REDESIGNED BUTTON */}
+        <button 
+          className={`mentor-toggle ${isOpen ? 'active' : ''}`} 
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle AI Coach"
+        >
+          <div className="glow-aura"></div>
+          <Sparkles className="sparkle-icon" strokeWidth={2.5} />
         </button>
 
         <div className="mentor-panel">
@@ -119,7 +122,6 @@ const MentorDock = () => {
 
           <div className="mentor-body">
             
-            {/* EXISTING FEATURE: Predictive Plan */}
             {plan && (
               <div className="plan-container">
                 <div className="outcomes">
@@ -150,7 +152,6 @@ const MentorDock = () => {
               </div>
             )}
 
-            {/* NEW FEATURE: AI Chat Interface */}
             <div className="chat-container">
               {messages.length === 0 && !plan && (
                 <div className="text-center text-slate-500 mb-4 text-sm">
@@ -218,57 +219,118 @@ const MentorDock = () => {
       <style jsx>{`
         .mentor-dock {
           position: fixed;
-          bottom: 20px;
-          right: 20px;
+          bottom: 24px;
+          right: 24px;
           z-index: 1000;
         }
+
+        /* ════════════════════════════════════════════════════════════════════════
+           NEW DESIGN: The "Living Orb" Button 
+        ════════════════════════════════════════════════════════════════════════ */
         .mentor-toggle {
-          width: 56px;
-          height: 56px;
+          position: relative;
+          width: 64px;
+          height: 64px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #6366f1, #ec4899);
+          background: linear-gradient(135deg, #4f46e5, #ec4899); /* Deep indigo to hot pink */
+          border: 2px solid rgba(255, 255, 255, 0.2);
           color: white;
-          border: none;
-          font-size: 20px;
-          font-weight: bold;
           cursor: pointer;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-          transition: transform 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
+          z-index: 10;
+          
+          /* Beaird's Depth: Outer drop shadow + Inner bevel highlight */
+          box-shadow: 
+            0 10px 25px -5px rgba(236, 72, 153, 0.4),
+            0 8px 10px -6px rgba(79, 70, 229, 0.5),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
         }
-        .mentor-toggle:hover { transform: scale(1.1); }
+
+        /* The Breathing Aura */
+        .glow-aura {
+          position: absolute;
+          inset: -6px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #6366f1, #ec4899);
+          z-index: -1;
+          filter: blur(12px);
+          opacity: 0.5;
+          animation: breathe 3s infinite alternate ease-in-out;
+        }
+
+        /* Robbins' Interactive States */
+        .mentor-toggle:hover { 
+          transform: translateY(-4px) scale(1.05); 
+          box-shadow: 
+            0 20px 30px -10px rgba(236, 72, 153, 0.5),
+            inset 0 2px 4px rgba(255, 255, 255, 0.4);
+        }
+        .mentor-toggle:active {
+          transform: translateY(2px) scale(0.95);
+        }
+        .mentor-toggle.active {
+          background: #1e293b; /* Turn dark when open to contrast the white panel */
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .mentor-toggle.active .glow-aura {
+          display: none;
+        }
+        
+        .sparkle-icon {
+          width: 28px;
+          height: 28px;
+          color: white;
+          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .mentor-toggle:hover .sparkle-icon {
+          transform: rotate(15deg) scale(1.1);
+        }
+
+        @keyframes breathe {
+          0% { transform: scale(0.95); opacity: 0.4; }
+          100% { transform: scale(1.1); opacity: 0.7; }
+        }
+        /* ════════════════════════════════════════════════════════════════════════ */
+
         .mentor-panel {
           position: absolute;
-          bottom: 70px;
+          bottom: 84px;
           right: 0;
-          width: 360px;
-          border-radius: 16px;
-          background: white;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+          width: 380px;
+          border-radius: 20px;
+          background: #ffffff;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
           overflow: hidden;
           transform: scale(0);
           transform-origin: bottom right;
-          transition: transform 0.25s ease;
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+          opacity: 0;
           display: flex;
           flex-direction: column;
         }
         .mentor-dock.open .mentor-panel {
           transform: scale(1);
+          opacity: 1;
         }
+        
+        /* Rest of the styles are perfectly preserved below */
         .mentor-header {
-          padding: 16px;
-          background: #6366f1;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, #4f46e5, #ec4899);
           color: white;
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
-        .mentor-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
-        .close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+        .mentor-header h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+        .close { background: none; border: none; color: white; font-size: 26px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
+        .close:hover { opacity: 1; }
         .mentor-body { 
-          padding: 16px; 
+          padding: 20px; 
           max-height: 65vh; 
           display: flex;
           flex-direction: column;
@@ -283,12 +345,15 @@ const MentorDock = () => {
           gap: 12px;
           padding-right: 4px;
         }
+        .chat-container::-webkit-scrollbar { width: 6px; }
+        .chat-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .chat-bubble {
           max-width: 85%;
-          padding: 10px 14px;
-          border-radius: 12px;
+          padding: 12px 16px;
+          border-radius: 16px;
           font-size: 14px;
-          line-height: 1.4;
+          line-height: 1.5;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .chat-bubble.user {
           align-self: flex-end;
@@ -298,7 +363,7 @@ const MentorDock = () => {
         }
         .chat-bubble.ai {
           align-self: flex-start;
-          background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(236,72,153,0.1));
+          background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(236,72,153,0.08));
           color: #1e293b;
           border-bottom-left-radius: 4px;
         }
@@ -307,7 +372,7 @@ const MentorDock = () => {
           width: 6px;
           height: 6px;
           margin: 0 2px;
-          background: #6366f1;
+          background: #4f46e5;
           border-radius: 50%;
           animation: bounce 1.4s infinite ease-in-out both;
         }
@@ -316,58 +381,63 @@ const MentorDock = () => {
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
         
         .chat-controls {
-          border-top: 1px solid #e2e8f0;
+          border-top: 1px solid #f1f5f9;
           padding-top: 16px;
           background: white;
         }
         .text-input-row {
           display: flex;
           gap: 8px;
-          margin-top: 8px;
+          margin-top: 12px;
         }
         .chat-input {
           flex: 1;
-          padding: 10px 12px;
+          padding: 12px 16px;
           border: 1px solid #cbd5e1;
-          border-radius: 8px;
+          border-radius: 12px;
           font-size: 14px;
           outline: none;
+          transition: border-color 0.2s;
         }
-        .chat-input:focus { border-color: #6366f1; }
+        .chat-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
         .send-btn {
-          padding: 0 16px;
-          background: #6366f1;
+          padding: 0 20px;
+          background: #4f46e5;
           color: white;
           border: none;
-          border-radius: 8px;
-          font-weight: 500;
+          border-radius: 12px;
+          font-weight: 600;
           cursor: pointer;
+          transition: background 0.2s;
         }
-        .send-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .send-btn:hover:not(:disabled) { background: #4338ca; }
+        .send-btn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
         
-        /* Preserved Plan Styles */
-        .plan-container { margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
+        .plan-container { margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }
         .outcomes, .blocks { margin-bottom: 16px; }
-        .outcomes h4, .blocks h4 { margin: 0 0 8px; font-size: 14px; color: #334155; }
+        .outcomes h4, .blocks h4 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
         .outcomes ol { margin: 0; padding-left: 20px; }
-        .outcomes li { margin: 4px 0; font-size: 13px; color: #475569;}
+        .outcomes li { margin: 6px 0; font-size: 14px; color: #334155;}
         .block {
           display: flex;
           justify-content: space-between;
-          padding: 6px 8px;
+          padding: 8px 12px;
           background: #f8fafc;
           border-radius: 8px;
           font-size: 13px;
-          margin: 4px 0;
-          color: #475569;
+          margin: 6px 0;
+          color: #334155;
+          border: 1px solid #f1f5f9;
         }
         .voice-btn {
           width: 100%;
-          padding: 12px;
+          padding: 14px;
           border: 2px dashed #cbd5e1;
-          border-radius: 8px;
-          background: transparent;
-          font-size: 13px;
+          border-radius: 12px;
+          background: #f8fafc;
+          color: #64748b;
+          font-size: 14px;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
@@ -375,16 +445,20 @@ const MentorDock = () => {
           justify-content: center;
           gap: 8px;
         }
+        .voice-btn:hover:not(:disabled) { border-color: #94a3b8; color: #475569; }
         .voice-btn.listening {
           border-color: #ec4899;
+          color: #ec4899;
           background: rgba(236, 72, 153, 0.05);
           animation: pulse 1.5s infinite;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .transcript { margin: 8px 0; font-style: italic; color: #94a3b8; font-size: 13px;}
-        .btn { width: 100%; padding: 10px; border-radius: 8px; font-weight: 500; cursor: pointer; border: none;}
-        .btn--primary { background: #6366f1; color: white; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(236,72,153, 0); } }
+        .transcript { margin: 12px 0 0; font-style: italic; color: #94a3b8; font-size: 13px; text-align: center;}
+        .btn { width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;}
+        .btn--primary { background: #4f46e5; color: white; }
+        .btn--primary:hover { background: #4338ca; }
         .btn--outline { background: transparent; border: 1px solid #cbd5e1; color: #475569; }
+        .btn--outline:hover { background: #f8fafc; }
         .mb-4 { margin-bottom: 16px; }
         .mt-2 { margin-top: 8px; }
       `}</style>

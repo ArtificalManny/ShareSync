@@ -1,13 +1,24 @@
 // src/components/views/FlowView.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOW VIEW: Kanban board with blocking visualization
-// See work in motion, identify bottlenecks, track WIP limits
+// UPGRADE: @dnd-kit integrated for smooth, Optimistic UI drag-and-drop
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useMemo } from 'react';
 import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import {
   Plus, Filter, Search, MoreHorizontal, AlertTriangle,
-  Clock, Zap, Lock, User, ArrowRight, GripVertical,
+  Clock, Zap, Lock, User, GripVertical,
   ChevronDown, Users, Activity
 } from 'lucide-react';
 
@@ -24,15 +35,27 @@ const DEFAULT_COLUMNS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TASK CARD COMPONENT
+// TASK CARD COMPONENT (Draggable)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function TaskCard({ task, isDragging, onDragStart, onDragEnd }) {
+function TaskCard({ task, isOverlay = false }) {
   const isBlocked = task.isBlocked;
   const isBlocking = task.blockingCount > 0;
   const isActive = task.isActive;
   const isAging = task.daysInColumn > 3;
   
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: { type: 'Task', task }
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    // Increase z-index and apply a Beaird-style depth shadow when dragging
+    zIndex: isDragging || isOverlay ? 50 : 1,
+    boxShadow: isOverlay ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' : undefined,
+  };
+
   const getPriorityBorder = () => {
     switch (task.priority?.toLowerCase()) {
       case 'critical': return 'border-l-error-500';
@@ -42,17 +65,29 @@ function TaskCard({ task, isDragging, onDragStart, onDragEnd }) {
     }
   };
   
+  // If the original item is currently being dragged, visually dim it in the list
+  // The DragOverlay handles showing the moving card.
+  if (isDragging && !isOverlay) {
+    return (
+      <div 
+        ref={setNodeRef} 
+        style={style} 
+        className="p-4 rounded-xl border-2 border-dashed border-brand-500/30 bg-brand-500/5 opacity-50 h-[120px]" 
+      />
+    );
+  }
+
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart?.(e, task)}
-      onDragEnd={onDragEnd}
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
       className={`
         group relative p-4 rounded-xl border-l-4 ${getPriorityBorder()}
         bg-surface-2 border border-white/[0.06]
         hover:border-white/[0.12] hover:bg-surface-3
-        transition-all duration-200 cursor-grab active:cursor-grabbing
-        ${isDragging ? 'opacity-50 scale-95' : ''}
+        transition-colors duration-200 cursor-grab active:cursor-grabbing
         ${isBlocked ? 'opacity-60' : ''}
         ${isActive ? 'ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-0' : ''}
         ${isAging ? 'border-warning-500/50' : ''}
@@ -145,13 +180,18 @@ function TaskCard({ task, isDragging, onDragStart, onDragEnd }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// COLUMN COMPONENT
+// COLUMN COMPONENT (Droppable)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function Column({ column, tasks, onAddTask, onDrop, onDragOver }) {
+function Column({ column, tasks, onAddTask }) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.id,
+    data: { type: 'Column', column }
+  });
+
   const isOverWipLimit = column.wipLimit && tasks.length > column.wipLimit;
   const isAtWipLimit = column.wipLimit && tasks.length === column.wipLimit;
   const hasAgingTasks = tasks.some(t => t.daysInColumn > 3);
@@ -177,15 +217,11 @@ function Column({ column, tasks, onAddTask, onDrop, onDragOver }) {
   
   return (
     <div
-      className="flex-1 min-w-[280px] max-w-[320px] flex flex-col"
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver?.(e, column.id);
-      }}
-      onDrop={(e) => onDrop?.(e, column.id)}
+      ref={setNodeRef}
+      className={`flex-1 min-w-[280px] max-w-[320px] flex flex-col rounded-xl transition-colors duration-200 ${isOver ? 'bg-surface-2 ring-1 ring-brand-500/30' : ''}`}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between mb-4 px-2">
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
         <div className="flex items-center gap-3">
           {/* Health indicator */}
           <div className={`w-2 h-2 rounded-full ${health.color}`} />
@@ -222,9 +258,14 @@ function Column({ column, tasks, onAddTask, onDrop, onDragOver }) {
       
       {/* Tasks Container */}
       <div className="flex-1 space-y-3 px-2 pb-4 overflow-y-auto">
-        {/* Quick Add */}
+        {/* Task Cards */}
+        {tasks.map(task => (
+          <TaskCard key={task.id} task={task} />
+        ))}
+
+        {/* Quick Add Inline Input */}
         {isAddingTask && (
-          <div className="p-3 rounded-xl bg-surface-2 border border-brand-500/30">
+          <div className="p-3 rounded-xl bg-surface-2 border border-brand-500/30 shadow-lg">
             <input
               type="text"
               value={newTaskTitle}
@@ -254,19 +295,25 @@ function Column({ column, tasks, onAddTask, onDrop, onDragOver }) {
           </div>
         )}
         
-        {/* Task Cards */}
-        {tasks.map(task => (
-          <TaskCard key={task.id} task={task} />
-        ))}
-        
-        {/* Empty state */}
+        {/* Empty state specifically tailored for rapid creation */}
         {tasks.length === 0 && !isAddingTask && (
           <button
             onClick={() => setIsAddingTask(true)}
-            className="w-full p-4 rounded-xl border-2 border-dashed border-white/[0.06] hover:border-white/[0.12] text-text-tertiary hover:text-text-secondary transition-colors"
+            className="w-full p-4 rounded-xl border border-dashed border-white/[0.06] hover:border-brand-500/50 hover:bg-brand-500/5 text-text-tertiary hover:text-brand-400 transition-all flex flex-col items-center justify-center gap-2"
           >
-            <Plus className="w-5 h-5 mx-auto mb-1" />
-            <span className="text-sm">Add task</span>
+            <Plus className="w-5 h-5" />
+            <span className="text-sm font-medium">No tasks yet — click + to add one</span>
+          </button>
+        )}
+        
+        {/* Add button for populated lists */}
+        {tasks.length > 0 && !isAddingTask && (
+          <button
+            onClick={() => setIsAddingTask(true)}
+            className="w-full p-3 rounded-xl border border-transparent hover:bg-white/[0.04] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-2 justify-center"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm font-medium">Add task</span>
           </button>
         )}
       </div>
@@ -283,7 +330,6 @@ function FlowMetricsBar({ tasks, columns }) {
   const blockedCount = tasks.filter(t => t.isBlocked).length;
   const completedThisWeek = tasks.filter(t => t.status === 'done' && t.completedThisWeek).length;
   
-  // Calculate average cycle time
   const completedTasks = tasks.filter(t => t.status === 'done' && t.cycleTime);
   const avgCycleTime = completedTasks.length > 0 
     ? (completedTasks.reduce((sum, t) => sum + t.cycleTime, 0) / completedTasks.length).toFixed(1)
@@ -338,10 +384,19 @@ export default function FlowView({
   onTaskClick 
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [swimlane, setSwimlane] = useState('none'); // none, assignee, priority
-  const [draggedTask, setDraggedTask] = useState(null);
+  const [swimlane, setSwimlane] = useState('none'); 
+  const [activeTask, setActiveTask] = useState(null);
   
-  // Filter tasks by search
+  // Dnd-kit sensors (determines what constitutes a drag vs a click)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Requires a 5px movement before dragging starts (allows clicks to pass through)
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   const filteredTasks = useMemo(() => {
     if (!searchQuery.trim()) return tasks;
     const query = searchQuery.toLowerCase();
@@ -350,7 +405,6 @@ export default function FlowView({
     );
   }, [tasks, searchQuery]);
   
-  // Group tasks by column
   const tasksByColumn = useMemo(() => {
     const grouped = {};
     columns.forEach(col => {
@@ -359,24 +413,31 @@ export default function FlowView({
     return grouped;
   }, [filteredTasks, columns]);
   
-  const handleDragStart = (e, task) => {
-    setDraggedTask(task);
-    e.dataTransfer.effectAllowed = 'move';
+  // DnD Handlers
+  const handleDragStart = (event) => {
+    const { active } = event;
+    const task = tasks.find(t => t.id === active.id);
+    if (task) setActiveTask(task);
   };
-  
-  const handleDragEnd = () => {
-    setDraggedTask(null);
-  };
-  
-  const handleDrop = (e, columnId) => {
-    e.preventDefault();
-    if (draggedTask && draggedTask.status !== columnId) {
-      onMoveTask?.(draggedTask.id, columnId);
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (!over) return; // Dropped outside a valid zone
+
+    const taskId = active.id;
+    const targetColumnId = over.id;
+    const task = tasks.find(t => t.id === taskId);
+
+    // Only fire the Optimistic move if it actually changed columns
+    if (task && task.status !== targetColumnId) {
+      onMoveTask?.(taskId, targetColumnId);
     }
-    setDraggedTask(null);
   };
   
   const handleAddTask = (columnId, title) => {
+    // Firing exactly what the blueprint requested
     onAddTask?.({ title, status: columnId });
   };
   
@@ -422,19 +483,29 @@ export default function FlowView({
       {/* Metrics Bar */}
       <FlowMetricsBar tasks={tasks} columns={columns} />
       
-      {/* Kanban Board */}
-      <div className="flex-1 flex gap-6 overflow-x-auto pb-4">
-        {columns.map(column => (
-          <Column
-            key={column.id}
-            column={column}
-            tasks={tasksByColumn[column.id] || []}
-            onAddTask={handleAddTask}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-          />
-        ))}
-      </div>
+      {/* Kanban Board with @dnd-kit Context */}
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 flex gap-6 overflow-x-auto pb-4">
+          {columns.map(column => (
+            <Column
+              key={column.id}
+              column={column}
+              tasks={tasksByColumn[column.id] || []}
+              onAddTask={handleAddTask}
+            />
+          ))}
+        </div>
+
+        {/* The visual representation of the card while you are holding it */}
+        <DragOverlay>
+          {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

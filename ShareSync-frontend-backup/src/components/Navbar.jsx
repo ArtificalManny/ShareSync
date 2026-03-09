@@ -1,11 +1,7 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC NAVBAR v4.1 - With CreateProject Modal Integration
-// CLEANED: Completely removed hover background boxes to prevent "smudges" on glass
-// ADDED: SubscriptionButton integration
-// ⭐ PHASE 8.1: Performance - Search Debouncing & Input Optimization
-// ⭐ PHASE 8.3: Accessibility (A11y) - Added explicit aria-labels and roles
-// ⭐ PHASE 9.2: Pitch Mode Integration - Hiding extraneous badges
+// UPGRADE: Item 14 - Standardized Violet Pill CTA for "New" Button
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -29,7 +25,6 @@ import QuickCapture from "./navbar/QuickCapture.jsx";
 
 import NotificationCenter from "./navigation/NotificationCenter";
 import { useMomentumContext } from "../contexts/MomentumContext";
-import { usePitchMode } from "../contexts/PitchModeContext"; // ⭐ PITCH MODE
 
 import ShipNotification, { useShipNotifications } from "./social/ShipNotification";
 import AchievementToast, { useAchievementToasts } from "./social/AchievementToast";
@@ -46,18 +41,6 @@ import { useFocusBlock } from "../hooks/useFocusBlock";
 import FocusBlockScheduler from "./focus/FocusBlockScheduler";
 
 const DEFAULT_PIC = "/default-profile.png";
-
-// ⭐ PHASE 8.1: Custom Debounce Hook
-function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-}
 
 function getAvatarOverride() {
   try { return localStorage.getItem("ss.avatarOverride") || null; } catch { return null; }
@@ -107,7 +90,7 @@ const MomentumBadge = () => {
         <span className={`text-xs font-bold ${config.color}`}>{isFireMode ? "🔥" : `L${glowLevel}`}</span>
       </div>
       {showTooltip && (
-        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-none z-50 whitespace-nowrap animate-in fade-in slide-in-from-top-2 duration-200" role="tooltip">
+        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-none z-50 whitespace-nowrap animate-in fade-in slide-in-from-top-2 duration-200">
           <div className={`text-xs font-bold ${config.color}`}>{glowState.charAt(0).toUpperCase() + glowState.slice(1)}</div>
           <div className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 mt-0.5">{message}</div>
         </div>
@@ -155,20 +138,14 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
 
   return (
     <div className="relative" ref={menuRef}>
-      <button 
-        onClick={() => setShowMenu(!showMenu)} 
-        className="flex items-center outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-full transition-transform duration-200 hover:scale-105"
-        aria-label="Toggle user menu"
-        aria-expanded={showMenu}
-        aria-haspopup="true"
-      >
+      <button onClick={() => setShowMenu(!showMenu)} className="flex items-center outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-full transition-transform duration-200 hover:scale-105">
         <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-300 dark:hover:border-violet-500/50 transition-colors duration-200">
           <UserAvatar size={32} name={displayName} avatarUrl={avatarUrl} ringClassName="ring-0" />
         </div>
       </button>
       {showMenu && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl dark:shadow-none overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200" role="menu">
-          <Link to="/profile" className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 border-b border-slate-100 dark:border-white/5 transition-colors" onClick={() => setShowMenu(false)} role="menuitem">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl dark:shadow-none overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+          <Link to="/profile" className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 border-b border-slate-100 dark:border-white/5 transition-colors" onClick={() => setShowMenu(false)}>
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <UserAvatar size={40} name={displayName} avatarUrl={avatarUrl} ringClassName="ring-0" />
             </div>
@@ -177,16 +154,11 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
               <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 transition-colors">View profile</p>
             </div>
           </Link>
-          <button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 text-left transition-colors focus-visible:outline-none"
-            role="menuitem"
-            aria-label="Change photo"
-          >
+          <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 text-left transition-colors focus-visible:outline-none">
             <Camera className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
             <span className="text-sm font-medium text-slate-600 dark:text-zinc-300 transition-colors">{uploading ? "Loading..." : "Change photo"}</span>
           </button>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" aria-hidden="true" />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
         </div>
       )}
     </div>
@@ -195,12 +167,7 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
 
 // PURE ICON HOVER: No background boxes. Just color change and scale.
 const IconButton = ({ children, onClick, className = "", badge = null, title = "" }) => (
-  <button 
-    onClick={onClick} 
-    title={title} 
-    aria-label={title || "Icon button"}
-    className={`relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}
-  >
+  <button onClick={onClick} title={title} className={`relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}>
     {children}
     {badge}
   </button>
@@ -209,29 +176,17 @@ const IconButton = ({ children, onClick, className = "", badge = null, title = "
 export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
   const chat = typeof useChat === "function" ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
 
   const [showCreateProject, setShowCreateProject] = useState(false);
 
-  // ⭐ PHASE 8.1: Initialize Search State and Debounce hook
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
   const { glowLevel, isFireMode } = useMomentumContext();
   const focusBlock = useFocusBlock();
-  const { isPitchMode } = usePitchMode(); // ⭐ PITCH MODE CHECK
-
   const { notifications: shipNotifications, addNotification: addShipNotification, dismissNotification: dismissShipNotification } = useShipNotifications();
   const { toasts: achievementToasts, addToast: addAchievementToast, dismissToast: dismissAchievementToast } = useAchievementToasts();
   const { playTeamActivity } = useTeamActivitySound();
-
-  // ⭐ PHASE 8.1: Preload Target on Debounce
-  useEffect(() => {
-    if (debouncedSearchQuery.trim().length > 0) {
-      import("../pages/SearchPage").catch(() => {});
-    }
-  }, [debouncedSearchQuery]);
 
   useEffect(() => {
     const handleTeamShip = (event) => {
@@ -290,28 +245,20 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
         className={`navbar sticky top-0 z-40 h-14 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/10 px-4 lg:px-6 transition-all duration-500`}
         style={navbarGlowStyle}
         data-momentum={glowLevel}
-        role="banner"
       >
         <div className="h-full max-w-[1800px] mx-auto flex items-center">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 flex items-center justify-center transition-colors duration-200">
-                <Layout className="w-4 h-4 text-slate-400 dark:text-zinc-500" aria-hidden="true" />
+                <Layout className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-zinc-600" aria-hidden="true" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-zinc-600" />
               <span className="text-sm font-bold text-slate-800 dark:text-white transition-colors duration-200">{getPageName()}</span>
             </div>
-            <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-white/10 mx-2 transition-colors duration-200" aria-hidden="true" />
-            
-            <form onSubmit={handleSearch} className="hidden md:flex items-center relative group" role="search" aria-label="Site Search">
-              <Search className="absolute left-3 w-4 h-4 text-slate-400 dark:text-zinc-500 group-focus-within:text-violet-500 transition-colors duration-200" aria-hidden="true" />
-              <input 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
-                placeholder="Search everything..." 
-                aria-label="Search query"
-                className="bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-[#0F172A] focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 w-52 focus:w-72 transition-all duration-300" 
-              />
+            <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-white/10 mx-2 transition-colors duration-200" />
+            <form onSubmit={handleSearch} className="hidden md:flex items-center relative group">
+              <Search className="absolute left-3 w-4 h-4 text-slate-400 dark:text-zinc-500 group-focus-within:text-violet-500 transition-colors duration-200" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search everything..." className="bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-[#0F172A] focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 w-52 focus:w-72 transition-all duration-300" />
             </form>
           </div>
 
@@ -330,9 +277,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
               />
             )}
             <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 transition-colors duration-200">
-              {/* ⭐ PHASE 9.2: Hide Beta/Season badge when Pitch Mode is active */}
-              {!isPitchMode && <SeasonBadge />}
-              
+              <SeasonBadge />
               <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
               <NextMicroStep />
               <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
@@ -345,18 +290,21 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           <div className="flex items-center gap-2">
             <div className="hidden sm:block mr-2"><MomentumBadge /></div>
             
+            {/* VIOLET PILL CTA FIX */}
             <button 
               onClick={() => setShowCreateProject(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white hover:from-violet-600 hover:to-violet-700 hover:scale-105 hover:shadow-lg hover:shadow-violet-200 dark:hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 transition-all duration-200 mr-1 ${isFireMode ? "animate-pulse shadow-md shadow-orange-200 dark:shadow-none" : "shadow-sm shadow-violet-200 dark:shadow-none"}`} 
-              style={{ background: isFireMode ? "linear-gradient(135deg, #F97316 0%, #8B5CF6 100%)" : "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" }}
-              aria-label="Create new project"
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-medium text-white shadow-sm hover:shadow transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 mr-1 ${
+                isFireMode 
+                  ? "bg-orange-500 hover:bg-orange-600 animate-pulse shadow-orange-200 dark:shadow-none" 
+                  : "bg-violet-600 hover:bg-violet-700"
+              }`}
             >
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              <span className="text-sm font-medium hidden sm:inline">New</span>
+              <Plus className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">New</span>
             </button>
             
             <FocusModeToggle />
-            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block transition-colors duration-200" aria-hidden="true" />
+            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block transition-colors duration-200" />
             
             <NavbarSoundToggle />
             <BackgroundColorPicker />
@@ -369,11 +317,11 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
               <MessageCircle className="w-4 h-4" />
             </IconButton>
             
-            <IconButton onClick={toggleDarkMode} title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}>
+            <IconButton onClick={toggleDarkMode} title={isDarkMode ? "Light mode" : "Dark mode"}>
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </IconButton>
             
-            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 transition-colors duration-200" aria-hidden="true" />
+            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 transition-colors duration-200" />
             
             <ProfileDropdown user={user} onUploadComplete={() => {}} />
             

@@ -1,21 +1,23 @@
 // src/components/views/StackView.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // STACK VIEW: Your prioritized work queue
-// Tasks grouped by purpose ("Why Chain"), sorted by impact
+// UPGRADE: Fully interactive with Optimistic UI, Inline Editing, and Priority Sort
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useMemo } from 'react';
 import {
   Plus, Filter, SlidersHorizontal, Search, ChevronDown, ChevronRight,
-  Zap, Users, Clock, CheckCircle2, Circle, AlertCircle, Lock,
+  Zap, Users, Clock, CheckCircle2, AlertCircle, Lock,
   MoreHorizontal, Play, GripVertical, Target, Sparkles
 } from 'lucide-react';
+import { inlineUpdateTask } from '../../api/tasks';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SORT OPTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SORT_OPTIONS = [
+  { id: 'priority', label: 'Priority', icon: AlertCircle },
   { id: 'impact', label: 'Impact Score', icon: Zap },
   { id: 'unblocking', label: 'Unblocking Power', icon: Users },
   { id: 'quickWins', label: 'Quick Wins', icon: Sparkles },
@@ -32,15 +34,24 @@ const GROUP_OPTIONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TASK ROW COMPONENT
+// TASK ROW COMPONENT (Interactive)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function TaskRow({ task, onComplete, onSelect, isSelected }) {
   const [isHovered, setIsHovered] = useState(false);
   
+  // Optimistic UI State
+  const [optimisticCompleted, setOptimisticCompleted] = useState(task.completed);
+  const [optimisticTitle, setOptimisticTitle] = useState(task.title);
+  
+  // Inline Editing State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case 'critical': return 'border-error-500';
+      case 'urgent': return 'border-error-400';
       case 'high': return 'border-warning-500';
       case 'medium': return 'border-brand-500';
       default: return 'border-transparent';
@@ -50,6 +61,35 @@ function TaskRow({ task, onComplete, onSelect, isSelected }) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const isDueSoon = task.dueDate && !isOverdue && 
     (new Date(task.dueDate) - new Date()) < 2 * 24 * 60 * 60 * 1000;
+
+  const handleCompleteToggle = (e) => {
+    e.stopPropagation();
+    if (optimisticCompleted) return; // Prevent double clicks
+    
+    // Instant Optimistic UI Update
+    setOptimisticCompleted(true);
+    // Fire to parent (which handles API and XP animation)
+    onComplete?.(task);
+  };
+
+  const handleTitleSave = async () => {
+    if (editTitle.trim() === optimisticTitle || !editTitle.trim()) {
+      setIsEditing(false);
+      setEditTitle(optimisticTitle);
+      return;
+    }
+
+    setIsEditing(false);
+    setOptimisticTitle(editTitle.trim());
+
+    try {
+      await inlineUpdateTask(task.id, { title: editTitle.trim() });
+    } catch (err) {
+      // Revert on failure
+      setOptimisticTitle(task.title);
+      setEditTitle(task.title);
+    }
+  };
   
   return (
     <div
@@ -62,37 +102,58 @@ function TaskRow({ task, onComplete, onSelect, isSelected }) {
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onSelect?.(task)}
+      onClick={() => !isEditing && onSelect?.(task)}
     >
       {/* Drag handle */}
       <div className="opacity-0 group-hover:opacity-100 cursor-grab text-text-tertiary">
         <GripVertical className="w-4 h-4" />
       </div>
       
-      {/* Checkbox */}
+      {/* Optimistic Checkbox */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onComplete?.(task);
-        }}
+        onClick={handleCompleteToggle}
         className={`
           flex-shrink-0 w-5 h-5 rounded-full border-2 
           flex items-center justify-center transition-all
-          ${task.completed 
+          ${optimisticCompleted 
             ? 'bg-success-500 border-success-500' 
             : 'border-text-tertiary hover:border-brand-400'
           }
         `}
       >
-        {task.completed && <CheckCircle2 className="w-3 h-3 text-white" />}
+        {optimisticCompleted && <CheckCircle2 className="w-3 h-3 text-white" />}
       </button>
       
-      {/* Task content */}
+      {/* Task content (Inline Editable) */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`font-medium truncate ${task.completed ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
-            {task.title}
-          </span>
+          {isEditing ? (
+            <input
+              autoFocus
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleTitleSave();
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                  setEditTitle(optimisticTitle);
+                }
+              }}
+              className="bg-surface-1 border border-brand-500 rounded px-2 py-0.5 outline-none text-text-primary text-sm w-full"
+            />
+          ) : (
+            <span 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!optimisticCompleted) setIsEditing(true);
+              }}
+              className={`font-medium truncate hover:text-brand-400 transition-colors ${optimisticCompleted ? 'line-through text-text-tertiary' : 'text-text-primary'}`}
+            >
+              {optimisticTitle}
+            </span>
+          )}
           
           {task.isBlocked && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-500/15 text-error-400 text-xs">
@@ -104,7 +165,6 @@ function TaskRow({ task, onComplete, onSelect, isSelected }) {
         
         {/* Meta info */}
         <div className="flex items-center gap-3 mt-1 text-xs text-text-tertiary">
-          {/* Assignee */}
           {task.assignee && (
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 rounded-full bg-surface-3 flex items-center justify-center text-[10px]">
@@ -114,7 +174,6 @@ function TaskRow({ task, onComplete, onSelect, isSelected }) {
             </div>
           )}
           
-          {/* Due date */}
           {task.dueDate && (
             <div className={`flex items-center gap-1 ${isOverdue ? 'text-error-400' : isDueSoon ? 'text-warning-400' : ''}`}>
               <Clock className="w-3 h-3" />
@@ -147,7 +206,6 @@ function TaskRow({ task, onComplete, onSelect, isSelected }) {
         <button 
           onClick={(e) => {
             e.stopPropagation();
-            // Start working on task
           }}
           className="p-2 rounded-lg bg-brand-500 text-white hover:bg-brand-400 transition-colors"
         >
@@ -177,7 +235,6 @@ function ObjectiveGroup({ objective, tasks, onTaskComplete, onTaskSelect }) {
   
   return (
     <div className="mb-6">
-      {/* Objective header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-1 border border-white/[0.06] hover:bg-surface-2 transition-colors group"
@@ -195,7 +252,6 @@ function ObjectiveGroup({ objective, tasks, onTaskComplete, onTaskSelect }) {
           )}
         </div>
         
-        {/* Progress bar */}
         <div className="w-24 h-1.5 bg-surface-3 rounded-full overflow-hidden">
           <div 
             className="h-full bg-brand-500 rounded-full transition-all duration-500"
@@ -203,7 +259,6 @@ function ObjectiveGroup({ objective, tasks, onTaskComplete, onTaskSelect }) {
           />
         </div>
         
-        {/* Stats */}
         <div className="flex items-center gap-4 text-sm">
           <span className="text-text-tertiary">
             {completedCount}/{tasks.length} tasks
@@ -215,7 +270,6 @@ function ObjectiveGroup({ objective, tasks, onTaskComplete, onTaskSelect }) {
         </div>
       </button>
       
-      {/* Tasks */}
       {isExpanded && (
         <div className="mt-2 ml-8 space-y-2">
           {tasks.map(task => (
@@ -243,11 +297,10 @@ function StackToolbar({
   onGroupChange,
   searchQuery,
   onSearchChange,
-  onAddTask 
+  onToggleAdd 
 }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
   const currentSort = SORT_OPTIONS.find(o => o.id === sortBy) || SORT_OPTIONS[0];
   const currentGroup = GROUP_OPTIONS.find(o => o.id === groupBy) || GROUP_OPTIONS[0];
@@ -255,25 +308,19 @@ function StackToolbar({
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
-        {/* Add Task */}
+        {/* Interactive Add Task Toggle */}
         <button
-          onClick={onAddTask}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"
+          onClick={onToggleAdd}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
           <span>Add Task</span>
         </button>
         
-        {/* Filter */}
-        <div className="relative">
-          <button
-            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary text-sm hover:bg-surface-2 transition-colors"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Filter</span>
-          </button>
-        </div>
+        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary text-sm hover:bg-surface-2 transition-colors">
+          <Filter className="w-4 h-4" />
+          <span>Filter</span>
+        </button>
         
         {/* Sort */}
         <div className="relative">
@@ -366,7 +413,7 @@ function StackToolbar({
 // EMPTY STATE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function EmptyState({ onAddTask }) {
+function EmptyState({ onToggleAdd }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 rounded-2xl border-2 border-dashed border-white/[0.08]">
       <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mb-4">
@@ -375,7 +422,7 @@ function EmptyState({ onAddTask }) {
       <h3 className="text-xl font-semibold text-text-primary mb-2">All caught up!</h3>
       <p className="text-sm text-text-tertiary mb-6">No tasks in your stack right now</p>
       <button
-        onClick={onAddTask}
+        onClick={onToggleAdd}
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"
       >
         <Plus className="w-4 h-4" />
@@ -396,11 +443,15 @@ export default function StackView({
   onTaskSelect,
   onAddTask 
 }) {
-  const [sortBy, setSortBy] = useState('impact');
+  // Defaulted to 'priority' sorting per the blueprint specifications
+  const [sortBy, setSortBy] = useState('priority');
   const [groupBy, setGroupBy] = useState('objective');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Filter tasks by search
+  // Inline Add Task State
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  
   const filteredTasks = useMemo(() => {
     if (!searchQuery.trim()) return tasks;
     const query = searchQuery.toLowerCase();
@@ -410,10 +461,12 @@ export default function StackView({
     );
   }, [tasks, searchQuery]);
   
-  // Sort tasks
   const sortedTasks = useMemo(() => {
     const sorted = [...filteredTasks];
     switch (sortBy) {
+      case 'priority':
+        const weights = { critical: 5, urgent: 4, high: 3, medium: 2, low: 1 };
+        return sorted.sort((a, b) => (weights[b.priority?.toLowerCase()] || 0) - (weights[a.priority?.toLowerCase()] || 0));
       case 'impact':
         return sorted.sort((a, b) => (b.xp || 0) - (a.xp || 0));
       case 'unblocking':
@@ -431,14 +484,12 @@ export default function StackView({
     }
   }, [filteredTasks, sortBy]);
   
-  // Group tasks
   const groupedTasks = useMemo(() => {
     if (groupBy === 'none') {
       return [{ id: 'all', title: 'All Tasks', tasks: sortedTasks }];
     }
     
     if (groupBy === 'objective') {
-      // Group by objective
       const groups = {};
       const noObjective = [];
       
@@ -465,15 +516,20 @@ export default function StackView({
       }
       return result;
     }
-    
-    // Add other grouping options as needed
     return [{ id: 'all', title: 'All Tasks', tasks: sortedTasks }];
   }, [sortedTasks, groupBy, objectives]);
   
-  // Stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalXP = tasks.reduce((sum, t) => sum + (t.xp || 0), 0);
+
+  const handleCreateTask = () => {
+    if (newTaskTitle.trim()) {
+      onAddTask?.({ title: newTaskTitle.trim(), status: 'todo', priority: 'medium' });
+      setNewTaskTitle('');
+      setIsAddingTask(false);
+    }
+  };
   
   return (
     <div className="p-10 max-w-[1400px] mx-auto">
@@ -500,12 +556,47 @@ export default function StackView({
         onGroupChange={setGroupBy}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onAddTask={onAddTask}
+        onToggleAdd={() => setIsAddingTask(!isAddingTask)}
       />
+
+      {/* Inline Quick Add Component */}
+      {isAddingTask && (
+        <div className="mb-6 p-4 rounded-xl bg-surface-2 border border-brand-500/30 shadow-lg flex items-center gap-3 transition-all">
+          <div className="w-5 h-5 rounded-full border-2 border-text-tertiary" />
+          <input
+            type="text"
+            autoFocus
+            value={newTaskTitle}
+            onChange={e => setNewTaskTitle(e.target.value)}
+            placeholder="What needs to be done?"
+            className="flex-1 bg-transparent outline-none text-text-primary placeholder-text-tertiary text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCreateTask();
+              if (e.key === 'Escape') {
+                setIsAddingTask(false);
+                setNewTaskTitle('');
+              }
+            }}
+          />
+          <button 
+            onClick={() => { setIsAddingTask(false); setNewTaskTitle(''); }} 
+            className="text-xs font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleCreateTask}
+            disabled={!newTaskTitle.trim()}
+            className="px-3 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-medium hover:bg-brand-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Save Task
+          </button>
+        </div>
+      )}
       
       {/* Task list */}
-      {sortedTasks.length === 0 ? (
-        <EmptyState onAddTask={onAddTask} />
+      {sortedTasks.length === 0 && !isAddingTask ? (
+        <EmptyState onToggleAdd={() => setIsAddingTask(true)} />
       ) : (
         <div>
           {groupedTasks.map(group => (

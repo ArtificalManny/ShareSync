@@ -1,4 +1,8 @@
 // /src/api/discovery.js
+// ═══════════════════════════════════════════════════════════════════════════════
+// ⭐ UPGRADE: Item 8 - Wired to Dasgupta-Informed Discovery Engine
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import client from "./client";
 
 export async function getDiscoveryFeed(params = {}) {
@@ -11,13 +15,14 @@ export async function getDiscoveryFeed(params = {}) {
   }
 }
 
-// 🎰 NEW: Fetches the live Algorithmic Time-Decay Feed and maps it to UI cards
+// 🎰 ALGORITHMIC FEED: Fetches the live Dasgupta-scored feed and maps to UI cards
 export async function getAlgorithmicFeed({ cursor, limit = 10 } = {}) {
   try {
     const qs = new URLSearchParams();
     if (cursor) qs.set("cursor", cursor);
     if (limit) qs.set("limit", String(limit));
 
+    // Calls our new personalized algorithm endpoint
     const res = await client.get(`/discovery/feed?${qs.toString()}`);
     
     // Safety unwrap depending on Axios configuration
@@ -26,23 +31,25 @@ export async function getAlgorithmicFeed({ cursor, limit = 10 } = {}) {
     const nextCursor = payload?.nextCursor || null;
 
     const activities = rawItems.map((p) => {
-      // Use math hash to ensure the same project gets the same icon/color
-      const hash = p.id.charCodeAt(0) % 4;
+      // Use math hash to ensure the same project gets the same icon/color consistently
+      const hash = String(p.id || p._id).charCodeAt(0) % 4;
       const actions = ['shipped an update for', 'hit a milestone in', 'posted a task on', 'made progress on'];
       const icons = ['Rocket', 'TrendingUp', 'CheckCircle', 'Sparkles'];
-      const colors = ['purple', 'emerald', 'blue', 'orange'];
+      const colors = ['violet', 'emerald', 'blue', 'amber'];
       
       return {
-        id: `feed-item-${p.id}`,
+        id: `feed-item-${p.id || p._id}`,
         type: 'ship',
         user: p.ownerInfo?.username || p.ownerInfo?.firstName || p.teamName || 'A creator',
         action: actions[hash],
         content: p.lastShip || p.description || 'working hard on the vision',
-        project: p.projectName,
-        timestamp: p.lastActivity || 'recently',
+        project: p.projectName || p.name,
+        timestamp: p.lastActivity || p.updatedAt || 'recently',
         icon: icons[hash],
         color: colors[hash],
-        rawScore: p.algorithmicScore // Passed back from algorithm
+        // Capture the mathematically computed score from the backend
+        rawScore: p.algorithmicScore || p.trendingScore || 0,
+        stats: p.stats
       };
     });
 
@@ -75,7 +82,7 @@ function normalizeProjectItem(item) {
   const currentProject = s(item?.currentProject || item?.projectName);
 
   return {
-    project: { id, projectName, teamName, emoji, streak, members, lastShip, totalShips, completionRate, lastActivity, lastActivityDays, tags: Array.isArray(item?.tags) ? item.tags : [], moderationStatus: item?.moderationStatus },
+    project: { id, projectName, teamName, emoji, streak, members, lastShip, totalShips, completionRate, lastActivity, lastActivityDays, tags: Array.isArray(item?.tags) ? item.tags : [], moderationStatus: item?.moderationStatus, trendingScore: item?.trendingScore },
     person: personName ? { id, name: personName, avatar: s(item?.avatar, "👤"), workStyle: workStyle || "Deep Focus", similarity: similarity || 80, peakTime: peakTime || "Varies", currentProject: currentProject || "Project", streak: streak || 0, reason: s(item?.reason, "Similar momentum patterns"), moderationStatus: item?.moderationStatus } : null,
   };
 }

@@ -10,21 +10,13 @@ import { useProjectOverview } from '../../hooks/useProjectOverview';
 import { toast } from '../../components/ui/toast';
 import client from '../../api/client';
 
-/**
- * ProjectSettings - Project-specific settings page
- * - Role-Based Access Control (RBAC) for Project Info
- * - User-specific notification preferences
- * - Leave project (destructive)
- */
 const ProjectSettings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Fetch real project data via existing hook
   const { project, loading, refresh } = useProjectOverview(id);
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     picture: '',
@@ -44,16 +36,12 @@ const ProjectSettings = () => {
   const [saving, setSaving] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  // 1. DETERMINE ROLE & PERMISSIONS
-  // Find current user in the project members list to determine role
   const currentMember = project?.members?.find(m => m.userId?._id === user?.id || m.userId === user?.id);
   const isOwnerByDirectId = project?.ownerId === user?.id || project?.owner?._id === user?.id;
   const role = isOwnerByDirectId ? 'owner' : (currentMember?.role || 'viewer');
   
-  // Logic: Only Owners and Admins can edit Project Info
   const canEditProjectInfo = role === 'owner' || role === 'admin';
 
-  // 2. SYNC STATE WITH DATABASE
   useEffect(() => {
     if (project) {
       setFormData({
@@ -63,27 +51,30 @@ const ProjectSettings = () => {
         description: project.description || ''
       });
 
-      // Load specific user preferences if they exist in the member array
       if (currentMember?.preferences) {
-        setNotificationSettings(currentMember.preferences);
+        setNotificationSettings({
+          taskAssigned: currentMember.preferences.taskAssigned ?? true,
+          taskCompleted: currentMember.preferences.taskCompleted ?? true,
+          announcements: currentMember.preferences.announcements ?? true,
+          mentions: currentMember.preferences.mentions ?? true,
+          deadlines: currentMember.preferences.deadlines ?? true,
+          weeklyDigest: currentMember.preferences.weeklyDigest ?? false
+        });
       }
     }
   }, [project, currentMember]);
 
-  // 3. API ACTIONS
   const handleSaveProject = async () => {
     if (!canEditProjectInfo) return;
     setSaving(true);
     try {
-      // ✅ FIX: Removed 'banner' because it doesn't exist in the backend schema
-      // This stops NestJS from throwing a 400 Bad Request
       await client.put(`/projects/${id}`, {
         name: formData.name,
         description: formData.description,
         icon: formData.picture
       });
       toast({ title: '✅ Project updated!', variant: 'success' });
-      refresh(); // Reload data via hook
+      refresh();
     } catch (error) {
       toast({ title: 'Failed to update project', description: error.response?.data?.message || error.message, variant: 'error' });
     } finally {
@@ -94,11 +85,29 @@ const ProjectSettings = () => {
   const handleSaveNotifications = async () => {
     setSaving(true);
     try {
-      await client.patch(`/projects/${id}/preferences`, notificationSettings);
+      // Send the cleanest standard payload shape
+      await client.patch(`/projects/${id}/preferences`, { 
+        preferences: notificationSettings 
+      });
       toast({ title: '🔔 Preferences saved!', variant: 'success' });
-      refresh(); // Reload data via hook
+      refresh();
     } catch (error) {
-      toast({ title: 'Failed to save preferences', variant: 'error' });
+      console.error('[ProjectSettings] Save preferences error:', error);
+      
+      // Explicitly catch the 500 error and explain it to the user
+      if (error.response?.status === 500) {
+        toast({ 
+          title: 'Backend Crash (500 Error)', 
+          description: 'The server crashed trying to save this. Check your NestJS terminal!', 
+          variant: 'error' 
+        });
+      } else {
+        toast({ 
+          title: 'Failed to save preferences', 
+          description: error.response?.data?.message || 'Could not update preferences.', 
+          variant: 'error' 
+        });
+      }
     } finally {
       setSaving(false);
     }
@@ -108,7 +117,7 @@ const ProjectSettings = () => {
     try {
       await client.post(`/projects/${id}/leave`);
       toast({ title: 'Left project successfully', variant: 'default' });
-      navigate('/projects'); // Navigate back to dashboard
+      navigate('/projects');
     } catch (error) {
       toast({ 
         title: 'Could not leave project', 
@@ -135,7 +144,6 @@ const ProjectSettings = () => {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
       <div className="max-w-4xl mx-auto px-6 py-8">
         
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate(`/projects/${id}`)}
@@ -156,9 +164,6 @@ const ProjectSettings = () => {
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 1: PROJECT INFO (Role-Based Access)        */}
-        {/* ══════════════════════════════════════════════════ */}
         <div className={`bg-slate-800/50 backdrop-blur-xl border ${canEditProjectInfo ? 'border-brand-500/20' : 'border-slate-700/50'} rounded-2xl p-6 shadow-xl mb-6 relative overflow-hidden`}>
           
           {!canEditProjectInfo && (
@@ -176,7 +181,6 @@ const ProjectSettings = () => {
           </div>
 
           <div className={!canEditProjectInfo ? 'opacity-60 pointer-events-none grayscale-[0.5]' : ''}>
-            {/* Banner */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-white mb-2">Project Banner</label>
               <div className="relative h-40 rounded-xl overflow-hidden bg-slate-700 group">
@@ -189,20 +193,12 @@ const ProjectSettings = () => {
                 )}
                 {canEditProjectInfo && (
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                    <button
-                      onClick={() => handleImageUpload('banner')}
-                      className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg font-semibold transition-all flex items-center gap-2"
-                    >
-                      <Upload className="w-4 h-4" />
-                      Upload
+                    <button onClick={() => handleImageUpload('banner')} className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg font-semibold transition-all flex items-center gap-2">
+                      <Upload className="w-4 h-4" /> Upload
                     </button>
                     {formData.banner && (
-                      <button
-                        onClick={() => setFormData({ ...formData, banner: null })}
-                        className="px-4 py-2 bg-error-600 hover:bg-error-500 rounded-lg font-semibold transition-all flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Remove
+                      <button onClick={() => setFormData({ ...formData, banner: null })} className="px-4 py-2 bg-error-600 hover:bg-error-500 rounded-lg font-semibold transition-all flex items-center gap-2">
+                        <Trash2 className="w-4 h-4" /> Remove
                       </button>
                     )}
                   </div>
@@ -210,7 +206,6 @@ const ProjectSettings = () => {
               </div>
             </div>
 
-            {/* Project Picture & Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Project Icon</label>
@@ -218,67 +213,36 @@ const ProjectSettings = () => {
                   <div className="w-20 h-20 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold relative group">
                     {formData.picture}
                     {canEditProjectInfo && (
-                      <button
-                        onClick={() => handleImageUpload('picture')}
-                        className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                      >
+                      <button onClick={() => handleImageUpload('picture')} className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Camera className="w-6 h-6" />
                       </button>
                     )}
                   </div>
                   <div className="flex-1">
-                    <input
-                      type="text"
-                      disabled={!canEditProjectInfo}
-                      value={formData.picture}
-                      onChange={(e) => setFormData({ ...formData, picture: e.target.value })}
-                      placeholder="Enter emoji or icon URL"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
-                    />
+                    <input type="text" disabled={!canEditProjectInfo} value={formData.picture} onChange={(e) => setFormData({ ...formData, picture: e.target.value })} placeholder="Enter emoji or icon URL" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500" />
                   </div>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Project Name</label>
-                <input
-                  type="text"
-                  disabled={!canEditProjectInfo}
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
-                />
+                <input type="text" disabled={!canEditProjectInfo} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500" />
               </div>
             </div>
 
-            {/* Description */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-white mb-2">Description</label>
-              <textarea
-                value={formData.description}
-                disabled={!canEditProjectInfo}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 resize-none transition-colors disabled:bg-slate-800 disabled:text-slate-500"
-              />
+              <textarea value={formData.description} disabled={!canEditProjectInfo} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 resize-none transition-colors disabled:bg-slate-800 disabled:text-slate-500" />
             </div>
 
             {canEditProjectInfo && (
-              <button
-                onClick={handleSaveProject}
-                disabled={saving}
-                className="w-full px-6 py-3 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
-              >
-                <Save className="w-5 h-5" />
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button onClick={handleSaveProject} disabled={saving} className="w-full px-6 py-3 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20">
+                <Save className="w-5 h-5" /> {saving ? 'Saving...' : 'Save Changes'}
               </button>
             )}
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 2: NOTIFICATIONS (User Specific)           */}
-        {/* ══════════════════════════════════════════════════ */}
         <div className="bg-slate-800/50 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
           <div className="flex items-center gap-3 mb-6">
             <Bell className="w-5 h-5 text-blue-400" />
@@ -306,12 +270,7 @@ const ProjectSettings = () => {
                   </div>
                 </div>
                 <label className="relative inline-block w-12 h-6 cursor-pointer flex-shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setNotificationSettings({ ...notificationSettings, [key]: e.target.checked })}
-                    className="sr-only peer"
-                  />
+                  <input type="checkbox" checked={value} onChange={(e) => setNotificationSettings({ ...notificationSettings, [key]: e.target.checked })} className="sr-only peer" />
                   <div className="w-12 h-6 bg-slate-700 rounded-full peer-checked:bg-blue-500 transition-all" />
                   <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6" />
                 </label>
@@ -319,19 +278,11 @@ const ProjectSettings = () => {
             ))}
           </div>
 
-          <button
-            onClick={handleSaveNotifications}
-            disabled={saving}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-          >
-            <Save className="w-5 h-5" />
-            {saving ? 'Saving...' : 'Save Preferences'}
+          <button onClick={handleSaveNotifications} disabled={saving} className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
+            <Save className="w-5 h-5" /> {saving ? 'Saving...' : 'Save Preferences'}
           </button>
         </div>
 
-        {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 3: DANGER ZONE                             */}
-        {/* ══════════════════════════════════════════════════ */}
         <div className="bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="w-5 h-5 text-error-400" />
@@ -347,26 +298,16 @@ const ProjectSettings = () => {
             <div className="bg-slate-900/80 rounded-xl p-5 border border-error-500/50">
               <p className="text-white font-semibold mb-4">Are you absolutely sure you want to leave {project?.name}?</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowLeaveConfirm(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all"
-                >
+                <button onClick={() => setShowLeaveConfirm(false)} className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all">
                   Cancel
                 </button>
-                <button
-                  onClick={handleLeaveProject}
-                  disabled={role === 'owner'}
-                  className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-error-500/20"
-                >
+                <button onClick={handleLeaveProject} disabled={role === 'owner'} className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-error-500/20">
                   Yes, Leave Project
                 </button>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowLeaveConfirm(true)}
-              className="px-6 py-3 bg-error-600 hover:bg-error-500 rounded-xl font-bold transition-all shadow-lg shadow-error-500/20"
-            >
+            <button onClick={() => setShowLeaveConfirm(true)} className="px-6 py-3 bg-error-600 hover:bg-error-500 rounded-xl font-bold transition-all shadow-lg shadow-error-500/20">
               Leave Project
             </button>
           )}
