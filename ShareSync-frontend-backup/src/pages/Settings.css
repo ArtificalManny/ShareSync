@@ -5,3 +5,57 @@
   min-height: 100vh;
   background: transparent;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🎨 COLOR THEORY FIX: Presence Settings Overrides
+   Bypasses Tailwind JIT purging to force accessible dark mode contrast 
+   on legacy/hardcoded components, using zinc-100/zinc-400 to prevent halation.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.dark .presence-settings-wrapper [class*="text-gray-900"],
+.dark .presence-settings-wrapper [class*="text-slate-900"],
+.dark .presence-settings-wrapper [class*="text-gray-800"],
+.dark .presence-settings-wrapper [class*="text-slate-800"],
+.dark .presence-settings-wrapper [class*="text-black"] {
+  color: #f4f4f5 !important; /* zinc-100: Prevents halation while maintaining high contrast */
+}
+
+.dark .presence-settings-wrapper [class*="text-gray-700"],
+.dark .presence-settings-wrapper [class*="text-slate-700"],
+.dark .presence-settings-wrapper [class*="text-gray-600"],
+.dark .presence-settings-wrapper [class*="text-slate-600"] {
+  color: #e4e4e7 !important; /* zinc-200 */
+}
+
+.dark .presence-settings-wrapper [class*="text-gray-500"],
+.dark .presence-settings-wrapper [class*="text-slate-500"] {
+  color: #a1a1aa !important; /* zinc-400: Beautiful muted secondary text */
+}
+
+.dark .presence-settings-wrapper [class*="bg-white"] {
+  background-color: transparent !important;
+}
+
+.dark .presence-settings-wrapper [class*="bg-gray-50"],
+.dark .presence-settings-wrapper [class*="bg-slate-50"] {
+  background-color: rgba(255, 255, 255, 0.03) !important; /* Subtle depth */
+}
+
+.dark .presence-settings-wrapper [class*="border-gray-200"],
+.dark .presence-settings-wrapper [class*="border-slate-200"] {
+  border-color: rgba(255, 255, 255, 0.1) !important; /* Soft borders */
+}
+
+/* Fallbacks for raw HTML elements inside the wrapper */
+.dark .presence-settings-wrapper h3,
+.dark .presence-settings-wrapper h4,
+.dark .presence-settings-wrapper label,
+.dark .presence-settings-wrapper .font-semibold,
+.dark .presence-settings-wrapper .font-medium {
+  color: #f4f4f5 !important;
+}
+
+.dark .presence-settings-wrapper p,
+.dark .presence-settings-wrapper .text-sm {
+  color: #a1a1aa !important;
+}

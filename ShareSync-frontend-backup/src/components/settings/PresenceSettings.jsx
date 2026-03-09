@@ -1,13 +1,14 @@
 /**
  * PresenceSettings.jsx
  * Comprehensive privacy and presence controls
- * 
- * Features:
+ * * Features:
  * - Who can see your cursor
  * - Activity status settings
  * - Notification preferences
  * - Privacy presets
  * - Granular controls
+ * * UPDATE: Removed hardcoded inline styles. Implemented adaptive 
+ * Tailwind classes (slate-900/white) for seamless Light/Dark mode.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -162,28 +163,28 @@ export function PresenceSettings() {
   // ============================================
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
-        <h3 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
           Presence & Privacy
         </h3>
-        <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, margin: 0 }}>
+        <p className="text-sm text-slate-500 dark:text-zinc-400 m-0">
           Control who can see your cursor and when
         </p>
       </div>
 
       {/* Privacy Presets */}
       <div>
-        <h4 style={{ color: 'white', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
           Quick Presets
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+        <div className="grid grid-cols-2 gap-3">
           <PresetButton
             icon={Globe}
             label="Open"
             description="Visible to everyone"
-            color="#10B981"
+            color="#10B981" // Emerald
             onClick={() => applyPreset('open')}
             active={privacySettings.visibility === 'everyone' && privacySettings.showActivity}
           />
@@ -191,7 +192,7 @@ export function PresenceSettings() {
             icon={Users}
             label="Balanced"
             description="Team members only"
-            color="#8B5CF6"
+            color="#8B5CF6" // Violet
             onClick={() => applyPreset('balanced')}
             active={privacySettings.visibility === 'team' && privacySettings.showActivity}
           />
@@ -199,7 +200,7 @@ export function PresenceSettings() {
             icon={Shield}
             label="Private"
             description="Minimal sharing"
-            color="#F59E0B"
+            color="#F59E0B" // Amber
             onClick={() => applyPreset('private')}
             active={privacySettings.visibility === 'team' && !privacySettings.showActivity}
           />
@@ -207,7 +208,7 @@ export function PresenceSettings() {
             icon={Ghost}
             label="Invisible"
             description="Ghost mode"
-            color="#6366F1"
+            color="#6366F1" // Indigo
             onClick={() => applyPreset('invisible')}
             active={privacySettings.visibility === 'nobody'}
           />
@@ -216,10 +217,10 @@ export function PresenceSettings() {
 
       {/* Visibility Settings */}
       <div>
-        <h4 style={{ color: 'white', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
           Who Can See Your Cursor
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           <RadioOption
             icon={Globe}
             label="Everyone"
@@ -246,10 +247,10 @@ export function PresenceSettings() {
 
       {/* Activity Settings */}
       <div>
-        <h4 style={{ color: 'white', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
           Activity Sharing
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           <ToggleOption
             icon={Eye}
             label="Show Activity"
@@ -269,10 +270,10 @@ export function PresenceSettings() {
 
       {/* Interaction Settings */}
       <div>
-        <h4 style={{ color: 'white', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
           Interactions
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           <ToggleOption
             icon={Users}
             label="Allow Proximity Detection"
@@ -292,10 +293,10 @@ export function PresenceSettings() {
 
       {/* Notification Settings */}
       <div>
-        <h4 style={{ color: 'white', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
           Notifications
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           <ToggleOption
             icon={Bell}
             label="Proximity Alerts"
@@ -314,21 +315,14 @@ export function PresenceSettings() {
       </div>
 
       {/* Info Box */}
-      <div
-        style={{
-          padding: 16,
-          background: 'rgba(139, 92, 246, 0.1)',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          borderRadius: 12,
-        }}
-      >
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Shield size={20} color="#8B5CF6" style={{ flexShrink: 0, marginTop: 2 }} />
+      <div className="p-4 rounded-xl bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30">
+        <div className="flex gap-3">
+          <Shield size={20} className="text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
           <div>
-            <p style={{ color: 'white', fontSize: 13, fontWeight: 600, margin: '0 0 8px 0' }}>
+            <p className="text-sm font-semibold text-violet-900 dark:text-white mb-2">
               Your Privacy Matters
             </p>
-            <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 12, margin: 0, lineHeight: 1.6 }}>
+            <p className="text-xs text-violet-700 dark:text-zinc-300 m-0 leading-relaxed">
               These settings control your real-time presence. You can change them anytime, and they apply immediately across all sessions.
             </p>
           </div>
@@ -348,30 +342,27 @@ function PresetButton({ icon: Icon, label, description, color, onClick, active }
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      style={{
-        padding: 16,
-        background: active
-          ? `${color}22`
-          : 'rgba(255, 255, 255, 0.05)',
-        border: active
-          ? `2px solid ${color}`
-          : '2px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 12,
-        cursor: 'pointer',
-        textAlign: 'left',
-        transition: 'all 0.2s',
-      }}
+      className={`p-4 rounded-xl cursor-pointer text-left transition-all border ${
+        active 
+          ? '' // Styles injected via inline for dynamic hex colors
+          : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
+      }`}
+      style={
+        active 
+          ? { backgroundColor: `${color}15`, borderColor: color } 
+          : {}
+      }
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+      <div className="flex items-center gap-3 mb-2">
         <Icon size={20} color={color} />
-        <span style={{ color: 'white', fontSize: 14, fontWeight: 600 }}>
+        <span className="text-sm font-semibold text-slate-900 dark:text-white">
           {label}
         </span>
         {active && (
-          <Check size={16} color={color} style={{ marginLeft: 'auto' }} />
+          <Check size={16} color={color} className="ml-auto" />
         )}
       </div>
-      <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12, margin: 0 }}>
+      <p className="text-xs text-slate-500 dark:text-zinc-400 m-0">
         {description}
       </p>
     </motion.button>
@@ -388,51 +379,31 @@ function RadioOption({ icon: Icon, label, description, selected, onClick }) {
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
-      style={{
-        padding: 12,
-        background: selected
-          ? 'rgba(139, 92, 246, 0.1)'
-          : 'rgba(255, 255, 255, 0.05)',
-        border: selected
-          ? '1px solid rgba(139, 92, 246, 0.5)'
-          : '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 8,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        transition: 'all 0.2s',
-      }}
+      className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 transition-all border ${
+        selected
+          ? 'bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/50'
+          : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
+      }`}
     >
-      <Icon size={18} color={selected ? '#8B5CF6' : 'rgba(255, 255, 255, 0.6)'} />
-      <div style={{ flex: 1, textAlign: 'left' }}>
-        <div style={{ color: 'white', fontSize: 14, fontWeight: 600 }}>
+      <Icon 
+        size={18} 
+        className={selected ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-400'} 
+      />
+      <div className="flex-1 text-left">
+        <div className="text-sm font-semibold text-slate-900 dark:text-white">
           {label}
         </div>
-        <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }}>
+        <div className="text-xs text-slate-500 dark:text-zinc-400">
           {description}
         </div>
       </div>
       <div
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: '50%',
-          border: `2px solid ${selected ? '#8B5CF6' : 'rgba(255, 255, 255, 0.3)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        className={`w-5 h-5 rounded-full flex items-center justify-center border-2 ${
+          selected ? 'border-violet-600 dark:border-violet-400' : 'border-slate-300 dark:border-white/30'
+        }`}
       >
         {selected && (
-          <div
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: '#8B5CF6',
-            }}
-          />
+          <div className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-400" />
         )}
       </div>
     </motion.button>
@@ -445,41 +416,27 @@ function RadioOption({ icon: Icon, label, description, selected, onClick }) {
 
 function ToggleOption({ icon: Icon, label, description, checked, onChange }) {
   return (
-    <div
-      style={{
-        padding: 12,
-        background: 'rgba(255, 255, 255, 0.05)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-      }}
-    >
-      <Icon size={18} color="rgba(255, 255, 255, 0.6)" />
-      <div style={{ flex: 1 }}>
-        <div style={{ color: 'white', fontSize: 14, fontWeight: 600 }}>
+    <div className="p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg flex items-center gap-3">
+      <Icon size={18} className="text-slate-400 dark:text-zinc-400" />
+      <div className="flex-1">
+        <div className="text-sm font-semibold text-slate-900 dark:text-white">
           {label}
         </div>
-        <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 }}>
+        <div className="text-xs text-slate-500 dark:text-zinc-400">
           {description}
         </div>
       </div>
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onChange}
-        style={{
-          width: 48,
-          height: 28,
-          borderRadius: 14,
-          background: checked
-            ? 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)'
-            : 'rgba(255, 255, 255, 0.1)',
-          border: 'none',
-          cursor: 'pointer',
-          position: 'relative',
-          transition: 'all 0.2s',
-        }}
+        className={`w-12 h-7 rounded-full cursor-pointer relative transition-all border-none ${
+          checked ? '' : 'bg-slate-300 dark:bg-white/10'
+        }`}
+        style={
+          checked 
+            ? { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' } 
+            : {}
+        }
       >
         <motion.div
           animate={{ x: checked ? 22 : 2 }}
@@ -491,6 +448,7 @@ function ToggleOption({ icon: Icon, label, description, checked, onChange }) {
             background: 'white',
             position: 'absolute',
             top: 2,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
           }}
         />
       </motion.button>

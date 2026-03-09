@@ -10,9 +10,11 @@
 //   to dedicated Settings API (GET/PUT /settings).
 // - Maps Nest Settings schema to existing React state.
 // - Keeps ALL UI + layout identical.
+// - COLOR THEORY FIX: Added robust CSS wrapper for PresenceSettings readability
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
+import './Settings.css'; // ✅ IMPORTED CSS OVERRIDES
 // OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { getSettings, updateSettings } from '../api/settings';
 import { toast } from '../components/ui/Toaster.jsx';
@@ -718,7 +720,10 @@ export default function Settings() {
             iconColor="text-emerald-600 dark:text-emerald-400"
             title="Live Cursor Privacy"
           >
-            <PresenceSettings />
+            {/* ✅ COLOR THEORY FIX: Wrapped in the target class that Settings.css will overhaul */}
+            <div className="presence-settings-wrapper transition-colors duration-300">
+              <PresenceSettings />
+            </div>
           </SectionCard>
 
           {/* LAYER 6: Legacy Mode */}
