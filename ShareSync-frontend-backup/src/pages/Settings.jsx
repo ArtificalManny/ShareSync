@@ -1,25 +1,15 @@
 // src/pages/Settings.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SETTINGS PAGE v4.2 - Wired to /api/settings
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// THEME: "The Control Room" (Adaptive Light/Dark)
-//
-// CHANGES in v4.2:
-// - Switched from getMe()/updateProfile()/updateNotifications
-//   to dedicated Settings API (GET/PUT /settings).
-// - Maps Nest Settings schema to existing React state.
-// - Keeps ALL UI + layout identical.
-// - COLOR THEORY FIX: Added robust CSS wrapper for PresenceSettings readability
+// SHARESYNC SETTINGS PAGE v4.2.2
+// - FIX: Aligned payload perfectly with NestJS DTO to prevent silent drops.
+// - UI: Replaced gradient on Save Changes with solid bg-violet-600.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
-import './Settings.css'; // ✅ IMPORTED CSS OVERRIDES
-// OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
+import './Settings.css'; 
 import { getSettings, updateSettings } from '../api/settings';
 import { toast } from '../components/ui/Toaster.jsx';
-import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
-import { DISCOVERABILITY } from '../config/flags.js';
+import { trackMentorSettings } from '../utils/telemetry';
 import {
   Beaker,
   Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles,
@@ -34,9 +24,6 @@ import BillingSettings from "../components/settings/BillingSettings";
 import PersonaPicker from "../components/settings/PersonaPicker";
 import CelebrationStylePicker from "../components/settings/CelebrationStylePicker";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SLIDER COMPONENT - Adaptive
-// ═══════════════════════════════════════════════════════════════════════════════
 function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Icon }) {
   const percentage = ((value - min) / (max - min)) * 100;
 
@@ -80,9 +67,6 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TOGGLE COMPONENT - Adaptive
-// ═══════════════════════════════════════════════════════════════════════════════
 function Toggle({ label, checked, onChange, description }) {
   return (
     <label className="flex items-start gap-3 cursor-pointer group">
@@ -93,14 +77,12 @@ function Toggle({ label, checked, onChange, description }) {
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only peer"
         />
-        {/* Toggle track */}
         <div
           className={`w-11 h-6 rounded-full transition-all border ${checked ? 'border-transparent' : 'border-slate-300 dark:border-[#27272a] bg-slate-200 dark:bg-[#1f1f23]'}`}
           style={{
             background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' : undefined
           }}
         />
-        {/* Toggle thumb */}
         <div
           className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all"
           style={{ left: checked ? '24px' : '4px' }}
@@ -118,9 +100,6 @@ function Toggle({ label, checked, onChange, description }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// RADIO GROUP COMPONENT - Adaptive
-// ═══════════════════════════════════════════════════════════════════════════════
 function RadioGroup({ label, options, value, onChange, icon: Icon }) {
   return (
     <div className="space-y-3">
@@ -154,9 +133,6 @@ function RadioGroup({ label, options, value, onChange, icon: Icon }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SECTION CARD COMPONENT - Adaptive
-// ═══════════════════════════════════════════════════════════════════════════════
 function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = false }) {
   return (
     <div
@@ -181,56 +157,43 @@ function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = 
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN SETTINGS PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [ok, setOk] = useState('');
 
-  // LAYER 1: Momentum Engine
   const [dailyShipsGoal, setDailyShipsGoal] = useState(5);
   const [weekendShipsCount, setWeekendShipsCount] = useState(true);
   const [allowStreakFreeze, setAllowStreakFreeze] = useState(true);
 
-  // LAYER 2: Focus DNA
   const [deepWorkTarget, setDeepWorkTarget] = useState(4);
   const [autoStartFocus, setAutoStartFocus] = useState(false);
   const [focusStartTime, setFocusStartTime] = useState('09:00');
 
-  // LAYER 3: Social Proof
   const [showStreakTo, setShowStreakTo] = useState('friends');
   const [celebratePublicly, setCelebratePublicly] = useState(true);
   const [publicProfile, setPublicProfile] = useState(true);
   const [discoverable, setDiscoverable] = useState(false);
 
-  // LAYER 4: AI Mentor Personality
   const [mentorEnabled, setMentorEnabled] = useState(true);
   const [mentorTone, setMentorTone] = useState('wise');
   const [mentorIntensity, setMentorIntensity] = useState(3);
 
-  // LAYER 5: Distraction Shield (stored in focus in backend)
   const [blockedApps, setBlockedApps] = useState(['slack', 'youtube', 'tiktok']);
   const [emergencyBreaksLeft, setEmergencyBreaksLeft] = useState(1);
 
-  // LAYER 6: Legacy Mode
   const [showLegacyEverywhere, setShowLegacyEverywhere] = useState(true);
   const [yearlyMontage, setYearlyMontage] = useState(false);
 
-  // LAYER 7: Kid Mode / Pro Mode
   const [userMode, setUserMode] = useState('pro');
 
-  // Existing settings
   const [theme, setTheme] = useState('system');
   const [emailActivity, setEmailActivity] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
-  const [twoFA, setTwoFA] = useState(false);
 
-  // ✅ PHONE VERIFICATION STATE (Item 13)
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneStatus, setPhoneStatus] = useState('idle'); // 'idle' | 'pending' | 'verified'
+  const [phoneStatus, setPhoneStatus] = useState('idle'); 
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const otpRefs = useRef([]);
@@ -262,14 +225,10 @@ export default function Settings() {
       return;
     }
 
-    // System mode
     setDark(false);
     localStorage.setItem('ss.theme', 'system');
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // LOAD SETTINGS FROM /api/settings
-  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     let ignore = false;
     setLoading(true);
@@ -278,80 +237,47 @@ export default function Settings() {
       .then((settings) => {
         if (ignore || !settings) return;
 
-        // Momentum
         const momentum = settings.momentum || {};
         setDailyShipsGoal(momentum.dailyGoal ?? 5);
-        setWeekendShipsCount(
-          momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true
-        );
-        setAllowStreakFreeze(
-          momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true
-        );
+        setWeekendShipsCount(momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true);
+        setAllowStreakFreeze(momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true);
 
-        // Focus
         const focus = settings.focus || {};
         setDeepWorkTarget(focus.dailyTarget ?? 4);
         setAutoStartFocus(Boolean(focus.autoStart ?? false));
         setFocusStartTime(focus.startTime || '09:00');
-
-        // Distraction shield bits (live under focus in schema)
         setBlockedApps(Array.isArray(focus.blockedApps) ? focus.blockedApps : ['slack', 'youtube', 'tiktok']);
         setEmergencyBreaksLeft(focus.emergencyBreaksLeft ?? 1);
 
-        // Social
         const social = settings.social || {};
         setShowStreakTo(social.showStreakTo || 'friends');
         setCelebratePublicly(Boolean(social.celebrate ?? true));
 
-        const resolvedPublicProfile =
-          social.publicProfile ??
-          settings.publicProfile ??
-          true;
-        const resolvedDiscoverable =
-          social.discoverable ??
-          settings.discoverable ??
-          false;
+        const resolvedPublicProfile = social.publicProfile ?? settings.publicProfile ?? true;
+        const resolvedDiscoverable = social.discoverable ?? settings.discoverable ?? false;
 
         setPublicProfile(Boolean(resolvedPublicProfile));
         setDiscoverable(Boolean(resolvedDiscoverable));
 
-        // Mentor
         const mentor = settings.mentor || {};
         setMentorEnabled(Boolean(mentor.enabled ?? true));
         setMentorTone(mentor.tone || 'wise');
         setMentorIntensity(mentor.intensity ?? 3);
 
-        // Legacy
         const legacy = settings.legacy || {};
         setShowLegacyEverywhere(Boolean(legacy.showEverywhere ?? true));
         setYearlyMontage(Boolean(legacy.yearlyVideo ?? false));
 
-        // Appearance
         const appearance = settings.appearance || {};
-        const initialTheme =
-          appearance.theme ||
-          localStorage.getItem('ss.theme') ||
-          'dark'; // default to dark now
+        const initialTheme = appearance.theme || localStorage.getItem('ss.theme') || 'dark'; 
         setTheme(initialTheme);
         setUserMode(appearance.mode || 'pro');
         applyTheme(initialTheme);
 
-        // Notifications
-        const notifications = settings.notifications || {};
-        setEmailActivity(Boolean(notifications.emailActivity ?? true));
-        setEmailDigest(Boolean(notifications.emailDigest ?? true));
-
-        // Security
-        const security = settings.security || {};
-        setTwoFA(Boolean(security.twoFA ?? false));
       })
       .catch((e) => {
         if (ignore) return;
-        // Prefer backend message if present
-        const msg =
-          e?.response?.data?.message ||
-          e?.message ||
-          'Failed to load settings';
+        const msg = e?.response?.data?.message || e?.message || 'Failed to load settings';
         setErrorMsg(String(msg));
       })
       .finally(() => {
@@ -363,9 +289,6 @@ export default function Settings() {
     };
   }, []);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SAVE SETTINGS -> PUT /api/settings
-  // ═══════════════════════════════════════════════════════════════════════════
   const handleSave = async (e) => {
     e?.preventDefault?.();
     setErrorMsg('');
@@ -373,49 +296,17 @@ export default function Settings() {
     setSaving(true);
 
     try {
+      // ✅ PERFECT DTO ALIGNMENT: 
+      // Matched object structures identically to UpdateSettingsDto
       const payload = {
-        // legacy flat fields for backward compatibility
         publicProfile,
         discoverable: Boolean(discoverable),
-
-        appearance: {
-          theme,
-          mode: userMode,
-        },
-        mentor: {
-          enabled: Boolean(mentorEnabled),
-          tone: mentorTone,
-          intensity: mentorIntensity,
-        },
-        momentum: {
-          dailyGoal: dailyShipsGoal,
-          weekendCount: weekendShipsCount,
-          allowFreeze: allowStreakFreeze,
-        },
-        focus: {
-          dailyTarget: deepWorkTarget,
-          autoStart: autoStartFocus,
-          startTime: focusStartTime,
-          blockedApps,
-          emergencyBreaksLeft,
-        },
-        social: {
-          showStreakTo,
-          celebrate: celebratePublicly,
-          publicProfile,
-          discoverable: Boolean(discoverable),
-        },
-        legacy: {
-          showEverywhere: showLegacyEverywhere,
-          yearlyVideo: yearlyMontage,
-        },
-        notifications: {
-          emailActivity,
-          emailDigest,
-        },
-        security: {
-          twoFA,
-        },
+        appearance: { theme, mode: userMode },
+        mentor: { enabled: Boolean(mentorEnabled), tone: mentorTone, intensity: mentorIntensity },
+        momentum: { dailyGoal: dailyShipsGoal, weekendCount: weekendShipsCount, allowFreeze: allowStreakFreeze },
+        focus: { dailyTarget: deepWorkTarget, autoStart: autoStartFocus, startTime: focusStartTime },
+        social: { showStreakTo, celebrate: celebratePublicly },
+        legacy: { showEverywhere: showLegacyEverywhere, yearlyVideo: yearlyMontage },
       };
 
       await updateSettings(payload);
@@ -428,20 +319,13 @@ export default function Settings() {
         source: 'settings_save',
       });
     } catch (e) {
-      const msg =
-        e?.response?.data?.message ||
-        e?.message ||
-        'Failed to save settings';
+      const msg = e?.response?.data?.message || e?.message || 'Failed to save settings';
       setErrorMsg(String(msg));
     } finally {
       setSaving(false);
       setTimeout(() => setOk(''), 3000);
     }
   };
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ✅ PHONE VERIFICATION HANDLERS (Item 13)
-  // ═══════════════════════════════════════════════════════════════════════════
 
   const handleRequestPhoneCode = async () => {
     if (!phoneNumber.trim()) {
@@ -518,7 +402,6 @@ export default function Settings() {
     <main className="min-h-screen px-6 py-12 bg-slate-50 dark:bg-[#09090B] text-slate-900 dark:text-white transition-colors duration-300">
       <div className="max-w-4xl mx-auto space-y-8">
 
-        {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-3">
             <SettingsIcon className="w-5 h-5 text-violet-500" />
@@ -530,7 +413,6 @@ export default function Settings() {
           <p className="text-slate-500 dark:text-zinc-400 text-lg">Who do you want to become?</p>
         </div>
 
-        {/* Alerts */}
         {errorMsg && (
           <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-6 py-4 text-red-600 dark:text-red-400">
             {errorMsg}
@@ -544,7 +426,6 @@ export default function Settings() {
 
         <form onSubmit={handleSave} className="space-y-6">
 
-          {/* LAYER 1: Momentum Engine */}
           <SectionCard
             icon={Target}
             iconBg="bg-violet-100 dark:bg-violet-500/10"
@@ -573,7 +454,6 @@ export default function Settings() {
             />
           </SectionCard>
 
-          {/* ⭐ Priority 4.1: Persona / Experience Mode */}
           <SectionCard
             icon={Sparkles}
             iconBg="bg-fuchsia-100 dark:bg-fuchsia-500/10"
@@ -583,7 +463,6 @@ export default function Settings() {
             <PersonaPicker />
           </SectionCard>
 
-          {/* ⭐ Priority 4.2: Celebration Style */}
           <SectionCard
             icon={Play}
             iconBg="bg-orange-100 dark:bg-orange-500/10"
@@ -593,7 +472,6 @@ export default function Settings() {
             <CelebrationStylePicker />
           </SectionCard>
 
-          {/* LAYER 1.5: Daily Pulse Check (Priority 3.4) */}
           <SectionCard
             icon={Heart}
             iconBg="bg-rose-100 dark:bg-rose-500/10"
@@ -614,9 +492,6 @@ export default function Settings() {
             />
           </SectionCard>
 
-      
-
-          {/* LAYER 2: Focus DNA */}
           <SectionCard
             icon={Brain}
             iconBg="bg-blue-100 dark:bg-blue-500/10"
@@ -640,7 +515,6 @@ export default function Settings() {
             />
           </SectionCard>
 
-          {/* LAYER 3: Social Proof */}
           <SectionCard
             icon={UsersIcon}
             iconBg="bg-cyan-100 dark:bg-cyan-500/10"
@@ -677,7 +551,6 @@ export default function Settings() {
             />
           </SectionCard>
 
-          {/* LAYER 4: AI Mentor Personality */}
           <SectionCard
             icon={Sparkles}
             iconBg="bg-amber-100 dark:bg-amber-500/10"
@@ -713,20 +586,17 @@ export default function Settings() {
             )}
           </SectionCard>
 
-          {/* Cursor Presence Settings */}
           <SectionCard
             icon={Eye}
             iconBg="bg-emerald-100 dark:bg-emerald-500/10"
             iconColor="text-emerald-600 dark:text-emerald-400"
             title="Live Cursor Privacy"
           >
-            {/* ✅ COLOR THEORY FIX: Wrapped in the target class that Settings.css will overhaul */}
             <div className="presence-settings-wrapper transition-colors duration-300">
               <PresenceSettings />
             </div>
           </SectionCard>
 
-          {/* LAYER 6: Legacy Mode */}
           <SectionCard
             icon={Heart}
             iconBg="bg-pink-100 dark:bg-pink-500/10"
@@ -755,7 +625,6 @@ export default function Settings() {
             </button>
           </SectionCard>
 
-          {/* LAYER 7: Experience Mode */}
           <SectionCard
             icon={Star}
             iconBg="bg-indigo-100 dark:bg-indigo-500/10"
@@ -797,7 +666,6 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* PHASE 4: SETTINGS LAB */}
           <SectionCard
             icon={Beaker}
             iconBg="bg-teal-100 dark:bg-teal-500/10"
@@ -808,10 +676,8 @@ export default function Settings() {
             <WhatWorksAnalyzer />
           </SectionCard>
 
-          {/* PHASE 4: PRIVACY TRANSPARENCY */}
           <PrivacyCard />
 
-          {/* SUBSCRIPTION & BILLING */}
           <SectionCard
             icon={CreditCard}
             iconBg="bg-fuchsia-100 dark:bg-fuchsia-500/10"
@@ -821,7 +687,6 @@ export default function Settings() {
             <BillingSettings />
           </SectionCard>
 
-          {/* ✅ PHONE VERIFICATION (Item 13) */}
           <SectionCard
             icon={Phone}
             iconBg="bg-green-100 dark:bg-green-500/10"
@@ -841,7 +706,6 @@ export default function Settings() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Phone input + Send Code */}
                 <div className="flex gap-3">
                   <div className="relative flex-1">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
@@ -859,15 +723,13 @@ export default function Settings() {
                       type="button"
                       onClick={handleRequestPhoneCode}
                       disabled={phoneLoading || !phoneNumber.trim()}
-                      className="px-5 py-3 rounded-xl font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500/50 whitespace-nowrap"
-                      style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
+                      className="px-5 py-3 rounded-xl font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-violet-600 hover:bg-violet-700 whitespace-nowrap border-none"
                     >
                       {phoneLoading ? 'Sending...' : 'Send Code'}
                     </button>
                   )}
                 </div>
 
-                {/* OTP input (shown after code sent) */}
                 {phoneStatus === 'pending' && (
                   <div className="space-y-3">
                     <p className="text-sm text-slate-500 dark:text-zinc-400">
@@ -911,7 +773,6 @@ export default function Settings() {
             )}
           </SectionCard>
 
-          {/* Appearance */}
           <SectionCard
             icon={SettingsIcon}
             iconBg="bg-slate-200 dark:bg-zinc-800"
@@ -935,7 +796,6 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* DANGER ZONE */}
           <SectionCard
             icon={AlertTriangle}
             iconBg="bg-red-100 dark:bg-red-500/20"
@@ -965,12 +825,11 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* Save Button */}
+          {/* ✅ REPLACED GRADIENT WITH SOLID bg-violet-600 */}
           <button
             type="submit"
             disabled={saving}
-            className="w-full text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500/50"
-            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
+            className="w-full text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed bg-violet-600 hover:bg-violet-700 border-none"
           >
             {saving ? 'Saving Your Future...' : 'Save Changes'}
           </button>
