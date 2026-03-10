@@ -75,6 +75,11 @@ export class UpdateSettingsDto {
     emailActivity?: boolean;
   };
 
+  // ⭐ FIX: Added 'notifications' payload to the whitelist to prevent 400 Bad Request
+  @IsOptional()
+  @IsObject()
+  notifications?: any;
+
   // ─────────────────────────────────────────────────────────────────────────────
   // PRIVACY SETTINGS
   // ─────────────────────────────────────────────────────────────────────────────
