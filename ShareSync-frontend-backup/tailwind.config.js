@@ -1,13 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * SHARESYNC DESIGN SYSTEM v4.2 - "The Gallery Walk" + Phase 1 & 2 Blueprints
+ * SHARESYNC DESIGN SYSTEM v4.2 - "The Gallery Walk" + Phase 1 Blueprint
  * ═══════════════════════════════════════════════════════════════════════════════
  * * UPDATED IN v4.2:
  * - Added light mode colors from palette.css
  * - Mapped CSS variables to Tailwind classes
  * - Preserved ALL existing momentum/gamification features
- * ⭐ PHASE 2: Injected "Data Integrity" Mono Stack and Authority Tracking
  * * COLOR PHILOSOPHY:
  * • Deep Violet (#8B5CF6 → #7C3AED) = Brand, creativity, transformation
  * • Ocean Blue (#3B82F6) = Actions, Save buttons, toggles ON
@@ -18,6 +17,7 @@
  */
 
 export default {
+  darkMode: 'class', // ⭐ THE FINAL BOSS SWITCH: This tells Tailwind to look for the "dark" class on the HTML tag!
   content: [
     "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
@@ -31,16 +31,8 @@ export default {
        */
       fontFamily: {
         sans: ["Inter var", "Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
-        // ⭐ Phase 2: Data Integrity Font Stack
-        mono: ["JetBrains Mono", "IBM Plex Mono", "monospace"],
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
         display: ["Inter Tight", "Inter var", "Inter", "system-ui", "sans-serif"],
-      },
-
-      /**
-       * ⭐ Phase 2: Custom Letter Spacing for Authority Headings
-       */
-      letterSpacing: {
-        'tightest': '-0.025em',
       },
 
       /**
@@ -127,7 +119,7 @@ export default {
           500: "var(--palette-emerald-500, #10B981)",
           600: "var(--palette-emerald-600, #059669)",
           700: "var(--palette-emerald-700, #047857)",
-          800: "var(--palette-emerald-800, #065F46)",
+          800: "var(--emerald-800, #065F46)",
           900: "var(--palette-emerald-900, #064E3B)",
         },
 

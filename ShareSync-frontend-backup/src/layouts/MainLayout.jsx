@@ -21,36 +21,43 @@ export default function MainLayout({
   children 
 }) {
   return (
-    <div className="main-layout min-h-screen bg-slate-50">
+    // ⭐ FIX: Added dark background and text transitions
+    <div className="main-layout min-h-screen bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
+      
       {/* ═══════════════════════════════════════════════════════════════════════
-          ATMOSPHERIC GLOWS - Subtle violet/teal to echo auth pages
-          These are purely decorative and don't affect functionality
+          ATMOSPHERIC GLOWS 
+          ⭐ FIX: Split into Light Mode div and Dark Mode div so inline styles don't clash!
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Base gradient - soft with violet hint */}
+      
+      {/* --- LIGHT MODE GLOWS --- */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 dark:hidden">
         <div 
           className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)'
-          }}
+          style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)' }}
         />
-        
-        {/* Violet glow - top left (subtle) */}
         <div 
           className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)',
-            filter: 'blur(40px)'
-          }}
+          style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)', filter: 'blur(40px)' }}
         />
-        
-        {/* Teal glow - bottom right (very subtle) */}
         <div 
           className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)',
-            filter: 'blur(40px)'
-          }}
+          style={{ background: 'radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)', filter: 'blur(40px)' }}
+        />
+      </div>
+
+      {/* --- DARK MODE GLOWS --- */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 hidden dark:block">
+        <div 
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b 100%)' }}
+        />
+        <div 
+          className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)', filter: 'blur(40px)' }}
+        />
+        <div 
+          className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(45, 212, 191, 0.02) 0%, transparent 70%)', filter: 'blur(40px)' }}
         />
       </div>
 
@@ -106,9 +113,11 @@ export function PageHeader({
   return (
     <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 ${className}`}>
       <div>
-        <h1 className="text-2xl font-semibold text-slate-800">{title}</h1>
+        {/* ⭐ FIX: Added dark:text-white */}
+        <h1 className="text-2xl font-semibold text-slate-800 dark:text-white transition-colors">{title}</h1>
         {subtitle && (
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          {/* ⭐ FIX: Added dark:text-zinc-400 */}
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400 transition-colors">{subtitle}</p>
         )}
       </div>
       {actions && (
@@ -133,10 +142,11 @@ export function PageSection({
         <div className="flex items-center justify-between mb-4">
           <div>
             {title && (
-              <h2 className="text-lg font-semibold text-slate-700">{title}</h2>
+              {/* ⭐ FIX: Added dark mode text colors */}
+              <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 transition-colors">{title}</h2>
             )}
             {description && (
-              <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400 transition-colors">{description}</p>
             )}
           </div>
           {actions && (
@@ -161,9 +171,9 @@ export function ContentCard({
   return (
     <div 
       className={`
-        bg-white rounded-xl border border-slate-200
-        shadow-sm
-        ${hover ? 'hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60 transition-all duration-200' : ''}
+        bg-white dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#27272a]
+        shadow-sm transition-all duration-300
+        ${hover ? 'hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60 dark:hover:border-violet-500/30' : ''}
         ${padding ? 'p-6' : ''}
         ${className}
       `}
@@ -185,27 +195,29 @@ export function StatCard({
   className = "" 
 }) {
   const trendColors = {
-    up: 'text-emerald-600',
-    down: 'text-red-500',
-    neutral: 'text-slate-500',
+    up: 'text-emerald-600 dark:text-emerald-400',
+    down: 'text-red-500 dark:text-red-400',
+    neutral: 'text-slate-500 dark:text-zinc-400',
   };
 
   return (
     <ContentCard className={className}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-slate-500">{label}</p>
-          <p className="text-2xl font-semibold text-slate-800 mt-1">{value}</p>
+          {/* ⭐ FIX: Dark mode text colors */}
+          <p className="text-sm text-slate-500 dark:text-zinc-400 transition-colors">{label}</p>
+          <p className="text-2xl font-semibold text-slate-800 dark:text-white mt-1 transition-colors">{value}</p>
           {trend && (
-            <p className={`text-sm mt-1 ${trendColors[trendDirection]}`}>
+            <p className={`text-sm mt-1 transition-colors ${trendColors[trendDirection]}`}>
               {trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : ''}
               {trend}
             </p>
           )}
         </div>
         {Icon && (
-          <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-violet-500" />
+          {/* ⭐ FIX: Dark mode subtle backgrounds */}
+          <div className="w-10 h-10 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center transition-colors">
+            <Icon className="w-5 h-5 text-violet-500 dark:text-violet-400" />
           </div>
         )}
       </div>
