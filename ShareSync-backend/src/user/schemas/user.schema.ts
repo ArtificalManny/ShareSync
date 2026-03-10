@@ -470,7 +470,6 @@ UserSchema.virtual('name').get(function () {
   return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username;
 });
 
-UserSchema.index({ email: 1 });
-UserSchema.index({ username: 1 });
+// ⭐ FIX: Removed duplicate email and username indexes!
 UserSchema.index({ xp: -1 });
 UserSchema.index({ streakDays: -1 });
