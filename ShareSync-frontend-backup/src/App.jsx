@@ -108,7 +108,6 @@ import "./styles/card-tiers.css";
 import "./styles/status-colors.css";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
-import { Menu, X } from "lucide-react";
 
 // Feature flags
 import {
@@ -168,8 +167,6 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
-// ❌ TEMPORARILY DISABLED - Component has dependency issues
-// const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
@@ -255,8 +252,7 @@ function ScrollToHash() {
 
 function LoadingSpinner() {
   return (
-    // ⭐ FIX: Add dark mode background to spinner
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-[#09090b]">
+    <div className="flex items-center justify-center min-h-screen bg-slate-950">
       <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
@@ -288,27 +284,6 @@ function PublicOnlyRoute({ children }) {
   }
 
   return children;
-}
-
-function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
-  return (
-    <button
-      className="sidebar-toggle"
-      onClick={() => setSidebarOpen(!sidebarOpen)}
-      aria-label="Toggle Sidebar"
-    >
-      {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-    </button>
-  );
-}
-
-function SidebarOverlay({ show, onClick }) {
-  return (
-    <div
-      className={`sidebar-overlay ${show ? "active" : ""}`}
-      onClick={onClick}
-    />
-  );
 }
 
 function ContextTracker() {
@@ -447,15 +422,18 @@ function AuthenticatedApp({ children, userData }) {
                             <BreakReminder position="bottom-right" />
                           </Suspense>
                         </AdaptiveDensityProvider>
+                        {/* ✅ Priority 1: Aha Moment Toast */}
                         <AhaMomentToast
                           show={ahaMoment.showToast}
                           insight={ahaMoment.currentInsight}
                           onView={ahaMoment.viewInsight}
                           onDismiss={ahaMoment.dismissInsight}
                         />
+                        {/* ✅ Priority 4.2: Global Celebration Router */}
                         <Suspense fallback={null}>
                           <CelebrationRouter />
                         </Suspense>
+                        {/* ✅ Priority 5.4: Shortcut Guide Modal */}
                         <Suspense fallback={null}>
                           <ShortcutGuide />
                         </Suspense>
@@ -478,7 +456,6 @@ function AuthenticatedApp({ children, userData }) {
 function AppRoutes() {
   const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAuthPage = [
     "/login",
@@ -497,20 +474,9 @@ function AppRoutes() {
     <>
       {showAppChrome && (
         <>
-          <SidebarToggle
-            sidebarOpen={sidebarOpen}
-            setSidebarOpen={setSidebarOpen}
-          />
-          <SidebarOverlay
-            show={sidebarOpen}
-            onClick={() => setSidebarOpen(false)}
-          />
           <Suspense fallback={null}>
-            <div className={`sidebar ${sidebarOpen ? "mobile-open" : ""}`}>
-              <Sidebar />
-            </div>
+            <Sidebar user={authUser} />
           </Suspense>
-
           <Navbar user={authUser} onLogout={logout} />
         </>
       )}
@@ -519,9 +485,8 @@ function AppRoutes() {
       <div className="main-content border-none outline-none ring-0 !rounded-none !m-0 !p-0">
         <div className="content-wrapper border-none shadow-none !rounded-none !m-0 !p-0">
           <Suspense
-            // ⭐ FIX: Add dark mode text color for the suspense fallback
             fallback={
-              <div className="px-6 py-10 text-center text-slate-500 dark:text-zinc-500">
+              <div className="px-6 py-10 text-center text-slate-500">
                 Loading...
               </div>
             }
@@ -777,12 +742,10 @@ function AppRoutes() {
 }
 
 // ⭐ MASTER THEME SWITCHER
-// This physically adds or removes the 'dark' class from the <html> tag
 function ThemeSync() {
   const { user } = useAuth();
   
   useEffect(() => {
-    // Check user preferences, fallback to local storage, fallback to system
     const theme = user?.preferences?.theme || localStorage.getItem('ss.theme') || 'system';
     const root = document.documentElement;
     
@@ -791,17 +754,15 @@ function ThemeSync() {
     } else {
       root.classList.remove('dark');
     }
-  }, [user?.preferences?.theme]); // Re-run whenever the user changes their theme
+  }, [user?.preferences?.theme]); 
 
-  return null; // This component is invisible
+  return null; 
 }
 
 const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        {/* ⭐ ADDED MASTER THEME SWITCHER */}
-        <ThemeSync />
         <SoundProvider>
           <NewToastProvider>
             <ToastProvider>
@@ -809,8 +770,8 @@ const App = () => {
                 <Router>
                   <Suspense fallback={<LoadingSpinner />}>
                     <LayoutSkin>
-                      {/* ⭐ RE-ADDED CSS FIX: dark:bg-[#09090b] and text color defaults so the canvas obeys Dark Mode */}
-                      <div className="app-container w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-slate-100 !rounded-none !m-0 !p-0 !border-0 transition-colors duration-300">
+                      {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
+                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
                         <AuthCheck />
                       </div>
                     </LayoutSkin>

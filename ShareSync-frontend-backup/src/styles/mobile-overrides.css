@@ -1,27 +1,30 @@
 /* src/styles/mobile-overrides.css */
 /* ═══════════════════════════════════════════════════════════════════════════════
    Priority 5.5: Mobile responsiveness overrides
-   - Hide desktop sidebar below md
-   - Show bottom nav on mobile
+   - Show persistent Skinny Rail sidebar below md
    - Increase touch targets to 44px min
    - Handle safe-area-inset for notched phones
    - Adjust modal heights for mobile keyboards
-   ⭐ PHASE 8.2: MobileTabBar Pad & Strict Tap Targets
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Hide desktop sidebar on mobile ──────────────────────────────────────── */
+/* ── Show skinny rail on mobile ──────────────────────────────────────────── */
 @media (max-width: 767px) {
+  /* Ensure the sidebar remains visible as a permanent skinny rail */
   #app-sidebar,
   .sidebar {
-    display: none !important;
+    display: flex !important;
   }
 
-  /* Remove sidebar margin from main content */
+  /* Accommodate the 72px permanent rail on the left */
   .main-content {
-    margin-left: 0 !important;
+    margin-left: 72px !important;
     padding-left: 0 !important;
-    /* Ensure nothing is hidden behind the new MobileTabBar */
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; 
+  }
+
+  /* Align the navbar with the rail */
+  .navbar {
+    left: 72px !important;
   }
 
   /* Adjust main content padding for mobile */

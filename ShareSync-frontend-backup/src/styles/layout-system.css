@@ -169,85 +169,13 @@ body.sidebar-collapsed .main-content {
 }
 
 /* ============================================
-   MOBILE
-   ============================================ */
-
-.sidebar-toggle {
-  position: fixed !important;
-  top: 16px !important;
-  left: 16px !important;
-  width: 40px !important;
-  height: 40px !important;
-  z-index: 101 !important;
-  display: none !important;
-  background: rgba(139, 92, 246, 0.2) !important;
-  border: 1px solid rgba(139, 92, 246, 0.3) !important;
-  border-radius: 8px !important;
-  cursor: pointer !important;
-}
-
-.sidebar-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.5) !important;
-  z-index: 99 !important;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.sidebar-overlay.active {
-  opacity: 1 !important;
-  pointer-events: all !important;
-}
-
-/* ============================================
-   FULL-SCREEN MODALS
-   ============================================ */
-
-main.full-screen {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  z-index: 10000 !important;
-  background: var(--surface-0-alpha, rgba(42, 42, 62, 0.95)) !important;
-  overflow-y: auto !important;
-}
-
-/* ============================================
-   MOBILE RESPONSIVE
+   MOBILE RESPONSIVE (SCENARIO B PERMANENT RAIL)
    ============================================ */
 
 @media (max-width: 1024px) {
-  .ss-sidebar {
-    transform: translateX(calc(-1 * var(--sidebar-w, 248px))) !important;
-  }
-  
-  .ss-sidebar.mobile-open {
-    transform: translateX(0) !important;
-  }
-  
-  .navbar {
-    left: 0 !important;
-  }
-  
-  .main-content {
-    margin-left: 0 !important;
-  }
-  
+  /* We let the body.sidebar-collapsed handle the 72px margins dynamically now. */
   .sidebar-toggle {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    display: none !important;
   }
 }
 
@@ -301,35 +229,4 @@ body.app-entrance-active .layout-skin,
 body.app-entrance-active .app-container {
   background: #f8fafc !important;
   border-radius: 0 !important;
-}
-
-/* ============================================
-   ⭐ DARK MODE OVERRIDES
-   ============================================ */
-
-/* If the 'dark' class is present on HTML, punch through the !important rules */
-html.dark,
-html.dark body,
-html.dark #root,
-html.dark .layout-skin,
-html.dark .app-container {
-  background: #09090b !important;
-}
-
-html.dark .navbar {
-  background: #111113 !important;
-}
-
-html.dark .main-content,
-html.dark .content-wrapper {
-  background: #09090b !important;
-}
-
-/* Defensive Dark Mode overrides */
-html.dark body.app-entrance-active .navbar,
-html.dark body.app-entrance-active .main-content,
-html.dark body.app-entrance-active .content-wrapper,
-html.dark body.app-entrance-active .layout-skin,
-html.dark body.app-entrance-active .app-container {
-  background: #09090b !important;
 }
