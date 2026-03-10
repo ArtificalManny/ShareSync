@@ -108,6 +108,7 @@ import "./styles/card-tiers.css";
 import "./styles/status-colors.css";
 
 import { scrollToAnchorFromHash } from "./utils/anchor";
+import { Menu, X } from "lucide-react";
 
 // Feature flags
 import {
@@ -167,6 +168,8 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
+// ❌ TEMPORARILY DISABLED - Component has dependency issues
+// const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
@@ -237,6 +240,7 @@ const MessageProvider = lazy(() =>
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
+// import useBrandTheme from "./hooks/useBrandTheme.js";
 
 function ScrollToHash() {
   const location = useLocation();
@@ -284,6 +288,27 @@ function PublicOnlyRoute({ children }) {
   }
 
   return children;
+}
+
+function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
+  return (
+    <button
+      className="sidebar-toggle"
+      onClick={() => setSidebarOpen(!sidebarOpen)}
+      aria-label="Toggle Sidebar"
+    >
+      {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+    </button>
+  );
+}
+
+function SidebarOverlay({ show, onClick }) {
+  return (
+    <div
+      className={`sidebar-overlay ${show ? "active" : ""}`}
+      onClick={onClick}
+    />
+  );
 }
 
 function ContextTracker() {
@@ -394,6 +419,12 @@ function AuthenticatedApp({ children, userData }) {
                                   {FOCUS_DOCK_V1 ? (
                                     <FocusProvider>
                                       <ContextTracker />
+
+                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                      {/* <Suspense fallback={null}>
+                                        <WelcomeBack />
+                                      </Suspense> */}
+
                                       <Suspense fallback={null}>
                                         <ContextIndicator />
                                       </Suspense>
@@ -405,6 +436,12 @@ function AuthenticatedApp({ children, userData }) {
                                   ) : (
                                     <>
                                       <ContextTracker />
+
+                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                      {/* <Suspense fallback={null}>
+                                        <WelcomeBack />
+                                      </Suspense> */}
+
                                       <Suspense fallback={null}>
                                         <ContextIndicator />
                                       </Suspense>
@@ -456,6 +493,7 @@ function AuthenticatedApp({ children, userData }) {
 function AppRoutes() {
   const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAuthPage = [
     "/login",
@@ -474,16 +512,28 @@ function AppRoutes() {
     <>
       {showAppChrome && (
         <>
+          <SidebarToggle
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
+          <SidebarOverlay
+            show={sidebarOpen}
+            onClick={() => setSidebarOpen(false)}
+          />
           <Suspense fallback={null}>
-            <Sidebar user={authUser} />
+            <div className={`sidebar ${sidebarOpen ? "mobile-open" : ""}`}>
+              <Sidebar />
+            </div>
           </Suspense>
+
+          {/* IMPORTANT: do NOT wrap Navbar in another .navbar div (it already renders a .navbar header) */}
           <Navbar user={authUser} onLogout={logout} />
         </>
       )}
 
-      {/* ⭐ WEDGE FIX: Forcing explicit rounded-none, m-0, p-0, and full bleed on these wrappers */}
-      <div className="main-content border-none outline-none ring-0 !rounded-none !m-0 !p-0">
-        <div className="content-wrapper border-none shadow-none !rounded-none !m-0 !p-0">
+      {/* ⭐ WEDGE FIX: Removed !m-0 and !p-0 to let layout-system.css handle the 64px padding-top */}
+      <div className="main-content border-none outline-none ring-0 !rounded-none">
+        <div className="content-wrapper border-none shadow-none !rounded-none">
           <Suspense
             fallback={
               <div className="px-6 py-10 text-center text-slate-500">
@@ -742,10 +792,12 @@ function AppRoutes() {
 }
 
 // ⭐ MASTER THEME SWITCHER
+// This physically adds or removes the 'dark' class from the <html> tag
 function ThemeSync() {
   const { user } = useAuth();
   
   useEffect(() => {
+    // Check user preferences, fallback to local storage, fallback to system
     const theme = user?.preferences?.theme || localStorage.getItem('ss.theme') || 'system';
     const root = document.documentElement;
     
@@ -754,12 +806,21 @@ function ThemeSync() {
     } else {
       root.classList.remove('dark');
     }
-  }, [user?.preferences?.theme]); 
+  }, [user?.preferences?.theme]); // Re-run whenever the user changes their theme
 
-  return null; 
+  return null; // This component is invisible
 }
 
 const App = () => {
+  // ⭐ WEDGE FIX: We disable the floating container wrapper that pushes your app inward
+  // Temporarily disable brand theme hook entirely while debugging shell/background issues
+  // const { containerAttrs } = useBrandTheme({
+  //   enabled: false,
+  //   applyToDocument: false,
+  //   defaultBrand: "v2",
+  //   defaultAccent: "pandora",
+  // });
+
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -770,8 +831,8 @@ const App = () => {
                 <Router>
                   <Suspense fallback={<LoadingSpinner />}>
                     <LayoutSkin>
-                      {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
-                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
+                      {/* ⭐ WEDGE FIX: Removed !m-0 and !p-0 here as well to ensure global CSS layout constraints apply natively */}
+                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !border-0">
                         <AuthCheck />
                       </div>
                     </LayoutSkin>
