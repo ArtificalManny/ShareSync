@@ -50,6 +50,30 @@ export class TextModerationService {
       };
     }
 
+    // ⭐ MOCK THREAT DETECTION (Bypasses need for OpenAI Key)
+    // General cursing is allowed, but direct physical threats/illegal acts are blocked.
+    const normalizedText = text.toLowerCase();
+    const mockThreatKeywords = [
+      'assassinate',
+      'rape',
+      'torch person',
+      'kill person',
+      'murder'
+    ];
+
+    const containsThreat = mockThreatKeywords.some(keyword => normalizedText.includes(keyword));
+
+    if (containsThreat) {
+      this.logger.error(`🚨 CRITICAL: SIMULATED THREAT/ILLEGAL CONTENT DETECTED BY MOCK. INITIATING LOCKDOWN. 🚨`);
+      return {
+        flagged: true,
+        confidence: 'high',
+        categories: ['Violence/Threat'],
+        action: 'block',
+        reason: 'Content rejected due to severe threat or illegal intent.',
+      };
+    }
+
     // If moderation is disabled, allow everything but log
     if (!this.isEnabled || !this.openai) {
       this.logger.debug('Moderation disabled - allowing content');

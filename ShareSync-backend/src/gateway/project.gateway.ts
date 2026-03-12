@@ -4,25 +4,33 @@ import {
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-// If you already have a gateway, keep your existing decorators/ports.
-// This will work with your existing IoAdapter in main.ts.
 @WebSocketGateway({
   cors: {
-    origin: true, // dev-friendly; your main.ts already has CORS for HTTP
+    origin: true,
     credentials: true,
   },
 })
-export class ProjectGateway {
+export class ProjectGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  // Client calls: socket.emit("joinProject", { projectId })
+  handleDisconnect(socket: Socket) {
+    const userId = socket.handshake?.auth?.userId || socket.handshake?.query?.userId || socket.id;
+    const rooms = socket.data.projectRooms || new Set();
+    
+    rooms.forEach((projectId: string) => {
+      // ⭐ Include sessionId so the frontend knows exactly which tab closed
+      this.server.to(`project:${projectId}`).emit('userLeft', { userId, id: userId, sessionId: socket.id });
+    });
+  }
+
   @SubscribeMessage('joinProject')
   async onJoinProject(
-    @MessageBody() body: { projectId: string },
+    @MessageBody() body: any,
     @ConnectedSocket() socket: Socket,
   ) {
     const projectId = body?.projectId;
@@ -31,32 +39,57 @@ export class ProjectGateway {
     const room = `project:${projectId}`;
     await socket.join(room);
 
-    // optional ack
+    socket.data.projectRooms = socket.data.projectRooms || new Set();
+    socket.data.projectRooms.add(projectId);
+
+    const userId = socket.handshake?.auth?.userId || socket.handshake?.query?.userId || body?.userId || socket.id;
+    
+    // ⭐ Include sessionId to distinguish multiple tabs from the same user
+    const userPayload = { userId, id: userId, sessionId: socket.id, status: 'online' };
+
+    socket.to(room).emit('userJoined', userPayload);
+
+    try {
+      const sockets = await this.server.in(room).fetchSockets();
+      const users = sockets.map(s => {
+        const sUserId = s.handshake?.auth?.userId || s.handshake?.query?.userId || s.id;
+        return { userId: sUserId, id: sUserId, sessionId: s.id, status: 'online' };
+      });
+      socket.emit('room:users', users);
+    } catch (e) {
+      console.error("Failed to fetch sockets", e);
+    }
+
     socket.emit('joinedProject', { room });
   }
 
-  // Client calls: socket.emit("leaveProject", { projectId })
   @SubscribeMessage('leaveProject')
   async onLeaveProject(
-    @MessageBody() body: { projectId: string },
+    @MessageBody() body: any,
     @ConnectedSocket() socket: Socket,
   ) {
     const projectId = body?.projectId;
     if (!projectId) return;
 
     const room = `project:${projectId}`;
-    await socket.leave(room);
+    const userId = socket.handshake?.auth?.userId || socket.handshake?.query?.userId || body?.userId || socket.id;
+    
+    // ⭐ Include sessionId
+    socket.to(room).emit('userLeft', { userId, id: userId, sessionId: socket.id });
 
+    if (socket.data.projectRooms) {
+       socket.data.projectRooms.delete(projectId);
+    }
+
+    await socket.leave(room);
     socket.emit('leftProject', { room });
   }
 
-  // ✅ This is what your services/controllers call after task changes.
   emitTaskUpdated(projectId: string, task: any) {
     if (!projectId) return;
     this.server.to(`project:${projectId}`).emit('taskUpdated', task);
   }
 
-  // Optional: if you also want delete events
   emitTaskDeleted(projectId: string, taskId: string) {
     if (!projectId || !taskId) return;
     this.server.to(`project:${projectId}`).emit('taskDeleted', { taskId });

@@ -1,6 +1,7 @@
 // src/auth/auth.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH CONTROLLER — Complete authentication endpoints
+// ⭐ SAVED: Triggering TS recompile to clear the ghost error
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -118,7 +119,7 @@ export class AuthController {
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   async resendVerification(@Body() body: { userId: string }) {
-    console.log('�� CONTROLLER: RESEND VERIFICATION');
+    console.log('🔵 CONTROLLER: RESEND VERIFICATION');
 
     await this.authService.resendVerificationCode(body.userId);
 
