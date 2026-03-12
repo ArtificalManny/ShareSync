@@ -1,71 +1,43 @@
 /**
  * usePresence.js
- * Custom hook for managing user presence (online/idle/focus)
- * 
- * ⭐ PHASE 2D: Enhanced to work with both CursorContext AND SocketContext
- * 
- * Features:
- * - Automatic idle detection
- * - Focus mode management
- * - Ghost/team mode switching
- * - Activity heartbeat
- * - Presence analytics
- * - WebSocket integration via SocketContext
+ * ⭐ FIX: Switched deduplication from `userId` to `sessionId` to support same-user multi-tab testing!
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-// Try to import both contexts (they may not both exist)
 let useCursorContext = () => ({ cursors: [], isConnected: false, sendHeartbeat: () => {} });
 let useSocketContext = () => null;
 
 try {
   const cursorModule = require('../context/CursorContext');
-  if (cursorModule?.useCursorContext) {
-    useCursorContext = cursorModule.useCursorContext;
-  }
-} catch (e) {
-  // CursorContext not available
-}
+  if (cursorModule?.useCursorContext) useCursorContext = cursorModule.useCursorContext;
+} catch (e) {}
 
 try {
   const socketModule = require('../context/SocketContext');
-  if (socketModule?.useSocketContext) {
-    useSocketContext = socketModule.useSocketContext;
-  }
-} catch (e) {
-  // SocketContext not available
-}
+  if (socketModule?.useSocketContext) useSocketContext = socketModule.useSocketContext;
+} catch (e) {}
 
-// Presence states
 export const PresenceStatus = {
-  ONLINE: 'online',
-  IDLE: 'idle',
-  AWAY: 'away',
-  BUSY: 'busy',
-  FOCUS: 'focus',
-  OFFLINE: 'offline',
+  ONLINE: 'online', IDLE: 'idle', AWAY: 'away', BUSY: 'busy', FOCUS: 'focus', OFFLINE: 'offline',
 };
 
 export const PresenceMode = {
-  GHOST: 'ghost',   // Anonymous viewing
-  TEAM: 'team',     // Full visibility
-  FOCUS: 'focus',   // Deep work mode
+  GHOST: 'ghost', TEAM: 'team', FOCUS: 'focus',
 };
 
 export function usePresence(options = {}) {
   const {
-    idleTimeout = 5 * 60 * 1000,        // 5 minutes
-    heartbeatInterval = 30 * 1000,      // 30 seconds
+    projectId,
+    idleTimeout = 5 * 60 * 1000,
+    heartbeatInterval = 30 * 1000,
     autoDetectIdle = true,
     autoSendHeartbeat = true,
   } = options;
 
-  // Try both contexts
   const cursorContext = useCursorContext?.() || {};
   const socketContext = useSocketContext?.() || {};
 
-  // Use whichever context is available
   const { 
     cursors = [], 
     isConnected: cursorConnected = false, 
@@ -75,151 +47,115 @@ export function usePresence(options = {}) {
   const {
     isConnected: socketConnected = false,
     updatePresence: socketUpdatePresence,
-    getPresence: socketGetPresence,
+    subscribe,
   } = socketContext;
 
   const isConnected = cursorConnected || socketConnected;
 
-  // User's presence state
   const [status, setStatus] = useState(PresenceStatus.ONLINE);
   const [mode, setMode] = useState(PresenceMode.TEAM);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
-  // Timers
   const idleTimer = useRef(null);
   const heartbeatTimer = useRef(null);
   const lastActivity = useRef(Date.now());
 
-  // ============================================
-  // SEND PRESENCE UPDATE (via WebSocket)
-  // ============================================
+  useEffect(() => {
+    if (!subscribe) return;
+
+    const handleListUpdate = (data) => {
+      console.log("🔥 [WebSockets] RECEIVED room:users payload!", data);
+      const users = Array.isArray(data) ? data : (data?.users || []);
+      if (users.length > 0) {
+          setOnlineUsers(users.map(u => ({ ...u, status: u.status || PresenceStatus.ONLINE })));
+      }
+    };
+
+    const handleUserJoin = (user) => {
+      console.log("🔥 [WebSockets] RECEIVED userJoined!", user);
+      if (!user) return;
+      setOnlineUsers(prev => {
+        // ⭐ DEDUPE BY SESSION ID NOW
+        const uniqueId = user.sessionId || user.userId || user.id;
+        if (prev.some(u => (u.sessionId || u.userId || u.id) === uniqueId)) return prev;
+        return [...prev, { ...user, status: user.status || PresenceStatus.ONLINE }];
+      });
+    };
+
+    const handleUserLeave = (data) => {
+      console.log("🔥 [WebSockets] RECEIVED userLeft!", data);
+      const uniqueId = data?.sessionId || data?.userId || data?.id || data;
+      setOnlineUsers(prev => prev.filter(u => (u.sessionId || u.userId || u.id) !== uniqueId));
+    };
+
+    const unsub1 = subscribe('room:users', handleListUpdate);
+    const unsub2 = subscribe('userJoined', handleUserJoin);
+    const unsub3 = subscribe('userLeft', handleUserLeave);
+
+    return () => {
+      unsub1?.();
+      unsub2?.();
+      unsub3?.();
+    };
+  }, [subscribe]);
+
 
   const sendPresenceUpdate = useCallback((newStatus) => {
-    // Try SocketContext first (new system)
-    if (socketUpdatePresence) {
-      socketUpdatePresence(newStatus);
-    }
-    // Fallback to CursorContext heartbeat
-    if (cursorHeartbeat) {
-      cursorHeartbeat();
-    }
+    if (socketUpdatePresence) socketUpdatePresence(newStatus);
+    if (cursorHeartbeat) cursorHeartbeat();
   }, [socketUpdatePresence, cursorHeartbeat]);
-
-  // ============================================
-  // IDLE DETECTION
-  // ============================================
 
   const resetIdleTimer = useCallback(() => {
     lastActivity.current = Date.now();
-
-    // If was idle, set back to online
     if (status === PresenceStatus.IDLE || status === PresenceStatus.AWAY) {
       setStatus(PresenceStatus.ONLINE);
       sendPresenceUpdate(PresenceStatus.ONLINE);
-      console.log('🔄 Presence: Back to ONLINE');
     }
-
-    // Clear and restart idle timer
-    if (idleTimer.current) {
-      clearTimeout(idleTimer.current);
-    }
-
+    if (idleTimer.current) clearTimeout(idleTimer.current);
     if (autoDetectIdle) {
       idleTimer.current = setTimeout(() => {
         setStatus(PresenceStatus.IDLE);
         sendPresenceUpdate(PresenceStatus.IDLE);
-        console.log('😴 Presence: Now IDLE');
       }, idleTimeout);
     }
   }, [status, autoDetectIdle, idleTimeout, sendPresenceUpdate]);
 
-  // Track user activity to reset idle timer
   useEffect(() => {
     if (!autoDetectIdle) return;
-
-    const handleActivity = () => {
-      resetIdleTimer();
-    };
-
-    // Listen to various activity events
+    const handleActivity = () => resetIdleTimer();
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-    
-    events.forEach(event => {
-      window.addEventListener(event, handleActivity, { passive: true });
-    });
-
-    // Start initial timer
+    events.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));
     resetIdleTimer();
-
     return () => {
-      events.forEach(event => {
-        window.removeEventListener(event, handleActivity);
-      });
-      
-      if (idleTimer.current) {
-        clearTimeout(idleTimer.current);
-      }
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+      if (idleTimer.current) clearTimeout(idleTimer.current);
     };
   }, [autoDetectIdle, resetIdleTimer]);
 
-  // ============================================
-  // HEARTBEAT
-  // ============================================
-
   useEffect(() => {
     if (!autoSendHeartbeat || !isConnected) return;
-
-    // Send initial heartbeat/presence
     sendPresenceUpdate(status);
-
-    // Send periodic heartbeats
     heartbeatTimer.current = setInterval(() => {
-      // Only send if not offline
-      if (status !== PresenceStatus.OFFLINE) {
-        sendPresenceUpdate(status);
-      }
+      if (status !== PresenceStatus.OFFLINE) sendPresenceUpdate(status);
     }, heartbeatInterval);
-
     return () => {
-      if (heartbeatTimer.current) {
-        clearInterval(heartbeatTimer.current);
-      }
+      if (heartbeatTimer.current) clearInterval(heartbeatTimer.current);
     };
   }, [autoSendHeartbeat, isConnected, heartbeatInterval, status, sendPresenceUpdate]);
 
-  // ============================================
-  // PRESENCE MODE MANAGEMENT
-  // ============================================
-
-  const enterGhostMode = useCallback(() => {
-    setMode(PresenceMode.GHOST);
-    console.log('🎭 Presence: Entered GHOST mode');
-  }, []);
-
-  const enterTeamMode = useCallback(() => {
-    setMode(PresenceMode.TEAM);
-    console.log('👥 Presence: Entered TEAM mode');
-  }, []);
-
+  const enterGhostMode = useCallback(() => setMode(PresenceMode.GHOST), []);
+  const enterTeamMode = useCallback(() => setMode(PresenceMode.TEAM), []);
   const enterFocusMode = useCallback((duration) => {
     setMode(PresenceMode.FOCUS);
     setStatus(PresenceStatus.FOCUS);
     sendPresenceUpdate(PresenceStatus.FOCUS);
-    console.log('🔥 Presence: Entered FOCUS mode');
-
-    // Auto-exit after duration (if specified)
-    if (duration) {
-      setTimeout(() => {
-        exitFocusMode();
-      }, duration);
-    }
+    if (duration) setTimeout(() => exitFocusMode(), duration);
   }, [sendPresenceUpdate]);
 
   const exitFocusMode = useCallback(() => {
     setMode(PresenceMode.TEAM);
     setStatus(PresenceStatus.ONLINE);
     sendPresenceUpdate(PresenceStatus.ONLINE);
-    console.log('✅ Presence: Exited FOCUS mode');
   }, [sendPresenceUpdate]);
 
   const setAway = useCallback(() => {
@@ -237,28 +173,12 @@ export function usePresence(options = {}) {
     sendPresenceUpdate(PresenceStatus.ONLINE);
   }, [sendPresenceUpdate]);
 
-  // ============================================
-  // PRESENCE ANALYTICS
-  // ============================================
-
-  // Get presence stats for current project
   const getProjectStats = useCallback(() => {
-    const users = cursors.length > 0 ? cursors : onlineUsers;
-    
-    if (!users || users.length === 0) {
-      return {
-        total: 0,
-        online: 0,
-        idle: 0,
-        focus: 0,
-        away: 0,
-        busy: 0,
-      };
-    }
-
+    const users = onlineUsers.length > 0 ? onlineUsers : (cursors || []);
+    if (!users || users.length === 0) return { total: 0, online: 0, idle: 0, focus: 0, away: 0, busy: 0 };
     return {
       total: users.length,
-      online: users.filter(c => c.status === PresenceStatus.ONLINE).length,
+      online: users.filter(c => c.status === PresenceStatus.ONLINE || !c.status).length,
       idle: users.filter(c => c.status === PresenceStatus.IDLE).length,
       focus: users.filter(c => c.status === PresenceStatus.FOCUS).length,
       away: users.filter(c => c.status === PresenceStatus.AWAY).length,
@@ -266,141 +186,72 @@ export function usePresence(options = {}) {
     };
   }, [cursors, onlineUsers]);
 
-  // Get users by status
   const getUsersByStatus = useCallback((targetStatus) => {
-    const users = cursors.length > 0 ? cursors : onlineUsers;
-    return users.filter(c => c.status === targetStatus);
+    const users = onlineUsers.length > 0 ? onlineUsers : cursors;
+    return users.filter(c => (c.status || PresenceStatus.ONLINE) === targetStatus);
   }, [cursors, onlineUsers]);
 
-  // Get users by mode
   const getUsersByMode = useCallback((targetMode) => {
-    const users = cursors.length > 0 ? cursors : onlineUsers;
+    const users = onlineUsers.length > 0 ? onlineUsers : cursors;
     return users.filter(c => c.mode === targetMode);
   }, [cursors, onlineUsers]);
 
-  // Check if user is active (online or focus)
   const isUserActive = useCallback((userId) => {
-    const users = cursors.length > 0 ? cursors : onlineUsers;
-    const user = users.find(c => c.userId === userId);
-    return user && (
-      user.status === PresenceStatus.ONLINE || 
-      user.status === PresenceStatus.FOCUS ||
-      user.status === PresenceStatus.BUSY
-    );
+    const users = onlineUsers.length > 0 ? onlineUsers : cursors;
+    const user = users.find(c => (c.userId || c.id) === userId);
+    if (!user) return false;
+    const s = user.status || PresenceStatus.ONLINE;
+    return s === PresenceStatus.ONLINE || s === PresenceStatus.FOCUS || s === PresenceStatus.BUSY;
   }, [cursors, onlineUsers]);
 
-  // Get time since last activity
-  const getTimeSinceActivity = useCallback(() => {
-    return Date.now() - lastActivity.current;
-  }, []);
-
-  // ============================================
-  // RETURN VALUE
-  // ============================================
+  const getTimeSinceActivity = useCallback(() => Date.now() - lastActivity.current, []);
 
   return {
-    // Current user's state
-    status,
-    mode,
+    status, mode,
     isOnline: status === PresenceStatus.ONLINE,
     isIdle: status === PresenceStatus.IDLE,
     isFocus: status === PresenceStatus.FOCUS,
     isAway: status === PresenceStatus.AWAY,
     isBusy: status === PresenceStatus.BUSY,
-    isConnected,
-    
-    // Status setters
-    setOnline,
-    setAway,
-    setBusy,
-    
-    // Mode management
-    enterGhostMode,
-    enterTeamMode,
-    enterFocusMode,
-    exitFocusMode,
-    
-    // Activity
-    resetIdleTimer,
-    lastActivity: lastActivity.current,
-    timeSinceActivity: getTimeSinceActivity(),
-    
-    // Analytics
-    projectStats: getProjectStats(),
-    getUsersByStatus,
-    getUsersByMode,
-    isUserActive,
-    onlineUsers: cursors.length > 0 ? cursors : onlineUsers,
+    isConnected, setOnline, setAway, setBusy,
+    enterGhostMode, enterTeamMode, enterFocusMode, exitFocusMode,
+    resetIdleTimer, lastActivity: lastActivity.current, timeSinceActivity: getTimeSinceActivity(),
+    projectStats: getProjectStats(), getUsersByStatus, getUsersByMode, isUserActive,
+    onlineUsers: onlineUsers.length > 0 ? onlineUsers : cursors,
   };
 }
 
-// ============================================
-// SPECIALIZED PRESENCE HOOKS
-// ============================================
-
-/**
- * Hook for monitoring team activity
- */
 export function useTeamPresence() {
   let cursors = [];
-  
   try {
     const ctx = useCursorContext?.();
     cursors = ctx?.cursors || [];
-  } catch (e) {
-    // Context not available
-  }
+  } catch (e) {}
 
-  const [teamActivity, setTeamActivity] = useState({
-    isActive: false,
-    activeCount: 0,
-    message: '',
-  });
+  const [teamActivity, setTeamActivity] = useState({ isActive: false, activeCount: 0, message: '' });
 
   useEffect(() => {
     if (!cursors || cursors.length === 0) {
-      setTeamActivity({
-        isActive: false,
-        activeCount: 0,
-        message: 'Waiting for team...',
-      });
+      setTeamActivity({ isActive: false, activeCount: 0, message: 'Waiting for team...' });
       return;
     }
-
-    const activeUsers = cursors.filter(c => 
-      c.status === PresenceStatus.ONLINE || 
-      c.status === PresenceStatus.FOCUS ||
-      c.status === PresenceStatus.BUSY
-    );
-
-    const count = activeUsers.length;
-
-    let message = '';
-    if (count === 0) {
-      message = 'Team is quiet';
-    } else if (count === 1) {
-      message = '1 person working';
-    } else if (count <= 3) {
-      message = `${count} people working`;
-    } else if (count <= 7) {
-      message = `Team is active! (${count} online)`;
-    } else {
-      message = `🔥 Team is on FIRE! (${count} online)`;
-    }
-
-    setTeamActivity({
-      isActive: count > 0,
-      activeCount: count,
-      message,
+    const activeUsers = cursors.filter(c => {
+      const s = c.status || PresenceStatus.ONLINE;
+      return s === PresenceStatus.ONLINE || s === PresenceStatus.FOCUS || s === PresenceStatus.BUSY;
     });
+    const count = activeUsers.length;
+    let message = '';
+    if (count === 0) message = 'Team is quiet';
+    else if (count === 1) message = '1 person working';
+    else if (count <= 3) message = `${count} people working`;
+    else if (count <= 7) message = `Team is active! (${count} online)`;
+    else message = `🔥 Team is on FIRE! (${count} online)`;
+    setTeamActivity({ isActive: count > 0, activeCount: count, message });
   }, [cursors]);
 
   return teamActivity;
 }
 
-/**
- * Hook for focus mode timer
- */
 export function useFocusTimer(duration = 25 * 60 * 1000) {
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const [isActive, setIsActive] = useState(false);
@@ -409,7 +260,6 @@ export function useFocusTimer(duration = 25 * 60 * 1000) {
   const start = useCallback(() => {
     setIsActive(true);
     setTimeRemaining(duration);
-
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1000) {
@@ -424,112 +274,59 @@ export function useFocusTimer(duration = 25 * 60 * 1000) {
 
   const pause = useCallback(() => {
     setIsActive(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
   const reset = useCallback(() => {
     setIsActive(false);
     setTimeRemaining(duration);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
   }, [duration]);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
-  // Format time remaining as MM:SS
   const minutes = Math.floor(timeRemaining / 60000);
   const seconds = Math.floor((timeRemaining % 60000) / 1000);
   const formatted = `${minutes}:${String(seconds).padStart(2, '0')}`;
 
-  return {
-    timeRemaining,
-    formatted,
-    isActive,
-    progress: ((duration - timeRemaining) / duration) * 100,
-    start,
-    pause,
-    reset,
-  };
+  return { timeRemaining, formatted, isActive, progress: ((duration - timeRemaining) / duration) * 100, start, pause, reset };
 }
 
-/**
- * Hook for detecting cursor loneliness (you're the only one)
- */
 export function useLonelinessDetection() {
   let cursors = [];
-  
   try {
     const ctx = useCursorContext?.();
     cursors = ctx?.cursors || [];
-  } catch (e) {
-    // Context not available
-  }
+  } catch (e) {}
 
   const [isAlone, setIsAlone] = useState(false);
   const [justJoined, setJustJoined] = useState(null);
 
   useEffect(() => {
-    const activeUsers = (cursors || []).filter(c => 
-      c.status === PresenceStatus.ONLINE || c.status === PresenceStatus.FOCUS
-    );
-
+    const activeUsers = (cursors || []).filter(c => {
+      const s = c.status || PresenceStatus.ONLINE;
+      return s === PresenceStatus.ONLINE || s === PresenceStatus.FOCUS;
+    });
     const wasAlone = isAlone;
     const nowAlone = activeUsers.length === 0;
-
     setIsAlone(nowAlone);
-
-    // Detect when someone joins while you're alone
     if (wasAlone && !nowAlone && activeUsers.length === 1) {
       const newUser = activeUsers[0];
       setJustJoined(newUser);
-      
-      // Clear notification after 5 seconds
-      setTimeout(() => {
-        setJustJoined(null);
-      }, 5000);
-
-      console.log(`🎉 ${newUser.userName || 'Someone'} just joined! You're not alone anymore.`);
+      setTimeout(() => setJustJoined(null), 5000);
     }
   }, [cursors, isAlone]);
 
   const userCount = cursors?.length || 0;
-
   return {
-    isAlone,
-    justJoined,
-    message: isAlone 
-      ? "You're working solo right now"
-      : justJoined 
-        ? `${justJoined.userName || 'Someone'} just joined!`
-        : `${userCount} ${userCount === 1 ? 'person' : 'people'} here`,
+    isAlone, justJoined,
+    message: isAlone ? "You're working solo right now" : justJoined ? `${justJoined.userName || 'Someone'} just joined!` : `${userCount} ${userCount === 1 ? 'person' : 'people'} here`,
   };
 }
 
-/**
- * Hook for simple presence status
- */
 export function useSimplePresence() {
-  const { status, isConnected, setOnline, setAway, setBusy } = usePresence({
-    autoDetectIdle: true,
-    autoSendHeartbeat: true,
-  });
-
-  return {
-    status,
-    isConnected,
-    setOnline,
-    setAway,
-    setBusy,
-  };
+  const { status, isConnected, setOnline, setAway, setBusy } = usePresence({ autoDetectIdle: true, autoSendHeartbeat: true });
+  return { status, isConnected, setOnline, setAway, setBusy };
 }
 
 export default usePresence;

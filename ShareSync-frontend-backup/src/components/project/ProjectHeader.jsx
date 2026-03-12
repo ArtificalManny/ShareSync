@@ -11,7 +11,6 @@ function DNAPulse({ velocity = 50, size = 60 }) {
   
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {/* Outer pulse rings */}
       <div 
         className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping"
         style={{ animationDuration: `${2 / pulseSpeed}s` }}
@@ -20,8 +19,6 @@ function DNAPulse({ velocity = 50, size = 60 }) {
         className="absolute inset-0 rounded-full bg-fuchsia-500/20 animate-ping"
         style={{ animationDuration: `${2.5 / pulseSpeed}s`, animationDelay: '0.3s' }}
       />
-      
-      {/* DNA Helix */}
       <div className="absolute inset-0 flex items-center justify-center">
         <svg width={size} height={size} viewBox="0 0 60 60" className="animate-spin-slow">
           <defs>
@@ -45,12 +42,9 @@ function DNAPulse({ velocity = 50, size = 60 }) {
           <circle cx="40" cy="45" r="3" fill="#EC4899" />
         </svg>
       </div>
-      
-      {/* Center icon */}
       <div className="absolute inset-0 flex items-center justify-center">
         <Activity className="w-6 h-6 text-white" style={{ filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.8))' }} />
       </div>
-      
       <style jsx>{`
         @keyframes spin-slow {
           from { transform: rotate(0deg); }
@@ -101,27 +95,12 @@ function MomentumScore({ score = 0, streak = 0, velocity = 0 }) {
         </div>
       </div>
       
-      {/* Radial progress ring */}
       <svg className="absolute -inset-4" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(139, 92, 246, 0.1)" strokeWidth="2" />
         <circle
-          cx="60"
-          cy="60"
-          r="54"
-          fill="none"
-          stroke="rgba(139, 92, 246, 0.1)"
-          strokeWidth="2"
-        />
-        <circle
-          cx="60"
-          cy="60"
-          r="54"
-          fill="none"
-          stroke="url(#momentum-gradient)"
-          strokeWidth="2"
-          strokeDasharray={`${(score / 1000) * 339} 339`}
-          strokeLinecap="round"
-          transform="rotate(-90 60 60)"
-          className="transition-all duration-1000"
+          cx="60" cy="60" r="54" fill="none" stroke="url(#momentum-gradient)" strokeWidth="2"
+          strokeDasharray={`${(score / 1000) * 339} 339`} strokeLinecap="round"
+          transform="rotate(-90 60 60)" className="transition-all duration-1000"
         />
         <defs>
           <linearGradient id="momentum-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -138,16 +117,11 @@ function MomentumScore({ score = 0, streak = 0, velocity = 0 }) {
 function EmotionalWeather({ mood = 'neutral' }) {
   const getMoodData = (m) => {
     switch(m) {
-      case 'celebrating':
-        return { icon: Sun, color: 'text-yellow-400', bg: 'bg-yellow-500/10', label: 'Celebrating' };
-      case 'focused':
-        return { icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/10', label: 'Focused' };
-      case 'stressed':
-        return { icon: CloudRain, color: 'text-slate-400', bg: 'bg-slate-500/10', label: 'Stressed' };
-      case 'chill':
-        return { icon: Cloud, color: 'text-blue-400', bg: 'bg-blue-500/10', label: 'Chill' };
-      default:
-        return { icon: Brain, color: 'text-indigo-400', bg: 'bg-indigo-500/10', label: 'Neutral' };
+      case 'celebrating': return { icon: Sun, color: 'text-yellow-400', bg: 'bg-yellow-500/10', label: 'Celebrating' };
+      case 'focused': return { icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/10', label: 'Focused' };
+      case 'stressed': return { icon: CloudRain, color: 'text-slate-400', bg: 'bg-slate-500/10', label: 'Stressed' };
+      case 'chill': return { icon: Cloud, color: 'text-blue-400', bg: 'bg-blue-500/10', label: 'Chill' };
+      default: return { icon: Brain, color: 'text-indigo-400', bg: 'bg-indigo-500/10', label: 'Neutral' };
     }
   };
 
@@ -165,7 +139,6 @@ function EmotionalWeather({ mood = 'neutral' }) {
 // Streak Fire Badge
 function StreakFireBadge({ streak = 0 }) {
   if (streak < 50) return null;
-  
   const getFireIntensity = (s) => {
     if (s >= 100) return { color: 'text-orange-600', size: 'w-8 h-8', label: '100d+ 🔥🔥🔥' };
     if (s >= 75) return { color: 'text-orange-500', size: 'w-7 h-7', label: '75d+ 🔥🔥' };
@@ -185,7 +158,7 @@ function StreakFireBadge({ streak = 0 }) {
 }
 
 export default function ProjectHeader({
-  projectId, // Added explicitly for layoutId targeting
+  projectId,
   name = "Untitled Project",
   status = "In Progress",
   isPublic = false,
@@ -196,7 +169,8 @@ export default function ProjectHeader({
   icon = "U",
   stats,
   shippedAt,
-  membersCount = 0
+  membersCount = 0,
+  activeUsers = 0 // ⭐ FIX: Now accepting the activeUsers prop!
 }) {
   const [spinOnce, setSpinOnce] = useState(true);
   
@@ -205,7 +179,6 @@ export default function ProjectHeader({
     return () => clearTimeout(t);
   }, []);
 
-  // Calculate momentum score (0-1000)
   const calculateMomentum = () => {
     const streakPoints = Math.min(300, (metrics?.streak || 0) * 3);
     const velocityPoints = Math.min(300, (metrics?.throughput || 0) * 20);
@@ -215,9 +188,7 @@ export default function ProjectHeader({
   };
 
   const determineMood = () => {
-    if (shippedAt && Date.now() - new Date(shippedAt).getTime() < 86400000) {
-      return 'celebrating';
-    }
+    if (shippedAt && Date.now() - new Date(shippedAt).getTime() < 86400000) return 'celebrating';
     const velocity = metrics?.throughput || 0;
     if (velocity > 15) return 'focused';
     if (velocity < 3) return 'stressed';
@@ -228,19 +199,15 @@ export default function ProjectHeader({
   const mood = determineMood();
   const velocity = metrics?.throughput || 0;
   const streak = metrics?.streak || 0;
-
-  const statusClass =
-    status === "In Progress" ? "good" : status === "Paused" ? "warn" : "muted";
+  const statusClass = status === "In Progress" ? "good" : status === "Paused" ? "warn" : "muted";
 
   return (
     <motion.section 
       layoutId={projectId ? `project-container-${projectId}` : undefined}
       className="project-header panel-neon specular" 
       role="region" 
-      aria-label="Project header"
     >
       <div className="ph-inner">
-        {/* Left cluster with DNA Pulse */}
         <div className="ph-left">
           <div className="relative">
             <DNAPulse velocity={velocity} size={72} />
@@ -250,17 +217,12 @@ export default function ProjectHeader({
           <div className="ph-title">
             <h1 className="ph-name">{name}</h1>
             <div className="ph-sub">
-              <span className={`chip chip-${statusClass}`} aria-label={`Status: ${status}`}>
-                {status}
-              </span>
-              <span className={`chip chip-${isPublic ? "info" : "muted"}`}>
-                {isPublic ? "Public" : "Private"}
-              </span>
+              <span className={`chip chip-${statusClass}`}>{status}</span>
+              <span className={`chip chip-${isPublic ? "info" : "muted"}`}>{isPublic ? "Public" : "Private"}</span>
               <EmotionalWeather mood={mood} />
             </div>
 
-            {/* Micro KPIs */}
-            <ul className="ph-kpis" aria-label="Project mini KPIs">
+            <ul className="ph-kpis">
               <li>
                 <span className="kpi-label">On-time</span>
                 <span className="kpi-val">{metrics?.ontime ?? 0}%</span>
@@ -269,9 +231,16 @@ export default function ProjectHeader({
                 <span className="kpi-label">Throughput</span>
                 <span className="kpi-val">{metrics?.throughput ?? 0}/wk</span>
               </li>
+              {/* ⭐ NEW: Glowing Live Presence Indicator */}
               <li>
-                <span className="kpi-label">Streak</span>
-                <span className="kpi-val">{streak}d {streak > 50 && '🔥'}</span>
+                <span className="kpi-label">Live</span>
+                <span className="kpi-val flex items-center gap-1.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  {activeUsers}
+                </span>
               </li>
               <li>
                 <span className="kpi-label">Team</span>
@@ -281,14 +250,9 @@ export default function ProjectHeader({
           </div>
         </div>
 
-        {/* Right: Momentum Score + Actions */}
         <div className="ph-right flex gap-6 items-center">
           <div className="hidden lg:block">
-            <MomentumScore 
-              score={momentumScore} 
-              streak={streak}
-              velocity={velocity}
-            />
+            <MomentumScore score={momentumScore} streak={streak} velocity={velocity} />
           </div>
           
           <div className="flex flex-col gap-2">
@@ -298,11 +262,6 @@ export default function ProjectHeader({
             <Button variant="outline" size="md" onClick={onStartFocus}>
               <Zap className="w-4 h-4" /> Start 25:00
             </Button>
-            {onDownloadICS && (
-              <Button variant="ghost" size="md" onClick={onDownloadICS}>
-                Download .ics
-              </Button>
-            )}
           </div>
         </div>
       </div>

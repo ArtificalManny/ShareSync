@@ -6,6 +6,7 @@
 // + Notifications event relay preserved (notification:new)
 // + STEP 6: Public project spectator rooms (public:project:{projectId})
 // ⭐ PHASE 4: Optimistic UI & React Query Cache Invalidation
+// ⭐ FIX: Added presence events (room:users, userJoined, userLeft) to the master event bus
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, {
@@ -107,6 +108,17 @@ export function SocketProvider({ children }) {
         // Dispatch window event for legacy components
         window.dispatchEvent(new CustomEvent('presence.updated', { detail: data }));
         eventHandlers['presence.updated']?.forEach((handler) => handler(data));
+      },
+
+      // ⭐ REAL-TIME SCOREBOARD FIX: Allow backend presence events through the bus!
+      'room:users': (data) => {
+        eventHandlers['room:users']?.forEach((handler) => handler(data));
+      },
+      'userJoined': (data) => {
+        eventHandlers['userJoined']?.forEach((handler) => handler(data));
+      },
+      'userLeft': (data) => {
+        eventHandlers['userLeft']?.forEach((handler) => handler(data));
       }
     }),
     [eventHandlers, queryClient],

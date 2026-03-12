@@ -2,12 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Create Account Page
 // Two-step flow: Data Collection → OTP Verification
-// Frontend-only polish:
-// - Added OpenShare Kinetic Monogram Logo
-// - Fix alignment (Last name now matches First name icon/padding)
-// - Inputs less "boxed" (rounded-xl + ring)
-// - ShareSync → OpenShare copy (Terms)
-// - NO backend endpoints or auth logic modified
+// ⭐ FIX: Updated port from 3000 to 5050 and switched to 'client' for API calls
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
@@ -18,7 +13,7 @@ import {
   AtSign, ArrowLeft
 } from "lucide-react";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
-import Logo from "../components/ui/Logo";
+import client from "../api/client"; // ⭐ Added existing client import
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PASSWORD STRENGTH METER
@@ -143,16 +138,10 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
   const handleResend = async () => {
     if (resendCountdown > 0) return;
     setResendCountdown(30);
-    // Could call resend API here if available
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* OpenShare Kinetic Monogram */}
-      <div className="flex justify-center mb-2 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
-        <Logo size={48} />
-      </div>
-
       <div className="text-center">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 ring-1 ring-purple-500/20 flex items-center justify-center">
           <Mail className="w-8 h-8 text-purple-400" />
@@ -259,7 +248,7 @@ export default function CreateAccount() {
 
   // ─────────────────────────────────────────────────────────────────────────────
   // REGISTRATION SUBMIT
-  // ⚠️ PRESERVING EXISTING API CALL LOGIC - DO NOT MODIFY
+  // ⭐ UPDATED: Using 'client' (Axios) to point to the correct 5050 port automatically
   // ─────────────────────────────────────────────────────────────────────────────
   const handleSubmitData = async (e) => {
     e.preventDefault();
@@ -280,25 +269,16 @@ export default function CreateAccount() {
 
     setSubmitting(true);
     try {
-      // ⚠️ EXISTING API CALL - PRESERVED
-      const response = await fetch("http://localhost:3000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // ⭐ Switched to Axios client for Port 5050 support
+      const response = await client.post("/auth/register", {
           firstName: formData.firstName,
           lastName: formData.lastName,
           username: formData.username,
           email: formData.email,
           password: formData.password,
-        }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       console.log("🔍 BACKEND RESPONSE:", data);
 
       setUserId(data.userId);
@@ -317,33 +297,22 @@ export default function CreateAccount() {
 
   // ─────────────────────────────────────────────────────────────────────────────
   // EMAIL VERIFICATION
-  // ⚠️ PRESERVING EXISTING API CALL LOGIC - DO NOT MODIFY
+  // ⭐ UPDATED: Using 'client' (Axios)
   // ─────────────────────────────────────────────────────────────────────────────
   const handleVerification = async (code) => {
     setSubmitting(true);
     setError("");
 
     try {
-      // ⚠️ EXISTING API CALL - PRESERVED
-      const response = await fetch("http://localhost:3000/api/auth/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, code }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Verification failed");
-      }
-
-      const data = await response.json();
+      const response = await client.post("/auth/verify-email", { userId, code });
+      const data = response.data;
 
       localStorage.setItem("ss.jwt", data.token);
       localStorage.setItem("ss.user", JSON.stringify(data.user));
 
       navigate("/home", { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err?.response?.data?.message || err.message);
       setSubmitting(false);
     }
   };
@@ -363,15 +332,9 @@ export default function CreateAccount() {
             onSubmit={handleSubmitData}
             className="space-y-4"
           >
-            {/* OpenShare Kinetic Monogram */}
-            <div className="flex justify-center mb-6 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
-              <Logo size={48} />
-            </div>
-
             <AuthError>{error}</AuthError>
 
             <div className="grid grid-cols-2 gap-3">
-              {/* First name */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   First name
@@ -401,7 +364,6 @@ export default function CreateAccount() {
                 )}
               </div>
 
-              {/* Last name (ALIGNMENT FIX: icon + pl-10 to match) */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   Last name
@@ -432,7 +394,6 @@ export default function CreateAccount() {
               </div>
             </div>
 
-            {/* Username */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Username
@@ -466,7 +427,6 @@ export default function CreateAccount() {
               )}
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Email
@@ -496,7 +456,6 @@ export default function CreateAccount() {
               )}
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Password
@@ -538,7 +497,6 @@ export default function CreateAccount() {
               ) : null}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Confirm password
