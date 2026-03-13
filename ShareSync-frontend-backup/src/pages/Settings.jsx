@@ -1,12 +1,13 @@
 // src/pages/Settings.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SETTINGS PAGE v4.2.4
-// - FIX: Passing BOTH phoneNumber and code to the backend verify route!
+// SHARESYNC SETTINGS PAGE v4.2.8
+// - FIX: Added aggressive data extractor to hunt down wrapped phone data!
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
 import './Settings.css'; 
 import { getSettings, updateSettings } from '../api/settings';
+import { fetchMe } from '../api/users';
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings } from '../utils/telemetry';
 import {
@@ -232,51 +233,87 @@ export default function Settings() {
     let ignore = false;
     setLoading(true);
 
-    getSettings()
-      .then((settings) => {
-        if (ignore || !settings) return;
+    Promise.all([
+      getSettings().catch(() => null),
+      fetchMe().catch(() => null)
+    ])
+      .then(([settingsResponse, userResponse]) => {
+        if (ignore) return;
 
-        const momentum = settings.momentum || {};
-        setDailyShipsGoal(momentum.dailyGoal ?? 5);
-        setWeekendShipsCount(momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true);
-        setAllowStreakFreeze(momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true);
+        // 1. Unwrap the data securely! If it's nested in `.data`, extract it.
+        const settings = settingsResponse?.data || settingsResponse;
+        const user = userResponse?.data || userResponse;
 
-        const focus = settings.focus || {};
-        setDeepWorkTarget(focus.dailyTarget ?? 4);
-        setAutoStartFocus(Boolean(focus.autoStart ?? false));
-        setFocusStartTime(focus.startTime || '09:00');
-        setBlockedApps(Array.isArray(focus.blockedApps) ? focus.blockedApps : ['slack', 'youtube', 'tiktok']);
-        setEmergencyBreaksLeft(focus.emergencyBreaksLeft ?? 1);
+        // 2. Load Settings
+        if (settings) {
+          const momentum = settings.momentum || {};
+          setDailyShipsGoal(momentum.dailyGoal ?? 5);
+          setWeekendShipsCount(momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true);
+          setAllowStreakFreeze(momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true);
 
-        const social = settings.social || {};
-        setShowStreakTo(social.showStreakTo || 'friends');
-        setCelebratePublicly(Boolean(social.celebrate ?? true));
+          const focus = settings.focus || {};
+          setDeepWorkTarget(focus.dailyTarget ?? 4);
+          setAutoStartFocus(Boolean(focus.autoStart ?? false));
+          setFocusStartTime(focus.startTime || '09:00');
+          setBlockedApps(Array.isArray(focus.blockedApps) ? focus.blockedApps : ['slack', 'youtube', 'tiktok']);
+          setEmergencyBreaksLeft(focus.emergencyBreaksLeft ?? 1);
 
-        const resolvedPublicProfile = social.publicProfile ?? settings.publicProfile ?? true;
-        const resolvedDiscoverable = social.discoverable ?? settings.discoverable ?? false;
+          const social = settings.social || {};
+          setShowStreakTo(social.showStreakTo || 'friends');
+          setCelebratePublicly(Boolean(social.celebrate ?? true));
 
-        setPublicProfile(Boolean(resolvedPublicProfile));
-        setDiscoverable(Boolean(resolvedDiscoverable));
+          const resolvedPublicProfile = social.publicProfile ?? settings.publicProfile ?? true;
+          const resolvedDiscoverable = social.discoverable ?? settings.discoverable ?? false;
 
-        const mentor = settings.mentor || {};
-        setMentorEnabled(Boolean(mentor.enabled ?? true));
-        setMentorTone(mentor.tone || 'wise');
-        setMentorIntensity(mentor.intensity ?? 3);
+          setPublicProfile(Boolean(resolvedPublicProfile));
+          setDiscoverable(Boolean(resolvedDiscoverable));
 
-        const legacy = settings.legacy || {};
-        setShowLegacyEverywhere(Boolean(legacy.showEverywhere ?? true));
-        setYearlyMontage(Boolean(legacy.yearlyVideo ?? false));
+          const mentor = settings.mentor || {};
+          setMentorEnabled(Boolean(mentor.enabled ?? true));
+          setMentorTone(mentor.tone || 'wise');
+          setMentorIntensity(mentor.intensity ?? 3);
 
-        const appearance = settings.appearance || {};
-        const initialTheme = appearance.theme || localStorage.getItem('ss.theme') || 'dark'; 
-        setTheme(initialTheme);
-        setUserMode(appearance.mode || 'pro');
-        applyTheme(initialTheme);
+          const legacy = settings.legacy || {};
+          setShowLegacyEverywhere(Boolean(legacy.showEverywhere ?? true));
+          setYearlyMontage(Boolean(legacy.yearlyVideo ?? false));
 
+          const appearance = settings.appearance || {};
+          const initialTheme = appearance.theme || localStorage.getItem('ss.theme') || 'dark'; 
+          setTheme(initialTheme);
+          setUserMode(appearance.mode || 'pro');
+          applyTheme(initialTheme);
+        }
+
+        // ⭐ FIX: 3. Aggressively search both payloads for the Phone Number
+        let foundPhone = '';
+        let foundVerified = false;
+        
+        const dataSources = [settings, user];
+        
+        for (const source of dataSources) {
+          if (!source) continue;
+          
+          const p = source?.notificationChannels?.sms?.phoneNumber || source?.phoneNumber || source?.phone;
+          const v = source?.notificationChannels?.sms?.verified || source?.isPhoneVerified || source?.phoneVerified;
+          
+          if (p) {
+            foundPhone = p;
+            foundVerified = Boolean(v);
+            break; // Stop looking, we found it!
+          }
+        }
+
+        // Apply the found phone state to the UI
+        if (foundPhone) {
+          setPhoneNumber(foundPhone);
+          if (foundVerified) {
+            setPhoneStatus('verified');
+          }
+        }
       })
       .catch((e) => {
         if (ignore) return;
-        const msg = e?.response?.data?.message || e?.message || 'Failed to load settings';
+        const msg = e?.response?.data?.message || e?.message || 'Failed to load preferences';
         setErrorMsg(String(msg));
       })
       .finally(() => {
@@ -350,7 +387,6 @@ export default function Settings() {
     setPhoneLoading(true);
     try {
       const { verifyPhoneCode } = await import('../api/users');
-      // ⭐ FIX: Pass BOTH phoneNumber and code!
       await verifyPhoneCode(phoneNumber, code);
       setPhoneStatus('verified');
       toast({ title: "Phone verified successfully!", variant: "success" });
@@ -696,16 +732,36 @@ export default function Settings() {
             iconColor="text-green-600 dark:text-green-400"
             title="Phone Verification"
           >
-            <p className="text-sm text-slate-500 dark:text-zinc-400 mb-4">
-              Add your phone number for SMS notifications and account security. Your number is never shown publicly.
-            </p>
-
             {phoneStatus === 'verified' ? (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30">
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  Phone verified: ***-***-{phoneNumber.slice(-4)}
-                </span>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      disabled
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-[#111113] text-slate-500 dark:text-zinc-400 focus:outline-none opacity-70 cursor-not-allowed"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 px-2 py-1 rounded-md text-xs font-bold">
+                      <CheckCircle className="w-3 h-3" /> Verified
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhoneStatus('idle');
+                      setPhoneNumber('');
+                      setOtpCode(['', '', '', '', '', '']);
+                    }}
+                    className="px-5 py-3 rounded-xl font-medium text-slate-700 dark:text-zinc-300 transition-all border border-slate-200 dark:border-[#1f1f23] hover:bg-slate-100 dark:hover:bg-[#1f1f23] whitespace-nowrap"
+                  >
+                    Change Number
+                  </button>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-zinc-400">
+                  Add your phone number for SMS notifications and account security. Your number is never shown publicly.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -732,7 +788,7 @@ export default function Settings() {
                     </button>
                   )}
                 </div>
-
+                
                 {phoneStatus === 'pending' && (
                   <div className="space-y-3">
                     <p className="text-sm text-slate-500 dark:text-zinc-400">
@@ -772,6 +828,9 @@ export default function Settings() {
                     </div>
                   </div>
                 )}
+                <p className="text-sm text-slate-500 dark:text-zinc-400">
+                  Add your phone number for SMS notifications and account security. Your number is never shown publicly.
+                </p>
               </div>
             )}
           </SectionCard>
