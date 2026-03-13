@@ -31,15 +31,17 @@ export async function fetchUserActivity(userId, limit = 80) {
  * @param {string} phoneNumber - The phone number to verify (e.g., "+1234567890")
  */
 export async function sendPhoneVerificationCode(phoneNumber) {
-  const res = await client.post("/users/me/phone/send-code", { phoneNumber });
+  const res = await client.post("/notifications/channels/sms/start", { phoneNumber });
   return res.data;
 }
 
 /**
  * Submits the 6-digit code entered by the user to the backend for Twilio verification.
+ * ⭐ FIX: Now accepts and sends BOTH phoneNumber and code!
+ * @param {string} phoneNumber - The phone number being verified.
  * @param {string} code - The 6-digit SMS verification code.
  */
-export async function verifyPhoneCode(code) {
-  const res = await client.post("/users/me/phone/verify-code", { code });
+export async function verifyPhoneCode(phoneNumber, code) {
+  const res = await client.post("/notifications/channels/sms/verify", { phoneNumber, code });
   return res.data;
 }

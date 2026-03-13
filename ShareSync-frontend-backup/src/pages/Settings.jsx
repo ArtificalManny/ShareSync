@@ -1,8 +1,7 @@
 // src/pages/Settings.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SETTINGS PAGE v4.2.2
-// - FIX: Aligned payload perfectly with NestJS DTO to prevent silent drops.
-// - UI: Replaced gradient on Save Changes with solid bg-violet-600.
+// SHARESYNC SETTINGS PAGE v4.2.4
+// - FIX: Passing BOTH phoneNumber and code to the backend verify route!
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -296,8 +295,6 @@ export default function Settings() {
     setSaving(true);
 
     try {
-      // ✅ PERFECT DTO ALIGNMENT: 
-      // Matched object structures identically to UpdateSettingsDto
       const payload = {
         publicProfile,
         discoverable: Boolean(discoverable),
@@ -347,36 +344,42 @@ export default function Settings() {
     }
   };
 
+  const handleVerifyPhoneCode = async (submitCode) => {
+    const code = submitCode || otpCode.join('');
+    if (code.length < 6) return;
+    setPhoneLoading(true);
+    try {
+      const { verifyPhoneCode } = await import('../api/users');
+      // ⭐ FIX: Pass BOTH phoneNumber and code!
+      await verifyPhoneCode(phoneNumber, code);
+      setPhoneStatus('verified');
+      toast({ title: "Phone verified successfully!", variant: "success" });
+    } catch (e) {
+      const msg = e?.response?.data?.message || e.message || "Invalid code.";
+      toast({ title: "Verification Failed", description: msg, variant: "error" });
+      setOtpCode(['', '', '', '', '', '']);
+      otpRefs.current[0]?.focus();
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otpCode];
     newOtp[index] = value.substring(value.length - 1);
     setOtpCode(newOtp);
+    
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
+    } else if (value && index === 5) {
+      handleVerifyPhoneCode(newOtp.join(''));
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerifyPhoneCode = async () => {
-    const code = otpCode.join('');
-    if (code.length < 6) return;
-    setPhoneLoading(true);
-    try {
-      const { verifyPhoneCode } = await import('../api/users');
-      await verifyPhoneCode(code);
-      setPhoneStatus('verified');
-      toast({ title: "Phone verified successfully!", variant: "success" });
-    } catch (e) {
-      const msg = e?.response?.data?.message || e.message || "Invalid code.";
-      toast({ title: "Verification Failed", description: msg, variant: "error" });
-    } finally {
-      setPhoneLoading(false);
     }
   };
 
@@ -825,7 +828,6 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* ✅ REPLACED GRADIENT WITH SOLID bg-violet-600 */}
           <button
             type="submit"
             disabled={saving}
