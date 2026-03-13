@@ -95,12 +95,20 @@ export class UserService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   async findById(id: string): Promise<UserDocument | null> {
-    const result = await this.userModel.findById(id).exec();
+    // ⭐ FIX: Added .lean() to bypass strict schema stripping and return the raw document,
+    // ensuring nested dynamic fields like notificationChannels are sent to the frontend!
+    const result = await this.userModel.findById(id).lean().exec();
+    if (result && (result as any).password) {
+      delete (result as any).password;
+    }
     return result as any;
   }
 
   async findByUsername(username: string): Promise<UserDocument | null> {
-    const result = await this.userModel.findOne({ username }).exec();
+    const result = await this.userModel.findOne({ username }).lean().exec();
+    if (result && (result as any).password) {
+      delete (result as any).password;
+    }
     return result as any;
   }
 
@@ -171,12 +179,11 @@ export class UserService {
     const user = await this.userModel
       .findById(userId)
       .select('-password -resetToken -verificationToken -verificationCode')
-      .lean()
+      .lean() // ⭐ FIX: ensures all raw data is loaded
       .exec();
 
     if (!user) throw new NotFoundException('User not found');
 
-    // ⭐ FIX: Stopped hardcoding default values. Now actively retrieving from db.
     return {
       firstName: (user as any).firstName || '',
       lastName: (user as any).lastName || '',
@@ -214,6 +221,11 @@ export class UserService {
       preferences: (user as any).preferences || {},
       publicProfile: (user as any).publicProfile ?? true,
       discoverable: (user as any).discoverable ?? (user as any).preferences?.privacy?.publicProfile ?? false,
+      
+      // ⭐ FIX: Safely pass the phone data explicitly back to the frontend settings payload!
+      notificationChannels: (user as any).notificationChannels || {},
+      phoneNumber: (user as any).notificationChannels?.sms?.phoneNumber || (user as any).phoneNumber || '',
+      phoneVerified: (user as any).notificationChannels?.sms?.verified || (user as any).isPhoneVerified || false,
     };
   }
 
@@ -241,10 +253,7 @@ export class UserService {
     if (settingsDto.discoverable !== undefined) { (user as any).discoverable = settingsDto.discoverable; }
 
     if (settingsDto.appearance) {
-      // ⭐ FIX: Store appearance at top-level
       (user as any).appearance = { ...((user as any).appearance || {}), ...settingsDto.appearance };
-      
-      // Preserve old preference mapping so we don't break existing UI dependencies
       const existing = (user as any).preferences ?? {};
       (user as any).preferences = { ...existing, theme: settingsDto.appearance.theme ?? existing.theme };
     }
@@ -252,10 +261,7 @@ export class UserService {
     const nestedFields = ['mentor', 'momentum', 'focus', 'social', 'legacy', 'security'];
     for (const field of nestedFields) {
       if (settingsDto[field] !== undefined) {
-        // ⭐ FIX: Now saving directly to the new top-level schema shelves we built!
         (user as any)[field] = { ...((user as any)[field] || {}), ...settingsDto[field] };
-
-        // Keep saving into old preferences object just as a fallback 
         const existing = (user as any).preferences ?? {};
         (user as any).preferences = { ...existing, [field]: { ...(existing[field] || {}), ...settingsDto[field] } };
       }
@@ -278,18 +284,15 @@ export class UserService {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new NotFoundException('User not found');
 
-    // Basic regex validation to ensure it looks like a phone number (e.g., +1234567890)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     if (!phoneRegex.test(phoneNumber.replace(/\s|-/g, ''))) {
       throw new BadRequestException('Invalid phone number format. Please include country code.');
     }
 
-    // Save unverified number
     (user as any).phoneNumber = phoneNumber;
     (user as any).isPhoneVerified = false;
     await user.save();
 
-    // Trigger SMS Service to send code
     await this.smsService.verifyPhoneNumber(phoneNumber);
   }
 
@@ -298,7 +301,6 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
     if (!(user as any).phoneNumber) throw new BadRequestException('No phone number on record to verify.');
 
-    // Check with Twilio
     const isValid = await (this.smsService as any).checkVerificationCode((user as any).phoneNumber, code);
 
     if (isValid) {
@@ -430,7 +432,6 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
 
     try {
-      // ✅ Silenced TS Error using type casting
       await (this.projects as any).deleteAllForUser(userId);
     } catch (e) {
       console.warn('Could not delete user projects:', e);

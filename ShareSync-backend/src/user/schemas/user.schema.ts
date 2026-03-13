@@ -293,7 +293,8 @@ export class User extends Document {
         verifiedAt: { type: Date, default: undefined },
       },
     },
-    default: undefined,
+    // ⭐ FIX: Changed from `undefined` to `{}` so nested updates never fail
+    default: {},
   })
   notificationChannels?: {
     email?: { email?: string; verified?: boolean; optIn?: boolean; verifiedAt?: Date };
@@ -427,6 +428,13 @@ export class User extends Document {
   // ⭐ EXISTING: Keep for backward compatibility
   @Prop({ default: false })
   isEmailVerified: boolean;
+
+  // ⭐ FIX: Added Top-Level Phone fields so Mongoose persists them immediately!
+  @Prop()
+  phoneNumber?: string;
+
+  @Prop({ default: false })
+  isPhoneVerified?: boolean;
 
   @Prop()
   emailVerificationToken?: string;
