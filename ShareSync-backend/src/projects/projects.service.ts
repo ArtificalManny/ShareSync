@@ -274,7 +274,9 @@ export class ProjectsService {
   }
 
   async findById(projectId: string): Promise<ProjectDocument> {
-    const project = await this.projectModel.findById(projectId);
+    const project = await this.projectModel.findById(projectId)
+      .populate("ownerId", "firstName lastName username email avatarUrl")
+      .populate("members.userId", "firstName lastName username email avatarUrl");
     if (!project) throw new NotFoundException(`Project ${projectId} not found`);
     return project;
   }
@@ -613,7 +615,8 @@ export class ProjectsService {
     const memberIndex = (project.members || []).findIndex((m) => (m.userId || (m as any).user)?.toString() === userId);
 
     if (memberIndex === -1) {
-      const ownerId = (project.ownerId || (project as any).owner)?.toString();
+      const ownerRaw = project.ownerId || (project as any).owner;
+    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
       if (ownerId === userId) {
         const newMember = {
           userId: new Types.ObjectId(userId),
@@ -716,20 +719,23 @@ export class ProjectsService {
 
   // ✅ SAFELY HANDLES LEGACY "USER" FIELD OR MISSING IDS
   private hasAccess(project: ProjectDocument, userId: string): boolean {
-    const ownerId = (project.ownerId || (project as any).owner)?.toString();
+    const ownerRaw = project.ownerId || (project as any).owner;
+    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
     if (ownerId === userId) return true;
     return (project.members || []).some((m) => (m.userId || (m as any).user)?.toString() === userId);
   }
 
   private canEdit(project: ProjectDocument, userId: string): boolean {
-    const ownerId = (project.ownerId || (project as any).owner)?.toString();
+    const ownerRaw = project.ownerId || (project as any).owner;
+    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
     if (ownerId === userId) return true;
     const member = (project.members || []).find((m) => (m.userId || (m as any).user)?.toString() === userId);
     return member?.role === MemberRole.ADMIN;
   }
 
   private canManageMembers(project: ProjectDocument, userId: string): boolean {
-    const ownerId = (project.ownerId || (project as any).owner)?.toString();
+    const ownerRaw = project.ownerId || (project as any).owner;
+    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
     if (ownerId === userId) return true;
     const member = (project.members || []).find((m) => (m.userId || (m as any).user)?.toString() === userId);
     return member?.role === MemberRole.ADMIN;

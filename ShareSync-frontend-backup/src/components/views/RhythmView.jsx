@@ -1,3 +1,11 @@
+// src/components/views/RhythmView.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// RhythmView — Weekly calendar with energy zones + session scheduling
+// ✅ Proper light/dark mode using ShareSync design tokens
+// ✅ Lowered z-indices to avoid burying tab dropdown menus
+// ✅ Violet brand button + improved visual hierarchy
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus, ChevronLeft, ChevronRight, Clock,
@@ -21,34 +29,44 @@ const TIME_SLOTS = [
 ];
 
 const ENERGY_ZONES = [
-  { hours: [8, 9, 10, 11], label: 'High Energy', icon: Sun, color: 'text-warning-400', bg: 'bg-warning-500/5' },
-  { hours: [12, 13, 14], label: 'Medium Energy', icon: Coffee, color: 'text-cyan-400', bg: 'bg-cyan-500/5' },
-  { hours: [15, 16, 17, 18], label: 'Lower Energy', icon: Moon, color: 'text-purple-400', bg: 'bg-purple-500/5' },
+  { hours: [8, 9, 10, 11], label: 'High Energy', icon: Sun, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-500/[0.04]' },
+  { hours: [12, 13, 14], label: 'Medium Energy', icon: Coffee, color: 'text-cyan-500 dark:text-cyan-400', bg: 'bg-cyan-50/50 dark:bg-cyan-500/[0.04]' },
+  { hours: [15, 16, 17, 18], label: 'Lower Energy', icon: Moon, color: 'text-violet-500 dark:text-violet-400', bg: 'bg-violet-50/50 dark:bg-violet-500/[0.04]' },
 ];
+
+// ─── CalendarEvent ──────────────────────────────────────────────────────────
 
 function CalendarEvent({ event }) {
   const getEventColor = () => {
     switch (event.type) {
-      case 'focus': return 'bg-brand-500/20 border-brand-500/30 text-brand-400 shadow-md shadow-brand-500/10';
-      case 'meeting': return 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400 shadow-md shadow-cyan-500/10';
-      case 'task': return 'bg-success-500/20 border-success-500/30 text-success-400 shadow-md shadow-success-500/10';
-      default: return 'bg-surface-2 border-white/[0.08] text-text-secondary';
+      case 'focus':
+        return 'bg-violet-100 dark:bg-violet-500/20 border-violet-300 dark:border-violet-500/30 text-violet-800 dark:text-violet-300 shadow-sm';
+      case 'meeting':
+        return 'bg-cyan-100 dark:bg-cyan-500/20 border-cyan-300 dark:border-cyan-500/30 text-cyan-800 dark:text-cyan-300 shadow-sm';
+      case 'task':
+        return 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 shadow-sm';
+      default:
+        return 'bg-slate-100 dark:bg-white/[0.06] border-slate-300 dark:border-white/[0.08] text-slate-700 dark:text-white/70 shadow-sm';
     }
   };
-  
-  const height = (event.duration / 60) * 64; 
-  
+
+  const height = (event.duration / 60) * 64;
+
   return (
     <div
-      className={`absolute left-1 right-1 rounded-lg border px-3 py-2 cursor-pointer hover:brightness-125 transition-all z-20 overflow-hidden ${getEventColor()}`}
-      style={{ 
+      className={`absolute left-1 right-1 rounded-lg border px-3 py-2 cursor-pointer
+        hover:brightness-110 dark:hover:brightness-125 transition-all
+        ${getEventColor()}`}
+      style={{
         top: `${((event.startHour - 8) + event.startMinute / 60) * 64}px`,
-        height: `${Math.max(height, 48)}px`
+        height: `${Math.max(height, 48)}px`,
+        /* ✅ LOWERED from z-20 to z-[5] so tab dropdown isn't buried */
+        zIndex: 5,
       }}
     >
       <div className="font-medium text-sm truncate">{event.title}</div>
       {height >= 48 && (
-        <div className="text-xs opacity-80 mt-0.5">
+        <div className="text-xs opacity-70 mt-0.5">
           {event.startHour > 12 ? event.startHour - 12 : event.startHour}:{String(event.startMinute).padStart(2, '0')} {event.startHour >= 12 ? 'PM' : 'AM'}
         </div>
       )}
@@ -56,37 +74,56 @@ function CalendarEvent({ event }) {
   );
 }
 
+// ─── DayColumn ──────────────────────────────────────────────────────────────
+
 function DayColumn({ day, events, isToday, workload, onAddEvent }) {
   const getWorkloadColor = () => {
-    if (workload > 100) return 'bg-error-500';
-    if (workload > 80) return 'bg-warning-500';
-    if (workload > 50) return 'bg-success-500';
-    return 'bg-cyan-500';
+    if (workload > 100) return 'bg-rose-500';
+    if (workload > 80) return 'bg-amber-500';
+    if (workload > 50) return 'bg-emerald-500';
+    return 'bg-violet-500';
   };
-  
+
   return (
-    <div className="flex-1 min-w-[140px] border-r border-white/[0.04] last:border-r-0">
-      <div className={`sticky top-0 z-30 px-3 py-3 border-b border-white/[0.06] ${isToday ? 'bg-brand-500/10' : 'bg-surface-0'}`}>
+    <div className="flex-1 min-w-[140px] border-r border-slate-100 dark:border-white/[0.04] last:border-r-0">
+      {/* Day header — ✅ LOWERED from z-30 to z-[8] */}
+      <div className={`sticky top-0 z-[8] px-3 py-3 border-b border-slate-200 dark:border-white/[0.06]
+        ${isToday
+          ? 'bg-violet-50 dark:bg-violet-500/10'
+          : 'bg-white dark:bg-[#1f1f23]'
+        }`}
+      >
         <div className="text-center">
-          <div className={`text-sm font-medium ${isToday ? 'text-brand-400' : 'text-text-secondary'}`}>{day.dayName}</div>
-          <div className={`text-2xl font-bold ${isToday ? 'text-brand-400' : 'text-text-primary'}`}>{day.date}</div>
+          <div className={`text-sm font-medium ${isToday ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-white/50'}`}>
+            {day.dayName}
+          </div>
+          <div className={`text-2xl font-bold ${isToday ? 'text-violet-600 dark:text-violet-400' : 'text-slate-800 dark:text-white'}`}>
+            {day.date}
+          </div>
         </div>
-        <div className="mt-2 h-1.5 bg-surface-3 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all duration-300 ${getWorkloadColor()}`} style={{ width: `${Math.min(workload, 100)}%` }} />
+        {/* Workload bar */}
+        <div className="mt-2 h-1.5 bg-slate-200 dark:bg-white/[0.08] rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${getWorkloadColor()}`}
+            style={{ width: `${Math.min(workload, 100)}%` }}
+          />
         </div>
       </div>
-      
-      <div className="relative bg-surface-0/50">
+
+      {/* Time slot grid */}
+      <div className="relative bg-white dark:bg-[#1a1a1e]">
         {TIME_SLOTS.map((slot) => {
           const zone = ENERGY_ZONES.find(z => z.hours.includes(slot.hour));
           return (
-            <div 
+            <div
               key={slot.hour}
-              className={`h-16 border-b border-white/[0.04] cursor-pointer hover:bg-white/[0.03] transition-colors relative group ${zone?.bg || ''}`}
+              className={`h-16 border-b border-slate-100 dark:border-white/[0.04] cursor-pointer
+                hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors relative group
+                ${zone?.bg || ''}`}
               onClick={() => onAddEvent(day.fullDate, slot.hour)}
             >
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Plus className="w-5 h-5 text-text-tertiary" />
+                <Plus className="w-5 h-5 text-slate-300 dark:text-white/20" />
               </div>
             </div>
           );
@@ -97,18 +134,27 @@ function DayColumn({ day, events, isToday, workload, onAddEvent }) {
   );
 }
 
+// ─── EnergySidebar ──────────────────────────────────────────────────────────
+
 function EnergySidebar() {
   return (
-    <div className="w-24 flex-shrink-0 border-r border-white/[0.06] bg-surface-0 z-20">
-      <div className="h-[88px] border-b border-white/[0.06]" />
+    <div className="w-24 flex-shrink-0 border-r border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#1a1a1e]"
+      /* ✅ LOWERED from z-20 to z-[6] */
+      style={{ zIndex: 6 }}
+    >
+      {/* Spacer to align with day headers */}
+      <div className="h-[88px] border-b border-slate-200 dark:border-white/[0.06]" />
+
       {TIME_SLOTS.map((slot) => {
         const zone = ENERGY_ZONES.find(z => z.hours.includes(slot.hour));
         const Icon = zone?.icon || Clock;
         const isZoneStart = zone?.hours[0] === slot.hour;
-        
+
         return (
-          <div key={slot.hour} className="h-16 relative border-b border-white/[0.04]">
-            <div className="absolute -top-3 left-3 text-xs font-medium text-text-tertiary bg-surface-0 px-1">{slot.label}</div>
+          <div key={slot.hour} className="h-16 relative border-b border-slate-100 dark:border-white/[0.04]">
+            <div className="absolute -top-3 left-3 text-[11px] font-medium text-slate-400 dark:text-white/30 bg-slate-50 dark:bg-[#1a1a1e] px-1">
+              {slot.label}
+            </div>
             {isZoneStart && (
               <div className={`absolute top-1/2 -translate-y-1/2 right-2 ${zone.color}`}>
                 <Icon className="w-4 h-4" />
@@ -121,20 +167,22 @@ function EnergySidebar() {
   );
 }
 
+// ─── Main Component ─────────────────────────────────────────────────────────
+
 export default function RhythmView({ projectId }) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [realEvents, setRealEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  
+
   // ✅ FIX: STRICT BOUNDARIES. Clamp to exact 00:00:00 of the correct day.
   const weekDays = useMemo(() => {
     const start = new Date(currentWeek);
     start.setHours(0, 0, 0, 0); // Absolute midnight
     start.setDate(start.getDate() - start.getDay() + 1); // Monday
-    
+
     return Array.from({ length: 5 }, (_, i) => {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
@@ -154,14 +202,14 @@ export default function RhythmView({ projectId }) {
       // Form absolute boundary strings
       const startBound = new Date(weekDays[0].fullDate);
       startBound.setHours(0, 0, 0, 0);
-      
+
       const endBound = new Date(weekDays[4].fullDate);
       endBound.setHours(23, 59, 59, 999);
-      
+
       const payload = await getProjectRhythm(projectId, startBound.toISOString(), endBound.toISOString());
-      
+
       console.log("📅 Loaded Rhythm Payload:", payload); // Debug Log
-      
+
       if (payload?.data) {
         const mapped = payload.data.map(item => {
           const startDate = new Date(item.startAt);
@@ -174,7 +222,7 @@ export default function RhythmView({ projectId }) {
           let uiType = 'task';
           if (item.type === 'event' || item.type === 'meeting') uiType = 'meeting';
           if (item.title.toLowerCase().includes('focus')) uiType = 'focus';
-          
+
           return {
             id: item.id,
             title: item.title,
@@ -184,7 +232,7 @@ export default function RhythmView({ projectId }) {
             duration: duration,
             day: dayIndex,
           };
-        }).filter(e => e.day >= 0 && e.day <= 4); 
+        }).filter(e => e.day >= 0 && e.day <= 4);
 
         setRealEvents(mapped);
       }
@@ -222,48 +270,83 @@ export default function RhythmView({ projectId }) {
   });
 
   return (
-    <div className="p-10 max-w-full mx-auto pb-32">
+    <div className="p-6 lg:p-10 max-w-full mx-auto pb-32">
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleAddEventClick(new Date(), 9)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-all shadow-lg shadow-brand-500/20"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl
+              bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium
+              transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>Schedule Session</span>
           </button>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <button onClick={() => { const p = new Date(currentWeek); p.setDate(p.getDate() - 7); setCurrentWeek(p); }} className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-          <button onClick={() => setCurrentWeek(new Date())} className="px-4 py-2 rounded-xl bg-surface-1 border border-white/[0.08] text-sm text-text-secondary hover:bg-surface-2 transition-colors">Today</button>
-          <div className="px-4 py-2 rounded-xl bg-surface-1 border border-white/[0.08]">
-            <span className="text-sm font-medium text-text-primary">
-              {weekDays[0].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - 
+          <button
+            onClick={() => { const p = new Date(currentWeek); p.setDate(p.getDate() - 7); setCurrentWeek(p); }}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-400 dark:text-white/40 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setCurrentWeek(new Date())}
+            className="px-4 py-2 rounded-xl bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08]
+              text-sm text-slate-600 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/[0.08] transition-colors"
+          >
+            Today
+          </button>
+
+          <div className="px-4 py-2 rounded-xl bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08]">
+            <span className="text-sm font-medium text-slate-800 dark:text-white">
+              {weekDays[0].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} –{' '}
               {weekDays[4].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
-          <button onClick={() => { const n = new Date(currentWeek); n.setDate(n.getDate() + 7); setCurrentWeek(n); }} className="p-2 rounded-lg hover:bg-surface-2 text-text-tertiary transition-colors"><ChevronRight className="w-5 h-5" /></button>
+
+          <button
+            onClick={() => { const n = new Date(currentWeek); n.setDate(n.getDate() + 7); setCurrentWeek(n); }}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-400 dark:text-white/40 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
-      
+
+      {/* ── Calendar Grid ──────────────────────────────────────────────── */}
       <div className="flex gap-6">
-        <div className="flex-1 rounded-2xl border border-white/[0.08] bg-surface-0 overflow-hidden relative shadow-xl">
+        <div className="flex-1 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#1f1f23] overflow-hidden relative shadow-sm">
+          {/* Loading overlay — ✅ LOWERED from z-50 to z-[15] */}
           {loading && (
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
-               <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 bg-white/60 dark:bg-black/40 backdrop-blur-sm flex items-center justify-center"
+              style={{ zIndex: 15 }}
+            >
+              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
+
           <div className="flex">
             <EnergySidebar />
             {weekDays.map((day, idx) => (
-              <DayColumn key={idx} day={day} events={realEvents.filter(e => e.day === idx)} isToday={day.isToday} workload={workloads[idx]} onAddEvent={handleAddEventClick} />
+              <DayColumn
+                key={idx}
+                day={day}
+                events={realEvents.filter(e => e.day === idx)}
+                isToday={day.isToday}
+                workload={workloads[idx]}
+                onAddEvent={handleAddEventClick}
+              />
             ))}
           </div>
         </div>
       </div>
 
-      <CreateSessionModal 
+      {/* ── Session Modal ──────────────────────────────────────────────── */}
+      <CreateSessionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={selectedSlot}

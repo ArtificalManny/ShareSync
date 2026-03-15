@@ -1,8 +1,4 @@
 // /src/api/discovery.js
-// ═══════════════════════════════════════════════════════════════════════════════
-// ⭐ UPGRADE: Item 8 - Wired to Dasgupta-Informed Discovery Engine
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import client from "./client";
 
 export async function getDiscoveryFeed(params = {}) {
@@ -15,41 +11,36 @@ export async function getDiscoveryFeed(params = {}) {
   }
 }
 
-// 🎰 ALGORITHMIC FEED: Fetches the live Dasgupta-scored feed and maps to UI cards
+// Fetches the live Algorithmic Time-Decay Feed and maps it to UI cards
 export async function getAlgorithmicFeed({ cursor, limit = 10 } = {}) {
   try {
     const qs = new URLSearchParams();
     if (cursor) qs.set("cursor", cursor);
     if (limit) qs.set("limit", String(limit));
 
-    // Calls our new personalized algorithm endpoint
     const res = await client.get(`/discovery/feed?${qs.toString()}`);
     
-    // Safety unwrap depending on Axios configuration
     const payload = res?.data?.items ? res.data : res?.data?.data;
     const rawItems = payload?.items || [];
     const nextCursor = payload?.nextCursor || null;
 
     const activities = rawItems.map((p) => {
-      // Use math hash to ensure the same project gets the same icon/color consistently
-      const hash = String(p.id || p._id).charCodeAt(0) % 4;
+      const hash = p.id.charCodeAt(0) % 4;
       const actions = ['shipped an update for', 'hit a milestone in', 'posted a task on', 'made progress on'];
       const icons = ['Rocket', 'TrendingUp', 'CheckCircle', 'Sparkles'];
-      const colors = ['violet', 'emerald', 'blue', 'amber'];
+      const colors = ['purple', 'emerald', 'blue', 'orange'];
       
       return {
-        id: `feed-item-${p.id || p._id}`,
+        id: `feed-item-${p.id}`,
         type: 'ship',
         user: p.ownerInfo?.username || p.ownerInfo?.firstName || p.teamName || 'A creator',
         action: actions[hash],
         content: p.lastShip || p.description || 'working hard on the vision',
-        project: p.projectName || p.name,
-        timestamp: p.lastActivity || p.updatedAt || 'recently',
+        project: p.projectName,
+        timestamp: p.lastActivity || 'recently',
         icon: icons[hash],
         color: colors[hash],
-        // Capture the mathematically computed score from the backend
-        rawScore: p.algorithmicScore || p.trendingScore || 0,
-        stats: p.stats
+        rawScore: p.algorithmicScore
       };
     });
 
@@ -59,6 +50,44 @@ export async function getAlgorithmicFeed({ cursor, limit = 10 } = {}) {
     return { items: [], nextCursor: null };
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPECTATOR ECONOMY — Follow / Unfollow public projects
+// Backend endpoints: POST/DELETE /api/projects/:id/follow
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function followProject(projectId) {
+  try {
+    const res = await client.post(`/projects/${projectId}/follow`);
+    return res.data?.data || res.data;
+  } catch (err) {
+    console.error("Follow project error:", err);
+    throw err;
+  }
+}
+
+export async function unfollowProject(projectId) {
+  try {
+    const res = await client.delete(`/projects/${projectId}/follow`);
+    return res.data?.data || res.data;
+  } catch (err) {
+    console.error("Unfollow project error:", err);
+    throw err;
+  }
+}
+
+export async function getFollowStatus(projectId) {
+  try {
+    const res = await client.get(`/projects/${projectId}/follow-status`);
+    return res.data?.data || res.data;
+  } catch {
+    return { isFollowing: false };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTIONS — Normalized data for discovery UI
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function n(v, fallback = 0) { const x = Number(v); return Number.isFinite(x) ? x : fallback; }
 function s(v, fallback = "") { return typeof v === "string" && v.trim() ? v : fallback; }
@@ -82,7 +111,7 @@ function normalizeProjectItem(item) {
   const currentProject = s(item?.currentProject || item?.projectName);
 
   return {
-    project: { id, projectName, teamName, emoji, streak, members, lastShip, totalShips, completionRate, lastActivity, lastActivityDays, tags: Array.isArray(item?.tags) ? item.tags : [], moderationStatus: item?.moderationStatus, trendingScore: item?.trendingScore },
+    project: { id, projectName, teamName, emoji, streak, members, lastShip, totalShips, completionRate, lastActivity, lastActivityDays, tags: Array.isArray(item?.tags) ? item.tags : [], moderationStatus: item?.moderationStatus },
     person: personName ? { id, name: personName, avatar: s(item?.avatar, "👤"), workStyle: workStyle || "Deep Focus", similarity: similarity || 80, peakTime: peakTime || "Varies", currentProject: currentProject || "Project", streak: streak || 0, reason: s(item?.reason, "Similar momentum patterns"), moderationStatus: item?.moderationStatus } : null,
   };
 }
@@ -103,4 +132,4 @@ export async function getDiscoveryPage(params = {}) {
   return { items, next: null };
 }
 
-export default { getDiscoveryFeed, getDiscoverySections, getDiscoveryPage, getAlgorithmicFeed };
+export default { getDiscoveryFeed, getDiscoverySections, getDiscoveryPage, getAlgorithmicFeed, followProject, unfollowProject, getFollowStatus };

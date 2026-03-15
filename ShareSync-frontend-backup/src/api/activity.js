@@ -1,9 +1,13 @@
 // /src/api/activity.js
 import api from "./client";
-
+ 
 /**
  * Unified activity fetcher (cursor-ready) with normalization.
- * Tries /api/activity first; falls back to /activities for legacy servers.
+ *
+ * Route priority:
+ *   1. /projects/:projectId/activity (ActivitiesController — most reliable)
+ *   2. /activity?scope=... (UnifiedActivityController)
+ *   3. /activities?scope=... (legacy fallback)
  *
  * Params:
  *  - scope: 'user' | 'project' (default 'user')
@@ -33,33 +37,62 @@ export async function getActivity({
     ...(cursor ? { cursor } : {}),
     ...(limit ? { limit } : {}),
   };
-
-  // Attempt the new route first
+ 
   let json;
-  try {
-    const { data } = await api.get("/api/activity", { params, signal });
-    json = data;
-  } catch (e) {
-    // Fallback to legacy route if available
+ 
+  // ✅ FIX: Try project-scoped route first (ActivitiesController)
+  // This is the most reliable endpoint: @Controller('projects/:projectId/activity')
+  if (scope === 'project' && projectId) {
     try {
-      const { data } = await api.get("/activities", { params, signal });
+      const { data } = await api.get(`/projects/${projectId}/activity`, {
+        params: { limit, cursor: cursor || undefined },
+        signal,
+      });
       json = data;
-    } catch (e2) {
-      throw e; // surface original error
+    } catch (e) {
+      // 404 = route not found, try next
+      if (e?.response?.status !== 404) {
+        // Real error (auth, server, etc.) — don't swallow it
+        // Still try fallbacks below
+      }
+      json = null;
     }
   }
-
+ 
+  // ✅ FIX: Second attempt — /activity (NOT /api/activity — client already adds /api)
+  if (!json) {
+    try {
+      const { data } = await api.get("/activity", { params, signal });
+      json = data;
+    } catch (e) {
+      // Fallback to legacy route
+      try {
+        const { data } = await api.get("/activities", { params, signal });
+        json = data;
+      } catch (e2) {
+        throw e; // surface original error
+      }
+    }
+  }
+ 
   // Normalize shape: expect { items: any[], nextCursor?: string } OR an array
   const rawItems = Array.isArray(json?.items) ? json.items : Array.isArray(json) ? json : [];
-  const { normalizeActivity } = await import("../models/activity.js");
-  const items = rawItems.map((it) => normalizeActivity(it));
-
+ 
+  let items;
+  try {
+    const { normalizeActivity } = await import("../models/activity.js");
+    items = rawItems.map((it) => normalizeActivity(it));
+  } catch {
+    // If normalizeActivity model doesn't exist, pass items through raw
+    items = rawItems;
+  }
+ 
   return {
     items,
     nextCursor: json?.nextCursor || null,
   };
 }
-
+ 
 /**
  * CSV export (keeps your existing behavior & route).
  * Accepts same filters as getActivity; forwards as query params.

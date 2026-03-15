@@ -6,6 +6,8 @@
 // - Prefers computed fields injected by RoadmapPanel: progress, tasksDone, tasksTotal, tasksLeft
 // - Falls back to backend-ish fields if present
 // - No backend assumptions required
+//
+// ✅ ADDED: onStatusChange prop — status quick-actions in "..." dropdown
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useMemo } from 'react';
@@ -20,6 +22,7 @@ import {
   Edit2,
   Trash2,
   ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -40,12 +43,26 @@ const STATUS_CONFIG = {
     borderColor: 'border-brand/20',
     icon: Clock,
   },
+  in_progress: {
+    label: 'In Progress',
+    color: 'text-brand',
+    bgColor: 'bg-brand/10',
+    borderColor: 'border-brand/20',
+    icon: Clock,
+  },
   completed: {
     label: 'Completed',
     color: 'text-success',
     bgColor: 'bg-success/10',
     borderColor: 'border-success/20',
     icon: CheckCircle2,
+  },
+  at_risk: {
+    label: 'At Risk',
+    color: 'text-error-500',
+    bgColor: 'bg-error-500/10',
+    borderColor: 'border-error-500/20',
+    icon: AlertTriangle,
   },
   overdue: {
     label: 'Overdue',
@@ -55,6 +72,17 @@ const STATUS_CONFIG = {
     icon: AlertTriangle,
   },
 };
+
+/* ─────────────────────────────────────────────────────────────────────────
+   STATUS TRANSITION OPTIONS
+   Shows only the statuses the milestone can move TO (not its current one)
+───────────────────────────────────────────────────────────────────────── */
+const ALL_STATUS_TRANSITIONS = [
+  { value: 'planned', label: 'Mark Planned', icon: Circle, color: 'text-text-tertiary' },
+  { value: 'in_progress', label: 'Mark In Progress', icon: Clock, color: 'text-brand' },
+  { value: 'completed', label: 'Mark Completed', icon: CheckCircle2, color: 'text-success' },
+  { value: 'at_risk', label: 'Mark At Risk', icon: AlertTriangle, color: 'text-error-500' },
+];
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -77,7 +105,10 @@ const normalizeToCardStatus = (rawStatus, dueDate) => {
   if (s === 'done' || s === 'complete' || s === 'completed') return 'completed';
 
   // In progress synonyms
-  if (s === 'inprogress' || s === 'in-progress' || s === 'active') return 'in-progress';
+  if (s === 'inprogress' || s === 'in-progress' || s === 'in_progress' || s === 'active') return 'in-progress';
+
+  // At risk synonyms
+  if (s === 'at_risk' || s === 'at-risk') return 'at_risk';
 
   // Overdue (safe heuristic)
   const d = dueDate ? new Date(dueDate) : null;
@@ -88,6 +119,13 @@ const normalizeToCardStatus = (rawStatus, dueDate) => {
 
   // Default planned
   return 'planned';
+};
+
+// Normalize to backend-friendly status for API calls
+const normalizeToApiStatus = (cardStatus) => {
+  if (cardStatus === 'in-progress') return 'in_progress';
+  if (cardStatus === 'overdue') return 'at_risk'; // overdue is display-only, API uses at_risk
+  return cardStatus;
 };
 
 const clampPercent = (n) => {
@@ -106,6 +144,9 @@ const MilestoneCard = ({
   onDelete,
   isSelected = false,
   showActions = true,
+
+  // ✅ NEW: status change callback
+  onStatusChange,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -149,6 +190,12 @@ const MilestoneCard = ({
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.planned;
   const StatusIcon = statusConfig.icon;
 
+  // ✅ NEW: Compute which status transitions are available
+  const currentApiStatus = normalizeToApiStatus(status);
+  const availableTransitions = useMemo(() => {
+    return ALL_STATUS_TRANSITIONS.filter((t) => t.value !== currentApiStatus);
+  }, [currentApiStatus]);
+
   const handleClick = () => {
     if (onClick && id) onClick(id, milestone);
   };
@@ -163,6 +210,13 @@ const MilestoneCard = ({
     e.stopPropagation();
     setShowMenu(false);
     if (onDelete && id) onDelete(id, milestone);
+  };
+
+  // ✅ NEW: Status change handler
+  const handleStatusChange = (e, newStatus) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (onStatusChange && id) onStatusChange(id, newStatus);
   };
 
   const dueLabel = formatDate(dueDate);
@@ -217,10 +271,11 @@ const MilestoneCard = ({
                 />
                 <div className="
                   absolute right-0 top-full mt-1 z-20
-                  w-36 py-1 rounded-lg
+                  w-48 py-1 rounded-lg
                   bg-surface-2 border border-white/[0.08]
                   shadow-lg shadow-black/20
                 ">
+                  {/* Edit */}
                   <button
                     onClick={handleEdit}
                     className="
@@ -232,17 +287,53 @@ const MilestoneCard = ({
                     <Edit2 className="w-3.5 h-3.5" />
                     Edit
                   </button>
-                  <button
-                    onClick={handleDelete}
-                    className="
-                      w-full flex items-center gap-2 px-3 py-2 text-sm text-left
-                      text-error-500 hover:bg-error-500/10
-                      transition-colors
-                    "
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete
-                  </button>
+
+                  {/* ✅ NEW: Status transitions */}
+                  {onStatusChange && availableTransitions.length > 0 ? (
+                    <>
+                      <div className="my-1 border-t border-white/[0.06]" />
+                      <div className="px-3 py-1">
+                        <span className="text-[10px] uppercase tracking-wider text-text-tertiary">
+                          Change Status
+                        </span>
+                      </div>
+                      {availableTransitions.map((transition) => {
+                        const TransIcon = transition.icon;
+                        return (
+                          <button
+                            key={transition.value}
+                            onClick={(e) => handleStatusChange(e, transition.value)}
+                            className={`
+                              w-full flex items-center gap-2 px-3 py-2 text-sm text-left
+                              ${transition.color} hover:bg-surface-3
+                              transition-colors
+                            `}
+                          >
+                            <TransIcon className="w-3.5 h-3.5" />
+                            {transition.label}
+                          </button>
+                        );
+                      })}
+                    </>
+                  ) : null}
+
+                  {/* Delete */}
+                  {onDelete ? (
+                    <>
+                      <div className="my-1 border-t border-white/[0.06]" />
+                      <button
+                        onClick={handleDelete}
+                        className="
+                          w-full flex items-center gap-2 px-3 py-2 text-sm text-left
+                          text-error-500 hover:bg-error-500/10
+                          transition-colors
+                        "
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </>
             )}

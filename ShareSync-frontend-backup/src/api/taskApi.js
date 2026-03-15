@@ -25,11 +25,40 @@ export async function fetchKanbanBoard({ projectId, sprintId } = {}) {
 export async function moveTask(taskId, { status, order, sprintId } = {}) {
   if (!taskId) throw new Error("taskId is required");
   const body = {};
-  if (status) body.status = status;
-  if (typeof order === "number") body.order = order;
+  if (status !== undefined) body.status = status;
+  if (order !== undefined) body.order = order;
   if (sprintId !== undefined) body.sprintId = sprintId;
-  
+
   const response = await client.patch(`/tasks/${taskId}/move`, body);
+  return response.data?.data || response.data;
+}
+
+/**
+ * POST /projects/:projectId/tasks - Create a new task
+ * Supports two call signatures for backwards compatibility:
+ *   createTask(projectId, { title, status, priority, description })
+ *   createTask({ projectId, title, status, priority, description })
+ */
+export async function createTask(projectIdOrOpts, maybeData) {
+  let projectId, title, status, priority, description;
+
+  if (typeof projectIdOrOpts === "string") {
+    // Two-arg form: createTask(projectId, { title, ... })
+    projectId = projectIdOrOpts;
+    ({ title, status = "backlog", priority, description } = maybeData || {});
+  } else {
+    // Single-object form: createTask({ projectId, title, ... })
+    ({ projectId, title, status = "backlog", priority, description } = projectIdOrOpts || {});
+  }
+
+  if (!projectId) throw new Error("projectId is required");
+  if (!title) throw new Error("title is required");
+
+  const body = { title, status };
+  if (priority) body.priority = priority;
+  if (description) body.description = description;
+
+  const response = await client.post(`/projects/${projectId}/tasks`, body);
   return response.data?.data || response.data;
 }
 

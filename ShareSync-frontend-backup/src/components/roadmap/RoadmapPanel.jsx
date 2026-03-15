@@ -7,12 +7,29 @@
 // - Filter + sort client-side
 // - Compute progress from liveTasks (task.milestoneId)
 // - Clicking milestone calls onMilestoneClick(milestoneId, milestone)
+//
+// ✅ ADDED: Edit modal, Delete confirmation, Status change
+// - Uses client.patch/client.delete for API calls
+// - Tries multiple endpoint patterns for resilience
+// - Optimistic UI with rollback on failure
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { Plus, RefreshCw, Map as MapIcon, Filter, ArrowUpDown } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  Map as MapIcon,
+  Filter,
+  ArrowUpDown,
+  X,
+  Loader2,
+  Calendar,
+  Flag,
+  AlertTriangle,
+} from "lucide-react";
 import MilestoneCard from "./MilestoneCard";
 import { getMilestones } from "../../api/milestones";
+import client from "../../api/client";
 
 const STATUS_OPTIONS = [
   { id: "all", label: "All" },
@@ -62,7 +79,7 @@ function isMilestoneCompleted(m) {
 
 function isMilestoneInProgress(m) {
   const s = normalizeStatus(m?.status);
-  return s === "active" || s === "in-progress" || s === "inprogress";
+  return s === "active" || s === "in-progress" || s === "inprogress" || s === "in_progress";
 }
 
 function parseDateMaybe(v) {
@@ -73,7 +90,7 @@ function parseDateMaybe(v) {
 
 function isOverdueMilestone(m) {
   if (isMilestoneCompleted(m)) return false;
-  const due = parseDateMaybe(m?.dueDate);
+  const due = parseDateMaybe(m?.dueDate || m?.targetDate);
   if (!due) return false;
   return due.getTime() < Date.now();
 }
@@ -109,7 +126,7 @@ function applySort(items, sortId) {
   const getValue = (m) => {
     if (field === "createdAt") return parseDateMaybe(m?.createdAt)?.getTime() ?? 0;
     // default: dueDate
-    return parseDateMaybe(m?.dueDate)?.getTime() ?? 0;
+    return parseDateMaybe(m?.dueDate || m?.targetDate)?.getTime() ?? 0;
   };
 
   arr.sort((a, b) => {
@@ -120,6 +137,329 @@ function applySort(items, sortId) {
 
   return arr;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✅ NEW: API helpers for update/delete (tries multiple endpoint patterns)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function updateMilestoneApi(milestoneId, data) {
+  if (!milestoneId) throw new Error("milestoneId is required");
+
+  // Try every reasonable method + URL combination.
+  // NestJS CRUD generators can use PATCH or PUT depending on config.
+  const attempts = [
+    { method: "patch", url: `/milestones/${milestoneId}` },
+    { method: "put",   url: `/milestones/${milestoneId}` },
+    { method: "patch", url: `/milestones/${milestoneId}/update` },
+    { method: "put",   url: `/milestones/${milestoneId}/update` },
+  ];
+
+  for (const { method, url } of attempts) {
+    try {
+      const res = await client[method](url, data);
+      return res.data?.data || res.data;
+    } catch (e) {
+      const status = e?.response?.status;
+      // 404 = route not found, 405 = method not allowed → try next combo
+      if (status === 404 || status === 405) continue;
+      throw e;
+    }
+  }
+
+  throw new Error("Could not update milestone — no working endpoint found. Check backend routes.");
+}
+
+async function deleteMilestoneApi(milestoneId) {
+  if (!milestoneId) throw new Error("milestoneId is required");
+
+  const endpoints = [
+    `/milestones/${milestoneId}`,
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const res = await client.delete(url);
+      return res.data?.data || res.data;
+    } catch (e) {
+      if (e?.response?.status === 404 || e?.response?.status === 405) continue;
+      throw e;
+    }
+  }
+
+  throw new Error("Could not delete milestone — no working endpoint found. Check backend routes.");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✅ NEW: Edit Milestone Modal
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const EDIT_STATUS_OPTIONS = [
+  { value: "planned", label: "Planned" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "at_risk", label: "At Risk" },
+];
+
+function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveError }) {
+  const [title, setTitle] = useState(milestone?.title || milestone?.name || "");
+  const [description, setDescription] = useState(milestone?.description || "");
+  const [targetDate, setTargetDate] = useState(() => {
+    const raw = milestone?.dueDate || milestone?.targetDate;
+    if (!raw) return "";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0];
+  });
+  const [status, setStatus] = useState(() => {
+    const s = normalizeStatus(milestone?.status);
+    // Normalize to backend-friendly values
+    if (s === "in-progress" || s === "inprogress" || s === "active") return "in_progress";
+    if (s === "done" || s === "complete" || s === "completed") return "completed";
+    if (s === "at-risk" || s === "at_risk") return "at_risk";
+    return "planned";
+  });
+
+  const canSave = title.trim().length >= 1 && !saving;
+
+  const handleSubmit = (e) => {
+    e?.preventDefault?.();
+    if (!canSave) return;
+
+    const data = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      targetDate: targetDate || undefined,
+      status,
+    };
+
+    onSave(data);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <button
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label="Close"
+      />
+
+      {/* Modal */}
+      <div className="relative w-[92vw] max-w-[520px] rounded-2xl border border-white/[0.10] bg-surface-1 shadow-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flag className="w-4 h-4 text-brand-300" />
+            <h3 className="text-base font-semibold text-text-primary">
+              Edit Milestone
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-white/[0.06] transition-colors"
+            aria-label="Close modal"
+          >
+            <X className="w-4 h-4 text-text-tertiary" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Title */}
+          <div>
+            <label className="text-xs uppercase tracking-wider text-text-tertiary">
+              Title
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Milestone title..."
+              className="
+                mt-2 w-full px-3 py-2 rounded-xl
+                bg-surface-2 border border-white/[0.10]
+                text-text-secondary
+                focus:outline-none focus:ring-2 focus:ring-brand-500/30
+              "
+              autoFocus
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="text-xs uppercase tracking-wider text-text-tertiary">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe this milestone..."
+              rows={3}
+              className="
+                mt-2 w-full px-3 py-2 rounded-xl resize-none
+                bg-surface-2 border border-white/[0.10]
+                text-text-secondary
+                focus:outline-none focus:ring-2 focus:ring-brand-500/30
+              "
+            />
+          </div>
+
+          {/* Target Date */}
+          <div>
+            <label className="text-xs uppercase tracking-wider text-text-tertiary flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Target date
+            </label>
+            <input
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className="
+                mt-2 w-full px-3 py-2 rounded-xl
+                bg-surface-2 border border-white/[0.10]
+                text-text-secondary
+                focus:outline-none focus:ring-2 focus:ring-brand-500/30
+              "
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="text-xs uppercase tracking-wider text-text-tertiary">
+              Status
+            </label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {EDIT_STATUS_OPTIONS.map((opt) => {
+                const active = status === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setStatus(opt.value)}
+                    className={`
+                      px-3 py-1.5 rounded-xl text-sm transition-all border
+                      ${active
+                        ? "bg-brand-500/10 border-brand-500/25 text-brand-300 ring-1 ring-brand-500/20"
+                        : "bg-surface-2 border-white/[0.08] text-text-secondary hover:bg-surface-3 hover:border-white/[0.12]"
+                      }
+                    `}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Error */}
+          {saveError ? (
+            <div className="p-3 rounded-xl bg-error-500/10 border border-error-500/15 text-sm text-error-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{saveError}</span>
+            </div>
+          ) : null}
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="
+                px-4 py-2 rounded-xl
+                bg-surface-2 border border-white/[0.10]
+                text-text-secondary text-sm
+                hover:bg-surface-1 transition-colors
+              "
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!canSave}
+              className={`
+                inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                text-sm font-medium text-white transition-colors
+                ${canSave ? "bg-brand-500 hover:bg-brand-400" : "bg-white/[0.10] text-white/40"}
+              `}
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✅ NEW: Delete Confirmation Modal
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function DeleteConfirmModal({ milestone, onClose, onConfirm, deleting, error: deleteError }) {
+  const title = milestone?.title || milestone?.name || "this milestone";
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <button
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label="Close"
+      />
+
+      {/* Modal */}
+      <div className="relative w-[92vw] max-w-[400px] rounded-2xl border border-white/[0.10] bg-surface-1 shadow-2xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-error-500/10 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-error-500" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-text-primary">Delete Milestone?</h3>
+          </div>
+        </div>
+
+        <p className="text-sm text-text-secondary mb-6">
+          Are you sure you want to delete <strong className="text-text-primary">"{title}"</strong>? This action cannot be undone.
+        </p>
+
+        {deleteError ? (
+          <div className="p-3 mb-4 rounded-xl bg-error-500/10 border border-error-500/15 text-sm text-error-200">
+            {deleteError}
+          </div>
+        ) : null}
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="
+              flex-1 py-2.5 rounded-xl
+              bg-surface-2 text-text-secondary text-sm
+              hover:bg-surface-3 hover:text-text-primary
+              transition-colors
+            "
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="
+              flex-1 py-2.5 rounded-xl
+              bg-error-500 text-white text-sm font-medium
+              hover:bg-error-600
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors flex items-center justify-center gap-2
+            "
+          >
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function RoadmapPanel({
   projectId,
@@ -143,6 +483,14 @@ export default function RoadmapPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
+
+  // ✅ NEW: edit/delete modal state
+  const [editingMilestone, setEditingMilestone] = useState(null);
+  const [deletingMilestone, setDeletingMilestone] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   const fetchData = useCallback(async () => {
     if (!projectId) return;
@@ -264,6 +612,113 @@ export default function RoadmapPanel({
     [onMilestoneClick]
   );
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: Edit handler
+  // ═══════════════════════════════════════════════════════════════════════════
+  const handleEdit = useCallback((milestoneId, milestone) => {
+    setSaveError("");
+    setEditingMilestone(milestone);
+  }, []);
+
+  const handleEditSave = useCallback(
+    async (data) => {
+      const mid = getMilestoneId(editingMilestone);
+      if (!mid) return;
+
+      setSaving(true);
+      setSaveError("");
+
+      // Optimistic update
+      const prevItems = items;
+      setItems((prev) =>
+        prev.map((m) =>
+          getMilestoneId(m) === mid ? { ...m, ...data, status: data.status || m.status } : m
+        )
+      );
+
+      try {
+        await updateMilestoneApi(mid, data);
+        setEditingMilestone(null);
+        // Refetch to get fresh server state
+        await fetchData();
+      } catch (e) {
+        const msg =
+          Array.isArray(e?.response?.data?.message)
+            ? e.response.data.message.join(" • ")
+            : e?.response?.data?.message || e?.message || "Failed to save";
+        setSaveError(msg);
+        // Rollback
+        setItems(prevItems);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editingMilestone, items, fetchData]
+  );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: Delete handler
+  // ═══════════════════════════════════════════════════════════════════════════
+  const handleDelete = useCallback((milestoneId, milestone) => {
+    setDeleteError("");
+    setDeletingMilestone(milestone);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    const mid = getMilestoneId(deletingMilestone);
+    if (!mid) return;
+
+    setDeleting(true);
+    setDeleteError("");
+
+    // Optimistic removal
+    const prevItems = items;
+    setItems((prev) => prev.filter((m) => getMilestoneId(m) !== mid));
+
+    try {
+      await deleteMilestoneApi(mid);
+      setDeletingMilestone(null);
+      // Dispatch refresh event so AddMilestoneModal/other listeners update too
+      window.dispatchEvent(new CustomEvent("milestones:refresh"));
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message || e?.message || "Failed to delete";
+      setDeleteError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      // Rollback
+      setItems(prevItems);
+    } finally {
+      setDeleting(false);
+    }
+  }, [deletingMilestone, items]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: Status change handler (called from MilestoneCard dropdown)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const handleStatusChange = useCallback(
+    async (milestoneId, newStatus) => {
+      if (!milestoneId || !newStatus) return;
+
+      // Optimistic update
+      const prevItems = items;
+      setItems((prev) =>
+        prev.map((m) =>
+          getMilestoneId(m) === milestoneId ? { ...m, status: newStatus } : m
+        )
+      );
+
+      try {
+        await updateMilestoneApi(milestoneId, { status: newStatus });
+        // Refetch for fresh data
+        await fetchData();
+      } catch (e) {
+        // Rollback silently
+        setItems(prevItems);
+        console.error("[RoadmapPanel] Status change failed:", e?.message);
+      }
+    },
+    [items, fetchData]
+  );
+
   return (
     <section className={`p-10 max-w-[1600px] mx-auto ${className}`}>
       {/* Header */}
@@ -380,7 +835,7 @@ export default function RoadmapPanel({
 
       {!loading && error && (
         <div className="p-8 rounded-2xl bg-error-500/10 border border-error-500/15">
-          <div className="text-error-300 font-medium mb-2">Couldn’t load milestones</div>
+          <div className="text-error-300 font-medium mb-2">Couldn't load milestones</div>
           <div className="text-sm text-text-secondary mb-4">{error}</div>
           <button
             onClick={fetchData}
@@ -423,13 +878,36 @@ export default function RoadmapPanel({
                 onClick={handleCardClick}
                 showActions={true}
                 isSelected={isSelected}
-                onEdit={(mId, mm) => onMilestoneClick?.(mId, mm)}
-                onDelete={undefined}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onStatusChange={handleStatusChange}
               />
             );
           })}
         </div>
       )}
+
+      {/* ✅ NEW: Edit Modal */}
+      {editingMilestone ? (
+        <EditMilestoneModal
+          milestone={editingMilestone}
+          onClose={() => { setEditingMilestone(null); setSaveError(""); }}
+          onSave={handleEditSave}
+          saving={saving}
+          error={saveError}
+        />
+      ) : null}
+
+      {/* ✅ NEW: Delete Confirmation */}
+      {deletingMilestone ? (
+        <DeleteConfirmModal
+          milestone={deletingMilestone}
+          onClose={() => { setDeletingMilestone(null); setDeleteError(""); }}
+          onConfirm={handleConfirmDelete}
+          deleting={deleting}
+          error={deleteError}
+        />
+      ) : null}
     </section>
   );
 }

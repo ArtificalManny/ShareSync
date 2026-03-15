@@ -67,6 +67,7 @@ import { FilesModule } from './files/files.module';
 // ✅ PHASE 6: NEW MODULES
 import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
+import { ThreadMessagesModule } from './thread-messages/thread-messages.module';
 import { InsightsModule } from './insights/insights.module';
 import { VaultModule } from './vault/vault.module';
 
@@ -86,6 +87,7 @@ import { DiscoveryModule } from './discovery/discovery.module';
 
 import { ModerationModule } from './moderation/moderation.module';
 import { ContentReportsModule } from './content-reports/content-reports.module';
+import { SuggestionsModule } from './suggestions/suggestions.module';
 
 @Module({
   imports: [
@@ -211,6 +213,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ✅ PHASE 6: ADD THESE
     MilestonesModule,
     ThreadsModule,
+    ThreadMessagesModule,
     InsightsModule,
     VaultModule,
 
@@ -230,6 +233,9 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ─────────────────────────────────────────────────────────────────────────
     ModerationModule,
     ContentReportsModule,
+
+    // ✅ SPECTATOR ECONOMY
+    SuggestionsModule,
   ],
 
   providers: [

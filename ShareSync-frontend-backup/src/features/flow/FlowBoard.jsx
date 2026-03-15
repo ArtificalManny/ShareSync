@@ -30,7 +30,7 @@ export default function FlowBoard({
   // ✅ SAFE: frontend-only filter
   milestoneIdFilter = null,
 }) {
-  const { board, loading, error, reload, moveTaskOptimistic } = useFlowTasks({
+  const { board, loading, error, reload, moveTaskOptimistic, addTask } = useFlowTasks({
     projectId,
     sprintId,
   });
@@ -120,6 +120,7 @@ export default function FlowBoard({
               status={status}
               tasks={filteredBoard?.[status] || []}
               onMoveTask={moveTaskOptimistic}
+              onAddTask={addTask}
             />
           ))}
         </div>

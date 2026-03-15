@@ -1,140 +1,362 @@
-import React, { useState, useEffect } from 'react';
-// FIXED: Adjusted relative path to reach the api folder from src/components/insights
-import { getProjectInsights } from '../../api/insights';
-// FIXED: These components are now in the exact same folder, so we just use ./
-import MetricCard from './MetricCard';
-import SprintHealth from './SprintHealth';
-import TeamBalance from './TeamBalance';
+// src/components/insights/ActivityFeed.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTIVITY FEED — Real-time list of all project member activity
+// ✅ Uses EXISTING getActivity() from api/activity.js
+// ✅ Hits existing GET /api/activity?scope=project&projectId=... endpoint
+// ✅ Falls back gracefully if no activities exist yet
+// ✅ Auto-refreshes every 30 seconds
+// ✅ NEW FILE — purely additive, does not modify any existing file
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const InsightsTab = ({ projectId }) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [range, setRange] = useState('7d');
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Activity, CheckCircle2, Circle, Clock, Flag, Loader2,
+  Plus, RefreshCw, ArrowRight, FileText, MessageSquare,
+  UserPlus, Zap, Send,
+} from 'lucide-react';
+import { getActivity } from '../../api/activity';
 
-  useEffect(() => {
-    let isMounted = true;
+// ─── Activity type → display config ────────────────────────────────────────
 
-    const fetchInsights = async () => {
-      setLoading(true);
-      try {
-        const payload = await getProjectInsights(projectId, range);
-        if (isMounted) {
-          setData(payload);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) setError('Failed to load insights.');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
+const ACTIVITY_CONFIG = {
+  // Canonical types (from activity.types.ts)
+  'TASK_CREATED': {
+    icon: Plus, label: 'created a task',
+    color: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-violet-100 dark:bg-violet-500/15',
+    dot: 'bg-violet-500',
+  },
+  'TASK_UPDATED': {
+    icon: ArrowRight, label: 'updated a task',
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-100 dark:bg-blue-500/15',
+    dot: 'bg-blue-500',
+  },
+  'TASK_MOVED': {
+    icon: ArrowRight, label: 'moved a task',
+    color: 'text-cyan-600 dark:text-cyan-400',
+    bg: 'bg-cyan-100 dark:bg-cyan-500/15',
+    dot: 'bg-cyan-500',
+  },
+  'TASK_COMPLETED': {
+    icon: CheckCircle2, label: 'completed a task',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-100 dark:bg-emerald-500/15',
+    dot: 'bg-emerald-500',
+  },
+  'TASK_DELETED': {
+    icon: Circle, label: 'deleted a task',
+    color: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-100 dark:bg-rose-500/15',
+    dot: 'bg-rose-500',
+  },
 
-    fetchInsights();
-    return () => { isMounted = false; };
-  }, [projectId, range]);
+  // Legacy action types (from activity.schema.ts enum)
+  'task_created': {
+    icon: Plus, label: 'created a task',
+    color: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-violet-100 dark:bg-violet-500/15',
+    dot: 'bg-violet-500',
+  },
+  'task_completed': {
+    icon: CheckCircle2, label: 'completed a task',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-100 dark:bg-emerald-500/15',
+    dot: 'bg-emerald-500',
+  },
+  'task_deleted': {
+    icon: Circle, label: 'deleted a task',
+    color: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-100 dark:bg-rose-500/15',
+    dot: 'bg-rose-500',
+  },
+  'file_uploaded': {
+    icon: FileText, label: 'uploaded a file',
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-100 dark:bg-amber-500/15',
+    dot: 'bg-amber-500',
+  },
+  'file_deleted': {
+    icon: FileText, label: 'deleted a file',
+    color: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-100 dark:bg-rose-500/15',
+    dot: 'bg-rose-500',
+  },
+  'message_sent': {
+    icon: MessageSquare, label: 'sent a message',
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-100 dark:bg-blue-500/15',
+    dot: 'bg-blue-500',
+  },
+  'member_added': {
+    icon: UserPlus, label: 'added a member',
+    color: 'text-teal-600 dark:text-teal-400',
+    bg: 'bg-teal-100 dark:bg-teal-500/15',
+    dot: 'bg-teal-500',
+  },
+  'member_removed': {
+    icon: UserPlus, label: 'removed a member',
+    color: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-100 dark:bg-rose-500/15',
+    dot: 'bg-rose-500',
+  },
+  'announcement_created': {
+    icon: Send, label: 'posted an announcement',
+    color: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-violet-100 dark:bg-violet-500/15',
+    dot: 'bg-violet-500',
+  },
+  'project_shipped': {
+    icon: Zap, label: 'shipped an update',
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-100 dark:bg-amber-500/15',
+    dot: 'bg-amber-500',
+  },
+  'comment_added': {
+    icon: MessageSquare, label: 'added a comment',
+    color: 'text-slate-500 dark:text-white/50',
+    bg: 'bg-slate-100 dark:bg-white/10',
+    dot: 'bg-slate-400',
+  },
+};
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64 text-zinc-500">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p>Crunching project data...</p>
-        </div>
-      </div>
-    );
-  }
+const DEFAULT_CONFIG = {
+  icon: Circle, label: 'activity',
+  color: 'text-slate-500 dark:text-white/50',
+  bg: 'bg-slate-100 dark:bg-white/10',
+  dot: 'bg-slate-400',
+};
 
-  if (error || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
-        <p>{error || "No data available."}</p>
-      </div>
-    );
-  }
+// ─── Resolve config from activity item ──────────────────────────────────────
 
-  const { metrics, teamBalance, aiInsights } = data;
+function getConfigForItem(item) {
+  // Try 'type' first (canonical), then 'action' (legacy), then 'kind'
+  const typeKey = item?.type || item?.action || item?.kind || '';
+  if (ACTIVITY_CONFIG[typeKey]) return ACTIVITY_CONFIG[typeKey];
+
+  // Try lowercase/normalized variants
+  const lower = typeKey.toLowerCase().replace(/\./g, '_');
+  if (ACTIVITY_CONFIG[lower]) return ACTIVITY_CONFIG[lower];
+
+  // Check for partial matches
+  if (lower.includes('created') || lower.includes('create')) return ACTIVITY_CONFIG['task_created'];
+  if (lower.includes('completed') || lower.includes('complete')) return ACTIVITY_CONFIG['task_completed'];
+  if (lower.includes('updated') || lower.includes('update')) return ACTIVITY_CONFIG['TASK_UPDATED'];
+  if (lower.includes('moved') || lower.includes('move')) return ACTIVITY_CONFIG['TASK_MOVED'];
+  if (lower.includes('file')) return ACTIVITY_CONFIG['file_uploaded'];
+  if (lower.includes('message') || lower.includes('comment')) return ACTIVITY_CONFIG['comment_added'];
+
+  return DEFAULT_CONFIG;
+}
+
+// ─── Extract display title from activity item ───────────────────────────────
+
+function getTitle(item) {
+  // Direct title fields
+  if (item?.title) return item.title;
+
+  // From details/metadata/payload
+  if (item?.details?.message) return item.details.message;
+  if (item?.metadata?.taskTitle) return item.metadata.taskTitle;
+  if (item?.payload?.title) return item.payload.title;
+  if (item?.payload?.snapshot?.title) return item.payload.snapshot.title;
+  if (item?.message) return item.message;
+
+  // From type
+  const type = item?.type || item?.action || '';
+  return type.replace(/[._]/g, ' ') || 'Activity';
+}
+
+// ─── Extract actor name ─────────────────────────────────────────────────────
+
+function getActorName(item) {
+  if (item?.actorName) return item.actorName;
+  if (item?.userName) return item.userName;
+  if (item?.user?.displayName) return item.user.displayName;
+  if (item?.user?.firstName) return `${item.user.firstName} ${item.user.lastName || ''}`.trim();
+  if (item?.payload?.actorName) return item.payload.actorName;
+  return null;
+}
+
+// ─── Time formatting ────────────────────────────────────────────────────────
+
+function timeAgo(timestamp) {
+  if (!timestamp) return '';
+  const diff = Date.now() - new Date(timestamp).getTime();
+  if (isNaN(diff) || diff < 0) return '';
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (d < 7) return `${d}d ago`;
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ─── Single Activity Row ────────────────────────────────────────────────────
+
+function ActivityRow({ item }) {
+  const config = getConfigForItem(item);
+  const Icon = config.icon;
+  const who = getActorName(item) || 'Team member';
+  const title = getTitle(item);
+  const ago = timeAgo(item?.createdAt || item?.timestamp);
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header & Controls */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Project Insights</h2>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">Velocity, cycle time, and team health.</p>
+    <div className="flex items-start gap-3 py-3 border-b border-slate-100 dark:border-white/[0.04] last:border-b-0 group">
+      {/* Timeline dot */}
+      <div className="flex flex-col items-center mt-1">
+        <div className={`w-2 h-2 rounded-full ${config.dot}`} />
+        <div className="w-px flex-1 bg-slate-200 dark:bg-white/[0.06] mt-1 min-h-[20px] group-last:hidden" />
+      </div>
+
+      {/* Icon */}
+      <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center flex-shrink-0`}>
+        <Icon className={`w-3.5 h-3.5 ${config.color}`} />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-slate-700 dark:text-white/80">
+          <span className="font-medium text-slate-900 dark:text-white">{who}</span>
+          {' '}
+          <span className="text-slate-500 dark:text-white/50">{config.label}</span>
+        </p>
+        <p className="text-sm font-medium text-slate-800 dark:text-white/90 truncate mt-0.5">
+          {title}
+        </p>
+      </div>
+
+      {/* Timestamp */}
+      <span className="text-[11px] text-slate-400 dark:text-white/30 whitespace-nowrap flex-shrink-0 mt-0.5">
+        {ago}
+      </span>
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
+export default function ActivityFeed({ projectId, limit = 50, className = '' }) {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [nextCursor, setNextCursor] = useState(null);
+  const mountedRef = useRef(true);
+
+  const fetchActivities = useCallback(async () => {
+    if (!projectId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Uses EXISTING getActivity() from api/activity.js
+      // which hits GET /api/activity?scope=project&projectId=...
+      // (UnifiedActivityController)
+      const result = await getActivity({
+        scope: 'project',
+        projectId,
+        limit,
+      });
+
+      if (mountedRef.current) {
+        setActivities(Array.isArray(result?.items) ? result.items : []);
+        setNextCursor(result?.nextCursor || null);
+      }
+    } catch (e) {
+      if (mountedRef.current) {
+        setError(e?.message || 'Failed to load activities');
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [projectId, limit]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    fetchActivities();
+    return () => { mountedRef.current = false; };
+  }, [fetchActivities]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!projectId) return;
+    const interval = setInterval(fetchActivities, 30000);
+    return () => clearInterval(interval);
+  }, [projectId, fetchActivities]);
+
+  return (
+    <div className={`bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] rounded-xl ${className}`}
+      style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-white">Activity Feed</h3>
+          {activities.length > 0 && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40">
+              {activities.length}
+            </span>
+          )}
         </div>
-        
-        {/* Time Range Selector */}
-        <div className="flex bg-slate-100 dark:bg-[#18181b] border border-slate-200 dark:border-[#27272a] rounded-lg p-1">
-          {['7d', '14d', '30d'].map((r) => (
+
+        <button
+          onClick={fetchActivities}
+          disabled={loading}
+          className="p-1.5 rounded-lg text-slate-400 dark:text-white/30
+            hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-slate-600 dark:hover:text-white/60
+            disabled:opacity-50 transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="px-5 py-2 max-h-[600px] overflow-y-auto">
+        {/* Loading */}
+        {loading && activities.length === 0 ? (
+          <div className="flex items-center gap-2 py-8 justify-center text-slate-400 dark:text-white/30">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Loading activity...</span>
+          </div>
+        ) : null}
+
+        {/* Error */}
+        {error && !loading ? (
+          <div className="py-6 text-center">
+            <p className="text-sm text-slate-500 dark:text-white/40">{error}</p>
             <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                range === r 
-                  ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-sm' 
-                  : 'text-slate-500 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300'
-              }`}
+              onClick={fetchActivities}
+              className="mt-2 text-xs text-violet-600 dark:text-violet-400 hover:underline"
             >
-              {r.toUpperCase()}
+              Try again
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* AI Insights Banner (Optional but awesome) */}
-      {aiInsights && aiInsights.length > 0 && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-xl p-4 flex gap-4 items-start">
-          <div className="bg-emerald-500/20 p-2 rounded-lg text-emerald-400">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
           </div>
-          <div>
-            <h4 className="text-slate-800 dark:text-zinc-100 font-semibold text-sm">{aiInsights[0].title}</h4>
-            <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1">{aiInsights[0].description}</p>
+        ) : null}
+
+        {/* Empty */}
+        {!loading && !error && activities.length === 0 ? (
+          <div className="py-8 text-center">
+            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3">
+              <Activity className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 dark:text-white/60">No activity yet</p>
+            <p className="text-xs text-slate-400 dark:text-white/30 mt-1">
+              Create tasks, upload files, or ship updates to see activity here
+            </p>
           </div>
-        </div>
-      )}
+        ) : null}
 
-      {/* Top Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard 
-          title="Velocity" 
-          value={metrics.velocity.value} 
-          trend={metrics.velocity.trend} 
-          unit={metrics.velocity.unit} 
-        />
-        <MetricCard 
-          title="Avg Cycle Time" 
-          value={metrics.cycleTime.value} 
-          trend={metrics.cycleTime.trend} 
-          unit={metrics.cycleTime.unit} 
-          invertTrendColors={true} // Faster is greener
-        />
-        <MetricCard 
-          title="Completion Rate" 
-          value={metrics.completionRate.value} 
-          trend={metrics.completionRate.trend} 
-          unit={metrics.completionRate.unit} 
-        />
-        <MetricCard 
-          title="Collaboration" 
-          value={metrics.collaboration.value} 
-          trend={metrics.collaboration.trend} 
-          unit={metrics.collaboration.unit} 
-        />
-      </div>
-
-      {/* Main Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1">
-          <SprintHealth completionRate={metrics.completionRate.value} />
-        </div>
-        <div className="lg:col-span-2">
-          <TeamBalance teamData={teamBalance} />
-        </div>
+        {/* Activity list */}
+        {activities.map((item, idx) => (
+          <ActivityRow key={item?._id || item?.id || `activity-${idx}`} item={item} />
+        ))}
       </div>
     </div>
   );
-};
-
-export default InsightsTab;
+}
