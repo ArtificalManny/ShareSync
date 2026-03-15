@@ -29,14 +29,14 @@ import {
       @Body() dto: CreateInviteDto,
       @Req() req: any,
     ) {
-      const actingUserId = req.user?.id || req.user?._id;
+      const actingUserId = req.user?.sub || req.user?.userId || req.user?.id || req.user?._id;
       return this.invites.createInvite(projectId, actingUserId, dto);
     }
   
     /** GET /projects/:id/invites */
     @Get()
     async listInvites(@Param('id') projectId: string, @Req() req: any) {
-      const actingUserId = req.user?.id || req.user?._id;
+      const actingUserId = req.user?.sub || req.user?.userId || req.user?.id || req.user?._id;
       return this.invites.listInvites(projectId, actingUserId);
     }
   
@@ -47,7 +47,7 @@ import {
       @Param('token') token: string,
       @Req() req: any,
     ) {
-      const actingUserId = req.user?.id || req.user?._id;
+      const actingUserId = req.user?.sub || req.user?.userId || req.user?.id || req.user?._id;
       return this.invites.revokeInvite(projectId, token, actingUserId);
     }
   }
@@ -60,9 +60,8 @@ import {
     /** POST /invites/accept  body: { token } */
     @Post('accept')
     async accept(@Body() body: { token: string }, @Req() req: any) {
-      const userId = req.user?.id || req.user?._id;
+      const userId = req.user?.sub || req.user?.userId || req.user?.id || req.user?._id;
       const email = req.user?.email;
       return this.invites.acceptInvite(body?.token, userId, email);
     }
   }
-  

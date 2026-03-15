@@ -3,10 +3,12 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import {
   Project,
@@ -28,26 +30,35 @@ const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 @Injectable()
 export class InvitesService {
+  private readonly logger = new Logger(InvitesService.name);
+
   constructor(
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
     private readonly realtime: RealtimeGateway,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   private static genToken() {
     return randomBytes(24).toString('hex');
   }
 
+  private getId(ref: any): string {
+    if (!ref) return '';
+    if (typeof ref === 'string') return ref;
+    return (ref._id || ref.id || ref)?.toString() || '';
+  }
+
   private assertOwnerOrThrow(project: ProjectDocument, actingUserId: string) {
     const acting = String(actingUserId);
 
     // ownerId is the canonical owner field in your schema
-    if (String(project.ownerId) === acting) return;
+    if (this.getId(project.ownerId) === acting) return;
 
     // You *can* choose to allow ADMINs too; for now, keep strict "owner only"
     const isOwnerMember =
       (project.members || []).some(
-        (m) => String(m.userId) === acting && m.role === MemberRole.OWNER,
+        (m) => this.getId(m.userId) === acting && m.role === MemberRole.OWNER,
       );
 
     if (!isOwnerMember) {
@@ -69,6 +80,7 @@ export class InvitesService {
 
     const now = Date.now();
     const expiresAt = new Date(now + INVITE_TTL_MS);
+    let inviteToken: string | undefined;
 
     // Reuse existing pending invite for this email
     const existing = (project.invites || []).find(
@@ -80,8 +92,10 @@ export class InvitesService {
       existing.invitedBy = new Types.ObjectId(actingUserId);
       existing.createdAt = new Date(now);
       existing.expiresAt = expiresAt;
+      inviteToken = existing.token;
     } else {
       const token = InvitesService.genToken();
+      inviteToken = token;
 
       const invite: ProjectInvite = {
         email: normalizedEmail,
@@ -98,6 +112,18 @@ export class InvitesService {
     }
 
     await project.save();
+
+    // ✅ Emit event so NotificationsService can send invite notification to invitee
+    this.eventEmitter.emit('project.invite.created', {
+      projectId: project.id,
+      projectName: project.name,
+      inviteeEmail: normalizedEmail,
+      inviteToken,
+      role,
+      invitedBy: actingUserId,
+    });
+
+    this.logger.log(`Invite sent to ${normalizedEmail} for project ${project.name} (role: ${role})`);
 
     return {
       projectId: project.id,
@@ -167,8 +193,8 @@ export class InvitesService {
     }
 
     const alreadyMember =
-      String(project.ownerId) === String(userId) ||
-      (project.members || []).some((m) => String(m.userId) === String(userId));
+      this.getId(project.ownerId) === String(userId) ||
+      (project.members || []).some((m) => this.getId(m.userId) === String(userId));
 
     if (!alreadyMember) {
       project.members.push({
@@ -182,9 +208,6 @@ export class InvitesService {
     invite.status = 'accepted';
     invite.acceptedByUserId = new Types.ObjectId(userId);
 
-    // Optional: if you want to keep the email somewhere, store it in invite.email (already exists)
-    // userEmail is unused because your ProjectMember doesn't have email (by design)
-
     await project.save();
 
     this.realtime.emitToProject(project.id, 'project:membersUpdated', {
@@ -192,6 +215,17 @@ export class InvitesService {
       members: project.members,
       invites: project.invites,
     });
+
+    // ✅ Emit event so NotificationsService can notify the project owner
+    this.eventEmitter.emit('project.invite.accepted', {
+      projectId: project.id,
+      projectName: project.name,
+      acceptedBy: userId,
+      role: invite.role,
+      ownerId: this.getId(project.ownerId),
+    });
+
+    this.logger.log(`Invite accepted by user ${userId} for project ${project.name}`);
 
     return {
       projectId: project.id,
