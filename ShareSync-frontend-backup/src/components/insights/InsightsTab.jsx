@@ -15,6 +15,7 @@ import {
   UserPlus, Zap, Send,
 } from 'lucide-react';
 import { getActivity } from '../../api/activity';
+import WeeklyMomentumReport from './WeeklyMomentumReport';
 
 // ─── Activity type → display config ────────────────────────────────────────
 
@@ -292,6 +293,11 @@ export default function ActivityFeed({ projectId, limit = 50, className = '' }) 
     <div className={`bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] rounded-xl ${className}`}
       style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
     >
+      {/* Weekly Momentum Report */}
+      <div className="mb-6">
+        <WeeklyMomentumReport projectId={projectId} embedded={true} />
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/[0.06]">
         <div className="flex items-center gap-2">

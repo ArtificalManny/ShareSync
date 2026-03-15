@@ -792,6 +792,13 @@ export default function ProjectHome() {
     [shipUpdate, flashShip, triggerPulse]
   );
 
+  // ✅ Re-fetch project data when switching views (so Pulse updates after Stack/Flow edits)
+  useEffect(() => {
+    if (activeView && refresh) {
+      refresh();
+    }
+  }, [activeView]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Navigation handlers
   const handleSettings = useCallback(() => {
     navigate(`/projects/${id}/settings`);
