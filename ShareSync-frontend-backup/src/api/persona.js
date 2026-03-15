@@ -18,32 +18,38 @@ function getHeaders() {
 // ── GET /api/users/persona ───────────────────────────────────────────────
 export async function getUserPersona() {
   try {
-  const res = await fetch(`${API}/api/users/persona`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
+    const res = await fetch(`${API}/api/users/persona`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || `Failed to fetch persona (${res.status})`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to fetch persona (${res.status})`);
+    }
+
+    return res.json();
+  } catch {
+    return { persona: 'strategist' };
   }
-
-  return res.json();
 }
 
 // ── PUT /api/users/persona ───────────────────────────────────────────────
 export async function updateUserPersona(persona) {
   try {
-  const res = await fetch(`${API}/api/users/persona`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify({ persona }),
-  });
+    const res = await fetch(`${API}/api/users/persona`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ persona }),
+    });
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || `Failed to update persona (${res.status})`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to update persona (${res.status})`);
+    }
+
+    return res.json();
+  } catch {
+    return { persona };
   }
-
-  return res.json();
 }

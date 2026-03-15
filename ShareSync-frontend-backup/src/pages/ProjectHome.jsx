@@ -38,6 +38,7 @@ import {
   MoreHorizontal,
   Star,
   Share2,
+  UserPlus,
   Settings,
   Rocket,
   Activity,
@@ -93,6 +94,10 @@ import RhythmView from "../components/views/RhythmView";
 import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
+
+// ✅ Invite & Share modals
+import InviteMemberModal from "../components/project/InviteMemberModal";
+import ShareProjectModal from "../components/project/ShareProjectModal";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -163,6 +168,8 @@ function ProjectHeader({
   onShipUpdate,
   onSettings,
   onBackToProjects,
+  onInvite,
+  onShare,
 }) {
   const [isStarred, setIsStarred] = useState(false);
   const momentum = metrics?.momentum || 0;
@@ -288,7 +295,24 @@ function ProjectHeader({
 
           <div className="w-px h-6 bg-slate-200" />
 
-          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all">
+          <button
+            onClick={() => onInvite?.()}
+            className="
+              flex items-center gap-2 px-4 py-2.5 rounded-xl
+              bg-white border border-slate-200 shadow-sm
+              text-slate-700 text-sm
+              hover:bg-slate-50 hover:border-slate-300
+              transition-all duration-200
+            "
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Invite</span>
+          </button>
+
+          <button
+            onClick={() => onShare?.()}
+            className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all"
+          >
             <Share2 className="w-4 h-4" />
           </button>
 
@@ -673,6 +697,8 @@ export default function ProjectHome() {
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
 
   const [showAddMilestone, setShowAddMilestone] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Project data from your existing hook
   const {
@@ -948,6 +974,8 @@ export default function ProjectHome() {
         onShipUpdate={handleShipUpdate}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
+        onInvite={() => setShowInviteModal(true)}
+        onShare={() => setShowShareModal(true)}
       />
 
       {/* View Navigation */}
@@ -967,6 +995,24 @@ export default function ProjectHome() {
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}
+        />
+      )}
+
+      {showInviteModal && (
+        <InviteMemberModal
+          projectId={id}
+          projectName={project?.name}
+          onClose={() => setShowInviteModal(false)}
+          onInviteSent={() => refresh?.()}
+        />
+      )}
+
+      {showShareModal && (
+        <ShareProjectModal
+          project={project}
+          projectId={id}
+          onClose={() => setShowShareModal(false)}
+          onVisibilityChanged={() => refresh?.()}
         />
       )}
 
