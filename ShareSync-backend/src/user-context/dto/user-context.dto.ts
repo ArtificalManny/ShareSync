@@ -23,6 +23,11 @@ export class SaveContextDto {
   @ApiPropertyOptional() @IsMongoId() @IsOptional() currentProjectId?: string;
   @ApiPropertyOptional() @IsMongoId() @IsOptional() currentTaskId?: string;
   @ApiPropertyOptional() @IsMongoId() @IsOptional() currentSprintId?: string;
+
+  @ApiPropertyOptional()
+  @IsMongoId()
+  @IsOptional()
+  lastActiveProjectId?: string;
   @ApiPropertyOptional({ type: WorkspaceStateDto }) @ValidateNested() @Type(() => WorkspaceStateDto) @IsOptional() workspaceState?: WorkspaceStateDto;
   
   // ✅ Added fields to fix the 400 Bad Request validation errors

@@ -134,7 +134,7 @@ export default function PulseWidget({ tasks = [], className = "" }) {
               Pulse
             </h3>
             <p className="text-xs text-slate-400 dark:text-zinc-500">
-              Live counts from {tasks.length} task{tasks.length !== 1 ? "s" : ""}
+              {tasks.length > 0 ? `Live counts from ${tasks.length} task${tasks.length !== 1 ? 's' : ''}` : 'Add tasks in Stack or Flow to see live pulse'}
             </p>
           </div>
         </div>

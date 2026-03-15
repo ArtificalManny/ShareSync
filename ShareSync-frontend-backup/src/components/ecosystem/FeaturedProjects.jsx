@@ -151,7 +151,7 @@ function ProjectCard({ project, onFollow }) {
   );
 }
 
-export default function FeaturedProjects({ maxVisible = 6 }) {
+export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('trending');
@@ -190,7 +190,14 @@ export default function FeaturedProjects({ maxVisible = 6 }) {
     console.log(isFollowing ? 'Following' : 'Unfollowing', projectId);
   };
 
-  const sorted = [...projects].sort((a, b) => {
+  const filtered = searchQuery.trim() ? projects.filter(p => {
+    const q = searchQuery.toLowerCase();
+    const name = (p.name || p.title || '').toLowerCase();
+    const desc = (p.description || '').toLowerCase();
+    const tags = (p.tags || []).join(' ').toLowerCase();
+    return name.includes(q) || desc.includes(q) || tags.includes(q);
+  }) : projects;
+  const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'trending') return (b.shipCount || 0) - (a.shipCount || 0);
     if (sortBy === 'newest') return 0; // preserve API order
     if (sortBy === 'streak') return (b.streak || 0) - (a.streak || 0);

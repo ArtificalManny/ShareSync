@@ -345,7 +345,7 @@ export default function ActivityFeed({ projectId, limit = 50, className = '' }) 
             <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3">
               <Activity className="w-5 h-5 text-violet-500 dark:text-violet-400" />
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-white/60">No activity yet</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-white/60">No activity yet — create tasks, upload files, or ship updates to see activity here</p>
             <p className="text-xs text-slate-400 dark:text-white/30 mt-1">
               Create tasks, upload files, or ship updates to see activity here
             </p>

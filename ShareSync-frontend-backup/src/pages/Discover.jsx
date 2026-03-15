@@ -171,7 +171,7 @@ export default function Discover() {
 
         {/* ── Featured Projects ─────────────────────────────────────── */}
         <div className="mb-10">
-          <FeaturedProjects maxVisible={4} />
+          <FeaturedProjects maxVisible={4} searchQuery={searchQuery} />
         </div>
 
         {/* ── Algorithmic Feed ──────────────────────────────────────── */}

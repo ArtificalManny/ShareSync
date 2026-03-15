@@ -14,7 +14,7 @@ export default function SubscriptionButton() {
 
   const loadSubscription = async () => {
     try {
-      const response = await api.get('/api/subscriptions/current');
+      const response = await api.get('/subscriptions/current');
       setSubscription(response.data);
     } catch (error) {
       console.error('Failed to load subscription:', error);
@@ -24,7 +24,7 @@ export default function SubscriptionButton() {
   const handleUpgrade = async (plan) => {
     setLoading(true);
     try {
-      const response = await api.post('/api/subscriptions/checkout', { plan });
+      const response = await api.post('/subscriptions/checkout', { plan });
       // Redirect to Stripe Checkout URL provided by your backend
       window.location.href = response.data.url;
     } catch (error) {

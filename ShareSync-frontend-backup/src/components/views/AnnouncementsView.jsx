@@ -421,7 +421,10 @@ export default function AnnouncementsView({ projectId }) {
 
             <p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">No announcements yet</p>
 
-            <p className="text-xs text-slate-400 dark:text-white/30">Post your first update to keep everyone in the loop</p>
+            <p className="text-xs text-slate-400 dark:text-white/30 mb-4">Post your first update to keep everyone in the loop</p>
+            <button onClick={() => setShowCreate(true)} className="px-4 py-2 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors flex items-center gap-1.5 mx-auto">
+              <Plus className="w-3.5 h-3.5" /> Post First Announcement
+            </button>
 
           </div>
 

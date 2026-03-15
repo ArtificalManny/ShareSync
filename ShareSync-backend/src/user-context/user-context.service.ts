@@ -115,6 +115,12 @@ export class UserContextService {
         : undefined;
     }
 
+    if (dto.lastActiveProjectId !== undefined) {
+      context.currentProjectId = dto.lastActiveProjectId
+        ? new Types.ObjectId(dto.lastActiveProjectId)
+        : undefined;
+    }
+
     if (dto.workspaceState) {
       context.workspaceState = {
         ...context.workspaceState,

@@ -10,7 +10,7 @@ import client from './client';
  */
 export async function getUserFocusMoves() {
   try {
-    const response = await client.get('/users/me/focus');
+    const response = await client.get('/api/focus/active').catch(() => ({ data: null }));
     return response.data;
   } catch (error) {
     console.error('[Focus API] User moves error:', error);

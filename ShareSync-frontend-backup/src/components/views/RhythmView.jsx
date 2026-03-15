@@ -345,6 +345,23 @@ export default function RhythmView({ projectId }) {
         </div>
       </div>
 
+      {/* Empty state hint */}
+      {!loading && realEvents.length === 0 && (
+        <div className="mt-6 text-center py-10 bg-white dark:bg-[#1f1f23] rounded-2xl border border-dashed border-slate-200 dark:border-white/[0.08]">
+          <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mx-auto mb-4">
+            <Clock className="w-6 h-6 text-violet-500" />
+          </div>
+          <p className="text-sm font-medium text-slate-700 dark:text-white/60 mb-1">No sessions scheduled this week</p>
+          <p className="text-xs text-slate-400 dark:text-white/30 max-w-xs mx-auto mb-4">Click any time slot or use the button above to schedule focus sessions, meetings, or deep work blocks.</p>
+          <button
+            onClick={() => handleAddEventClick(new Date(), 9)}
+            className="px-4 py-2 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Schedule Your First Session
+          </button>
+        </div>
+      )}
+
       {/* ── Session Modal ──────────────────────────────────────────────── */}
       <CreateSessionModal
         isOpen={isModalOpen}

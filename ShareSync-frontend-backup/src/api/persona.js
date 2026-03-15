@@ -17,6 +17,7 @@ function getHeaders() {
 
 // ── GET /api/users/persona ───────────────────────────────────────────────
 export async function getUserPersona() {
+  try {
   const res = await fetch(`${API}/api/users/persona`, {
     method: 'GET',
     headers: getHeaders(),
@@ -32,6 +33,7 @@ export async function getUserPersona() {
 
 // ── PUT /api/users/persona ───────────────────────────────────────────────
 export async function updateUserPersona(persona) {
+  try {
   const res = await fetch(`${API}/api/users/persona`, {
     method: 'PUT',
     headers: getHeaders(),

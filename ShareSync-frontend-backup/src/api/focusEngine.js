@@ -13,7 +13,7 @@ import { rankMoves, getTopMoves } from '../utils/focusRanking';
  */
 export async function getUserFocusMoves(count = 3) {
   try {
-    const response = await client.get('/users/me/focus', {
+    const response = await client.get('/api/focus/active', {
       params: { count },
     });
     return response.data;

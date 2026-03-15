@@ -106,7 +106,7 @@ export class ProjectsService {
   async enablePublic(projectId: string, userId: string): Promise<{ publicToken: string }> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (!this.canManageMembers(project, userId) && (project.ownerId || (project as any).owner)?.toString() !== userId) {
+    if (!this.canManageMembers(project, userId) && this.getId(project.ownerId || (project as any).owner) !== userId) {
       throw new ForbiddenException('You do not have permission to enable public sharing');
     }
 
@@ -118,7 +118,7 @@ export class ProjectsService {
   async disablePublic(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (!this.canManageMembers(project, userId) && (project.ownerId || (project as any).owner)?.toString() !== userId) {
+    if (!this.canManageMembers(project, userId) && this.getId(project.ownerId || (project as any).owner) !== userId) {
       throw new ForbiddenException('You do not have permission to disable public sharing');
     }
 
@@ -128,7 +128,7 @@ export class ProjectsService {
   async regeneratePublicToken(projectId: string, userId: string): Promise<{ publicToken: string }> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (!this.canManageMembers(project, userId) && (project.ownerId || (project as any).owner)?.toString() !== userId) {
+    if (!this.canManageMembers(project, userId) && this.getId(project.ownerId || (project as any).owner) !== userId) {
       throw new ForbiddenException('You do not have permission to regenerate public token');
     }
 
@@ -504,7 +504,7 @@ export class ProjectsService {
   async delete(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if ((project.ownerId || (project as any).owner)?.toString() !== userId) {
+    if (this.getId(project.ownerId || (project as any).owner) !== userId) {
       throw new ForbiddenException('Only the project owner can delete this project');
     }
 
@@ -527,7 +527,7 @@ export class ProjectsService {
     const existingMember = (project.members || []).find((m) => (m.userId || (m as any).user)?.toString() === dto.userId);
     if (existingMember) throw new BadRequestException('User is already a member of this project');
 
-    if ((project.ownerId || (project as any).owner)?.toString() === dto.userId) {
+    if (this.getId(project.ownerId || (project as any).owner) === dto.userId) {
       throw new BadRequestException('Cannot add project owner as a member');
     }
 
@@ -559,7 +559,7 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to remove members');
     }
 
-    if ((project.ownerId || (project as any).owner)?.toString() === memberUserId) {
+    if (this.getId(project.ownerId || (project as any).owner) === memberUserId) {
       throw new BadRequestException('Cannot remove project owner');
     }
 
@@ -583,11 +583,11 @@ export class ProjectsService {
   async updateMemberRole(projectId: string, userId: string, memberUserId: string, dto: UpdateMemberRoleDto): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if ((project.ownerId || (project as any).owner)?.toString() !== userId) {
+    if (this.getId(project.ownerId || (project as any).owner) !== userId) {
       throw new ForbiddenException('Only the project owner can change member roles');
     }
 
-    if ((project.ownerId || (project as any).owner)?.toString() === memberUserId) {
+    if (this.getId(project.ownerId || (project as any).owner) === memberUserId) {
       throw new BadRequestException('Cannot change owner role');
     }
 
@@ -648,7 +648,7 @@ export class ProjectsService {
   async leaveProject(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if ((project.ownerId || (project as any).owner)?.toString() === userId) {
+    if (this.getId(project.ownerId || (project as any).owner) === userId) {
       throw new BadRequestException('Owner cannot leave project. Transfer ownership first.');
     }
 
@@ -718,6 +718,11 @@ export class ProjectsService {
   }
 
   // ✅ SAFELY HANDLES LEGACY "USER" FIELD OR MISSING IDS
+  private getId(ref: any): string {
+    if (!ref) return '';
+    if (typeof ref === 'string') return ref;
+    return (ref._id || ref.id || ref)?.toString() || '';
+  }
   private hasAccess(project: ProjectDocument, userId: string): boolean {
     const ownerRaw = project.ownerId || (project as any).owner;
     const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
