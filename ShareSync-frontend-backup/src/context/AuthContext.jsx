@@ -366,6 +366,18 @@ export function AuthProvider({ children }) {
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // UPDATE USER (for avatar sync, profile edits, etc.)
+  // Merges new fields into current user state + syncs localStorage
+  // ═══════════════════════════════════════════════════════════════════════════
+  const updateUser = (nextFields = {}) => {
+    setUser((prev) => {
+      const merged = { ...(prev || {}), ...nextFields };
+      try { localStorage.setItem("ss.user", JSON.stringify(merged)); } catch {}
+      return merged;
+    });
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // CONTEXT VALUE
   // ═══════════════════════════════════════════════════════════════════════════
   const value = {
@@ -378,6 +390,7 @@ export function AuthProvider({ children }) {
     setAuthError,
 
     // Methods
+    updateUser,
     login,
     register,
     verifyEmail,

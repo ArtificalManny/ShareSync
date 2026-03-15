@@ -13,6 +13,7 @@ import {
 
 import { formatProfilePicture } from "../utils/imageUtils";
 import { useChat } from "../context/ChatContext.jsx";
+import { useAuth } from "../context/AuthContext";
 import UnreadBadge from "./messenger/UnreadBadge.jsx";
 import { toast } from "./ui/toast";
 import UserAvatar from "./ui/UserAvatar";
@@ -104,6 +105,7 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const menuRef = useRef(null);
+  const { updateUser } = useAuth();
 
   const avatarUrl = resolveAvatarUrl(user) || DEFAULT_PIC;
   const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.username || "User";
@@ -124,7 +126,8 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
         const dataUrl = String(reader.result || "");
         try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
         applyUserEverywhere({ avatarUrl: dataUrl });
-        toast({ title: "Photo updated (local)", description: "Backend upload isn't enabled yet — UI will still show your new photo.", variant: "success" });
+        updateUser({ avatarUrl: dataUrl, profilePicture: dataUrl });
+        toast({ title: "Photo updated", variant: "success" });
         setShowMenu(false);
         onUploadComplete?.();
       };

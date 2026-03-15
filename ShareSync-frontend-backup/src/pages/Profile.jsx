@@ -334,6 +334,8 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       localStorage.setItem("ss.user", JSON.stringify(next));
       window.dispatchEvent(new Event("storage"));
     } catch {}
+    // ✅ Update AuthContext state so Navbar, Sidebar, and all components re-render
+    try { updateUser?.(nextFields); } catch {}
   };
 
   const handleUpload = async () => {
