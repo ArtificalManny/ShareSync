@@ -1,9 +1,11 @@
 // src/projects/projects.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECTS SERVICE: Business Logic for Project Management
-// - SAFE PATCH: Replaced ALL project.save() memory mutations with atomic $set/$push
-// - SAFE PATCH: Bypasses legacy Mongoose validation traps for older DB records
-// - SAFE PATCH: Bulletproofed all member lookups against undefined/legacy user IDs
+// - SAFE PATCH: updateMetrics() now merges instead of overwriting metrics object
+// - SAFE PATCH: create() normalizes emoji/icon + ensures settings/goals defaults
+// - SAFE PATCH: create() now handles privacy→visibility, title, category, members
+// - PHASE 3: helper triggers for follower notifications (ship updates / milestones)
+// - PHASE 4: Discovery feed support
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -28,7 +30,9 @@ import {
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
+import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 
+// ✅ Phase 3: follower notifications (optional injection)
 import { NotificationsService } from '../notifications/notifications.service';
 
 export interface ProjectQueryOptions {
@@ -64,12 +68,16 @@ export class ProjectsService {
   constructor(
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
+    @InjectModel(Task.name)
+    private readonly taskModel: Model<TaskDocument>,
     private readonly eventEmitter: EventEmitter2,
+
+    // ✅ Optional so we don't create circular/module boot traps
     @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // COMPATIBILITY METHODS
+  // COMPATIBILITY METHODS (for old ProjectService API)
   // ─────────────────────────────────────────────────────────────────────────────
 
   async findOneForUser(userId: string, projectId: string): Promise<ProjectDocument | null> {
@@ -90,6 +98,10 @@ export class ProjectsService {
     return result.projects;
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DEBUG SUPPORT
+  // ─────────────────────────────────────────────────────────────────────────────
+
   async findAllNoFilter(): Promise<ProjectDocument[]> {
     return this.projectModel.find({}).exec();
   }
@@ -100,40 +112,51 @@ export class ProjectsService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // PUBLIC SHARE
+  // PUBLIC SHARE (minimal implementation so share.controller.ts compiles)
   // ─────────────────────────────────────────────────────────────────────────────
 
   async enablePublic(projectId: string, userId: string): Promise<{ publicToken: string }> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (!this.canManageMembers(project, userId) && this.getId(project.ownerId || (project as any).owner) !== userId) {
+    if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
       throw new ForbiddenException('You do not have permission to enable public sharing');
     }
 
     const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
-    await this.projectModel.findByIdAndUpdate(projectId, { $set: { publicEnabled: true, publicToken } }, { runValidators: false });
+
+    (project as any).publicEnabled = true;
+    (project as any).publicToken = publicToken;
+
+    await project.save();
     return { publicToken };
   }
 
   async disablePublic(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (!this.canManageMembers(project, userId) && this.getId(project.ownerId || (project as any).owner) !== userId) {
+    if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
       throw new ForbiddenException('You do not have permission to disable public sharing');
     }
 
-    await this.projectModel.findByIdAndUpdate(projectId, { $set: { publicEnabled: false, publicToken: null } }, { runValidators: false });
+    (project as any).publicEnabled = false;
+    (project as any).publicToken = null;
+
+    await project.save();
   }
 
   async regeneratePublicToken(projectId: string, userId: string): Promise<{ publicToken: string }> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (!this.canManageMembers(project, userId) && this.getId(project.ownerId || (project as any).owner) !== userId) {
+    if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
       throw new ForbiddenException('You do not have permission to regenerate public token');
     }
 
     const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
-    await this.projectModel.findByIdAndUpdate(projectId, { $set: { publicEnabled: true, publicToken } }, { runValidators: false });
+
+    (project as any).publicEnabled = true;
+    (project as any).publicToken = publicToken;
+
+    await project.save();
     return { publicToken };
   }
 
@@ -165,8 +188,16 @@ export class ProjectsService {
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIELD NORMALIZATION (handles frontend→backend field mapping)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ✅ Normalize emoji/icon safely:
     const emoji = (dto.emoji || dto.icon || '📁').trim();
 
+    // ✅ Normalize visibility from privacy field
+    // Frontend sends: "Private" | "Public" | "Listed"
+    // Backend expects: ProjectVisibility enum
     let visibility: ProjectVisibility = ProjectVisibility.PRIVATE;
     
     if (dto.visibility) {
@@ -182,19 +213,27 @@ export class ProjectsService {
       }
     }
 
+    // ✅ Use title as name fallback (frontend sends both)
     const projectName = dto.name || dto.title || 'Untitled Project';
 
+    // ✅ Handle isPublic flag from frontend
     const isPublic = dto.isPublic === true || 
                      visibility === ProjectVisibility.PUBLIC || 
                      visibility === ProjectVisibility.LISTED;
 
+    // ✅ Merge settings with isPublic/isListed from various sources
     const settings = {
       ...(dto.settings || {}),
       isPublic: dto.settings?.isPublic ?? isPublic,
       isListed: dto.settings?.isListed ?? (visibility === ProjectVisibility.LISTED),
     };
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CREATE PROJECT DOCUMENT
+    // ═══════════════════════════════════════════════════════════════════════════
+
     const project = new this.projectModel({
+      // Core fields from DTO
       name: projectName,
       description: dto.description,
       emoji,
@@ -202,12 +241,20 @@ export class ProjectsService {
       color: dto.color || '#7C3AED',
       visibility,
       tags: dto.tags || [],
+      
+      // Category and status from frontend
       category: dto.category || null,
       status: dto.status ? this.normalizeStatus(dto.status) : ProjectStatus.ACTIVE,
+
+      // Ownership
       ownerId: new Types.ObjectId(userId),
       members: [],
+
+      // Nested objects
       goals: dto.goals || [],
       settings,
+
+      // Ensure full metrics object exists for Pulse / sorting
       metrics: {
         momentum: 0,
         velocity: 0,
@@ -219,25 +266,37 @@ export class ProjectsService {
         momentumTrend: 0,
         activeSprintId: null,
         totalShips: 0,
-        memberCount: 1, 
+        memberCount: 1, // Owner counts as 1
         likes: 0,
         comments: 0,
       },
+
+      // Phase 3: safe default
       followersCount: 0,
+
+      // Phase 4: Discover fields
       streakDays: 0,
       trendingScore: 0,
     });
 
     const saved = await project.save();
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // POST-CREATION: Handle member invites (if provided)
+    // ═══════════════════════════════════════════════════════════════════════════
     if (dto.members && Array.isArray(dto.members) && dto.members.length > 0) {
       this.logger.log(`Processing ${dto.members.length} member invites for project ${saved._id}`);
+      
       this.eventEmitter.emit('project.members.invited', {
         projectId: saved._id,
         invitedBy: userId,
         members: dto.members,
       });
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EMIT EVENTS
+    // ═══════════════════════════════════════════════════════════════════════════
 
     this.eventEmitter.emit('project.created', {
       projectId: saved._id,
@@ -247,37 +306,50 @@ export class ProjectsService {
       isPublic,
     });
 
+    this.logger.log(`Project created: ${saved._id} (visibility: ${visibility})`);
     return saved;
   }
 
+  // ✅ Helper to normalize status string from frontend
+  // Uses string literals that match the enum values for safety
   private normalizeStatus(status: string): ProjectStatus {
     const statusLower = String(status).toLowerCase().replace(/\s+/g, '_');
+    
+    // Map common frontend values to enum
+    // Using explicit enum values to avoid TypeScript errors
     switch (statusLower) {
       case 'active':
       case 'in_progress':
       case 'in progress':
         return ProjectStatus.ACTIVE;
+      
       case 'planning':
+        // If PLANNING exists, use it; otherwise fall back to ACTIVE
         return (ProjectStatus as any).PLANNING || ProjectStatus.ACTIVE;
+      
       case 'on_hold':
       case 'on hold':
       case 'paused':
+        // If ON_HOLD exists, use it; otherwise fall back to ACTIVE
         return (ProjectStatus as any).ON_HOLD || (ProjectStatus as any).PAUSED || ProjectStatus.ACTIVE;
+      
       case 'completed':
       case 'done':
         return ProjectStatus.COMPLETED;
+      
       case 'archived':
         return ProjectStatus.ARCHIVED;
+      
       default:
         return ProjectStatus.ACTIVE;
     }
   }
 
   async findById(projectId: string): Promise<ProjectDocument> {
-    const project = await this.projectModel.findById(projectId)
-      .populate("ownerId", "firstName lastName username email avatarUrl")
-      .populate("members.userId", "firstName lastName username email avatarUrl");
-    if (!project) throw new NotFoundException(`Project ${projectId} not found`);
+    const project = await this.projectModel.findById(projectId);
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
     return project;
   }
 
@@ -293,7 +365,15 @@ export class ProjectsService {
     userId: string,
     options: ProjectQueryOptions = {},
   ): Promise<{ projects: ProjectDocument[]; total: number }> {
-    const { status, search, tags, limit = 50, offset = 0, sortBy = 'metrics.lastActivityAt', sortOrder = 'desc' } = options;
+    const {
+      status,
+      search,
+      tags,
+      limit = 50,
+      offset = 0,
+      sortBy = 'metrics.lastActivityAt',
+      sortOrder = 'desc',
+    } = options;
 
     const query: any = {
       $or: [
@@ -333,7 +413,6 @@ export class ProjectsService {
       .sort({ 'metrics.lastActivityAt': -1 });
   }
 
-  // ✅ ATOMIC DATABASE UPDATE - BYPASSES LEGACY VALIDATION CRASHES
   async update(
     projectId: string,
     userId: string,
@@ -345,51 +424,46 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to edit this project');
     }
 
-    const updateData: any = { $set: {} };
-
-    if (dto.name !== undefined) updateData.$set.name = dto.name;
-    if (dto.description !== undefined) updateData.$set.description = dto.description;
-    
+    // Status timestamps
     if (dto.status) {
-      updateData.$set.status = dto.status;
-      if (dto.status === ProjectStatus.ARCHIVED) updateData.$set.archivedAt = new Date();
-      else if (dto.status === ProjectStatus.COMPLETED) updateData.$set.completedAt = new Date();
+      if (dto.status === ProjectStatus.ARCHIVED) project.archivedAt = new Date();
+      else if (dto.status === ProjectStatus.COMPLETED) project.completedAt = new Date();
     }
 
+    // Merge settings safely (don't overwrite object)
     if ((dto as any).settings) {
-      for (const [key, val] of Object.entries((dto as any).settings)) {
-        updateData.$set[`settings.${key}`] = val;
-      }
+      (project as any).settings = { ...(project as any).settings, ...(dto as any).settings };
+      delete (dto as any).settings;
     }
 
+    // Goals overwrite
     if ((dto as any).goals) {
-      updateData.$set.goals = (dto as any).goals;
+      (project as any).goals = (dto as any).goals;
+      delete (dto as any).goals;
     }
 
+    // Emoji/icon normalization if provided
     if ((dto as any).emoji || (dto as any).icon) {
-      const nextEmoji = ((dto as any).emoji || (dto as any).icon || project.emoji || project.icon || '��').trim();
-      updateData.$set.emoji = nextEmoji;
-      updateData.$set.icon = (dto as any).icon || nextEmoji;
+      const nextEmoji = ((dto as any).emoji || (dto as any).icon || project.emoji || project.icon || '📁').trim();
+      project.emoji = nextEmoji;
+      project.icon = (dto as any).icon || nextEmoji;
+      delete (dto as any).emoji;
+      delete (dto as any).icon;
     }
 
-    // Safety fallback if no changes
-    if (Object.keys(updateData.$set).length === 0) {
-      return project;
-    }
+    Object.assign(project, dto);
+    const updated = await project.save();
 
-    const updated = await this.projectModel.findByIdAndUpdate(
-      projectId,
-      updateData,
-      { new: true, runValidators: false } 
-    );
-
-    if (!updated) throw new NotFoundException('Project not found during update');
-
-    this.eventEmitter.emit('project.updated', { projectId: updated._id, userId, changes: dto });
+    this.eventEmitter.emit('project.updated', {
+      projectId: updated._id,
+      userId,
+      changes: dto,
+    });
 
     return updated;
   }
 
+  // ✅ SAFETY FIX: patch nested metrics fields instead of overwriting whole object
   async updateMetrics(projectId: string, metrics: Partial<Project['metrics']>): Promise<void> {
     const set: Record<string, any> = {};
     for (const [key, value] of Object.entries(metrics || {})) {
@@ -460,10 +534,20 @@ export class ProjectsService {
 
     const projectName = args.projectNameOverride || project.name;
 
-    this.eventEmitter.emit('project.ship.posted', { projectId: args.projectId, projectName, shipTitle: args.shipTitle, triggeredBy: args.userId });
+    this.eventEmitter.emit('project.ship.posted', {
+      projectId: args.projectId,
+      projectName,
+      shipTitle: args.shipTitle,
+      triggeredBy: args.userId,
+    });
 
     if (this.notifications?.notifyFollowersShipUpdate) {
-      await this.notifications.notifyFollowersShipUpdate({ projectId: args.projectId, projectName, shipTitle: args.shipTitle, triggeredBy: args.userId });
+      await this.notifications.notifyFollowersShipUpdate({
+        projectId: args.projectId,
+        projectName,
+        shipTitle: args.shipTitle,
+        triggeredBy: args.userId,
+      });
     }
 
     return { success: true };
@@ -483,15 +567,27 @@ export class ProjectsService {
 
     await this.projectModel.updateOne(
       { _id: new Types.ObjectId(args.projectId) },
-      { $set: { 'metrics.lastActivityAt': new Date() } },
+      {
+        $set: { 'metrics.lastActivityAt': new Date() },
+      },
     );
 
     const projectName = args.projectNameOverride || project.name;
 
-    this.eventEmitter.emit('project.milestone.reached', { projectId: args.projectId, projectName, milestoneName: args.milestoneName, triggeredBy: args.userId });
+    this.eventEmitter.emit('project.milestone.reached', {
+      projectId: args.projectId,
+      projectName,
+      milestoneName: args.milestoneName,
+      triggeredBy: args.userId,
+    });
 
     if (this.notifications?.notifyFollowersMilestoneReached) {
-      await this.notifications.notifyFollowersMilestoneReached({ projectId: args.projectId, projectName, milestoneName: args.milestoneName, triggeredBy: args.userId });
+      await this.notifications.notifyFollowersMilestoneReached({
+        projectId: args.projectId,
+        projectName,
+        milestoneName: args.milestoneName,
+        triggeredBy: args.userId,
+      });
     }
 
     return { success: true };
@@ -504,18 +600,16 @@ export class ProjectsService {
   async delete(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (this.getId(project.ownerId || (project as any).owner) !== userId) {
+    if (project.ownerId.toString() !== userId) {
       throw new ForbiddenException('Only the project owner can delete this project');
     }
 
     await this.projectModel.deleteOne({ _id: project._id });
+
     this.eventEmitter.emit('project.deleted', { projectId: project._id, userId });
+
     this.logger.log(`Project deleted: ${projectId}`);
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MEMBER MANAGEMENT (ATOMIC UPDATES)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   async addMember(projectId: string, userId: string, dto: AddMemberDto): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
@@ -524,70 +618,88 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to add members');
     }
 
-    const existingMember = (project.members || []).find((m) => (m.userId || (m as any).user)?.toString() === dto.userId);
+    const existingMember = project.members.find((m) => m.userId.toString() === dto.userId);
     if (existingMember) throw new BadRequestException('User is already a member of this project');
 
-    if (this.getId(project.ownerId || (project as any).owner) === dto.userId) {
+    if (project.ownerId.toString() === dto.userId) {
       throw new BadRequestException('Cannot add project owner as a member');
     }
 
-    const newMember = {
+    project.members.push({
       userId: new Types.ObjectId(dto.userId),
       role: dto.role || MemberRole.MEMBER,
       joinedAt: new Date(),
       invitedBy: new Types.ObjectId(userId),
-    };
+    } as ProjectMember);
 
-    const updated = await this.projectModel.findByIdAndUpdate(
-      projectId,
-      { 
-        $push: { members: newMember as any },
-        $set: { 'metrics.memberCount': (project.members || []).length + 2 } 
-      },
-      { new: true, runValidators: false }
+    // Update member count
+    await this.projectModel.updateOne(
+      { _id: new Types.ObjectId(projectId) },
+      { $set: { 'metrics.memberCount': project.members.length + 1 } }, // +1 for owner
     );
 
-    this.eventEmitter.emit('project.member.added', { projectId: updated._id, memberId: dto.userId, role: dto.role || MemberRole.MEMBER, addedBy: userId });
+    const updated = await project.save();
+
+    this.eventEmitter.emit('project.member.added', {
+      projectId: updated._id,
+      memberId: dto.userId,
+      role: dto.role || MemberRole.MEMBER,
+      addedBy: userId,
+    });
 
     return updated;
   }
 
-  async removeMember(projectId: string, userId: string, memberUserId: string): Promise<ProjectDocument> {
+  async removeMember(
+    projectId: string,
+    userId: string,
+    memberUserId: string,
+  ): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
     if (!this.canManageMembers(project, userId)) {
       throw new ForbiddenException('You do not have permission to remove members');
     }
 
-    if (this.getId(project.ownerId || (project as any).owner) === memberUserId) {
+    if (project.ownerId.toString() === memberUserId) {
       throw new BadRequestException('Cannot remove project owner');
     }
 
-    const memberIndex = (project.members || []).findIndex((m) => (m.userId || (m as any).user)?.toString() === memberUserId);
+    const memberIndex = project.members.findIndex((m) => m.userId.toString() === memberUserId);
     if (memberIndex === -1) throw new NotFoundException('Member not found in project');
 
-    const updated = await this.projectModel.findByIdAndUpdate(
-      projectId,
-      { 
-        $pull: { members: { $or: [{ userId: new Types.ObjectId(memberUserId) }, { user: new Types.ObjectId(memberUserId) }] } },
-        $set: { 'metrics.memberCount': Math.max(1, (project.members || []).length) }
-      },
-      { new: true, runValidators: false }
+    project.members.splice(memberIndex, 1);
+
+    // Update member count
+    await this.projectModel.updateOne(
+      { _id: new Types.ObjectId(projectId) },
+      { $set: { 'metrics.memberCount': project.members.length + 1 } }, // +1 for owner
     );
 
-    this.eventEmitter.emit('project.member.removed', { projectId: updated._id, memberId: memberUserId, removedBy: userId });
+    const updated = await project.save();
+
+    this.eventEmitter.emit('project.member.removed', {
+      projectId: updated._id,
+      memberId: memberUserId,
+      removedBy: userId,
+    });
 
     return updated;
   }
 
-  async updateMemberRole(projectId: string, userId: string, memberUserId: string, dto: UpdateMemberRoleDto): Promise<ProjectDocument> {
+  async updateMemberRole(
+    projectId: string,
+    userId: string,
+    memberUserId: string,
+    dto: UpdateMemberRoleDto,
+  ): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (this.getId(project.ownerId || (project as any).owner) !== userId) {
+    if (project.ownerId.toString() !== userId) {
       throw new ForbiddenException('Only the project owner can change member roles');
     }
 
-    if (this.getId(project.ownerId || (project as any).owner) === memberUserId) {
+    if (project.ownerId.toString() === memberUserId) {
       throw new BadRequestException('Cannot change owner role');
     }
 
@@ -595,107 +707,141 @@ export class ProjectsService {
       throw new BadRequestException('Cannot assign owner role. Use transfer ownership instead.');
     }
 
-    const memberIndex = (project.members || []).findIndex((m) => (m.userId || (m as any).user)?.toString() === memberUserId);
-    if (memberIndex === -1) throw new NotFoundException('Member not found in project');
+    const member = project.members.find((m) => m.userId.toString() === memberUserId);
+    if (!member) throw new NotFoundException('Member not found in project');
 
-    const updatePath = `members.${memberIndex}.role`;
-
-    return this.projectModel.findByIdAndUpdate(
-      projectId,
-      { $set: { [updatePath]: dto.role } },
-      { new: true, runValidators: false }
-    );
+    member.role = dto.role;
+    return project.save();
   }
 
-  // ✅ ATOMIC DATABASE UPDATE - SAFELY EXTRACTS PREFERENCES & HANDLES THE OWNER EXCEPTION
   async updateMemberPreferences(projectId: string, userId: string, preferences: any): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    const prefsToSave = preferences?.preferences ? preferences.preferences : preferences;
-    const memberIndex = (project.members || []).findIndex((m) => (m.userId || (m as any).user)?.toString() === userId);
-
+    const memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
     if (memberIndex === -1) {
-      const ownerRaw = project.ownerId || (project as any).owner;
-    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
-      if (ownerId === userId) {
-        const newMember = {
-          userId: new Types.ObjectId(userId),
-          role: (MemberRole as any).OWNER || 'owner',
-          joinedAt: new Date(),
-          preferences: prefsToSave
-        };
-        
-        return this.projectModel.findByIdAndUpdate(
-          projectId,
-          { $push: { members: newMember as any } },
-          { new: true, runValidators: false }
-        );
-      }
       throw new BadRequestException('You are not a member of this project');
     }
 
-    const updatePath = `members.${memberIndex}.preferences`;
-    const currentPrefs = project.members[memberIndex].preferences || {};
-    const mergedPrefs = { ...currentPrefs, ...prefsToSave };
+    project.members[memberIndex].preferences = {
+      ...project.members[memberIndex].preferences,
+      ...preferences
+    };
 
-    return this.projectModel.findByIdAndUpdate(
-      projectId,
-      { $set: { [updatePath]: mergedPrefs } },
-      { new: true, runValidators: false }
-    );
+    project.markModified(`members.${memberIndex}.preferences`);
+    return project.save();
   }
 
   async leaveProject(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    if (this.getId(project.ownerId || (project as any).owner) === userId) {
+    if (project.ownerId.toString() === userId) {
       throw new BadRequestException('Owner cannot leave project. Transfer ownership first.');
     }
 
-    const memberIndex = (project.members || []).findIndex((m) => (m.userId || (m as any).user)?.toString() === userId);
+    const memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
     if (memberIndex === -1) {
       throw new BadRequestException('You are not a member of this project');
     }
 
-    await this.projectModel.findByIdAndUpdate(
-      projectId,
-      { $pull: { members: { $or: [{ userId: new Types.ObjectId(userId) }, { user: new Types.ObjectId(userId) }] } } },
-      { runValidators: false }
-    );
+    project.members.splice(memberIndex, 1);
+    await project.save();
 
     this.eventEmitter.emit('project.member.left', { projectId: project._id, userId });
   }
 
   async getPulseData(projectId: string, userId: string): Promise<PulseData> {
     const project = await this.findByIdWithAccess(projectId, userId);
+    const storedMetrics = (project as any).metrics || {};
+    const pid = new Types.ObjectId(projectId);
 
-    const metrics = (project as any).metrics || {
-      momentum: 0,
-      velocity: 0,
-      weeklyShips: 0,
-      momentumTrend: 0,
-      totalTasks: 0,
-      completedTasks: 0,
-    };
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LIVE TASK QUERIES — compute real-time stats instead of relying on counters
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Calculate date boundaries
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday
+    weekStart.setHours(0, 0, 0, 0);
+
+    // Run all counts in parallel for performance
+    const [
+      totalTasks,
+      completedTasks,
+      completedToday,
+      completedThisWeek,
+      inProgress,
+      blocked,
+    ] = await Promise.all([
+      this.taskModel.countDocuments({ projectId: pid }),
+      this.taskModel.countDocuments({ projectId: pid, status: 'done' }),
+      this.taskModel.countDocuments({
+        projectId: pid,
+        status: 'done',
+        completedAt: { $gte: todayStart },
+      }),
+      this.taskModel.countDocuments({
+        projectId: pid,
+        status: 'done',
+        completedAt: { $gte: weekStart },
+      }),
+      this.taskModel.countDocuments({
+        projectId: pid,
+        status: 'in_progress',
+      }),
+      this.taskModel.countDocuments({
+        projectId: pid,
+        isBlocking: true,
+        status: { $ne: 'done' },
+      }),
+    ]);
+
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    // Use live weeklyShips from task query; fall back to stored counter
+    const weeklyShips = completedThisWeek > 0
+      ? completedThisWeek
+      : (storedMetrics.weeklyShips || 0);
 
     return {
       project,
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // metrics sub-object (existing shape — nothing downstream breaks)
+      // ═══════════════════════════════════════════════════════════════════════
       metrics: {
-        momentum: metrics.momentum || 0,
-        velocity: metrics.velocity || 0,
-        weeklyShips: metrics.weeklyShips || 0,
-        momentumTrend: metrics.momentumTrend || 0,
-        completionRate:
-          (metrics.totalTasks || 0) > 0
-            ? Math.round(((metrics.completedTasks || 0) / (metrics.totalTasks || 0)) * 100)
-            : 0,
+        momentum: storedMetrics.momentum || 0,
+        velocity: storedMetrics.velocity || 0,
+        weeklyShips,
+        momentumTrend: storedMetrics.momentumTrend || 0,
+        completionRate,
       },
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // NEW flat fields — frontend Pulse widget + Weekly Report can read these
+      // directly without digging into metrics sub-object
+      // ═══════════════════════════════════════════════════════════════════════
+      completedToday,
+      completedThisWeek,
+      inProgress,
+      blocked,
+      totalTasks,
+      completedTasks,
+
       criticalMoves: [],
       objectives: [],
       sprint: null,
       activity: [],
-    };
+    } as any;
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STUB: Template & Featured (referenced by controller, not yet fully implemented)
+  // ─────────────────────────────────────────────────────────────────────────────
 
   async createFromTemplate(userId: string, templateType: string): Promise<{ project: ProjectDocument; taskCount: number }> {
     this.logger.warn(`createFromTemplate called but not yet implemented. templateType=${templateType}`);
@@ -717,32 +863,23 @@ export class ProjectsService {
       .exec();
   }
 
-  // ✅ SAFELY HANDLES LEGACY "USER" FIELD OR MISSING IDS
-  private getId(ref: any): string {
-    if (!ref) return '';
-    if (typeof ref === 'string') return ref;
-    return (ref._id || ref.id || ref)?.toString() || '';
-  }
-  private hasAccess(project: ProjectDocument, userId: string): boolean {
-    const ownerRaw = project.ownerId || (project as any).owner;
-    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
+ private hasAccess(project: ProjectDocument, userId: string): boolean {
+    const ownerId = (project.ownerId || (project as any).owner)?.toString();
     if (ownerId === userId) return true;
-    return (project.members || []).some((m) => (m.userId || (m as any).user)?.toString() === userId);
+    return project.members.some((m) => m.userId.toString() === userId);
   }
 
   private canEdit(project: ProjectDocument, userId: string): boolean {
-    const ownerRaw = project.ownerId || (project as any).owner;
-    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
+    const ownerId = (project.ownerId || (project as any).owner)?.toString();
     if (ownerId === userId) return true;
-    const member = (project.members || []).find((m) => (m.userId || (m as any).user)?.toString() === userId);
+    const member = project.members.find((m) => m.userId.toString() === userId);
     return member?.role === MemberRole.ADMIN;
   }
 
-  private canManageMembers(project: ProjectDocument, userId: string): boolean {
-    const ownerRaw = project.ownerId || (project as any).owner;
-    const ownerId = (ownerRaw?._id || ownerRaw)?.toString();
+ private canManageMembers(project: ProjectDocument, userId: string): boolean {
+    const ownerId = (project.ownerId || (project as any).owner)?.toString();
     if (ownerId === userId) return true;
-    const member = (project.members || []).find((m) => (m.userId || (m as any).user)?.toString() === userId);
+    const member = project.members.find((m) => m.userId.toString() === userId);
     return member?.role === MemberRole.ADMIN;
   }
 }

@@ -6,6 +6,8 @@
 // ⭐ FIX: RoadmapView now receives projectId for API integration
 // ⭐ ADD: Force-refresh view content on realtime task updates (pulseRefreshKey)
 // ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
+// ⭐ ADD: PulseWidget now also receives pulseData from API for pre-computed counts
+// ⭐ ADD: MembersDropdown in header + InviteMemberModal integration
 // ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
 // ⭐ THEME: Updated to Gallery Walk Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -24,6 +26,10 @@ import {
 
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 
+// ✅ NEW: Members dropdown + Invite modal
+import MembersDropdown from "../components/project/MembersDropdown";
+import InviteMemberModal from "../components/project/InviteMemberModal";
+
 // Icons
 import {
   Gauge,
@@ -38,7 +44,6 @@ import {
   MoreHorizontal,
   Star,
   Share2,
-  UserPlus,
   Settings,
   Rocket,
   Activity,
@@ -94,10 +99,6 @@ import RhythmView from "../components/views/RhythmView";
 import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
-
-// ✅ Invite & Share modals
-import InviteMemberModal from "../components/project/InviteMemberModal";
-import ShareProjectModal from "../components/project/ShareProjectModal";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -159,6 +160,7 @@ function ErrorState({ error, onRetry }) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HEADER (Simplified, clean)
+// ✅ NOW: Accepts project + onInvite for MembersDropdown
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ProjectHeader({
@@ -169,7 +171,6 @@ function ProjectHeader({
   onSettings,
   onBackToProjects,
   onInvite,
-  onShare,
 }) {
   const [isStarred, setIsStarred] = useState(false);
   const momentum = metrics?.momentum || 0;
@@ -293,26 +294,12 @@ function ProjectHeader({
             <span>Activity</span>
           </button>
 
+          {/* ✅ NEW: Members dropdown with invite integration */}
+          <MembersDropdown project={project} onInvite={onInvite} />
+
           <div className="w-px h-6 bg-slate-200" />
 
-          <button
-            onClick={() => onInvite?.()}
-            className="
-              flex items-center gap-2 px-4 py-2.5 rounded-xl
-              bg-white border border-slate-200 shadow-sm
-              text-slate-700 text-sm
-              hover:bg-slate-50 hover:border-slate-300
-              transition-all duration-200
-            "
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Invite</span>
-          </button>
-
-          <button
-            onClick={() => onShare?.()}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all"
-          >
+          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all">
             <Share2 className="w-4 h-4" />
           </button>
 
@@ -329,28 +316,17 @@ function ProjectHeader({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW NAVIGATION — ⭐ FIXED: dropdown uses fixed positioning to escape
-// the sticky nav's stacking context. All menu items preserved exactly.
+// VIEW NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   const [showMore, setShowMore] = useState(false);
-  const moreRef = React.useRef(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
-  const visibleViews = views.slice(0, 9);
+  const visibleViews = views.slice(0, 6);
   const moreViews = views.slice(6);
 
-  const handleToggleMore = () => {
-    if (!showMore && moreRef.current) {
-      const rect = moreRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.bottom + 8, left: Math.max(8, rect.right - 208) });
-    }
-    setShowMore((prev) => !prev);
-  };
-
   return (
-    <nav className="px-10 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+    <nav className="px-10 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
       <div className="flex items-center gap-1 -mb-px">
         {visibleViews.map((view) => {
           const Icon = view.icon;
@@ -382,10 +358,9 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
         })}
 
         {moreViews.length > 0 && (
-          <>
+          <div className="relative">
             <button
-              ref={moreRef}
-              onClick={handleToggleMore}
+              onClick={() => setShowMore(!showMore)}
               className="flex items-center gap-1.5 px-4 py-4 text-sm text-slate-500 hover:text-slate-800 transition-colors"
             >
               <MoreHorizontal className="w-4 h-4" />
@@ -393,15 +368,8 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
 
             {showMore && (
               <>
-                <div
-                  className="fixed inset-0"
-                  style={{ zIndex: 9998 }}
-                  onClick={() => setShowMore(false)}
-                />
-                <div
-                  className="fixed w-52 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
-                  style={{ zIndex: 9999, top: menuPos.top, left: menuPos.left }}
-                >
+                <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
+                <div className="absolute top-full right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden">
                   {moreViews.map((view) => {
                     const Icon = view.icon;
                     return (
@@ -426,7 +394,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                 </div>
               </>
             )}
-          </>
+          </div>
         )}
 
         <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-slate-500 hover:text-violet-600 transition-colors ml-1">
@@ -583,6 +551,7 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PULSE VIEW - Main Overview Dashboard
+// ✅ FIX: Now receives and passes pulseData to PulseWidget
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function PulseView({
@@ -595,12 +564,13 @@ function PulseView({
   onObjectiveClick,
   onSprintAction,
   tasks = [],
+  pulseData = null,
 }) {
   return (
     <div className="p-10 max-w-[1600px] mx-auto">
-      {/* Row 0: Pulse mini widget */}
+      {/* Row 0: Pulse mini widget — now receives pulseData for live API counts */}
       <div className="mb-8">
-        <PulseWidget tasks={tasks} />
+        <PulseWidget tasks={tasks} pulseData={pulseData} />
       </div>
 
       {/* Row 1: Momentum + Priority Stack */}
@@ -683,6 +653,9 @@ export default function ProjectHome() {
   const [activeView, setActiveView] = useState("pulse");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
 
+  // ✅ NEW: Invite modal state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
   // Presence
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
@@ -697,10 +670,9 @@ export default function ProjectHome() {
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
 
   const [showAddMilestone, setShowAddMilestone] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
 
   // Project data from your existing hook
+  // ✅ FIX: Now also destructuring pulseData for PulseWidget
   const {
     project,
     metrics,
@@ -721,6 +693,7 @@ export default function ProjectHome() {
     events,
     threads,
     files,
+    pulseData,
   } = useProjectOverview(id);
 
   // Render heartbeat log (helps debug silent black screens)
@@ -792,12 +765,10 @@ export default function ProjectHome() {
     [shipUpdate, flashShip, triggerPulse]
   );
 
-  // ✅ Re-fetch project data when switching views (so Pulse updates after Stack/Flow edits)
-  useEffect(() => {
-    if (activeView && refresh) {
-      refresh();
-    }
-  }, [activeView]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ✅ NEW: Invite handler — opens InviteMemberModal
+  const handleInvite = useCallback(() => {
+    setShowInviteModal(true);
+  }, []);
 
   // Navigation handlers
   const handleSettings = useCallback(() => {
@@ -889,6 +860,7 @@ export default function ProjectHome() {
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
               tasks={liveTasks}
+              pulseData={pulseData}
             />
           );
 
@@ -973,7 +945,7 @@ export default function ProjectHome() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header — now includes MembersDropdown + invite callback */}
       <ProjectHeader
         project={project}
         metrics={metrics}
@@ -981,8 +953,7 @@ export default function ProjectHome() {
         onShipUpdate={handleShipUpdate}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
-        onInvite={() => setShowInviteModal(true)}
-        onShare={() => setShowShareModal(true)}
+        onInvite={handleInvite}
       />
 
       {/* View Navigation */}
@@ -998,31 +969,25 @@ export default function ProjectHome() {
       <QuickActionsManager />
       <KeyboardShortcuts />
 
-       {showAddMilestone && (
+      {showAddMilestone && (
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}
         />
       )}
 
+      {/* ✅ NEW: Invite Member Modal — triggered from MembersDropdown */}
       {showInviteModal && (
         <InviteMemberModal
           projectId={id}
           projectName={project?.name}
           onClose={() => setShowInviteModal(false)}
-          onInviteSent={() => refresh?.()}
+          onInviteSent={() => {
+            refresh();
+            toast({ title: 'Team updated', variant: 'success' });
+          }}
         />
       )}
-
-      {showShareModal && (
-        <ShareProjectModal
-          project={project}
-          projectId={id}
-          onClose={() => setShowShareModal(false)}
-          onVisibilityChanged={() => refresh?.()}
-        />
-      )}
-
     </div>
   );
 }

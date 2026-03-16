@@ -1,16 +1,18 @@
 // src/hooks/useProjectOverview.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // Hook: Main Data Hook for ProjectHome
-// ⭐ UPGRADE: Item 9 - Inject AuthContext to compute Spectator/Member roles
+// ──────────────────────────────────────────────────────────────────────────────
+// NOTE: This hook now provides "compat layer" fields used by ProjectHome.jsx:
+// - metrics, activity, shipUpdate, isHealthy, hasWarnings, tasks/milestones/etc.
+// This avoids backend quagmires by keeping everything frontend-only.
+// ✅ FIX: Now exposes pulseData with live counts from the pulse API
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { getProjectPulse } from "../api/projectOverview";
-import { apiRequest } from "../utils/api";
-import { useAuth } from "../context/AuthContext";
+import { apiRequest } from "../utils/api"; // ✅ ADDED: Direct API access
 
 export function useProjectOverview(projectId, options = {}) {
-  const { user } = useAuth();
   const {
     autoRefresh = true,
     refreshInterval = 30000,
@@ -28,14 +30,17 @@ export function useProjectOverview(projectId, options = {}) {
 
     try {
       setError(null);
+      // Try pulse endpoint first for rich data
       const res = await apiRequest(`/projects/${projectId}/pulse`);
       const payload = res?.data ?? res;
       setData(payload);
     } catch (err) {
+      // Pulse failed — fall back to basic project endpoint
       console.warn("[useProjectOverview] Pulse failed, falling back to basic project data:", err?.message);
       try {
         const fallback = await apiRequest(`/projects/${projectId}`);
         const fallbackPayload = fallback?.data ?? fallback;
+        // Wrap in the shape the rest of the hook expects
         setData({ project: fallbackPayload, tasks: fallbackPayload?.tasks || [], activity: [], milestones: [], events: [], threads: [], files: [] });
       } catch (fallbackErr) {
         setError(fallbackErr?.message || "Failed to load project");
@@ -51,6 +56,7 @@ export function useProjectOverview(projectId, options = {}) {
       const pulseData = await getProjectPulse(projectId);
       setPulse(pulseData);
     } catch (err) {
+      // Keep pulse errors non-fatal
       console.warn("[useProjectOverview] Pulse fetch error:", err?.message || err);
     }
   }, [projectId, includePulse]);
@@ -62,10 +68,13 @@ export function useProjectOverview(projectId, options = {}) {
 
   useEffect(() => {
     if (!autoRefresh || !projectId) return;
+
     const overviewInterval = setInterval(fetchOverview, refreshInterval);
+
     if (includePulse) {
       pulseIntervalRef.current = setInterval(fetchPulse, 10000);
     }
+
     return () => {
       clearInterval(overviewInterval);
       if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
@@ -78,50 +87,39 @@ export function useProjectOverview(projectId, options = {}) {
   }, [fetchOverview, fetchPulse, includePulse]);
 
   // ───────────────────────────────────────────────────────────────────────────
-  // ROLE DETECTION (Item 9)
-  // ───────────────────────────────────────────────────────────────────────────
-  const { isMember, isFollowing, isSpectator } = useMemo(() => {
-    const project = data?.project;
-    if (!user || !project) return { isMember: false, isFollowing: false, isSpectator: true };
-
-    const userId = user.id || user._id;
-    const isOwner = project.ownerId === userId || project.owner?._id === userId;
-    
-    const isProjectMember = isOwner || project.members?.some(m => {
-      const mid = m?.userId?._id || m?.userId || m?._id || m;
-      return mid === userId;
-    });
-
-    const isProjectFollower = project.followers?.some(f => {
-      const fid = f?.userId?._id || f?.userId || f?._id || f;
-      return fid === userId;
-    });
-
-    return {
-      isMember: isProjectMember,
-      isFollowing: isProjectFollower,
-      isSpectator: !isProjectMember,
-    };
-  }, [data?.project, user]);
-
-  // ───────────────────────────────────────────────────────────────────────────
   // Compatibility layer for ProjectHome.jsx
   // ───────────────────────────────────────────────────────────────────────────
+
+  // ProjectHome expects metrics.momentum (0-100), metrics.weeklyShips, metrics.momentumTrend, etc.
   const metrics = useMemo(() => {
     const momentumPct =
-      typeof data?.metrics?.momentum === "number" ? data.metrics.momentum :
-      typeof data?.momentum?.percentage === "number" ? data.momentum.percentage :
-      typeof data?.momentum === "number" ? data.momentum : 0;
+      typeof data?.metrics?.momentum === "number"
+        ? data.metrics.momentum
+        : typeof data?.momentum?.percentage === "number"
+        ? data.momentum.percentage
+        : typeof data?.momentum === "number"
+        ? data.momentum
+        : 0;
 
     const weeklyShips =
-      typeof data?.metrics?.weeklyShips === "number" ? data.metrics.weeklyShips :
-      typeof data?.heartbeat?.shipsPerWeek === "number" ? data.heartbeat.shipsPerWeek : 0;
+      typeof data?.metrics?.weeklyShips === "number"
+        ? data.metrics.weeklyShips
+        : typeof data?.heartbeat?.shipsPerWeek === "number"
+        ? data.heartbeat.shipsPerWeek
+        : 0;
 
     const momentumTrend =
-      typeof data?.metrics?.momentumTrend === "number" ? data.metrics.momentumTrend :
-      typeof data?.momentum?.trend === "number" ? data.momentum.trend : 0;
+      typeof data?.metrics?.momentumTrend === "number"
+        ? data.metrics.momentumTrend
+        : typeof data?.momentum?.trend === "number"
+        ? data.momentum.trend
+        : 0;
 
-    const completionForecast = typeof data?.metrics?.completionForecast === "number" ? data.metrics.completionForecast : 0;
+    // Optional extras used by some cards
+    const completionForecast =
+      typeof data?.metrics?.completionForecast === "number"
+        ? data.metrics.completionForecast
+        : 0;
 
     return {
       momentum: momentumPct,
@@ -134,28 +132,53 @@ export function useProjectOverview(projectId, options = {}) {
     };
   }, [data]);
 
-  const activity = useMemo(() => data?.activity || data?.recentActivity || [], [data]);
+  // ═════════════════════════════════════════════════════════════════════════════
+  // FIX: Expose pre-computed pulse counts from the API response
+  // The pulse endpoint returns: { completedToday, completedThisWeek, inProgress, blocked, totalTasks, completedTasks }
+  // PulseWidget can use these directly instead of computing from an empty tasks array
+  // ═════════════════════════════════════════════════════════════════════════════
+  const pulseData = useMemo(() => ({
+    completedToday: typeof data?.completedToday === 'number' ? data.completedToday : undefined,
+    completedThisWeek: typeof data?.completedThisWeek === 'number' ? data.completedThisWeek : undefined,
+    inProgress: typeof data?.inProgress === 'number' ? data.inProgress : undefined,
+    blocked: typeof data?.blocked === 'number' ? data.blocked : undefined,
+    totalTasks: typeof data?.totalTasks === 'number' ? data.totalTasks : undefined,
+    completedTasks: typeof data?.completedTasks === 'number' ? data.completedTasks : undefined,
+  }), [data]);
+
+  // ProjectHome expects "activity" array
+  const activity = useMemo(() => {
+    return data?.activity || data?.recentActivity || [];
+  }, [data]);
+
+  // ProjectHome expects these fields (even if empty)
   const tasks = useMemo(() => data?.tasks || [], [data]);
   const milestones = useMemo(() => data?.milestones || [], [data]);
   const events = useMemo(() => data?.events || [], [data]);
   const threads = useMemo(() => data?.threads || [], [data]);
   const files = useMemo(() => data?.files || [], [data]);
 
+  // Health flags expected by ProjectHome (non-breaking defaults)
   const isHealthy = Boolean(data?.isHealthy ?? true);
   const hasWarnings = Boolean(data?.hasWarnings ?? false);
 
+  // ProjectHome calls shipUpdate({description})
+  // We keep this frontend-safe: if backend not wired, it still resolves.
   const shipUpdate = useCallback(async (_payload) => {
+    // Intentionally no-op to avoid backend quagmire.
+    // If/when you wire a real endpoint, implement it in api/projectOverview.js and call it here.
     return true;
   }, []);
 
   return {
+    // Raw
     data,
     pulse,
     loading,
     error,
     refresh,
 
-    // Project Data
+    // Primary (ProjectHome.jsx expects these)
     project: data?.project,
     metrics,
     criticalMoves: data?.criticalMoves || [],
@@ -165,20 +188,22 @@ export function useProjectOverview(projectId, options = {}) {
     pinnedAnnouncement: data?.pinnedAnnouncement || null,
     activity,
 
-    // Access Flags
-    isMember,
-    isFollowing,
-    isSpectator,
+    // ✅ NEW: Pre-computed pulse counts for PulseWidget
+    pulseData,
 
+    // Extended (optional)
     tasks,
     milestones,
     events,
     threads,
     files,
 
+    // Actions / flags
     shipUpdate,
     isHealthy,
     hasWarnings,
+
+    // Pulse convenience
     isLive: pulse?.liveActivity,
     activeUsers: pulse?.activeUsers,
     lastShipAt: pulse?.lastShipAt,

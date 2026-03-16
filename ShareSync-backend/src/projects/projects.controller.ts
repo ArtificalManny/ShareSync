@@ -30,7 +30,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService, ProjectQueryOptions } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -188,7 +188,10 @@ export class ProjectsController {
     };
   }
 
+  // ✅ FIX: SkipThrottle — Pulse is polled by multiple components + auto-refresh
+  // Authenticated + read-only + project-scoped = no abuse risk
   @Get(':id/pulse')
+  @SkipThrottle()
   @ApiOperation({ summary: 'Get project Pulse dashboard data' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async getPulse(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {

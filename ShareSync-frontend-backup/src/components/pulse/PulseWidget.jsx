@@ -4,6 +4,7 @@
 // Uses tasks only to compute 3 live counts:
 // 🔥 Today shipped, ⚡ In motion, ⛔ Blocked
 // Updates instantly because parent passes liveTasks (patched by taskUpdated socket)
+// ✅ FIX: Also accepts pulseData prop with pre-computed counts from API
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useMemo } from "react";
@@ -81,10 +82,29 @@ function StatPill({ icon: Icon, iconBg, iconColor, label, value, accent }) {
   );
 }
 
-export default function PulseWidget({ tasks = [], className = "" }) {
+export default function PulseWidget({ tasks = [], pulseData = null, className = "" }) {
   const now = new Date();
 
   const counts = useMemo(() => {
+    // ═════════════════════════════════════════════════════════════════════════
+    // FIX: If pre-computed pulse data is available from the API, use it
+    // directly instead of computing from an empty tasks array.
+    // The pulse API returns: { completedToday, inProgress, blocked, ... }
+    // ═════════════════════════════════════════════════════════════════════════
+    if (
+      pulseData &&
+      (typeof pulseData.completedToday === 'number' ||
+       typeof pulseData.inProgress === 'number' ||
+       typeof pulseData.blocked === 'number')
+    ) {
+      return {
+        todayShipped: pulseData.completedToday || 0,
+        inMotion: pulseData.inProgress || 0,
+        blocked: pulseData.blocked || 0,
+      };
+    }
+
+    // Fallback: compute from tasks array (original behavior)
     const list = Array.isArray(tasks) ? tasks : [];
 
     let todayShipped = 0;
@@ -104,7 +124,10 @@ export default function PulseWidget({ tasks = [], className = "" }) {
     }
 
     return { todayShipped, inMotion, blocked };
-  }, [tasks]);
+  }, [tasks, pulseData]);
+
+  // Total task count: prefer pulseData if available
+  const totalTaskCount = pulseData?.totalTasks || (Array.isArray(tasks) ? tasks.length : 0);
 
   // Determine pulse state for ambient accent
   const pulseState = counts.blocked > 0
@@ -134,7 +157,7 @@ export default function PulseWidget({ tasks = [], className = "" }) {
               Pulse
             </h3>
             <p className="text-xs text-slate-400 dark:text-zinc-500">
-              {tasks.length > 0 ? `Live counts from ${tasks.length} task${tasks.length !== 1 ? 's' : ''}` : 'Add tasks in Stack or Flow to see live pulse'}
+              {totalTaskCount > 0 ? `Live counts from ${totalTaskCount} task${totalTaskCount !== 1 ? 's' : ''}` : 'Add tasks in Stack or Flow to see live pulse'}
             </p>
           </div>
         </div>

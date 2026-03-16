@@ -184,15 +184,26 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
       const overview = overviewRes.status === 'fulfilled' ? overviewRes.value : {};
       const pulse = pulseRes.status === 'fulfilled' ? pulseRes.value : {};
 
-      const momentum = pulse?.momentum || overview?.velocity || 0;
-      const streak = gam?.streak?.current || gam?.streakDays || gam?.currentStreak || 0;
+      // ═════════════════════════════════════════════════════════════════════
+      // FIX: getPulseData() returns { metrics: { weeklyShips, momentum, ... } }
+      // We must read from pulse.metrics sub-object, NOT pulse directly.
+      // Full fallback chain so this works with both current and enhanced backend.
+      // ═════════════════════════════════════════════════════════════════════
+      const pMetrics = pulse?.metrics || {};
+
+      const momentum = pMetrics.momentum || pulse?.momentum || overview?.velocity || 0;
+      const streak = gam?.streak?.current || gam?.streak?.currentStreak || gam?.streakDays || gam?.currentStreak || 0;
       const weeklyXP = gam?.weeklyXP || 0;
       const totalXP = gam?.totalXP || 0;
       const level = gam?.level || 1;
-      const tasksCompleted = overview?.completedTasks || pulse?.completedToday || 0;
-      const totalTasks = overview?.totalTasks || 0;
-      const completionRate = overview?.completionRate || (totalTasks > 0 ? Math.round((tasksCompleted / totalTasks) * 100) : 0);
-      const weeklyShips = pulse?.weeklyShips || 0;
+
+      // FIX: Read tasks from pulse flat fields (enhanced backend) → pulse.metrics → overview
+      const totalTasks = pulse?.totalTasks || overview?.totalTasks || pMetrics.totalTasks || 0;
+      const tasksCompleted = pulse?.completedTasks || overview?.completedTasks || pMetrics.completedTasks || 0;
+      const completionRate = pMetrics.completionRate || overview?.completionRate || (totalTasks > 0 ? Math.round((tasksCompleted / totalTasks) * 100) : 0);
+
+      // FIX: weeklyShips lives inside pulse.metrics, not pulse directly
+      const weeklyShips = pMetrics.weeklyShips || pulse?.completedThisWeek || pulse?.weeklyShips || 0;
 
       const todayIndex = (new Date().getDay() + 6) % 7;
       const dailyCounts = Array(7).fill(0);
@@ -210,7 +221,8 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
         tasksCompleted, totalTasks, completionRate, weeklyShips, dailyCounts,
         verdict: getMomentumVerdict(momentum),
         weekRange: getWeekRange(),
-        trends: { momentum: pulse?.momentumTrend || 0, ships: 0, xp: 0 },
+        // FIX: momentumTrend also lives in pMetrics
+        trends: { momentum: pMetrics.momentumTrend || pulse?.momentumTrend || 0, ships: 0, xp: 0 },
       });
     } catch (err) {
       console.error('[WeeklyMomentumReport] fetch error:', err);
