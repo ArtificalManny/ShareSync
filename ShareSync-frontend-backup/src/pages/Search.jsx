@@ -2,8 +2,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 1: Discover + Search — One source of truth for public listings
 //
-// - Projects results now come from /api/discovery?q=... (frontend-safe)
-// - Other types remain mocked until a unified /api/search endpoint exists
+// ✅ Phase 2: Now uses real search across all existing backend endpoints:
+//   - GET /discovery?q=...     → public/listed projects
+//   - GET /projects?search=... → user's own projects
+//   - GET /users/search?q=...  → users by name/username
+//   - GET /tasks?search=...    → tasks across user's projects
+//
+// All calls run in parallel via Promise.allSettled for resilience.
+// No dedicated /api/search backend endpoint needed.
 //
 // Phase 2: Moderation Gate (optional)
 // - If VITE_MODERATION_GATE_V1 === "true": filter out non-approved projects defensively
@@ -28,8 +34,8 @@ import {
 import EmptySearch from "../components/empty-states/EmptySearch";
 import { useMomentumContext } from "../contexts/MomentumContext";
 
-// ✅ Phase 1: Projects search uses Discovery endpoint (public-listed source of truth)
-import { searchPublicListedProjects } from "../api/search";
+// ✅ Phase 2: Unified search across all existing endpoints
+import { searchAll } from "../api/search";
 
 // ──────────────────────────────────────────────────────────────
 // Phase 2 Moderation Gate (frontend-safe)
@@ -38,7 +44,7 @@ const MODERATION_GATE_V1 = String(import.meta?.env?.VITE_MODERATION_GATE_V1 || "
 
 function isModerationApproved(item) {
   if (!MODERATION_GATE_V1) return true;
-  const s = String(item?.moderationStatus || "approved").toLowerCase();
+  const s = String(item?.moderationStatus || item?.raw?.moderationStatus || "approved").toLowerCase();
   return s === "approved";
 }
 
@@ -50,59 +56,11 @@ const RESULT_TYPES = {
   task: { icon: CheckSquare, color: "text-cyan-400", bg: "bg-cyan-500/10", label: "Task" },
   message: { icon: MessageSquare, color: "text-success-400", bg: "bg-success-500/10", label: "Message" },
   person: { icon: Users, color: "text-warning-400", bg: "bg-warning-500/10", label: "Person" },
+  user: { icon: Users, color: "text-warning-400", bg: "bg-warning-500/10", label: "Person" },
   document: { icon: FileText, color: "text-energy-400", bg: "bg-energy-500/10", label: "Document" },
+  post: { icon: MessageSquare, color: "text-success-400", bg: "bg-success-500/10", label: "Post" },
+  file: { icon: FileText, color: "text-energy-400", bg: "bg-energy-500/10", label: "File" },
 };
-
-/* ─────────────────────────────────────────────────────────────────────────
-   MOCK SEARCH RESULTS (non-project types for now)
-───────────────────────────────────────────────────────────────────────── */
-const mockNonProjectSearch = async (query) => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 250));
-
-  if (!query || query.length < 2) return [];
-
-  const allResults = [
-    { id: "t1", type: "task", title: "Fix login bug", description: "In ShareSync v2", url: "/projects/1/tasks/1" },
-    { id: "t2", type: "task", title: "Write documentation", description: "API Integration docs", url: "/projects/2/tasks/1" },
-    { id: "m1", type: "message", title: "Great work on the momentum engine!", description: "From Sarah Chen", url: "/messages/1" },
-    { id: "p1", type: "person", title: "Sarah Chen", description: "Product Designer", url: "/team/sarah" },
-    { id: "p2", type: "person", title: "Alex Rivera", description: "Backend Engineer", url: "/team/alex" },
-    { id: "d1", type: "document", title: "Project Roadmap", description: "Q1 Planning", url: "/docs/roadmap" },
-  ];
-
-  const lower = query.toLowerCase();
-  return allResults.filter(
-    (r) => r.title.toLowerCase().includes(lower) || r.description.toLowerCase().includes(lower)
-  );
-};
-
-/* ─────────────────────────────────────────────────────────────────────────
-   NORMALIZE: Discovery Project -> Search result shape
-───────────────────────────────────────────────────────────────────────── */
-function projectToResult(p) {
-  if (!p || typeof p !== "object") return null;
-
-  // ✅ Phase 2 moderation gate (defensive)
-  if (!isModerationApproved(p)) return null;
-
-  const id = p._id || p.id || p.projectId;
-  if (!id) return null;
-
-  const title = p.name || p.title || "Untitled Project";
-  const description =
-    p.description ||
-    (Array.isArray(p.tags) && p.tags.length ? `Tags: ${p.tags.join(", ")}` : "Public project");
-
-  return {
-    id: String(id),
-    type: "project",
-    title,
-    description,
-    url: `/projects/${id}`,
-    raw: p,
-  };
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
    SEARCH RESULT ITEM
@@ -147,9 +105,8 @@ const SearchFilters = ({ activeFilter, onFilterChange, resultCounts }) => {
     { key: "all", label: "All" },
     { key: "project", label: "Projects", icon: FolderKanban },
     { key: "task", label: "Tasks", icon: CheckSquare },
-    { key: "message", label: "Messages", icon: MessageSquare },
     { key: "person", label: "People", icon: Users },
-    { key: "document", label: "Docs", icon: FileText },
+    { key: "file", label: "Files", icon: FileText },
   ];
 
   return (
@@ -199,7 +156,7 @@ const SearchFilters = ({ activeFilter, onFilterChange, resultCounts }) => {
 const TRENDING_ITEMS = [
   { name: "ShareSync", icon: FolderKanban },
   { name: "Tasks", icon: CheckSquare },
-  { name: "Team", icon: MessageSquare },
+  { name: "Team", icon: Users },
   { name: "Docs", icon: FileText },
 ];
 
@@ -256,7 +213,9 @@ export default function Search() {
     else setSearchParams({});
   }, [query, setSearchParams]);
 
-  // Perform search when query changes
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PERFORM SEARCH — calls real endpoints in parallel via searchAll()
+  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     let alive = true;
 
@@ -271,19 +230,21 @@ export default function Search() {
       setLoading(true);
 
       try {
-        // Phase 1: Projects come from /discovery?q=...
-        const discoveredProjects = await searchPublicListedProjects(q);
-        const projectResults = (discoveredProjects || [])
-          .map(projectToResult)
-          .filter(Boolean);
-
-        // Other types still mocked (safe)
-        const otherResults = await mockNonProjectSearch(q);
+        // ✅ Phase 2: Real unified search across all existing endpoints
+        const allResults = await searchAll({
+          q,
+          types: ['project', 'task', 'person'],
+          limit: 25,
+        });
 
         if (!alive) return;
 
-        const merged = [...projectResults, ...otherResults];
-        setResults(merged);
+        // Apply moderation gate if enabled
+        const filtered = MODERATION_GATE_V1
+          ? allResults.filter(isModerationApproved)
+          : allResults;
+
+        setResults(filtered);
         setSelectedIndex(0);
       } catch (error) {
         if (!alive) return;
@@ -305,13 +266,19 @@ export default function Search() {
   // Filter results
   const filteredResults = useMemo(() => {
     if (activeFilter === "all") return results;
+    // Map "person" filter to match both "person" and "user" types
+    if (activeFilter === "person") {
+      return results.filter((r) => r.type === "person" || r.type === "user");
+    }
     return results.filter((r) => r.type === activeFilter);
   }, [results, activeFilter]);
 
   // Count results by type
   const resultCounts = useMemo(() => {
     return results.reduce((acc, r) => {
-      acc[r.type] = (acc[r.type] || 0) + 1;
+      // Normalize "user" type to "person" for counting
+      const type = r.type === 'user' ? 'person' : r.type;
+      acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
   }, [results]);
@@ -375,7 +342,7 @@ export default function Search() {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search projects, tasks, messages, people..."
+            placeholder="Search projects, tasks, people..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className={`

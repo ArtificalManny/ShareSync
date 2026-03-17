@@ -6,8 +6,6 @@
 // ⭐ FIX: RoadmapView now receives projectId for API integration
 // ⭐ ADD: Force-refresh view content on realtime task updates (pulseRefreshKey)
 // ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
-// ⭐ ADD: PulseWidget now also receives pulseData from API for pre-computed counts
-// ⭐ ADD: MembersDropdown in header + InviteMemberModal integration
 // ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
 // ⭐ THEME: Updated to Gallery Walk Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -25,10 +23,6 @@ import {
 } from "../components/project/pulse/card";
 
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
-
-// ✅ NEW: Members dropdown + Invite modal
-import MembersDropdown from "../components/project/MembersDropdown";
-import InviteMemberModal from "../components/project/InviteMemberModal";
 
 // Icons
 import {
@@ -160,7 +154,6 @@ function ErrorState({ error, onRetry }) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HEADER (Simplified, clean)
-// ✅ NOW: Accepts project + onInvite for MembersDropdown
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ProjectHeader({
@@ -170,7 +163,6 @@ function ProjectHeader({
   onShipUpdate,
   onSettings,
   onBackToProjects,
-  onInvite,
 }) {
   const [isStarred, setIsStarred] = useState(false);
   const momentum = metrics?.momentum || 0;
@@ -294,9 +286,6 @@ function ProjectHeader({
             <span>Activity</span>
           </button>
 
-          {/* ✅ NEW: Members dropdown with invite integration */}
-          <MembersDropdown project={project} onInvite={onInvite} />
-
           <div className="w-px h-6 bg-slate-200" />
 
           <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all">
@@ -410,13 +399,28 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
+  // ⭐ FIX ITEM 5: MetaLab Principle - Empty states should guide, not dead-end.
+  if (momentum === 0 && weeklyShips === 0) {
+    return (
+      <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none h-full flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+        <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-3">
+          <Zap className="w-6 h-6 text-violet-500 dark:text-violet-400" />
+        </div>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100 mb-1">Ignite Momentum</h3>
+        <p className="text-xs text-slate-500 dark:text-zinc-400 px-4">
+          Ship your first update or complete a task to get the momentum engine spinning.
+        </p>
+      </section>
+    );
+  }
+
   const pct = Math.min(100, momentum);
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
+    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none h-full">
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
@@ -470,7 +474,7 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
 function PriorityStack({ moves }) {
   const items = Array.isArray(moves) ? moves : [];
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
+    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none h-full">
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center">
@@ -551,7 +555,6 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PULSE VIEW - Main Overview Dashboard
-// ✅ FIX: Now receives and passes pulseData to PulseWidget
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function PulseView({
@@ -564,26 +567,29 @@ function PulseView({
   onObjectiveClick,
   onSprintAction,
   tasks = [],
-  pulseData = null,
 }) {
   return (
     <div className="p-10 max-w-[1600px] mx-auto">
-      {/* Row 0: Pulse mini widget — now receives pulseData for live API counts */}
+      {/* Row 0: Pulse mini widget */}
       <div className="mb-8">
-        <PulseWidget tasks={tasks} pulseData={pulseData} />
+        <PulseWidget tasks={tasks} />
       </div>
 
       {/* Row 1: Momentum + Priority Stack */}
       <div className="grid grid-cols-12 gap-8 mb-8">
-        <div className="col-span-4">
-          <MomentumCard
-            momentum={metrics?.momentum || 0}
-            weeklyShips={metrics?.weeklyShips || 0}
-            trend={metrics?.momentumTrend}
-          />
+        <div className="col-span-4 flex">
+          <div className="w-full">
+            <MomentumCard
+              momentum={metrics?.momentum || 0}
+              weeklyShips={metrics?.weeklyShips || 0}
+              trend={metrics?.momentumTrend}
+            />
+          </div>
         </div>
-        <div className="col-span-8">
-          <PriorityStack moves={criticalMoves} />
+        <div className="col-span-8 flex">
+          <div className="w-full">
+            <PriorityStack moves={criticalMoves} />
+          </div>
         </div>
       </div>
 
@@ -653,9 +659,6 @@ export default function ProjectHome() {
   const [activeView, setActiveView] = useState("pulse");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
 
-  // ✅ NEW: Invite modal state
-  const [showInviteModal, setShowInviteModal] = useState(false);
-
   // Presence
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
@@ -672,7 +675,6 @@ export default function ProjectHome() {
   const [showAddMilestone, setShowAddMilestone] = useState(false);
 
   // Project data from your existing hook
-  // ✅ FIX: Now also destructuring pulseData for PulseWidget
   const {
     project,
     metrics,
@@ -693,7 +695,6 @@ export default function ProjectHome() {
     events,
     threads,
     files,
-    pulseData,
   } = useProjectOverview(id);
 
   // Render heartbeat log (helps debug silent black screens)
@@ -764,11 +765,6 @@ export default function ProjectHome() {
     },
     [shipUpdate, flashShip, triggerPulse]
   );
-
-  // ✅ NEW: Invite handler — opens InviteMemberModal
-  const handleInvite = useCallback(() => {
-    setShowInviteModal(true);
-  }, []);
 
   // Navigation handlers
   const handleSettings = useCallback(() => {
@@ -860,7 +856,6 @@ export default function ProjectHome() {
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
               tasks={liveTasks}
-              pulseData={pulseData}
             />
           );
 
@@ -945,7 +940,7 @@ export default function ProjectHome() {
         </div>
       )}
 
-      {/* Header — now includes MembersDropdown + invite callback */}
+      {/* Header */}
       <ProjectHeader
         project={project}
         metrics={metrics}
@@ -953,7 +948,6 @@ export default function ProjectHome() {
         onShipUpdate={handleShipUpdate}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
-        onInvite={handleInvite}
       />
 
       {/* View Navigation */}
@@ -969,25 +963,13 @@ export default function ProjectHome() {
       <QuickActionsManager />
       <KeyboardShortcuts />
 
-      {showAddMilestone && (
+       {showAddMilestone && (
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}
         />
       )}
 
-      {/* ✅ NEW: Invite Member Modal — triggered from MembersDropdown */}
-      {showInviteModal && (
-        <InviteMemberModal
-          projectId={id}
-          projectName={project?.name}
-          onClose={() => setShowInviteModal(false)}
-          onInviteSent={() => {
-            refresh();
-            toast({ title: 'Team updated', variant: 'success' });
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -143,24 +143,24 @@ const Avatar = ({ user, size = 'md', showOnline = false }) => {
   
   return (
     <div className="relative">
-      {user.avatar ? (
+      {user?.avatar ? (
         <img 
           src={user.avatar} 
-          alt={user.name}
+          alt={user.name || 'User'}
           className={`${sizes[size]} rounded-full object-cover`}
         />
       ) : (
         <div className={`
           ${sizes[size]} rounded-full 
-          ${getColorFromName(user.name)}
+          ${getColorFromName(user?.name)}
           flex items-center justify-center font-medium
         `}>
-          {getInitials(user.name)}
+          {getInitials(user?.name)}
         </div>
       )}
       
       {/* Online indicator */}
-      {showOnline && user.isOnline && (
+      {showOnline && user?.isOnline && (
         <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-surface-0" />
       )}
     </div>
@@ -171,6 +171,7 @@ const Avatar = ({ user, size = 'md', showOnline = false }) => {
 // TIME AGO FORMATTER
 // ═══════════════════════════════════════════════════════════════════════════════
 const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return 'just now';
   const now = new Date();
   const time = new Date(timestamp);
   const diff = now - time;
@@ -234,23 +235,27 @@ export default function ActivityFeedItem({
   className = '',
 }) {
   const [hasReacted, setHasReacted] = useState(false);
-  const [reactionCount, setReactionCount] = useState(activity.reactions || 0);
+  const [reactionCount, setReactionCount] = useState(activity?.reactions || 0);
   
-  const config = ACTIVITY_CONFIGS[activity.type] || ACTIVITY_CONFIGS.ship;
+  // ✅ WORLD CLASS FIX: Added highly defensive destructuring fallbacks so the app never crashes
+  const type = activity?.type || 'ship';
+  const config = ACTIVITY_CONFIGS[type] || ACTIVITY_CONFIGS.ship;
   const Icon = config.icon;
+  
+  const user = activity?.user || { name: 'Someone' };
+  const target = activity?.target || 'a milestone';
+  const value = activity?.value || '';
   
   // Handle reaction
   const handleReact = (e) => {
     e.stopPropagation();
     setHasReacted(!hasReacted);
     setReactionCount(prev => hasReacted ? prev - 1 : prev + 1);
-    if (onReact) onReact(activity.id, !hasReacted);
+    if (onReact) onReact(activity?.id, !hasReacted);
   };
   
   // Generate activity message
   const getMessage = () => {
-    const { user, type, target, value } = activity;
-    
     switch (type) {
       case 'ship':
         return <><strong>{user.name}</strong> {config.verb} <strong>{target}</strong></>;
@@ -281,7 +286,7 @@ export default function ActivityFeedItem({
         <span className="text-text-secondary">{getMessage()}</span>
         {showTimestamp && (
           <span className="text-text-tertiary text-xs">
-            {formatTimeAgo(activity.timestamp)}
+            {formatTimeAgo(activity?.timestamp || activity?.createdAt)}
           </span>
         )}
       </div>
@@ -302,7 +307,7 @@ export default function ActivityFeedItem({
         `}
         onClick={onClick}
       >
-        {showAvatar && <Avatar user={activity.user} size="sm" showOnline />}
+        {showAvatar && <Avatar user={user} size="sm" showOnline />}
         
         <div className="flex-1 min-w-0">
           <p className="text-xs text-text-secondary truncate">
@@ -337,14 +342,14 @@ export default function ActivityFeedItem({
         </div>
         
         <div className="relative flex items-start gap-3">
-          {showAvatar && <Avatar user={activity.user} size="lg" showOnline />}
+          {showAvatar && <Avatar user={user} size="lg" showOnline />}
           
           <div className="flex-1 min-w-0">
             <p className="text-sm text-text-primary mb-1">
               {getMessage()} {config.emoji}
             </p>
             
-            {activity.description && (
+            {activity?.description && (
               <p className="text-xs text-text-secondary mb-2">
                 {activity.description}
               </p>
@@ -353,7 +358,7 @@ export default function ActivityFeedItem({
             <div className="flex items-center gap-3">
               {showTimestamp && (
                 <span className="text-[10px] text-text-tertiary">
-                  {formatTimeAgo(activity.timestamp)}
+                  {formatTimeAgo(activity?.timestamp || activity?.createdAt)}
                 </span>
               )}
               
@@ -368,8 +373,8 @@ export default function ActivityFeedItem({
                   {onComment && (
                     <ReactionButton 
                       icon={MessageSquare}
-                      count={activity.comments || 0}
-                      onClick={(e) => { e.stopPropagation(); onComment(activity.id); }}
+                      count={activity?.comments || 0}
+                      onClick={(e) => { e.stopPropagation(); onComment(activity?.id); }}
                     />
                   )}
                 </div>
@@ -396,7 +401,7 @@ export default function ActivityFeedItem({
       onClick={onClick}
     >
       {/* Avatar */}
-      {showAvatar && <Avatar user={activity.user} size="md" showOnline />}
+      {showAvatar && <Avatar user={user} size="md" showOnline />}
       
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -416,7 +421,7 @@ export default function ActivityFeedItem({
         </div>
         
         {/* Description if any */}
-        {activity.description && (
+        {activity?.description && (
           <p className="text-xs text-text-tertiary mt-1 line-clamp-2">
             {activity.description}
           </p>
@@ -426,7 +431,7 @@ export default function ActivityFeedItem({
         <div className="flex items-center justify-between mt-2">
           {showTimestamp && (
             <span className="text-[10px] text-text-tertiary">
-              {formatTimeAgo(activity.timestamp)}
+              {formatTimeAgo(activity?.timestamp || activity?.createdAt)}
             </span>
           )}
           

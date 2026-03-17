@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { fetchProjects, fetchActivities, fetchActivitySummary } from "../api/home";
+import client from "../api/client";
 
 /**
  * Convert projects -> Home "missions" shape
@@ -45,24 +46,69 @@ function toMissions(projects) {
  * Activities:
  * We support multiple shapes.
  * Normalize minimal fields.
+ * ✅ WORLD-CLASS FIX: Acts as a strict Data Adapter so the UI never breaks.
  */
 function normalizeActivities(items) {
   return (Array.isArray(items) ? items : [])
     .map((a) => {
-      const type = a?.type || a?.action || a?.event || "ACTIVITY";
+      let rawType = a?.type || a?.action || a?.event || "ACTIVITY";
+      let type = String(rawType).toLowerCase();
+
+      // Normalize backend types to perfectly match ACTIVITY_CONFIGS in ActivityFeedItem
+      if (type.includes('task_completed') || type.includes('task_complete')) type = 'task_complete';
+      if (type.includes('task_started') || type.includes('focus')) type = 'focus';
+      if (type.includes('project_ship') || type === 'ship') type = 'ship';
+      if (type.includes('streak')) type = 'streak';
+
       const createdAt = a?.createdAt || a?.timestamp || a?.time || Date.now();
+
+      // 1. Resolve User Object (Required by ActivityFeedItem)
       const actorName =
         a?.actor?.name ||
+        a?.actor?.displayName ||
         a?.user?.name ||
+        a?.user?.displayName ||
         a?.username ||
         a?.actorName ||
-        "Someone";
+        "A teammate";
+
+      const avatar = 
+        a?.actor?.avatar || 
+        a?.user?.avatar || 
+        a?.user?.profilePicture || 
+        a?.avatar || 
+        null;
+
+      // 2. Resolve Project Name
       const projectName =
         a?.project?.name ||
         a?.projectName ||
         a?.project?.title ||
+        a?.metadata?.projectName ||
         a?.meta?.projectName ||
+        a?.raw?.projectName ||
         null;
+
+      // 3. Resolve Target (Task Name, Milestone Name) - This fixes the missing task name!
+      const target =
+        a?.target ||
+        a?.taskTitle ||
+        a?.metadata?.taskTitle ||
+        a?.metadata?.taskName ||
+        a?.meta?.taskTitle ||
+        a?.raw?.taskTitle ||
+        a?.raw?.title ||
+        projectName ||
+        "a mission";
+
+      // 4. Resolve Value (For streaks, level ups)
+      const value = 
+        a?.value || 
+        a?.metadata?.value || 
+        a?.meta?.value || 
+        a?.raw?.value || 
+        a?.raw?.xp || 
+        "";
 
       const createdMs =
         typeof createdAt === "number" ? createdAt : new Date(createdAt).getTime();
@@ -79,6 +125,14 @@ function normalizeActivities(items) {
         createdAt: createdMs,
         actorName,
         projectName,
+        target, // Plumbed through!
+        value,  // Plumbed through!
+        user: { // Perfectly shaped for ActivityFeedItem!
+          name: actorName,
+          avatar: avatar,
+          isOnline: false,
+        },
+        description: a?.description || a?.metadata?.description || null,
         raw: a,
       };
     })
@@ -91,7 +145,7 @@ function minutesSince(ts) {
 }
 
 /**
- * Derive lightweight metrics if /user/activity-summary isn’t available.
+ * Derive lightweight metrics if /user/activity-summary isn't available.
  */
 function computeSummaryFromActivities(activities) {
   const now = Date.now();
@@ -99,9 +153,10 @@ function computeSummaryFromActivities(activities) {
     (a) => now - a.createdAt <= 7 * 24 * 60 * 60 * 1000
   );
 
-  const ships = last7d.filter((a) =>
-    String(a.type).toLowerCase().includes("ship")
-  ).length;
+  const ships = last7d.filter((a) => {
+    const t = String(a.type).toLowerCase();
+    return t.includes("ship") || t.includes("completed");
+  }).length;
 
   // Streak estimate: number of distinct calendar days with activity (max 30)
   const days = new Set(
@@ -140,7 +195,7 @@ function computeSummaryFromActivities(activities) {
 
 function computeTeamPulse(activities) {
   const now = Date.now();
-  const windowMs = 30 * 60 * 1000; // 30 min “active”
+  const windowMs = 30 * 60 * 1000; // 30 min "active"
   const recent = activities.filter((a) => now - a.createdAt <= windowMs);
 
   const unique = new Map();
@@ -189,10 +244,138 @@ function computeStreakComparison(summary, activities) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CROSS-PROJECT TASK FALLBACK
+// When the activities endpoint returns empty (no EventLog entries), we fetch
+// real tasks across all projects and convert them into activity items.
+// Same pattern as the project-level ActivityFeed fallback.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function fetchCrossProjectTasks(limit = 30) {
+  try {
+    const response = await client.get('/tasks', {
+      params: {
+        sortBy: 'updatedAt',
+        sortOrder: 'desc',
+        limit,
+      },
+    });
+
+    const result = response.data?.data || response.data;
+    const tasks = result?.tasks || (Array.isArray(result) ? result : []);
+
+    if (!tasks.length) return [];
+
+    const items = [];
+
+    for (const task of tasks) {
+      // Find project name from task data
+      const projectName = task?.projectId?.name || task?.project?.name || null;
+
+      // If task is done and has completedAt, show completion event
+      if (task.status === 'done' && task.completedAt) {
+        items.push({
+          _id: `${task._id || task.id}-completed`,
+          type: 'TASK_COMPLETED',
+          actorName: 'Team member',
+          projectName,
+          createdAt: task.completedAt,
+          timestamp: task.completedAt,
+          raw: { taskTitle: task.title, projectName },
+        });
+      }
+
+      // If task is in progress, show it
+      if (task.status === 'in_progress') {
+        items.push({
+          _id: `${task._id || task.id}-in-progress`,
+          type: 'TASK_STARTED',
+          actorName: 'Team member',
+          projectName,
+          createdAt: task.updatedAt || task.createdAt,
+          timestamp: task.updatedAt || task.createdAt,
+          raw: { taskTitle: task.title, projectName },
+        });
+      }
+
+      // Always show creation event
+      items.push({
+        _id: `${task._id || task.id}-created`,
+        type: 'TASK_CREATED',
+        actorName: 'Team member',
+        projectName,
+        createdAt: task.createdAt,
+        timestamp: task.createdAt,
+        raw: { taskTitle: task.title, projectName },
+      });
+    }
+
+    // Sort by timestamp descending
+    items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return items.slice(0, limit);
+  } catch (err) {
+    console.warn('[useHomeRealtime] Cross-project task fallback failed:', err?.message);
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTELLIGENCE FETCH
+// Fetches peak productivity window from analytics endpoint.
+// Parses string times ("10:00 PM") into numeric hours for PeakWindow component.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function parseTimeStringToHour(timeStr) {
+  if (typeof timeStr === 'number') return timeStr;
+  if (!timeStr || typeof timeStr !== 'string') return null;
+
+  // Parse formats like "10:00 PM", "2:00 AM", "14:00"
+  const match = timeStr.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (!match) return null;
+
+  let hour = parseInt(match[1], 10);
+  const ampm = match[3]?.toUpperCase?.();
+
+  if (ampm === 'PM' && hour < 12) hour += 12;
+  if (ampm === 'AM' && hour === 12) hour = 0;
+
+  return hour;
+}
+
+async function fetchUserIntelligence() {
+  try {
+    const response = await client.get('/analytics/user/intelligence');
+    const data = response.data?.data || response.data;
+
+    if (!data) return null;
+
+    // Parse string times to numeric hours
+    const startHour = parseTimeStringToHour(data.peakWindowStart);
+    const endHour = parseTimeStringToHour(data.peakWindowEnd);
+
+    return {
+      peakWindowStart: startHour ?? 10,
+      peakWindowEnd: endHour ?? 12,
+      productivity: data.productivity ?? 0,
+      coWorkingMultiplier: data.coWorkingMultiplier ?? 1,
+      isCoWorking: data.isCoWorking ?? false,
+    };
+  } catch (err) {
+    console.warn('[useHomeRealtime] Intelligence fetch failed:', err?.message);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN HOOK
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export function useHomeRealtime() {
   const [projects, setProjects] = useState([]);
   const [activitiesRaw, setActivitiesRaw] = useState([]);
   const [summaryRaw, setSummaryRaw] = useState(null);
+  const [intelligenceData, setIntelligenceData] = useState(null);
 
   const [loadingMissions, setLoadingMissions] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
@@ -203,7 +386,7 @@ export function useHomeRealtime() {
   // Poll timers
   const pollingRef = useRef({ projects: null, activities: null, summary: null });
 
-  // Keep last good payloads (so we can “keep old data” if a fetch fails)
+  // Keep last good payloads (so we can "keep old data" if a fetch fails)
   const lastGoodRef = useRef({
     projects: [],
     activities: [],
@@ -219,10 +402,11 @@ export function useHomeRealtime() {
     safeSet(setLoadingMissions, true);
 
     try {
-      const [pRes, aRes, sRes] = await Promise.allSettled([
+      const [pRes, aRes, sRes, iRes] = await Promise.allSettled([
         fetchProjects(),
         fetchActivities({ limit: 80 }),
         fetchActivitySummary(),
+        fetchUserIntelligence(),
       ]);
 
       let anySuccess = false;
@@ -240,7 +424,23 @@ export function useHomeRealtime() {
 
       // Activities
       if (aRes.status === "fulfilled") {
-        const a = Array.isArray(aRes.value) ? aRes.value : [];
+        let a = Array.isArray(aRes.value) ? aRes.value : [];
+
+        // ═════════════════════════════════════════════════════════════════
+        // FALLBACK: If activities endpoint returned empty, build activity
+        // items from real task data across all user projects.
+        // ═════════════════════════════════════════════════════════════════
+        if (a.length === 0) {
+          try {
+            const taskItems = await fetchCrossProjectTasks(30);
+            if (taskItems.length > 0) {
+              a = taskItems;
+            }
+          } catch (fallbackErr) {
+            console.warn('[useHomeRealtime] Task fallback failed:', fallbackErr?.message);
+          }
+        }
+
         lastGoodRef.current.activities = a;
         safeSet(setActivitiesRaw, a);
         anySuccess = true;
@@ -256,6 +456,11 @@ export function useHomeRealtime() {
         anySuccess = true;
       } else {
         safeSet(setSummaryRaw, lastGoodRef.current.summary);
+      }
+
+      // Intelligence
+      if (iRes.status === "fulfilled" && iRes.value) {
+        safeSet(setIntelligenceData, iRes.value);
       }
 
       safeSet(setIsConnected, anySuccess);
@@ -292,8 +497,19 @@ export function useHomeRealtime() {
 
     pollingRef.current.activities = setInterval(async () => {
       try {
-        const a = await fetchActivities({ limit: 80 });
-        const safeA = Array.isArray(a) ? a : [];
+        let a = await fetchActivities({ limit: 80 });
+        let safeA = Array.isArray(a) ? a : [];
+
+        // ═════════════════════════════════════════════════════════════════
+        // FALLBACK on poll too: if activities still empty, try tasks
+        // ═════════════════════════════════════════════════════════════════
+        if (safeA.length === 0) {
+          try {
+            const taskItems = await fetchCrossProjectTasks(30);
+            if (taskItems.length > 0) safeA = taskItems;
+          } catch (_) {}
+        }
+
         lastGoodRef.current.activities = safeA;
         safeSet(setActivitiesRaw, safeA);
         safeSet(setIsConnected, true);
@@ -408,6 +624,18 @@ export function useHomeRealtime() {
     };
   }, [activities]);
 
+  // ✅ NEW: Intelligence data with safe defaults
+  const intelligence = useMemo(() => {
+    if (intelligenceData) return intelligenceData;
+    return {
+      peakWindowStart: null,
+      peakWindowEnd: null,
+      productivity: 0,
+      coWorkingMultiplier: 1,
+      isCoWorking: false,
+    };
+  }, [intelligenceData]);
+
   return {
     loadingMissions,
     missions,
@@ -417,6 +645,8 @@ export function useHomeRealtime() {
     teamPulse,
     streakComparison,
     shippedStats,
+    // ✅ NEW: Intelligence (peak window, productivity, co-working)
+    intelligence,
     refreshAll: loadOnce,
     isConnected,
   };

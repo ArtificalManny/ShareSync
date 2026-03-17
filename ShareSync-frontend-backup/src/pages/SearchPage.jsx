@@ -28,14 +28,38 @@ const TYPE_META = {
 };
 const ALL_TYPES = Object.keys(TYPE_META);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ⭐ WORLD-CLASS FIX: Data Adapter Pattern
+// Resolves the impedance mismatch between api/search.js (flat array)
+// and SearchPage UI (categorized object). Also extracts the 'raw' payload
+// so child cards get exactly the database document they expect!
+// ═══════════════════════════════════════════════════════════════════════════════
 function coerceResults(data) {
-  // Accept both legacy {projects, tasks} or richer shape {projects, tasks, users, posts, files}
-  const projects = Array.isArray(data?.projects) ? data.projects : [];
-  const tasks    = Array.isArray(data?.tasks) ? data.tasks : [];
-  const users    = Array.isArray(data?.users) ? data.users : [];
-  const posts    = Array.isArray(data?.posts) ? data.posts : [];
-  const files    = Array.isArray(data?.files) ? data.files : [];
-  return { projects, tasks, users, posts, files };
+  const result = { projects: [], tasks: [], users: [], posts: [], files: [] };
+
+  // 1. Handle modern unified flat array from searchAll()
+  if (Array.isArray(data)) {
+    data.forEach(item => {
+      // Extract raw DB document so standard cards render perfectly
+      const payload = item.raw || item; 
+      
+      if (item.type === 'project') result.projects.push(payload);
+      else if (item.type === 'task') result.tasks.push(payload);
+      else if (item.type === 'person' || item.type === 'user') result.users.push(payload);
+      else if (item.type === 'post') result.posts.push(payload);
+      else if (item.type === 'file') result.files.push(payload);
+    });
+    return result;
+  }
+
+  // 2. Handle legacy object shape
+  result.projects = Array.isArray(data?.projects) ? data.projects : [];
+  result.tasks    = Array.isArray(data?.tasks) ? data.tasks : [];
+  result.users    = Array.isArray(data?.users) ? data.users : [];
+  result.posts    = Array.isArray(data?.posts) ? data.posts : [];
+  result.files    = Array.isArray(data?.files) ? data.files : [];
+  
+  return result;
 }
 
 export default function SearchPage() {
@@ -91,9 +115,6 @@ export default function SearchPage() {
         types,
         sort,
         scope,
-        // Optionally pass scoped ids if you wire them later:
-        // projectId: scope === "project" ? currentProjectId : undefined,
-        // userId: scope === "mine" ? currentUserId : undefined,
         page: 1,
         limit: 25,
       };
@@ -108,6 +129,7 @@ export default function SearchPage() {
           // Back-compat with earlier helper: searchAll("text")
           data = await searchAll(q);
         }
+        
         if (!alive) return;
         const coerced = coerceResults(data);
         setResults(coerced);
@@ -117,7 +139,7 @@ export default function SearchPage() {
         if (liveRef.current) liveRef.current.textContent = `${total} results`;
 
         try { trackSearchUsed?.({ q, types, sort, scope }); } catch {}
-      } catch {
+      } catch (err) {
         if (alive) setResults({ projects: [], tasks: [], users: [], posts: [], files: [] });
       } finally {
         if (alive) setLoading(false);
@@ -189,11 +211,11 @@ export default function SearchPage() {
 
     return (
       <section className="mt-5" aria-label={label}>
-        <div className="flex items-center gap-2 text-xs font-semibold text-muted">
-          <Icon className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          <Icon className="w-4 h-4 text-violet-500 dark:text-violet-400" />
           {label}
         </div>
-        <div className="mt-2 space-y-2" role="list">
+        <div className="space-y-2" role="list">
           {items}
         </div>
       </section>
@@ -203,23 +225,32 @@ export default function SearchPage() {
   const totalResults = ["projects","tasks","users","posts","files"].reduce((n, k) => n + (results[k]?.length || 0), 0);
 
   return (
-    <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown}>
-      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto">
-        <div className="card rounded-2xl border border-border bg-surface p-4">
+    <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown} className="min-h-screen bg-slate-50 dark:bg-[#09090B]">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
+        
+        {/* Search Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Search ShareSync</h1>
+          <p className="text-slate-500 dark:text-zinc-400">Find projects, tasks, people, and files across your workspace.</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] p-5 shadow-sm dark:shadow-none">
           {/* Search input */}
           <form onSubmit={onSubmit} role="search" aria-label="Global search">
-            <div className="flex items-center gap-2">
-              <Search className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                <Search className="w-5 h-5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+              </div>
               <input
                 value={q}
                 onChange={(e) => { setQ(e.target.value); setActiveIdx(0); }}
                 placeholder="Search @users, #projects, and more…"
-                className="flex-1 bg-transparent outline-none text-base"
+                className="flex-1 bg-transparent border-none outline-none text-lg text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600"
                 aria-label="Search query"
               />
               <button
                 type="submit"
-                className="rounded-md px-3 py-1.5 text-sm border border-border hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                className="rounded-xl px-6 py-2.5 text-sm font-bold bg-slate-100 dark:bg-[#1f1f23] text-slate-700 dark:text-zinc-300 hover:bg-violet-600 hover:text-white transition-all"
                 aria-label="Run search"
               >
                 Search
@@ -228,46 +259,57 @@ export default function SearchPage() {
           </form>
 
           {/* Parsed tokens */}
-          <div className="mt-2 flex flex-wrap items-center gap-2" aria-hidden={tokens.atUsers.length + tokens.hashProjects.length === 0 ? "true" : "false"}>
-            {tokens.atUsers.map((u) => (
-              <span key={`u:${u}`} className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">@{u}</span>
-            ))}
-            {tokens.hashProjects.map((p) => (
-              <span key={`p:${p}`} className="text-[11px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">#{p}</span>
-            ))}
-          </div>
+          {tokens.atUsers.length > 0 || tokens.hashProjects.length > 0 ? (
+            <div className="mt-4 flex flex-wrap items-center gap-2" aria-hidden="false">
+              {tokens.atUsers.map((u) => (
+                <span key={`u:${u}`} className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30">@{u}</span>
+              ))}
+              {tokens.hashProjects.map((p) => (
+                <span key={`p:${p}`} className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">#{p}</span>
+              ))}
+            </div>
+          ) : null}
 
-          {/* Filters (types / scope / sort) */}
-          <SearchFilters
-            types={types}
-            allTypes={ALL_TYPES}
-            onToggleType={toggleType}
-            sort={sort}
-            onChangeSort={setSort}
-            scope={scope}
-            onChangeScope={setScope}
-          />
+          <div className="mt-5 pt-5 border-t border-slate-100 dark:border-[#1f1f23]">
+            {/* Filters (types / scope / sort) */}
+            <SearchFilters
+              types={types}
+              allTypes={ALL_TYPES}
+              onToggleType={toggleType}
+              sort={sort}
+              onChangeSort={setSort}
+              scope={scope}
+              onChangeScope={setScope}
+            />
+          </div>
         </div>
 
         {/* Live result count for screen readers */}
-        <div
-          ref={liveRef}
-          aria-live="polite"
-          className="sr-only"
-        >
+        <div ref={liveRef} aria-live="polite" className="sr-only">
           {totalResults} results
         </div>
 
-        {/* Results */}
-        <div role="listbox" aria-label="Search results" className="mt-4">
+        {/* Results Area */}
+        <div role="listbox" aria-label="Search results" className="mt-8">
+          
           {loading && (
-            <div className="text-sm text-muted flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Searching…
+            <div className="flex items-center justify-center py-12 text-slate-500 dark:text-zinc-400 gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-violet-500" /> 
+              <span className="font-medium">Scouring the database…</span>
             </div>
           )}
 
-          {!loading && totalResults === 0 && (
-            <div className="text-sm text-muted">No results.</div>
+          {/* ⭐ MetaLab Principle: Honest data or no data. Engage the user on empty state. */}
+          {!loading && totalResults === 0 && q.length > 1 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in duration-500">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-[#1f1f23] flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-slate-400 dark:text-zinc-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No results found for "{q}"</h3>
+              <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+                We couldn't find anything matching your search. Try adjusting your filters or using different keywords.
+              </p>
+            </div>
           )}
 
           {/* Grouped lists */}
