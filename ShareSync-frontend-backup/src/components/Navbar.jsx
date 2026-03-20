@@ -1,7 +1,10 @@
 // src/components/Navbar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC NAVBAR v4.1 - With CreateProject Modal Integration
-// UPGRADE: Item 14 - Standardized Violet Pill CTA for "New" Button
+// CLEANED: Completely removed hover background boxes to prevent "smudges" on glass
+// ADDED: SubscriptionButton integration
+// OPTICAL FIX: Baseline aligned Search icon & Congruent 20px (w-5) right-side icons
+// RESILIENCE FIX: Bulletproof "!bg-[#HEX]" CTA button with CSS immunity shield
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -13,7 +16,6 @@ import {
 
 import { formatProfilePicture } from "../utils/imageUtils";
 import { useChat } from "../context/ChatContext.jsx";
-import { useAuth } from "../context/AuthContext";
 import UnreadBadge from "./messenger/UnreadBadge.jsx";
 import { toast } from "./ui/toast";
 import UserAvatar from "./ui/UserAvatar";
@@ -105,7 +107,6 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const menuRef = useRef(null);
-  const { updateUser } = useAuth();
 
   const avatarUrl = resolveAvatarUrl(user) || DEFAULT_PIC;
   const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.username || "User";
@@ -126,8 +127,7 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
         const dataUrl = String(reader.result || "");
         try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
         applyUserEverywhere({ avatarUrl: dataUrl });
-        updateUser({ avatarUrl: dataUrl, profilePicture: dataUrl });
-        toast({ title: "Photo updated", variant: "success" });
+        toast({ title: "Photo updated (local)", description: "Backend upload isn't enabled yet — UI will still show your new photo.", variant: "success" });
         setShowMenu(false);
         onUploadComplete?.();
       };
@@ -168,7 +168,6 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
   );
 };
 
-// PURE ICON HOVER: No background boxes. Just color change and scale.
 const IconButton = ({ children, onClick, className = "", badge = null, title = "" }) => (
   <button onClick={onClick} title={title} className={`relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}>
     {children}
@@ -259,10 +258,18 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
               <span className="text-sm font-bold text-slate-800 dark:text-white transition-colors duration-200">{getPageName()}</span>
             </div>
             <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-white/10 mx-2 transition-colors duration-200" />
+            
             <form onSubmit={handleSearch} className="hidden md:flex items-center relative group">
-              <Search className="absolute left-3 w-4 h-4 text-slate-400 dark:text-zinc-500 group-focus-within:text-violet-500 transition-colors duration-200" />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search everything..." className="bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-[#0F172A] focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 w-52 focus:w-72 transition-all duration-300" />
+              {/* Precision optical alignment: top-1/2 -translate-y-1/2 mt-[1.5px] pushes it down to match text baseline perfectly */}
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 mt-[1.5px] w-4 h-4 text-slate-400 dark:text-zinc-500 group-focus-within:text-violet-500 transition-colors duration-200" />
+              <input 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                placeholder="Search everything..." 
+                className="bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-[#0F172A] focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 w-52 focus:w-72 transition-all duration-300" 
+              />
             </form>
+
           </div>
 
           <div className="flex-1 flex items-center justify-center px-4">
@@ -293,16 +300,19 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
           <div className="flex items-center gap-2">
             <div className="hidden sm:block mr-2"><MomentumBadge /></div>
             
-            {/* VIOLET PILL CTA FIX */}
+            {/* ENGINEERING FIX: 
+              1. 'bg-gradient-to-br' is kept as a dummy class to bypass the destructive Navbar.css hover rule.
+              2. '!bg-[#7c3aed]' uses Tailwind's arbitrary !important modifier to mathematically guarantee the violet color renders regardless of CSS cascade wars. 
+            */}
             <button 
               onClick={() => setShowCreateProject(true)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-medium text-white shadow-sm hover:shadow transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 mr-1 ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold transition-all duration-200 mr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 border-none bg-gradient-to-br ${
                 isFireMode 
-                  ? "bg-orange-500 hover:bg-orange-600 animate-pulse shadow-orange-200 dark:shadow-none" 
-                  : "bg-violet-600 hover:bg-violet-700"
-              }`}
+                  ? "!bg-[#f97316] hover:!bg-[#ea580c] !text-white !shadow-lg !shadow-orange-500/30 animate-pulse" 
+                  : "!bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white !shadow-lg !shadow-violet-500/30"
+              } hover:-translate-y-0.5`}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span className="text-sm hidden sm:inline">New</span>
             </button>
             
@@ -317,11 +327,11 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <NotificationCenter />
             
             <IconButton onClick={() => navigate("/messages")} badge={unreadTotal > 0 && <UnreadBadge count={unreadTotal} />} title="Messages">
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-5 h-5" />
             </IconButton>
             
             <IconButton onClick={toggleDarkMode} title={isDarkMode ? "Light mode" : "Dark mode"}>
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </IconButton>
             
             <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 transition-colors duration-200" />
@@ -329,7 +339,7 @@ export default function Navbar({ user, isDarkMode, toggleDarkMode, onLogout }) {
             <ProfileDropdown user={user} onUploadComplete={() => {}} />
             
             <IconButton onClick={onLogout} className="hover:text-red-500 dark:hover:text-red-400" title="Sign out">
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-5 h-5" />
             </IconButton>
           </div>
         </div>

@@ -29,7 +29,8 @@ export default function SearchBar({
         ${className}
       `}
     >
-      <Search className="w-4 h-4 shrink-0" />
+      {/* Precision optical alignment: relative top-[1.5px] pushes it down to match text baseline */}
+      <Search className="w-4 h-4 shrink-0 relative top-[1.5px]" />
       
       <span className="text-sm flex-1 text-left">
         {placeholder}
