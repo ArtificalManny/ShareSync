@@ -314,8 +314,31 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
       </div>
 
       <div className={'flex-1 flex flex-col ' + (!activeThread ? 'hidden lg:flex' : 'flex')}>
-        {activeThread ? <ConversationPanel thread={activeThread} currentUserId={currentUserId} onBack={() => setActiveThread(null)} />
-        : <div className="flex-1 flex items-center justify-center"><div className="text-center"><div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-4"><MessageCircle className="w-8 h-8 text-violet-500" /></div><h3 className="text-lg font-semibold text-slate-700 dark:text-white/70 mb-1">Select a thread</h3><p className="text-sm text-slate-400">Choose a conversation or start a new one</p></div></div>}
+        {activeThread ? (
+          <ConversationPanel thread={activeThread} currentUserId={currentUserId} onBack={() => setActiveThread(null)} />
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-slate-50/50 dark:bg-[#1f1f23]/50">
+            <div className="text-center max-w-sm mx-auto">
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-2xl animate-pulse" />
+                <div className="relative w-full h-full rounded-3xl bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.08] shadow-xl flex items-center justify-center transform -rotate-3">
+                  <Hash className="w-10 h-10 text-violet-600 dark:text-violet-400 rotate-3" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">Start a new discussion</h3>
+              <p className="text-sm text-slate-500 dark:text-white/50 mb-8 leading-relaxed">
+                Threads keep your team's ideas organized and actionable. Launch a new topic to get the conversation flowing.
+              </p>
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-[#1f1f23] border-2 border-slate-200 dark:border-white/[0.1] text-slate-800 dark:text-white text-sm font-bold shadow-sm hover:border-violet-300 dark:hover:border-violet-500/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23] transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                Create Thread
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showCreate && <CreateThreadModal projectId={projectId} members={projectMembers} onClose={() => setShowCreate(false)} onCreated={(t) => { setThreads(prev => [{ ...t, id: t._id || t.id, category: t.category || 'general', participantCount: 0, replyCount: 0, lastMessage: 'No messages yet' }, ...prev]); setActiveThread(t); }} />}

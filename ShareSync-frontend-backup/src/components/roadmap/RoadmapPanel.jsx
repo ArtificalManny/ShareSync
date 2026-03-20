@@ -847,20 +847,25 @@ export default function RoadmapPanel({
       )}
 
       {!loading && !error && (items?.length || 0) === 0 && (
-        <div className="p-12 rounded-2xl bg-surface-1 border border-white/[0.06] text-center">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-400 flex items-center justify-center mx-auto mb-4">
-            <MapIcon className="w-6 h-6" />
+        <div 
+          onClick={() => onAddMilestone?.()}
+          className="py-20 mt-4 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.15] rounded-3xl bg-slate-50/50 dark:bg-surface-1/30 hover:bg-slate-50 dark:hover:bg-surface-1/50 transition-all duration-300 group cursor-pointer"
+        >
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            <div className="absolute inset-0 bg-brand-500/20 rounded-full blur-2xl group-hover:animate-pulse transition-all duration-300" />
+            <div className="relative w-full h-full rounded-3xl bg-white dark:bg-surface-2 border border-slate-200 dark:border-white/[0.05] shadow-xl flex items-center justify-center transform group-hover:scale-105 group-hover:shadow-2xl transition-all duration-300">
+              <MapIcon className="w-10 h-10 text-brand-500" />
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">No milestones yet</h3>
-          <p className="text-sm text-text-tertiary mb-6 max-w-md mx-auto">
-            Create a milestone for your next release, demo, or deadline — and track progress as tasks get completed.
+          <h3 className="text-2xl font-bold text-slate-800 dark:text-text-primary mb-3">The future is unwritten.</h3>
+          <p className="text-sm text-slate-500 dark:text-text-tertiary max-w-md mx-auto text-center mb-8 leading-relaxed">
+            Every massive achievement starts with a single point on the map. Define your next big release, demo, or deadline.
           </p>
           <button
-            onClick={() => onAddMilestone?.()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 group-hover:border-brand-400 pointer-events-none"
           >
-            <Plus className="w-4 h-4" />
-            Create first milestone
+            <Plus className="w-5 h-5" />
+            Plot your first Milestone
           </button>
         </div>
       )}

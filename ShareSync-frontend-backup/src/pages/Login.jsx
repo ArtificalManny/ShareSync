@@ -1,11 +1,8 @@
 // src/pages/Login.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Login Page
-// Frontend-only polish:
-// - ShareSync → OpenShare copy
-// - Divider bg made transparent (less "boxed")
-// - Added OpenShare Kinetic Monogram Logo
-// - NO auth logic changed
+// Frontend-only polish: Pristine Light Mode & High Contrast CTA
+// NO auth logic changed
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
@@ -13,7 +10,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
-import Logo from "../components/ui/Logo";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -64,21 +60,16 @@ export default function Login() {
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to continue shipping">
-      <form onSubmit={onSubmit} className="space-y-4">
-        {/* OpenShare Kinetic Monogram */}
-        <div className="flex justify-center mb-6 drop-shadow-[0_2px_8px_rgba(139,92,246,0.25)]">
-          <Logo size={48} />
-        </div>
-
+      <form onSubmit={onSubmit} className="space-y-5">
         <AuthError>{error}</AuthError>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
             <input
               type="email"
               name="email"
@@ -87,11 +78,11 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="
-                w-full pl-10 pr-4 py-2.5 rounded-xl
-                bg-white/[0.035] ring-1 ring-white/[0.08]
-                text-white placeholder:text-slate-500
-                focus:outline-none focus:ring-2 focus:ring-purple-500/25
-                transition-all duration-200
+                w-full pl-10 pr-4 py-3 rounded-xl font-medium
+                bg-white border-2 border-slate-200
+                text-slate-900 placeholder:text-slate-400
+                focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10
+                hover:border-slate-300 transition-all duration-200 shadow-sm
               "
             />
           </div>
@@ -100,19 +91,19 @@ export default function Login() {
         {/* Password */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-sm font-medium text-slate-300">
+            <label className="block text-sm font-semibold text-slate-700">
               Password
             </label>
             <Link
               to="/forgot-password"
-              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              className="text-xs font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1 transition-colors"
             >
               <KeyRound className="w-3 h-3" />
               Forgot password?
             </Link>
           </div>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
             <input
               type={showPassword ? "text" : "password"}
               name="password"
@@ -121,17 +112,17 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="
-                w-full pl-10 pr-10 py-2.5 rounded-xl
-                bg-white/[0.035] ring-1 ring-white/[0.08]
-                text-white placeholder:text-slate-500
-                focus:outline-none focus:ring-2 focus:ring-purple-500/25
-                transition-all duration-200
+                w-full pl-10 pr-10 py-3 rounded-xl font-medium
+                bg-white border-2 border-slate-200
+                text-slate-900 placeholder:text-slate-400
+                focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10
+                hover:border-slate-300 transition-all duration-200 shadow-sm
               "
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10 focus:outline-none"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -139,27 +130,30 @@ export default function Login() {
         </div>
 
         {/* Remember me */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-1">
           <input
             type="checkbox"
             id="remember"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
             className="
-              w-4 h-4 rounded
-              ring-1 ring-white/[0.15]
-              bg-white/[0.04]
-              text-purple-500
-              focus:ring-purple-500/25 focus:ring-offset-0
+              w-4 h-4 rounded cursor-pointer
+              border-2 border-slate-300 bg-white
+              text-violet-600
+              focus:ring-violet-500/25 focus:ring-offset-0 transition-colors
             "
           />
-          <label htmlFor="remember" className="text-sm text-slate-400">
+          <label htmlFor="remember" className="text-sm font-medium text-slate-600 cursor-pointer">
             Remember me for 30 days
           </label>
         </div>
 
-        {/* Submit */}
-        <AuthButton type="submit" loading={submitting}>
+        {/* Submit CTA - High Contrast Purple */}
+        <AuthButton 
+          type="submit" 
+          loading={submitting}
+          className="!bg-violet-600 hover:!bg-violet-700 !text-white !border-none !shadow-lg !shadow-violet-600/30 transition-all duration-200"
+        >
           Sign In
           <ArrowRight className="w-5 h-5" />
         </AuthButton>
@@ -167,10 +161,10 @@ export default function Login() {
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/[0.10]" />
+            <div className="w-full border-t border-slate-200" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-transparent text-slate-500">
+            <span className="px-4 bg-white text-slate-500 font-medium">
               New to OpenShare?
             </span>
           </div>
@@ -183,13 +177,13 @@ export default function Login() {
         </AuthButton>
 
         {/* Terms */}
-        <p className="text-center text-xs text-slate-500">
+        <p className="text-center text-xs text-slate-500 pt-2">
           By continuing, you agree to OpenShare&apos;s{" "}
-          <Link to="#" className="text-purple-400 hover:underline">
+          <Link to="#" className="text-violet-600 font-medium hover:underline">
             Terms
           </Link>{" "}
           and{" "}
-          <Link to="#" className="text-purple-400 hover:underline">
+          <Link to="#" className="text-violet-600 font-medium hover:underline">
             Privacy Policy
           </Link>
         </p>

@@ -313,7 +313,7 @@ export default function StackPanel({
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm">
+    <div className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 p-4 pb-0">
         <div className="flex items-center gap-3">
@@ -460,7 +460,7 @@ export default function StackPanel({
       ) : null}
 
       {/* ── Task list ──────────────────────────────────────────────────── */}
-      <div className="p-4 pt-3 space-y-1.5">
+      <div className="p-4 pt-3 space-y-1.5 min-h-[120px]">
         {loading && filteredTasks.length === 0 ? (
           <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/40 p-3">
             <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -469,29 +469,34 @@ export default function StackPanel({
         ) : null}
 
         {!loading && filteredTasks.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] p-6 text-center">
-            <div className="inline-flex h-10 w-10 rounded-xl bg-violet-100 dark:bg-violet-500/15 items-center justify-center mb-3">
-              <Layers className="h-5 w-5 text-violet-500 dark:text-violet-400" />
+          <div 
+            onClick={!showAddForm ? handleOpenAddForm : undefined}
+            className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.10] rounded-2xl bg-slate-50/50 dark:bg-[#111113]/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23]/80 transition-all duration-300 group cursor-pointer"
+          >
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative w-full h-full rounded-2xl bg-white dark:bg-surface-2 shadow-sm border border-slate-200 dark:border-white/[0.05] flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition-all duration-300">
+                <Layers className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+              </div>
             </div>
-            <div className="font-semibold text-sm text-slate-700 dark:text-white/80">
-              {hasFilter ? "No tasks in this milestone" : "No tasks in your stack"}
-            </div>
-            <div className="text-xs text-slate-500 dark:text-white/40 mt-1">
+            
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
+              {hasFilter ? "No tasks in this milestone" : "Your queue is clear."}
+            </h3>
+            
+            <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-[250px] mx-auto text-center mb-6">
               {hasFilter
                 ? "Try another milestone, or assign tasks to this milestone."
-                : "Create a task above, or set existing tasks to TODO / IN PROGRESS."}
-            </div>
-            {/* CTA in empty state if add form isn't open */}
-            {!hasFilter && !showAddForm && projectId ? (
+                : "Great work happens in sequence. Add a task to your stack to build momentum."}
+            </p>
+            
+            {!hasFilter && projectId && !showAddForm ? (
               <button
                 type="button"
-                onClick={handleOpenAddForm}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 mt-4 rounded-lg
-                  bg-violet-600 hover:bg-violet-700 text-white
-                  transition-colors shadow-sm"
+                className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
               >
-                <Plus className="h-3.5 w-3.5" />
-                Add Your First Task
+                <Plus className="w-4 h-4" />
+                Add a Task to the Stack
               </button>
             ) : null}
           </div>

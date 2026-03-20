@@ -9,8 +9,35 @@ import "./styles/gradients.css";
 import "./styles/motion.css";
 import "./registerSW.js";
 
+import posthog from "posthog-js"; // ✅ PHASE 2: The Neural Network
+
 if (import.meta.env.MODE !== "production") {
   import("./utils/perfLog.js");
+}
+
+// ====================================================================
+// 0. INITIALIZE TELEMETRY & SESSION REPLAY (POSTHOG)
+// ====================================================================
+if (typeof window !== "undefined") {
+  posthog.init(
+    import.meta.env.VITE_POSTHOG_KEY || "YOUR_POSTHOG_PROJECT_API_KEY", // Replace with your key from PostHog dashboard
+    {
+      api_host: import.meta.env.VITE_POSTHOG_HOST || "https://us.i.posthog.com",
+      autocapture: true, // ✅ Captures Rage Clicks automatically
+      session_recording: {
+        maskAllInputs: true, // Security: automatically masks passwords and PII in videos
+        maskTextSelector: ".ph-no-capture" // Manual override for sensitive UI elements
+      },
+      capture_pageview: false, // We will handle manual pageviews if using a SPA router
+      loaded: (ph) => {
+        // Automatically opt-out if running locally so you don't pollute your own metrics
+        if (import.meta.env.DEV) {
+          console.log("[Telemetry] Local dev detected. PostHog tracking paused.");
+          ph.opt_out_capturing(); 
+        }
+      }
+    }
+  );
 }
 
 // ====================================================================

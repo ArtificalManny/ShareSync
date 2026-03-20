@@ -1,7 +1,23 @@
 // src/pages/Projects.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC PROJECTS PAGE v4.0 - "The Gallery Walk" Light Theme
-// UPGRADE: Item 14 - Standardized Violet CTA for "New Project" Button
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// THEME: "The Working Studio"
+//
+// COLOR MAP:
+// - Page Background: #F8FAFC (clean canvas)
+// - Project Cards: #FFFFFF with violet-tinted shadows
+// - Card Hover: violet shadow lift effect
+// - Card Border: #E2E8F0 (slate-200)
+// - Project Icon Background: #EEF2FF (soft violet tint)
+// - Velocity Bar: Ocean Gradient (blue → cyan → teal)
+// - "Start Sprint" Button: #3B82F6 (blue-500)
+// - Filter Pills Active: #8B5CF6 bg, white text
+// - Filter Pills Inactive: #F1F5F9 bg, #64748B text
+//
+// NO BACKEND CHANGES
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
@@ -15,11 +31,15 @@ import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
 
-import EmptyProjects from '../components/empty-states/EmptyProjects';
+// PHASE D: Import empty state components
 import EmptySearch from '../components/empty-states/EmptySearch';
 
+// Use API helpers that already unwrap backend shapes correctly
 import { getProjects } from '../api/projects';
 
+/* ─────────────────────────────────────────────────────────────────────────
+   HELPER: Safely get project ID (handles both _id and id)
+───────────────────────────────────────────────────────────────────────── */
 const getProjectId = (project) => {
   const id = project?._id || project?.id;
   if (!id) {
@@ -28,6 +48,9 @@ const getProjectId = (project) => {
   return id;
 };
 
+/* ─────────────────────────────────────────────────────────────────────────
+   VELOCITY BAR - Ocean Gradient
+───────────────────────────────────────────────────────────────────────── */
 const VelocityBar = ({ percentage }) => {
   const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
   const isComplete = clampedPercentage >= 100;
@@ -47,6 +70,9 @@ const VelocityBar = ({ percentage }) => {
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PROJECT CARD - Grid View (Light theme with violet shadows)
+───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
     switch (season) {
@@ -65,7 +91,10 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
   const projectId = getProjectId(project);
 
   const handleClick = () => {
-    if (!projectId) return;
+    if (!projectId) {
+      console.error('[Projects] Cannot navigate - ProjectCard missing ID:', project);
+      return;
+    }
     onProjectClick(projectId);
   };
 
@@ -97,7 +126,9 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
+      {/* Header: Emoji + Streak */}
       <div className="flex justify-between items-start mb-4">
+        {/* Project Icon Background: #EEF2FF (soft violet tint) */}
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform"
           style={{ backgroundColor: `${project.color || '#8B5CF6'}15`, color: project.color || '#8B5CF6' }}
@@ -119,6 +150,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         )}
       </div>
 
+      {/* Title + Description */}
       <h3 className="text-base font-semibold text-slate-800 dark:text-zinc-100 mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
         {project.name}
       </h3>
@@ -126,6 +158,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         {project.description}
       </p>
 
+      {/* Next Step */}
       {hasNextStep ? (
         <div className="bg-slate-50 dark:bg-[#111113] border border-slate-100 dark:border-white/5 rounded-lg p-3 mb-4">
           <div className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
@@ -144,6 +177,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         </div>
       )}
 
+      {/* Velocity Progress - Ocean Gradient */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
@@ -156,6 +190,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
         <VelocityBar percentage={velocity} />
       </div>
 
+      {/* Footer */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/10">
         <div className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500">
           <Users className="w-3.5 h-3.5" />
@@ -164,6 +199,7 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
           </span>
         </div>
 
+        {/* Start Sprint Button - Blue (#3B82F6) */}
         <button
           onClick={handleStartSprint}
           className="
@@ -189,6 +225,9 @@ function ProjectCard({ project, onProjectClick, onStartSprint }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PROJECT ROW - List View (Light theme)
+───────────────────────────────────────────────────────────────────────── */
 function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const getSeasonEmoji = (season) => {
     switch (season) {
@@ -205,7 +244,10 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
   const projectId = getProjectId(project);
 
   const handleClick = () => {
-    if (!projectId) return;
+    if (!projectId) {
+      console.error('[Projects] Cannot navigate - ProjectRow missing ID:', project);
+      return;
+    }
     onProjectClick(projectId);
   };
 
@@ -279,6 +321,9 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN PAGE (Light theme)
+───────────────────────────────────────────────────────────────────────── */
 const Projects = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -319,7 +364,10 @@ const Projects = () => {
   const handleProjectCreated = (newProject) => setProjects(prev => [newProject, ...prev]);
   
   const handleProjectClick = (projectId) => {
-    if (!projectId) return;
+    if (!projectId) {
+      console.error('[Projects] handleProjectClick called with invalid ID:', projectId);
+      return;
+    }
     navigate(`/projects/${projectId}`);
   };
   
@@ -369,15 +417,25 @@ const Projects = () => {
 
     if (projects.length === 0) {
       return (
-        <EmptyProjects
-          onCreateProject={() => setShowCreateModal(true)}
-          onSelectTemplate={(template) => {
-            console.log('Selected template:', template);
-            setShowCreateModal(true);
-          }}
-          showTemplates={true}
-          variant="animated"
-        />
+        <div 
+          onClick={() => setShowCreateModal(true)}
+          className="py-24 mt-8 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.10] rounded-3xl bg-slate-50/50 dark:bg-[#111113]/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23]/80 transition-all duration-300 group cursor-pointer"
+        >
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-2xl group-hover:animate-pulse transition-all duration-300" />
+            <div className="relative w-full h-full rounded-3xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.05] shadow-xl flex items-center justify-center transform group-hover:scale-105 group-hover:shadow-2xl transition-all duration-300">
+              <LayoutGrid className="w-10 h-10 text-violet-600 dark:text-violet-400" />
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">Every great initiative starts here.</h3>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md text-center mb-8 leading-relaxed">
+            Set the stage for your team's next breakthrough. Initialize a new project to structure your workflow and align your focus.
+          </p>
+          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 pointer-events-none">
+            <Plus className="w-5 h-5" />
+            Initialize Project
+          </button>
+        </div>
       );
     }
 
@@ -415,6 +473,9 @@ const Projects = () => {
         background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%))'
       }}
     >
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -429,6 +490,7 @@ const Projects = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
             <input
@@ -446,10 +508,26 @@ const Projects = () => {
             />
           </div>
 
-          {/* STANDARDIZED VIOLET CTA */}
+          {/* New Project Button - Violet Gradient (Sunset) */}
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium shadow-sm transition-all duration-200"
+            className="
+              flex items-center gap-2 px-4 py-2.5 rounded-lg
+              text-white text-sm font-medium
+              transition-all duration-200
+            "
+            style={{
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
+              boxShadow: '0 4px 14px rgba(139, 92, 246, 0.25)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.35)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 14px rgba(139, 92, 246, 0.25)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Project</span>
@@ -459,7 +537,11 @@ const Projects = () => {
 
       <QuietProjectsBanner />
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          TOOLBAR
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center justify-between mb-6 mt-8 pb-4 border-b border-slate-200 dark:border-white/10">
+        {/* Filters - Active: violet bg, white text / Inactive: slate bg */}
         <div className="flex gap-1">
           {['all', 'active', 'at-risk'].map(filter => (
             <button
@@ -479,6 +561,7 @@ const Projects = () => {
           ))}
         </div>
 
+        {/* View Toggle */}
         <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-transparent dark:border-white/5">
           <button
             onClick={() => setViewMode('grid')}
@@ -507,6 +590,9 @@ const Projects = () => {
         </div>
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROJECT GRID / LIST
+      ═══════════════════════════════════════════════════════════════════ */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => <SkeletonProjectCard key={i} />)}

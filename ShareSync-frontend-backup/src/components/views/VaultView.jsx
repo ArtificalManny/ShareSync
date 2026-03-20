@@ -249,11 +249,21 @@ export default function VaultView({ projectId }) {
               ))}
             </div>
 
-            {/* Original empty state */}
-            <div className="py-16 text-center border border-dashed border-white/[0.1] rounded-2xl bg-surface-1/30">
-              <Archive className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-text-primary mb-2">Vault is empty</h3>
-              <p className="text-sm text-text-tertiary mb-6">Upload files or create folders to organize your assets securely.</p>
+            {/* Tactile Drop Zone Empty State */}
+            <div 
+              onClick={() => setIsUploadModalOpen(true)}
+              className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.15] rounded-3xl bg-slate-50/50 dark:bg-surface-1/30 hover:bg-slate-50 dark:hover:bg-surface-1/50 transition-colors group cursor-pointer"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-white dark:bg-surface-2 shadow-sm border border-slate-200 dark:border-white/[0.05] flex items-center justify-center mb-6 group-hover:scale-105 group-hover:shadow-md transition-all duration-300">
+                <Upload className="w-8 h-8 text-brand-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-text-primary mb-2">Secure Your First Asset</h3>
+              <p className="text-sm text-text-tertiary max-w-sm mx-auto text-center mb-8">
+                Drag and drop a file here to secure it, or click to browse your computer.
+              </p>
+              <button className="px-6 py-2.5 rounded-xl bg-white dark:bg-surface-2 border-2 border-slate-200 dark:border-white/[0.1] text-text-primary text-sm font-bold shadow-sm group-hover:border-brand-500/50 transition-all pointer-events-none">
+                Upload File
+              </button>
             </div>
           </div>
         )}

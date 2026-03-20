@@ -14,6 +14,7 @@
 import React, { useMemo } from "react";
 import FlowColumn from "./FlowColumn";
 import useFlowTasks, { FLOW_STATUSES } from "./useFlowTasks";
+import { LayoutDashboard, Plus } from "lucide-react";
 
 function normalizeId(v) {
   if (!v) return "";
@@ -47,6 +48,11 @@ export default function FlowBoard({
     return next;
   }, [board, milestoneIdFilter]);
 
+  // Calculate if the entire board is empty
+  const totalTasks = useMemo(() => {
+    return FLOW_STATUSES.reduce((acc, status) => acc + (filteredBoard?.[status]?.length || 0), 0);
+  }, [filteredBoard]);
+
   if (!projectId) {
     return (
       <div
@@ -77,7 +83,7 @@ export default function FlowBoard({
           <button
             type="button"
             onClick={reload}
-            className="text-xs px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-900"
+            className="text-xs px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-900 transition-colors"
           >
             Refresh
           </button>
@@ -110,6 +116,28 @@ export default function FlowBoard({
             className="mt-3 text-xs px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-900"
           >
             Try again
+          </button>
+        </div>
+      ) : totalTasks === 0 ? (
+        <div 
+          onClick={() => addTask('todo')}
+          className="py-24 mt-4 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-3xl bg-slate-50/50 dark:bg-slate-900/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-all duration-300 group cursor-pointer"
+        >
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-2xl group-hover:animate-pulse transition-all duration-300" />
+            <div className="relative w-full h-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-center transform group-hover:-translate-y-1 group-hover:shadow-2xl transition-all duration-300">
+              <LayoutDashboard className="w-10 h-10 text-violet-600 dark:text-violet-400" />
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">Nothing in motion.</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto text-center mb-8 leading-relaxed">
+            A clear board is a blank canvas. Initialize your workflow by creating your first stage action or dropping a task here.
+          </p>
+          <button
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 pointer-events-none"
+          >
+            <Plus className="w-5 h-5" />
+            Create your first Workflow Lane
           </button>
         </div>
       ) : (

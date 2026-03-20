@@ -43,7 +43,7 @@ export default function MiniSprintWidget() {
   const [dismissedStreak, setDismissedStreak] = useState(false);
   
   // Show the EmptyStreak challenge if no sprint is active, streak is 0, and not dismissed
-  const showEmptyStreak = !visible && streakDays === 0 && !dismissedStreak;
+  const showEmptyStreak = false; // Ghost neutralized
 
   // Global render check
   if (!visible && !showEmptyStreak) return null;

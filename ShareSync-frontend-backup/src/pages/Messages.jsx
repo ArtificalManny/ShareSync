@@ -801,12 +801,15 @@ export default function Messages() {
                 ))}
               </div>
             ) : conversations.length === 0 ? (
-              <div className="p-8 text-center">
-                <MessageCircle className="w-12 h-12 text-slate-300 dark:text-zinc-700 mx-auto mb-3" />
-                <p className="text-sm text-slate-500 dark:text-zinc-500">No conversations yet</p>
+              <div className="p-8 text-center flex flex-col items-center justify-center h-full">
+                <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-4 border border-violet-100 dark:border-violet-500/20">
+                  <MessageCircle className="w-8 h-8 text-violet-500 dark:text-violet-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">Inbox Zero</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-500 mb-6">You have no active conversations.</p>
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700 shadow-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 shadow-sm transition-all active:scale-95"
                 >
                   <Plus className="w-4 h-4" />
                   New Message
@@ -920,19 +923,24 @@ export default function Messages() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-[#111113]">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 flex items-center justify-center mx-auto mb-4">
-                  <Send className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+            <div className="flex-1 flex items-center justify-center p-8 bg-slate-50/50 dark:bg-[#09090B] inset-0">
+              <div className="text-center max-w-md mx-auto">
+                <div className="relative w-24 h-24 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-2xl animate-pulse" />
+                  <div className="relative w-full h-full rounded-3xl bg-white dark:bg-[#111113] border border-slate-200 dark:border-[#1f1f23] shadow-xl flex items-center justify-center transform rotate-3">
+                    <MessageCircle className="w-10 h-10 text-violet-600 dark:text-violet-400 -rotate-3" />
+                  </div>
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Select a conversation</h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-500 max-w-sm">Choose a message from the list or start a new conversation</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Start a conversation</h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mb-8 leading-relaxed">
+                  Great work happens in sync. Choose a teammate from the list or start a new direct message to ignite momentum.
+                </p>
                 <button
                   onClick={() => setShowComposer(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 shadow-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 shadow-md hover:shadow-lg transition-all active:scale-95"
                 >
-                  <Plus className="w-4 h-4" />
-                  New Message
+                  <Plus className="w-5 h-5" />
+                  Start a New Message
                 </button>
               </div>
             </div>

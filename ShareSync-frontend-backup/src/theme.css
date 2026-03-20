@@ -37,6 +37,36 @@
   --gradient-brand: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
   --grad-primary:   linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); /* Sunset CTA */
   --grad-pandora:   linear-gradient(135deg, #8B5CF6 0%, #06B6D4 75%, #2DD4BF 100%); /* Aurora */
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     PHASE 4: ANTI-BLOAT & STRUCTURAL GUARDRAILS (The Weaponized "No")
+     ────────────────────────────────────────────────────────────────────────────── */
+     
+  /* 1. The Z-Index Guillotine 
+     We strictly limit z-index tiers. If a requested feature requires a z-index
+     higher than these bounds to support nested flyouts, the feature is too complex.
+     Reject the Jira-fication. Redesign it to be a single-level interaction. */
+  --z-base:       0;
+  --z-elevated:   10;  /* Cards, sticky headers */
+  --z-dropdown:   40;  /* Standard menus */
+  --z-overlay:    50;  /* Slide-out panels, standard modals */
+  --z-lifeline:   90;  /* Telemetry / Feedback FAB */
+  --z-critical:   100; /* Toasts, fatal errors */
+
+  /* 2. Strict Spatial Boundaries
+     Prevents UI from becoming a bloated, edge-to-edge spreadsheet. */
+  --max-content-width: 1600px; /* Preserves the "Gallery" feel on ultra-wides */
+  --panel-width:       480px;  /* Standardized panel width. No resizable splitters. */
+  
+  /* 3. Dropdown Depth Limits
+     Prevents infinite nesting (the hallmark of legacy enterprise software).
+     If a menu needs to be taller than this, the user is overwhelmed. Break it down. */
+  --dropdown-max-height: 320px;
+  
+  /* 4. Motion Guardrails
+     Standardize animations so developers don't add bespoke, distracting physics. */
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.16, 1, 0.3, 1); /* Apple-grade ease */
 }
 
 /* Dark mode mapping (The Grand Entrance) */

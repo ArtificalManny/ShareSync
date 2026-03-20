@@ -1,191 +1,64 @@
 // src/layouts/AuthLayout.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// GLASS FORTRESS - Auth Layout + Shared UI Primitives
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// v4.0 "The Gallery Walk" - THE GRAND ENTRANCE
-// This layout is INTENTIONALLY dark and atmospheric. It creates the dramatic
-// entrance to ShareSync before users step into the light gallery (app pages).
-//
-// FIXED: Fluid Scrolling applied. Tall forms (Create Account) will now scroll 
-// smoothly, while short forms (Login) remain perfectly dead-center.
-//
-// - Frontend-only changes (NO backend/auth logic touched)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import React from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
-// Shared classnames (kept simple + consistent)
 export const AUTH_CARD =
-  "w-full max-w-md rounded-3xl " +
-  "bg-white/[0.04] backdrop-blur-xl " +
-  "shadow-[0_20px_80px_rgba(0,0,0,0.55)] " +
-  "ring-1 ring-white/[0.08] " +
-  "px-8 py-8";
+  "w-full max-w-md rounded-3xl !bg-white " +
+  "shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] " +
+  "border border-slate-200 " +
+  "px-8 py-10 relative z-10 mt-auto mb-auto";
 
-export const AUTH_INPUT =
-  "w-full px-4 py-2.5 rounded-xl " +
-  "bg-white/[0.035] " +
-  "ring-1 ring-white/[0.08] " +
-  "text-white placeholder:text-slate-500 " +
-  "focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-transparent " +
-  "transition-all duration-200";
-
-export const AUTH_INPUT_WITH_ICON =
-  "w-full pl-10 pr-4 py-2.5 rounded-xl " +
-  "bg-white/[0.035] " +
-  "ring-1 ring-white/[0.08] " +
-  "text-white placeholder:text-slate-500 " +
-  "focus:outline-none focus:ring-2 focus:ring-purple-500/25 focus:border-transparent " +
-  "transition-all duration-200";
-
-// Layout shell
-// ✅ "auth-layout" class enables dark theme CSS variable scoping from tokens.css
 export function AuthLayout({ title, subtitle, children }) {
   return (
-    // Replaced rigid 'fixed h-screen overflow-hidden' with a fluid scrolling container
-    <div className="auth-layout relative min-h-screen w-full bg-[#070712] overflow-x-hidden">
+    <div className="auth-layout relative min-h-screen w-full !bg-slate-50 !text-slate-900 font-sans overflow-y-auto overflow-x-hidden">
       
-      {/* Ambient background - THE GRAND ENTRANCE atmospheric effect */}
-      {/* Kept 'fixed' so the background stays locked in place while the user scrolls */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Base */}
-        <div className="absolute inset-0 bg-[#070712]" />
-
-        {/* Full-screen purple wash that fades out (prevents the "boxed slab" look) */}
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-700/30 via-purple-700/12 to-transparent" />
-
-        {/* Purple blob - top left */}
-        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-purple-600/20 blur-[110px]" />
-        
-        {/* Fuchsia blob - bottom right */}
-        <div className="absolute -bottom-48 -right-48 w-[620px] h-[620px] rounded-full bg-fuchsia-500/12 blur-[120px]" />
-
-        {/* Soft center bloom */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0)_55%)]" />
+      {/* Light Mode Ambient Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 !bg-slate-50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-white to-slate-50 opacity-80" />
+        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-violet-200/50 blur-[100px]" />
+        <div className="absolute -bottom-48 -right-48 w-[620px] h-[620px] rounded-full bg-fuchsia-200/40 blur-[100px]" />
       </div>
 
-      {/* Centered content with safe scrolling */}
-      {/* flex-col with min-h-screen paired with m-auto on the child prevents top-clipping on tall forms */}
-      <div className="relative z-10 flex flex-col min-h-screen px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className={`${AUTH_CARD} m-auto`}
-        >
-          {/* Brand header */}
+      <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className={AUTH_CARD}>
+          
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-full bg-purple-500/20 ring-1 ring-purple-500/25 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-purple-300" />
+            <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center shadow-sm">
+              <Sparkles className="w-5 h-5 text-violet-600" />
             </div>
-            <div className="text-lg font-semibold tracking-wide text-purple-200">
-              OpenShare
-            </div>
+            <div className="text-xl font-bold tracking-tight text-slate-900">OpenShare</div>
           </div>
 
-          {/* Title */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-semibold text-white">{title}</h1>
-            {subtitle ? (
-              <p className="mt-2 text-sm text-slate-400">{subtitle}</p>
-            ) : null}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold !text-slate-900">{title}</h1>
+            {subtitle && <p className="mt-2 text-sm !text-slate-500">{subtitle}</p>}
           </div>
 
-          {/* Page content */}
           {children}
 
-          {/* Footer */}
-          <div className="mt-8 text-center text-xs text-slate-500">
-            © 2026 OpenShare. Ship with momentum.
-          </div>
+          <div className="mt-8 text-center text-xs !text-slate-400">© 2026 OpenShare. Ship with momentum.</div>
         </motion.div>
       </div>
     </div>
   );
 }
 
-// Button
-export function AuthButton({
-  children,
-  loading,
-  variant = "primary",
-  className = "",
-  ...props
-}) {
-  const base =
-    "w-full inline-flex items-center justify-center gap-2 " +
-    "py-3 px-4 rounded-xl font-semibold " +
-    "transition-all duration-200 " +
-    "focus:outline-none focus:ring-2 focus:ring-purple-500/25 " +
-    "disabled:opacity-60 disabled:cursor-not-allowed";
-
-  const styles =
-    variant === "secondary"
-      ? "bg-white/[0.05] ring-1 ring-white/[0.10] text-white hover:bg-white/[0.07]"
-      : "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white hover:brightness-[1.07] shadow-lg shadow-purple-900/30";
-
+export function AuthButton({ children, loading, variant = "primary", className = "", ...props }) {
+  const base = "w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/25 disabled:opacity-60 disabled:cursor-not-allowed";
+  const styles = variant === "secondary"
+    ? "!bg-white border-2 !border-slate-200 !text-slate-700 hover:!bg-slate-50 hover:!border-slate-300 shadow-sm"
+    : "bg-gradient-to-r from-violet-500 to-fuchsia-500 !text-white shadow-md shadow-violet-500/20 hover:shadow-lg hover:shadow-violet-500/30 hover:-translate-y-0.5 active:translate-y-0";
+  
   return (
     <button className={`${base} ${styles} ${className}`} disabled={loading || props.disabled} {...props}>
-      {loading ? (
-        <span className="inline-flex items-center gap-2">
-          <span className="w-4 h-4 rounded-full border-2 border-white/70 border-t-transparent animate-spin" />
-          Loading...
-        </span>
-      ) : (
-        children
-      )}
+      {loading ? <span className="inline-flex items-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin opacity-70" />Wait...</span> : children}
     </button>
   );
 }
 
-// Error (kept subtle)
 export function AuthError({ children }) {
   if (!children) return null;
-  return (
-    <div className="rounded-xl bg-red-500/10 ring-1 ring-red-500/20 px-4 py-3 text-sm text-red-200">
-      {children}
-    </div>
-  );
+  return <div className="rounded-xl !bg-red-50 border !border-red-200 px-4 py-3 text-sm !text-red-700 font-medium flex items-center gap-2 mb-4">{children}</div>;
 }
-
-// Success message
-export function AuthSuccess({ children }) {
-  if (!children) return null;
-  return (
-    <div className="rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 px-4 py-3 text-sm text-emerald-200">
-      {children}
-    </div>
-  );
-}
-
-// Optional input wrapper
-export function AuthInput({ label, icon: Icon, error, className = "", ...props }) {
-  return (
-    <div>
-      {label ? (
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">
-          {label}
-        </label>
-      ) : null}
-
-      <div className="relative">
-        {Icon ? (
-          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-        ) : null}
-
-        <input
-          {...props}
-          className={`${Icon ? AUTH_INPUT_WITH_ICON : AUTH_INPUT} ${error ? "ring-red-500/30 focus:ring-red-500/25" : ""} ${className}`}
-        />
-      </div>
-
-      {error ? <p className="mt-1 text-xs text-red-300">{error}</p> : null}
-    </div>
-  );
-}
-
-// Default export for easier imports
-export default AuthLayout;

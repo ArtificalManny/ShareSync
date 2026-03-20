@@ -2,12 +2,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HOME: Mission Control with Premium View Navigation
 // Integrates existing hooks/context with new Pulse/Stack/Flow/etc. views
-// ⭐ FIX: Added validation for project ID to prevent /projects/undefined issue
-// ⭐ FIX: RoadmapView now receives projectId for API integration
-// ⭐ ADD: Force-refresh view content on realtime task updates (pulseRefreshKey)
-// ⭐ ADD: PulseWidget uses liveTasks + updates instantly on taskUpdated
-// ⭐ SAFETY: Debug + Guardrails to prevent blank screens (frontend only)
-// ⭐ THEME: Updated to Gallery Walk Light Theme
+// ⭐ FIX: Navigation Bar flattened to a single continuous row (No Dropdowns)
+// ⭐ FIX: Announcements moved to the very front of the array
+// ⭐ FIX: Z-Index increased to [100] to brutally override Vault & Insights
+// ⭐ FIX: Stripped bg-white. Nav and Header perfectly sync with bg-slate-50
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -35,7 +33,6 @@ import {
   MessageCircle,
   Archive,
   Plus,
-  MoreHorizontal,
   Star,
   Share2,
   Settings,
@@ -53,6 +50,7 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
+  Megaphone, // Added for Announcements
 } from "lucide-react";
 
 // Hooks
@@ -83,25 +81,26 @@ import { getStatusColor } from "../utils/statusColor";
 import PulseWidget from "../components/pulse/PulseWidget";
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW COMPONENTS - Import all the new views
+// VIEW COMPONENTS 
 // ═══════════════════════════════════════════════════════════════════════════════
 import StackPanel from "../features/stack/StackPanel";
 import FlowBoard from "../features/flow/FlowBoard";
 import RoadmapPanel from "../components/roadmap/RoadmapPanel";
 import RhythmView from "../components/views/RhythmView";
-// ✅ FIXED IMPORT: Now pointing to our newly built live component
 import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
+import AnnouncementsView from "../components/views/AnnouncementsView";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW CONFIGURATION - Premium ShareSync-branded names
+// VIEW CONFIGURATION - Completely Flattened, Announcements First
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const PROJECT_VIEWS = [
+  { id: "announcements", label: "Announcements", icon: Megaphone, description: "Broadcasts" },
   { id: "pulse", label: "Pulse", icon: Gauge, description: "Project heartbeat" },
   { id: "stack", label: "Stack", icon: Layers, description: "Your work queue" },
   { id: "flow", label: "Flow", icon: GitBranch, description: "Workflow lanes" },
@@ -153,7 +152,7 @@ function ErrorState({ error, onRetry }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT HEADER (Simplified, clean)
+// PROJECT HEADER (Perfectly synced to bg-slate-50)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ProjectHeader({
@@ -177,26 +176,25 @@ function ProjectHeader({
   const state = getMomentumState();
 
   return (
-    <header className="px-10 py-6 border-b border-slate-200 bg-white">
+    // ⭐ MATCHING THEME: bg-slate-50 completely removes the ugly gray/white block clash.
+    <header className="px-10 py-6 border-b border-slate-200/60 bg-slate-50 dark:bg-[#0f172a] dark:border-white/10">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
         <span
           onClick={onBackToProjects}
-          className="hover:text-slate-700 cursor-pointer transition-colors"
+          className="hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
           role="button"
           tabIndex={0}
         >
           Projects
         </span>
         <ArrowRight className="w-3 h-3" />
-        <span className="text-slate-700">{project?.name || "Project"}</span>
+        <span className="text-slate-700 dark:text-slate-300">{project?.name || "Project"}</span>
       </nav>
 
       {/* Main header */}
       <div className="flex items-start justify-between gap-8">
-        {/* Left: Project identity */}
         <div className="flex items-start gap-5 flex-1 min-w-0">
-          {/* Project icon */}
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0"
             style={{
@@ -207,15 +205,14 @@ function ProjectHeader({
             {project?.icon || "📁"}
           </div>
 
-          {/* Project info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-semibold text-slate-900 truncate">
+              <h1 className="text-2xl font-semibold text-slate-900 dark:text-white truncate">
                 {project?.name || "Untitled Project"}
               </h1>
               <button
                 onClick={() => setIsStarred(!isStarred)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-white/5 transition-colors"
               >
                 <Star
                   className={`w-5 h-5 transition-colors ${
@@ -227,9 +224,7 @@ function ProjectHeader({
               </button>
             </div>
 
-            {/* Status badges */}
             <div className="flex items-center gap-5">
-              {/* Live indicator */}
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -238,23 +233,20 @@ function ProjectHeader({
                 <span className="text-sm text-emerald-600 font-medium">Live</span>
               </div>
 
-              {/* Active members */}
-              <div className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-zinc-400">
                 <Users className="w-4 h-4" />
                 <span>{activeUsers || 0} online</span>
               </div>
 
-              {/* Momentum */}
               <div className={`flex items-center gap-2 text-sm font-medium ${state.color}`}>
                 <Zap className="w-4 h-4" />
                 <span>{momentum}</span>
-                <span className="text-slate-500 font-normal">· {state.label}</span>
+                <span className="text-slate-500 dark:text-zinc-400 font-normal">· {state.label}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => onShipUpdate?.("Shipped an update")}
@@ -276,9 +268,9 @@ function ProjectHeader({
           <button
             className="
             flex items-center gap-2 px-4 py-2.5 rounded-xl
-            bg-white border border-slate-200 shadow-sm
-            text-slate-700 text-sm
-            hover:bg-slate-50 hover:border-slate-300
+            bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm
+            text-slate-700 dark:text-zinc-300 text-sm
+            hover:bg-slate-50 dark:hover:bg-zinc-800
             transition-all duration-200
           "
           >
@@ -286,15 +278,15 @@ function ProjectHeader({
             <span>Activity</span>
           </button>
 
-          <div className="w-px h-6 bg-slate-200" />
+          <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
 
-          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all">
+          <button className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all">
             <Share2 className="w-4 h-4" />
           </button>
 
           <button
             onClick={onSettings}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all"
+            className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -305,19 +297,20 @@ function ProjectHeader({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW NAVIGATION
+// VIEW NAVIGATION (FLAT ARRAY + Z-INDEX SUPREMACY)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
-  const [showMore, setShowMore] = useState(false);
-
-  const visibleViews = views.slice(0, 6);
-  const moreViews = views.slice(6);
-
   return (
-    <nav className="px-10 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
-      <div className="flex items-center gap-1 -mb-px">
-        {visibleViews.map((view) => {
+    // ⭐ FIX: bg-slate-50/80 perfectly matches the background to create seamless glass.
+    // ⭐ FIX: z-[100] absolutely blocks Vault dropzones or Insights charts from bleeding over.
+    <nav className="px-10 border-b border-slate-200/60 dark:border-white/10 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-[100] transition-colors duration-300">
+      
+      {/* ⭐ FIX: Hidden custom scrollbar injected so it scrolls elegantly on small screens but looks perfect on wide screens */}
+      <style>{`.hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
+      
+      <div className="flex items-center gap-2 -mb-px overflow-x-auto hide-scroll w-full">
+        {views.map((view) => {
           const Icon = view.icon;
           const isActive = activeView === view.id;
 
@@ -326,101 +319,53 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               key={view.id}
               onClick={() => onViewChange(view.id)}
               className={`
-                relative flex items-center gap-2.5 px-5 py-4
+                relative flex items-center gap-2.5 px-4 py-4 whitespace-nowrap
                 text-sm font-medium transition-all duration-200
-                ${isActive ? "text-violet-600" : "text-slate-500 hover:text-slate-800"}
+                rounded-t-lg
+                ${isActive 
+                  ? "text-slate-900 dark:text-white" 
+                  : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-white/5"}
               `}
               title={view.description}
             >
-              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600" : ""}`} />
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600 dark:text-violet-400" : ""}`} />
               <span>{view.label}</span>
 
               {view.badge && (
-                <span className="px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs font-medium">
+                <span className={`
+                  px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors
+                  ${isActive 
+                    ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400" 
+                    : "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400"}
+                `}>
                   {view.badge}
                 </span>
               )}
 
-              {isActive && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-violet-500 rounded-full" />}
+              {/* High-contrast crisp border for active state */}
+              {isActive && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-500 shadow-[0_-2px_8px_rgba(124,58,237,0.3)] rounded-t-sm" />
+              )}
             </button>
           );
         })}
-
-        {moreViews.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={() => setShowMore(!showMore)}
-              className="flex items-center gap-1.5 px-4 py-4 text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-
-            {showMore && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
-                <div className="absolute top-full right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden">
-                  {moreViews.map((view) => {
-                    const Icon = view.icon;
-                    return (
-                      <button
-                        key={view.id}
-                        onClick={() => {
-                          onViewChange(view.id);
-                          setShowMore(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        <Icon className="w-4 h-4 text-slate-500" />
-                        <span>{view.label}</span>
-                        {view.badge && (
-                          <span className="ml-auto px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-xs">
-                            {view.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        <button className="flex items-center gap-1.5 px-3 py-4 text-sm text-slate-500 hover:text-violet-600 transition-colors ml-1">
-          <Plus className="w-4 h-4" />
-        </button>
       </div>
     </nav>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SAFE PLACEHOLDER CARDS (prevents blank screens)
+// SAFE PLACEHOLDER CARDS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
-  // ⭐ FIX ITEM 5: MetaLab Principle - Empty states should guide, not dead-end.
-  if (momentum === 0 && weeklyShips === 0) {
-    return (
-      <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none h-full flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
-        <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-3">
-          <Zap className="w-6 h-6 text-violet-500 dark:text-violet-400" />
-        </div>
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100 mb-1">Ignite Momentum</h3>
-        <p className="text-xs text-slate-500 dark:text-zinc-400 px-4">
-          Ship your first update or complete a task to get the momentum engine spinning.
-        </p>
-      </section>
-    );
-  }
-
   const pct = Math.min(100, momentum);
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none h-full">
+    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
@@ -474,7 +419,7 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
 function PriorityStack({ moves }) {
   const items = Array.isArray(moves) ? moves : [];
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none h-full">
+    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center">
@@ -577,19 +522,15 @@ function PulseView({
 
       {/* Row 1: Momentum + Priority Stack */}
       <div className="grid grid-cols-12 gap-8 mb-8">
-        <div className="col-span-4 flex">
-          <div className="w-full">
-            <MomentumCard
-              momentum={metrics?.momentum || 0}
-              weeklyShips={metrics?.weeklyShips || 0}
-              trend={metrics?.momentumTrend}
-            />
-          </div>
+        <div className="col-span-4">
+          <MomentumCard
+            momentum={metrics?.momentum || 0}
+            weeklyShips={metrics?.weeklyShips || 0}
+            trend={metrics?.momentumTrend}
+          />
         </div>
-        <div className="col-span-8 flex">
-          <div className="w-full">
-            <PriorityStack moves={criticalMoves} />
-          </div>
+        <div className="col-span-8">
+          <PriorityStack moves={criticalMoves} />
         </div>
       </div>
 
@@ -655,8 +596,8 @@ export default function ProjectHome() {
     return <LoadingState />;
   }
 
-  // View state
-  const [activeView, setActiveView] = useState("pulse");
+  // View state: Force active view to 'announcements' since it is the first tab
+  const [activeView, setActiveView] = useState("announcements");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
 
   // Presence
@@ -844,6 +785,13 @@ export default function ProjectHome() {
   const renderViewContent = () => {
     try {
       switch (activeView) {
+        case "announcements": // Fully wired and now naturally the default fallback
+          return (
+            <div className={pageWrap}>
+               <AnnouncementsView projectId={id} announcements={announcements || []} />
+            </div>
+          );
+
         case "pulse":
           return (
             <PulseView
@@ -928,10 +876,11 @@ export default function ProjectHome() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    // ⭐ MATCHING THEME: This is the parent div that everything rests on. bg-slate-50 forces the whole page to a unified color.
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-zinc-100">
       {/* DEV Debug strip (non-invasive). Remove anytime. */}
       {SHOW_DEBUG && (
-        <div className="px-10 py-3 border-b border-slate-200 bg-white/70 text-xs text-slate-500 flex flex-wrap gap-3">
+        <div className="px-10 py-3 border-b border-slate-200/60 bg-white/40 text-xs text-slate-500 flex flex-wrap gap-3">
           <span>ProjectHome OK</span>
           <span>· id: {String(id)}</span>
           <span>· view: {String(activeView)}</span>
@@ -960,7 +909,7 @@ export default function ProjectHome() {
       <GlobalPulseBar position="bottom" color="brand" />
 
       {/* Utilities */}
-      <QuickActionsManager />
+      <QuickActionsManager projectId={id} />
       <KeyboardShortcuts />
 
        {showAddMilestone && (

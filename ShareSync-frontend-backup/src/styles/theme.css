@@ -5,7 +5,7 @@
    This file applies the color tokens to the actual UI.
    
    LIGHT MODE (Default): App pages - clean, bright gallery feel
-   DARK MODE: Auth pages - dramatic entrance atmosphere
+   DARK MODE: Auth pages - CONVERTED TO LIGHT MODE
    
    NO BACKEND CHANGES - Pure CSS
    
@@ -47,12 +47,12 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE - THE GRAND ENTRANCE (Auth Pages)
-   Applied via .auth-layout class on auth page wrappers
+   THE GRAND ENTRANCE (Auth Pages)
+   Converted from Dark Mode to Light Mode to match the rest of the app.
    ═══════════════════════════════════════════════════════════════════════════════ */
 .auth-layout {
-  background: var(--palette-slate-950);
-  color: var(--slate-50);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
   position: relative;
   isolation: isolate;
@@ -66,7 +66,7 @@ body::after {
   left: -10%;
   width: 70vw;
   height: 70vw;
-  background: radial-gradient(circle, rgba(var(--palette-violet-500-rgb), 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--palette-violet-500-rgb), 0.05) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -80,7 +80,7 @@ body::after {
   right: -10%;
   width: 60vw;
   height: 60vw;
-  background: radial-gradient(circle, rgba(var(--palette-teal-400-rgb), 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--palette-teal-400-rgb), 0.03) 0%, transparent 70%);
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
@@ -204,25 +204,25 @@ textarea::placeholder {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   AUTH PAGE INPUTS (Dark Mode)
+   AUTH PAGE INPUTS (Converted to Light Mode)
    ═══════════════════════════════════════════════════════════════════════════════ */
 .auth-layout input,
 .auth-layout select,
 .auth-layout textarea {
-  background: rgba(15, 23, 42, 0.6);
-  color: var(--slate-50);
-  border: 1px solid var(--palette-white-10);
+  background: var(--palette-white);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
 }
 
 .auth-layout input:focus,
 .auth-layout select:focus,
 .auth-layout textarea:focus {
-  border-color: var(--violet-500);
-  box-shadow: 0 0 0 3px rgba(var(--palette-violet-500-rgb), 0.2);
+  border-color: var(--brand-500);
+  box-shadow: var(--ring-focus);
 }
 
 .auth-layout input::placeholder {
-  color: var(--slate-400);
+  color: var(--text-muted);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -279,21 +279,21 @@ label {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   AUTH PAGE FORMS (Dark Mode - Glassmorphic)
+   AUTH PAGE FORMS (Converted to Light Mode Card)
    ═══════════════════════════════════════════════════════════════════════════════ */
 .auth-layout form,
 .auth-card {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--palette-white-8);
+  background: var(--palette-white);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 2.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 40px -12px rgba(0, 0, 0, 0.1);
 }
 
 .auth-layout label {
-  color: var(--slate-300);
+  color: var(--text-secondary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -403,11 +403,11 @@ a:hover {
 }
 
 .auth-layout a {
-  color: var(--violet-400);
+  color: var(--brand-600);
 }
 
 .auth-layout a:hover {
-  color: var(--violet-300);
+  color: var(--brand-700);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -423,7 +423,7 @@ hr,
 
 .auth-layout hr,
 .auth-layout .divider {
-  background: var(--palette-white-8);
+  background: var(--border-subtle);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -451,12 +451,12 @@ hr,
 /* Dark mode scrollbar */
 .auth-layout ::-webkit-scrollbar-track,
 .dark ::-webkit-scrollbar-track {
-  background: var(--palette-white-5);
+  background: var(--slate-100);
 }
 
 .auth-layout ::-webkit-scrollbar-thumb,
 .dark ::-webkit-scrollbar-thumb {
-  background: var(--palette-white-15);
+  background: var(--slate-300);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -469,19 +469,12 @@ hr,
 
 .auth-layout ::selection,
 .dark ::selection {
-  background: var(--violet-600);
-  color: var(--palette-white);
+  background: var(--violet-200);
+  color: var(--violet-900);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    GHOST BUSTER: BARE BUTTON OVERRIDE (100% Safe Append)
-   Because this file defines a global `button:hover` with a linear-gradient,
-   it forces a purple box onto EVERY unclassed button in the app on hover 
-   (including the Tailwind utility icons in the Navbar). 
-   
-   This safety block specifically strips the gradient image and box shadow 
-   from utility buttons so Tailwind can properly color them, without breaking 
-   your global .btn-primary buttons.
    ═══════════════════════════════════════════════════════════════════════════════ */
 button:not(.btn):not(.btn-primary):not(.btn-action):not(.btn-blue):not(.btn-secondary):not(.btn-outline):not(.btn-ghost):hover {
   background-image: none !important;

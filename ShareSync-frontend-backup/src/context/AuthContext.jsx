@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/client";
+import { identifyUser, resetUser, track } from "../utils/telemetry"; // ✅ PHASE 2: Telemetry Integration
 
 const AuthContext = createContext();
 
@@ -78,6 +79,12 @@ export function AuthProvider({ children }) {
           console.log("[AuthContext] Token valid, user:", payload.user.email);
           setUser(payload.user);
           localStorage.setItem("ss.user", JSON.stringify(payload.user));
+          
+          // ✅ PHASE 2: Re-identify user on page reload
+          identifyUser(payload.user._id || payload.user.id || payload.user.sub, { 
+            email: payload.user.email,
+            username: payload.user.username 
+          });
 
           // keep compatibility keys in sync
           writeTokenEverywhere(token);
@@ -107,6 +114,13 @@ export function AuthProvider({ children }) {
               console.log("[AuthContext] ✅ Full profile loaded:", mePayload.email || mePayload.username);
               setUser(mePayload);
               localStorage.setItem("ss.user", JSON.stringify(mePayload));
+              
+              // ✅ PHASE 2: Update identity with full profile
+              identifyUser(mePayload._id || mePayload.id, { 
+                email: mePayload.email,
+                username: mePayload.username,
+                level: mePayload.level
+              });
             }
           } catch (meError) {
             console.warn("[AuthContext] Could not fetch full profile, using JWT data:", meError?.message);
@@ -116,11 +130,13 @@ export function AuthProvider({ children }) {
           console.log("[AuthContext] Token invalid");
           clearTokenEverywhere();
           localStorage.removeItem("ss.user");
+          resetUser(); // ✅ PHASE 2: Clear telemetry identity
         }
       } catch (error) {
         console.error("[AuthContext] Token verification failed:", error);
         clearTokenEverywhere();
         localStorage.removeItem("ss.user");
+        resetUser(); // ✅ PHASE 2: Clear telemetry identity
       } finally {
         setLoading(false);
       }
@@ -143,7 +159,7 @@ export function AuthProvider({ children }) {
         password,
       });
 
-      console.log("[AuthContext] �� Login response:", response.data);
+      console.log("[AuthContext] 🔵 Login response:", response.data);
 
       // ✅ Unwrap TransformInterceptor format: { success, data, timestamp }
       const payload = response.data?.data ?? response.data;
@@ -174,6 +190,10 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem("ss.user", JSON.stringify(userData));
       setUser(userData);
+      
+      // ✅ PHASE 2: Identify user on explicit login
+      identifyUser(userData._id || userData.id || userData.sub, { email: userData.email, username: userData.username });
+      track("user_logged_in", { method: "email" });
 
       console.log("[AuthContext] 🎉 Login successful!");
       return { success: true };
@@ -216,6 +236,7 @@ export function AuthProvider({ children }) {
       // New flow returns { userId } for verification
       if (payload?.userId) {
         console.log("[AuthContext] 🎉 Registration successful, needs verification");
+        track("registration_initiated", { email }); // ✅ PHASE 2 tracking
         return {
           success: true,
           userId: payload.userId,
@@ -232,6 +253,11 @@ export function AuthProvider({ children }) {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem("ss.user", JSON.stringify(userData));
         setUser(userData);
+        
+        // ✅ PHASE 2: Identify user and track Golden Path event
+        identifyUser(userData._id || userData.id, { email: userData.email, username: userData.username });
+        track("user_signed_up", { flow: "legacy" });
+        
         console.log("[AuthContext] 🎉 Registration successful (legacy flow)!");
         return { success: true };
       }
@@ -277,6 +303,11 @@ export function AuthProvider({ children }) {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem("ss.user", JSON.stringify(userData));
         setUser(userData);
+        
+        // ✅ PHASE 2: Golden Path tracked
+        identifyUser(userData._id || userData.id, { email: userData.email, username: userData.username });
+        track("user_signed_up", { flow: "verified_email" });
+
         console.log("[AuthContext] 🎉 Email verified!");
         return { success: true };
       }
@@ -362,19 +393,10 @@ export function AuthProvider({ children }) {
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
     setAuthError(null);
+    
+    resetUser(); // ✅ PHASE 2: Clear telemetry identity so next user is clean
+    
     window.location.href = "/login";
-  };
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // UPDATE USER (for avatar sync, profile edits, etc.)
-  // Merges new fields into current user state + syncs localStorage
-  // ═══════════════════════════════════════════════════════════════════════════
-  const updateUser = (nextFields = {}) => {
-    setUser((prev) => {
-      const merged = { ...(prev || {}), ...nextFields };
-      try { localStorage.setItem("ss.user", JSON.stringify(merged)); } catch {}
-      return merged;
-    });
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -390,7 +412,6 @@ export function AuthProvider({ children }) {
     setAuthError,
 
     // Methods
-    updateUser,
     login,
     register,
     verifyEmail,
