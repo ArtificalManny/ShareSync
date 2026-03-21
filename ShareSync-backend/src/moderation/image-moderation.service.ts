@@ -87,8 +87,16 @@ export class ImageModerationService {
 
     try {
       // Convert buffer to base64 for OpenAI Vision
-      const base64Image = imageBuffer.toString('base64');
       const mimeType = this.detectMimeType(imageBuffer);
+
+      // OpenAI Vision only supports png, jpeg, gif, webp - skip unsupported formats
+      const supportedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!supportedMimes.includes(mimeType)) {
+        this.logger.warn('Unsupported image format for Vision API: ' + mimeType + ' - blocking unverifiable image');
+        return { safe: false, action: 'block', labels: [{ name: 'Unsupported Format', confidence: 100 }], hash, reason: 'Please upload an image in JPG, PNG, GIF, or WebP format.' };
+      }
+
+      const base64Image = imageBuffer.toString('base64');
 
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',

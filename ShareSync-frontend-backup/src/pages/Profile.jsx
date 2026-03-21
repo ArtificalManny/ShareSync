@@ -344,16 +344,18 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     }
     setUploading(true);
     try {
+      // Upload through moderated /api/uploads/avatar endpoint (OpenAI Vision scan)
       const formData = new FormData();
-      formData.append("profilePicture", selectedFile);
       formData.append("avatar", selectedFile);
-      const out = await updateProfile(formData);
-      const avatarUrl =
-        out?.avatarUrl || out?.user?.avatarUrl || out?.data?.avatarUrl ||
-        out?.profilePicture || out?.user?.profilePicture || out?.data?.profilePicture || null;
+      const res = await client.post("/uploads/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const avatarUrl = res.data?.url || res.data?.avatarUrl;
 
       if (avatarUrl) {
         try { localStorage.removeItem("ss.avatarOverride"); } catch {}
+        // Also persist to user profile
+        try { await client.put("/users/me", { avatarUrl }); } catch {}
         applyUserEverywhere({ avatarUrl, profilePicture: avatarUrl });
         toast({ title: "Photo updated", variant: "success" });
         setIsEditing(false);
@@ -363,6 +365,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         return;
       }
 
+      // Fallback: save locally if no URL returned
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = String(reader.result || "");
@@ -376,26 +379,32 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       };
       reader.readAsDataURL(selectedFile);
     } catch (error) {
-      try {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = String(reader.result || "");
-          try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
-          applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
-          toast({ title: "Photo updated (local)", variant: "success" });
-          setIsEditing(false);
-          setSelectedFile(null);
-          setPreviewUrl(null);
-          onPhotoUpdate?.();
-        };
-        reader.readAsDataURL(selectedFile);
-        return;
-      } catch {}
-      toast({
-        title: "Update failed",
-        description: error?.response?.data?.message || error?.message || "Could not upload photo",
-        variant: "error",
-      });
+      const msg = error?.response?.data?.message || error?.message || "";
+      if (msg.includes("moderation") || msg.includes("community guidelines") || msg.includes("rejected")) {
+        toast({ title: "Photo rejected", description: "This image violates our community guidelines.", variant: "error" });
+      } else {
+        // Fallback to localStorage on network error
+        try {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = String(reader.result || "");
+            try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
+            applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
+            toast({ title: "Photo updated (local)", variant: "success" });
+            setIsEditing(false);
+            setSelectedFile(null);
+            setPreviewUrl(null);
+            onPhotoUpdate?.();
+          };
+          reader.readAsDataURL(selectedFile);
+          return;
+        } catch {}
+        toast({
+          title: "Update failed",
+          description: msg || "Could not upload photo",
+          variant: "error",
+        });
+      }
     } finally {
       setUploading(false);
     }

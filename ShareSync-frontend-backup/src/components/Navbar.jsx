@@ -18,6 +18,7 @@ import { formatProfilePicture } from "../utils/imageUtils";
 import { useChat } from "../context/ChatContext.jsx";
 import UnreadBadge from "./messenger/UnreadBadge.jsx";
 import { toast } from "./ui/toast";
+import client from "../api/client";
 import UserAvatar from "./ui/UserAvatar";
 
 import NextMicroStep from "./navbar/NextMicroStep";
@@ -122,18 +123,54 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
     if (!file) return;
     setUploading(true);
     try {
+      // Upload through moderated /api/uploads/avatar endpoint
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const res = await client.post("/uploads/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const avatarUrl = res.data?.url || res.data?.avatarUrl;
+      if (avatarUrl) {
+        try { localStorage.removeItem("ss.avatarOverride"); } catch {}
+        applyUserEverywhere({ avatarUrl, profilePicture: avatarUrl });
+        // Also update the user profile with the new avatar URL
+        try { await client.put("/users/me", { avatarUrl }); } catch {}
+        toast({ title: "Photo updated", variant: "success" });
+        setShowMenu(false);
+        onUploadComplete?.();
+        return;
+      }
+      // Fallback: save locally if backend returned no URL
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = String(reader.result || "");
         try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
         applyUserEverywhere({ avatarUrl: dataUrl });
-        toast({ title: "Photo updated (local)", description: "Backend upload isn't enabled yet — UI will still show your new photo.", variant: "success" });
+        toast({ title: "Photo updated (local)", variant: "success" });
         setShowMenu(false);
         onUploadComplete?.();
       };
       reader.readAsDataURL(file);
-    } catch {
-      toast({ title: "Failed to update photo", variant: "error" });
+    } catch (err) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || err?.message || "";
+      if (status === 400 || msg.includes("moderation") || msg.includes("community guidelines") || msg.includes("rejected") || msg.includes("nudity") || msg.includes("block")) {
+        toast({ title: "Photo rejected", description: msg || "This image violates our community guidelines.", variant: "error" });
+      } else {
+        // Fallback to localStorage on network error
+        try {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = String(reader.result || "");
+            try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
+            applyUserEverywhere({ avatarUrl: dataUrl });
+            toast({ title: "Photo updated (local)", variant: "success" });
+            setShowMenu(false);
+            onUploadComplete?.();
+          };
+          reader.readAsDataURL(file);
+        } catch { toast({ title: "Failed to update photo", variant: "error" }); }
+      }
     } finally {
       setUploading(false);
     }
