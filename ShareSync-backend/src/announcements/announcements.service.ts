@@ -1,10 +1,9 @@
 // src/announcements/announcements.service.ts
-import { Injectable, BadRequestException, NotFoundException, Inject, Optional } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 import { Announcement, AnnouncementDocument } from './schemas/announcements.schema';
-import { UploadsService } from '../uploads/uploads.service'; // ✅ Import UploadsService
 
 export type GetAnnouncementsOptions = {
   pinnedOnly?: boolean;
@@ -16,9 +15,30 @@ export type CreateAnnouncementInput = {
   title: string;
   message: string;
   type?: string;
-  pinned?: boolean | string; // Multer sends form-data as strings
+  pinned?: boolean;
   attachments?: string[];
-  file?: Express.Multer.File; // ✅ Accept optional file object
+};
+
+// ✅ NEW: Comment input type
+export type AddCommentInput = {
+  announcementId: string;
+  authorId: string;
+  text: string;
+  attachments?: string[];
+};
+
+// ─── Shared author populate fields ─────────────────────────────────────────
+const AUTHOR_POPULATE = {
+  path: 'authorId',
+  select: 'firstName lastName username avatar profilePicture',
+};
+const COMMENT_AUTHOR_POPULATE = {
+  path: 'comments.authorId',
+  select: 'firstName lastName username avatar profilePicture',
+};
+const LIKES_POPULATE = {
+  path: 'likes',
+  select: 'firstName lastName username avatar profilePicture',
 };
 
 @Injectable()
@@ -26,7 +46,6 @@ export class AnnouncementsService {
   constructor(
     @InjectModel(Announcement.name)
     private readonly announcementModel: Model<AnnouncementDocument>,
-    @Optional() private readonly uploadsService?: UploadsService, // ✅ Inject UploadsService securely
   ) {}
 
   private toObjectId(id: string, label: string): Types.ObjectId {
@@ -35,6 +54,10 @@ export class AnnouncementsService {
     }
     return new Types.ObjectId(id);
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GET announcements (with author + comment author + likes populated)
+  // ═══════════════════════════════════════════════════════════════════════════
 
   public async getProjectAnnouncements(
     projectId: string,
@@ -47,30 +70,20 @@ export class AnnouncementsService {
 
     return this.announcementModel
       .find(query)
-      // ✅ Populate author info so frontend can display name/avatar
-      .populate('authorId', 'firstName lastName username profilePicture') 
       .sort({ pinned: -1, createdAt: -1 })
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
       .exec();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CREATE announcement
+  // ═══════════════════════════════════════════════════════════════════════════
 
   public async create(input: CreateAnnouncementInput) {
     const projectObjectId = this.toObjectId(input.projectId, 'projectId');
     const authorObjectId = this.toObjectId(input.authorId, 'authorId');
-
-    const finalAttachments: string[] = input.attachments ? [...input.attachments] : [];
-
-    // ✅ Process file attachment if one was uploaded
-    if (input.file && this.uploadsService) {
-      try {
-        const storedFile = await this.uploadsService.uploadFile(input.file);
-        if (storedFile && storedFile.url) {
-          finalAttachments.push(storedFile.url);
-        }
-      } catch (err) {
-        console.error('Failed to upload announcement attachment:', err);
-        // Continue creating announcement even if upload fails
-      }
-    }
 
     const doc = await this.announcementModel.create({
       projectId: projectObjectId,
@@ -78,14 +91,25 @@ export class AnnouncementsService {
       title: input.title,
       message: input.message,
       type: input.type || 'info',
-      pinned: input.pinned === true || input.pinned === 'true', // Handle form-data strings
-      attachments: finalAttachments,
+      pinned: Boolean(input.pinned),
+      attachments: input.attachments || [],
       readBy: [],
+      likes: [],
+      comments: [],
     });
 
-    // ✅ Return populated document so UI updates immediately with author info
-    return this.announcementModel.findById(doc._id).populate('authorId', 'firstName lastName username profilePicture').exec();
+    // Return populated version
+    return this.announcementModel
+      .findById(doc._id)
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
+      .exec();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MARK AS READ
+  // ═══════════════════════════════════════════════════════════════════════════
 
   public async markAsRead(announcementId: string, userId: string) {
     const annId = this.toObjectId(announcementId, 'announcementId');
@@ -97,11 +121,18 @@ export class AnnouncementsService {
         { $addToSet: { readBy: userObjectId } },
         { new: true },
       )
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
       .exec();
 
     if (!updated) throw new NotFoundException('Announcement not found');
     return updated;
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TOGGLE PIN
+  // ═══════════════════════════════════════════════════════════════════════════
 
   public async togglePin(announcementId: string) {
     const annId = this.toObjectId(announcementId, 'announcementId');
@@ -111,8 +142,18 @@ export class AnnouncementsService {
 
     existing.pinned = !existing.pinned;
     await existing.save();
-    return existing;
+
+    return this.announcementModel
+      .findById(annId)
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
+      .exec();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DELETE
+  // ═══════════════════════════════════════════════════════════════════════════
 
   public async delete(announcementId: string) {
     const annId = this.toObjectId(announcementId, 'announcementId');
@@ -122,6 +163,10 @@ export class AnnouncementsService {
 
     return { success: true };
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // READ STATUS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   public async getReadStatus(announcementId: string, memberIds: string[]) {
     const annId = this.toObjectId(announcementId, 'announcementId');
@@ -135,5 +180,95 @@ export class AnnouncementsService {
       memberId,
       read: readSet.has(String(memberId)),
     }));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: TOGGLE LIKE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  public async toggleLike(announcementId: string, userId: string) {
+    const annId = this.toObjectId(announcementId, 'announcementId');
+    const userObjectId = this.toObjectId(userId, 'userId');
+
+    const ann = await this.announcementModel.findById(annId).exec();
+    if (!ann) throw new NotFoundException('Announcement not found');
+
+    const likesStrings = (ann.likes || []).map((x) => String(x));
+    const alreadyLiked = likesStrings.includes(String(userObjectId));
+
+    if (alreadyLiked) {
+      await this.announcementModel.findByIdAndUpdate(annId, {
+        $pull: { likes: userObjectId },
+      }).exec();
+    } else {
+      await this.announcementModel.findByIdAndUpdate(annId, {
+        $addToSet: { likes: userObjectId },
+      }).exec();
+    }
+
+    return this.announcementModel
+      .findById(annId)
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
+      .exec();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: ADD COMMENT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  public async addComment(input: AddCommentInput) {
+    const annId = this.toObjectId(input.announcementId, 'announcementId');
+    const authorObjectId = this.toObjectId(input.authorId, 'authorId');
+
+    const ann = await this.announcementModel.findById(annId).exec();
+    if (!ann) throw new NotFoundException('Announcement not found');
+
+    const comment = {
+      _id: new Types.ObjectId(),
+      authorId: authorObjectId,
+      text: input.text,
+      attachments: input.attachments || [],
+      createdAt: new Date(),
+    };
+
+    ann.comments.push(comment as any);
+    await ann.save();
+
+    return this.announcementModel
+      .findById(annId)
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
+      .exec();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: DELETE COMMENT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  public async deleteComment(announcementId: string, commentId: string) {
+    const annId = this.toObjectId(announcementId, 'announcementId');
+
+    if (!Types.ObjectId.isValid(commentId)) {
+      throw new BadRequestException('Invalid commentId');
+    }
+
+    const ann = await this.announcementModel.findById(annId).exec();
+    if (!ann) throw new NotFoundException('Announcement not found');
+
+    const commentObjId = new Types.ObjectId(commentId);
+    ann.comments = ann.comments.filter(
+      (c: any) => String(c._id) !== String(commentObjId),
+    );
+    await ann.save();
+
+    return this.announcementModel
+      .findById(annId)
+      .populate(AUTHOR_POPULATE)
+      .populate(COMMENT_AUTHOR_POPULATE)
+      .populate(LIKES_POPULATE)
+      .exec();
   }
 }

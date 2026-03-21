@@ -10,13 +10,19 @@ export interface StoredFile {
   mime: string;
 }
 
+// Backend base URL for constructing absolute file URLs
+// In production, replace with your CDN/S3 URL via environment variable
+const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || 'http://localhost:5050';
+
 @Injectable()
 export class UploadsService {
   async uploadFile(file: Express.Multer.File): Promise<StoredFile> {
     // TODO: your actual persistence (S3, local, etc.)
-    // For now, assume the file is accessible at /uploads/<filename>
     const id = crypto.randomUUID();
-    const url = `/uploads/${(file as any).filename || id}`;
+    const filename = (file as any).filename || id;
+    // ✅ FIX: Return absolute URL so frontend can render images directly
+    const relativePath = `/uploads/${filename}`;
+    const url = `${UPLOADS_BASE_URL}${relativePath}`;
     const thumbUrl = file.mimetype?.startsWith('image/') ? url : undefined;
 
     return {
@@ -30,7 +36,7 @@ export class UploadsService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // ✅ PHASE 5.1: AVATAR UPLOAD WRAPPER
+  // AVATAR UPLOAD WRAPPER
   // Controller expects a string URL. We reuse uploadFile().
   // ─────────────────────────────────────────────────────────────────────────────
   async uploadAvatar(file: Express.Multer.File): Promise<string> {

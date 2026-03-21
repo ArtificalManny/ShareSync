@@ -26,22 +26,35 @@ export class Announcement {
   @Prop({ type: [String], default: [] })
   attachments: string[];
 
-  // NEW: Threaded comments support
-  @Prop({ 
-    type: [{ 
-      authorId: { type: Types.ObjectId, ref: 'User' }, 
-      text: String, 
-      createdAt: { type: Date, default: Date.now } 
-    }], 
-    default: [] 
-  })
-  comments: { authorId: Types.ObjectId; text: string; createdAt: Date }[];
-
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   readBy: Types.ObjectId[];
 
   @Prop({ default: false })
   archived: boolean;
+
+  // ✅ NEW: Likes — array of user ObjectIds who liked this announcement
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  likes: Types.ObjectId[];
+
+  // ✅ NEW: Comments — embedded subdocuments
+  @Prop({
+    type: [
+      {
+        authorId: { type: Types.ObjectId, ref: 'User' },
+        text: { type: String, required: true },
+        attachments: { type: [String], default: [] },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  comments: Array<{
+    _id?: Types.ObjectId;
+    authorId: Types.ObjectId;
+    text: string;
+    attachments: string[];
+    createdAt: Date;
+  }>;
 }
 
 export const AnnouncementSchema = SchemaFactory.createForClass(Announcement);

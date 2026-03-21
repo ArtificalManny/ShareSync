@@ -1,13 +1,27 @@
 import {
-  Controller, Get, Post, Body, Param, Req, UseGuards, 
+  Controller, Get, Post, Body, Param, Req, UseGuards,
   UseInterceptors, UploadedFile, BadRequestException
 } from '@nestjs/common';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 import { ImageModerationService } from '../moderation/image-moderation.service';
+import { ModerationService } from '../moderation/moderation.service';
+import { policyForUpload } from '../moderation/policy';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { ApiBearerAuth, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { VaultService } from './vault.service';
+import * as path from 'node:path';
+
+// Multer disk storage — saves vault files to /uploads with unique names
+const vaultDiskStorage = diskStorage({
+  destination: path.join(__dirname, '..', '..', 'uploads'),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const uniqueName = `vault-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+    cb(null, uniqueName);
+  },
+});
 
 @ApiTags('Vault')
 @ApiBearerAuth()
@@ -17,6 +31,7 @@ export class VaultController {
   constructor(
     private readonly vaultService: VaultService,
     private readonly imageModerationService: ImageModerationService,
+    private readonly moderationService: ModerationService,
   ) {}
 
   @Get('project/:projectId')
@@ -37,13 +52,13 @@ export class VaultController {
   ) {
     const userId = req.user?.sub || req.user?.userId;
     if (!projectId || !name) throw new BadRequestException('Project ID and folder name are required.');
-    
+
     const folder = await this.vaultService.createFolder(projectId, userId, name, accessLevel || 'public', allowedUsers);
     return { success: true, data: folder };
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: vaultDiskStorage }))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -62,21 +77,56 @@ export class VaultController {
     @Body('folderId') folderId?: string,
   ) {
     const userId = req.user?.sub || req.user?.userId;
-    
-   if (!file) throw new BadRequestException('No file provided');
+
+    if (!file) throw new BadRequestException('No file provided');
     if (!projectId) throw new BadRequestException('Project ID is required');
 
-    // Image moderation — scan before storing
-    if (file.mimetype?.startsWith('image/') && file.buffer) {
-      const modResult = await this.imageModerationService.moderateImage(file.buffer);
-      if (modResult.action === 'block') {
-        throw new BadRequestException({
-          error: 'Content Policy Violation',
-          message: 'This image violates our community guidelines and cannot be uploaded.',
-          code: 'IMAGE_BLOCKED',
-        });
+    const ext = path.extname(file.originalname || '').slice(1).toLowerCase();
+    const mime = file.mimetype || 'application/octet-stream';
+    const size = file.size || 0;
+    const fsPath = (file as any).path || '';
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FULL MODERATION PIPELINE (matches /api/uploads/file)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // 1) Virus scan
+    const virus = await this.moderationService.virusScan(fsPath);
+
+    // 2) Real AI image moderation via OpenAI Vision
+    let image = null;
+    if (mime.startsWith('image/') && fsPath) {
+      const imgResult = await this.imageModerationService.moderateImage(fsPath);
+      if (imgResult.action === 'block') {
+        throw new BadRequestException(imgResult.reason || 'Image rejected by AI moderation safety filters.');
       }
+      image = {
+        decision: imgResult.action === 'allow' ? 'ALLOW' : imgResult.action === 'review' ? 'REVIEW' : 'BLOCK',
+        reason: imgResult.reason,
+        categories: imgResult.labels.map(l => l.name),
+      };
     }
+
+    // 3) Policy decision
+    const decision = policyForUpload({ ext, sizeBytes: size, mime, virus, image });
+
+    await this.moderationService.logDecision({
+      kind: 'upload',
+      ext,
+      size,
+      mime,
+      decision: decision.decision,
+      reason: decision.reason,
+      ts: Date.now(),
+    });
+
+    if (decision.decision === 'BLOCK') {
+      throw new BadRequestException(decision.reason || 'This file is not allowed.');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STORAGE QUOTA + PERSIST
+    // ═══════════════════════════════════════════════════════════════════════
 
     const uploadedFile = await this.vaultService.uploadFile(projectId, userId, file, folderId);
     return { success: true, data: uploadedFile };

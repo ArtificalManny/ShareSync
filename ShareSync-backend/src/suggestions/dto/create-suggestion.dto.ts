@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsArray } from 'class-validator';
 
 export class CreateSuggestionDto {
   @IsString()
@@ -10,4 +10,10 @@ export class CreateSuggestionDto {
   @IsNotEmpty()
   @MaxLength(2000, { message: 'Content cannot exceed 2000 characters.' })
   content: string;
+
+  // ✅ NEW: Optional attachment URLs (uploaded via /api/uploads/file)
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  attachments?: string[];
 }

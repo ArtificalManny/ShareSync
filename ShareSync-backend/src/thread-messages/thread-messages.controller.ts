@@ -9,11 +9,13 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 import { ThreadMessagesService } from './thread-messages.service';
 import { CreateThreadMessageDto } from './dto/create-thread-message.dto';
 import { EditThreadMessageDto } from './dto/edit-thread-message.dto';
@@ -26,6 +28,7 @@ export class ThreadMessagesController {
   constructor(private readonly threadMessagesService: ThreadMessagesService) {}
 
   @Post(':threadId')
+  @UseInterceptors(TextModerationInterceptor)
   @ApiOperation({ summary: 'Create a message in a thread' })
   @ApiParam({ name: 'threadId', description: 'Thread ID' })
   async create(
@@ -51,6 +54,7 @@ export class ThreadMessagesController {
   }
 
   @Put(':messageId')
+  @UseInterceptors(TextModerationInterceptor)
   @ApiOperation({ summary: 'Edit a message (owner only)' })
   @ApiParam({ name: 'messageId', description: 'Message ID' })
   async edit(

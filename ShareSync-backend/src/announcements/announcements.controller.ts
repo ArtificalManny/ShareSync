@@ -23,6 +23,21 @@ export class AnnouncementsController {
     private readonly announcementsService: AnnouncementsService,
   ) {}
 
+  // Helper: extract userId from JWT payload
+  private getUserId(req: any): string {
+    return String(
+      req?.user?.userId ||
+        req?.user?._id ||
+        req?.user?.id ||
+        req?.user?.sub ||
+        '',
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GET all announcements (populated with author avatars + comments)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @Get()
   async getAnnouncements(@Param('projectId') projectId: string) {
     return this.announcementsService.getProjectAnnouncements(projectId, {
@@ -36,6 +51,10 @@ export class AnnouncementsController {
       pinnedOnly: true,
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CREATE announcement (text moderation on title + message)
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Post()
   @UseInterceptors(TextModerationInterceptor)
@@ -51,8 +70,7 @@ export class AnnouncementsController {
       attachments?: string[];
     },
   ) {
-    const authorId =
-      String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
+    const authorId = this.getUserId(req);
 
     return this.announcementsService.create({
       projectId,
@@ -61,28 +79,86 @@ export class AnnouncementsController {
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MARK AS READ
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @Patch(':id/read')
   async markAsRead(@Param('id') id: string, @Request() req: any) {
-    const userId =
-      String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
-
+    const userId = this.getUserId(req);
     return this.announcementsService.markAsRead(id, userId);
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TOGGLE PIN
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Patch(':id/pin')
   async togglePin(@Param('id') id: string) {
     return this.announcementsService.togglePin(id);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DELETE announcement
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @Delete(':id')
   async deleteAnnouncement(@Param('id') id: string) {
     return this.announcementsService.delete(id);
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // READ STATUS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Get(':id/read-status')
   async getReadStatus(@Param('id') id: string) {
     // TODO: replace with real project member IDs
     const memberIds: string[] = [];
     return this.announcementsService.getReadStatus(id, memberIds);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: TOGGLE LIKE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Patch(':id/like')
+  async toggleLike(@Param('id') id: string, @Request() req: any) {
+    const userId = this.getUserId(req);
+    return this.announcementsService.toggleLike(id, userId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: ADD COMMENT (text moderation on comment text)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Post(':id/comments')
+  @UseInterceptors(TextModerationInterceptor)
+  async addComment(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() body: { text: string; attachments?: string[] },
+  ) {
+    const authorId = this.getUserId(req);
+
+    return this.announcementsService.addComment({
+      announcementId: id,
+      authorId,
+      text: body.text,
+      attachments: body.attachments || [],
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ NEW: DELETE COMMENT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Delete(':id/comments/:commentId')
+  async deleteComment(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.announcementsService.deleteComment(id, commentId);
   }
 }

@@ -1,461 +1,227 @@
-
 // src/components/suggestions/SuggestionCard.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM v2.0 - PHASE 4: Information Architecture
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3-ZONE PATTERN (Asana-style consistent scanning):
+//
+// This component is a CARD (not a row), so zones stack vertically:
+// ZONE 1: Identity - Title + Context + Author
+// ZONE 2: Status - Content preview + Attachments
+// ZONE 3: Action - Vote + Comments + Implement
+// ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback } from 'react';
-
-import {
-
-  ThumbsUp, MessageCircle, CheckCircle, Clock, ChevronRight,
-
-  ChevronDown, Send, Loader2,
-
-} from 'lucide-react';
-
+import React, { useState } from 'react';
+import { ThumbsUp, MessageCircle, CheckCircle, Clock, ChevronRight } from 'lucide-react';
 import { toast } from '../ui/toast';
 
-import { addSuggestionComment, getSuggestionComments } from '../../api/suggestions';
-
- 
-
+/* ─────────────────────────────────────────────────────────────────────────
+   CONTEXT CONFIG
+───────────────────────────────────────────────────────────────────────── */
 const contextConfig = {
-
-  task: { label: 'Task', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-500/10' },
-
-  announcement: { label: 'Feedback', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-
-  general: { label: 'General', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-
-  feature: { label: 'Feature', color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-500/10' },
-
+  task: { label: 'Task', color: 'text-brand', bg: 'bg-brand/10' },
+  announcement: { label: 'Announcement', color: 'text-warning', bg: 'bg-warning/10' },
+  general: { label: 'General', color: 'text-success', bg: 'bg-success/10' },
+  feature: { label: 'Feature', color: 'text-brand', bg: 'bg-brand/10' },
 };
 
- 
-
-function timeAgo(ts) {
-
-  if (!ts) return 'Recently';
-
-  const diff = Date.now() - new Date(ts).getTime();
-
-  if (isNaN(diff) || diff < 0) return 'Recently';
-
-  const m = Math.floor(diff / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
-
-  if (m < 1) return 'Just now';
-
-  if (m < 60) return `${m}m ago`;
-
-  if (h < 24) return `${h}h ago`;
-
-  if (d < 7) return `${d}d ago`;
-
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-}
-
- 
-
-const SuggestionCard = ({ suggestion, projectId, onVote, onImplement, canImplement = false, onClick }) => {
-
-  const [implementing, setImplementing] = useState(false);
-
-  const [showComments, setShowComments] = useState(false);
-
-  const [comments, setComments] = useState(suggestion?.comments || []);
-
-  const [loadingComments, setLoadingComments] = useState(false);
-
-  const [newComment, setNewComment] = useState('');
-
-  const [posting, setPosting] = useState(false);
-
- 
-
-  const suggestionId = suggestion?.id || suggestion?._id;
-
- 
-
-  const handleVote = (e) => {
-
-    e.stopPropagation();
-
-    onVote?.(suggestionId);
-
-  };
-
- 
-
-  const handleImplement = async (e) => {
-
-    e.stopPropagation();
-
-    setImplementing(true);
-
-    try { await onImplement?.(suggestionId); }
-
-    catch { toast({ title: 'Failed', variant: 'error' }); }
-
-    finally { setImplementing(false); }
-
-  };
-
- 
-
-  const handleToggleComments = useCallback(async (e) => {
-
-    e?.stopPropagation?.();
-
-    const opening = !showComments;
-
-    setShowComments(opening);
-
- 
-
-    if (opening && comments.length === 0 && suggestionId && projectId) {
-
-      setLoadingComments(true);
-
-      try {
-
-        const fetched = await getSuggestionComments(projectId, suggestionId);
-
-        setComments(Array.isArray(fetched) ? fetched : []);
-
-      } catch { /* keep embedded comments */ }
-
-      finally { setLoadingComments(false); }
-
-    }
-
-  }, [showComments, comments.length, suggestionId, projectId]);
-
- 
-
-  const handlePostComment = useCallback(async () => {
-
-    const content = newComment.trim();
-
-    if (!content || !suggestionId || !projectId || posting) return;
-
- 
-
-    setPosting(true);
-
-    try {
-
-      const created = await addSuggestionComment(projectId, suggestionId, content);
-
-      setComments(prev => [...prev, created]);
-
-      setNewComment('');
-
-    } catch (err) {
-
-      toast({ title: err?.message || 'Failed to post comment', variant: 'error' });
-
-    } finally {
-
-      setPosting(false);
-
-    }
-
-  }, [newComment, suggestionId, projectId, posting]);
-
- 
-
-  const context = contextConfig[suggestion?.context] || contextConfig.general;
-
-  const isImplemented = suggestion?.implemented || suggestion?.status === 'completed';
-
-  const commentCount = comments.length || suggestion?.comments?.length || 0;
-
-  const voteCount = (suggestion?.upvotes?.length || 0);
-
- 
+/* ─────────────────────────────────────────────────────────────────────────
+   ATTACHMENT GALLERY — displays uploaded images on the suggestion card
+───────────────────────────────────────────────────────────────────────── */
+function AttachmentGallery({ attachments }) {
+  const urls = Array.isArray(attachments) ? attachments.filter(Boolean) : [];
+  if (urls.length === 0) return null;
+
+  const gridClass = urls.length === 1 ? '' : 'grid grid-cols-2 gap-2';
 
   return (
+    <div className={"px-4 pb-3 " + gridClass}>
+      {urls.map(function(url, i) {
+        return (
+          <a
+            key={"att-" + i}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={function(e) { e.stopPropagation(); }}
+            className="block rounded-lg overflow-hidden border border-slate-200 dark:border-white/[0.08] hover:opacity-90 transition-opacity"
+          >
+            <img
+              src={url}
+              alt={"Attachment " + (i + 1)}
+              className="w-full max-h-64 object-cover"
+              onError={function(e) { e.target.style.display = 'none'; }}
+            />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
-    <div className={`group rounded-xl overflow-hidden
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false, onClick }) => {
+  const [voted, setVoted] = useState(false);
+  const [implementing, setImplementing] = useState(false);
 
-      bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06]
+  const suggestionId = suggestion.id || suggestion._id;
 
-      hover:border-slate-300 dark:hover:border-white/[0.1] transition-all duration-200
+  const handleVote = (e) => {
+    e.stopPropagation();
+    if (voted) {
+      toast({ title: 'Already voted', variant: 'default' });
+      return;
+    }
+    setVoted(true);
+    onVote?.(suggestionId);
+    toast({ title: 'Vote counted!', variant: 'success' });
+  };
 
-      ${isImplemented ? 'opacity-70 border-l-2 border-l-emerald-500' : ''}`}>
+  const handleImplement = async (e) => {
+    e.stopPropagation();
+    setImplementing(true);
+    try {
+      await onImplement?.(suggestionId);
+      toast({ title: 'Suggestion marked as implemented!', variant: 'success' });
+    } catch (error) {
+      toast({ title: 'Failed to implement', variant: 'error' });
+    } finally {
+      setImplementing(false);
+    }
+  };
 
- 
+  const context = contextConfig[suggestion.context] || contextConfig.general;
+  const isImplemented = suggestion.implemented || suggestion.status === 'completed';
 
-      {/* Identity */}
+  // Author display
+  const authorInitial = suggestion.authorId?.firstName?.[0] || suggestion.author?.name?.[0] || '?';
+  const authorName = suggestion.authorId?.firstName
+    ? (suggestion.authorId.firstName + ' ' + (suggestion.authorId.lastName || '')).trim()
+    : (suggestion.author?.name || 'Unknown');
+  const timeDisplay = suggestion.timeAgo || (suggestion.createdAt
+    ? new Date(suggestion.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : '');
 
-      <div className="p-4 pb-3" onClick={onClick} role={onClick ? 'button' : undefined}>
-
+  return (
+    <div
+      onClick={onClick}
+      className={
+        "group rounded-xl overflow-hidden bg-surface-1 border border-white/[0.06] hover:bg-surface-2 hover:border-white/[0.1] transition-all duration-200"
+        + (onClick ? " cursor-pointer" : "")
+        + (isImplemented ? " opacity-70 border-l-2 border-l-success" : "")
+      }
+    >
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 1: Identity
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="p-4 pb-3">
         <div className="flex items-start justify-between gap-3">
-
           <div className="min-w-0 flex-1">
-
+            {/* Context + Visibility + Implemented badges */}
             <div className="flex items-center gap-2 mb-2">
-
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${context.bg} ${context.color}`}>
-
+              <span className={"text-[10px] font-medium px-2 py-0.5 rounded " + context.bg + " " + context.color}>
                 {context.label}
-
               </span>
-
-              {suggestion?.visibility && (
-
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40">
-
-                  {suggestion.visibility.charAt(0).toUpperCase() + suggestion.visibility.slice(1)}
-
+              {suggestion.visibility && (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40 capitalize">
+                  {suggestion.visibility}
                 </span>
-
               )}
-
               {isImplemented && (
-
-                <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-
-                  <CheckCircle className="w-3 h-3" /> Done
-
+                <span className="flex items-center gap-1 text-[10px] font-medium text-success">
+                  <CheckCircle className="w-3 h-3" />
+                  Done
                 </span>
-
               )}
-
             </div>
 
-            <h3 className="text-sm font-medium text-slate-800 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors line-clamp-2">
-
-              {suggestion?.title}
-
+            {/* Title */}
+            <h3 className="text-sm font-medium text-text-primary group-hover:text-brand transition-colors line-clamp-2">
+              {suggestion.title}
             </h3>
 
-          </div>
-
-          {onClick && <ChevronRight className="w-4 h-4 text-slate-300 dark:text-white/20 shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />}
-
-        </div>
-
- 
-
-        <div className="flex items-center gap-2 mt-3">
-
-          <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center text-[10px] font-medium text-violet-600 dark:text-violet-400">
-
-            {suggestion?.authorId?.firstName?.[0] || suggestion?.author?.name?.[0] || '?'}
-
-          </div>
-
-          <span className="text-xs text-slate-500 dark:text-white/40">
-
-            {suggestion?.authorId?.firstName || suggestion?.author?.name || 'Unknown'}
-
-          </span>
-
-          <span className="text-slate-300 dark:text-white/20">·</span>
-
-          <span className="text-xs text-slate-400 dark:text-white/30 flex items-center gap-1">
-
-            <Clock className="w-3 h-3" />
-
-            {suggestion?.timeAgo || timeAgo(suggestion?.createdAt)}
-
-          </span>
-
-        </div>
-
-      </div>
-
- 
-
-      {/* Content */}
-
-      {suggestion?.content && (
-
-        <div className="px-4 pb-3">
-
-          <p className="text-xs text-slate-600 dark:text-white/50 line-clamp-2">{suggestion.content}</p>
-
-        </div>
-
-      )}
-
- 
-
-      {/* Actions */}
-
-      <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.04] flex items-center justify-between">
-
-        <div className="flex items-center gap-4">
-
-          <button onClick={handleVote} disabled={isImplemented}
-
-            className="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 disabled:opacity-50 transition-colors">
-
-            <ThumbsUp className="w-3.5 h-3.5" />
-
-            <span>{voteCount}</span>
-
-          </button>
-
- 
-
-          <button onClick={handleToggleComments}
-
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors
-
-              ${showComments ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-white/30 hover:text-slate-600 dark:hover:text-white/60'}`}>
-
-            <MessageCircle className="w-3.5 h-3.5" />
-
-            <span>{commentCount}</span>
-
-            <ChevronDown className={`w-3 h-3 transition-transform ${showComments ? 'rotate-180' : ''}`} />
-
-          </button>
-
-        </div>
-
- 
-
-        {canImplement && !isImplemented && (
-
-          <button onClick={handleImplement} disabled={implementing}
-
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium
-
-              bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400
-
-              hover:bg-emerald-100 dark:hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
-
-            <CheckCircle className="w-3.5 h-3.5" />
-
-            {implementing ? '...' : 'Done'}
-
-          </button>
-
-        )}
-
-      </div>
-
- 
-
-      {/* Comments */}
-
-      {showComments && (
-
-        <div className="border-t border-slate-100 dark:border-white/[0.04] bg-slate-50/50 dark:bg-white/[0.02]">
-
-          <div className="px-4 py-2 max-h-[300px] overflow-y-auto">
-
-            {loadingComments ? (
-
-              <div className="flex items-center gap-2 py-4 justify-center text-slate-400 dark:text-white/30">
-
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-
-                <span className="text-xs">Loading comments...</span>
-
-              </div>
-
-            ) : comments.length === 0 ? (
-
-              <p className="text-xs text-slate-400 dark:text-white/30 py-4 text-center">No comments yet — be the first!</p>
-
-            ) : (
-
-              comments.map((c, idx) => (
-
-                <div key={c._id || idx} className="flex items-start gap-2 py-2 border-b border-slate-100 dark:border-white/[0.03] last:border-b-0">
-
-                  <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-[9px] font-medium text-slate-500 dark:text-white/40 flex-shrink-0 mt-0.5">
-
-                    {c.authorName?.[0] || '?'}
-
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-
-                    <div className="flex items-center gap-2">
-
-                      <span className="text-[11px] font-medium text-slate-700 dark:text-white/70">{c.authorName || 'Unknown'}</span>
-
-                      <span className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(c.createdAt)}</span>
-
-                    </div>
-
-                    <p className="text-xs text-slate-600 dark:text-white/50 mt-0.5">{c.content}</p>
-
-                  </div>
-
-                </div>
-
-              ))
-
+            {/* Related to */}
+            {suggestion.targetName && (
+              <p className="text-xs text-text-tertiary mt-1">
+                {"\u2192 "}{suggestion.targetName}
+              </p>
             )}
-
           </div>
 
- 
-
-          <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.04]">
-
-            <div className="flex items-center gap-2">
-
-              <input
-
-                type="text"
-
-                value={newComment}
-
-                onChange={(e) => setNewComment(e.target.value)}
-
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
-
-                placeholder="Add a comment..."
-
-                maxLength={1000}
-
-                className="flex-1 min-w-0 text-xs px-3 py-2 rounded-lg
-
-                  bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08]
-
-                  text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30
-
-                  focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-shadow"
-
-              />
-
-              <button
-
-                onClick={handlePostComment}
-
-                disabled={posting || !newComment.trim()}
-
-                className="p-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white
-
-                  disabled:opacity-40 transition-colors"
-
-              >
-
-                {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-
-              </button>
-
-            </div>
-
-          </div>
-
+          {/* Chevron */}
+          {onClick && (
+            <ChevronRight className="w-4 h-4 text-text-tertiary shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          )}
         </div>
 
+        {/* Author + Time */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="w-5 h-5 rounded-full bg-surface-3 flex items-center justify-center text-[10px] font-medium text-text-secondary">
+            {authorInitial}
+          </div>
+          <span className="text-xs text-text-tertiary">{authorName}</span>
+          <span className="text-text-tertiary opacity-50">{"\u00B7"}</span>
+          <span className="text-xs text-text-tertiary flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {timeDisplay}
+          </span>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 2: Status — Content + Attachments
+      ═══════════════════════════════════════════════════════════════════ */}
+      {suggestion.content && (
+        <div className="px-4 pb-3">
+          <p className="text-xs text-text-secondary line-clamp-3">
+            {suggestion.content}
+          </p>
+        </div>
       )}
 
+      {/* Attachment gallery */}
+      <AttachmentGallery attachments={suggestion.attachments} />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ZONE 3: Action — Vote + Comments + Implement
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="px-4 py-3 border-t border-white/[0.04] flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {/* Vote Button */}
+          <button
+            onClick={handleVote}
+            disabled={voted || isImplemented}
+            className={
+              "flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed "
+              + (voted ? "text-brand" : "text-text-tertiary hover:text-brand")
+            }
+          >
+            <ThumbsUp className={"w-3.5 h-3.5" + (voted ? " fill-current" : "")} />
+            <span>{(suggestion.votes || 0) + (suggestion.upvotes?.length || 0) + (voted ? 1 : 0)}</span>
+          </button>
+
+          {/* Comments Count */}
+          <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+            <MessageCircle className="w-3.5 h-3.5" />
+            {suggestion.comments?.length || suggestion.commentCount || 0}
+          </span>
+        </div>
+
+        {/* Implement Button */}
+        {canImplement && !isImplemented && (
+          <button
+            onClick={handleImplement}
+            disabled={implementing}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-success/10 text-success hover:bg-success hover:text-white disabled:opacity-50 transition-colors"
+          >
+            <CheckCircle className="w-3.5 h-3.5" />
+            {implementing ? '...' : 'Done'}
+          </button>
+        )}
+      </div>
     </div>
-
   );
-
 };
 
- 
-
 export default SuggestionCard;
-

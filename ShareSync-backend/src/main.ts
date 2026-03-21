@@ -1,15 +1,13 @@
 // src/main.ts
-// ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC BACKEND - APPLICATION BOOTSTRAP
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import compression from 'compression';
+import { join } from 'path';
 
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
@@ -18,7 +16,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
@@ -26,14 +24,19 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  // Serve uploaded files as static assets
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
+
   app.use(
     helmet({
       contentSecurityPolicy: process.env.NODE_ENV === 'production',
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: false,
     }),
   );
 
-  // ✅ CORS: strict in production, flexible for localhost in dev
   const isProd = process.env.NODE_ENV === 'production';
 
   const corsOrigins = configService.get<string>(
@@ -48,11 +51,9 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Non-browser clients or same-origin requests may have no Origin header
       if (!origin) return callback(null, true);
 
       if (!isProd) {
-        // Allow any localhost port in dev (covers Vite random ports like 54693)
         const isLocalhost =
           /^http:\/\/localhost:\d+$/.test(origin) ||
           /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
@@ -60,7 +61,6 @@ async function bootstrap() {
         if (isLocalhost) return callback(null, true);
       }
 
-      // Production (or non-localhost): must be explicitly allowlisted
       if (allowedList.includes(origin)) return callback(null, true);
 
       return callback(new Error(`CORS blocked for origin: ${origin}`), false);
@@ -121,6 +121,7 @@ async function bootstrap() {
   logger.log(`🚀 ShareSync API running on http://localhost:${port}`);
   logger.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
   logger.log(`🔗 Health Check: http://localhost:${port}/api/health`);
+  logger.log(`📁 Static uploads: http://localhost:${port}/uploads/`);
   logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
