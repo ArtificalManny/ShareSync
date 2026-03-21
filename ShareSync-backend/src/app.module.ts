@@ -45,7 +45,6 @@ import { ActivitiesModule } from './activities/activities.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresenceModule } from './presence/presence.module';
-import { AnnouncementsModule } from './announcements/announcements.module'; // ✅ Added Announcements Module
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 3: GAMIFICATION MODULE
@@ -55,6 +54,8 @@ import { GamificationModule } from './gamification/gamification.module';
 
 // ✅ Phase 3: spectator follows
 import { ProjectFollowModule } from './follows/project-follow.module';
+
+import { FollowsModule } from './follows/follows.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 4: ADVANCED MODULES
@@ -67,7 +68,6 @@ import { FilesModule } from './files/files.module';
 // ✅ PHASE 6: NEW MODULES
 import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
-import { ThreadMessagesModule } from './thread-messages/thread-messages.module';
 import { InsightsModule } from './insights/insights.module';
 import { VaultModule } from './vault/vault.module';
 
@@ -87,7 +87,6 @@ import { DiscoveryModule } from './discovery/discovery.module';
 
 import { ModerationModule } from './moderation/moderation.module';
 import { ContentReportsModule } from './content-reports/content-reports.module';
-import { SuggestionsModule } from './suggestions/suggestions.module';
 
 @Module({
   imports: [
@@ -193,10 +192,11 @@ import { SuggestionsModule } from './suggestions/suggestions.module';
     // ─────────────────────────────────────────────────────────────────────────
     MessagesModule,
     NotificationsModule,
-    AnnouncementsModule, // ✅ Added Announcements Module
 
     // ✅ Phase 3: spectator follows
     ProjectFollowModule,
+
+    FollowsModule,
 
     // ─────────────────────────────────────────────────────────────────────────
     // GAMIFICATION
@@ -213,7 +213,6 @@ import { SuggestionsModule } from './suggestions/suggestions.module';
     // ✅ PHASE 6: ADD THESE
     MilestonesModule,
     ThreadsModule,
-    ThreadMessagesModule,
     InsightsModule,
     VaultModule,
 
@@ -233,9 +232,6 @@ import { SuggestionsModule } from './suggestions/suggestions.module';
     // ─────────────────────────────────────────────────────────────────────────
     ModerationModule,
     ContentReportsModule,
-
-    // ✅ SPECTATOR ECONOMY
-    SuggestionsModule,
   ],
 
   providers: [

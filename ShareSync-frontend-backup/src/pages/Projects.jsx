@@ -32,6 +32,7 @@ import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
 
 // PHASE D: Import empty state components
+import EmptyProjects from '../components/empty-states/EmptyProjects';
 import EmptySearch from '../components/empty-states/EmptySearch';
 
 // Use API helpers that already unwrap backend shapes correctly
@@ -417,25 +418,15 @@ const Projects = () => {
 
     if (projects.length === 0) {
       return (
-        <div 
-          onClick={() => setShowCreateModal(true)}
-          className="py-24 mt-8 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.10] rounded-3xl bg-slate-50/50 dark:bg-[#111113]/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23]/80 transition-all duration-300 group cursor-pointer"
-        >
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-2xl group-hover:animate-pulse transition-all duration-300" />
-            <div className="relative w-full h-full rounded-3xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.05] shadow-xl flex items-center justify-center transform group-hover:scale-105 group-hover:shadow-2xl transition-all duration-300">
-              <LayoutGrid className="w-10 h-10 text-violet-600 dark:text-violet-400" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">Every great initiative starts here.</h3>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md text-center mb-8 leading-relaxed">
-            Set the stage for your team's next breakthrough. Initialize a new project to structure your workflow and align your focus.
-          </p>
-          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 pointer-events-none">
-            <Plus className="w-5 h-5" />
-            Initialize Project
-          </button>
-        </div>
+        <EmptyProjects
+          onCreateProject={() => setShowCreateModal(true)}
+          onSelectTemplate={(template) => {
+            console.log('Selected template:', template);
+            setShowCreateModal(true);
+          }}
+          showTemplates={true}
+          variant="animated"
+        />
       );
     }
 
@@ -508,26 +499,18 @@ const Projects = () => {
             />
           </div>
 
-          {/* New Project Button - Violet Gradient (Sunset) */}
+          {/* New Project Button - Pure Tailwind violet (FIXED: inline style was being overridden) */}
           <button
             onClick={() => setShowCreateModal(true)}
             className="
               flex items-center gap-2 px-4 py-2.5 rounded-lg
+              bg-violet-600 hover:bg-violet-700 active:bg-violet-800
               text-white text-sm font-medium
+              shadow-lg shadow-violet-600/30
+              hover:shadow-xl hover:shadow-violet-600/40
+              hover:-translate-y-0.5 active:translate-y-0
               transition-all duration-200
             "
-            style={{
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
-              boxShadow: '0 4px 14px rgba(139, 92, 246, 0.25)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.35)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(139, 92, 246, 0.25)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Project</span>

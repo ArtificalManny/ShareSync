@@ -11,6 +11,8 @@ import {
   Flame, Eye, Zap, Bell, BellOff,
 } from 'lucide-react';
 import client from '../../api/client';
+import { useFollow } from '../../hooks/useFollow';
+import { getBulkFollowStatus } from '../../api/follows';
 
 const FALLBACK_FEATURED = [
   { id: 'demo-1', name: 'ShareSync Platform', description: 'The project management tool that builds momentum', emoji: '🚀', memberCount: 12, shipCount: 34, tags: ['saas', 'productivity'], streak: 45, completionRate: 72 },
@@ -46,16 +48,23 @@ function ProgressBar({ value = 0 }) {
   );
 }
 
-function ProjectCard({ project, onFollow }) {
+function ProjectCard({ project, initialFollowing }) {
   const navigate = useNavigate();
-  const [following, setFollowing] = useState(false);
   const pid = project._id || project.id;
   const isDemo = pid?.startsWith('demo-');
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FOLLOW HOOK — replaces old local useState with real API calls
+  // ═══════════════════════════════════════════════════════════════════════════
+  const { following, loading: followLoading, toggle } = useFollow(
+    pid,
+    initialFollowing || false,
+  );
+
   const handleFollow = (e) => {
     e.stopPropagation();
-    setFollowing(!following);
-    onFollow?.(pid, !following);
+    if (isDemo) return; // Don't call API for demo projects
+    toggle();
   };
 
   return (
@@ -127,18 +136,26 @@ function ProjectCard({ project, onFollow }) {
           </div>
         </div>
 
-        {/* Follow button */}
+        {/* Follow button — now wired to real API via useFollow hook */}
         <div className="flex flex-col items-end gap-2 shrink-0">
           <button
             onClick={handleFollow}
+            disabled={followLoading || isDemo}
             className={
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border '
               + (following
                 ? 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40 border-slate-200 dark:border-white/[0.08]'
                 : 'bg-violet-600 hover:bg-violet-700 text-white border-violet-600 shadow-sm')
+              + (followLoading ? ' opacity-70 cursor-wait' : '')
             }
           >
-            {following ? <BellOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            {followLoading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : following ? (
+              <BellOff className="w-3 h-3" />
+            ) : (
+              <Eye className="w-3 h-3" />
+            )}
             {following ? 'Following' : 'Follow'}
           </button>
 
@@ -155,6 +172,7 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('trending');
+  const [followStatuses, setFollowStatuses] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -163,7 +181,7 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
         const { data } = await client.get('/discovery/trending', { params: { limit: maxVisible } });
         const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
         if (!cancelled) {
-          setProjects(items.length > 0 ? items.slice(0, maxVisible).map(p => ({
+          const mapped = items.length > 0 ? items.slice(0, maxVisible).map(p => ({
             ...p,
             id: p._id || p.id,
             name: p.name || p.projectName,
@@ -173,7 +191,25 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
             completionRate: p.metrics?.completedTasks && p.metrics?.totalTasks
               ? Math.round((p.metrics.completedTasks / p.metrics.totalTasks) * 100)
               : (p.completionRate || 0),
-          })) : FALLBACK_FEATURED);
+          })) : FALLBACK_FEATURED;
+
+          setProjects(mapped);
+
+          // ═══════════════════════════════════════════════════════════════════
+          // BULK FOLLOW STATUS — fetch which projects user already follows
+          // so buttons render correctly on page load
+          // ═══════════════════════════════════════════════════════════════════
+          const realIds = mapped
+            .map(p => p._id || p.id)
+            .filter(id => id && !String(id).startsWith('demo-'));
+          if (realIds.length > 0) {
+            try {
+              const statuses = await getBulkFollowStatus(realIds);
+              if (!cancelled) setFollowStatuses(statuses);
+            } catch (err) {
+              console.error('[FeaturedProjects] Bulk follow status failed:', err);
+            }
+          }
         }
       } catch {
         if (!cancelled) setProjects(FALLBACK_FEATURED);
@@ -184,11 +220,6 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
     load();
     return () => { cancelled = true; };
   }, [maxVisible]);
-
-  const handleFollow = (projectId, isFollowing) => {
-    // Will wire to API in step 4
-    console.log(isFollowing ? 'Following' : 'Unfollowing', projectId);
-  };
 
   const filtered = searchQuery.trim() ? projects.filter(p => {
     const q = searchQuery.toLowerCase();
@@ -250,11 +281,18 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
         </div>
       </div>
 
-      {/* Project cards */}
+      {/* Project cards — each card manages its own follow state via useFollow hook */}
       <div className="space-y-3">
-        {sorted.map((project) => (
-          <ProjectCard key={project._id || project.id} project={project} onFollow={handleFollow} />
-        ))}
+        {sorted.map((project) => {
+          const pid = project._id || project.id;
+          return (
+            <ProjectCard
+              key={pid}
+              project={project}
+              initialFollowing={!!followStatuses[pid]}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -361,6 +361,37 @@ export default function Sidebar({ user }) {
   }, []);
 
   // ⭐ Override desktop collapse logic if we are on a mobile device!
+  // ─── Real gamification stats ─────────────────────────────────────────
+  const [gamStats, setGamStats] = useState({ xp: 0, level: 1, streak: 0, weeklyShips: 0, dailyShips: 0, dailyShipTarget: 5 });
+  useEffect(() => {
+    let mounted = true;
+    const fetchStats = async () => {
+      try {
+        const res = await client.get("/gamification/stats");
+        const d = res.data?.data || res.data || {};
+        if (mounted) {
+          setGamStats({
+            xp: d.xp || d.totalXp || 0,
+            level: d.level || 1,
+            streak: d.streak || d.currentStreak || 0,
+            weeklyShips: d.weeklyShips || d.shipsThisWeek || 0,
+            dailyShips: d.dailyShips || d.shipsToday || 0,
+            dailyShipTarget: d.dailyShipTarget || 5,
+          });
+        }
+      } catch (err) {
+        console.warn("[Sidebar] gamification stats fetch failed:", err?.message);
+      }
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 60000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
+  const xpForNextLevel = Math.round(75 + Math.pow(gamStats.level, 1.35) * 35);
+  const xpInCurrentLevel = gamStats.xp - (function calcXpForLevel(lvl) { let s = 0; for (let i = 1; i < lvl; i++) s += Math.round(75 + Math.pow(i, 1.35) * 35); return s; })(gamStats.level);
+  const levelProgress = xpForNextLevel > 0 ? Math.min(1, Math.max(0, xpInCurrentLevel / xpForNextLevel)) : 0;
+
   const collapsed = isMobile || (autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed || focusBlockCollapse);
 
   useEffect(() => {
@@ -444,7 +475,7 @@ export default function Sidebar({ user }) {
           )}
         </div>
 
-        <ProgressRing collapsed={collapsed} />
+        <ProgressRing progress={levelProgress} level={gamStats.level} streak={gamStats.streak} collapsed={collapsed} />
 
         <div className="mb-4">
           <MomentumLevelIndicator collapsed={collapsed} />
@@ -452,7 +483,7 @@ export default function Sidebar({ user }) {
 
         {!collapsed && (
           <div className="mx-3 mb-4">
-            <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
+            <MiniLeagueIndicator currentXP={gamStats.xp} onClick={() => navigate("/leaderboard")} />
           </div>
         )}
 
@@ -466,7 +497,7 @@ export default function Sidebar({ user }) {
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
           
-          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
+          <div className="pt-4"><ShipCounter current={gamStats.dailyShips} target={gamStats.dailyShipTarget} collapsed={collapsed} /></div>
           
           {!collapsed && (
             <>

@@ -1,101 +1,92 @@
 // src/api/follows.js
-// ──────────────────────────────────────────────────────────────
-// FOLLOW API (frontend-safe)
-// - follow/unfollow/status/me-follows
-// - defensive token handling (supports multiple key names)
-// - uses fetch so it won't depend on any missing client wrapper
-// ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// FOLLOWS API - Instagram-style project following
+//
+// followProject(id)          → POST /api/follows/:id
+// unfollowProject(id)        → DELETE /api/follows/:id
+// getFollowedProjects()      → GET /api/follows
+// getFollowStatus(id)        → GET /api/follows/check/:id
+// getBulkFollowStatus([ids]) → GET /api/follows/status?ids=a,b,c
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const API_BASE = (import.meta?.env?.VITE_API_URL || "").replace(/\/$/, "");
+import client from './client';
 
-// If you run Vite with a proxy, keep this as "/api" (relative).
-// If you deploy with a full URL, set VITE_API_URL.
-function apiUrl(path) {
-  if (!path.startsWith("/")) path = `/${path}`;
-  if (!API_BASE) return path; // relative (proxy)
-  return `${API_BASE}${path}`;
-}
-
-function getToken() {
+/**
+ * Follow a project
+ * @param {string} projectId
+ * @returns {Promise<{ success: boolean, following: boolean, followersCount: number }>}
+ */
+export async function followProject(projectId) {
   try {
-    return (
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("authToken") ||
-      localStorage.getItem("token") ||
-      ""
-    );
-  } catch {
-    return "";
-  }
-}
-
-async function request(path, { method = "GET", body, headers } = {}) {
-  const token = getToken();
-
-  const res = await fetch(apiUrl(path), {
-    method,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(headers || {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  // Try to parse json; fall back to text
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text || null;
-  }
-
-  if (!res.ok) {
-    const msg =
-      (data && (data.message || data.error)) ||
-      (typeof data === "string" ? data : null) ||
-      `Request failed (${res.status})`;
-    const err = new Error(msg);
-    err.status = res.status;
-    err.data = data;
+    const res = await client.post(`/follows/${projectId}`);
+    return res?.data || res;
+  } catch (err) {
+    console.error('[follows] followProject failed:', err);
     throw err;
   }
-
-  return data;
 }
 
-// ──────────────────────────────────────────────────────────────
-// Public functions
-// ──────────────────────────────────────────────────────────────
-
-export async function followProject(projectId, preferences = null) {
-  if (!projectId) throw new Error("followProject: projectId is required");
-  return request(`/api/projects/${projectId}/follow`, {
-    method: "POST",
-    body: preferences ? { preferences } : undefined,
-  });
-}
-
+/**
+ * Unfollow a project
+ * @param {string} projectId
+ * @returns {Promise<{ success: boolean, following: boolean, followersCount: number }>}
+ */
 export async function unfollowProject(projectId) {
-  if (!projectId) throw new Error("unfollowProject: projectId is required");
-  return request(`/api/projects/${projectId}/follow`, { method: "DELETE" });
+  try {
+    const res = await client.delete(`/follows/${projectId}`);
+    return res?.data || res;
+  } catch (err) {
+    console.error('[follows] unfollowProject failed:', err);
+    throw err;
+  }
 }
 
+/**
+ * Get all projects the current user follows (full project data)
+ * Used by Projects page to merge followed projects into the grid
+ * @returns {Promise<Array>} Array of project objects
+ */
+export async function getFollowedProjects() {
+  try {
+    const res = await client.get('/follows');
+    const payload = res?.data || res;
+    return payload?.data || payload || [];
+  } catch (err) {
+    console.error('[follows] getFollowedProjects failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Check if the current user follows a specific project
+ * @param {string} projectId
+ * @returns {Promise<boolean>}
+ */
 export async function getFollowStatus(projectId) {
-  if (!projectId) throw new Error("getFollowStatus: projectId is required");
-  return request(`/api/projects/${projectId}/follow/status`, { method: "GET" });
+  try {
+    const res = await client.get(`/follows/check/${projectId}`);
+    const payload = res?.data || res;
+    return !!payload?.following;
+  } catch (err) {
+    console.error('[follows] getFollowStatus failed:', err);
+    return false;
+  }
 }
 
-export async function updateFollowPreferences(projectId, preferences) {
-  if (!projectId) throw new Error("updateFollowPreferences: projectId is required");
-  if (!preferences) throw new Error("updateFollowPreferences: preferences is required");
-  return request(`/api/projects/${projectId}/follow/preferences`, {
-    method: "PATCH",
-    body: { preferences },
-  });
-}
-
-export async function getMyFollows() {
-  return request(`/api/users/me/follows`, { method: "GET" });
+/**
+ * Bulk check follow status for multiple projects (used by Discover feed)
+ * @param {string[]} projectIds - Array of project IDs
+ * @returns {Promise<Record<string, boolean>>} Map of projectId → isFollowing
+ */
+export async function getBulkFollowStatus(projectIds) {
+  try {
+    if (!projectIds || projectIds.length === 0) return {};
+    const ids = projectIds.join(',');
+    const res = await client.get(`/follows/status?ids=${ids}`);
+    const payload = res?.data || res;
+    return payload?.statuses || {};
+  } catch (err) {
+    console.error('[follows] getBulkFollowStatus failed:', err);
+    return {};
+  }
 }
