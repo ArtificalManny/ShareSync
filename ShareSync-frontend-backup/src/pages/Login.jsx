@@ -74,10 +74,12 @@ export default function Login() {
             window.location.href = 'http://localhost:5050/api/auth/google';
           }}
           className="
+            btn-outline
             w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
-            bg-white/[0.05] ring-1 ring-white/[0.10]
-            text-white font-medium text-sm
-            hover:bg-white/[0.08] hover:ring-white/[0.15]
+            bg-white ring-1 ring-slate-200
+            text-slate-700 font-medium text-sm
+            hover:bg-slate-50 hover:ring-slate-300
+            shadow-sm hover:shadow
             transition-all duration-200
           "
         >
