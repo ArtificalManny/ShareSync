@@ -611,7 +611,7 @@ export default function CreateAccount() {
               ) : null}
             </div>
 
-            <AuthButton type="submit" loading={submitting}>
+            <AuthButton type="submit" loading={submitting} className="btn-primary">
               Create Account
               <ArrowRight className="w-5 h-5" />
             </AuthButton>

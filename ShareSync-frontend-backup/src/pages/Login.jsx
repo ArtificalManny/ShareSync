@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Login Page
 // Frontend-only polish:
@@ -67,7 +66,7 @@ export default function Login() {
         <AuthError>{error}</AuthError>
 
         {/* ══════════════════════════════════════════════════════════════════
-            GOOGLE SIGN-IN — Solid white button, visible on any background
+            GOOGLE SIGN-IN — Redirects to backend Passport OAuth flow
         ══════════════════════════════════════════════════════════════════ */}
         <button
           type="button"
@@ -76,10 +75,9 @@ export default function Login() {
           }}
           className="
             w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
-            bg-white text-slate-800 font-medium text-sm
-            border border-slate-300
-            hover:bg-slate-50 hover:border-slate-400
-            shadow-sm hover:shadow
+            bg-white/[0.05] ring-1 ring-white/[0.10]
+            text-white font-medium text-sm
+            hover:bg-white/[0.08] hover:ring-white/[0.15]
             transition-all duration-200
           "
         >
@@ -95,10 +93,10 @@ export default function Login() {
         {/* ── "or" divider ── */}
         <div className="relative my-2">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-400/30" />
+            <div className="w-full border-t border-white/[0.08]" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 text-slate-400 font-medium" style={{ backgroundColor: 'transparent' }}>or</span>
+            <span className="px-4 bg-transparent text-slate-500 font-medium">or</span>
           </div>
         </div>
 
@@ -189,7 +187,7 @@ export default function Login() {
         </div>
 
         {/* Submit */}
-        <AuthButton type="submit" loading={submitting}>
+        <AuthButton type="submit" loading={submitting} className="btn-primary">
           Sign In
           <ArrowRight className="w-5 h-5" />
         </AuthButton>
@@ -207,7 +205,7 @@ export default function Login() {
         </div>
 
         {/* Create Account */}
-        <AuthButton variant="secondary" type="button" onClick={() => navigate("/create-account")}>
+        <AuthButton variant="secondary" type="button" onClick={() => navigate("/create-account")} className="btn-secondary">
           <UserPlus className="w-5 h-5" />
           Create an account
         </AuthButton>
