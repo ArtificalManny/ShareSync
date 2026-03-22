@@ -1,8 +1,13 @@
 // src/pages/CreateAccount.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS FORTRESS - Create Account Page
-// Frontend-only polish: Pristine Light Mode & High Contrast CTA
-// NO backend endpoints or auth logic modified
+// Two-step flow: Data Collection → OTP Verification
+// Frontend-only polish:
+// - Fix alignment (Last name now matches First name icon/padding)
+// - Inputs less "boxed" (rounded-xl + ring)
+// - ShareSync → OpenShare copy (Terms)
+// - Google OAuth sign-up button
+// - NO backend endpoints or auth logic modified
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
@@ -27,24 +32,24 @@ function PasswordStrengthMeter({ password }) {
   ];
 
   const score = checks.filter(c => c.valid).length;
-  const colors = ['bg-red-500', 'bg-red-500', 'bg-amber-500', 'bg-amber-500', 'bg-emerald-500', 'bg-emerald-500'];
+  const colors = ['bg-red-500', 'bg-red-500', 'bg-yellow-500', 'bg-yellow-500', 'bg-green-500', 'bg-green-500'];
   const labels = ['', 'Weak', 'Weak', 'Fair', 'Good', 'Strong'];
 
   return (
-    <div className="space-y-2 mt-2">
+    <div className="space-y-2">
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-              i <= score ? colors[score] : 'bg-slate-200'
+            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+              i <= score ? colors[score] : 'bg-slate-700'
             }`}
           />
         ))}
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-xs font-medium text-slate-500">Password strength</span>
-        <span className={`text-xs font-bold ${score >= 4 ? 'text-emerald-500' : score >= 3 ? 'text-amber-500' : 'text-red-500'}`}>
+        <span className="text-xs text-slate-500">Password strength</span>
+        <span className={`text-xs ${score >= 4 ? 'text-green-400' : score >= 3 ? 'text-yellow-400' : 'text-red-400'}`}>
           {labels[score]}
         </span>
       </div>
@@ -101,10 +106,10 @@ function OTPInput({ value, onChange, length = 6 }) {
           onPaste={handlePaste}
           autoFocus={i === 0}
           className="
-            w-12 h-14 text-center text-2xl font-bold
-            bg-white border-2 border-slate-200 rounded-xl
-            text-slate-900 shadow-sm
-            focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 hover:border-slate-300
+            w-12 h-14 text-center text-2xl font-semibold
+            bg-white/[0.035] ring-1 ring-white/[0.10] rounded-xl
+            text-white
+            focus:ring-2 focus:ring-purple-500/25
             focus:outline-none transition-all duration-200
           "
         />
@@ -137,17 +142,18 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
   const handleResend = async () => {
     if (resendCountdown > 0) return;
     setResendCountdown(30);
+    // Could call resend API here if available
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-50 border border-violet-100 shadow-sm flex items-center justify-center">
-          <Mail className="w-8 h-8 text-violet-600" />
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 ring-1 ring-purple-500/20 flex items-center justify-center">
+          <Mail className="w-8 h-8 text-purple-400" />
         </div>
-        <p className="text-sm text-slate-500 font-medium">
+        <p className="text-sm text-slate-400">
           We sent a 6-digit code to<br />
-          <span className="text-slate-900 font-bold">{email}</span>
+          <span className="text-white font-medium">{email}</span>
         </p>
       </div>
 
@@ -155,23 +161,18 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
 
       <OTPInput value={code} onChange={setCode} />
 
-      <AuthButton 
-        type="submit" 
-        loading={submitting} 
-        disabled={code.length !== 6}
-        className="!bg-violet-600 hover:!bg-violet-700 !text-white !border-none !shadow-lg !shadow-violet-600/30 transition-all duration-200"
-      >
+      <AuthButton type="submit" loading={submitting} disabled={code.length !== 6}>
         <Check className="w-5 h-5" />
         Verify Email
       </AuthButton>
 
-      <p className="text-center text-sm font-medium text-slate-500">
+      <p className="text-center text-sm text-slate-500">
         Didn&apos;t receive the code?{" "}
         <button
           type="button"
           onClick={handleResend}
           disabled={resendCountdown > 0}
-          className={`${resendCountdown > 0 ? 'text-slate-400' : 'text-violet-600 font-bold hover:text-violet-700 transition-colors'}`}
+          className={`${resendCountdown > 0 ? 'text-slate-600' : 'text-purple-400 hover:text-purple-300'}`}
         >
           {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend'}
         </button>
@@ -180,7 +181,7 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
       <button
         type="button"
         onClick={onBack}
-        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+        className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-slate-300 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Use a different email
@@ -341,13 +342,6 @@ export default function CreateAccount() {
     }
   };
 
-  // Shared light mode input classes
-  const baseInputClass = "w-full pl-10 pr-4 py-2.5 rounded-xl font-medium border-2 transition-all duration-200 focus:outline-none focus:ring-4 shadow-sm ";
-  const normalClass = baseInputClass + "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-violet-500 focus:ring-violet-500/10";
-  const errorClass = baseInputClass + "bg-red-50 border-red-300 text-red-900 placeholder:text-red-300 focus:border-red-500 focus:ring-red-500/20";
-  const successClass = baseInputClass + "bg-white border-emerald-400 text-slate-900 focus:border-emerald-500 focus:ring-emerald-500/20";
-  const getInputClass = (err, success = false) => err ? errorClass : success ? successClass : normalClass;
-
   return (
     <AuthLayout
       title={step === "data" ? "Create your account" : "Verify your email"}
@@ -365,14 +359,50 @@ export default function CreateAccount() {
           >
             <AuthError>{error}</AuthError>
 
+            {/* ══════════════════════════════════════════════════════════════
+                GOOGLE SIGN-UP — Solid white button, visible on any background
+            ══════════════════════════════════════════════════════════════ */}
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = 'http://localhost:5050/api/auth/google';
+              }}
+              className="
+                w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
+                bg-white text-slate-800 font-medium text-sm
+                border border-slate-300
+                hover:bg-slate-50 hover:border-slate-400
+                shadow-sm hover:shadow
+                transition-all duration-200
+              "
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              Continue with Google
+            </button>
+
+            {/* ── "or" divider ── */}
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-400/30" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 text-slate-400 font-medium" style={{ backgroundColor: 'transparent' }}>or</span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               {/* First name */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   First name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="text"
                     name="firstName"
@@ -380,24 +410,29 @@ export default function CreateAccount() {
                     value={formData.firstName}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className={getInputClass(fieldErrors.firstName)}
+                    className={`
+                      w-full pl-10 pr-4 py-2.5 rounded-xl
+                      bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                      focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                      ${fieldErrors.firstName ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                    `}
                   />
                 </div>
                 {fieldErrors.firstName && (
-                  <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1">
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                     <X className="w-3 h-3" />
                     {fieldErrors.firstName}
                   </p>
                 )}
               </div>
 
-              {/* Last name */}
+              {/* Last name (ALIGNMENT FIX: icon + pl-10 to match) */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   Last name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="text"
                     name="lastName"
@@ -405,11 +440,16 @@ export default function CreateAccount() {
                     value={formData.lastName}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className={getInputClass(fieldErrors.lastName)}
+                    className={`
+                      w-full pl-10 pr-4 py-2.5 rounded-xl
+                      bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                      focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                      ${fieldErrors.lastName ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                    `}
                   />
                 </div>
                 {fieldErrors.lastName && (
-                  <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1">
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                     <X className="w-3 h-3" />
                     {fieldErrors.lastName}
                   </p>
@@ -419,11 +459,11 @@ export default function CreateAccount() {
 
             {/* Username */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Username
               </label>
               <div className="relative">
-                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type="text"
                   name="username"
@@ -431,11 +471,16 @@ export default function CreateAccount() {
                   value={formData.username}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={getInputClass(fieldErrors.username)}
+                  className={`
+                    w-full pl-10 pr-4 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.username ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                  `}
                 />
               </div>
               {fieldErrors.username ? (
-                <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1">
+                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <X className="w-3 h-3" />
                   {fieldErrors.username}
                 </p>
@@ -448,11 +493,11 @@ export default function CreateAccount() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type="email"
                   name="email"
@@ -460,11 +505,16 @@ export default function CreateAccount() {
                   value={formData.email}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={getInputClass(fieldErrors.email)}
+                  className={`
+                    w-full pl-10 pr-4 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.email ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                  `}
                 />
               </div>
               {fieldErrors.email && (
-                <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1">
+                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <X className="w-3 h-3" />
                   {fieldErrors.email}
                 </p>
@@ -473,11 +523,11 @@ export default function CreateAccount() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -485,34 +535,41 @@ export default function CreateAccount() {
                   value={formData.password}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`${getInputClass(fieldErrors.password)} pr-10`}
+                  className={`
+                    w-full pl-10 pr-10 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.password ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                  `}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
 
               {fieldErrors.password ? (
-                <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1">
+                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <X className="w-3 h-3" />
                   {fieldErrors.password}
                 </p>
               ) : formData.password ? (
-                <PasswordStrengthMeter password={formData.password} />
+                <div className="mt-2">
+                  <PasswordStrengthMeter password={formData.password} />
+                </div>
               ) : null}
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Confirm password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
@@ -520,52 +577,57 @@ export default function CreateAccount() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`${getInputClass(fieldErrors.confirmPassword, formData.confirmPassword && formData.confirmPassword === formData.password)} pr-10`}
+                  className={`
+                    w-full pl-10 pr-10 py-2.5 rounded-xl
+                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
+                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    ${fieldErrors.confirmPassword
+                      ? 'ring-red-500/30'
+                      : formData.confirmPassword && formData.confirmPassword === formData.password
+                        ? 'ring-green-500/30'
+                        : 'ring-white/[0.08]'
+                    }
+                  `}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-10 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
 
               {fieldErrors.confirmPassword ? (
-                <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1">
+                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
                   <X className="w-3 h-3" />
                   {fieldErrors.confirmPassword}
                 </p>
               ) : formData.confirmPassword && formData.confirmPassword === formData.password ? (
-                <p className="mt-1 text-xs font-bold text-emerald-500 flex items-center gap-1">
+                <p className="mt-1 text-xs text-green-400 flex items-center gap-1">
                   <Check className="w-3 h-3" />
                   Passwords match
                 </p>
               ) : null}
             </div>
 
-            {/* Submit CTA - High Contrast Purple */}
-            <AuthButton 
-              type="submit" 
-              loading={submitting}
-              className="!bg-violet-600 hover:!bg-violet-700 !text-white !border-none !shadow-lg !shadow-violet-600/30 transition-all duration-200"
-            >
+            <AuthButton type="submit" loading={submitting}>
               Create Account
               <ArrowRight className="w-5 h-5" />
             </AuthButton>
 
-            <p className="text-center text-sm font-medium text-slate-500 pt-2">
+            <p className="text-center text-sm text-slate-400">
               Already have an account?{" "}
-              <Link to="/login" className="text-violet-600 font-bold hover:text-violet-700 transition-colors">
+              <Link to="/login" className="text-purple-400 hover:text-purple-300">
                 Sign in
               </Link>
             </p>
 
             <p className="text-center text-xs text-slate-500">
               By creating an account, you agree to OpenShare&apos;s{" "}
-              <a href="#" className="text-violet-600 font-medium hover:underline">Terms</a>{" "}
+              <a href="#" className="text-purple-400 hover:underline">Terms</a>{" "}
               and{" "}
-              <a href="#" className="text-violet-600 font-medium hover:underline">Privacy Policy</a>
+              <a href="#" className="text-purple-400 hover:underline">Privacy Policy</a>
             </p>
           </motion.form>
         ) : (

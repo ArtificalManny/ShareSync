@@ -1,7 +1,6 @@
 // src/auth/auth.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH CONTROLLER — Complete authentication endpoints
-// ⭐ SAVED: Triggering TS recompile to clear the ghost error
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -13,6 +12,7 @@ import {
   Param,
   UseGuards,
   Req,
+  Res,
   HttpCode,
   HttpStatus,
   UnauthorizedException,
@@ -23,6 +23,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -192,6 +193,82 @@ export class AuthController {
     const available = await this.authService.isUsernameAvailable(username);
 
     return { available };
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GOOGLE OAUTH ROUTES
+  //
+  // Flow:
+  // 1. Frontend redirects to GET /api/auth/google
+  // 2. Passport redirects to Google consent screen
+  // 3. Google redirects back to GET /api/auth/google/callback
+  // 4. We issue JWT and redirect to frontend with token in URL
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth() {
+    // Passport handles the redirect to Google — this method body is never reached
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req, @Res() res) {
+    console.log('🔵 CONTROLLER: GOOGLE CALLBACK');
+
+    try {
+      const user = req.user;
+
+      if (!user) {
+        console.error('❌ GOOGLE CALLBACK: No user in request');
+        return res.redirect(
+          `${process.env.FRONTEND_URL || 'http://localhost:54693'}/auth/google/callback?error=Authentication+failed`,
+        );
+      }
+
+      // Generate JWT using the same pattern as normal login
+      const payload = {
+        sub: String(user._id),
+        email: user.email,
+        tokenVersion: user.tokenVersion || 0,
+        ...(user.roles && { roles: user.roles }),
+        ...(user.firstName && { firstName: user.firstName }),
+        ...(user.lastName && { lastName: user.lastName }),
+        ...(user.username && { username: user.username }),
+      };
+
+      const token = await this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        expiresIn: '7d',
+      });
+
+      // Build safe user object for frontend
+      const safeUser = {
+        _id: user._id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        username: user.username || '',
+        displayName: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || '',
+        profilePicture: user.profilePicture || null,
+        xp: user.xp || 0,
+        level: user.level || 1,
+        streakDays: user.streakDays || 0,
+      };
+
+      const userParam = encodeURIComponent(JSON.stringify(safeUser));
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:54693';
+
+      console.log('🟢 GOOGLE CALLBACK: Redirecting to frontend with token');
+
+      return res.redirect(
+        `${frontendUrl}/auth/google/callback?token=${token}&user=${userParam}`,
+      );
+    } catch (err) {
+      console.error('❌ GOOGLE CALLBACK ERROR:', err.message);
+      return res.redirect(
+        `${process.env.FRONTEND_URL || 'http://localhost:54693'}/auth/google/callback?error=${encodeURIComponent(err.message)}`,
+      );
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

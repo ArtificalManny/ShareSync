@@ -37,6 +37,10 @@ export class User extends Document {
   @Prop({ required: true })
   password: string;
 
+  // ✅ Google OAuth: links Google account to this user
+  @Prop({ sparse: true })
+  googleId?: string;
+
   @Prop()
   profilePicture?: string;
 
@@ -85,109 +89,6 @@ export class User extends Document {
 
   @Prop({ default: false })
   publicProfile?: boolean;
-
-  // ============================================
-  // ⭐ FIX: TOP-LEVEL SETTINGS OBJECTS
-  // Explicitly defined so Mongoose stops silently 
-  // dropping them during Settings page updates.
-  // ============================================
-
-  @Prop({ default: false })
-  discoverable?: boolean;
-
-  @Prop({
-    type: {
-      theme: { type: String, default: 'system' },
-      mode: { type: String, default: 'pro' },
-      accentColor: { type: String },
-      animations: { type: Boolean },
-      sounds: { type: Boolean }
-    },
-    default: undefined,
-  })
-  appearance?: {
-    theme?: 'system' | 'light' | 'dark';
-    mode?: 'kid' | 'pro';
-    accentColor?: string;
-    animations?: boolean;
-    sounds?: boolean;
-  };
-
-  @Prop({
-    type: {
-      enabled: { type: Boolean, default: true },
-      tone: { type: String, default: 'wise' },
-      intensity: { type: Number, default: 3 }
-    },
-    default: undefined,
-  })
-  mentor?: {
-    enabled?: boolean;
-    tone?: 'kind' | 'wise' | 'drill';
-    intensity?: number;
-  };
-
-  @Prop({
-    type: {
-      dailyGoal: { type: Number, default: 5 },
-      weekendCount: { type: Boolean, default: true },
-      allowFreeze: { type: Boolean, default: true }
-    },
-    default: undefined,
-  })
-  momentum?: {
-    dailyGoal?: number;
-    weekendCount?: boolean;
-    allowFreeze?: boolean;
-  };
-
-  @Prop({
-    type: {
-      dailyTarget: { type: Number, default: 4 },
-      autoStart: { type: Boolean, default: false },
-      startTime: { type: String, default: '09:00' }
-    },
-    default: undefined,
-  })
-  focus?: {
-    dailyTarget?: number;
-    autoStart?: boolean;
-    startTime?: string;
-  };
-
-  @Prop({
-    type: {
-      showStreakTo: { type: String, default: 'friends' },
-      celebrate: { type: Boolean, default: true }
-    },
-    default: undefined,
-  })
-  social?: {
-    showStreakTo?: 'nobody' | 'friends' | 'everyone';
-    celebrate?: boolean;
-  };
-
-  @Prop({
-    type: {
-      showEverywhere: { type: Boolean, default: true },
-      yearlyVideo: { type: Boolean, default: false }
-    },
-    default: undefined,
-  })
-  legacy?: {
-    showEverywhere?: boolean;
-    yearlyVideo?: boolean;
-  };
-
-  @Prop({
-    type: {
-      twoFA: { type: Boolean, default: false }
-    },
-    default: undefined,
-  })
-  security?: {
-    twoFA?: boolean;
-  };
 
   // ============================================
   // PREFERENCES (NEW, but non-breaking)
@@ -293,8 +194,7 @@ export class User extends Document {
         verifiedAt: { type: Date, default: undefined },
       },
     },
-    // ⭐ FIX: Changed from `undefined` to `{}` so nested updates never fail
-    default: {},
+    default: undefined,
   })
   notificationChannels?: {
     email?: { email?: string; verified?: boolean; optIn?: boolean; verifiedAt?: Date };
@@ -429,13 +329,6 @@ export class User extends Document {
   @Prop({ default: false })
   isEmailVerified: boolean;
 
-  // ⭐ FIX: Added Top-Level Phone fields so Mongoose persists them immediately!
-  @Prop()
-  phoneNumber?: string;
-
-  @Prop({ default: false })
-  isPhoneVerified?: boolean;
-
   @Prop()
   emailVerificationToken?: string;
 
@@ -478,6 +371,8 @@ UserSchema.virtual('name').get(function () {
   return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username;
 });
 
-// ⭐ FIX: Removed duplicate email and username indexes!
+UserSchema.index({ email: 1 });
+UserSchema.index({ username: 1 });
 UserSchema.index({ xp: -1 });
 UserSchema.index({ streakDays: -1 });
+UserSchema.index({ googleId: 1 }, { sparse: true });

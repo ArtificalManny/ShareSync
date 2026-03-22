@@ -425,6 +425,98 @@ export class AuthService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // GOOGLE OAUTH — Find or create user from Google profile
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Called by GoogleStrategy.validate() after Google confirms the user's identity.
+   *
+   * Logic:
+   * 1. If a user with this googleId exists → return them (returning user)
+   * 2. If a user with this email exists but no googleId → LINK the Google account
+   * 3. If no user exists → CREATE a new one (auto-verified, random password)
+   */
+  public async validateOrCreateGoogleUser(profile: {
+    googleId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string;
+  }) {
+    console.log('🔵 GOOGLE AUTH: validateOrCreateGoogleUser for', profile.email);
+
+    // 1. Check if user already linked via googleId
+    let user = await this.userModel.findOne({ googleId: profile.googleId }).lean();
+
+    if (user) {
+      console.log('🟢 GOOGLE AUTH: Existing Google-linked user found:', user.email);
+      const { password: _pw, ...safe } = user as any;
+      return safe;
+    }
+
+    // 2. Check if user with same email exists (link Google account)
+    user = await this.userModel
+      .findOne({ email: profile.email.toLowerCase() })
+      .lean();
+
+    if (user) {
+      console.log('🟡 GOOGLE AUTH: Existing email user found, linking Google account');
+      await this.userModel.findByIdAndUpdate(user._id, {
+        googleId: profile.googleId,
+        // Only update profile picture if user doesn't have one
+        ...(!user.profilePicture && profile.profilePicture
+          ? { profilePicture: profile.profilePicture }
+          : {}),
+        // Mark email as verified since Google confirmed it
+        isEmailVerified: true,
+      });
+
+      const updated = await this.userModel
+        .findById(user._id)
+        .select('-password')
+        .lean();
+      return updated;
+    }
+
+    // 3. Create brand new user from Google profile
+    console.log('🟢 GOOGLE AUTH: Creating new user from Google profile');
+
+    // Generate a random password hash (user can't use it — they sign in via Google)
+    const randomPassword = await bcrypt.hash(
+      crypto.randomBytes(32).toString('hex'),
+      12,
+    );
+
+    // Generate a unique username from email prefix
+    const emailPrefix = profile.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    let username = emailPrefix;
+    let attempt = 0;
+    while (await this.userModel.findOne({ username })) {
+      attempt++;
+      username = `${emailPrefix}${attempt}`;
+    }
+
+    const newUser = await this.userModel.create({
+      email: profile.email.toLowerCase(),
+      username,
+      password: randomPassword,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      displayName: `${profile.firstName} ${profile.lastName}`.trim(),
+      profilePicture: profile.profilePicture || undefined,
+      googleId: profile.googleId,
+      isEmailVerified: true, // Google already verified the email
+      tokenVersion: 0,
+    });
+
+    console.log('🟢 GOOGLE AUTH: New user created:', newUser.email, '(username:', username, ')');
+
+    const obj = newUser.toObject();
+    delete obj.password;
+    return obj;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // HELPER METHODS
   // ═══════════════════════════════════════════════════════════════════════════
 
