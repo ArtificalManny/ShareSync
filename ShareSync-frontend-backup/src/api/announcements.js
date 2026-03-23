@@ -1,62 +1,71 @@
 // src/api/announcements.js
 // ═══════════════════════════════════════════════════════════════════════════════
-// Announcements API — CRUD + likes + comments + attachments
-// Uses shared client (has JWT auth interceptor)
+// ANNOUNCEMENTS API — Uses shared client (port 5050 + JWT auth)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
 
-function unwrap(res) {
-  return res?.data?.data ?? res?.data;
-}
-
 // ─── Core CRUD ──────────────────────────────────────────────────────────────
 
-export async function getAnnouncements(projectId) {
+export const getAnnouncements = async (projectId) => {
   const res = await client.get(`/projects/${projectId}/announcements`);
-  return unwrap(res);
-}
+  return res.data;
+};
 
-export async function getPinnedAnnouncements(projectId) {
+export const getPinnedAnnouncements = async (projectId) => {
   const res = await client.get(`/projects/${projectId}/announcements/pinned`);
-  return unwrap(res);
-}
+  return res.data;
+};
 
-export async function createAnnouncement(projectId, data) {
+export const createAnnouncement = async (projectId, data) => {
   const res = await client.post(`/projects/${projectId}/announcements`, data);
-  return unwrap(res);
-}
+  return res.data;
+};
 
-export async function deleteAnnouncement(projectId, announcementId) {
-  const res = await client.delete(`/projects/${projectId}/announcements/${announcementId}`);
-  return unwrap(res);
-}
-
-export async function markAnnouncementAsRead(projectId, announcementId) {
+export const markAnnouncementAsRead = async (projectId, announcementId) => {
   const res = await client.patch(`/projects/${projectId}/announcements/${announcementId}/read`);
-  return unwrap(res);
-}
+  return res.data;
+};
 
-export async function toggleAnnouncementPin(projectId, announcementId) {
+export const toggleAnnouncementPin = async (projectId, announcementId) => {
   const res = await client.patch(`/projects/${projectId}/announcements/${announcementId}/pin`);
-  return unwrap(res);
-}
+  return res.data;
+};
 
-// ─── Likes ──────────────────────────────────────────────────────────────────
+export const deleteAnnouncement = async (projectId, announcementId) => {
+  const res = await client.delete(`/projects/${projectId}/announcements/${announcementId}`);
+  return res.data;
+};
 
-export async function toggleLike(projectId, announcementId) {
-  const res = await client.patch(`/projects/${projectId}/announcements/${announcementId}/like`);
-  return unwrap(res);
-}
+// ─── Social Features (stubs — backend endpoints needed) ─────────────────────
+// These prevent crashes in AnnouncementsView. Wire to real endpoints when built.
 
-// ─── Comments ───────────────────────────────────────────────────────────────
+export const toggleLike = async (projectId, announcementId) => {
+  try {
+    const res = await client.patch(`/projects/${projectId}/announcements/${announcementId}/like`);
+    return res.data;
+  } catch {
+    console.warn('[announcements] toggleLike endpoint not available yet');
+    return null;
+  }
+};
 
-export async function addComment(projectId, announcementId, data) {
-  const res = await client.post(`/projects/${projectId}/announcements/${announcementId}/comments`, data);
-  return unwrap(res);
-}
+export const addComment = async (projectId, announcementId, data) => {
+  try {
+    const res = await client.post(`/projects/${projectId}/announcements/${announcementId}/comments`, data);
+    return res.data;
+  } catch {
+    console.warn('[announcements] addComment endpoint not available yet');
+    return null;
+  }
+};
 
-export async function deleteComment(projectId, announcementId, commentId) {
-  const res = await client.delete(`/projects/${projectId}/announcements/${announcementId}/comments/${commentId}`);
-  return unwrap(res);
-}
+export const deleteComment = async (projectId, announcementId, commentId) => {
+  try {
+    const res = await client.delete(`/projects/${projectId}/announcements/${announcementId}/comments/${commentId}`);
+    return res.data;
+  } catch {
+    console.warn('[announcements] deleteComment endpoint not available yet');
+    return null;
+  }
+};

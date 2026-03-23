@@ -41,7 +41,8 @@ import { ActivitiesModule } from './activities/activities.module';
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 2: COLLABORATION MODULES
 // ═══════════════════════════════════════════════════════════════════════════════
-
+import { AnnouncementsModule } from './announcements/announcements.module';
+import { SuggestionsModule } from './suggestions/suggestions.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PresenceModule } from './presence/presence.module';
@@ -190,6 +191,8 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ─────────────────────────────────────────────────────────────────────────
     // COLLABORATION
     // ─────────────────────────────────────────────────────────────────────────
+    AnnouncementsModule,
+    SuggestionsModule,
     MessagesModule,
     NotificationsModule,
 
