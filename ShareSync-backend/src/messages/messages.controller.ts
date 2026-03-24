@@ -51,6 +51,11 @@ export class MessagesController {
 
   constructor(private readonly messagesService: MessagesService) {}
 
+  /** Safe userId extraction — matches every other controller */
+  private getUserId(req: any): string {
+    return String(req?.user?.sub || req?.user?.userId || req?.user?.id || req?.user?._id || '');
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // CONVERSATIONS
   // ─────────────────────────────────────────────────────────────────────────────
@@ -63,7 +68,7 @@ export class MessagesController {
     @Body() dto: CreateConversationDto,
   ) {
     const conversation = await this.messagesService.createConversation(
-      req.user.userId,
+      this.getUserId(req),
       dto,
     );
     return {
@@ -79,7 +84,7 @@ export class MessagesController {
     @Body() dto: CreateDirectConversationDto,
   ) {
     const conversation = await this.messagesService.getOrCreateDirectConversation(
-      req.user.userId,
+      this.getUserId(req),
       dto.recipientId,
     );
     return {
@@ -96,7 +101,7 @@ export class MessagesController {
     @Query('includeArchived') includeArchived?: string,
   ) {
     const conversations = await this.messagesService.getUserConversations(
-      req.user.userId,
+      this.getUserId(req),
       includeArchived === 'true',
     );
     return {
@@ -111,7 +116,7 @@ export class MessagesController {
   async getConversation(@Req() req: any, @Param('id') id: string) {
     const conversation = await this.messagesService.getConversationById(
       id,
-      req.user.userId,
+      this.getUserId(req),
     );
     return {
       success: true,
@@ -129,7 +134,7 @@ export class MessagesController {
   ) {
     const conversation = await this.messagesService.updateConversationSettings(
       id,
-      req.user.userId,
+      this.getUserId(req),
       dto,
     );
     return {
@@ -148,7 +153,7 @@ export class MessagesController {
   ) {
     const conversation = await this.messagesService.addParticipant(
       id,
-      req.user.userId,
+      this.getUserId(req),
       body.userId,
     );
     return {
@@ -167,7 +172,7 @@ export class MessagesController {
   ) {
     const conversation = await this.messagesService.removeParticipant(
       id,
-      req.user.userId,
+      this.getUserId(req),
       participantId,
     );
     return {
@@ -180,7 +185,7 @@ export class MessagesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Leave a conversation' })
   async leaveConversation(@Req() req: any, @Param('id') id: string) {
-    await this.messagesService.leaveConversation(id, req.user.userId);
+    await this.messagesService.leaveConversation(id, this.getUserId(req));
     return {
       success: true,
       message: 'Left conversation',
@@ -196,7 +201,7 @@ export class MessagesController {
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Message sent' })
   async sendMessage(@Req() req: any, @Body() dto: SendMessageDto) {
     const message = await this.messagesService.sendMessage(
-      req.user.userId,
+      this.getUserId(req),
       dto,
     );
     return {
@@ -218,7 +223,7 @@ export class MessagesController {
     @Query('before') before?: string,
     @Query('after') after?: string,
   ) {
-    const result = await this.messagesService.getMessages(id, req.user.userId, {
+    const result = await this.messagesService.getMessages(id, this.getUserId(req), {
       limit: limit ? parseInt(limit, 10) : 50,
       before,
       after,
@@ -238,7 +243,7 @@ export class MessagesController {
   async getThread(@Req() req: any, @Param('id') id: string) {
     const thread = await this.messagesService.getThreadMessages(
       id,
-      req.user.userId,
+      this.getUserId(req),
     );
     return {
       success: true,
@@ -256,7 +261,7 @@ export class MessagesController {
   ) {
     const message = await this.messagesService.editMessage(
       id,
-      req.user.userId,
+      this.getUserId(req),
       dto,
     );
     return {
@@ -270,7 +275,7 @@ export class MessagesController {
   @ApiOperation({ summary: 'Delete a message' })
   @ApiParam({ name: 'id', description: 'Message ID' })
   async deleteMessage(@Req() req: any, @Param('id') id: string) {
-    await this.messagesService.deleteMessage(id, req.user.userId);
+    await this.messagesService.deleteMessage(id, this.getUserId(req));
     return {
       success: true,
       message: 'Message deleted',
@@ -291,7 +296,7 @@ export class MessagesController {
   ) {
     const message = await this.messagesService.addReaction(
       id,
-      req.user.userId,
+      this.getUserId(req),
       dto.emoji,
     );
     return {
@@ -312,7 +317,7 @@ export class MessagesController {
   ) {
     const message = await this.messagesService.removeReaction(
       id,
-      req.user.userId,
+      this.getUserId(req),
       emoji,
     );
     return {
@@ -330,7 +335,7 @@ export class MessagesController {
   @ApiOperation({ summary: 'Mark a message as read' })
   @ApiParam({ name: 'id', description: 'Message ID' })
   async markAsRead(@Req() req: any, @Param('id') id: string) {
-    await this.messagesService.markAsRead(id, req.user.userId);
+    await this.messagesService.markAsRead(id, this.getUserId(req));
     return {
       success: true,
     };
@@ -341,7 +346,7 @@ export class MessagesController {
   @ApiOperation({ summary: 'Mark all messages in conversation as read' })
   @ApiParam({ name: 'id', description: 'Conversation ID' })
   async markConversationAsRead(@Req() req: any, @Param('id') id: string) {
-    await this.messagesService.markConversationAsRead(id, req.user.userId);
+    await this.messagesService.markConversationAsRead(id, this.getUserId(req));
     return {
       success: true,
     };
@@ -350,7 +355,7 @@ export class MessagesController {
   @Get('unread-count')
   @ApiOperation({ summary: 'Get unread message count' })
   async getUnreadCount(@Req() req: any) {
-    const count = await this.messagesService.getUnreadCount(req.user.userId);
+    const count = await this.messagesService.getUnreadCount(this.getUserId(req));
     return {
       success: true,
       data: count,
@@ -373,7 +378,7 @@ export class MessagesController {
     @Query('limit') limit?: string,
   ) {
     const messages = await this.messagesService.searchMessages(
-      req.user.userId,
+      this.getUserId(req),
       query,
       conversationId,
       limit ? parseInt(limit, 10) : 20,

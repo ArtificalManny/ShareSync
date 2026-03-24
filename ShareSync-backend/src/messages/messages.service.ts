@@ -97,13 +97,7 @@ export class MessagesService {
   }
 
   private isParticipant(conversation: any, userId: string): boolean {
-    const convAny = conversation as any;
-
-    if (typeof convAny.isParticipant === 'function') {
-      return !!convAny.isParticipant(userId);
-    }
-
-    const participants = convAny?.participants || [];
+    const participants = (conversation as any)?.participants || [];
     return participants.some((p: any) => this.participantMatchesUser(p, userId));
   }
 
