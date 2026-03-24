@@ -135,7 +135,7 @@ export class User extends Document {
       privacy: {
         showOnlineStatus: { type: Boolean, default: true },
         showActivity: { type: Boolean, default: true },
-        publicProfile: { type: Boolean, default: false },
+        publicProfile: { type: Boolean, default: true },
       },
     },
     default: undefined,
