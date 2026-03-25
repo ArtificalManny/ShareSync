@@ -717,9 +717,20 @@ export class ProjectsService {
   async updateMemberPreferences(projectId: string, userId: string, preferences: any): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
-    const memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
+    let memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
+
+    // Owner is stored as ownerId, not in members[]. Add them so preferences can be saved.
     if (memberIndex === -1) {
-      throw new BadRequestException('You are not a member of this project');
+      const isOwner = (project.ownerId || (project as any).owner)?.toString() === userId;
+      if (!isOwner) {
+        throw new BadRequestException('You are not a member of this project');
+      }
+      project.members.push({
+        userId: new Types.ObjectId(userId),
+        role: MemberRole.OWNER || 'owner',
+        joinedAt: project.createdAt || new Date(),
+      } as ProjectMember);
+      memberIndex = project.members.length - 1;
     }
 
     project.members[memberIndex].preferences = {

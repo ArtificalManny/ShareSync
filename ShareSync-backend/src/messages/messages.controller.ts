@@ -18,6 +18,7 @@ import {
   HttpStatus,
   HttpCode,
   Logger,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MessagesService } from './messages.service';
+import { TextModerationInterceptor } from '../moderation/moderation.interceptor'; // <-- IMPORT SHIELD
 import {
   CreateConversationDto,
   CreateDirectConversationDto,
@@ -197,6 +199,7 @@ export class MessagesController {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Post()
+  @UseInterceptors(TextModerationInterceptor) // <-- SHIELD ACTIVATED
   @ApiOperation({ summary: 'Send a message' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Message sent' })
   async sendMessage(@Req() req: any, @Body() dto: SendMessageDto) {
@@ -252,6 +255,7 @@ export class MessagesController {
   }
 
   @Put(':id')
+  @UseInterceptors(TextModerationInterceptor) // <-- SHIELD ACTIVATED
   @ApiOperation({ summary: 'Edit a message' })
   @ApiParam({ name: 'id', description: 'Message ID' })
   async editMessage(

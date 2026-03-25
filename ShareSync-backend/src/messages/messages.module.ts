@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGES MODULE
 // ⭐ PHASE 2A: Removed MessagesGateway (using global AppGateway instead)
+// ⭐ PHASE 3: Wired ModerationModule for zero-tolerance content filtering
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Module } from '@nestjs/common';
@@ -12,6 +13,7 @@ import { Message, MessageSchema } from './schemas/message.schema';
 import { Conversation, ConversationSchema } from './schemas/conversation.schema';
 import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
+import { ModerationModule } from '../moderation/moderation.module'; // <-- MODERATION SHIELD IMPORTED
 
 // Note: We no longer need MessagesGateway here because:
 // 1. GatewayModule is global and provides AppGateway everywhere
@@ -37,6 +39,7 @@ import { MessagesService } from './messages.service';
         },
       }),
     }),
+    ModerationModule, // <-- MODERATION SHIELD INJECTED
   ],
   controllers: [MessagesController],
   providers: [
