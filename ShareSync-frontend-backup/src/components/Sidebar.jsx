@@ -1,7 +1,15 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.2 - "The Gallery Walk" (Unified Permanent Rail)
-// Phase C: Momentum Engine + Phase E: Social Proof
+// SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
+// Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// CHANGES in v5.1:
+// - Removed toggle buttons (>> << arrows) completely per user request
+// - Removed auto-hide indicator wedge
+// - Cleaner minimal header
+// - IMPLEMENTED CONCEPT B: The Aperture / Prism Logo
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useRef, useMemo } from "react";
@@ -321,6 +329,10 @@ function HoverTriggerZone({ onHover, onLeave }) {
 
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
+   v5.1 CHANGES:
+   - REMOVED all toggle buttons (>> << arrows)
+   - REMOVED auto-hide indicator wedge
+   - Clean minimal header
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -328,15 +340,8 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  // ⭐ The magic sauce for Scenario B: Force skinny rail on mobile screens
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+  // Auto-hide is now disabled by default and not user-controllable via UI
+  // Users can still toggle via localStorage if they want
   const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
@@ -360,39 +365,7 @@ export default function Sidebar({ user }) {
     return () => window.removeEventListener('focus-block-change', checkFocusBlock);
   }, []);
 
-  // ⭐ Override desktop collapse logic if we are on a mobile device!
-  // ─── Real gamification stats ─────────────────────────────────────────
-  const [gamStats, setGamStats] = useState({ xp: 0, level: 1, streak: 0, weeklyShips: 0, dailyShips: 0, dailyShipTarget: 5 });
-  useEffect(() => {
-    let mounted = true;
-    const fetchStats = async () => {
-      try {
-        const res = await client.get("/gamification/stats");
-        const d = res.data?.data || res.data || {};
-        if (mounted) {
-          setGamStats({
-            xp: d.xp || d.totalXp || 0,
-            level: d.level || 1,
-            streak: d.streak || d.currentStreak || 0,
-            weeklyShips: d.weeklyShips || d.shipsThisWeek || 0,
-            dailyShips: d.dailyShips || d.shipsToday || 0,
-            dailyShipTarget: d.dailyShipTarget || 5,
-          });
-        }
-      } catch (err) {
-        console.warn("[Sidebar] gamification stats fetch failed:", err?.message);
-      }
-    };
-    fetchStats();
-    const interval = setInterval(fetchStats, 60000);
-    return () => { mounted = false; clearInterval(interval); };
-  }, []);
-
-  const xpForNextLevel = Math.round(75 + Math.pow(gamStats.level, 1.35) * 35);
-  const xpInCurrentLevel = gamStats.xp - (function calcXpForLevel(lvl) { let s = 0; for (let i = 1; i < lvl; i++) s += Math.round(75 + Math.pow(i, 1.35) * 35); return s; })(gamStats.level);
-  const levelProgress = xpForNextLevel > 0 ? Math.min(1, Math.max(0, xpInCurrentLevel / xpForNextLevel)) : 0;
-
-  const collapsed = isMobile || (autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed || focusBlockCollapse);
+  const collapsed = autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed || focusBlockCollapse;
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, userCollapsed ? "1" : "0");
@@ -446,47 +419,68 @@ export default function Sidebar({ user }) {
       {autoHideEnabled && collapsed && <HoverTriggerZone onHover={handleTriggerHover} onLeave={handleTriggerLeave} />}
       {autoHideEnabled && <div className="w-[72px] h-screen shrink-0" aria-hidden="true" />}
 
-      {/* ⭐ Fixed to top left with z-[100] so it NEVER gets pushed around by other layout shifts */}
       <aside
         ref={sidebarRef}
         id="app-sidebar"
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
         className={`
-          sidebar-item h-screen flex flex-col fixed left-0 top-0 z-[100]
+          sidebar-item h-screen flex flex-col 
           bg-white border-r border-slate-200
           transition-all duration-300 ease-out
           ${collapsed ? "w-[72px]" : "w-[260px]"}
           ${isInFlow ? "opacity-90" : "opacity-100"}
-          ${autoHideEnabled ? "shadow-xl" : ""}
+          ${autoHideEnabled ? "fixed left-0 top-0 z-50 shadow-xl" : ""}
           translate-x-0
         `}
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        <div className="flex items-center justify-center p-4">
-          {!collapsed && (
-            <div className="flex items-center gap-2.5">
-              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
-                <span className="text-xs font-bold text-white">S</span>
-              </div>
-              <span className="text-sm font-bold text-slate-800">OpenShare</span>
+        {/* Header - The Aperture / Prism (Concept B) */}
+        <div className={`flex items-center p-4 transition-all duration-300 ${collapsed ? "justify-center" : "justify-start px-5"}`}>
+          <div className="flex items-center gap-3">
+            {/* The Precision Aperture (Concept B) - Always visible */}
+            <div className={`sidebar-logo w-8 h-8 flex-shrink-0 flex items-center justify-center transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" : "drop-shadow-[0_2px_4px_rgba(139,92,246,0.3)]"}`}>
+              <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-slate-800">
+                <defs>
+                  <linearGradient id="aperture-core-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#d946ef" />
+                  </linearGradient>
+                </defs>
+                <g stroke="currentColor" strokeWidth="3.5" strokeLinecap="square" strokeLinejoin="miter" fill="none">
+                  <path d="M 12 5 L 4 13 L 4 19 L 12 27" />
+                  <path d="M 20 5 L 28 13 L 28 19 L 20 27" />
+                </g>
+                <path d="M 16 9 L 23 16 L 16 23 L 9 16 Z" fill="url(#aperture-core-grad)" />
+              </svg>
             </div>
-          )}
+            
+            {/* Text - Only visible when expanded */}
+            {!collapsed && (
+              <span className="text-[15px] font-bold tracking-tight text-slate-800">
+                OpenShare
+              </span>
+            )}
+          </div>
         </div>
 
-        <ProgressRing progress={levelProgress} level={gamStats.level} streak={gamStats.streak} collapsed={collapsed} />
+        {/* Progress Ring */}
+        <ProgressRing collapsed={collapsed} />
 
+        {/* Momentum Indicator */}
         <div className="mb-4">
           <MomentumLevelIndicator collapsed={collapsed} />
         </div>
 
+        {/* League Indicator */}
         {!collapsed && (
           <div className="mx-3 mb-4">
-            <MiniLeagueIndicator currentXP={gamStats.xp} onClick={() => navigate("/leaderboard")} />
+            <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
           </div>
         )}
 
+        {/* Navigation */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
@@ -497,7 +491,7 @@ export default function Sidebar({ user }) {
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
           
-          <div className="pt-4"><ShipCounter current={gamStats.dailyShips} target={gamStats.dailyShipTarget} collapsed={collapsed} /></div>
+          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
           
           {!collapsed && (
             <>
@@ -514,6 +508,7 @@ export default function Sidebar({ user }) {
           )}
         </nav>
 
+        {/* User Profile Card */}
         <div className="p-3">
           <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
             <div className="relative">
