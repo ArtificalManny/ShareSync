@@ -1,5 +1,5 @@
 // src/pages/project/ProjectSettings.jsx - Project-specific settings
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Settings, Image, Bell, AlertTriangle, ArrowLeft, 
@@ -43,17 +43,14 @@ const ProjectSettings = () => {
 
   const [saving, setSaving] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // NEW: Track delete confirmation
-
-  // ⭐ Image Upload State & Refs
-  const fileInputRef = useRef(null);
-  const [uploadType, setUploadType] = useState(null);
 
   // 1. DETERMINE ROLE & PERMISSIONS
+  // Find current user in the project members list to determine role
   const currentMember = project?.members?.find(m => m.userId?._id === user?.id || m.userId === user?.id);
   const isOwnerByDirectId = project?.ownerId === user?.id || project?.owner?._id === user?.id;
   const role = isOwnerByDirectId ? 'owner' : (currentMember?.role || 'viewer');
   
+  // Logic: Only Owners and Admins can edit Project Info
   const canEditProjectInfo = role === 'owner' || role === 'admin';
 
   // 2. SYNC STATE WITH DATABASE
@@ -66,6 +63,7 @@ const ProjectSettings = () => {
         description: project.description || ''
       });
 
+      // Load specific user preferences if they exist in the member array
       if (currentMember?.preferences) {
         setNotificationSettings(currentMember.preferences);
       }
@@ -77,13 +75,15 @@ const ProjectSettings = () => {
     if (!canEditProjectInfo) return;
     setSaving(true);
     try {
+      // ✅ FIX: Removed 'banner' because it doesn't exist in the backend schema
+      // This stops NestJS from throwing a 400 Bad Request
       await client.put(`/projects/${id}`, {
         name: formData.name,
         description: formData.description,
         icon: formData.picture
       });
       toast({ title: '✅ Project updated!', variant: 'success' });
-      refresh();
+      refresh(); // Reload data via hook
     } catch (error) {
       toast({ title: 'Failed to update project', description: error.response?.data?.message || error.message, variant: 'error' });
     } finally {
@@ -96,7 +96,7 @@ const ProjectSettings = () => {
     try {
       await client.patch(`/projects/${id}/preferences`, notificationSettings);
       toast({ title: '🔔 Preferences saved!', variant: 'success' });
-      refresh();
+      refresh(); // Reload data via hook
     } catch (error) {
       toast({ title: 'Failed to save preferences', variant: 'error' });
     } finally {
@@ -108,7 +108,7 @@ const ProjectSettings = () => {
     try {
       await client.post(`/projects/${id}/leave`);
       toast({ title: 'Left project successfully', variant: 'default' });
-      navigate('/projects');
+      navigate('/projects'); // Navigate back to dashboard
     } catch (error) {
       toast({ 
         title: 'Could not leave project', 
@@ -119,92 +119,43 @@ const ProjectSettings = () => {
     }
   };
 
-  // ⭐ NEW: Handle Project Deletion (Owner Only)
-  const handleDeleteProject = async () => {
-    try {
-      await client.delete(`/projects/${id}`);
-      toast({ title: 'Project deleted permanently', variant: 'success' });
-      navigate('/projects'); // Navigate back to dashboard
-    } catch (error) {
-      toast({ 
-        title: 'Could not delete project', 
-        description: error.response?.data?.message || 'Server error occurred.', 
-        variant: 'error' 
-      });
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  // ⭐ RESTORED: Image Upload Logic
   const handleImageUpload = (type) => {
-    setUploadType(type);
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-
-    try {
-      toast({ title: 'Scanning & Uploading...', variant: 'default' });
-      const response = await client.post('/uploads/file', uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const imageUrl = response.data?.url || response.data?.fileUrl || response.data?.path || '';
-
-      setFormData(prev => ({
-        ...prev,
-        [uploadType]: imageUrl || 'Uploaded Image'
-      }));
-
-      toast({ title: '✅ Image safe and uploaded!', variant: 'success' });
-    } catch (error) {
-      toast({ 
-        title: 'Upload Rejected', 
-        description: error.response?.data?.message || 'Image failed moderation.', 
-        variant: 'error' 
-      });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      setUploadType(null);
-    }
+    toast({ title: 'Image upload coming soon!', variant: 'default' });
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-zinc-100 pb-20 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-6 py-8">
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate(`/projects/${id}`)}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
               Project Settings
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xs px-2 py-0.5 rounded-md border ${role === 'owner' ? 'border-warning-500 text-warning-500' : 'border-slate-500 text-slate-400'}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-md border font-medium ${
+                role === 'owner' 
+                  ? 'border-amber-500/30 text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400' 
+                  : 'border-slate-200 text-slate-600 bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-400'
+              }`}>
                 {role.toUpperCase()}
               </span>
-              <p className="text-slate-400 text-sm">{project?.name}</p>
+              <p className="text-slate-500 dark:text-zinc-400 text-sm font-medium">{project?.name}</p>
             </div>
           </div>
         </div>
@@ -212,39 +163,41 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 1: PROJECT INFO (Role-Based Access)        */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className={`bg-slate-800/50 backdrop-blur-xl border ${canEditProjectInfo ? 'border-brand-500/20' : 'border-slate-700/50'} rounded-2xl p-6 shadow-xl mb-6 relative overflow-hidden`}>
+        <div className={`bg-white dark:bg-[#111113] border ${canEditProjectInfo ? 'border-slate-200 dark:border-white/[0.06]' : 'border-slate-200 dark:border-white/[0.02]'} rounded-2xl p-6 shadow-sm dark:shadow-none mb-6 relative overflow-hidden transition-colors duration-300`}>
           
           {!canEditProjectInfo && (
             <div className="absolute top-0 right-0 p-4">
-              <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/80 rounded-full border border-slate-700 text-xs text-slate-400">
-                <Lock className="w-3 h-3" />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-[#1f1f23] rounded-full border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-zinc-400 font-medium">
+                <Lock className="w-3.5 h-3.5" />
                 <span>Moderator Access Only</span>
               </div>
             </div>
           )}
 
           <div className="flex items-center gap-3 mb-6">
-            <Settings className={`w-5 h-5 ${canEditProjectInfo ? 'text-brand-400' : 'text-slate-500'}`} />
-            <h2 className="text-xl font-bold">Project Information</h2>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${canEditProjectInfo ? 'bg-violet-50 dark:bg-violet-500/10' : 'bg-slate-100 dark:bg-white/5'}`}>
+              <Settings className={`w-4 h-4 ${canEditProjectInfo ? 'text-violet-500' : 'text-slate-500 dark:text-zinc-400'}`} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Project Information</h2>
           </div>
 
-          <div className={!canEditProjectInfo ? 'opacity-60 pointer-events-none grayscale-[0.5]' : ''}>
+          <div className={!canEditProjectInfo ? 'opacity-60 pointer-events-none grayscale-[0.2]' : ''}>
             {/* Banner */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-white mb-2">Project Banner</label>
-              <div className="relative h-40 rounded-xl overflow-hidden bg-slate-700 group">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Project Banner</label>
+              <div className="relative h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800/50 border border-slate-200 dark:border-white/5 group transition-colors">
                 {formData.banner ? (
                   <img src={formData.banner} alt="Banner" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-zinc-500 text-sm font-medium">
                     No banner set
                   </div>
                 )}
                 {canEditProjectInfo && (
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                  <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
                     <button
                       onClick={() => handleImageUpload('banner')}
-                      className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg font-semibold transition-all flex items-center gap-2"
+                      className="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700 rounded-lg font-semibold transition-all flex items-center gap-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                     >
                       <Upload className="w-4 h-4" />
                       Upload
@@ -252,7 +205,7 @@ const ProjectSettings = () => {
                     {formData.banner && (
                       <button
                         onClick={() => setFormData({ ...formData, banner: null })}
-                        className="px-4 py-2 bg-error-600 hover:bg-error-500 rounded-lg font-semibold transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-all flex items-center gap-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
                         <Trash2 className="w-4 h-4" />
                         Remove
@@ -266,22 +219,16 @@ const ProjectSettings = () => {
             {/* Project Picture & Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Project Icon</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Project Icon</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold relative group overflow-hidden">
-                    {/* Render Image or Text */}
-                    {formData.picture?.startsWith('http') ? (
-                       <img src={formData.picture} alt="icon" className="w-full h-full object-cover" />
-                    ) : (
-                       <span>{formData.picture}</span>
-                    )}
-                    
+                  <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center text-2xl font-bold relative group shadow-sm flex-shrink-0">
+                    {formData.picture}
                     {canEditProjectInfo && (
                       <button
                         onClick={() => handleImageUpload('picture')}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        className="absolute inset-0 bg-slate-900/60 dark:bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                       >
-                        <Camera className="w-6 h-6" />
+                        <Camera className="w-5 h-5 text-white" />
                       </button>
                     )}
                   </div>
@@ -292,33 +239,33 @@ const ProjectSettings = () => {
                       value={formData.picture}
                       onChange={(e) => setFormData({ ...formData, picture: e.target.value })}
                       placeholder="Enter emoji or icon URL"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                      className="w-full bg-slate-50 dark:bg-[#111113] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors disabled:opacity-60 disabled:cursor-not-allowed placeholder-slate-400 dark:placeholder-zinc-500"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Project Name</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Project Name</label>
                 <input
                   type="text"
                   disabled={!canEditProjectInfo}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                  className="w-full bg-slate-50 dark:bg-[#111113] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors disabled:opacity-60 disabled:cursor-not-allowed placeholder-slate-400 dark:placeholder-zinc-500"
                 />
               </div>
             </div>
 
             {/* Description */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-white mb-2">Description</label>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Description</label>
               <textarea
                 value={formData.description}
                 disabled={!canEditProjectInfo}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 resize-none transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                className="w-full bg-slate-50 dark:bg-[#111113] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed placeholder-slate-400 dark:placeholder-zinc-500"
               />
             </div>
 
@@ -326,7 +273,7 @@ const ProjectSettings = () => {
               <button
                 onClick={handleSaveProject}
                 disabled={saving}
-                className="w-full px-6 py-3 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
+                className="w-full px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
                 <Save className="w-5 h-5" />
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -338,24 +285,26 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 2: NOTIFICATIONS (User Specific)           */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Bell className="w-5 h-5 text-blue-400" />
-            <h2 className="text-xl font-bold">Your Notification Preferences</h2>
+        <div className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm dark:shadow-none mb-6 transition-colors duration-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+              <Bell className="w-4 h-4 text-blue-500" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Your Notification Preferences</h2>
           </div>
 
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6">
             Control what you hear from this project. These settings are personal to you and will not affect the rest of the team.
           </p>
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 mb-6">
             {Object.entries(notificationSettings).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/[0.04]">
+              <div key={key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/30 rounded-xl border border-slate-200 dark:border-white/[0.04] transition-colors">
                 <div>
-                  <div className="font-semibold text-white capitalize">
+                  <div className="font-semibold text-slate-800 dark:text-zinc-100 capitalize">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
-                  <div className="text-sm text-slate-400">
+                  <div className="text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
                     {key === 'taskAssigned' && 'Get notified when you are assigned to a task'}
                     {key === 'taskCompleted' && 'Get notified when team tasks are completed'}
                     {key === 'announcements' && 'Get notified of project-wide announcements'}
@@ -370,9 +319,10 @@ const ProjectSettings = () => {
                     checked={value}
                     onChange={(e) => setNotificationSettings({ ...notificationSettings, [key]: e.target.checked })}
                     className="sr-only peer"
+                    aria-label={`Toggle ${key}`}
                   />
-                  <div className="w-12 h-6 bg-slate-700 rounded-full peer-checked:bg-blue-500 transition-all" />
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6" />
+                  <div className="w-12 h-6 bg-slate-300 dark:bg-zinc-700 rounded-full peer-checked:bg-blue-500 transition-colors" />
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-6 shadow-sm" />
                 </label>
               </div>
             ))}
@@ -381,7 +331,7 @@ const ProjectSettings = () => {
           <button
             onClick={handleSaveNotifications}
             disabled={saving}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Save className="w-5 h-5" />
             {saving ? 'Saving...' : 'Save Preferences'}
@@ -391,94 +341,49 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 3: DANGER ZONE                             */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className="bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
+        <div className="bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 shadow-sm dark:shadow-none transition-colors duration-300">
           <div className="flex items-center gap-3 mb-4">
-            <AlertTriangle className="w-5 h-5 text-error-400" />
-            <h2 className="text-xl font-bold text-error-400">Danger Zone</h2>
+            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/10 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <h2 className="text-xl font-bold text-red-700 dark:text-red-400">Danger Zone</h2>
           </div>
 
-          {role === 'owner' ? (
-            // ⭐ OWNER VIEW: DELETE PROJECT
-            <>
-              <p className="text-sm text-slate-300 mb-4">
-                This action cannot be undone. This will permanently delete the project and erase all associated tasks, files, and members.
-              </p>
-              
-              {showDeleteConfirm ? (
-                <div className="bg-slate-900/80 rounded-xl p-5 border border-error-500/50">
-                  <p className="text-white font-semibold mb-4">Are you absolutely sure you want to PERMANENTLY delete {project?.name}?</p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleDeleteProject}
-                      className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 rounded-xl font-bold transition-all flex items-center justify-center shadow-lg shadow-error-500/20"
-                    >
-                      Yes, Permanently Delete
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-6 py-3 bg-error-600 hover:bg-error-500 rounded-xl font-bold transition-all shadow-lg shadow-error-500/20"
-                >
-                  Delete Project
-                </button>
-              )}
-            </>
-          ) : (
-            // REGULAR MEMBER VIEW: LEAVE PROJECT
-            <>
-              <p className="text-sm text-slate-300 mb-4">
-                Once you leave this project, you will lose access to all project data and won't be able to rejoin unless invited again.
-              </p>
+          <p className="text-sm text-red-800/80 dark:text-red-200/70 mb-5">
+            Once you leave this project, you will lose access to all project data and won't be able to rejoin unless invited again.
+            {role === 'owner' && <span className="font-bold text-red-600 dark:text-red-400 block mt-2">⚠️ You are the Owner. You cannot leave until you transfer ownership.</span>}
+          </p>
 
-              {showLeaveConfirm ? (
-                <div className="bg-slate-900/80 rounded-xl p-5 border border-error-500/50">
-                  <p className="text-white font-semibold mb-4">Are you absolutely sure you want to leave {project?.name}?</p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowLeaveConfirm(false)}
-                      className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleLeaveProject}
-                      className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-error-500/20"
-                    >
-                      Yes, Leave Project
-                    </button>
-                  </div>
-                </div>
-              ) : (
+          {showLeaveConfirm ? (
+            <div className="bg-white dark:bg-[#1f1f23] rounded-xl p-5 border border-red-200 dark:border-red-500/30 shadow-sm">
+              <p className="text-slate-800 dark:text-white font-semibold mb-4 text-center">Are you absolutely sure you want to leave <span className="text-red-600 dark:text-red-400">{project?.name}</span>?</p>
+              <div className="flex gap-3">
                 <button
-                  onClick={() => setShowLeaveConfirm(true)}
-                  className="px-6 py-3 bg-error-600 hover:bg-error-500 rounded-xl font-bold transition-all shadow-lg shadow-error-500/20"
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 rounded-xl font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                 >
-                  Leave Project
+                  Cancel
                 </button>
-              )}
-            </>
+                <button
+                  onClick={handleLeaveProject}
+                  disabled={role === 'owner'}
+                  className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  Yes, Leave Project
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            >
+              Leave Project
+            </button>
           )}
         </div>
 
       </div>
-
-      {/* ⭐ INVISIBLE FILE INPUT FOR HANDLING UPLOADS */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        accept="image/*" 
-        className="hidden" 
-        style={{ display: 'none' }}
-      />
     </div>
   );
 };
