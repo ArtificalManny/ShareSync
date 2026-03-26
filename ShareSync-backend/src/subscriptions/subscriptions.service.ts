@@ -386,65 +386,74 @@ export class SubscriptionsService {
     const subscription = await this.getOrCreateSubscription(userId);
 
     let customerId = subscription.stripeCustomerId;
-    if (!customerId) {
-      const customer = await this.stripe!.customers.create({
-        metadata: {
-          userId,
-          shareSync: 'true',
-        },
-      });
-      customerId = customer.id;
+    
+    try {
+      if (!customerId) {
+        const customer = await this.stripe!.customers.create({
+          metadata: {
+            userId,
+            shareSync: 'true',
+          },
+        });
+        customerId = customer.id;
 
-      await this.subscriptionModel.updateOne(
-        { userId: new Types.ObjectId(userId) },
-        { stripeCustomerId: customerId },
-      );
+        await this.subscriptionModel.updateOne(
+          { userId: new Types.ObjectId(userId) },
+          { stripeCustomerId: customerId },
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(`Stripe Customer Creation Error: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Could not create billing account: ${error.message}`);
     }
 
     const priceId = this.getPriceId(dto.plan, dto.interval || CheckoutInterval.MONTHLY);
     if (!priceId) {
-      throw new BadRequestException(`No price configured for plan: ${dto.plan}`);
+      throw new BadRequestException(`No price configured for plan: ${dto.plan} (${dto.interval})`);
     }
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const successUrl = dto.successUrl || `${frontendUrl}/settings?subscription=success`;
     const cancelUrl = dto.cancelUrl || `${frontendUrl}/settings?subscription=canceled`;
 
-    const session = await this.stripe!.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        userId,
-        plan: dto.plan,
-        interval: dto.interval || CheckoutInterval.MONTHLY,
-      },
-      subscription_data: {
+    try {
+      const session = await this.stripe!.checkout.sessions.create({
+        customer: customerId,
+        mode: 'subscription',
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         metadata: {
           userId,
           plan: dto.plan,
+          interval: dto.interval || CheckoutInterval.MONTHLY,
         },
-      },
-      allow_promotion_codes: true,
-      billing_address_collection: 'auto',
-      tax_id_collection: {
-        enabled: true,
-      },
-    });
+        subscription_data: {
+          metadata: {
+            userId,
+            plan: dto.plan,
+          },
+        },
+        allow_promotion_codes: true,
+        billing_address_collection: 'auto',
+        // TAX DISABLED: Often causes 500 errors on unconfigured test accounts
+      });
 
-    this.logger.log(`Created checkout session ${session.id} for user ${userId}`);
+      this.logger.log(`Created checkout session ${session.id} for user ${userId}`);
 
-    return {
-      url: session.url!,
-      sessionId: session.id,
-    };
+      return {
+        url: session.url!,
+        sessionId: session.id,
+      };
+    } catch (error: any) {
+      this.logger.error(`Stripe Checkout Session Error: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Could not start checkout: ${error.message}`);
+    }
   }
 
   async createPortalSession(userId: string): Promise<{ url: string }> {
@@ -460,12 +469,17 @@ export class SubscriptionsService {
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-    const session = await this.stripe!.billingPortal.sessions.create({
-      customer: subscription.stripeCustomerId,
-      return_url: `${frontendUrl}/settings`,
-    });
+    try {
+      const session = await this.stripe!.billingPortal.sessions.create({
+        customer: subscription.stripeCustomerId,
+        return_url: `${frontendUrl}/settings`,
+      });
 
-    return { url: session.url };
+      return { url: session.url };
+    } catch (error: any) {
+      this.logger.error(`Stripe Portal Session Error: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Could not open billing portal: ${error.message}`);
+    }
   }
 
   async cancelSubscription(userId: string): Promise<{ cancelAt: Date | null }> {
@@ -479,23 +493,28 @@ export class SubscriptionsService {
       throw new BadRequestException('No active subscription to cancel');
     }
 
-    const stripeSubscription = await this.stripe!.subscriptions.update(
-      subscription.stripeSubscriptionId,
-      { cancel_at_period_end: true },
-    );
+    try {
+      const stripeSubscription = await this.stripe!.subscriptions.update(
+        subscription.stripeSubscriptionId,
+        { cancel_at_period_end: true },
+      );
 
-    const cancelAt = stripeSubscription.cancel_at
-      ? new Date(stripeSubscription.cancel_at * 1000)
-      : null;
+      const cancelAt = stripeSubscription.cancel_at
+        ? new Date(stripeSubscription.cancel_at * 1000)
+        : null;
 
-    await this.subscriptionModel.updateOne(
-      { userId: new Types.ObjectId(userId) },
-      { cancelAt },
-    );
+      await this.subscriptionModel.updateOne(
+        { userId: new Types.ObjectId(userId) },
+        { cancelAt },
+      );
 
-    this.logger.log(`Subscription ${subscription.stripeSubscriptionId} scheduled for cancellation`);
+      this.logger.log(`Subscription ${subscription.stripeSubscriptionId} scheduled for cancellation`);
 
-    return { cancelAt };
+      return { cancelAt };
+    } catch (error: any) {
+      this.logger.error(`Stripe Cancel Subscription Error: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Could not cancel subscription: ${error.message}`);
+    }
   }
 
   async resumeSubscription(userId: string): Promise<void> {
@@ -509,17 +528,22 @@ export class SubscriptionsService {
       throw new BadRequestException('No subscription to resume');
     }
 
-    await this.stripe!.subscriptions.update(
-      subscription.stripeSubscriptionId,
-      { cancel_at_period_end: false },
-    );
+    try {
+      await this.stripe!.subscriptions.update(
+        subscription.stripeSubscriptionId,
+        { cancel_at_period_end: false },
+      );
 
-    await this.subscriptionModel.updateOne(
-      { userId: new Types.ObjectId(userId) },
-      { $unset: { cancelAt: 1 } },
-    );
+      await this.subscriptionModel.updateOne(
+        { userId: new Types.ObjectId(userId) },
+        { $unset: { cancelAt: 1 } },
+      );
 
-    this.logger.log(`Subscription ${subscription.stripeSubscriptionId} resumed`);
+      this.logger.log(`Subscription ${subscription.stripeSubscriptionId} resumed`);
+    } catch (error: any) {
+      this.logger.error(`Stripe Resume Subscription Error: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Could not resume subscription: ${error.message}`);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

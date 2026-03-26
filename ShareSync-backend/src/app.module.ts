@@ -81,6 +81,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportsModule } from './reports/reports.module';
 import { AIModule } from './ai/ai.module';
 import { DiscoveryModule } from './discovery/discovery.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module'; // <-- IMPORTED SUBSCRIPTIONS MODULE
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRUST & SAFETY MODULES
@@ -229,6 +230,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     IntegrationsModule,
     ReportsModule,
     AIModule,
+    SubscriptionsModule, // <-- REGISTERED SUBSCRIPTIONS MODULE
 
     // ─────────────────────────────────────────────────────────────────────────
     // TRUST & SAFETY

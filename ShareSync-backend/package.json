@@ -55,7 +55,7 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "socket.io": "^4.6.2",
-    "stripe": "^20.4.0",
+    "stripe": "^20.4.1",
     "twilio": "^4.20.0",
     "winston": "^3.19.0"
   },
