@@ -87,7 +87,7 @@ export default function PricingModal({
   onClose,
   onSuccess,
 }) {
-  const [loading, setLoading] = useState(false);
+  const [activeAction, setActiveAction] = useState(null); // Tracks specific loading state
   const [billingInterval, setBillingInterval] = useState('monthly'); // 'monthly' | 'yearly'
 
   const handleUpgrade = async (plan) => {
@@ -96,7 +96,7 @@ export default function PricingModal({
       return;
     }
 
-    setLoading(true);
+    setActiveAction(`upgrade_${plan}`);
     try {
       const result = await createCheckout({
         plan,
@@ -114,12 +114,12 @@ export default function PricingModal({
         variant: 'error',
       });
     } finally {
-      setLoading(false);
+      setActiveAction(null);
     }
   };
 
   const handleManageBilling = async () => {
-    setLoading(true);
+    setActiveAction('manage');
     try {
       const result = await createPortalSession();
       if (result.url) {
@@ -132,7 +132,7 @@ export default function PricingModal({
         variant: 'error',
       });
     } finally {
-      setLoading(false);
+      setActiveAction(null);
     }
   };
 
@@ -141,7 +141,7 @@ export default function PricingModal({
       return;
     }
 
-    setLoading(true);
+    setActiveAction('cancel');
     try {
       await cancelSubscription();
       toast({
@@ -157,12 +157,12 @@ export default function PricingModal({
         variant: 'error',
       });
     } finally {
-      setLoading(false);
+      setActiveAction(null);
     }
   };
 
   const handleResume = async () => {
-    setLoading(true);
+    setActiveAction('resume');
     try {
       await resumeSubscription();
       toast({
@@ -177,7 +177,7 @@ export default function PricingModal({
         variant: 'error',
       });
     } finally {
-      setLoading(false);
+      setActiveAction(null);
     }
   };
 
@@ -275,7 +275,10 @@ export default function PricingModal({
                 onManage={handleManageBilling}
                 onCancel={handleCancel}
                 onResume={handleResume}
-                loading={loading}
+                isUpgrading={activeAction === `upgrade_${key}`}
+                isManaging={activeAction === 'manage'}
+                isCancelingAction={activeAction === 'cancel'}
+                isResuming={activeAction === 'resume'}
               />
             ))}
           </div>
@@ -334,7 +337,10 @@ function PlanCard({
   onManage,
   onCancel,
   onResume,
-  loading,
+  isUpgrading,
+  isManaging,
+  isCancelingAction,
+  isResuming,
 }) {
   const Icon = plan.icon;
   const isYearly = billingInterval === 'yearly';
@@ -342,6 +348,8 @@ function PlanCard({
   const period = isYearly ? plan.periodYearly || '/year' : plan.period;
   const isFree = planKey === 'free';
   const isEnterprise = planKey === 'enterprise';
+
+  const anyActionLoading = isUpgrading || isManaging || isCancelingAction || isResuming;
 
   return (
     <div
@@ -418,26 +426,26 @@ function PlanCard({
             <>
               <button
                 onClick={onManage}
-                disabled={loading}
+                disabled={anyActionLoading}
                 className="w-full py-2 rounded-lg text-sm font-medium text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-50"
               >
-                Manage Billing
+                {isManaging ? 'Loading...' : 'Manage Billing'}
               </button>
               {isCanceling ? (
                 <button
                   onClick={onResume}
-                  disabled={loading}
+                  disabled={anyActionLoading}
                   className="w-full py-2 rounded-lg text-sm font-medium text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
                 >
-                  Resume Subscription
+                  {isResuming ? 'Loading...' : 'Resume Subscription'}
                 </button>
               ) : (
                 <button
                   onClick={onCancel}
-                  disabled={loading}
+                  disabled={anyActionLoading}
                   className="w-full py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
-                  Cancel Plan
+                  {isCancelingAction ? 'Loading...' : 'Cancel Plan'}
                 </button>
               )}
               {isCanceling && cancelAt && (
@@ -451,7 +459,7 @@ function PlanCard({
       ) : (
         <button
           onClick={onSelect}
-          disabled={loading || isFree}
+          disabled={anyActionLoading || isFree}
           className={`
             w-full py-3 rounded-xl font-medium transition-all
             ${isFree
@@ -463,7 +471,7 @@ function PlanCard({
             disabled:opacity-50
           `}
         >
-          {loading ? 'Loading...' : isEnterprise ? 'Contact Sales' : isFree ? 'Current Plan' : 'Upgrade'}
+          {isUpgrading ? 'Loading...' : isEnterprise ? 'Contact Sales' : isFree ? 'Current Plan' : 'Upgrade'}
         </button>
       )}
     </div>
