@@ -1,11 +1,21 @@
 // src/components/focus/YourMovesToday.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE H: Your 3 Moves Today - Cross-Project Focus View
-// ⭐ UPGRADE: Item 11 - Wired to LIVE Data (GET /api/tasks/priorities)
+// PHASE H: Your Top Moves Today - Cross-Project Focus View
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Shows the user's highest-leverage moves across ALL their projects.
+// Core differentiator: "No one opens ShareSync and wonders what to do next."
+//
+// Features:
+// - Customizable move count (1, 3, 5, 10)
+// - Project badges on each move
+// - Real-time refresh on ships/changes
+// - Impact summary footer
+// - Urgency indicators
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   Target, 
   Zap, 
@@ -13,12 +23,15 @@ import {
   ChevronRight,
   Flame,
   AlertCircle,
+  Settings,
+  Check
 } from 'lucide-react';
 import MoveCard, { MoveCardSkeleton } from './MoveCard';
-import { getPriorityTasks, patchTask } from '../../api/tasks';
+import { getStatusColor } from '../../utils/statusColor';
+import { useUserFocusMoves } from '../../hooks/useFocusMoves';
 
 export default function YourMovesToday({
-  variant = 'default',
+  variant = 'default', // 'default' | 'compact' | 'sidebar'
   maxMoves = 3,
   showHeader = true,
   showFooter = true,
@@ -27,115 +40,152 @@ export default function YourMovesToday({
   onViewAll,
   className = '',
 }) {
-  const navigate = useNavigate();
-  const [moves, setMoves] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [customLimit, setCustomLimit] = useState(maxMoves);
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef(null);
 
-  const fetchLiveMoves = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await getPriorityTasks(maxMoves);
-      setMoves(data || []);
-    } catch (err) {
-      console.error("Failed to fetch top moves:", err);
-      setError(err);
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [maxMoves]);
-
+  // Close settings when clicking outside
   useEffect(() => {
-    fetchLiveMoves();
-  }, [fetchLiveMoves]);
+    if (!showSettings) return;
+    const handleClickOutside = (e) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setShowSettings(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSettings]);
 
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    fetchLiveMoves();
-  }, [fetchLiveMoves]);
+  // 🚨 CRITICAL FIX: Bypass the Context Trap. 
+  // We strictly use the hook so our Data Adapter translation layer executes.
+  const focusData = useUserFocusMoves({ count: customLimit });
+
+  const {
+    moves = [],
+    impactSummary = {},
+    loading,
+    error,
+    isRefreshing,
+    refresh,
+    completeMove,
+    snoozeMove,
+    hasUrgentMoves,
+  } = focusData || {};
+
+  // We only rely on 'moves' now, which the hook has already sliced and ranked
+  const displayMoves = moves || [];
+
+  const handleRefresh = useCallback(async () => {
+    setIsManualRefreshing(true);
+    await refresh?.();
+    setTimeout(() => setIsManualRefreshing(false), 500);
+  }, [refresh]);
 
   const handleComplete = useCallback(async (moveId) => {
-    const move = moves.find(m => m.id === moveId || m._id === moveId);
-    if (!move) return;
-    const projectId = move.projectId || move.project?.id || move.project?._id;
-    
-    // Optimistic UI update
-    setMoves(prev => prev.filter(m => (m.id || m._id) !== moveId));
-    
-    try {
-      await patchTask(projectId, moveId, { status: 'done', completedAt: new Date().toISOString() });
-    } catch (err) {
-      console.error("Failed to complete task:", err);
-      fetchLiveMoves(); // Revert on failure
+    if (completeMove) {
+      await completeMove(moveId);
     }
-  }, [moves, fetchLiveMoves]);
+  }, [completeMove]);
 
-  const handleMoveClick = useCallback((move) => {
-    if (onMoveClick) {
-      onMoveClick(move);
-    } else {
-      const projectId = move.projectId || move.project?.id || move.project?._id;
-      if (projectId) navigate(`/projects/${projectId}`);
+  const handleSnooze = useCallback(async (moveId, hours) => {
+    if (snoozeMove) {
+      await snoozeMove(moveId, hours);
     }
-  }, [onMoveClick, navigate]);
+  }, [snoozeMove]);
 
   const isCompact = variant === 'compact' || variant === 'sidebar';
-  const hasUrgentMoves = moves.some(m => m.priority === 'critical' || m.priority === 'urgent');
 
   return (
     <div className={`
-      card-action
+      card-action relative
       ${isCompact ? 'p-4' : 'p-6'} rounded-xl
-      bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm
-      ${hasUrgentMoves ? 'border-l-4 border-l-amber-500' : ''}
+      bg-surface-1 border border-white/[0.06]
+      ${hasUrgentMoves ? 'border-l-2 border-l-warning shadow-lg shadow-warning/5' : 'shadow-lg shadow-black/20'}
       ${className}
     `}>
       {/* Header */}
       {showHeader && (
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${hasUrgentMoves ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-violet-50 dark:bg-violet-500/10'}`}>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${hasUrgentMoves ? 'bg-warning/10 text-warning' : 'bg-brand/10 text-brand'}`}>
               {hasUrgentMoves ? (
-                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <AlertCircle className="w-4 h-4" />
               ) : (
-                <Target className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <Target className="w-4 h-4" />
               )}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">
-                Your 3 Moves Today
-              </h3>
+              <div className="flex items-center gap-2 relative" ref={settingsRef}>
+                <h3 
+                  className="text-sm font-semibold text-text-primary flex items-center gap-1.5 cursor-pointer hover:text-brand transition-colors"
+                  onClick={() => setShowSettings(!showSettings)}
+                  title="Customize number of moves"
+                >
+                  Your {customLimit} Moves Today
+                  <Settings className="w-3.5 h-3.5 text-text-tertiary opacity-50 hover:opacity-100 transition-opacity" />
+                </h3>
+                
+                {/* Custom Limit Dropdown */}
+                {showSettings && (
+                  <div className="absolute top-full left-0 mt-2 w-40 py-1.5 rounded-xl bg-surface-2 border border-white/[0.10] shadow-xl z-50">
+                    <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-text-tertiary uppercase">
+                      Show Moves
+                    </div>
+                    {[1, 3, 5, 10].map(num => (
+                      <button
+                        key={num}
+                        onClick={() => { setCustomLimit(num); setShowSettings(false); }}
+                        className="w-full px-3 py-2 flex items-center justify-between text-xs text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
+                      >
+                        {num} {num === 1 ? 'Move (Laser Focus)' : 'Moves'}
+                        {customLimit === num && <Check className="w-3.5 h-3.5 text-brand" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {hasUrgentMoves && (
-                <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Action needed</p>
+                <p className="text-[11px] font-medium text-warning mt-0.5">Action needed</p>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {isRefreshing && (
-              <span className="text-[10px] font-medium text-slate-400">Updating...</span>
+            {/* Refresh indicator */}
+            {(isRefreshing || isManualRefreshing) && (
+              <span className="text-[10px] font-medium text-text-tertiary animate-pulse">Syncing...</span>
             )}
             
+            {/* Refresh button */}
             {showRefresh && (
               <button
                 onClick={handleRefresh}
-                disabled={isRefreshing || loading}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+                disabled={isRefreshing || isManualRefreshing}
+                className="
+                  p-1.5 rounded-lg
+                  text-text-tertiary hover:text-text-primary
+                  hover:bg-surface-2
+                  transition-all active:scale-95
+                  disabled:opacity-50
+                "
                 title="Refresh moves"
               >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${(isRefreshing || isManualRefreshing) ? 'animate-spin text-brand' : ''}`} />
               </button>
             )}
 
+            {/* View all */}
             {onViewAll && (
               <button
                 onClick={onViewAll}
-                className="text-xs font-medium text-slate-500 hover:text-violet-600 transition-colors flex items-center gap-1"
+                className="
+                  text-xs font-medium text-text-tertiary hover:text-brand
+                  transition-colors flex items-center gap-0.5 ml-1
+                "
               >
                 View all
-                <ChevronRight className="w-3 h-3" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -144,24 +194,29 @@ export default function YourMovesToday({
 
       {/* Content */}
       {loading ? (
-        <MoveCardSkeleton count={maxMoves} />
+        <MoveCardSkeleton count={customLimit} />
       ) : error ? (
-        <div className="py-8 text-center bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
-          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-          <p className="text-sm text-slate-600 dark:text-zinc-400 mb-2">Failed to load live moves</p>
-          <button onClick={handleRefresh} className="text-xs font-medium text-violet-600 hover:text-violet-700">
-            Try again
+        <div className="py-10 text-center bg-surface-2/30 rounded-xl border border-white/[0.04]">
+          <AlertCircle className="w-8 h-8 text-error-500 mx-auto mb-3 opacity-80" />
+          <p className="text-sm font-medium text-text-primary mb-1">Unable to load focus moves</p>
+          <p className="text-xs text-text-tertiary mb-4">Please check your connection and try again.</p>
+          <button
+            onClick={handleRefresh}
+            className="text-xs font-semibold px-4 py-2 bg-surface-3 rounded-lg text-brand hover:text-brand-400 transition-colors"
+          >
+            Retry Connection
           </button>
         </div>
-      ) : moves.length > 0 ? (
+      ) : displayMoves.length > 0 ? (
         <div className="space-y-3">
-          {moves.map((move, index) => (
+          {displayMoves.map((move, index) => (
             <MoveCard
-              key={move.id || move._id}
+              key={move.id || move._id || index}
               move={move}
               rank={index + 1}
-              onClick={() => handleMoveClick(move)}
+              onClick={onMoveClick}
               onComplete={handleComplete}
+              onSnooze={handleSnooze}
               showProject={true}
               showActions={!isCompact}
               variant={isCompact ? 'compact' : 'default'}
@@ -173,16 +228,22 @@ export default function YourMovesToday({
       )}
 
       {/* Footer - Impact Summary */}
-      {showFooter && moves.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/10">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">
-              Complete all {moves.length} to unlock maximum momentum
+      {showFooter && displayMoves.length > 0 && (
+        <div className="mt-5 pt-4 border-t border-white/[0.06] bg-surface-1">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs font-medium text-text-tertiary">
+              Complete all {displayMoves.length} to unlock:
             </span>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-xs font-bold text-violet-600 dark:text-violet-400">
-                <Zap className="w-3.5 h-3.5 fill-current" />
-                +{moves.reduce((s, m) => s + (m.momentum || m.xp || 25), 0)} XP
+            <div className="flex flex-wrap items-center gap-3">
+              {impactSummary.totalUnblocks > 0 && (
+                <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-cyan-400/10 text-xs font-medium text-cyan-400">
+                  <Target className="w-3.5 h-3.5" />
+                  Unblock {impactSummary.totalUnblocks} teammates
+                </span>
+              )}
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand/10 text-xs font-bold text-brand shadow-sm shadow-brand/10">
+                <Zap className="w-3.5 h-3.5" />
+                +{impactSummary.totalMomentum || displayMoves.reduce((s, m) => s + (m.momentum || 0), 0)} Momentum
               </span>
             </div>
           </div>
@@ -192,25 +253,34 @@ export default function YourMovesToday({
   );
 }
 
+/**
+ * Empty state when no moves
+ */
 function EmptyState({ onRefresh }) {
   return (
-    <div className="py-8 text-center bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
-      <div className="w-12 h-12 rounded-full bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 mx-auto mb-3 flex items-center justify-center shadow-sm">
-        <Target className="w-5 h-5 text-slate-300 dark:text-zinc-500" />
+    <div className="py-12 text-center bg-surface-2/20 rounded-xl border border-white/[0.02]">
+      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-success/20 to-success/5 mx-auto mb-4 flex items-center justify-center shadow-lg shadow-success/10">
+        <Flame className="w-8 h-8 text-success" />
       </div>
-      <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mb-4">
-        No moves yet — add a task to start building momentum.
+      <h4 className="text-lg font-bold text-text-primary mb-2">
+        You're completely clear! 🎉
+      </h4>
+      <p className="text-sm text-text-tertiary mb-6 max-w-xs mx-auto">
+        No critical moves demand your attention right now. Great job managing the workload.
       </p>
       <button
         onClick={onRefresh}
-        className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 transition-colors"
+        className="text-xs font-semibold text-text-secondary bg-surface-3 px-4 py-2 rounded-lg hover:text-brand hover:bg-surface-3/80 transition-all active:scale-95"
       >
-        Refresh Feed
+        Refresh Radar
       </button>
     </div>
   );
 }
 
+/**
+ * Compact widget version for sidebars
+ */
 export function YourMovesWidget({ onMoveClick, onViewAll }) {
   return (
     <YourMovesToday
@@ -225,31 +295,48 @@ export function YourMovesWidget({ onMoveClick, onViewAll }) {
   );
 }
 
+/**
+ * Inline banner version for quick glance
+ */
 export function FocusBanner({ className = '' }) {
-  const [topMove, setTopMove] = useState(null);
-
-  useEffect(() => {
-    getPriorityTasks(1).then(data => {
-      if (data && data.length > 0) setTopMove(data[0]);
-    }).catch(console.error);
-  }, []);
+  // Using hook directly here too to maintain consistency
+  const { moves, hasUrgentMoves } = useUserFocusMoves({ count: 1 });
   
-  if (!topMove) return null;
-  const hasUrgentMoves = topMove.priority === 'critical' || topMove.priority === 'urgent';
+  if (!moves?.length) return null;
+  
+  const topMove = moves[0];
   
   return (
     <div className={`
-      px-4 py-3 rounded-xl shadow-sm
-      ${hasUrgentMoves ? 'bg-amber-50 border border-amber-200' : 'bg-violet-50 border border-violet-200'}
-      flex items-center justify-between
+      px-4 py-3 rounded-xl
+      ${hasUrgentMoves ? 'bg-warning/10 border border-warning/20' : 'bg-brand/10 border border-brand/20'}
+      flex items-center justify-between shadow-sm
       ${className}
     `}>
       <div className="flex items-center gap-3">
-        <Target className={`w-5 h-5 ${hasUrgentMoves ? 'text-amber-500' : 'text-violet-600'}`} />
+        <Target className={`w-5 h-5 ${hasUrgentMoves ? 'text-warning' : 'text-brand'}`} />
         <div>
-          <p className={`text-xs font-medium ${hasUrgentMoves ? 'text-amber-600' : 'text-violet-500'}`}>Top priority</p>
-          <p className="text-sm font-bold text-slate-800">{topMove.title}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary mb-0.5">Top priority</p>
+          <p className="text-sm font-semibold text-text-primary line-clamp-1">{topMove.title}</p>
         </div>
+      </div>
+      
+      <div className="flex items-center gap-3 shrink-0">
+        {topMove.project && (
+          <span 
+            className="hidden sm:inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide"
+            style={{ 
+              backgroundColor: `${topMove.project?.color || '#3b82f6'}15`,
+              color: topMove.project?.color || '#3b82f6',
+            }}
+          >
+            {topMove.project?.name || 'Project'}
+          </span>
+        )}
+        <span className="flex items-center gap-1 text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md">
+          <Zap className="w-3.5 h-3.5" />
+          +{topMove.momentum || 0}
+        </span>
       </div>
     </div>
   );
