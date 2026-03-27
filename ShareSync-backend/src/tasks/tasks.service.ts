@@ -3,9 +3,9 @@
 // TASKS SERVICE: Business Logic with Gamification Integration
 // + Normalized Task Mutation Events (3.3)
 // + Realtime Socket Emits (Step 4)
-// + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
-// + ✅ Public Spectator Stream (public:project:{projectId}) (Step 6)
+// + Step 5 Notification Touchpoints
 // + ⚡️ Populated Projects for Focus Engine rendering
+// + 🚨 FIX: Assignee/Creator Access Bypass to prevent 404s on completion
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -172,9 +172,20 @@ export class TasksService {
     return task;
   }
 
+  // 🚨 CRITICAL BACKEND FIX: Project Access Bypass
   async findByIdWithAccess(taskId: string, userId: string): Promise<TaskDocument> {
     const task = await this.findById(taskId);
-    await this.projectsService.findByIdWithAccess(task.projectId.toString(), userId);
+    
+    // If the user is the assignee or the creator, they inherently have access
+    // to view and complete this task, regardless of project permissions.
+    const isAssignee = task.assigneeId?.toString() === userId;
+    const isCreator = task.createdBy?.toString() === userId;
+    
+    if (!isAssignee && !isCreator) {
+      // Only run the strict project check if they don't own the task
+      await this.projectsService.findByIdWithAccess(task.projectId.toString(), userId);
+    }
+    
     return task;
   }
 
@@ -215,7 +226,7 @@ export class TasksService {
     const [tasks, total] = await Promise.all([
       this.taskModel
         .find(query)
-        .populate('projectId', 'name color icon') // Added Population
+        .populate('projectId', 'name color icon')
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
         .skip(offset)
         .limit(limit)
@@ -268,7 +279,7 @@ export class TasksService {
 
     return this.taskModel
       .find(query)
-      .populate('projectId', 'name color icon') // Added Population
+      .populate('projectId', 'name color icon')
       .sort({
         priority: -1,
         isBlocking: -1,
@@ -283,10 +294,6 @@ export class TasksService {
     return this.taskModel.find({ parentId: task._id }).sort({ order: 1 });
   }
 
-  /**
-   * 🚨 CORE FIX: getMyPriorityTasks is the engine behind the Focus UI.
-   * We ensure projectId is populated so the frontend MoveCards have data for badges.
-   */
   async getMyPriorityTasks(
     userId: string,
     limit: number = 3,
@@ -313,7 +320,7 @@ export class TasksService {
         status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
         completedAt: null,
       })
-      .populate('projectId', 'name color icon') // 🚨 Populates Project Data!
+      .populate('projectId', 'name color icon')
       .sort({
         priority: -1,
         isBlocking: -1,
