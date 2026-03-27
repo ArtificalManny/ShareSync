@@ -1,6 +1,6 @@
 // src/hooks/useFocusMoves.js
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE H: Three-Move Focus Engine - Data Hook (OPTIMISTIC UI)
+// PHASE H: Three-Move Focus Engine - Data Hook (BULLETPROOF OPTIMISTIC UI)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,10 +14,11 @@ import { rankMoves, calculateImpactSummary, getUrgencyLevel } from '../utils/foc
 
 const normalizeTaskToMove = (task) => {
   if (!task) return null;
+  const validId = task._id || task.id || task.taskId;
   return {
     ...task,
-    id: task._id || task.id || task.taskId,
-    taskId: task._id || task.id || task.taskId,
+    id: validId,
+    taskId: validId,
     title: task.title || 'Untitled Move',
     deadline: task.dueDate || task.deadline,
     momentum: task.xpValue || task.momentum || task.storyPoints * 10 || 25,
@@ -48,35 +49,36 @@ export function useUserFocusMoves(options = {}) {
     }
   }, [count]);
 
-  // 🚨 BEHAVIORAL FIX: Optimistic UI
-  // We instantly remove the move from the screen for the dopamine hit.
-  // We don't wait for the server.
   const completeMove = useCallback(async (moveId) => {
-    // 1. Instantly remove from UI
+    if (!moveId) return;
+
+    // 1. Instantly remove from UI for the dopamine hit
     setMoves(prev => prev.filter(m => m.id !== moveId && m.taskId !== moveId));
     
     // 2. Background sync with server
     try {
-      await completeFocusMove(moveId.toString().trim());
-      await fetchMoves(true); // Refill the empty slot silently
-    } catch (err) {
-      console.warn("Server threw an error, but UI is optimistically updated.", err);
-      // If 404, it means it's already done/gone on the server anyway. Win-win.
+      const cleanId = typeof moveId === 'object' ? (moveId._id || moveId.id) : moveId.toString();
+      await completeFocusMove(cleanId);
+      
+      // We ONLY refresh if the server successfully processed the XP/Gamification
       await fetchMoves(true); 
+    } catch (err) {
+      console.warn("Backend gamification logic failed, but task is optimistically removed from UI to preserve flow state.", err);
+      // 🚨 FRONTEND FIX: Do NOT call fetchMoves() here. 
+      // If the server fails (e.g., 404), we leave the card hidden so it doesn't rudely pop back.
     }
   }, [fetchMoves]);
 
   const snoozeMove = useCallback(async (moveId, hours) => {
-    // 1. Instantly remove from UI
+    if (!moveId) return;
     setMoves(prev => prev.filter(m => m.id !== moveId && m.taskId !== moveId));
     
-    // 2. Background sync
     try {
-      await snoozeFocusMove(moveId.toString().trim(), hours);
+      const cleanId = typeof moveId === 'object' ? (moveId._id || moveId.id) : moveId.toString();
+      await snoozeFocusMove(cleanId, hours);
       await fetchMoves(true);
     } catch (err) {
-      console.warn("Server snooze failed, refreshing state.", err);
-      await fetchMoves(true);
+      console.warn("Server snooze failed, but UI state preserved.", err);
     }
   }, [fetchMoves]);
 

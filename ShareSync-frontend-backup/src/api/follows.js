@@ -7,6 +7,7 @@
 // getFollowedProjects()      → GET /api/follows
 // getFollowStatus(id)        → GET /api/follows/check/:id
 // getBulkFollowStatus([ids]) → GET /api/follows/status?ids=a,b,c
+// updateFollowPreferences    → PATCH /api/projects/:id/preferences
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
@@ -88,5 +89,22 @@ export async function getBulkFollowStatus(projectIds) {
   } catch (err) {
     console.error('[follows] getBulkFollowStatus failed:', err);
     return {};
+  }
+}
+
+/**
+ * Update notification and follow preferences for a specific project
+ * @param {string} projectId - The ID of the project
+ * @param {Object} preferences - The preferences payload to update
+ * @returns {Promise<Object>}
+ */
+export async function updateFollowPreferences(projectId, preferences) {
+  try {
+    // Hits the backend route: PATCH /api/projects/:id/preferences
+    const res = await client.patch(`/projects/${projectId}/preferences`, preferences);
+    return res?.data || res;
+  } catch (err) {
+    console.error('[follows] updateFollowPreferences failed:', err);
+    throw err;
   }
 }
