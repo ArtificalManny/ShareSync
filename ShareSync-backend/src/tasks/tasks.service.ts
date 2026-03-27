@@ -5,6 +5,7 @@
 // + Realtime Socket Emits (Step 4)
 // + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
 // + ✅ Public Spectator Stream (public:project:{projectId}) (Step 6)
+// + ⚡️ Populated Projects for Focus Engine rendering
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -214,6 +215,7 @@ export class TasksService {
     const [tasks, total] = await Promise.all([
       this.taskModel
         .find(query)
+        .populate('projectId', 'name color icon') // Added Population
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
         .skip(offset)
         .limit(limit)
@@ -266,6 +268,7 @@ export class TasksService {
 
     return this.taskModel
       .find(query)
+      .populate('projectId', 'name color icon') // Added Population
       .sort({
         priority: -1,
         isBlocking: -1,
@@ -280,6 +283,10 @@ export class TasksService {
     return this.taskModel.find({ parentId: task._id }).sort({ order: 1 });
   }
 
+  /**
+   * 🚨 CORE FIX: getMyPriorityTasks is the engine behind the Focus UI.
+   * We ensure projectId is populated so the frontend MoveCards have data for badges.
+   */
   async getMyPriorityTasks(
     userId: string,
     limit: number = 3,
@@ -306,6 +313,7 @@ export class TasksService {
         status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
         completedAt: null,
       })
+      .populate('projectId', 'name color icon') // 🚨 Populates Project Data!
       .sort({
         priority: -1,
         isBlocking: -1,
@@ -473,8 +481,6 @@ export class TasksService {
       throw new BadRequestException('Task is already completed');
     }
 
-    const project = await this.projectsService.findById(task.projectId.toString());
-
     const variableRewards = this.calculateVariableRewards(task.xpValue);
 
     task.status = TaskStatus.DONE;
@@ -522,8 +528,6 @@ export class TasksService {
       xpAwarded: totalXP,
       isLegendary: variableRewards.isLegendary,
       ceremonyTier: ceremonyTier as any,
-      taskTitle: task.title, // ADDED FOR TASK 1.2
-      projectName: project?.name || '', // ADDED FOR TASK 1.2
     });
 
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(task));
