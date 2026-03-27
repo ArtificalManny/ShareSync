@@ -1,15 +1,17 @@
 // src/hooks/useFocusMoves.js
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE H: Three-Move Focus Engine - Data Hook (DEBUG MODE)
+// PHASE H: Three-Move Focus Engine - Data Hook (OPTIMISTIC UI)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getUserFocusMoves, getProjectFocusMoves } from '../api/focusEngine';
+import { 
+  getUserFocusMoves, 
+  getProjectFocusMoves,
+  completeFocusMove,
+  snoozeFocusMove 
+} from '../api/focusEngine';
 import { rankMoves, calculateImpactSummary, getUrgencyLevel } from '../utils/focusRanking';
 
-/**
- * 🚨 DATA ADAPTER: Translates backend Task schemas into Frontend Move schemas
- */
 const normalizeTaskToMove = (task) => {
   if (!task) return null;
   return {
@@ -26,114 +28,69 @@ const normalizeTaskToMove = (task) => {
 };
 
 export function useUserFocusMoves(options = {}) {
-  const { 
-    count = 3, 
-    autoRefresh = true, 
-    refreshInterval = 30000,
-  } = options;
-  
+  const { count = 3, autoRefresh = true, refreshInterval = 30000 } = options;
   const [moves, setMoves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastFetch, setLastFetch] = useState(null);
 
   const fetchMoves = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
-      
       const data = await getUserFocusMoves(count);
-      console.log("🟢 [FOCUS ENGINE] 1. Raw API Response:", data);
-      
-      // 🚨 Aggressive Extraction: Find the array no matter where it is hidden
-      let rawArray = [];
-      if (Array.isArray(data)) {
-        rawArray = data;
-      } else if (data && typeof data === 'object') {
-        // Search the object for any array containing items
-        rawArray = data.tasks || data.data || data.moves || Object.values(data).find(Array.isArray) || [];
-      }
-      console.log("🟢 [FOCUS ENGINE] 2. Extracted Array:", rawArray);
-      
+      const rawArray = Array.isArray(data) ? data : (data?.tasks || data?.data || []);
       const normalizedMoves = rawArray.map(normalizeTaskToMove).filter(Boolean);
-      console.log("🟢 [FOCUS ENGINE] 3. Normalized Moves:", normalizedMoves);
-
-      // 🚨 TEMPORARY BYPASS: We are turning off rankMoves to see if it was filtering out valid tasks
-      // const ranked = rankMoves(normalizedMoves);
-      const ranked = normalizedMoves; 
-      console.log("🟢 [FOCUS ENGINE] 4. Ranked Moves (Bypassed):", ranked);
-
-      setMoves(ranked.slice(0, count));
-      setLastFetch(Date.now());
+      setMoves(rankMoves(normalizedMoves).slice(0, count));
     } catch (err) {
-      console.error("🔴 [FOCUS ENGINE] Error:", err);
       setError(err.message || 'Failed to load focus moves');
     } finally {
       setLoading(false);
     }
   }, [count]);
 
-  useEffect(() => {
-    fetchMoves();
+  // 🚨 BEHAVIORAL FIX: Optimistic UI
+  // We instantly remove the move from the screen for the dopamine hit.
+  // We don't wait for the server.
+  const completeMove = useCallback(async (moveId) => {
+    // 1. Instantly remove from UI
+    setMoves(prev => prev.filter(m => m.id !== moveId && m.taskId !== moveId));
+    
+    // 2. Background sync with server
+    try {
+      await completeFocusMove(moveId.toString().trim());
+      await fetchMoves(true); // Refill the empty slot silently
+    } catch (err) {
+      console.warn("Server threw an error, but UI is optimistically updated.", err);
+      // If 404, it means it's already done/gone on the server anyway. Win-win.
+      await fetchMoves(true); 
+    }
   }, [fetchMoves]);
+
+  const snoozeMove = useCallback(async (moveId, hours) => {
+    // 1. Instantly remove from UI
+    setMoves(prev => prev.filter(m => m.id !== moveId && m.taskId !== moveId));
+    
+    // 2. Background sync
+    try {
+      await snoozeFocusMove(moveId.toString().trim(), hours);
+      await fetchMoves(true);
+    } catch (err) {
+      console.warn("Server snooze failed, refreshing state.", err);
+      await fetchMoves(true);
+    }
+  }, [fetchMoves]);
+
+  useEffect(() => { fetchMoves(); }, [fetchMoves]);
 
   useEffect(() => {
     if (!autoRefresh || refreshInterval <= 0) return;
-    
     const interval = setInterval(() => fetchMoves(true), refreshInterval);
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchMoves]);
 
-  useEffect(() => {
-    const handleRefresh = () => setTimeout(() => fetchMoves(true), 500);
-    
-    window.addEventListener('local-ship', handleRefresh);
-    window.addEventListener('task-complete', handleRefresh);
-    
-    return () => {
-      window.removeEventListener('local-ship', handleRefresh);
-      window.removeEventListener('task-complete', handleRefresh);
-    };
-  }, [fetchMoves]);
-
-  // We still calculate impact summary for the footer
   const impactSummary = useMemo(() => calculateImpactSummary(moves), [moves]);
 
-  return {
-    moves,
-    loading,
-    error,
-    lastFetch,
-    refresh: fetchMoves,
-    impactSummary,
-  };
-}
-
-// ... [useProjectFocusMoves and useFocusUrgency remain the same for now to save space] ...
-export function useProjectFocusMoves(projectId, options = {}) {
-  const { count = 3, autoRefresh = true } = options;
-  const [moves, setMoves] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchMoves = useCallback(async (silent = false) => {
-    if (!projectId) return;
-    try {
-      if (!silent) setLoading(true);
-      setError(null);
-      const data = await getProjectFocusMoves(projectId, count);
-      const rawArray = Array.isArray(data) ? data : (data?.tasks || data?.data || []);
-      const normalizedMoves = rawArray.map(normalizeTaskToMove).filter(Boolean);
-      setMoves(normalizedMoves.slice(0, count));
-    } catch (err) {
-      setError(err.message || 'Failed to load project focus moves');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, count]);
-
-  useEffect(() => { fetchMoves(); }, [fetchMoves]);
-  return { moves, loading, error, refresh: fetchMoves };
+  return { moves, loading, error, refresh: fetchMoves, impactSummary, completeMove, snoozeMove };
 }
 
 export function useFocusUrgency() {
