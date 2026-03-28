@@ -1,15 +1,16 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.2 - "The Gallery Walk" Light Theme (Ultra Minimalist)
+// SHARESYNC SIDEBAR v5.3 - "The Gallery Walk" Light Theme (Minimal UI)
 // Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES in v5.2 (Gebbia Design Audit):
-// - Removed numeric text ("75") from ProgressRing to rely on pure visual fill
-// - Removed "Idle Level" text indicator
-// - Removed "Ships today" counter to reduce visual clutter
-// - Removed "Team" and "Leaderboard" sections for a highly focused nav
-// - Left Profile area exactly untouched
+// CHANGES:
+// - Removed MomentumLevelIndicator ("Idle Level 0")
+// - Removed text numbers from Progress Ring ("75")
+// - Removed ShipCounter ("Ships today")
+// - Removed Team and Leaderboard sections
+// - Removed Project Deck count, Gold League Indicator, and streak text
+// - Layout CSS kept exactly as stable baseline
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -84,7 +85,7 @@ function resolveAvatarUrl(u) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOMENTUM LEVEL INDICATOR (Kept for state safety, removed from render)
+   MOMENTUM LEVEL INDICATOR - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -128,7 +129,7 @@ function MomentumLevelIndicator({ collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - Light Theme (Removed static text for visual purity)
+   PROGRESS RING - Light Theme (ALL animations preserved, text removed)
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -140,17 +141,12 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - displayProgress * circumference;
-  const showStreak = streak >= 3;
-  const isImpressiveStreak = streak >= 7;
 
   const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
   const [isPulsing, setIsPulsing] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState("normal");
-
-  const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
-  const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
 
   useEffect(() => {
     if (!isComplete) return;
@@ -202,27 +198,20 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 
         <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "var(--theme-accent-primary)"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Visual purity update: Numbers removed, keeping only emotional celebrations */}
           {isLevelingUp ? (
             <div className="text-center level-up-number">
-              <span className="text-lg font-bold text-violet-600">✨</span>
+              <div className="text-[8px] text-violet-500 uppercase tracking-wider font-bold">Level Up!</div>
+              <span className="text-lg font-bold text-violet-600">{level}</span>
             </div>
           ) : isFireMode ? (
             <span className="text-lg animate-pulse">🔥</span>
           ) : null}
         </div>
       </div>
-
-      {!collapsed && showStreak && (
-        <div className={`mt-3 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${isImpressiveStreak ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-500 border border-transparent"}`}>
-          <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
-          <span>{streak}d</span>
-        </div>
-      )}
 
       <style>{`
         @keyframes ring-pulse { 0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.5); opacity: 0.6; } 100% { box-shadow: 0 0 0 12px transparent; opacity: 0; } }
@@ -251,7 +240,7 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER (Kept for state safety, removed from render)
+   SHIP COUNTER - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
@@ -297,7 +286,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   COLLAPSIBLE SECTION (Kept for state safety, removed from render)
+   COLLAPSIBLE SECTION - Light Theme
 ───────────────────────────────────────────────────────────────────────── */
 function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -318,14 +307,14 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, c
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   HOVER TRIGGER ZONE
+   HOVER TRIGGER ZONE (Auto-hide functionality preserved)
 ───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
   return <div className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer" onMouseEnter={onHover} onMouseLeave={onLeave} style={{ background: "transparent" }} />;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN SIDEBAR COMPONENT - Ultra Minimal
+   MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -345,7 +334,6 @@ export default function Sidebar({ user }) {
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
-  const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   useEffect(() => {
     const checkFocusBlock = () => {
       try { setFocusBlockCollapse(localStorage.getItem('ss.focusBlock.active') === '1'); } catch {}
@@ -355,6 +343,7 @@ export default function Sidebar({ user }) {
     return () => window.removeEventListener('focus-block-change', checkFocusBlock);
   }, []);
 
+  const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   const collapsed = autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed || focusBlockCollapse;
 
   useEffect(() => {
@@ -426,11 +415,11 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header - Cleaned up */}
+        {/* Header */}
         <div className="flex items-center justify-center p-4">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-[var(--theme-accent-primary)] to-[var(--theme-accent-glow)] rounded-lg flex items-center justify-center transition-all duration-500 shadow-sm ${isFireMode ? "shadow-orange-200" : ""}`}>
+              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
                 <span className="text-xs font-bold text-white">S</span>
               </div>
               <span className="text-sm font-bold text-slate-800">OpenShare</span>
@@ -441,17 +430,10 @@ export default function Sidebar({ user }) {
         {/* Progress Ring */}
         <ProgressRing collapsed={collapsed} />
 
-        {/* League Indicator */}
-        {!collapsed && (
-          <div className="mx-3 mb-4">
-            <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
-          </div>
-        )}
-
-        {/* Navigation - Cleaned of widgets */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden mt-2">
+        {/* Navigation */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
-          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
+          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
           
           <div className="py-4"><div className="h-px bg-slate-200" /></div>
@@ -460,7 +442,7 @@ export default function Sidebar({ user }) {
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
         </nav>
 
-        {/* User Profile Card (Untouched per instructions) */}
+        {/* User Profile Card */}
         <div className="p-3">
           <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
             <div className="relative">
