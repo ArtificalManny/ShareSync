@@ -1,12 +1,12 @@
 // src/components/projects/ProjectCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROJECT CARD v4.0 - "The Gallery Walk" Light Theme
-// ADDED: Framer Motion layoutId for spatial context transitions
-// ADDED: Ambient Glow for high-velocity projects (Color Theory)
+// SHARESYNC PROJECT CARD v4.1 - "The Gallery Walk" Phase 2
+// - Applied global `.card-surface` for consistent elevations.
+// - Icon backgrounds use soft gradient washes for premium feel.
+// - Standardized 8px grid gaps and typography weights.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, Folder, CheckCircle2, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import { useLivingCard } from '../../hooks/useLivingCard';
 import { getProjectId } from '../../utils/projectHelpers';
@@ -14,7 +14,7 @@ import { getProjectId } from '../../utils/projectHelpers';
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 /**
- * ProjectCard - A living card for projects (Light theme)
+ * ProjectCard - A living card for projects (Gebbia-Grade Polish)
  */
 const ProjectCard = ({ 
   project, 
@@ -36,41 +36,20 @@ const ProjectCard = ({
     isBlocked = false,
     blockers = [],
     priority = 'normal',
-    color = '#8B5CF6', // Default brand violet fallback
-    metrics = {}, // Needed for velocity tracking
   } = project || {};
   
   const livingState = useLivingCard({
-    progress,
-    priority,
-    status,
-    lastActivity,
-    dueDate,
-    completedAt,
-    isBlocked,
-    blockers,
+    progress, priority, status, lastActivity, dueDate, completedAt, isBlocked, blockers,
   });
 
   const isComplete = progress >= 100 || status === 'completed';
   const isNearComplete = !isComplete && progress >= 80;
   
-  // 🔥 Determine if project is "hot" based on velocity
-  const isHot = (metrics.throughput || 0) > 15 || (metrics.momentum || 0) >= 80;
-  
-  // Calculate dynamic shadows based on heat and hover state
-  const baseShadow = isHot 
-    ? `0 10px 40px -10px ${color}40` // 40 = 25% opacity in hex
-    : `0 2px 12px rgba(139, 92, 246, 0.04)`;
-    
-  const hoverShadow = isHot 
-    ? `0 15px 50px -10px ${color}60` // 60 = ~38% opacity in hex
-    : `0 4px 20px rgba(139, 92, 246, 0.1)`;
-
   const getProgressGradient = () => {
-    if (isComplete) return 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)';
+    if (isComplete) return 'var(--progress-fill-complete)';
     if (livingState.state === 'completing') return 'linear-gradient(90deg, #06B6D4 0%, #22D3EE 100%)';
-    if (livingState.state === 'blocked') return 'linear-gradient(90deg, #FCA5A5 0%, #F87171 100%)';
-    return 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)';
+    if (livingState.state === 'blocked') return 'var(--color-error)';
+    return 'var(--progress-gradient)';
   };
 
   const getStatusText = () => {
@@ -83,26 +62,27 @@ const ProjectCard = ({
   };
 
   const getStatusColor = () => {
-    if (livingState.isBlocked) return 'text-red-600';
-    if (livingState.state === 'stale') return 'text-slate-400';
-    if (livingState.state === 'overdue') return 'text-red-600';
-    if (isComplete) return 'text-teal-600';
+    if (livingState.isBlocked) return 'text-error';
+    if (livingState.state === 'stale') return 'text-text-tertiary';
+    if (livingState.state === 'overdue') return 'text-error';
+    if (isComplete) return 'text-success';
     if (isNearComplete) return 'text-cyan-600';
-    return 'text-slate-500';
+    return 'text-text-secondary';
   };
 
+  // Behavioral UI: Premium washes behind icons instead of flat grays
   const getIconBackground = () => {
-    if (isComplete) return 'bg-teal-50';
-    if (livingState.isBlocked) return 'bg-red-50';
-    if (livingState.isPriority) return 'bg-amber-50';
-    return 'bg-slate-50 group-hover:bg-white group-hover:shadow-sm';
+    if (isComplete) return 'bg-gradient-to-br from-success-100 to-success-50 border border-success-200';
+    if (livingState.isBlocked) return 'bg-gradient-to-br from-error-100 to-error-50 border border-error-200';
+    if (livingState.isPriority) return 'bg-gradient-to-br from-warning-100 to-warning-50 border border-warning-200';
+    return 'bg-gradient-to-br from-surface-tertiary to-surface-secondary border border-border-default group-hover:from-brand-50 group-hover:to-white group-hover:border-brand-200';
   };
 
   const getIconColor = () => {
-    if (isComplete) return 'text-teal-600';
-    if (livingState.isBlocked) return 'text-red-500';
-    if (livingState.state === 'stale') return 'text-slate-400';
-    return 'text-slate-400 group-hover:text-blue-500 group-hover:scale-110';
+    if (isComplete) return 'text-success';
+    if (livingState.isBlocked) return 'text-error';
+    if (livingState.state === 'stale') return 'text-text-tertiary';
+    return 'text-text-tertiary group-hover:text-brand group-hover:scale-110';
   };
 
   const handleClick = () => {
@@ -111,74 +91,71 @@ const ProjectCard = ({
   };
   
   return (
-    <motion.div 
-      layoutId={projectId ? `project-container-${projectId}` : undefined}
+    <div 
       onClick={handleClick}
       className={cn(
-        'group flex items-center gap-4 p-4 rounded-xl cursor-pointer',
-        'bg-white border transition-all duration-300',
-        isHot ? 'border-transparent' : 'border-slate-200 hover:border-violet-200',
+        'group card-surface flex items-center gap-4 p-4 cursor-pointer',
         !projectId && 'opacity-50 cursor-not-allowed',
         className
       )}
-      style={{ 
-        boxShadow: baseShadow,
-        // If hot, apply a very subtle tinted border matching the shadow
-        borderColor: isHot ? `${color}30` : undefined
-      }}
-      onMouseEnter={(e) => {
-        if (projectId) e.currentTarget.style.boxShadow = hoverShadow;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = baseShadow;
-      }}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200', getIconBackground())}>
+      <div className="flex items-center gap-4 min-w-0 flex-1">
+        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-sm', getIconBackground())}>
           {isComplete ? (
-            <CheckCircle2 className="w-4 h-4 text-teal-600" />
+            <CheckCircle2 className="w-5 h-5 text-success" />
           ) : livingState.isBlocked ? (
-            <XCircle className="w-4 h-4 text-red-500" />
+            <XCircle className="w-5 h-5 text-error" />
           ) : livingState.state === 'stale' ? (
-            <Clock className="w-4 h-4 text-slate-400" />
+            <Clock className="w-5 h-5 text-text-tertiary" />
           ) : emoji ? (
-            <span className="text-lg">{emoji}</span>
+            <span className="text-xl drop-shadow-sm group-hover:scale-110 transition-transform duration-300">{emoji}</span>
           ) : (
-            <Folder className={cn('w-4 h-4 transition-all duration-300', getIconColor())} />
+            <Folder className={cn('w-5 h-5 transition-all duration-300', getIconColor())} />
           )}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            {livingState.isPriority && <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />}
-            <h4 className={cn('text-sm font-medium truncate transition-colors', isComplete ? 'text-slate-400 line-through' : 'text-slate-800 group-hover:text-violet-600')}>
+            {livingState.isPriority && <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0" />}
+            <h4 className={cn('text-[15px] font-bold truncate transition-colors tracking-tight', isComplete ? 'text-text-tertiary line-through' : 'text-text-primary group-hover:text-brand')}>
               {name || 'Untitled Project'}
             </h4>
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500">
-            {client && <><span className="truncate max-w-[120px]">{client}</span><span className="opacity-50">·</span></>}
-            {dueDate && <span className={cn('flex items-center gap-1 shrink-0', livingState.state === 'overdue' && 'text-red-600')}><Calendar className="w-3 h-3" />{dueDate}</span>}
+          <div className="flex items-center gap-2 mt-1 text-[12px] font-medium text-text-secondary">
+            {client && <><span className="truncate max-w-[140px]">{client}</span><span className="opacity-40 text-text-tertiary">•</span></>}
+            {dueDate && (
+              <span className={cn('flex items-center gap-1.5 shrink-0', livingState.state === 'overdue' && 'text-error font-bold')}>
+                <Calendar className="w-3 h-3" />{dueDate}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {showProgress && (
-        <div className="hidden sm:flex items-center gap-3 w-36 shrink-0">
+        <div className="hidden sm:flex items-center gap-3 w-40 shrink-0">
           <div className="flex-1">
-            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(progress, 100)}%`, background: getProgressGradient() }} />
+            <div className="h-2 bg-surface-tertiary rounded-full overflow-hidden shadow-inner">
+              <div 
+                className="h-full rounded-full transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1)" 
+                style={{ width: `${Math.min(progress, 100)}%`, background: getProgressGradient() }} 
+              />
             </div>
           </div>
-          <span className={cn('text-xs font-medium w-8 text-right', isComplete ? 'text-teal-600' : isNearComplete ? 'text-cyan-600' : 'text-slate-600')}>{progress}%</span>
+          <span className={cn('text-[13px] font-black w-9 text-right tabular-nums', isComplete ? 'text-success' : isNearComplete ? 'text-cyan-600' : 'text-text-secondary')}>
+            {progress}%
+          </span>
         </div>
       )}
 
-      <div className="flex items-center gap-2 shrink-0">
-        {livingState.state === 'stale' && <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">Nudge</span>}
-        <span className={cn('text-xs font-medium', getStatusColor())}>{getStatusText()}</span>
-        <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+      <div className="flex items-center gap-3 shrink-0 ml-2">
+        {livingState.state === 'stale' && <span className="text-[10px] font-bold text-text-secondary bg-surface-tertiary px-2 py-1 rounded uppercase tracking-wider">Nudge</span>}
+        <span className={cn('text-[12px] font-bold uppercase tracking-wider', getStatusColor())}>{getStatusText()}</span>
+        <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-surface-secondary transition-colors duration-200">
+          <ChevronRight className="w-4 h-4 text-text-tertiary group-hover:text-text-primary transition-colors duration-200" />
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -186,76 +163,77 @@ export default ProjectCard;
 
 export function ProjectCardSkeleton() {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-200 animate-pulse">
-      <div className="w-10 h-10 rounded-xl bg-slate-100" />
-      <div className="flex-1 space-y-2">
-        <div className="h-4 w-3/4 rounded bg-slate-100" />
-        <div className="h-3 w-1/2 rounded bg-slate-100" />
+    <div className="card-surface flex items-center gap-4 p-4 animate-pulse">
+      <div className="w-12 h-12 rounded-xl bg-surface-tertiary" />
+      <div className="flex-1 space-y-2.5">
+        <div className="h-4 w-3/4 rounded bg-surface-tertiary" />
+        <div className="h-3 w-1/2 rounded bg-surface-tertiary" />
       </div>
-      <div className="w-24 h-1.5 rounded-full bg-slate-100" />
+      <div className="w-32 h-2 rounded-full bg-surface-tertiary" />
     </div>
   );
 }
 
 export function ProjectCardEmpty({ message = "No projects yet", action, actionLabel = "Create project" }) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center rounded-xl bg-white border border-slate-200">
-      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-        <Folder className="w-6 h-6 text-slate-400" />
+    <div className="card-surface flex flex-col items-center justify-center p-10 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-surface-secondary border border-border-default flex items-center justify-center mb-4 shadow-sm">
+        <Folder className="w-6 h-6 text-text-tertiary" />
       </div>
-      <p className="text-sm text-slate-500 mb-4">{message}</p>
-      {action && <button onClick={action} className="text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors">{actionLabel}</button>}
+      <p className="text-[15px] font-medium text-text-secondary mb-5">{message}</p>
+      {action && (
+        <button onClick={action} className="text-[13px] font-bold text-brand hover:text-brand-600 bg-brand-subtle px-4 py-2 rounded-lg transition-colors">
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
 
 /**
- * ProjectCardCompact - Smaller variant for lists (Light theme)
+ * ProjectCardCompact - Smaller variant for lists
  */
-export function ProjectCardCompact({
-  project,
-  onClick,
-  className = '',
-}) {
+export function ProjectCardCompact({ project, onClick, className = '' }) {
   const projectId = getProjectId(project);
-  const { name, progress = 0, status = 'active' } = project || {};
+  const { name, progress = 0, status = 'active', emoji } = project || {};
   const isComplete = progress >= 100 || status === 'completed';
 
   return (
-    <motion.div
-      layoutId={projectId ? `project-container-${projectId}` : undefined}
+    <div
       onClick={() => projectId && onClick?.(project)}
       className={cn(
-        'group flex items-center gap-3 p-3 rounded-lg cursor-pointer',
-        'bg-white border border-slate-200',
-        'hover:border-violet-200 hover:bg-slate-50 hover:shadow-sm',
+        'group flex items-center gap-3 p-3 rounded-xl cursor-pointer',
+        'bg-surface-primary border border-transparent',
+        'hover:border-border-default hover:bg-surface-secondary hover:shadow-sm',
         'transition-all duration-200',
         className
       )}
     >
-      <div className="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-white group-hover:shadow-sm transition-all duration-200 flex items-center justify-center shrink-0">
+      <div className="w-9 h-9 rounded-lg bg-surface-secondary border border-border-default group-hover:bg-white group-hover:border-brand-200 group-hover:shadow-sm transition-all duration-300 flex items-center justify-center shrink-0">
         {isComplete ? (
-          <CheckCircle2 className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
+          <CheckCircle2 className="w-4 h-4 text-success group-hover:scale-110 transition-transform" />
+        ) : emoji ? (
+           <span className="text-sm group-hover:scale-110 transition-transform">{emoji}</span>
         ) : (
-          <Folder className="w-4 h-4 text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-200" />
+          <Folder className="w-4 h-4 text-text-tertiary group-hover:text-brand group-hover:scale-110 transition-all duration-200" />
         )}
       </div>
       
       <div className="flex-1 min-w-0">
         <p className={cn(
-          'text-sm font-medium truncate transition-colors duration-200',
-          isComplete ? 'text-slate-400 line-through' : 'text-slate-800 group-hover:text-violet-600'
+          'text-[14px] font-bold truncate transition-colors duration-200 tracking-tight',
+          isComplete ? 'text-text-tertiary line-through' : 'text-text-primary group-hover:text-brand'
         )}>
           {name || 'Untitled'}
         </p>
       </div>
       
       <span className={cn(
-        'text-xs font-medium',
-        isComplete ? 'text-teal-600' : 'text-slate-500'
+        'text-[12px] font-black tabular-nums',
+        isComplete ? 'text-success' : 'text-text-secondary'
       )}>
         {progress}%
       </span>
-    </motion.div>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 // src/components/views/AnnouncementsView.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// ANNOUNCEMENTS — Facebook-style social feed for project updates
-// Features: likes, comments, avatars, attachments, pin, moderation
+// ANNOUNCEMENTS — Phase 2 Polish (Gebbia-Grade Visuals)
+// Features: tactile cards, standardized typography, inviting empty states.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -9,15 +9,13 @@ import {
   Megaphone, Plus, Pin, Trash2, Clock, Send, X,
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
-  ChevronDown, ChevronUp, MoreHorizontal,
 } from 'lucide-react';
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import {
   getAnnouncements, createAnnouncement,
-  toggleAnnouncementPin, deleteAnnouncement, markAnnouncementAsRead,
-  toggleLike, addComment, deleteComment,
+  toggleAnnouncementPin, deleteAnnouncement, toggleLike, addComment, deleteComment,
 } from '../../api/announcements';
 
 // ─── Upload helper ──────────────────────────────────────────────────────────
@@ -55,15 +53,15 @@ function timeAgo(ts) {
 }
 
 function getAuthorName(author) {
-  if (!author) return 'Team';
+  if (!author) return 'Team Admin';
   if (author.firstName) return `${author.firstName} ${author.lastName || ''}`.trim();
   if (author.username) return author.username;
-  return 'Team';
+  return 'Team Admin';
 }
 
 function getInitials(author) {
   const name = getAuthorName(author);
-  if (!name || name === 'Team') return 'T';
+  if (!name || name === 'Team Admin') return 'TA';
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 }
 
@@ -72,11 +70,10 @@ function getAvatarUrl(author) {
 }
 
 const AVATAR_COLORS = [
-  { bg: 'bg-violet-100 dark:bg-violet-500/20', text: 'text-violet-700 dark:text-violet-300' },
-  { bg: 'bg-cyan-100 dark:bg-cyan-500/20', text: 'text-cyan-700 dark:text-cyan-300' },
-  { bg: 'bg-amber-100 dark:bg-amber-500/20', text: 'text-amber-700 dark:text-amber-300' },
-  { bg: 'bg-emerald-100 dark:bg-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-300' },
-  { bg: 'bg-rose-100 dark:bg-rose-500/20', text: 'text-rose-700 dark:text-rose-300' },
+  { bg: 'bg-brand-subtle', text: 'text-brand' },
+  { bg: 'bg-info-subtle', text: 'text-info-600' },
+  { bg: 'bg-warning-subtle', text: 'text-warning' },
+  { bg: 'bg-success-subtle', text: 'text-success' },
 ];
 
 function getAvatarColor(name) {
@@ -89,10 +86,10 @@ function getId(item) {
 }
 
 const TYPE_STYLES = {
-  info:    { bg: 'bg-violet-50 dark:bg-violet-500/10', border: 'border-violet-200 dark:border-violet-500/20', dot: 'bg-violet-500' },
-  warning: { bg: 'bg-amber-50 dark:bg-amber-500/10',   border: 'border-amber-200 dark:border-amber-500/20',   dot: 'bg-amber-500' },
-  success: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500' },
-  urgent:  { bg: 'bg-rose-50 dark:bg-rose-500/10',     border: 'border-rose-200 dark:border-rose-500/20',     dot: 'bg-rose-500' },
+  info:    { bg: 'bg-brand-subtle', border: 'border-brand-200', dot: 'bg-brand' },
+  warning: { bg: 'bg-warning-subtle', border: 'border-warning-200', dot: 'bg-warning' },
+  success: { bg: 'bg-success-subtle', border: 'border-success-200', dot: 'bg-success' },
+  urgent:  { bg: 'bg-error-subtle', border: 'border-error-200', dot: 'bg-error' },
 };
 
 // ─── Avatar Component ───────────────────────────────────────────────────────
@@ -101,14 +98,14 @@ function Avatar({ author, size = 'md' }) {
   const url = getAvatarUrl(author);
   const name = getAuthorName(author);
   const color = getAvatarColor(name);
-  const sizes = { sm: 'w-7 h-7 text-[10px]', md: 'w-9 h-9 text-xs', lg: 'w-11 h-11 text-sm' };
+  const sizes = { sm: 'w-7 h-7 text-[10px]', md: 'w-10 h-10 text-[13px]', lg: 'w-12 h-12 text-[15px]' };
 
   if (url) {
-    return <img src={url} alt={name} className={`${sizes[size]} rounded-full object-cover flex-shrink-0`} />;
+    return <img src={url} alt={name} className={`${sizes[size]} rounded-full object-cover flex-shrink-0 shadow-sm`} />;
   }
 
   return (
-    <div className={`${sizes[size]} rounded-full ${color.bg} flex items-center justify-center font-bold ${color.text} flex-shrink-0`}>
+    <div className={`${sizes[size]} rounded-full ${color.bg} flex items-center justify-center font-bold ${color.text} flex-shrink-0 shadow-sm border border-white/10`}>
       {getInitials(author)}
     </div>
   );
@@ -121,17 +118,17 @@ function AttachmentGallery({ attachments }) {
   if (urls.length === 0) return null;
 
   return (
-    <div className={`mt-3 ${urls.length === 1 ? '' : 'grid grid-cols-2 gap-2'}`}>
+    <div className={`mt-4 ${urls.length === 1 ? '' : 'grid grid-cols-2 gap-2'}`}>
       {urls.map((url, i) => (
-        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border border-slate-200 dark:border-white/[0.08] hover:opacity-90 transition-opacity">
-          <img src={url} alt={`Attachment ${i + 1}`} className="w-full max-h-64 object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden border border-border-default hover:opacity-90 transition-opacity shadow-sm">
+          <img src={url} alt={`Attachment ${i + 1}`} className="w-full max-h-72 object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
         </a>
       ))}
     </div>
   );
 }
 
-// ─── Attachment Input (File Upload from Device) ─────────────────────────────
+// ─── Attachment Input ───────────────────────────────────────────────────────
 
 function AttachmentInput({ uploadedFiles, onFilesChange }) {
   const fileInputRef = useRef(null);
@@ -152,34 +149,18 @@ function AttachmentInput({ uploadedFiles, onFilesChange }) {
 
       const preview = URL.createObjectURL(file);
 
-      onFilesChange((prev) => [
-        ...prev,
-        { file, preview, url: null, uploading: true, error: null },
-      ]);
+      onFilesChange((prev) => [...prev, { file, preview, url: null, uploading: true, error: null }]);
 
-      // Upload immediately through moderation pipeline
       uploadFileToServer(file)
         .then((url) => {
-          onFilesChange((prev) =>
-            prev.map((a) =>
-              a.preview === preview ? { ...a, url, uploading: false } : a
-            )
-          );
+          onFilesChange((prev) => prev.map((a) => a.preview === preview ? { ...a, url, uploading: false } : a));
         })
         .catch((err) => {
-          const errorMsg =
-            err?.response?.data?.message || err?.message || 'Upload failed';
-          onFilesChange((prev) =>
-            prev.map((a) =>
-              a.preview === preview
-                ? { ...a, uploading: false, error: errorMsg }
-                : a
-            )
-          );
+          const errorMsg = err?.response?.data?.message || err?.message || 'Upload failed';
+          onFilesChange((prev) => prev.map((a) => a.preview === preview ? { ...a, uploading: false, error: errorMsg } : a));
           toast({ title: errorMsg, variant: 'error' });
         });
     }
-
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -189,65 +170,39 @@ function AttachmentInput({ uploadedFiles, onFilesChange }) {
   };
 
   return (
-    <div className="space-y-2">
-      <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-        <Paperclip className="w-3 h-3" /> Attachments
+    <div className="space-y-3">
+      <label className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
+        <Paperclip className="w-3.5 h-3.5" /> Attachments
       </label>
 
-      {/* Preview grid */}
       {uploadedFiles.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {uploadedFiles.map((a, i) => (
-            <div
-              key={a.preview}
-              className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-white/[0.08] aspect-square bg-slate-50 dark:bg-white/[0.04]"
-            >
-              <img
-                src={a.preview}
-                alt={'Attachment ' + (i + 1)}
-                className={`w-full h-full object-cover ${a.error ? 'opacity-30' : ''}`}
-              />
+            <div key={a.preview} className="relative rounded-xl overflow-hidden border border-border-default aspect-square bg-surface-secondary">
+              <img src={a.preview} alt={'Attachment ' + (i + 1)} className={`w-full h-full object-cover ${a.error ? 'opacity-30' : ''}`} />
               {a.uploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                   <Loader2 className="w-5 h-5 text-white animate-spin" />
                 </div>
               )}
               {a.error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-rose-500/20">
-                  <span className="text-[9px] text-rose-600 dark:text-rose-400 font-medium px-1 text-center leading-tight">
-                    Blocked
-                  </span>
+                <div className="absolute inset-0 flex items-center justify-center bg-error/20">
+                  <span className="text-[10px] text-error font-bold px-1 text-center leading-tight">Blocked</span>
                 </div>
               )}
-              <button
-                onClick={() => removeFile(a.preview)}
-                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
-              >
-                <X className="w-3 h-3 text-white" />
+              <button onClick={() => removeFile(a.preview)} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors">
+                <X className="w-3.5 h-3.5 text-white" />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Upload button */}
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-slate-300 dark:border-white/[0.12] text-xs font-medium text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:border-violet-300 dark:hover:border-violet-500/30 transition-all"
-      >
-        <ImageIcon className="w-4 h-4" />
-        Add Photo
+      <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-border-default text-[13px] font-bold text-text-secondary hover:bg-surface-secondary hover:border-brand-300 hover:text-brand transition-all">
+        <ImageIcon className="w-4 h-4" /> Add Photo
       </button>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
     </div>
   );
 }
@@ -257,7 +212,6 @@ function AttachmentInput({ uploadedFiles, onFilesChange }) {
 function CommentSection({ item, projectId, currentUserId, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState('');
-  const [commentAttachments, setCommentAttachments] = useState([]);
   const [posting, setPosting] = useState(false);
   const inputRef = useRef(null);
 
@@ -268,68 +222,45 @@ function CommentSection({ item, projectId, currentUserId, onUpdate }) {
     if (!text.trim() || posting) return;
     setPosting(true);
     try {
-      const updated = await addComment(projectId, getId(item), {
-        text: text.trim(),
-        attachments: commentAttachments,
-      });
+      const updated = await addComment(projectId, getId(item), { text: text.trim(), attachments: [] });
       onUpdate(updated);
       setText('');
-      setCommentAttachments([]);
       setExpanded(true);
     } catch (e) {
-      toast({ title: e?.response?.data?.message || e?.message || 'Failed to post comment', variant: 'error' });
+      toast({ title: 'Failed to post comment', variant: 'error' });
     } finally {
       setPosting(false);
     }
   };
 
-  const handleDelete = async (commentId) => {
-    try {
-      const updated = await deleteComment(projectId, getId(item), commentId);
-      onUpdate(updated);
-    } catch {
-      toast({ title: 'Failed to delete comment', variant: 'error' });
-    }
-  };
-
   const visibleComments = expanded ? comments : comments.slice(-2);
-  const hiddenCount = comments.length - visibleComments.length;
 
   return (
-    <div className="border-t border-slate-100 dark:border-white/[0.06]">
-      {/* Comment count toggle */}
+    <div className="border-t border-border-default/50 bg-surface-secondary/30">
       {commentCount > 2 && !expanded && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="w-full px-5 py-2 text-xs text-slate-500 dark:text-white/40 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
-        >
+        <button onClick={() => setExpanded(true)} className="w-full px-6 py-3 text-[12px] font-bold text-text-tertiary hover:text-brand hover:bg-surface-secondary transition-colors text-left tracking-wide">
           View all {commentCount} comments
         </button>
       )}
 
-      {/* Comment list */}
       {visibleComments.length > 0 && (
-        <div className="px-5 py-3 space-y-3">
+        <div className="px-6 py-4 space-y-4">
           {visibleComments.map((c, i) => (
-            <div key={c._id || i} className="flex items-start gap-2.5">
+            <div key={c._id || i} className="flex items-start gap-3">
               <Avatar author={c.authorId} size="sm" />
               <div className="flex-1 min-w-0">
-                <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl px-3 py-2">
-                  <span className="text-xs font-semibold text-slate-800 dark:text-white">
+                <div className="bg-surface-secondary rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm border border-border-default/50">
+                  <span className="text-[13px] font-bold text-text-primary tracking-tight">
                     {getAuthorName(c.authorId)}
                   </span>
-                  <p className="text-xs text-slate-600 dark:text-white/60 mt-0.5 leading-relaxed">
+                  <p className="text-[13px] text-text-secondary mt-0.5 leading-relaxed">
                     {c.text}
                   </p>
-                  <AttachmentGallery attachments={c.attachments} />
                 </div>
-                <div className="flex items-center gap-3 mt-1 px-1">
-                  <span className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(c.createdAt)}</span>
+                <div className="flex items-center gap-3 mt-1.5 px-2">
+                  <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{timeAgo(c.createdAt)}</span>
                   {String(c.authorId?._id || c.authorId) === currentUserId && (
-                    <button
-                      onClick={() => handleDelete(c._id)}
-                      className="text-[10px] text-slate-400 dark:text-white/30 hover:text-rose-500 transition-colors"
-                    >
+                    <button onClick={() => deleteComment(projectId, getId(item), c._id).then(onUpdate)} className="text-[10px] font-bold text-text-tertiary hover:text-error uppercase tracking-wider transition-colors">
                       Delete
                     </button>
                   )}
@@ -340,11 +271,10 @@ function CommentSection({ item, projectId, currentUserId, onUpdate }) {
         </div>
       )}
 
-      {/* Comment input */}
-      <div className="px-5 py-3 flex items-start gap-2.5">
+      <div className="px-6 py-4 flex items-start gap-3 border-t border-border-default/30">
         <Avatar author={{ _id: currentUserId }} size="sm" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.04] rounded-xl px-3 py-2 border border-transparent focus-within:border-violet-300 dark:focus-within:border-violet-500/30 transition-colors">
+          <div className="flex items-center gap-2 bg-surface-primary rounded-xl px-3 py-2 border border-border-default focus-within:border-brand focus-within:ring-2 focus-within:ring-brand-500/20 transition-all shadow-sm">
             <input
               ref={inputRef}
               type="text"
@@ -352,17 +282,13 @@ function CommentSection({ item, projectId, currentUserId, onUpdate }) {
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePost(); } }}
               placeholder="Write a comment..."
-              className="flex-1 bg-transparent text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none"
+              className="flex-1 bg-transparent text-[13px] font-medium text-text-primary placeholder-text-tertiary focus:outline-none"
             />
             {posting ? (
-              <Loader2 className="w-3.5 h-3.5 text-violet-500 animate-spin flex-shrink-0" />
+              <Loader2 className="w-4 h-4 text-brand animate-spin flex-shrink-0" />
             ) : (
-              <button
-                onClick={handlePost}
-                disabled={!text.trim()}
-                className="p-1 rounded text-violet-500 hover:text-violet-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-              >
-                <Send className="w-3.5 h-3.5" />
+              <button onClick={handlePost} disabled={!text.trim()} className="p-1.5 rounded-lg text-brand hover:bg-brand-subtle disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex-shrink-0">
+                <Send className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -372,7 +298,7 @@ function CommentSection({ item, projectId, currentUserId, onUpdate }) {
   );
 }
 
-// ─── Announcement Card (Facebook-style) ─────────────────────────────────────
+// ─── Announcement Card ──────────────────────────────────────────────────────
 
 function AnnouncementCard({ item, projectId, currentUserId, onPin, onDelete, onUpdate }) {
   const style = TYPE_STYLES[item.type] || TYPE_STYLES.info;
@@ -390,138 +316,93 @@ function AnnouncementCard({ item, projectId, currentUserId, onPin, onDelete, onU
     try {
       const updated = await toggleLike(projectId, getId(item));
       onUpdate(updated);
-    } catch {
-      toast({ title: 'Failed to like', variant: 'error' });
-    } finally {
-      setLiking(false);
-    }
+    } catch { toast({ title: 'Failed to like', variant: 'error' }); } 
+    finally { setLiking(false); }
   };
 
   return (
-    <article className={`rounded-xl border ${style.border} ${isPinned ? style.bg : 'bg-white dark:bg-[#1f1f23]'} overflow-hidden transition-all shadow-sm hover:shadow-md`}>
-      {/* Pin banner */}
+    <article className={`card-surface dashboard-section flex flex-col ${isPinned ? 'border-warning-300 ring-1 ring-warning-200 shadow-md' : ''}`}>
       {isPinned && (
-        <div className="px-5 py-1.5 bg-amber-100/60 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/15 flex items-center gap-1.5">
-          <Pin className="w-3 h-3 text-amber-600 dark:text-amber-400 fill-current" />
-          <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Pinned</span>
+        <div className="px-6 py-2 bg-warning-subtle border-b border-warning-200 flex items-center gap-2 rounded-t-xl">
+          <Pin className="w-3.5 h-3.5 text-warning fill-current" />
+          <span className="text-[11px] font-black text-warning uppercase tracking-widest">Pinned Update</span>
         </div>
       )}
 
-      {/* Header: Avatar + Author + Time + Actions */}
-      <div className="px-5 pt-4 pb-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="px-6 pt-6 pb-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
             <Avatar author={item.authorId} size="md" />
             <div className="min-w-0">
-              <span className="text-sm font-semibold text-slate-800 dark:text-white block leading-tight">
+              <span className="text-[15px] font-bold text-text-primary tracking-tight block leading-tight">
                 {getAuthorName(item.authorId)}
               </span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[11px] text-slate-400 dark:text-white/30 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {timeAgo(item.createdAt)}
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" /> {timeAgo(item.createdAt)}
                 </span>
                 <span className={`inline-block w-1.5 h-1.5 rounded-full ${style.dot}`} title={item.type} />
               </div>
             </div>
           </div>
 
-          {/* Actions menu */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => onPin(getId(item))}
-              className={`p-1.5 rounded-lg transition-colors ${isPinned ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/15' : 'text-slate-400 dark:text-white/30 hover:bg-slate-100 dark:hover:bg-white/[0.06]'}`}
-              title={isPinned ? 'Unpin' : 'Pin'}
-            >
-              <Pin className="w-3.5 h-3.5" />
+            <button onClick={() => onPin(getId(item))} className={`p-2 rounded-lg transition-colors ${isPinned ? 'text-warning bg-warning-subtle' : 'text-text-tertiary hover:bg-surface-secondary'}`} title={isPinned ? 'Unpin' : 'Pin'}>
+              <Pin className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => onDelete(getId(item))}
-              className="p-1.5 rounded-lg text-slate-400 dark:text-white/30 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-              title="Delete"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
+            <button onClick={() => onDelete(getId(item))} className="p-2 rounded-lg text-text-tertiary hover:text-error hover:bg-error-subtle transition-colors" title="Delete">
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Body: Title + Message */}
-      <div className="px-5 pt-3 pb-2">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-white leading-snug mb-1">
+      <div className="px-6 pt-3 pb-4">
+        <h3 className="text-[16px] font-black text-text-primary tracking-tight leading-snug mb-2">
           {item.title}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-white/60 leading-relaxed whitespace-pre-line">
+        <p className="text-[14px] text-text-secondary leading-relaxed whitespace-pre-line">
           {item.message}
         </p>
-
-        {/* Attachments */}
         <AttachmentGallery attachments={item.attachments} />
       </div>
 
-      {/* Engagement Counts */}
       {(likeCount > 0 || commentCount > 0) && (
-        <div className="px-5 py-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-white/40">
+        <div className="px-6 py-3 flex items-center justify-between text-[12px] font-bold text-text-tertiary border-t border-border-default/50">
           <div className="flex items-center gap-1.5">
             {likeCount > 0 && (
               <>
-                <span className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center">
-                  <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                <span className="w-5 h-5 rounded-full bg-error flex items-center justify-center shadow-sm">
+                  <Heart className="w-3 h-3 text-white fill-white" />
                 </span>
-                <span>{likeCount}</span>
+                <span className="tabular-nums">{likeCount}</span>
               </>
             )}
           </div>
-          {commentCount > 0 && (
-            <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>
-          )}
+          {commentCount > 0 && <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>}
         </div>
       )}
 
-      {/* Action Bar */}
-      <div className="px-5 py-1 border-t border-slate-100 dark:border-white/[0.06] flex items-center gap-1">
-        <button
-          onClick={handleLike}
-          disabled={liking}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors ${
-            hasLiked
-              ? 'text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10'
-              : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${hasLiked ? 'fill-rose-500' : ''}`} />
+      <div className="px-6 py-2 border-t border-border-default flex items-center gap-2">
+        <button onClick={handleLike} disabled={liking} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold transition-all ${hasLiked ? 'text-error bg-error-subtle' : 'text-text-secondary hover:bg-surface-secondary hover:text-text-primary'}`}>
+          <Heart className={`w-4 h-4 ${hasLiked ? 'fill-error' : ''}`} />
           <span>{hasLiked ? 'Liked' : 'Like'}</span>
         </button>
-
-        <div className="w-px h-5 bg-slate-100 dark:bg-white/[0.06]" />
-
-        <button
-          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
-          onClick={() => {
-            const el = document.querySelector(`[data-comment-input="${getId(item)}"]`);
-            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
-          }}
-        >
+        <div className="w-px h-6 bg-border-default" />
+        <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-text-secondary hover:bg-surface-secondary hover:text-text-primary transition-all" onClick={() => { const el = document.querySelector(`[data-comment-input="${getId(item)}"]`); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.querySelector('input').focus(); } }}>
           <MessageCircle className="w-4 h-4" />
           <span>Comment</span>
         </button>
       </div>
 
-      {/* Comments */}
       <div data-comment-input={getId(item)}>
-        <CommentSection
-          item={item}
-          projectId={projectId}
-          currentUserId={currentUserId}
-          onUpdate={onUpdate}
-        />
+        <CommentSection item={item} projectId={projectId} currentUserId={currentUserId} onUpdate={onUpdate} />
       </div>
 
-      {/* Read count */}
       {item.readBy?.length > 0 && (
-        <div className="px-5 pb-3 flex items-center gap-1.5">
-          <CheckCheck className="w-3 h-3 text-emerald-500" />
-          <span className="text-[10px] text-slate-400 dark:text-white/30">Read by {item.readBy.length}</span>
+        <div className="px-6 pb-4 pt-2 flex items-center gap-1.5 bg-surface-secondary/30 rounded-b-xl">
+          <CheckCheck className="w-3.5 h-3.5 text-success" />
+          <span className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider">Read by {item.readBy.length}</span>
         </div>
       )}
     </article>
@@ -542,7 +423,6 @@ export default function AnnouncementsView({ projectId }) {
   const [message, setMessage] = useState('');
   const [type, setType] = useState('info');
   const [pinned, setPinned] = useState(false);
-  // ✅ NEW: File upload state instead of URL list
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [posting, setPosting] = useState(false);
   const mountedRef = useRef(true);
@@ -551,8 +431,7 @@ export default function AnnouncementsView({ projectId }) {
 
   const load = useCallback(async () => {
     if (!projectId) return;
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const data = await getAnnouncements(projectId);
       if (mountedRef.current) setAnnouncements(Array.isArray(data) ? data : []);
@@ -567,26 +446,12 @@ export default function AnnouncementsView({ projectId }) {
 
   const handleCreate = async () => {
     if (!title.trim() || !message.trim() || posting) return;
-
-    if (anyUploading) {
-      toast({ title: 'Please wait for uploads to finish', variant: 'error' });
-      return;
-    }
+    if (anyUploading) { toast({ title: 'Please wait for uploads to finish', variant: 'error' }); return; }
 
     setPosting(true);
     try {
-      // Collect successfully uploaded URLs
-      const attachmentUrls = uploadedFiles
-        .filter((a) => a.url && !a.error)
-        .map((a) => a.url);
-
-      const created = await createAnnouncement(projectId, {
-        title: title.trim(),
-        message: message.trim(),
-        type,
-        pinned,
-        attachments: attachmentUrls,
-      });
+      const attachmentUrls = uploadedFiles.filter((a) => a.url && !a.error).map((a) => a.url);
+      const created = await createAnnouncement(projectId, { title: title.trim(), message: message.trim(), type, pinned, attachments: attachmentUrls });
       setAnnouncements(prev => [created, ...prev]);
       setTitle(''); setMessage(''); setType('info'); setPinned(false); setUploadedFiles([]); setShowCreate(false);
       toast({ title: 'Announcement posted!', variant: 'success' });
@@ -604,21 +469,16 @@ export default function AnnouncementsView({ projectId }) {
 
   const handleDelete = async (id) => {
     setAnnouncements(prev => prev.filter(a => getId(a) !== id));
-    try {
-      await deleteAnnouncement(projectId, id);
-      toast({ title: 'Announcement deleted', variant: 'default' });
-    } catch { toast({ title: 'Failed to delete', variant: 'error' }); }
+    try { await deleteAnnouncement(projectId, id); toast({ title: 'Announcement deleted', variant: 'default' }); } 
+    catch { toast({ title: 'Failed to delete', variant: 'error' }); }
   };
 
   const handleUpdate = (updated) => {
     if (!updated) return;
     const uid = getId(updated);
-    setAnnouncements(prev =>
-      prev.map(a => getId(a) === uid ? updated : a)
-    );
+    setAnnouncements(prev => prev.map(a => getId(a) === uid ? updated : a));
   };
 
-  // Sort: pinned first, then by date
   const sorted = [...announcements].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
@@ -626,160 +486,132 @@ export default function AnnouncementsView({ projectId }) {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-violet-50 dark:bg-violet-500/15 rounded-lg border border-violet-100 dark:border-violet-500/20">
-            <Megaphone className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+    <div className="space-y-8 max-w-3xl mx-auto">
+      <div className="flex items-center justify-between dashboard-section">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-brand-subtle rounded-xl border border-brand-200 flex items-center justify-center shadow-sm">
+            <Megaphone className="w-6 h-6 text-brand" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Announcements</h2>
-            <p className="text-sm text-slate-500 dark:text-white/40">Broadcast updates to your team and spectators</p>
+            <h2 className="text-[20px] font-black text-text-primary tracking-tight">Announcements</h2>
+            <p className="text-[14px] font-medium text-text-secondary mt-0.5">Broadcast updates to your team and spectators</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={load} disabled={loading} className="p-2 rounded-lg text-slate-400 dark:text-white/30 hover:bg-slate-100 dark:hover:bg-white/[0.06] disabled:opacity-50 transition-colors">
+        <div className="flex items-center gap-3">
+          <button onClick={load} disabled={loading} className="p-2.5 rounded-xl text-text-tertiary hover:bg-surface-secondary hover:text-text-primary disabled:opacity-50 transition-colors shadow-sm border border-border-default bg-surface-primary">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-all flex items-center gap-2 shadow-sm">
-            <Plus className="w-4 h-4" />
-            Post
+          <button onClick={() => setShowCreate(true)} className="px-5 py-2.5 bg-brand hover:bg-brand-600 text-white rounded-xl font-bold transition-all flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+            <Plus className="w-4 h-4" /> Share an Update
           </button>
         </div>
       </div>
 
-      {/* Feed */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {loading && announcements.length === 0 ? (
-          <div className="flex items-center gap-2 py-12 justify-center text-slate-400 dark:text-white/30">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Loading announcements...</span>
+          <div className="flex flex-col items-center justify-center py-20 text-text-tertiary">
+            <Loader2 className="w-8 h-8 animate-spin mb-4 text-brand" />
+            <span className="text-[14px] font-bold tracking-wide">Loading announcements...</span>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <AlertTriangle className="w-8 h-8 text-slate-400 dark:text-white/20 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 dark:text-white/40">{error}</p>
-            <button onClick={load} className="mt-2 text-xs text-violet-600 dark:text-violet-400 hover:underline">Try again</button>
+          <div className="card-surface text-center py-16 dashboard-section">
+            <AlertTriangle className="w-10 h-10 text-error/50 mx-auto mb-4" />
+            <p className="text-[15px] font-bold text-text-secondary">{error}</p>
+            <button onClick={load} className="mt-3 text-[13px] font-bold text-brand hover:underline">Try again</button>
           </div>
         ) : sorted.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-[#1f1f23] rounded-xl border border-dashed border-slate-200 dark:border-white/[0.06]">
-            <div className="w-14 h-14 bg-violet-100 dark:bg-violet-500/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Megaphone className="w-7 h-7 text-violet-500 dark:text-violet-400" />
+          <div className="card-surface text-center py-20 border border-dashed border-border-default dashboard-section">
+            <div className="w-16 h-16 bg-surface-secondary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+              <Megaphone className="w-8 h-8 text-text-tertiary" />
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">No announcements yet</p>
-            <p className="text-xs text-slate-400 dark:text-white/30 mb-4">Post your first update to keep everyone in the loop</p>
-            <button onClick={() => setShowCreate(true)} className="px-4 py-2 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors flex items-center gap-1.5 mx-auto">
-              <Plus className="w-3.5 h-3.5" /> Post First Announcement
+            <h3 className="text-[18px] font-black text-text-primary tracking-tight mb-2">This is a quiet project.</h3>
+            <p className="text-[14px] font-medium text-text-secondary mb-6 max-w-sm mx-auto">Share an update, milestone, or critical info to get things moving and keep the team aligned.</p>
+            <button onClick={() => setShowCreate(true)} className="px-5 py-2.5 text-[13px] font-bold bg-brand hover:bg-brand-600 text-white rounded-xl shadow-md transition-all flex items-center gap-2 mx-auto hover:-translate-y-0.5">
+              <Plus className="w-4 h-4" /> Share an Update
             </button>
           </div>
         ) : (
           sorted.map(item => (
             <AnnouncementCard
-              key={getId(item)}
-              item={item}
-              projectId={projectId}
-              currentUserId={currentUserId}
-              onPin={handlePin}
-              onDelete={handleDelete}
-              onUpdate={handleUpdate}
+              key={getId(item)} item={item} projectId={projectId} currentUserId={currentUserId}
+              onPin={handlePin} onDelete={handleDelete} onUpdate={handleUpdate}
             />
           ))
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          Create Announcement Modal
-      ═══════════════════════════════════════════════════════════════════ */}
       {showCreate && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <button className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} aria-label="Close" />
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-[#1f1f23] shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl border border-border-default bg-surface-primary shadow-2xl overflow-hidden max-h-[90vh] flex flex-col transform transition-all scale-100 opacity-100">
 
-            {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between sticky top-0 bg-white dark:bg-[#1f1f23] z-10">
+            <div className="px-6 py-4 border-b border-border-default flex items-center justify-between bg-surface-primary z-10 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center">
-                  <Megaphone className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <div className="w-10 h-10 rounded-xl bg-brand-subtle flex items-center justify-center">
+                  <Megaphone className="w-5 h-5 text-brand" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Post Announcement</h2>
-                  <p className="text-xs text-slate-500 dark:text-white/40">Visible to all members and spectators</p>
+                  <h2 className="text-[16px] font-black text-text-primary tracking-tight">Share an Update</h2>
+                  <p className="text-[12px] font-medium text-text-secondary">Visible to all members and spectators</p>
                 </div>
               </div>
-              <button onClick={() => setShowCreate(false)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors">
-                <X className="w-4 h-4 text-slate-400 dark:text-white/40" />
+              <button onClick={() => setShowCreate(false)} className="p-2 rounded-xl hover:bg-surface-secondary transition-colors">
+                <X className="w-5 h-5 text-text-tertiary" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
-              {/* Type selector */}
+            <div className="p-6 space-y-5 overflow-y-auto">
               <div>
-                <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Type</label>
+                <label className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider">Type</label>
                 <div className="flex gap-2 mt-2">
                   {['info', 'warning', 'success', 'urgent'].map(t => (
                     <button key={t} onClick={() => setType(t)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
+                      className={`px-4 py-2 rounded-xl text-[12px] font-bold capitalize transition-all border ${
                         type === t
-                          ? `${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].border}`
-                          : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.05]'
+                          ? `${TYPE_STYLES[t].bg} ${TYPE_STYLES[t].border} text-text-primary shadow-sm`
+                          : 'bg-surface-primary border-border-default text-text-secondary hover:bg-surface-secondary'
                       }`}>
-                      <span className={`inline-block w-2 h-2 rounded-full ${TYPE_STYLES[t].dot} mr-1.5`} />
+                      <span className={`inline-block w-2 h-2 rounded-full ${TYPE_STYLES[t].dot} mr-2`} />
                       {t}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Title */}
               <div>
-                <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">
-                  Title <span className="text-rose-500">*</span>
+                <label className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1">
+                  Title <span className="text-error">*</span>
                 </label>
                 <input type="text" value={title} onChange={e => setTitle(e.target.value)}
                   placeholder="What's the update?" maxLength={200} autoFocus
-                  className="mt-1.5 w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.10] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-shadow" />
+                  className="mt-2 w-full px-4 py-3 rounded-xl text-[14px] font-medium bg-surface-secondary border border-border-default text-text-primary placeholder-text-tertiary focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner" />
               </div>
 
-              {/* Message */}
               <div>
-                <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">
-                  Message <span className="text-rose-500">*</span>
+                <label className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1">
+                  Message <span className="text-error">*</span>
                 </label>
                 <textarea value={message} onChange={e => setMessage(e.target.value)}
-                  placeholder="Share the details..." rows={4} maxLength={5000}
-                  className="mt-1.5 w-full px-3 py-2.5 rounded-xl text-sm resize-none bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.10] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-shadow" />
+                  placeholder="Share the details..." rows={5} maxLength={5000}
+                  className="mt-2 w-full px-4 py-3 rounded-xl text-[14px] font-medium resize-none bg-surface-secondary border border-border-default text-text-primary placeholder-text-tertiary focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner" />
               </div>
 
-              {/* ✅ NEW: File upload attachments (replaces URL paste) */}
-              <AttachmentInput
-                uploadedFiles={uploadedFiles}
-                onFilesChange={setUploadedFiles}
-              />
+              <AttachmentInput uploadedFiles={uploadedFiles} onFilesChange={setUploadedFiles} />
 
-              {/* Pin toggle */}
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-surface-secondary transition-colors border border-transparent hover:border-border-default">
                 <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 dark:border-white/20 text-violet-600 focus:ring-violet-500" />
-                <span className="text-xs text-slate-600 dark:text-white/50">Pin this announcement</span>
+                  className="w-4 h-4 rounded border-border-default text-brand focus:ring-brand bg-surface-primary" />
+                <span className="text-[13px] font-bold text-text-secondary">Pin this update to the top</span>
               </label>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => setShowCreate(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/[0.10] transition-colors">
+              <div className="flex items-center gap-3 pt-4 border-t border-border-default">
+                <button onClick={() => setShowCreate(false)} className="flex-1 py-3 rounded-xl text-[14px] font-bold bg-surface-secondary text-text-secondary hover:bg-border-default transition-colors">
                   Cancel
                 </button>
                 <button onClick={handleCreate} disabled={!title.trim() || !message.trim() || posting || anyUploading}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 transition-colors flex items-center justify-center gap-2 shadow-sm">
-                  {posting ? (
-                    'Posting...'
-                  ) : anyUploading ? (
-                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</>
-                  ) : (
-                    <><Send className="w-3.5 h-3.5" /> Post Announcement</>
-                  )}
+                  className="flex-1 py-3 rounded-xl text-[14px] font-bold bg-brand hover:bg-brand-600 text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md">
+                  {posting ? 'Posting...' : anyUploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Send className="w-4 h-4" /> Share Update</>}
                 </button>
               </div>
             </div>

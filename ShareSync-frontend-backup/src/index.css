@@ -12,63 +12,24 @@
    7. Utilities
    8. Tailwind
    
-   NO BACKEND CHANGES - Pure CSS
-   
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+/* GEBBIA LENS: Distinctive Typography Import */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
 /* ─────────────────────────────────────────────────────────────────────────────
-   1. MASTER COLOR PALETTE (Must be first!)
+   IMPORTS
 ───────────────────────────────────────────────────────────────────────────── */
 @import './styles/palette.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   2. DESIGN TOKENS (References palette)
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/tokens.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   3. THEME APPLICATION
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/theme.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   4. GRADIENT SYSTEM
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/gradients.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   5. COLOR SYSTEM (Legacy - may contain additional colors)
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/colors.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   6. MOMENTUM GLOW SYSTEM (Phase 1)
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/momentum-glow.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   7. ENTRANCE ANIMATIONS (Phase A)
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/entrance.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   8. HEARTBEAT SYSTEM (Phase A) - Momentum-responsive body
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/heartbeat.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   9. PHASE C: MOMENTUM ENGINE STYLES
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/momentum-engine.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   10. LIVING CARDS (Phase B)
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/living-cards.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   11. COMPONENT STYLES
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/card.css';
 @import './styles/button.css';
 @import './styles/input.css';
@@ -77,43 +38,129 @@
 @import './styles/modal.css';
 @import './styles/dropdown.css';
 @import './styles/tooltip.css';
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   12. UTILITIES
-───────────────────────────────────────────────────────────────────────────── */
 @import './styles/utilities.css';
 @import './styles/animations.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   13. TAILWIND
+   TAILWIND
 ───────────────────────────────────────────────────────────────────────────── */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   GLOBAL STYLES
+   GLOBAL STYLES & TYPOGRAPHY
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* Base HTML setup */
 html {
-  font-family: var(--font-body);
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  /* CHANGED: Force light mode for "The Gallery Walk" */
   color-scheme: light;
 }
 
 /* Body defaults with momentum support */
 body {
-  background: var(--surface-0);
-  color: var(--text-primary);
+  /* Warmed up background via design-tokens */
+  background: var(--color-surface-secondary, #FAFAF8);
+  color: var(--color-text-primary, #111827);
   min-height: 100vh;
   line-height: 1.5;
-  
-  /* Smooth transitions for momentum changes and theme toggles */
   transition: background 0.3s ease-out, color 0.3s ease-out;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GEBBIA LENS: VISUAL ENHANCEMENTS & ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* The tactile, physical card surface */
+.card, [class*="card"] {
+  background: var(--color-surface-primary, #FFFFFF);
+  border: 1px solid var(--color-border-default, #E5E7EB);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover, [class*="card"]:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+/* The Hero Greeting (Massive, bold, confident) */
+.greeting-hero {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.greeting-hero .user-name {
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Dopamine Metrics (Ships, Focus %, Streak Days) */
+.metric-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Page Load Stagger Animation */
+.dashboard-section {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: sectionReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dashboard-section:nth-child(1) { animation-delay: 0.05s; }
+.dashboard-section:nth-child(2) { animation-delay: 0.1s; }
+.dashboard-section:nth-child(3) { animation-delay: 0.15s; }
+.dashboard-section:nth-child(4) { animation-delay: 0.2s; }
+.dashboard-section:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes sectionReveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* The Streak Counter Pulse */
+.streak-counter {
+  color: var(--color-accent-warm, #D97706);
+  text-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
+  animation: streakPulse 3s ease-in-out infinite;
+}
+
+@keyframes streakPulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(217, 119, 6, 0.2); }
+  50% { text-shadow: 0 0 30px rgba(217, 119, 6, 0.4); }
+}
+
+/* Legendary Earned Badge */
+.achievement-badge.earned {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+}
+
+.achievement-xp {
+  color: var(--color-accent-warm, #D97706);
+  font-weight: 700;
+  font-size: 13px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -125,12 +172,10 @@ body {
 .bg-brand { background-color: var(--brand-600); }
 .border-brand { border-color: var(--brand-600); }
 
-/* Success/Error/Warning utilities */
 .text-success { color: var(--success-500); }
 .text-error { color: var(--error-500); }
 .text-warning { color: var(--warning-500); }
 
-/* Energy (fire mode) utilities */
 .text-energy { color: var(--energy-500); }
 .bg-energy { background-color: var(--energy-500); }
 .border-energy { border-color: var(--energy-500); }
@@ -147,20 +192,16 @@ body {
    BENTO CARD ENHANCEMENTS
    ═══════════════════════════════════════════════════════════════════════════════ */
 .bento-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  transition: 
-    transform 200ms ease,
-    box-shadow 300ms ease,
-    border-color 200ms ease,
-    background-color 200ms ease;
+  background: var(--color-surface-primary, #FFFFFF);
+  border: 1px solid var(--color-border-default, #E5E7EB);
+  border-radius: var(--radius-xl, 16px);
+  transition: transform 200ms ease, box-shadow 300ms ease, border-color 200ms ease, background-color 200ms ease;
 }
 
 .bento-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--border-default);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  border-color: var(--color-border-default);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -182,7 +223,7 @@ body {
 
 .dark ::-webkit-scrollbar-thumb,
 html[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #27272a; /* zinc-800 */
+  background: #27272a; 
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -191,25 +232,19 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb {
 
 .dark ::-webkit-scrollbar-thumb:hover,
 html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46; /* zinc-700 */
+  background: #3f3f46; 
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-}
+* { scrollbar-width: thin; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SELECTION STYLING
+   SELECTION STYLING & FOCUS
    ═══════════════════════════════════════════════════════════════════════════════ */
 ::selection {
   background: var(--brand-500);
   color: #ffffff;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   FOCUS STYLES
-   ═══════════════════════════════════════════════════════════════════════════════ */
 :focus-visible {
   outline: 2px solid var(--brand-500);
   outline-offset: 2px;
@@ -218,21 +253,10 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
 /* ═══════════════════════════════════════════════════════════════════════════════
    MOMENTUM ENGINE GLOBAL UTILITIES
    ═══════════════════════════════════════════════════════════════════════════════ */
+.shadow-glow-brand { box-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3); }
+.shadow-glow-cyan { box-shadow: 0 0 20px rgba(var(--palette-cyan-500-rgb), 0.3); }
+.shadow-glow-energy { box-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3); }
 
-/* Glow utilities */
-.shadow-glow-brand {
-  box-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
-}
-
-.shadow-glow-cyan {
-  box-shadow: 0 0 20px rgba(var(--palette-cyan-500-rgb), 0.3);
-}
-
-.shadow-glow-energy {
-  box-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
-}
-
-/* Momentum-responsive text glow */
 body[data-momentum="4"] .text-glow,
 body[data-momentum="5"] .text-glow {
   text-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
@@ -243,204 +267,83 @@ body[data-momentum-fire="true"] .text-glow {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   REDUCED MOTION GLOBAL
+   REDUCED MOTION
    ═══════════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  
-  body {
-    transition: none !important;
-  }
+  body { transition: none !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    "THE GALLERY WALK" - LIGHT MODE ENFORCEMENT
-   ═══════════════════════════════════════════════════════════════════════════════
-   
-   This section ensures the app maintains the unified light theme aesthetic.
-   The sidebar and main content should feel like one cohesive "gallery" space.
-   
-   NOTE: Auth pages (Login, etc.) still use their own dark "Grand Entrance" 
-   theme via AuthLayout.jsx - this only affects the main app.
-   
    ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Override system dark mode preference for main app */
 :root {
-  --gallery-bg: #F8FAFC;
+  --gallery-bg: var(--color-surface-secondary, #FAFAF8);
   --gallery-bg-accent: #EEF2FF;
-  --gallery-text: #1E293B;
-  --gallery-text-muted: #64748B;
-  --gallery-border: #E2E8F0;
-  --gallery-shadow: 0 4px 24px rgba(139, 92, 246, 0.06);
+  --gallery-text: var(--color-text-primary, #111827);
+  --gallery-text-muted: var(--color-text-secondary, #6B6B72);
+  --gallery-border: var(--color-border-default, #E5E7EB);
+  --gallery-shadow: var(--color-shadow-base);
 }
 
-/* Ensure light backgrounds on key structural elements */
-.app-layout,
-.main-layout {
-  background-color: var(--gallery-bg);
-}
+.app-layout, .main-layout { background-color: var(--gallery-bg); }
 
-/* Sidebar "Gallery Wall" styling reinforcement */
 #app-sidebar {
-  background-color: #FFFFFF;
+  background-color: var(--color-surface-primary, #FFFFFF);
   border-right-color: var(--gallery-border);
 }
 
-/* Remove any unintended dark borders on main content wrapper */
-.app-layout > div,
-.main-layout > div {
-  border-color: transparent;
-}
+.app-layout > div, .main-layout > div { border-color: transparent; }
 
-/* Ensure cards use light theme */
-.card,
-.bento-card,
-[class*="Card"] {
-  background-color: #FFFFFF;
-  border-color: var(--gallery-border);
-}
-
-/* Light mode input fields */
-/* EXCLUDES .pc-create-modal which uses its own dark theme */
-input:not([type="checkbox"]):not([type="radio"]):not(.pc-create-modal *),
-textarea:not(.pc-create-modal *),
-select:not(.pc-create-modal *) {
-  background-color: #FFFFFF;
+input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+  background-color: var(--color-surface-primary, #FFFFFF);
   border-color: var(--gallery-border);
   color: var(--gallery-text);
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not(.pc-create-modal *):focus,
-textarea:not(.pc-create-modal *):focus,
-select:not(.pc-create-modal *):focus {
+input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus {
   border-color: #8B5CF6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-/* Buttons maintain their gradient colors but on light bg */
-.btn-primary,
-button[type="submit"] {
+.btn-primary, button[type="submit"] {
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
 }
 
-/* Dropdown menus */
-[role="menu"],
-[role="listbox"],
-.dropdown-menu {
-  background-color: #FFFFFF;
+[role="menu"], [role="listbox"], .dropdown-menu {
+  background-color: var(--color-surface-primary, #FFFFFF);
   border-color: var(--gallery-border);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* Modal overlays - lighter backdrop */
-.modal-backdrop,
-[class*="backdrop"] {
-  background-color: rgba(15, 23, 42, 0.3);
-}
+.modal-backdrop, [class*="backdrop"] { background-color: rgba(15, 23, 42, 0.3); }
 
-/* Modal content */
-.modal-content,
-[role="dialog"] > div:not(.pc-create-modal) {
-  background-color: #FFFFFF;
+.modal-content, [role="dialog"] > div {
+  background-color: var(--color-surface-primary, #FFFFFF);
   border-color: var(--gallery-border);
 }
 
-/* Tooltips - keep dark for contrast */
-[role="tooltip"],
-.tooltip {
+[role="tooltip"], .tooltip {
   background-color: #1E293B;
   color: #FFFFFF;
 }
 
-/* Status indicators maintain their semantic colors */
 .status-online { color: #10B981; }
 .status-offline { color: #94A3B8; }
 .status-busy { color: #F59E0B; }
 .status-dnd { color: #EF4444; }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   THE NUCLEAR OVERRIDE: PRISTINE WHITE INPUTS & LIGHT MODE ENFORCEMENT
-   ═══════════════════════════════════════════════════════════════════════════════ */
-html, body, .auth-layout, #root {
-  color-scheme: light !important;
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
-}
+html, body { color-scheme: light !important; }
 
-html.dark body, .dark .auth-layout {
-  background-color: #f8fafc !important;
-}
-
-/* Fixes browser autofill yellow/gray backgrounds */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
     -webkit-text-fill-color: #0f172a !important;
-}
-
-/* Nuke any global styling affecting our form inputs */
-/* EXCLUDES .pc-create-modal which uses its own dark theme */
-input[type="email"]:not(.pc-create-modal *),
-input[type="password"]:not(.pc-create-modal *),
-input[type="text"]:not(.pc-create-modal *) {
-    background-color: #ffffff !important;
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 0.75rem !important;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Explicitly assassinate the old transparent tailwind class */
-.bg-white\/\[0\.035\] {
-    background-color: #ffffff !important;
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODAL OVERRIDE — Must be LAST to beat the nuclear white input rules above
-   Scoped to .pc-create-modal so it only affects the Create Project dialog.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.pc-create-modal input[type="text"],
-.pc-create-modal input[type="email"],
-.pc-create-modal input[type="password"],
-.pc-create-modal input:not([type="checkbox"]):not([type="radio"]),
-.pc-create-modal select,
-.pc-create-modal textarea {
-  background-color: #0f172a !important;
-  background: #0f172a !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(139, 92, 246, 0.3) !important;
-  caret-color: #c084fc !important;
-  box-shadow: none !important;
-}
-.pc-create-modal input::placeholder,
-.pc-create-modal textarea::placeholder {
-  color: #64748b !important;
-  opacity: 1 !important;
-}
-.pc-create-modal select option {
-  background-color: #0f172a !important;
-  color: #ffffff !important;
-}
-.pc-create-modal input:-webkit-autofill,
-.pc-create-modal input:-webkit-autofill:hover,
-.pc-create-modal input:-webkit-autofill:focus,
-.pc-create-modal input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-[role="dialog"] > .pc-create-modal {
-  background-color: transparent !important;
 }

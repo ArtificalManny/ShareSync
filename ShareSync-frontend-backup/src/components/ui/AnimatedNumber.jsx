@@ -1,34 +1,38 @@
+// src/components/ui/AnimatedNumber.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 2.6: Motion & Micro-Interactions (The Dopamine Counter)
+// Uses refined spring physics to make number loading feel "alive".
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import React from 'react';
 import { useSpring, animated } from '@react-spring/web';
 
-/**
- * AnimatedNumber - Smoothly animates number changes
- */
 export default function AnimatedNumber({ 
   value = 0,
   decimals = 0, 
   suffix = '', 
   prefix = '',
-  className = ''
+  className = '',
+  delay = 0
 }) {
-  // Spring animation configuration
+  // Apple-grade spring physics for natural, satisfying deceleration
   const props = useSpring({ 
-    val: value, 
     from: { val: 0 },
+    to: { val: value },
+    delay,
     config: { 
-      tension: 280, 
-      friction: 60
+      mass: 1, 
+      tension: 170, 
+      friction: 26,
+      clamp: true // Prevents numbers from bouncing backward
     }
   });
 
   return (
-    <animated.span className={className}>
+    <animated.span className={`tabular-nums tracking-tight ${className}`}>
       {props.val.to(n => {
-        // Format number with specified decimal places
         const formatted = n.toFixed(decimals);
-        // Add commas for thousands (e.g., 1,234)
         const withCommas = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        // Return complete string with prefix/suffix
         return `${prefix}${withCommas}${suffix}`;
       })}
     </animated.span>

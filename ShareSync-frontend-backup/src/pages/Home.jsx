@@ -1,28 +1,23 @@
 // src/pages/Home.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC HOME PAGE v4.0 - "The Gallery Walk" Light Theme
+// SHARESYNC HOME PAGE v4.1 - "The Gallery Walk" Phase 2 (Gebbia Lens Polish)
 // ═══════════════════════════════════════════════════════════════════════════════
 // 
 // THEME: "The Light Gallery" - Mission Control
 // 
-// COLOR MAP:
-// - Page Background: #F8FAFC → #EEF2FF gradient (via CSS)
-// - Section Cards: #FFFFFF with violet-tinted shadows
-// - Headings: #1E293B (slate-800)
-// - Body Text: #475569 (slate-600)
-// - Muted Text: #94A3B8 (slate-400)
-// - Card Border: #E2E8F0 (slate-200)
-// - Card Shadow: violet-tinted (rgba(139, 92, 246, 0.06))
-// - Progress Bars: Ocean Gradient (blue → cyan → teal)
-// - Accent Bar: Aurora Gradient
+// WORLD-CLASS UPDATES INCLUDED:
+// - Hero Greeting: Massive display font with gradient user name.
+// - Section Staggering: Application of `.dashboard-section` for fluid waterfall loads.
+// - Velocity Metrics: Dynamic number count-up animation on page load.
+// - Streak Pulse: Application of `.streak-counter` pulsing gold/amber shadow.
+// - 8px Grid Enforcement: Re-spaced margins to strict 24px/32px multiples.
 //
 // NO BACKEND CHANGES
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Zap, Clock, TrendingUp, Flame, Rocket, X, Wifi, WifiOff, Plus } from "lucide-react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { Zap, Clock, TrendingUp, Flame, Rocket, X, Wifi, WifiOff } from "lucide-react";
 import "./Home.css";
 
 import { useRenovation } from "../context/RenovationCOntext";
@@ -55,12 +50,51 @@ import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
 
 /* ───────────────────────────────────────────────────────────────────────────
-   STAT CARD - Light theme with violet-tinted shadows
+   ANIMATED STAT CARD (WORLD-CLASS NUMBER COUNT-UP)
 ─────────────────────────────────────────────────────────────────────────── */
-const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400", description }) => {
+const StatCard = ({ label, value, color = "text-brand", description, isStreak = false }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { glowLevel, isFireMode } = useMomentumContext();
+  const [displayValue, setDisplayValue] = useState(0);
+
+  // Behavioral Science: Count-up animation to make metrics feel "alive"
+  useEffect(() => {
+    // Extract the numeric portion and prefix/suffix
+    const stringValue = String(value);
+    const numericMatch = stringValue.match(/[-+]?[0-9]*\.?[0-9]+/);
+    const targetNum = numericMatch ? parseFloat(numericMatch[0]) : 0;
+    
+    if (targetNum === 0) {
+      setDisplayValue(stringValue);
+      return;
+    }
+
+    const prefix = stringValue.split(numericMatch[0])[0] || '';
+    const suffix = stringValue.split(numericMatch[0])[1] || '';
+
+    let startTimestamp = null;
+    const duration = 1200; // 1.2s smooth ease
+
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      
+      // Easing function (easeOutExpo) for a snappy start and smooth finish
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      
+      const currentNum = Math.floor(easeProgress * targetNum);
+      setDisplayValue(`${prefix}${currentNum}${suffix}`);
+
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        setDisplayValue(stringValue); // Ensure it lands exactly on the target
+      }
+    };
+    
+    window.requestAnimationFrame(step);
+  }, [value]);
 
   return (
     <div
@@ -69,16 +103,15 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
         relative p-5 rounded-xl
         bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
         hover:border-violet-200 dark:hover:border-violet-500/30
-        shadow-sm hover:shadow-lg
-        transition-all duration-200 cursor-default
+        transition-all duration-300 cursor-default
         momentum-responsive-card momentum-card
-        ${isHovered ? "transform -translate-y-0.5" : ""}
+        ${isHovered ? "transform -translate-y-1" : ""}
         ${isFireMode ? "border-orange-200 dark:border-orange-500/30 hover:border-orange-300" : ""}
       `}
       style={{
         boxShadow: isHovered 
-          ? '0 8px 32px rgba(139, 92, 246, 0.12)' 
-          : '0 4px 24px rgba(139, 92, 246, 0.06)'
+          ? '0 12px 32px rgba(139, 92, 246, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04)' 
+          : '0 4px 24px rgba(139, 92, 246, 0.04)'
       }}
       data-momentum={glowLevel}
       onMouseEnter={() => {
@@ -92,25 +125,26 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
     >
       <div
         className={`
-          text-2xl font-semibold transition-all duration-200
+          metric-value transition-transform duration-300
           ${color}
-          ${isHovered ? "scale-105" : "scale-100"}
+          ${isStreak ? "streak-counter" : ""}
+          ${isHovered ? "scale-105 origin-left" : "scale-100 origin-left"}
         `}
       >
-        {value}
+        {displayValue}
       </div>
-      <div className="text-xs text-slate-500 dark:text-zinc-400 mt-1">{label}</div>
+      <div className="text-[13px] font-medium text-slate-500 dark:text-zinc-400 mt-0.5 tracking-wide uppercase">{label}</div>
 
       {showTooltip && description && (
         <div
           className="
-            absolute bottom-full mb-2 left-0 w-56
-            p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg
-            shadow-xl z-50
+            absolute bottom-full mb-3 left-0 w-64
+            p-3 bg-slate-800 dark:bg-zinc-800 border border-slate-700 dark:border-white/10 rounded-xl
+            shadow-2xl z-50
             animate-in fade-in slide-in-from-bottom-2 duration-200
           "
         >
-          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">{description}</p>
+          <p className="text-[13px] text-slate-200 dark:text-zinc-300 leading-relaxed">{description}</p>
         </div>
       )}
     </div>
@@ -122,7 +156,7 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
 ─────────────────────────────────────────────────────────────────────────── */
 const SectionHeader = ({
   icon: Icon,
-  iconColor = "text-violet-600 dark:text-violet-400",
+  iconColor = "text-brand",
   title,
   action,
   onAction,
@@ -139,23 +173,23 @@ const SectionHeader = ({
 
   return (
     <div className="flex justify-between items-center mb-6">
-      <div className="flex items-center gap-2">
-        <Icon className={`w-4 h-4 ${isFireMode ? "text-orange-500" : iconColor}`} />
-        <h2 className="text-sm font-medium text-slate-600 dark:text-zinc-300">{title}</h2>
+      <div className="flex items-center gap-2.5">
+        <Icon className={`w-4 h-4 ${isFireMode ? "text-energy" : iconColor}`} />
+        <h2 className="text-[15px] font-bold text-slate-700 dark:text-zinc-300 tracking-tight">{title}</h2>
         {showMomentum && isFireMode && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 animate-pulse">
-            🔥
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 animate-pulse tracking-wider uppercase">
+            🔥 Fire Mode
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {rightSlot}
 
         {action && (
           <button 
             onClick={handleAction} 
-            className="text-xs text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            className="text-[13px] font-medium text-slate-500 dark:text-zinc-400 hover:text-brand transition-colors"
           >
             {action}
           </button>
@@ -166,17 +200,16 @@ const SectionHeader = ({
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
-   MOMENTUM STATUS BANNER - Light theme badges
+   MOMENTUM STATUS BANNER
 ─────────────────────────────────────────────────────────────────────────── */
 const MomentumStatusBanner = () => {
   const { glowLevel, glowState, message, isFireMode } = useMomentumContext();
   if (glowLevel < 3) return null;
 
-  // Light theme badge colors per Part 4 color map
   const config = {
-    3: { bg: "bg-violet-50 dark:bg-violet-500/10", border: "border-violet-200 dark:border-violet-500/20", icon: TrendingUp, color: "text-violet-700 dark:text-violet-400" },
-    4: { bg: "bg-blue-50 dark:bg-blue-500/10", border: "border-blue-200 dark:border-blue-500/20", icon: Rocket, color: "text-blue-700 dark:text-blue-400" },
-    5: { bg: "bg-orange-50 dark:bg-orange-500/10", border: "border-orange-200 dark:border-orange-500/20", icon: Flame, color: "text-orange-700 dark:text-orange-400" },
+    3: { bg: "bg-brand-subtle", border: "border-brand-200", icon: TrendingUp, color: "text-brand" },
+    4: { bg: "bg-info-subtle", border: "border-info-200", icon: Rocket, color: "text-info-600" },
+    5: { bg: "bg-warning-subtle", border: "border-warning-200", icon: Flame, color: "text-warning" },
   };
 
   const currentConfig = config[glowLevel] || config[3];
@@ -185,22 +218,22 @@ const MomentumStatusBanner = () => {
   return (
     <div
       className={`
-        mb-6 px-4 py-3 rounded-xl
+        mb-6 px-5 py-4 rounded-xl
         ${currentConfig.bg} border ${currentConfig.border}
         flex items-center justify-between
-        ${isFireMode ? "animate-pulse" : ""}
+        ${isFireMode ? "animate-pulse shadow-glow-energy" : ""}
       `}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3.5">
         <Icon className={`w-5 h-5 ${currentConfig.color}`} />
         <div>
-          <div className={`text-sm font-medium ${currentConfig.color}`}>
+          <div className={`text-[15px] font-bold ${currentConfig.color}`}>
             {glowState.charAt(0).toUpperCase() + glowState.slice(1)} Mode
           </div>
-          <div className="text-xs text-slate-500 dark:text-zinc-400">{message}</div>
+          <div className="text-[13px] text-slate-600 font-medium">{message}</div>
         </div>
       </div>
-      <div className={`text-2xl font-bold tabular-nums ${currentConfig.color}`}>L{glowLevel}</div>
+      <div className={`text-2xl font-black tabular-nums ${currentConfig.color}`}>L{glowLevel}</div>
     </div>
   );
 };
@@ -210,7 +243,6 @@ const MomentumStatusBanner = () => {
 ─────────────────────────────────────────────────────────────────────────── */
 export default function Home() {
   const { user: authUser } = useAuth();
-  const navigate = useNavigate();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelContent, setPanelContent] = useState("balance");
   const [selectedMission, setSelectedMission] = useState(null);
@@ -226,11 +258,9 @@ export default function Home() {
   const { playAchievementUnlock } = useAchievementUnlockSound();
   const { playClick } = useUISounds();
 
-  // ✅ Priority 1: Onboarding context (safe — won't crash if provider missing)
+  // Onboarding context (safe)
   let onboardingCtx = { isCompleted: true, shouldShowOnboarding: false };
   try { onboardingCtx = useOnboardingContext?.() || onboardingCtx; } catch (e) {}
-
-  // ✅ Derive showFirstMission from onboarding context
   const showFirstMission = onboardingCtx.shouldShowOnboarding && !onboardingCtx.isCompleted;
 
   // Focus engine (safe)
@@ -239,8 +269,8 @@ export default function Home() {
     focusEngine = useFocusEngine();
   } catch (e) {}
 
-  // REALTIME HOME DATA (safe + polling + instant local events)
- const {
+  // REALTIME HOME DATA
+  const {
     loadingMissions,
     missions = [],
     activities = [],
@@ -309,7 +339,6 @@ export default function Home() {
 
       playShipSound(shipData);
 
-      // ✅ Priority 4.2: Fire persona-aware celebration (non-blocking)
       import('../utils/fireCelebration').then(({ fireCelebration }) => {
         fireCelebration('shipCeremony', {
           xp: totalXP,
@@ -340,28 +369,24 @@ export default function Home() {
     [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll]
   );
 
-  // Section card classes with violet-tinted shadows
+  // Section card classes
   const sectionCardClasses = useMemo(() => {
     const base = "p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 momentum-responsive-card momentum-card";
-    const shadow = "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
+    const shadow = "shadow-[0_4px_24px_rgba(139,92,246,0.04)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.08)]";
     if (isFireMode) return `${base} ${shadow} border-orange-200 dark:border-orange-500/30`;
     if (glowLevel >= 4) return `${base} ${shadow} border-violet-200 dark:border-violet-500/30`;
     return `${base} ${shadow}`;
   }, [glowLevel, isFireMode]);
 
-  // Live/Offline pill - Light theme
   const LivePill = useMemo(() => {
     const live = Boolean(isConnected);
-
     return (
       <div
         className={`
-          flex items-center gap-1.5
-          px-2 py-1 rounded-full
-          border text-[10px] font-medium
+          flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-wider
           ${live 
-            ? "bg-teal-50 dark:bg-teal-500/10 border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400" 
-            : "bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400"
+            ? "bg-success-subtle border-success-200 text-success" 
+            : "bg-slate-100 border-slate-200 text-slate-500"
           }
         `}
         title={live ? "Connected to live updates" : "Offline (showing last known data)"}
@@ -372,53 +397,50 @@ export default function Home() {
     );
   }, [isConnected]);
 
-  // If they have literally 0 active missions AND zero historical ships, show the contained Welcome CTA.
-  const isBrandNewUser = !loadingMissions && missions.length === 0 && summary.ships === 0 && shippedStats.tasksCompleted === 0;
-
   return (
     <div 
       className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto" 
       data-momentum={glowLevel}
     >
       {/* ═══════════════════════════════════════════════════════════════════
-          HEADER
+          HEADER (WORLD-CLASS GREETING)
       ═══════════════════════════════════════════════════════════════════ */}
-      <header className="mb-10 flex justify-between items-end">
+      <header className="mb-10 flex justify-between items-end dashboard-section">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2 h-2 rounded-full ${isFireMode ? "bg-orange-500 animate-pulse" : "bg-teal-500"}`} />
-            <span className="text-xs text-slate-500 dark:text-zinc-400">
+            <div className={`w-2.5 h-2.5 rounded-full ${isFireMode ? "bg-orange-500 animate-pulse shadow-glow-energy" : "bg-success shadow-glow-success"}`} />
+            <span className="text-[13px] font-medium text-slate-500 dark:text-zinc-400">
               {isFireMode ? "Fire Mode Active 🔥" : "Operational Status: Live"}
             </span>
 
             {focusEngine.hasUrgentMoves && (
-              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200 dark:border-amber-500/20">
+              <span className="ml-2 px-2 py-0.5 rounded bg-warning-subtle text-warning text-[11px] font-bold border border-warning-200">
                 ⚠️ Urgent moves pending
               </span>
             )}
           </div>
 
-          <h1 className="text-4xl font-semibold text-slate-800 dark:text-zinc-100">
+          <h1 className="greeting-hero">
             {(() => {
               const hour = new Date().getHours();
               if (hour < 12) return 'Good morning';
               if (hour < 18) return 'Good afternoon';
               return 'Good evening';
             })()},{" "}
-            <span className={`${isFireMode ? "text-orange-500" : "text-slate-400 dark:text-zinc-500"} transition-colors duration-500`}>
+            <span className="user-name">
               {authUser?.firstName || "Builder"}
             </span>
           </h1>
-          <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Mission Control</p>
+          <p className="text-[15px] font-medium text-slate-400 dark:text-zinc-500 mt-2">Mission Control</p>
         </div>
 
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-8">
           <div className="text-right">
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Momentum</p>
+            <p className="text-[13px] font-bold text-slate-400 dark:text-zinc-400 mb-1 tracking-wider uppercase">Momentum</p>
             <div
               className={`
-                text-xl font-semibold
-                ${isFireMode ? "text-orange-500" : glowLevel >= 3 ? "text-violet-600 dark:text-violet-400" : "text-slate-800 dark:text-zinc-200"}
+                text-2xl font-black tracking-tight
+                ${isFireMode ? "text-energy drop-shadow-md" : glowLevel >= 3 ? "text-brand" : "text-slate-800 dark:text-zinc-200"}
               `}
             >
               Level {glowLevel}
@@ -426,41 +448,42 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="w-px h-10 bg-slate-200 dark:bg-white/10" />
+          <div className="w-px h-12 bg-slate-200 dark:bg-white/10" />
 
           <div className="text-right">
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Global Rank</p>
-            <p className="text-xl font-semibold text-slate-800 dark:text-zinc-200">Top 2%</p>
+            <p className="text-[13px] font-bold text-slate-400 dark:text-zinc-400 mb-1 tracking-wider uppercase">Global Rank</p>
+            <p className="text-2xl font-black tracking-tight text-slate-800 dark:text-zinc-200">Top 2%</p>
           </div>
         </div>
       </header>
               
       {/* ═══════════════════════════════════════════════════════════════════
-          DAILY PULSE CHECK PROMPT (Priority 3.4)
+          PULSE & CONTAGION (STAGGERED ENTRANCE)
       ═══════════════════════════════════════════════════════════════════ */}
-      <PulseCheckPrompt
-        suggestedTask={missions?.[0]?.title || null}
-        className="mb-6"
-      />
+      <div className="dashboard-section mb-6">
+        <PulseCheckPrompt
+          suggestedTask={missions?.[0]?.title || null}
+        />
+      </div>
 
-      <MomentumStatusBanner />
+      <div className="dashboard-section">
+        <MomentumStatusBanner />
+      </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MOMENTUM CONTAGION — Live team shipping feed (Priority 3.2)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <MomentumContagion
-        activities={activities}
-        maxVisible={3}
-        showCTA={true}
-        onPickMove={() => console.log("Pick move from contagion")}
-        variant="compact"
-        className="mb-6"
-      />
+      <div className="dashboard-section mb-8">
+        <MomentumContagion
+          activities={activities}
+          maxVisible={3}
+          showCTA={true}
+          onPickMove={() => console.log("Pick move from contagion")}
+          variant="compact"
+        />
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           YOUR MOVES TODAY
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="mb-8">
+      <div className="dashboard-section mb-8">
         <YourMovesToday
           variant="default"
           maxMoves={3}
@@ -472,9 +495,8 @@ export default function Home() {
         />
       </div>
 
-      {/* ✅ Priority 1: First Mission prompt for new users */}
       {showFirstMission && (
-        <div className="mb-8">
+        <div className="dashboard-section mb-8">
           <FirstMission
             onMissionCreated={(task) => {
               console.log('[Home] First mission created:', task);
@@ -487,8 +509,8 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Missions Column */}
+      <div className="dashboard-section grid grid-cols-12 gap-6 mb-8">
+        {/* Missions */}
         <div className="col-span-12 xl:col-span-8">
           <div
             className={`
@@ -507,7 +529,7 @@ export default function Home() {
               rightSlot={LivePill}
             />
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {loadingMissions ? (
                 <MissionCardSkeleton count={3} />
               ) : missions.length > 0 ? (
@@ -527,36 +549,14 @@ export default function Home() {
                     />
                   </div>
                 ))
-              ) : isBrandNewUser ? (
-                /* The Welcome State contained INSIDE the mission card */
-                <div 
-                  onClick={() => navigate('/projects')}
-                  className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-white/[0.10] rounded-xl bg-slate-50/50 dark:bg-[#111113]/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23]/80 transition-all duration-300 group cursor-pointer"
-                >
-                  <div className="relative w-16 h-16 mx-auto mb-4">
-                    <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl group-hover:animate-pulse transition-all duration-300" />
-                    <div className="relative w-full h-full rounded-2xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.05] shadow-sm flex items-center justify-center transform group-hover:scale-105 group-hover:shadow-md transition-all duration-300">
-                      <Rocket className="w-8 h-8 text-violet-600 dark:text-violet-400" />
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Welcome to OpenShare</h3>
-                  <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm text-center mb-6 leading-relaxed">
-                    Your mission control is standing by. Create your first project to ignite momentum and start shipping.
-                  </p>
-                  <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold shadow-sm transition-all active:scale-95 pointer-events-none">
-                    <Plus className="w-4 h-4" />
-                    Create Your First Project
-                  </button>
-                </div>
               ) : (
-                /* The standard All Shipped state for active users */
                 <AllShipped
                   tasksCompleted={shippedStats.tasksCompleted}
                   xpEarned={shippedStats.xpEarned}
                   bonusXP={shippedStats.bonusXP}
                   streak={summary.streakDays}
                   bestStreak={summary.streakDays}
-                  onAddMore={() => navigate('/projects')}
+                  onAddMore={() => refreshAll?.()}
                   onViewStats={() => handleOpenPanel("balance")}
                   showConfetti={shippedStats.tasksCompleted > 0}
                   confettiIntensity={isFireMode ? "high" : "medium"}
@@ -566,8 +566,8 @@ export default function Home() {
             </div>
 
             {!isConnected && (
-              <div className="mt-4 text-[11px] text-slate-500 dark:text-zinc-500 flex items-center gap-2">
-                <WifiOff className="w-3.5 h-3.5" />
+              <div className="mt-5 text-[12px] font-medium text-slate-500 flex items-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <WifiOff className="w-4 h-4 text-slate-400" />
                 Showing last known data — updates will resume automatically when you're back online.
               </div>
             )}
@@ -607,51 +607,51 @@ export default function Home() {
             rankText={streakComparison.rankText}
           />
         </div>
+      </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            VELOCITY METRICS
-        ═══════════════════════════════════════════════════════════════════ */}
-        <div className="col-span-12">
-          <div className={sectionCardClasses} data-momentum={glowLevel}>
-            <SectionHeader 
-              icon={TrendingUp} 
-              iconColor="text-violet-600 dark:text-violet-400" 
-              title="Velocity Metrics" 
-              rightSlot={LivePill} 
+      {/* ═══════════════════════════════════════════════════════════════════
+          VELOCITY METRICS (WORLD-CLASS ANIMATED DATA)
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="dashboard-section col-span-12">
+        <div className={sectionCardClasses} data-momentum={glowLevel}>
+          <SectionHeader 
+            icon={TrendingUp} 
+            title="Velocity Metrics" 
+            rightSlot={LivePill} 
+          />
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <StatCard
+              label="Ships"
+              value={summary.ships}
+              color={isFireMode ? "text-energy" : "text-brand"}
+              description="Total validated deployments in the last 7 days (derived from real activity)."
             />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard
-                label="Ships"
-                value={summary.ships}
-                color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
-                description="Total validated deployments in the last 7 days (derived from real activity)."
-              />
-              <StatCard
-                label="Streak"
-                value={`${summary.streakDays}D`}
-                color="text-amber-600 dark:text-amber-500"
-                description="Current streak (from backend summary if available; otherwise derived from activity)."
-              />
-              <StatCard
-                label="Focus"
-                value={`${summary.focus}%`}
-                color="text-teal-600 dark:text-teal-400"
-                description="Focus estimate (backend if available; otherwise derived from activity types)."
-              />
-              <StatCard
-                label="Efficiency"
-                value={`${summary.efficiency >= 0 ? "+" : ""}${summary.efficiency}%`}
-                color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
-                description="Change vs previous period (derived until backend becomes authoritative)."
-              />
-            </div>
+            <StatCard
+              label="Streak"
+              value={`${summary.streakDays}D`}
+              color="text-warning"
+              isStreak={true}
+              description="Current streak (from backend summary if available; otherwise derived from activity)."
+            />
+            <StatCard
+              label="Focus"
+              value={`${summary.focus}%`}
+              color="text-success"
+              description="Focus estimate (backend if available; otherwise derived from activity types)."
+            />
+            <StatCard
+              label="Efficiency"
+              value={`${summary.efficiency >= 0 ? "+" : ""}${summary.efficiency}%`}
+              color={isFireMode ? "text-energy" : "text-brand"}
+              description="Change vs previous period (derived until backend becomes authoritative)."
+            />
           </div>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          SLIDE-OUT PANEL - Light theme
+          SLIDE-OUT PANEL
       ═══════════════════════════════════════════════════════════════════ */}
       <div
         className={`
@@ -673,7 +673,7 @@ export default function Home() {
         `}
       >
         <div className="flex justify-between items-center mb-8">
-          <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">
+          <h3 className="text-[15px] font-bold text-slate-700 dark:text-zinc-300">
             {panelContent === "balance" ? "Team Balance" : "Mission Telemetry"}
           </h3>
           <button 

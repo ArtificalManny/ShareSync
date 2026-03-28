@@ -1,13 +1,12 @@
 // src/components/xp/XpRing.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 8: XP Ring with Micro-Interactions
+// PHASE 8: XP Ring with Micro-Interactions (Gebbia-Grade Polish)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // ENHANCEMENTS:
-// - Ring pulses outward when XP is earned
-// - Number counts up smoothly (doesn't jump)
-// - Level-up triggers celebration effect
-// - Threshold celebrations at 25%, 50%, 75%
+// - Ring pulses outward with brand/gold colors when XP is earned.
+// - Number counts up smoothly (doesn't jump) using Spring physics conceptually.
+// - Typography explicitly uses display font weights.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -15,20 +14,6 @@ import React, { useMemo, useEffect, useState, useRef } from "react";
 import useAnimatedNumber from "../../hooks/useAnimatedNumber";
 import LevelUpCelebration, { useLevelUp } from "./LevelUpCelebration";
 
-/**
- * XpRing - Circular progress ring with micro-interactions
- *
- * Props:
- *  - level: number (displayed in the center)
- *  - progress: number in [0,1] (XP progress to next level)
- *  - currentXP: number (actual XP value for count-up)
- *  - maxXP: number (XP needed for next level)
- *  - size?: number (px, default 120)
- *  - thickness?: number (px, default 10)
- *  - label?: string ("XP")
- *  - motionEnabled?: boolean (default true)
- *  - onLevelUp?: function (callback when level increases)
- */
 export default function XpRing({
   level = 1,
   progress = 0,
@@ -46,34 +31,29 @@ export default function XpRing({
   const dash = clamped * circumference;
   const remainder = circumference - dash;
 
-  // Track previous progress for threshold detection
   const prevProgressRef = useRef(clamped);
   const [isPulsing, setIsPulsing] = useState(false);
-  const [pulseIntensity, setPulseIntensity] = useState('normal'); // 'normal' | 'strong'
+  const [pulseIntensity, setPulseIntensity] = useState('normal'); 
 
   // Animated XP display
   const { value: displayXP, isAnimating: isXPAnimating } = useAnimatedNumber(
     currentXP ?? Math.round(clamped * (maxXP || 100)),
-    { duration: 600, enabled: motionEnabled }
+    { duration: 800, enabled: motionEnabled }
   );
 
-  // Level-up celebration
   const { isLevelingUp, celebrateLevel, onCelebrationComplete } = useLevelUp(level);
 
-  // Detect progress changes and trigger pulse
   useEffect(() => {
     if (!motionEnabled) return;
     
     const prevProgress = prevProgressRef.current;
     const currentProgress = clamped;
     
-    // Check for threshold crossings (stronger pulse)
     const THRESHOLDS = [0.25, 0.5, 0.75, 1.0];
     const crossedThreshold = THRESHOLDS.some(t => 
       prevProgress < t && currentProgress >= t
     );
     
-    // Any increase triggers a pulse
     if (currentProgress > prevProgress) {
       setIsPulsing(true);
       setPulseIntensity(crossedThreshold ? 'strong' : 'normal');
@@ -81,7 +61,7 @@ export default function XpRing({
       const timer = setTimeout(() => {
         setIsPulsing(false);
         setPulseIntensity('normal');
-      }, 600);
+      }, 800);
       
       return () => clearTimeout(timer);
     }
@@ -89,20 +69,17 @@ export default function XpRing({
     prevProgressRef.current = currentProgress;
   }, [clamped, motionEnabled]);
 
-  // Notify level up
   useEffect(() => {
     if (isLevelingUp && onLevelUp) {
       onLevelUp(celebrateLevel);
     }
   }, [isLevelingUp, celebrateLevel, onLevelUp]);
 
-  // Motion transition
   const transition = motionEnabled
-    ? "stroke-dasharray 700ms cubic-bezier(0.2, 0.8, 0.2, 1)"
+    ? "stroke-dasharray 800ms cubic-bezier(0.16, 1, 0.3, 1)"
     : "none";
 
-  // Sublabel with XP values
-  const sublabel = maxXP ? `${displayXP}/${maxXP}` : null;
+  const sublabel = maxXP ? `${displayXP} / ${maxXP}` : null;
 
   return (
     <div
@@ -111,21 +88,17 @@ export default function XpRing({
       role="img"
       aria-label={`${label}: Level ${level}, ${Math.round(clamped * 100)}% to next level`}
     >
-      {/* Pulse ring behind (appears on XP gain) */}
+      {/* Pulse ring behind (Gold/Amber for reward sensation) */}
       {isPulsing && (
         <div 
           className={`
             absolute inset-0 rounded-full
             ${pulseIntensity === 'strong' ? 'xp-ring-pulse-strong' : 'xp-ring-pulse'}
           `}
-          style={{ 
-            width: size, 
-            height: size,
-          }}
+          style={{ width: size, height: size }}
         />
       )}
 
-      {/* Level-up celebration overlay */}
       <LevelUpCelebration 
         active={isLevelingUp}
         newLevel={celebrateLevel}
@@ -139,26 +112,25 @@ export default function XpRing({
         viewBox={`0 0 ${size} ${size}`} 
         aria-hidden="true"
         className={`
-          transition-transform duration-200
-          ${isPulsing ? 'scale-105' : 'scale-100'}
+          transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)
+          ${isPulsing ? 'scale-[1.03]' : 'scale-100'}
         `}
       >
-        {/* Track */}
+        {/* Track (Warm Gray) */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="currentColor"
-          strokeOpacity="0.15"
+          stroke="var(--color-surface-tertiary, #F3F4F6)"
           strokeWidth={thickness}
         />
 
-        {/* Progress gradient */}
+        {/* Progress gradient (Signature Purple) */}
         <defs>
           <linearGradient id="xp-ring-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--brand-500, #A855F7)" />
-            <stop offset="100%" stopColor="var(--accent-500, #D946EF)" />
+            <stop offset="0%" stopColor="var(--color-brand-500, #7C3AED)" />
+            <stop offset="100%" stopColor="var(--color-brand-400, #8B5CF6)" />
           </linearGradient>
         </defs>
 
@@ -175,18 +147,18 @@ export default function XpRing({
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
           style={{ transition }}
-          className={isPulsing ? 'opacity-100' : 'opacity-90'}
+          className={isPulsing ? 'opacity-100 drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]' : 'opacity-90'}
         />
       </svg>
 
-      {/* Center label (hidden during level-up) */}
+      {/* Center label (Flawless Typography) */}
       {!isLevelingUp && (
         <div className="absolute inset-0 grid place-items-center pointer-events-none select-none">
-          <div className="text-center leading-tight">
-            <div className="text-[11px] text-text-tertiary">{label}</div>
+          <div className="text-center leading-tight mt-1">
+            <div className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest">{label}</div>
             <div className={`
-              text-xl font-bold text-text-primary
-              transition-all duration-200
+              text-2xl font-black text-text-primary tracking-tight
+              transition-all duration-300
               ${isPulsing ? 'scale-110 text-brand' : 'scale-100'}
               ${isXPAnimating ? 'tabular-nums' : ''}
             `}>
@@ -194,8 +166,9 @@ export default function XpRing({
             </div>
             {sublabel && (
               <div className={`
-                text-[11px] text-text-tertiary mt-0.5 tabular-nums
-                ${isXPAnimating ? 'text-brand-400' : ''}
+                text-[11px] font-bold text-text-tertiary mt-1 tabular-nums tracking-wide
+                transition-colors duration-300
+                ${isPulsing || isXPAnimating ? 'text-warning' : ''}
               `}>
                 {sublabel}
               </div>
@@ -204,41 +177,19 @@ export default function XpRing({
         </div>
       )}
 
-      {/* Inline keyframes */}
+      {/* Inline keyframes for Gold/Reward pulse */}
       <style>{`
         @keyframes xp-ring-pulse {
-          0% {
-            box-shadow: 0 0 0 0 var(--brand-500);
-            opacity: 0.5;
-          }
-          100% {
-            box-shadow: 0 0 0 12px transparent;
-            opacity: 0;
-          }
+          0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); opacity: 0.8; }
+          100% { box-shadow: 0 0 0 15px transparent; opacity: 0; }
         }
-        
         @keyframes xp-ring-pulse-strong {
-          0% {
-            box-shadow: 0 0 0 0 var(--brand-400);
-            opacity: 0.7;
-          }
-          50% {
-            box-shadow: 0 0 20px 4px var(--brand-500);
-            opacity: 0.5;
-          }
-          100% {
-            box-shadow: 0 0 0 20px transparent;
-            opacity: 0;
-          }
+          0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); opacity: 1; }
+          50% { box-shadow: 0 0 25px 6px rgba(245, 158, 11, 0.4); opacity: 0.8; }
+          100% { box-shadow: 0 0 0 30px transparent; opacity: 0; }
         }
-        
-        .xp-ring-pulse {
-          animation: xp-ring-pulse 0.6s ease-out forwards;
-        }
-        
-        .xp-ring-pulse-strong {
-          animation: xp-ring-pulse-strong 0.8s ease-out forwards;
-        }
+        .xp-ring-pulse { animation: xp-ring-pulse 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .xp-ring-pulse-strong { animation: xp-ring-pulse-strong 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );

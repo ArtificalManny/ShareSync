@@ -10,11 +10,6 @@
    - Amber is ATTENTION (warnings, deadlines, needs action)
    - Red is ERROR ONLY (failures, destructive actions, broken)
    
-   PROGRESS BARS:
-   - Use purple fill on neutral track
-   - NOT red/green (those have emotional baggage)
-   - 100% complete = teal celebration
-   
    v3.1 CHANGELOG (Blueprint Additions):
    - Added: Momentum STATE colors (fire/building/warming/starting/attention)
    - Added: XP & Gamification colors (gold, legendary)
@@ -22,11 +17,36 @@
    - Added: XP/Legendary glow shadows
    - Added: Momentum & XP utility classes
    
+   v4.0 CHANGELOG (Gebbia Lens Foundation):
+   - Warmed up base grays to prevent clinical/sterile feel.
+   - Standardized semantic color variables for dark mode prep.
+   - Introduced modular typography and physical elevation shadows.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════════════
-     SURFACE HIERARCHY (Dark Theme Foundation)
+     WORLD-CLASS FOUNDATION (Gebbia Lens Blueprint)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --color-surface-primary: #FFFFFF;
+  --color-surface-secondary: #FAFAF8; /* Warmed up from pure gray #FAFAFA */
+  --color-surface-tertiary: #F3F4F6;
+  
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B6B72; /* Warmer secondary text */
+  --color-text-tertiary: #9CA3AF;
+  
+  --color-accent-primary: #7C3AED;
+  --color-accent-warm: #D97706; /* Unique OpenShare Amber/Gold */
+  
+  --color-border-default: #E5E7EB;
+  --color-shadow-base: rgba(0,0,0,0.06);
+
+  /* Typography Scale */
+  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     SURFACE HIERARCHY (Dark Theme Foundation - Legacy/Preserved)
      ═══════════════════════════════════════════════════════════════════════════ */
   --surface-0: #09090B;           /* Page background - deepest */
   --surface-1: #18181B;           /* Cards, sidebars */
@@ -41,7 +61,6 @@
 
   /* ═══════════════════════════════════════════════════════════════════════════
      BRAND (Purple → Fuchsia)
-     The ONLY accent color. Used for: buttons, links, focus states, progress.
      ═══════════════════════════════════════════════════════════════════════════ */
   --brand-50:  #FAF5FF;
   --brand-100: #F3E8FF;
@@ -68,8 +87,7 @@
   --accent-primary: var(--brand-500);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     SUCCESS (Teal) - Completions, achievements, shipped, positive
-     NOT generic green - teal is more sophisticated and less "traffic light"
+     SUCCESS (Teal)
      ═══════════════════════════════════════════════════════════════════════════ */
   --success-50:  #F0FDFA;
   --success-100: #CCFBF1;
@@ -86,8 +104,7 @@
   --accent-success: var(--success-500);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     WARNING (Amber) - Attention needed, deadlines, caution
-     Use for: at-risk projects, approaching deadlines, needs review
+     WARNING (Amber)
      ═══════════════════════════════════════════════════════════════════════════ */
   --warning-50:  #FFFBEB;
   --warning-100: #FEF3C7;
@@ -101,8 +118,7 @@
   --warning-900: #78350F;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     ERROR (Red) - ONLY for errors, destructive actions, failures
-     NEVER use for progress bars or status indicators (unless actually broken)
+     ERROR (Red)
      ═══════════════════════════════════════════════════════════════════════════ */
   --error-50:  #FEF2F2;
   --error-100: #FEE2E2;
@@ -119,8 +135,7 @@
   --danger: var(--error-500);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     INFO (Blue) - Informational, neutral highlights
-     Use for: tips, info badges, neutral status
+     INFO (Blue)
      ═══════════════════════════════════════════════════════════════════════════ */
   --info-50:  #EFF6FF;
   --info-100: #DBEAFE;
@@ -134,78 +149,60 @@
   --info-900: #1E3A8A;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     MOMENTUM STATE COLORS — NEW in v3.1
-     ═══════════════════════════════════════════════════════════════════════════
-     
-     For DYNAMIC UI that responds to user productivity levels.
-     Usage: Background colors, borders, and text based on momentum percentage.
-     
+     MOMENTUM STATE COLORS
      ═══════════════════════════════════════════════════════════════════════════ */
   
-  /* 🔥 FIRE MODE (80-100% momentum) - User is ON FIRE */
   --momentum-fire: #EF4444;
   --momentum-fire-glow: rgba(239, 68, 68, 0.4);
   --momentum-fire-subtle: rgba(239, 68, 68, 0.15);
   
-  /* ⚡ BUILDING (60-79% momentum) - Strong progress */
   --momentum-building: #F59E0B;
   --momentum-building-glow: rgba(245, 158, 11, 0.4);
   --momentum-building-subtle: rgba(245, 158, 11, 0.15);
   
-  /* 💜 WARMING UP (40-59% momentum) - Getting into flow */
   --momentum-warming: #8B5CF6;
   --momentum-warming-glow: rgba(139, 92, 246, 0.4);
   --momentum-warming-subtle: rgba(139, 92, 246, 0.15);
   
-  /* 💙 GETTING STARTED (20-39% momentum) - Beginning work */
   --momentum-starting: #3B82F6;
   --momentum-starting-glow: rgba(59, 130, 246, 0.4);
   --momentum-starting-subtle: rgba(59, 130, 246, 0.15);
   
-  /* 🩶 NEEDS ATTENTION (0-19% momentum) - Inactive/stalled */
   --momentum-attention: #6B7280;
   --momentum-attention-glow: rgba(107, 114, 128, 0.4);
   --momentum-attention-subtle: rgba(107, 114, 128, 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     XP & GAMIFICATION — NEW in v3.1
-     ═══════════════════════════════════════════════════════════════════════════
-     
-     Used for: XP rewards, achievements, legendary moments, celebrations
-     
+     XP & GAMIFICATION
      ═══════════════════════════════════════════════════════════════════════════ */
   
   --xp-gold: #FFD700;
   --xp-gold-glow: rgba(255, 215, 0, 0.5);
   --xp-gold-subtle: rgba(255, 215, 0, 0.15);
   
-  /* Legendary achievement colors (for 3-color gradient) */
-  --legendary-start: #FFD700;     /* Gold */
-  --legendary-mid: #EF4444;       /* Red */
-  --legendary-end: #8B5CF6;       /* Purple */
+  --legendary-start: #FFD700;
+  --legendary-mid: #EF4444;
+  --legendary-end: #8B5CF6;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     PROGRESS (Purple-based) - NO RED/GREEN EMOTIONAL SIGNALS
-     Progress is NEUTRAL - it's just "how far along", not "good/bad"
+     PROGRESS
      ═══════════════════════════════════════════════════════════════════════════ */
   --progress-track: var(--surface-2);
   --progress-fill: var(--brand-500);
-  --progress-fill-low: var(--brand-700);      /* 0-33% - darker purple */
-  --progress-fill-mid: var(--brand-500);      /* 34-66% - standard purple */
-  --progress-fill-high: var(--brand-400);     /* 67-99% - brighter purple */
-  --progress-fill-complete: var(--success-500); /* 100% - teal celebration! */
-  
-  /* Progress gradient (optional, for fancy bars) */
+  --progress-fill-low: var(--brand-700);
+  --progress-fill-mid: var(--brand-500);
+  --progress-fill-high: var(--brand-400);
+  --progress-fill-complete: var(--success-500);
   --progress-gradient: linear-gradient(90deg, var(--brand-600) 0%, var(--brand-400) 100%);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     TEXT HIERARCHY
+     TEXT HIERARCHY (Legacy bindings)
      ═══════════════════════════════════════════════════════════════════════════ */
-  --text-primary: #FAFAFA;        /* Headlines, important text */
-  --text-secondary: #A1A1AA;      /* Body text, descriptions */
-  --text-tertiary: #71717A;       /* Hints, timestamps, meta */
-  --text-muted: #52525B;          /* Disabled, placeholder */
-  --text-inverse: #09090B;        /* Text on light backgrounds */
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+  --text-muted: #52525B;
+  --text-inverse: #09090B;
 
   /* ═══════════════════════════════════════════════════════════════════════════
      BORDERS
@@ -218,7 +215,6 @@
 
   /* ═══════════════════════════════════════════════════════════════════════════
      SHADOWS & GLOWS
-     Rule: Glows are for HOVER/FOCUS only, never resting state
      ═══════════════════════════════════════════════════════════════════════════ */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
@@ -226,38 +222,28 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
   --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
   
-  /* Glows (hover/focus only!) */
+  /* Glows */
   --glow-brand: 0 0 20px rgba(168, 85, 247, 0.25);
   --glow-success: 0 0 16px rgba(20, 184, 166, 0.25);
   --glow-warning: 0 0 16px rgba(245, 158, 11, 0.25);
   --glow-error: 0 0 16px rgba(239, 68, 68, 0.25);
   
-  /* XP & Achievement glows — NEW in v3.1 */
   --glow-xp: 0 0 20px var(--xp-gold), 0 0 40px rgba(255, 215, 0, 0.3);
   --glow-legendary: 0 0 30px var(--legendary-start), 0 0 60px var(--legendary-mid);
   
-  /* Focus ring */
   --ring-focus: 0 0 0 3px rgba(168, 85, 247, 0.25);
-  
-  /* Inner glow */
   --inner-glow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
   --inner-glow-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     GRADIENTS — NEW in v3.1
+     GRADIENTS
      ═══════════════════════════════════════════════════════════════════════════ */
-  
-  /* Legendary gradient (for rare achievements, ~5% chance XP jackpots) */
   --gradient-legendary: linear-gradient(135deg, var(--legendary-start) 0%, var(--legendary-mid) 50%, var(--legendary-end) 100%);
-  
-  /* Fire gradient (for streaks, high momentum UI elements) */
   --gradient-fire: linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%);
-  
-  /* Aurora effect (for auth pages background glow) */
   --gradient-aurora: radial-gradient(ellipse at bottom left, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     BORDER RADIUS
+     BORDER RADIUS (Blueprint Standardized)
      ═══════════════════════════════════════════════════════════════════════════ */
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -289,6 +275,25 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   DARK MODE OVERRIDES (Prepared for Phase 4)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --color-surface-primary: #18181B;
+  --color-surface-secondary: #1F1F23;
+  --color-surface-tertiary: #27272A;
+  
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #A1A1AA;
+  --color-text-tertiary: #71717A;
+  
+  --color-accent-primary: #A78BFA;
+  --color-accent-warm: #FBBF24;
+  
+  --color-border-default: #2E2E33;
+  --color-shadow-base: rgba(0,0,0,0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    UTILITY CLASSES
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -300,7 +305,6 @@
   background-clip: text;
 }
 
-/* XP text gradient — NEW in v3.1 */
 .text-gradient-xp {
   background: linear-gradient(135deg, var(--xp-gold) 0%, #FFA500 100%);
   -webkit-background-clip: text;
@@ -308,7 +312,6 @@
   background-clip: text;
 }
 
-/* Legendary text gradient — NEW in v3.1 */
 .text-gradient-legendary {
   background: var(--gradient-legendary);
   -webkit-background-clip: text;
@@ -316,7 +319,7 @@
   background-clip: text;
 }
 
-/* Progress bar base styles */
+/* Progress bar */
 .progress-track {
   background-color: var(--progress-track);
   border-radius: var(--radius-full);
@@ -340,12 +343,10 @@
 .bg-info-subtle { background-color: rgba(59, 130, 246, 0.1); }
 .bg-brand-subtle { background-color: rgba(168, 85, 247, 0.1); }
 
-/* Momentum state backgrounds — NEW in v3.1 */
+/* Momentum state backgrounds */
 .bg-momentum-fire { background-color: var(--momentum-fire-subtle); }
 .bg-momentum-building { background-color: var(--momentum-building-subtle); }
 .bg-momentum-warming { background-color: var(--momentum-warming-subtle); }
 .bg-momentum-starting { background-color: var(--momentum-starting-subtle); }
 .bg-momentum-attention { background-color: var(--momentum-attention-subtle); }
-
-/* XP background — NEW in v3.1 */
 .bg-xp-subtle { background-color: var(--xp-gold-subtle); }

@@ -1,6 +1,7 @@
 // src/pages/Discover.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// ALGORITHMIC FEED - PHASE 3: LIVE WIRING (With Empty State Fallback)
+// ALGORITHMIC FEED - PHASE 2 POLISH (Gebbia-Grade Visuals)
+// Features: Staggered loads, display typography, premium empty state.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -47,12 +48,11 @@ export default function Discover() {
         const newFeed = [...prev];
         const currentLength = prev.filter(i => i.type !== 'interstitial').length;
         
-        // Only inject interstitials if there are actual items returned
         if (items && items.length > 0) {
           items.forEach((item, idx) => {
             const absoluteIndex = currentLength + idx + 1;
             
-            // 🎰 VARIABLE REWARD SLOTS
+            // Variable Reward Slots
             if (absoluteIndex === 7) {
               newFeed.push({ id: `interstitial-7`, type: 'interstitial', component: <Achievements /> });
             } else if (absoluteIndex === 15) {
@@ -77,13 +77,11 @@ export default function Discover() {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     fetchNextPage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
-  // Infinite Scroll Trigger
   const handleObserver = useCallback((entries) => {
     const target = entries[0];
     if (target.isIntersecting && !fetchingRef.current && hasMoreRef.current) {
@@ -102,45 +100,39 @@ export default function Discover() {
   }, [handleObserver]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] pb-24 transition-colors">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-surface-primary pb-24 transition-colors">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
         
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/20">
-            <Sparkles className="w-6 h-6 text-white" />
+        <div className="flex items-center gap-4 mb-10 dashboard-section">
+          <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <Sparkles className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
-              Discover
+            <h1 className="text-[32px] font-black text-text-primary tracking-tight leading-tight">
+              The Arena
             </h1>
-            <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
-              The heartbeat of the network 🌐
+            <p className="text-[14px] font-bold text-text-tertiary tracking-wide uppercase mt-1">
+              Live Network Heartbeat
             </p>
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 dashboard-section" style={{ animationDelay: '0.1s' }}>
           <TeamStories />
         </div>
 
-        <div className="space-y-6">
-          {/* ═══════════════════════════════════════════════════════════════
-              FEATURED PROJECTS — Always visible (Live Ranking + Follow)
-              Moved outside the empty-state conditional so it persists
-              even when the algorithmic feed has items.
-          ═══════════════════════════════════════════════════════════════ */}
-          <FeaturedProjects maxVisible={3} />
-
-          {/* Feed content or empty state */}
+        <div className="space-y-6 dashboard-section" style={{ animationDelay: '0.2s' }}>
           {feed.length === 0 && initialLoadDone && !loading ? (
             <div className="space-y-8">
-              <div className="text-center py-16 px-6 border-2 border-dashed border-slate-200 dark:border-white/[0.06] rounded-3xl bg-white/50 dark:bg-surface-0/50">
-                <div className="w-16 h-16 bg-slate-100 dark:bg-surface-2 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <Globe className="w-8 h-8 text-slate-400 dark:text-text-tertiary" />
+              <FeaturedProjects maxVisible={3} />
+
+              <div className="card-surface text-center py-20 px-6 border border-dashed border-border-default">
+                <div className="w-20 h-20 bg-surface-secondary rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-border-default">
+                  <Globe className="w-10 h-10 text-text-tertiary" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary mb-2">It's quiet out here...</h3>
-                <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary max-w-sm mx-auto">
-                  No public projects found in the network yet. Make sure your projects are set to <strong>Public</strong> to see them in the algorithmic feed!
+                <h3 className="text-[20px] font-black text-text-primary tracking-tight mb-3">It's quiet out here...</h3>
+                <p className="text-[15px] font-medium text-text-secondary max-w-sm mx-auto leading-relaxed">
+                  No public projects found in the network yet. Make sure your projects are set to <strong className="text-text-primary">Public</strong> to see them in the algorithmic feed!
                 </p>
               </div>
             </div>
@@ -151,14 +143,14 @@ export default function Discover() {
             }))} />
           )}
           
-          <div ref={loaderRef} className="w-full flex justify-center py-8">
+          <div ref={loaderRef} className="w-full flex justify-center py-10">
             {loading ? (
-              <div className="flex items-center gap-2 text-slate-400 font-medium">
-                <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+              <div className="flex items-center gap-3 text-text-secondary font-bold text-[13px] uppercase tracking-wider">
+                <Loader2 className="w-5 h-5 animate-spin text-brand" />
                 Calculating algorithmic updates...
               </div>
             ) : !hasMoreRef.current && feed.length > 0 ? (
-              <p className="text-sm font-medium text-slate-400">You've caught up on everything!</p>
+              <p className="text-[13px] font-bold text-text-tertiary uppercase tracking-wider">You've caught up on everything!</p>
             ) : null}
           </div>
         </div>
