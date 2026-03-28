@@ -1,37 +1,18 @@
 // src/components/focus/YourMovesToday.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE H: Your Top Moves Today - Cross-Project Focus View
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Shows the user's highest-leverage moves across ALL their projects.
-// Core differentiator: "No one opens ShareSync and wonders what to do next."
-//
-// Features:
-// - Customizable move count (1, 3, 5, 10)
-// - Project badges on each move
-// - Real-time refresh on ships/changes
-// - Impact summary footer
-// - Urgency indicators
-//
+// PHASE 5: Your 3 Moves Today - Cross-Project Focus View
+// UPGRADED: "Progress Should Be Visible" & Gallery Walk Light/Dark Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { 
-  Target, 
-  Zap, 
-  RefreshCw, 
-  ChevronRight,
-  Flame,
-  AlertCircle,
-  Settings,
-  Check
-} from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Target, Zap, RefreshCw, ChevronRight, Flame, AlertCircle } from 'lucide-react';
 import MoveCard, { MoveCardSkeleton } from './MoveCard';
 import { getStatusColor } from '../../utils/statusColor';
+import { useFocusEngine } from '../../contexts/FocusEngineContext';
 import { useUserFocusMoves } from '../../hooks/useFocusMoves';
 
 export default function YourMovesToday({
-  variant = 'default', // 'default' | 'compact' | 'sidebar'
+  variant = 'default',
   maxMoves = 3,
   showHeader = true,
   showFooter = true,
@@ -41,27 +22,17 @@ export default function YourMovesToday({
   className = '',
 }) {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-  const [customLimit, setCustomLimit] = useState(maxMoves);
-  const [showSettings, setShowSettings] = useState(false);
-  const settingsRef = useRef(null);
 
-  // Close settings when clicking outside
-  useEffect(() => {
-    if (!showSettings) return;
-    const handleClickOutside = (e) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
-        setShowSettings(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSettings]);
-
-  // 🚨 CRITICAL FIX: Bypass the Context Trap. 
-  // We strictly use the hook so our Data Adapter translation layer executes.
-  const focusData = useUserFocusMoves({ count: customLimit });
+  // Try context first, fall back to hook
+  let focusData;
+  try {
+    focusData = useFocusEngine();
+  } catch {
+    focusData = useUserFocusMoves({ count: maxMoves });
+  }
 
   const {
+    topMoves = [],
     moves = [],
     impactSummary = {},
     loading,
@@ -71,10 +42,9 @@ export default function YourMovesToday({
     completeMove,
     snoozeMove,
     hasUrgentMoves,
-  } = focusData || {};
+  } = focusData;
 
-  // We only rely on 'moves' now, which the hook has already sliced and ranked
-  const displayMoves = moves || [];
+  const displayMoves = (topMoves.length > 0 ? topMoves : moves).slice(0, maxMoves);
 
   const handleRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
@@ -83,106 +53,65 @@ export default function YourMovesToday({
   }, [refresh]);
 
   const handleComplete = useCallback(async (moveId) => {
-    if (completeMove) {
-      await completeMove(moveId);
-    }
+    if (completeMove) await completeMove(moveId);
   }, [completeMove]);
 
   const handleSnooze = useCallback(async (moveId, hours) => {
-    if (snoozeMove) {
-      await snoozeMove(moveId, hours);
-    }
+    if (snoozeMove) await snoozeMove(moveId, hours);
   }, [snoozeMove]);
 
   const isCompact = variant === 'compact' || variant === 'sidebar';
 
   return (
     <div className={`
-      card-action relative
-      ${isCompact ? 'p-4' : 'p-6'} rounded-xl
-      bg-surface-1 border border-white/[0.06]
-      ${hasUrgentMoves ? 'border-l-2 border-l-warning shadow-lg shadow-warning/5' : 'shadow-lg shadow-black/20'}
+      card-action
+      ${isCompact ? 'p-5' : 'p-6'} rounded-xl
+      bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+      shadow-[0_4px_24px_rgba(139,92,246,0.04)]
+      ${hasUrgentMoves ? 'border-l-4 border-l-amber-500' : ''}
       ${className}
     `}>
       {/* Header */}
       {showHeader && (
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${hasUrgentMoves ? 'bg-warning/10 text-warning' : 'bg-brand/10 text-brand'}`}>
+            <div className={`p-2.5 rounded-xl shadow-sm ${hasUrgentMoves ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-slate-50 dark:bg-white/5'}`}>
               {hasUrgentMoves ? (
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
               ) : (
-                <Target className="w-4 h-4" />
+                <Target className="w-5 h-5 text-[var(--theme-accent-primary)]" />
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2 relative" ref={settingsRef}>
-                <h3 
-                  className="text-sm font-semibold text-text-primary flex items-center gap-1.5 cursor-pointer hover:text-brand transition-colors"
-                  onClick={() => setShowSettings(!showSettings)}
-                  title="Customize number of moves"
-                >
-                  Your {customLimit} Moves Today
-                  <Settings className="w-3.5 h-3.5 text-text-tertiary opacity-50 hover:opacity-100 transition-opacity" />
-                </h3>
-                
-                {/* Custom Limit Dropdown */}
-                {showSettings && (
-                  <div className="absolute top-full left-0 mt-2 w-40 py-1.5 rounded-xl bg-surface-2 border border-white/[0.10] shadow-xl z-50">
-                    <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-text-tertiary uppercase">
-                      Show Moves
-                    </div>
-                    {[1, 3, 5, 10].map(num => (
-                      <button
-                        key={num}
-                        onClick={() => { setCustomLimit(num); setShowSettings(false); }}
-                        className="w-full px-3 py-2 flex items-center justify-between text-xs text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
-                      >
-                        {num} {num === 1 ? 'Move (Laser Focus)' : 'Moves'}
-                        {customLimit === num && <Check className="w-3.5 h-3.5 text-brand" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                Your 3 Moves Today
+              </h3>
               {hasUrgentMoves && (
-                <p className="text-[11px] font-medium text-warning mt-0.5">Action needed</p>
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mt-0.5">Action needed</p>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Refresh indicator */}
             {(isRefreshing || isManualRefreshing) && (
-              <span className="text-[10px] font-medium text-text-tertiary animate-pulse">Syncing...</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Updating...</span>
             )}
             
-            {/* Refresh button */}
             {showRefresh && (
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing || isManualRefreshing}
-                className="
-                  p-1.5 rounded-lg
-                  text-text-tertiary hover:text-text-primary
-                  hover:bg-surface-2
-                  transition-all active:scale-95
-                  disabled:opacity-50
-                "
+                className="p-2 rounded-lg text-slate-400 hover:text-[var(--theme-accent-primary)] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
                 title="Refresh moves"
               >
-                <RefreshCw className={`w-4 h-4 ${(isRefreshing || isManualRefreshing) ? 'animate-spin text-brand' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${(isRefreshing || isManualRefreshing) ? 'animate-spin' : ''}`} />
               </button>
             )}
 
-            {/* View all */}
             {onViewAll && (
               <button
                 onClick={onViewAll}
-                className="
-                  text-xs font-medium text-text-tertiary hover:text-brand
-                  transition-colors flex items-center gap-0.5 ml-1
-                "
+                className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-[var(--theme-accent-primary)] transition-colors flex items-center gap-1 ml-2"
               >
                 View all
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -194,24 +123,20 @@ export default function YourMovesToday({
 
       {/* Content */}
       {loading ? (
-        <MoveCardSkeleton count={customLimit} />
+        <MoveCardSkeleton count={maxMoves} />
       ) : error ? (
-        <div className="py-10 text-center bg-surface-2/30 rounded-xl border border-white/[0.04]">
-          <AlertCircle className="w-8 h-8 text-error-500 mx-auto mb-3 opacity-80" />
-          <p className="text-sm font-medium text-text-primary mb-1">Unable to load focus moves</p>
-          <p className="text-xs text-text-tertiary mb-4">Please check your connection and try again.</p>
-          <button
-            onClick={handleRefresh}
-            className="text-xs font-semibold px-4 py-2 bg-surface-3 rounded-lg text-brand hover:text-brand-400 transition-colors"
-          >
-            Retry Connection
+        <div className="py-8 text-center bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/10">
+          <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-3" />
+          <p className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Failed to load moves</p>
+          <button onClick={handleRefresh} className="text-xs font-black uppercase tracking-widest text-[var(--theme-accent-primary)] hover:brightness-110">
+            Try again
           </button>
         </div>
       ) : displayMoves.length > 0 ? (
         <div className="space-y-3">
           {displayMoves.map((move, index) => (
             <MoveCard
-              key={move.id || move._id || index}
+              key={move.id}
               move={move}
               rank={index + 1}
               onClick={onMoveClick}
@@ -229,21 +154,20 @@ export default function YourMovesToday({
 
       {/* Footer - Impact Summary */}
       {showFooter && displayMoves.length > 0 && (
-        <div className="mt-5 pt-4 border-t border-white/[0.06] bg-surface-1">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs font-medium text-text-tertiary">
-              Complete all {displayMoves.length} to unlock:
+        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-white/10">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-widest">
+              Complete all <strong className="text-slate-800 dark:text-zinc-200">{displayMoves.length}</strong> to unlock
             </span>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-4">
               {impactSummary.totalUnblocks > 0 && (
-                <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-cyan-400/10 text-xs font-medium text-cyan-400">
-                  <Target className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-black text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 px-2 py-1 rounded-md uppercase tracking-wider">
                   Unblock {impactSummary.totalUnblocks} teammates
                 </span>
               )}
-              <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand/10 text-xs font-bold text-brand shadow-sm shadow-brand/10">
-                <Zap className="w-3.5 h-3.5" />
-                +{impactSummary.totalMomentum || displayMoves.reduce((s, m) => s + (m.momentum || 0), 0)} Momentum
+              <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--theme-accent-primary)] bg-[var(--theme-accent-glow)] px-2.5 py-1 rounded-md">
+                <Zap className="w-3.5 h-3.5 fill-[var(--theme-accent-primary)]/20" />
+                +{impactSummary.totalMomentum || displayMoves.reduce((s, m) => s + m.momentum, 0)} Momentum
               </span>
             </div>
           </div>
@@ -253,34 +177,28 @@ export default function YourMovesToday({
   );
 }
 
-/**
- * Empty state when no moves
- */
 function EmptyState({ onRefresh }) {
   return (
-    <div className="py-12 text-center bg-surface-2/20 rounded-xl border border-white/[0.02]">
-      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-success/20 to-success/5 mx-auto mb-4 flex items-center justify-center shadow-lg shadow-success/10">
-        <Flame className="w-8 h-8 text-success" />
+    <div className="py-10 text-center bg-teal-50/50 dark:bg-teal-500/5 rounded-xl border border-teal-100 dark:border-teal-500/10">
+      <div className="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-500/20 mx-auto mb-4 flex items-center justify-center shadow-sm">
+        <Flame className="w-8 h-8 text-teal-600 dark:text-teal-400" />
       </div>
-      <h4 className="text-lg font-bold text-text-primary mb-2">
-        You're completely clear! 🎉
+      <h4 className="text-lg font-black text-slate-900 dark:text-zinc-100 mb-1">
+        All caught up! 🎉
       </h4>
-      <p className="text-sm text-text-tertiary mb-6 max-w-xs mx-auto">
-        No critical moves demand your attention right now. Great job managing the workload.
+      <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mb-5">
+        No critical moves right now. Great job staying on top of things.
       </p>
       <button
         onClick={onRefresh}
-        className="text-xs font-semibold text-text-secondary bg-surface-3 px-4 py-2 rounded-lg hover:text-brand hover:bg-surface-3/80 transition-all active:scale-95"
+        className="text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 px-4 py-2 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-[var(--theme-accent-primary)] hover:border-[var(--theme-accent-primary)] transition-all shadow-sm"
       >
-        Refresh Radar
+        Check again
       </button>
     </div>
   );
 }
 
-/**
- * Compact widget version for sidebars
- */
 export function YourMovesWidget({ onMoveClick, onViewAll }) {
   return (
     <YourMovesToday
@@ -295,47 +213,43 @@ export function YourMovesWidget({ onMoveClick, onViewAll }) {
   );
 }
 
-/**
- * Inline banner version for quick glance
- */
 export function FocusBanner({ className = '' }) {
-  // Using hook directly here too to maintain consistency
-  const { moves, hasUrgentMoves } = useUserFocusMoves({ count: 1 });
+  const { topMoves, hasUrgentMoves, impactSummary } = useFocusEngine();
   
-  if (!moves?.length) return null;
-  
-  const topMove = moves[0];
+  if (!topMoves.length) return null;
+  const topMove = topMoves[0];
   
   return (
     <div className={`
-      px-4 py-3 rounded-xl
-      ${hasUrgentMoves ? 'bg-warning/10 border border-warning/20' : 'bg-brand/10 border border-brand/20'}
-      flex items-center justify-between shadow-sm
+      px-5 py-3.5 rounded-xl shadow-sm
+      ${hasUrgentMoves ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' : 'bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10'}
+      flex flex-col sm:flex-row sm:items-center justify-between gap-3
       ${className}
     `}>
       <div className="flex items-center gap-3">
-        <Target className={`w-5 h-5 ${hasUrgentMoves ? 'text-warning' : 'text-brand'}`} />
+        <Target className={`w-5 h-5 flex-shrink-0 ${hasUrgentMoves ? 'text-amber-600 dark:text-amber-500' : 'text-[var(--theme-accent-primary)]'}`} />
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-text-tertiary mb-0.5">Top priority</p>
-          <p className="text-sm font-semibold text-text-primary line-clamp-1">{topMove.title}</p>
+          <p className="text-[10px] font-black text-slate-500 dark:text-zinc-400 uppercase tracking-widest mb-0.5">Top priority</p>
+          <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{topMove.title}</p>
         </div>
       </div>
       
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2">
         {topMove.project && (
           <span 
-            className="hidden sm:inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide"
+            className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm"
             style={{ 
-              backgroundColor: `${topMove.project?.color || '#3b82f6'}15`,
-              color: topMove.project?.color || '#3b82f6',
+              backgroundColor: `${topMove.project.color}15`,
+              color: topMove.project.color,
+              border: `1px solid ${topMove.project.color}30`
             }}
           >
-            {topMove.project?.name || 'Project'}
+            {topMove.project.name}
           </span>
         )}
-        <span className="flex items-center gap-1 text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md">
+        <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black text-[var(--theme-accent-primary)] bg-[var(--theme-accent-glow)]">
           <Zap className="w-3.5 h-3.5" />
-          +{topMove.momentum || 0}
+          +{topMove.momentum}
         </span>
       </div>
     </div>

@@ -1,26 +1,13 @@
 // src/components/ui/AvatarStack.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIORITY 2.3: Overlapping Avatar Stack with Online Indicators
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Displays overlapping circular avatars with optional online status dots.
-// Used in ProjectCardV2, but reusable anywhere.
-//
-// Props:
-//   members    — Array of { id, name, avatar?, isOnline? }
-//   max        — Max avatars to show before "+N" overflow
-//   size       — 'sm' | 'md' | 'lg'
-//   showOnline — Show green online dots
-//   className  — Additional classes
-//
-// NO BACKEND DEPENDENCIES. Pure presentational component.
+// PRINCIPLE: "Warmth Over Precision"
+// Uses a curated, warm color palette for fallback initials to ensure the 
+// interface feels human and intentionally designed.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
 
-/**
- * Size configuration
- */
 const SIZE_CONFIG = {
   sm: {
     avatar: 'w-6 h-6',
@@ -28,7 +15,7 @@ const SIZE_CONFIG = {
     dot: 'w-1.5 h-1.5',
     overlap: '-ml-1.5',
     overflow: 'w-6 h-6',
-    ring: 'ring-1',
+    ring: 'ring-2',
   },
   md: {
     avatar: 'w-8 h-8',
@@ -48,9 +35,6 @@ const SIZE_CONFIG = {
   },
 };
 
-/**
- * Generate initials from a name string
- */
 function getInitials(name) {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/);
@@ -59,20 +43,19 @@ function getInitials(name) {
 }
 
 /**
- * Generate a deterministic color from a string (id or name)
+ * Curated Warmth Palette for Avatars
+ * Avoids harsh primary colors in favor of "Gallery Walk" appropriate hues.
  */
 function getAvatarColor(str) {
   const colors = [
     'bg-violet-500',
-    'bg-blue-500',
-    'bg-cyan-500',
-    'bg-teal-500',
-    'bg-emerald-500',
-    'bg-amber-500',
     'bg-rose-500',
+    'bg-amber-500',
+    'bg-emerald-500',
     'bg-fuchsia-500',
-    'bg-indigo-500',
+    'bg-orange-500',
     'bg-pink-500',
+    'bg-teal-500',
   ];
   if (!str) return colors[0];
   let hash = 0;
@@ -82,9 +65,6 @@ function getAvatarColor(str) {
   return colors[Math.abs(hash) % colors.length];
 }
 
-/**
- * Single avatar circle
- */
 function AvatarCircle({ member, config, showOnline, isFirst }) {
   const hasImage = member.avatar && typeof member.avatar === 'string';
   const colorClass = getAvatarColor(member.id || member.name);
@@ -97,7 +77,7 @@ function AvatarCircle({ member, config, showOnline, isFirst }) {
         ${config.avatar} rounded-full
         ${config.ring} ring-white dark:ring-[#1f1f23]
         ${isFirst ? '' : config.overlap}
-        flex-shrink-0
+        flex-shrink-0 shadow-sm transition-transform hover:scale-110 hover:z-10 cursor-default
       `}
       title={member.name || 'Team member'}
     >
@@ -105,35 +85,32 @@ function AvatarCircle({ member, config, showOnline, isFirst }) {
         <img
           src={member.avatar}
           alt={member.name || 'Avatar'}
-          className={`${config.avatar} rounded-full object-cover`}
+          className={`${config.avatar} rounded-full object-cover bg-white dark:bg-[#1f1f23]`}
           onError={(e) => {
-            // Fallback to initials on image load error
             e.target.style.display = 'none';
             e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
           }}
         />
       ) : null}
 
-      {/* Initials fallback (shown if no image or image fails) */}
       <div
         className={`
           ${hasImage ? 'hidden' : 'flex'}
           items-center justify-center
           ${config.avatar} rounded-full
-          ${colorClass} text-white ${config.text} font-medium
+          ${colorClass} text-white ${config.text} font-black tracking-tighter
         `}
       >
         {initials}
       </div>
 
-      {/* Online indicator dot */}
       {showOnline && member.isOnline && (
         <span
           className={`
             absolute -bottom-0.5 -right-0.5
             ${config.dot} rounded-full
             bg-emerald-500
-            ring-1 ring-white dark:ring-[#1f1f23]
+            ring-2 ring-white dark:ring-[#1f1f23]
           `}
         />
       )}
@@ -141,9 +118,6 @@ function AvatarCircle({ member, config, showOnline, isFirst }) {
   );
 }
 
-/**
- * Main AvatarStack component
- */
 export default function AvatarStack({
   members = [],
   max = 3,
@@ -169,7 +143,6 @@ export default function AvatarStack({
         />
       ))}
 
-      {/* Overflow indicator */}
       {overflow > 0 && (
         <div
           className={`
@@ -177,9 +150,9 @@ export default function AvatarStack({
             ${config.overflow} rounded-full
             ${config.overlap}
             ${config.ring} ring-white dark:ring-[#1f1f23]
-            bg-slate-200 dark:bg-zinc-700
-            ${config.text} font-medium text-slate-600 dark:text-zinc-300
-            flex-shrink-0
+            bg-slate-100 dark:bg-zinc-800
+            ${config.text} font-black text-slate-600 dark:text-zinc-300
+            flex-shrink-0 shadow-sm hover:scale-110 hover:z-10 transition-transform cursor-default
           `}
           title={`${overflow} more member${overflow !== 1 ? 's' : ''}`}
         >
@@ -190,15 +163,12 @@ export default function AvatarStack({
   );
 }
 
-/**
- * Inline helper: count of online members
- */
 export function OnlineCount({ members = [], className = '' }) {
   const onlineCount = members.filter((m) => m.isOnline).length;
   if (onlineCount === 0) return null;
 
   return (
-    <span className={`text-xs text-emerald-600 dark:text-emerald-400 font-medium ${className}`}>
+    <span className={`text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest ${className}`}>
       +{onlineCount} online
     </span>
   );

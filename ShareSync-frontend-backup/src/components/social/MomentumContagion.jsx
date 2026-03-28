@@ -1,18 +1,9 @@
 // src/components/social/MomentumContagion.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // Priority 3.2: Momentum Contagion — Social Proof Engine
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// The live "3 people shipping right now" banner with real names,
-// task names, timestamps, and "You're next" CTA.
-//
-// USAGE:
-//   <MomentumContagion activities={activitiesFromRealtime} className="mb-6" />
-//
-// Accepts activities from useHomeRealtime (or any source).
-// Uses useMomentumContagion hook internally.
-//
-// ZERO BACKEND CHANGES
+// PRINCIPLE: "Warmth Over Precision"
+// Uses the dynamic momentum variables (--theme-accent-primary) so the social 
+// feed heats up visually along with the rest of the application.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useMemo } from 'react';
@@ -32,16 +23,13 @@ try {
   useMomentumContext = () => ({ glowLevel: 2, isFireMode: false });
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────
 export default function MomentumContagion({
   activities = [],
   maxVisible = 3,
   showCTA = true,
   showOptIn = false,
   onPickMove,
-  variant = 'default', // 'default' | 'compact' | 'sidebar'
+  variant = 'default',
   className = '',
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -55,7 +43,6 @@ export default function MomentumContagion({
     enabled: true,
   });
 
-  // Items to display
   const visibleItems = useMemo(() => {
     if (isExpanded) return feed;
     return feed.slice(0, maxVisible);
@@ -63,32 +50,30 @@ export default function MomentumContagion({
 
   const hasMore = feed.length > maxVisible;
 
-  // If nothing to show and user is opted in, show minimal state
   if (stats.isEmpty && optedIn) {
     return (
       <div
         className={`
           flex items-center gap-3 p-4 rounded-xl
-          bg-slate-50 dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06]
+          bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm
           ${className}
         `}
       >
-        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center">
-          <Radio className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-100 dark:border-white/5 flex items-center justify-center shadow-sm">
+          <Radio className="w-5 h-5 text-slate-400 dark:text-zinc-500" />
         </div>
         <div>
-          <p className="text-sm text-slate-600 dark:text-zinc-400">
+          <p className="text-sm font-bold text-slate-800 dark:text-zinc-100">
             No teammates shipping right now
           </p>
-          <p className="text-[11px] text-slate-400 dark:text-zinc-500">
-            Be the first to start — your team will see your momentum
+          <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 mt-0.5">
+            Be the first to start — your team will see your momentum.
           </p>
         </div>
       </div>
     );
   }
 
-  // If user has opted out, show the opt-in card
   if (!optedIn) {
     if (showOptIn) {
       return <ContagionOptIn optedIn={false} onToggle={setOptedIn} variant="card" className={className} />;
@@ -96,21 +81,16 @@ export default function MomentumContagion({
     return null;
   }
 
-  // ── Sidebar variant (compact list) ──
   if (variant === 'sidebar') {
     return (
-      <div className={`space-y-0.5 ${className}`}>
+      <div className={`space-y-1 ${className}`}>
         {visibleItems.map((item) => (
-          <ContagionFeedItem
-            key={item.id}
-            item={item}
-            variant="compact"
-          />
+          <ContagionFeedItem key={item.id} item={item} variant="compact" />
         ))}
         {hasMore && !isExpanded && (
           <button
             onClick={() => setIsExpanded(true)}
-            className="w-full text-[10px] text-slate-400 dark:text-zinc-500 hover:text-violet-500 py-1 transition-colors"
+            className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 hover:text-[var(--theme-accent-primary)] py-2 transition-colors"
           >
             +{feed.length - maxVisible} more
           </button>
@@ -119,29 +99,28 @@ export default function MomentumContagion({
     );
   }
 
-  // ── Compact variant (single-line summary + expandable) ──
   if (variant === 'compact') {
     return (
       <div className={className}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={`
-            w-full flex items-center justify-between p-3 rounded-xl
-            bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06]
-            hover:border-violet-200 dark:hover:border-violet-500/20
-            transition-colors
+            w-full flex items-center justify-between p-3.5 rounded-xl
+            bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+            hover:border-[var(--theme-accent-primary)] hover:shadow-md
+            transition-all duration-300
           `}
         >
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--theme-accent-primary)] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--theme-accent-primary)]" />
             </span>
-            <span className="text-sm text-slate-700 dark:text-zinc-300">
-              <span className={`font-semibold ${isFireMode ? 'text-orange-500' : 'text-violet-600 dark:text-violet-400'}`}>
+            <span className="text-sm font-medium text-slate-700 dark:text-zinc-300">
+              <span className="font-black text-[var(--theme-accent-primary)] text-base mr-1">
                 {stats.uniqueActiveUsers}
               </span>
-              {' '}shipping right now
+              shipping right now
             </span>
           </div>
           {isExpanded ? (
@@ -173,61 +152,55 @@ export default function MomentumContagion({
     );
   }
 
-  // ── Default variant (full banner with feed) ──
   return (
     <div
       className={`
-        rounded-xl border overflow-hidden
+        rounded-xl border overflow-hidden transition-all duration-500 shadow-sm
         ${stats.shippingNow >= 3
-          ? 'bg-gradient-to-r from-violet-50 to-blue-50 dark:from-violet-500/5 dark:to-blue-500/5 border-violet-200 dark:border-violet-500/20'
-          : 'bg-white dark:bg-[#1f1f23] border-slate-200 dark:border-white/[0.06]'
+          ? 'bg-[var(--theme-accent-glow)] border-[var(--theme-accent-primary)]/30'
+          : 'bg-white dark:bg-[#1f1f23] border-slate-200 dark:border-white/10'
         }
-        ${isFireMode ? 'border-orange-200 dark:border-orange-500/20' : ''}
+        ${isFireMode ? 'border-orange-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : ''}
         ${className}
       `}
     >
-      {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          {/* Live pulse */}
-          <span className="relative flex h-2.5 w-2.5">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isFireMode ? 'bg-orange-500' : 'bg-violet-500'}`} />
-            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isFireMode ? 'bg-orange-500' : 'bg-violet-500'}`} />
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-[var(--theme-accent-primary)]" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[var(--theme-accent-primary)]" />
           </span>
 
-          <span className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+          <span className="text-[10px] font-black text-slate-500 dark:text-zinc-400 uppercase tracking-widest">
             LIVE
           </span>
 
-          <span className="text-sm text-slate-700 dark:text-zinc-300">
-            <span className={`font-bold text-lg ${isFireMode ? 'text-orange-500' : 'text-violet-600 dark:text-violet-400'}`}>
+          <span className="text-sm font-medium text-slate-700 dark:text-zinc-300">
+            <span className="font-black text-lg text-[var(--theme-accent-primary)] mr-1.5 transition-colors">
               {stats.uniqueActiveUsers}
             </span>
-            {' '}
             {stats.uniqueActiveUsers === 1 ? 'person' : 'people'} shipping right now
           </span>
 
           {stats.shippingNow >= 3 && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400">
+            <span className="px-2 py-1 rounded-md text-[10px] font-black bg-[var(--theme-accent-primary)] text-white ml-2 shadow-sm animate-pulse">
               🔥 High Activity
             </span>
           )}
         </div>
 
-        {/* Expand/collapse */}
         {hasMore && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-slate-400 dark:text-zinc-500 hover:text-violet-500 transition-colors flex items-center gap-1"
+            className="text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 hover:text-[var(--theme-accent-primary)] transition-colors flex items-center gap-1"
           >
             {isExpanded ? 'Less' : `+${feed.length - maxVisible} more`}
-            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         )}
       </div>
 
-      {/* Feed items */}
-      <div className="p-3 space-y-2">
+      <div className="p-4 space-y-3">
         <AnimatePresence initial={false}>
           {visibleItems.map((item, index) => (
             <motion.div
@@ -242,15 +215,13 @@ export default function MomentumContagion({
           ))}
         </AnimatePresence>
 
-        {/* You're next CTA */}
         {showCTA && (
           <YoureNextCTA onClick={onPickMove} />
         )}
       </div>
 
-      {/* Opt-in toggle (if requested) */}
       {showOptIn && (
-        <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.06]">
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
           <ContagionOptIn optedIn={optedIn} onToggle={setOptedIn} variant="compact" />
         </div>
       )}

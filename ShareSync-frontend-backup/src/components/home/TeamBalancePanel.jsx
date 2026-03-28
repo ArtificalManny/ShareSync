@@ -1,4 +1,4 @@
-// src/components/Home/TeamBalancePanel.jsx
+// src/components/home/TeamBalancePanel.jsx
 import React, { useState } from "react";
 import { Users, AlertTriangle, ArrowRightLeft, CheckCircle2, Loader2 } from "lucide-react";
 
@@ -39,25 +39,25 @@ export default function TeamBalancePanel({ onBalanceComplete }) {
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
       {/* 1. Diagnostic Header */}
       {status === "balanced" ? (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl animate-in zoom-in-95 duration-300">
+        <div className="p-4 bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 rounded-xl animate-in zoom-in-95 duration-300 shadow-sm">
           <div className="flex gap-3 items-start">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-1" />
+            <CheckCircle2 className="w-5 h-5 text-teal-600 dark:text-teal-400 mt-0.5" />
             <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-tight">System Optimized</h4>
-              <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">
+              <h4 className="text-sm font-black text-teal-900 dark:text-teal-100 uppercase tracking-tight">System Optimized</h4>
+              <p className="text-xs text-teal-700 dark:text-teal-300 mt-1 leading-relaxed font-medium">
                 6 tasks reassigned. Your projected burnout risk has dropped by 45%. Team velocity is now synchronized.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl transition-all">
+        <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl transition-all shadow-sm">
           <div className="flex gap-3 items-start">
-            <AlertTriangle className="w-5 h-5 text-orange-500 mt-1" />
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5" />
             <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-tight">Workload Imbalance</h4>
-              <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">
-                Your current output is $2.3\times$ higher than the team average. This pace is unsustainable.
+              <h4 className="text-sm font-black text-amber-900 dark:text-amber-100 uppercase tracking-tight">Workload Imbalance</h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed font-medium">
+                Your current output is <strong className="font-black">2.3×</strong> higher than the team average. This pace is unsustainable.
               </p>
             </div>
           </div>
@@ -66,30 +66,30 @@ export default function TeamBalancePanel({ onBalanceComplete }) {
 
       {/* 2. Team Load Mapping */}
       <div className="space-y-4">
-        <h5 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex justify-between">
+        <h5 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest flex justify-between">
           Active Personnel
-          {status === "balancing" && <span className="text-indigo-400 animate-pulse">Syncing Nodes...</span>}
+          {status === "balancing" && <span className="text-[var(--theme-accent-primary)] animate-pulse">Syncing Nodes...</span>}
         </h5>
         
         {team.map((member) => (
-          <div key={member.id} className="group flex items-center justify-between p-3 rounded-lg bg-white/[0.01] border border-white/5 transition-all">
+          <div key={member.id} className="group flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 transition-all hover:shadow-md hover:-translate-y-0.5">
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors duration-500 ${member.load > 50 ? 'bg-orange-500/20 text-orange-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black transition-colors duration-500 shadow-sm ${member.load > 50 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-500' : 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-500'}`}>
                 {member.name.charAt(0)}
               </div>
               <div>
-                <div className="text-xs font-bold text-white tracking-tight">{member.name}</div>
-                <div className="text-[9px] text-neutral-500 uppercase font-medium transition-all">
+                <div className="text-sm font-bold text-slate-800 dark:text-zinc-100 tracking-tight">{member.name}</div>
+                <div className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase font-bold tracking-wider transition-all">
                    {status === "balancing" ? "Recalculating..." : `${member.ships} Ships Completed`}
                 </div>
               </div>
             </div>
 
             <div className="text-right">
-              <div className={`text-xs font-black italic transition-colors duration-500 ${member.load > 50 ? 'text-orange-500' : 'text-emerald-500'}`}>
+              <div className={`text-sm font-black italic transition-colors duration-500 ${member.load > 50 ? 'text-amber-600 dark:text-amber-500' : 'text-teal-600 dark:text-teal-400'}`}>
                 {member.load}%
               </div>
-              <div className="text-[8px] font-bold text-neutral-600 uppercase">Load</div>
+              <div className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Load</div>
             </div>
           </div>
         ))}
@@ -100,28 +100,28 @@ export default function TeamBalancePanel({ onBalanceComplete }) {
         <button 
           onClick={handleRebalance}
           disabled={status === "balancing"}
-          className={`w-full py-4 rounded-lg text-[11px] font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-2 
+          className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm
             ${status === "balancing" 
-              ? "bg-neutral-800 text-neutral-500 cursor-not-allowed" 
-              : "bg-white text-black hover:bg-brand-500 hover:text-white active:scale-95"}`}
+              ? "bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 cursor-not-allowed border border-slate-200 dark:border-white/10" 
+              : "bg-[var(--theme-accent-primary)] text-white hover:brightness-110 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 border border-transparent"}`}
         >
           {status === "balancing" ? (
             <>
-              <Loader2 className="w-3 h-3 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               Rebalancing Network...
             </>
           ) : (
             <>
-              <ArrowRightLeft className="w-3 h-3" />
+              <ArrowRightLeft className="w-4 h-4" />
               Auto-Rebalance Active Tasks
             </>
           )}
         </button>
       ) : (
         <button 
-          className="w-full py-4 border border-white/10 text-white text-[11px] font-black uppercase tracking-tighter rounded-lg cursor-default flex items-center justify-center gap-2"
+          className="w-full py-3.5 border border-teal-200 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 text-xs font-black uppercase tracking-widest rounded-xl cursor-default flex items-center justify-center gap-2"
         >
-          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+          <CheckCircle2 className="w-4 h-4" />
           Balance Restored
         </button>
       )}
