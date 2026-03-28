@@ -1,134 +1,89 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Megaphone, Plus, X, ChevronDown, ChevronUp, MessageCircle, Paperclip, FileText, Loader2 } from 'lucide-react';
+// src/components/project/Announcements.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 3: Project Announcements
+// - Uses the central EmptyAnnouncements state for consistency.
+// - High contrast headers, 8px grid spacing, hover micro-interactions.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useState } from 'react';
+import { Megaphone, Plus, X, ChevronDown, ChevronUp, Pin, Clock } from 'lucide-react';
 import TrustBadge from '../trust/TrustBadge';
 import { useIsMobile } from '../../hooks/useMobile';
-import { getAnnouncements, createAnnouncement } from '../../api/announcements';
+import { EmptyAnnouncements } from '../ui/EmptyState';
 
 const Announcements = ({ projectId, currentUserId }) => {
   const isMobile = useIsMobile();
-  
-  const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [announcements, setAnnouncements] = useState([
+    {
+      id: 1,
+      title: 'Beta Launch Next Week!',
+      content: 'We\'re launching on Product Hunt next Tuesday. Everyone please test the final build.',
+      author: 'Sarah',
+      timestamp: '2h ago',
+      pinned: true
+    },
+    {
+      id: 2,
+      title: 'Weekly Sync Moved',
+      content: 'Moving our weekly sync to Friday at 3pm instead of Thursday.',
+      author: 'Mike',
+      timestamp: '1d ago',
+      pinned: false
+    }
+  ]);
+
   const [expanded, setExpanded] = useState(true);
-  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef(null);
 
-  const loadAnnouncements = async () => {
-    if (!projectId) return;
-    try {
-      setLoading(true);
-      const data = await getAnnouncements(projectId);
-
-      // 🛡️ SAFE ARRAY EXTRACTION:
-      // No matter what weird shape the backend or Axios interceptor returns,
-      // we guarantee `announcements` is an array so .map() never crashes.
-      let safeArray = [];
-      if (Array.isArray(data)) {
-        safeArray = data;
-      } else if (data && Array.isArray(data.data)) {
-        safeArray = data.data;
-      } else if (data && Array.isArray(data.announcements)) {
-        safeArray = data.announcements;
-      }
-
-      setAnnouncements(safeArray);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to load announcements:', err);
-      setError('Failed to load announcements');
-      setAnnouncements([]); // Fallback to empty array
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAnnouncements();
-  }, [projectId]);
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const handleCreateAnnouncement = async (e) => {
+  const handleCreateAnnouncement = (e) => {
     e.preventDefault();
     if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) return;
 
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append('title', newAnnouncement.title);
-      formData.append('message', newAnnouncement.content); // Backend expects 'message'
-      formData.append('pinned', 'false');
-      
-      if (selectedFile) {
-        formData.append('file', selectedFile);
-      }
+    setAnnouncements([
+      {
+        id: Date.now(),
+        ...newAnnouncement,
+        author: 'You',
+        timestamp: 'Just now',
+        pinned: false
+      },
+      ...announcements
+    ]);
 
-      await createAnnouncement(projectId, formData);
-
-      // Reset Modal
-      setNewAnnouncement({ title: '', content: '' });
-      setSelectedFile(null);
-      setShowCreateModal(false);
-      
-      // Refresh Feed
-      await loadAnnouncements();
-    } catch (err) {
-      console.error('Failed to create announcement:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Just now';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffHours = Math.abs(now - date) / 36e5;
-    
-    if (diffHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    setNewAnnouncement({ title: '', content: '' });
+    setShowCreateModal(false);
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl shadow-xl">
+    <div className="bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm transition-all overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-slate-700/50">
+      <div className="p-5 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl flex items-center justify-center">
-              <Megaphone className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center border border-violet-200 dark:border-violet-500/20 shadow-sm">
+              <Megaphone className="w-6 h-6 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h3 className="font-bold text-white">Announcements</h3>
-              <TrustBadge type="private" size="xs" inline />
+              <h3 className="text-[18px] font-black text-slate-900 dark:text-white tracking-tight">Announcements</h3>
+              <div className="mt-0.5">
+                <TrustBadge type="private" size="xs" inline />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {!isMobile && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-white"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl text-[13px] font-bold transition-all flex items-center gap-2 border border-transparent dark:border-white/5"
               >
-                <Plus className="w-4 h-4" />
-                New
+                <Plus className="w-4 h-4" /> Post
               </button>
             )}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-300"
+              className="p-2 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-transparent hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
             >
               {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </button>
@@ -138,149 +93,86 @@ const Announcements = ({ projectId, currentUserId }) => {
 
       {/* Announcements List */}
       {expanded && (
-        <div className="p-4 space-y-3">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-red-400 text-sm">{error}</p>
-              <button onClick={loadAnnouncements} className="mt-2 text-xs text-purple-400 hover:underline">Try Again</button>
-            </div>
-          ) : announcements.length === 0 ? (
-            <div className="text-center py-8">
-              <Megaphone className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400">No announcements yet</p>
-            </div>
+        <div className="p-5 bg-white dark:bg-transparent">
+          {announcements.length === 0 ? (
+            <EmptyAnnouncements onPost={() => setShowCreateModal(true)} />
           ) : (
-            announcements.map((announcement) => {
-              const id = announcement._id || announcement.id;
-              const title = announcement.title;
-              const content = announcement.message || announcement.content;
-              const authorName = announcement.authorId?.firstName || announcement.authorId?.username || announcement.author || 'Team Member';
-              const timestamp = formatDate(announcement.createdAt || announcement.timestamp);
-              const isPinned = announcement.pinned;
-              const attachments = announcement.attachments || [];
-
-              return (
+            <div className="space-y-4">
+              {announcements.map((announcement) => (
                 <div
-                  key={id}
-                  className={`p-4 rounded-xl border transition-all ${
-                    isPinned
-                      ? 'bg-orange-500/10 border-orange-500/30'
-                      : 'bg-slate-900/50 border-slate-700/50 hover:border-purple-500/30'
+                  key={announcement.id}
+                  className={`p-5 rounded-xl border transition-all duration-300 hover:shadow-md ${
+                    announcement.pinned
+                      ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20'
+                      : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-500/30'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-bold text-white mb-1">{title}</h4>
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <span>{authorName}</span>
-                        <span>•</span>
-                        <span>{timestamp}</span>
+                      <h4 className="text-[15px] font-black text-slate-900 dark:text-white leading-tight mb-1">{announcement.title}</h4>
+                      <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                        <span className="text-violet-600 dark:text-violet-400">{announcement.author}</span>
+                        <span className="opacity-50">•</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{announcement.timestamp}</span>
                       </div>
                     </div>
-                    {isPinned && (
-                      <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs font-semibold rounded-full">
-                        Pinned
+                    {announcement.pinned && (
+                      <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400 text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm">
+                        <Pin className="w-3 h-3 fill-current" /> Pinned
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-300 whitespace-pre-wrap">{content}</p>
-
-                  {attachments.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {attachments.map((url, i) => (
-                        <a 
-                          key={i} 
-                          href={url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700 hover:bg-slate-700 hover:border-purple-500/30 transition-all text-xs text-purple-300"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          Attachment {i + 1}
-                        </a>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-[14px] text-slate-600 dark:text-slate-300 leading-relaxed">{announcement.content}</p>
                 </div>
-              );
-            })
+              ))}
+            </div>
           )}
         </div>
       )}
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">New Announcement</h2>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setSelectedFile(null);
-                }}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400"
-              >
+        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[20px] font-black text-slate-900 dark:text-white tracking-tight">New Announcement</h2>
+              <button onClick={() => setShowCreateModal(false)} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+            <form onSubmit={handleCreateAnnouncement} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Title</label>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Title</label>
                 <input
                   type="text"
                   value={newAnnouncement.title}
                   onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                  placeholder="What's the announcement?"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="What's the update?"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-shadow"
                   autoFocus
-                  disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Details</label>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Details</label>
                 <textarea
                   value={newAnnouncement.content}
                   onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                  placeholder="Add more details..."
-                  rows={4}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                  disabled={isSubmitting}
+                  placeholder="Share the details..."
+                  rows={5}
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-[14px] text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 resize-none transition-shadow"
                 />
               </div>
 
-              <div className="pt-2">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileSelect} 
-                  className="hidden" 
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 rounded-xl text-sm font-medium text-slate-300 transition-colors w-full justify-center"
-                >
-                  <Paperclip className="w-4 h-4" />
-                  {selectedFile ? selectedFile.name : 'Attach File (Optional)'}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl font-bold text-[14px] transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={!newAnnouncement.title.trim()} className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-[14px] disabled:opacity-50 transition-colors shadow-sm hover:shadow-md">
+                  Post
                 </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl font-bold text-lg text-white hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2"
-              >
-                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-                {isSubmitting ? 'Posting...' : 'Post Announcement'}
-              </button>
             </form>
           </div>
         </div>
