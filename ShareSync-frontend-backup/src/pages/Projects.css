@@ -1,104 +1,33 @@
 /* Projects.css */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* SHARESYNC PROJECTS STYLES v4.1 - Ultra Clean Base                               */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
 .projects-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
 }
 
 .main-content { flex: 1; }
 .projects-header { margin-bottom: 0.75rem; }
 
 /* ------------------------------------------------------------------ */
-/* Card baseline + hover                                               */
+/* Card Baseline Accessibilty                                         */
 /* ------------------------------------------------------------------ */
 .project-card {
-  position: relative;            /* required for shine */
-  overflow: hidden;              /* clip shine to card */
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-  will-change: transform;
-}
-.project-card:hover {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.10),
-              0 0 10px var(--purple-accent),
-              0 0 3px var(--teal-accent);
+  position: relative;            
+  overflow: hidden;              
+  will-change: transform, box-shadow;
 }
 
-.hover-glow { transition: box-shadow 0.15s ease, transform 0.15s ease; }
-.hover-glow:hover {
-  box-shadow: 0 0 15px var(--purple-accent), 0 0 5px var(--teal-accent);
-  transform: translateY(-1px) scale(1.01);
-}
-
-/* Visible keyboard focus */
+/* Visible keyboard focus for accessibility */
 .project-card:focus-visible,
 [data-shine]:focus-visible {
   outline: 2px solid var(--accent, #6366f1);
-  outline-offset: 2px;
-  border-radius: 12px;
-}
-
-/* ------------------------------------------------------------------ */
-/* BLUE SHINE                                                          */
-/* We keep the old circular spotlight (::after) AND add a rectangular  */
-/* spotlight (::before) that follows the cursor (square-ish look).     */
-/* bindShine sets --mx/--my (percent) AND --mxpx/--mypx (pixels).      */
-/* ------------------------------------------------------------------ */
-
-/* Rectangular/rounded-rect glow (this gives the “square” feel) */
-.project-card::before,
-[data-shine]::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0;
-  /* size of the rectangular glow (tweak to taste) */
-  --shine-w: 240px;
-  --shine-h: 140px;
-  width: var(--shine-w);
-  height: var(--shine-h);
-  /* center the rectangle on the cursor (pixel-based) */
-  transform: translate(
-    calc(var(--mxpx, 50%) - (var(--shine-w) / 2)),
-    calc(var(--mypx, 50%) - (var(--shine-h) / 2))
-  );
-  background: rgba(59,130,246,0.18);
-  border-radius: 18px;
-  filter: blur(16px);
-  opacity: 0;
-  transition: opacity .18s ease-out;
-  z-index: 9; /* above card bg, below content */
-  pointer-events: none;
-}
-
-.project-card:hover::before,
-.project-card:focus-visible::before,
-[data-shine]:hover::before,
-[data-shine]:focus-visible::before {
-  opacity: 1;
-}
-
-/* Keep the softer circular spotlight too (feathered center) */
-.project-card::after,
-[data-shine]::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(160px 160px at var(--mx, 50%) var(--my, 50%),
-      rgba(59,130,246,0.18),
-      rgba(59,130,246,0.10) 35%,
-      rgba(59,130,246,0.00) 65%);
-  opacity: 0;
-  transition: opacity .18s ease-out;
-  z-index: 8; /* sits under the rectangular layer for depth */
-}
-.project-card:hover::after,
-.project-card:focus-visible::after,
-[data-shine]:hover::after,
-[data-shine]:focus-visible::after {
-  opacity: 1;
+  outline-offset: 4px;
+  border-radius: 16px; /* Updated to match new 2xl radius */
 }
 
 /* ------------------------------------------------------------------ */
@@ -111,13 +40,14 @@
   width: 6px; height: 6px;
   animation: spin 0.6s linear infinite;
 }
+
 @keyframes spin { 0% { transform: rotate(0) } 100% { transform: rotate(360deg) } }
 
 .animate-pulse-slow { animation: pulse-slow 1s infinite; }
-@keyframes pulse-slow { 0% { transform: scale(1) } 50% { transform: scale(1.1) } 100% { transform: scale(1) } }
+@keyframes pulse-slow { 0% { transform: scale(1) } 50% { transform: scale(1.05) } 100% { transform: scale(1) } }
 
-.animate-fade-in { animation: fadeIn 0.15s ease-in; }
-@keyframes fadeIn { 0% { opacity: 0 } 100% { opacity: 1 } }
+.animate-fade-in { animation: fadeIn 0.2s ease-out; }
+@keyframes fadeIn { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: translateY(0); } }
 
 /* ✨ subtle linear "shine" sweep used elsewhere */
 @keyframes shine {
