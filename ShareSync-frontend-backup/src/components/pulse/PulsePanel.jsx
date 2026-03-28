@@ -1,8 +1,8 @@
 // src/components/pulse/PulsePanel.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PULSE PANEL (Phase 2): Lightweight heartbeat widget (Gebbia-Grade Polish)
-// - Upgraded to Card Surfaces with tactile hover states.
-// - Standardized typography scales and grid spacing.
+// PULSE PANEL (Phase 2): Lightweight heartbeat widget (Gallery Walk Polish)
+// - High-Contrast text colors.
+// - Smooth tactile hover states for metric cards.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState } from "react";
@@ -45,29 +45,24 @@ export default function PulsePanel({ projectId, refreshKey = 0, className = "" }
   const movedToReviewToday = pulse?.movedToReviewToday ?? 0;
 
   return (
-    <div
-      className={`
-        card-surface p-6
-        ${className}
-      `}
-    >
+    <div className={`bg-white dark:bg-[#1f1f23] rounded-2xl border border-slate-200 dark:border-white/10 p-6 shadow-sm ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2.5">
-          <Flame className="w-5 h-5 text-warning" />
-          <h3 className="text-[15px] font-bold text-text-primary tracking-tight">
+          <Flame className="w-5 h-5 text-amber-500" />
+          <h3 className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight">
             Pulse Activity
           </h3>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] font-bold text-text-tertiary uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
           {loading ? (
             <span className="inline-flex items-center gap-1.5">
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               Syncing
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 bg-success-subtle text-success px-2 py-0.5 rounded-full border border-success-200">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-500/20 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]" />
               Live
             </span>
           )}
@@ -76,27 +71,27 @@ export default function PulsePanel({ projectId, refreshKey = 0, className = "" }
 
       <div className="grid grid-cols-3 gap-4">
         <StatCard
-          icon={<Flame className="w-4 h-4 text-warning" />}
+          icon={<Flame className="w-4 h-4 text-amber-500" />}
           label="Today Shipped"
           value={doneToday}
           hint="Completed today"
         />
         <StatCard
-          icon={<Zap className="w-4 h-4 text-brand" />}
+          icon={<Zap className="w-4 h-4 text-violet-500" />}
           label="In Motion"
           value={inMotion}
           hint="Todo + In Progress"
         />
         <StatCard
-          icon={<AlertTriangle className="w-4 h-4 text-error" />}
+          icon={<AlertTriangle className="w-4 h-4 text-red-500" />}
           label="Blocked"
           value={blocked}
           hint="Needs attention"
         />
       </div>
 
-      <div className="mt-6 pt-6 border-t border-border-default grid grid-cols-3 gap-4">
-        <MiniStat label="7-Day Ships" value={doneLast7Days} icon={<TrendingUp className="w-4 h-4" />} />
+      <div className="mt-6 pt-6 border-t border-slate-100 dark:border-white/5 grid grid-cols-3 gap-4">
+        <MiniStat label="7-Day Ships" value={doneLast7Days} icon={<TrendingUp className="w-4 h-4 text-teal-500" />} />
         <MiniStat label="Created Today" value={createdToday} />
         <MiniStat label="To Review" value={movedToReviewToday} />
       </div>
@@ -106,25 +101,25 @@ export default function PulsePanel({ projectId, refreshKey = 0, className = "" }
 
 function StatCard({ icon, label, value, hint }) {
   return (
-    <div className="p-4 rounded-xl bg-surface-secondary border border-border-default hover:bg-white hover:border-brand-200 hover:-translate-y-0.5 transition-all duration-300 hover:shadow-md cursor-default group">
-      <div className="flex items-center gap-2 text-text-secondary text-[13px] font-semibold mb-3">
+    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 hover:border-violet-200 dark:hover:border-violet-500/30 hover:-translate-y-0.5 transition-all duration-300 hover:shadow-md cursor-default group">
+      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-[13px] font-bold mb-3">
         <div className="group-hover:scale-110 transition-transform">{icon}</div>
         <span>{label}</span>
       </div>
-      <div className="text-3xl font-black text-text-primary tabular-nums tracking-tight">{value}</div>
-      {hint && <div className="text-[11px] font-medium text-text-tertiary mt-2 tracking-wide uppercase">{hint}</div>}
+      <div className="text-[32px] font-black text-slate-900 dark:text-white tabular-nums tracking-tight leading-none">{value}</div>
+      {hint && <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-2 tracking-wide uppercase">{hint}</div>}
     </div>
   );
 }
 
 function MiniStat({ label, value, icon }) {
   return (
-    <div className="p-3.5 rounded-xl bg-surface-primary border border-border-default hover:border-brand-100 transition-colors duration-200">
-      <div className="flex items-center gap-2 text-[11px] font-bold text-text-tertiary uppercase tracking-wider mb-2">
-        {icon && <span className="text-text-tertiary">{icon}</span>}
+    <div className="p-3.5 rounded-xl bg-white dark:bg-transparent border border-slate-200 dark:border-white/10 hover:border-violet-200 transition-colors duration-200">
+      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
+        {icon && <span>{icon}</span>}
         <span>{label}</span>
       </div>
-      <div className="text-xl font-black text-text-primary tabular-nums">{value}</div>
+      <div className="text-[20px] font-black text-slate-900 dark:text-white tabular-nums leading-none">{value}</div>
     </div>
   );
 }

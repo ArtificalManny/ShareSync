@@ -1,239 +1,199 @@
 // src/components/projects/ProjectCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROJECT CARD v4.1 - "The Gallery Walk" Phase 2
-// - Applied global `.card-surface` for consistent elevations.
-// - Icon backgrounds use soft gradient washes for premium feel.
-// - Standardized 8px grid gaps and typography weights.
+// SHARESYNC PROJECT CARD v4.1 - "The Gallery Walk" Light Theme
+// - Unified Component: Merges Living State logic with Team Balance indicators.
+// - High-Contrast Typography & Tactile Hover States.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { Calendar, ChevronRight, Folder, CheckCircle2, AlertTriangle, Clock, XCircle } from 'lucide-react';
+import { Calendar, ChevronRight, Folder, CheckCircle2, AlertTriangle, Clock, XCircle, Users, Rocket } from 'lucide-react';
 import { useLivingCard } from '../../hooks/useLivingCard';
 import { getProjectId } from '../../utils/projectHelpers';
+import { labelledTimestamp } from '../../utils/formatters';
+import AvatarGroup from '../ui/AvatarGroup';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
-/**
- * ProjectCard - A living card for projects (Gebbia-Grade Polish)
- */
-const ProjectCard = ({ 
+// Team Balance Styles (From Discovery logic)
+function getBalanceStyle(status) {
+  switch(status) {
+    case 'heavy':
+      return { bg: 'bg-orange-50 dark:bg-orange-500/10', border: 'border-orange-200 dark:border-orange-500/20', text: 'text-orange-600 dark:text-orange-400', icon: AlertTriangle };
+    case 'moderate':
+      return { bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/20', text: 'text-amber-600 dark:text-amber-400', icon: AlertTriangle };
+    case 'balanced':
+      return { bg: 'bg-teal-50 dark:bg-teal-500/10', border: 'border-teal-200 dark:border-teal-500/20', text: 'text-teal-700 dark:text-teal-400', icon: CheckCircle2 };
+    default:
+      return null;
+  }
+}
+
+export default function ProjectCard({ 
   project, 
   onClick,
+  onShip,
   showProgress = true,
   className = '',
-}) => {
+}) {
   const projectId = getProjectId(project);
   
   const { 
-    name, 
+    name, title,
     client, 
     progress = 0, 
     dueDate, 
     status = 'active',
-    emoji,
-    lastActivity,
-    completedAt,
+    emoji, icon, color,
+    lastActivity, lastActivityAt, updatedAt, createdAt,
+    completedAt, shippedAt,
     isBlocked = false,
     blockers = [],
     priority = 'normal',
+    teamBalance,
+    members = []
   } = project || {};
+
+  const displayName = name || title || 'Untitled Project';
+  const displayIcon = emoji || icon;
+  const lastTs = lastActivity || lastActivityAt || updatedAt || createdAt;
+  const isShipped = !!shippedAt;
   
   const livingState = useLivingCard({
-    progress, priority, status, lastActivity, dueDate, completedAt, isBlocked, blockers,
+    progress, priority, status, lastActivity: lastTs, dueDate, completedAt, isBlocked, blockers,
   });
 
   const isComplete = progress >= 100 || status === 'completed';
   const isNearComplete = !isComplete && progress >= 80;
   
   const getProgressGradient = () => {
-    if (isComplete) return 'var(--progress-fill-complete)';
+    if (isComplete) return 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)';
     if (livingState.state === 'completing') return 'linear-gradient(90deg, #06B6D4 0%, #22D3EE 100%)';
-    if (livingState.state === 'blocked') return 'var(--color-error)';
-    return 'var(--progress-gradient)';
-  };
-
-  const getStatusText = () => {
-    if (livingState.state === 'blocked') return 'Blocked';
-    if (livingState.state === 'stale') return 'Stale';
-    if (livingState.state === 'overdue') return 'Overdue';
-    if (isComplete) return 'Done';
-    if (isNearComplete) return 'Almost there';
-    return status || 'Active';
+    if (livingState.state === 'blocked') return 'linear-gradient(90deg, #FCA5A5 0%, #F87171 100%)';
+    return 'linear-gradient(90deg, #8B5CF6 0%, #3B82F6 100%)'; // Brand gradient
   };
 
   const getStatusColor = () => {
-    if (livingState.isBlocked) return 'text-error';
-    if (livingState.state === 'stale') return 'text-text-tertiary';
-    if (livingState.state === 'overdue') return 'text-error';
-    if (isComplete) return 'text-success';
+    if (livingState.isBlocked) return 'text-red-600';
+    if (livingState.state === 'stale') return 'text-slate-400';
+    if (livingState.state === 'overdue') return 'text-red-600';
+    if (isComplete) return 'text-teal-600';
     if (isNearComplete) return 'text-cyan-600';
-    return 'text-text-secondary';
+    return 'text-slate-500';
   };
 
-  // Behavioral UI: Premium washes behind icons instead of flat grays
   const getIconBackground = () => {
-    if (isComplete) return 'bg-gradient-to-br from-success-100 to-success-50 border border-success-200';
-    if (livingState.isBlocked) return 'bg-gradient-to-br from-error-100 to-error-50 border border-error-200';
-    if (livingState.isPriority) return 'bg-gradient-to-br from-warning-100 to-warning-50 border border-warning-200';
-    return 'bg-gradient-to-br from-surface-tertiary to-surface-secondary border border-border-default group-hover:from-brand-50 group-hover:to-white group-hover:border-brand-200';
+    if (isComplete) return 'bg-teal-50 dark:bg-teal-500/10';
+    if (livingState.isBlocked) return 'bg-red-50 dark:bg-red-500/10';
+    if (livingState.isPriority) return 'bg-amber-50 dark:bg-amber-500/10';
+    return 'bg-slate-100 dark:bg-white/5 group-hover:bg-white dark:group-hover:bg-white/10 group-hover:shadow-sm';
   };
 
   const getIconColor = () => {
-    if (isComplete) return 'text-success';
-    if (livingState.isBlocked) return 'text-error';
-    if (livingState.state === 'stale') return 'text-text-tertiary';
-    return 'text-text-tertiary group-hover:text-brand group-hover:scale-110';
+    if (color) return color;
+    if (isComplete) return 'text-teal-600';
+    if (livingState.isBlocked) return 'text-red-500';
+    if (livingState.state === 'stale') return 'text-slate-400';
+    return 'text-slate-500 group-hover:text-violet-600 group-hover:scale-110';
   };
 
-  const handleClick = () => {
-    if (!projectId) return;
-    onClick?.(project);
-  };
-  
+  const balanceStyle = teamBalance ? getBalanceStyle(teamBalance.status) : null;
+
   return (
     <div 
-      onClick={handleClick}
+      onClick={() => projectId && onClick?.(project)}
       className={cn(
-        'group card-surface flex items-center gap-4 p-4 cursor-pointer',
+        'group relative flex flex-col p-5 rounded-2xl cursor-pointer overflow-hidden',
+        'bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10',
+        'hover:border-violet-300 dark:hover:border-violet-500/30',
+        'transition-all duration-300',
         !projectId && 'opacity-50 cursor-not-allowed',
         className
       )}
+      style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+      onMouseEnter={(e) => {
+        if (projectId) e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.12)';
+        if (projectId) e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(139, 92, 246, 0.04)';
+        e.currentTarget.style.transform = 'translateY(0)';
+      }}
     >
-      <div className="flex items-center gap-4 min-w-0 flex-1">
-        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-sm', getIconBackground())}>
-          {isComplete ? (
-            <CheckCircle2 className="w-5 h-5 text-success" />
-          ) : livingState.isBlocked ? (
-            <XCircle className="w-5 h-5 text-error" />
-          ) : livingState.state === 'stale' ? (
-            <Clock className="w-5 h-5 text-text-tertiary" />
-          ) : emoji ? (
-            <span className="text-xl drop-shadow-sm group-hover:scale-110 transition-transform duration-300">{emoji}</span>
-          ) : (
-            <Folder className={cn('w-5 h-5 transition-all duration-300', getIconColor())} />
-          )}
-        </div>
+      {/* Top Accent Line */}
+      <div 
+        className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-fuchsia-500 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"
+        style={color ? { background: color } : {}}
+      />
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {livingState.isPriority && <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0" />}
-            <h4 className={cn('text-[15px] font-bold truncate transition-colors tracking-tight', isComplete ? 'text-text-tertiary line-through' : 'text-text-primary group-hover:text-brand')}>
-              {name || 'Untitled Project'}
-            </h4>
-          </div>
-          <div className="flex items-center gap-2 mt-1 text-[12px] font-medium text-text-secondary">
-            {client && <><span className="truncate max-w-[140px]">{client}</span><span className="opacity-40 text-text-tertiary">•</span></>}
-            {dueDate && (
-              <span className={cn('flex items-center gap-1.5 shrink-0', livingState.state === 'overdue' && 'text-error font-bold')}>
-                <Calendar className="w-3 h-3" />{dueDate}
-              </span>
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300', getIconBackground())}>
+            {isComplete ? (
+              <CheckCircle2 className="w-5 h-5 text-teal-600" />
+            ) : livingState.isBlocked ? (
+              <XCircle className="w-5 h-5 text-red-500" />
+            ) : livingState.state === 'stale' ? (
+              <Clock className="w-5 h-5 text-slate-400" />
+            ) : displayIcon ? (
+              <span className="text-xl" style={{ color: getIconColor() }}>{displayIcon}</span>
+            ) : (
+              <Folder className={cn('w-5 h-5 transition-all duration-300', getIconColor())} style={color ? { color } : {}} />
             )}
           </div>
-        </div>
-      </div>
 
-      {showProgress && (
-        <div className="hidden sm:flex items-center gap-3 w-40 shrink-0">
-          <div className="flex-1">
-            <div className="h-2 bg-surface-tertiary rounded-full overflow-hidden shadow-inner">
-              <div 
-                className="h-full rounded-full transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1)" 
-                style={{ width: `${Math.min(progress, 100)}%`, background: getProgressGradient() }} 
-              />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              {livingState.isPriority && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+              <h4 className={cn('text-[16px] font-black tracking-tight truncate transition-colors', isComplete ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-white group-hover:text-violet-600')}>
+                {displayName}
+              </h4>
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-[12px] font-medium text-slate-500 dark:text-zinc-400">
+              {client && <><span className="truncate max-w-[120px]">{client}</span><span>•</span></>}
+              {dueDate && <span className={cn('flex items-center gap-1 shrink-0', livingState.state === 'overdue' && 'text-red-600')}><Calendar className="w-3.5 h-3.5" />{dueDate}</span>}
+              {!dueDate && lastTs && <span className="flex items-center gap-1 shrink-0"><Clock className="w-3.5 h-3.5" />{labelledTimestamp(lastTs, 'Updated')}</span>}
             </div>
           </div>
-          <span className={cn('text-[13px] font-black w-9 text-right tabular-nums', isComplete ? 'text-success' : isNearComplete ? 'text-cyan-600' : 'text-text-secondary')}>
-            {progress}%
-          </span>
+        </div>
+
+        {/* Action Button */}
+        {!isShipped && onShip && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onShip(project); }}
+            className="opacity-0 group-hover:opacity-100 -translate-y-1 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md hover:shadow-lg hover:scale-105"
+          >
+            <Rocket className="w-3 h-3" /> Ship
+          </button>
+        )}
+      </div>
+
+      {/* Team Balance Indicator */}
+      {balanceStyle && teamBalance.message !== '✅ No recent activity' && (
+        <div className="mb-4">
+          <div className={cn('inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-bold border', balanceStyle.bg, balanceStyle.border)}>
+            <balanceStyle.icon className={cn('w-3.5 h-3.5', balanceStyle.text)} />
+            <span className={balanceStyle.text}>{teamBalance.message}</span>
+          </div>
         </div>
       )}
 
-      <div className="flex items-center gap-3 shrink-0 ml-2">
-        {livingState.state === 'stale' && <span className="text-[10px] font-bold text-text-secondary bg-surface-tertiary px-2 py-1 rounded uppercase tracking-wider">Nudge</span>}
-        <span className={cn('text-[12px] font-bold uppercase tracking-wider', getStatusColor())}>{getStatusText()}</span>
-        <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-surface-secondary transition-colors duration-200">
-          <ChevronRight className="w-4 h-4 text-text-tertiary group-hover:text-text-primary transition-colors duration-200" />
+      {/* Progress Footer */}
+      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
+        <div className="flex items-center gap-3">
+          <AvatarGroup members={members} />
         </div>
+        
+        {showProgress && (
+          <div className="flex items-center gap-3 w-40 shrink-0">
+            <div className="flex-1">
+              <div className="h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
+                <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(progress, 100)}%`, background: getProgressGradient() }} />
+              </div>
+            </div>
+            <span className={cn('text-[13px] font-black w-9 text-right tabular-nums', isComplete ? 'text-teal-600' : isNearComplete ? 'text-cyan-600' : 'text-slate-700 dark:text-zinc-300')}>{progress}%</span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-export default ProjectCard;
-
-export function ProjectCardSkeleton() {
-  return (
-    <div className="card-surface flex items-center gap-4 p-4 animate-pulse">
-      <div className="w-12 h-12 rounded-xl bg-surface-tertiary" />
-      <div className="flex-1 space-y-2.5">
-        <div className="h-4 w-3/4 rounded bg-surface-tertiary" />
-        <div className="h-3 w-1/2 rounded bg-surface-tertiary" />
-      </div>
-      <div className="w-32 h-2 rounded-full bg-surface-tertiary" />
-    </div>
-  );
-}
-
-export function ProjectCardEmpty({ message = "No projects yet", action, actionLabel = "Create project" }) {
-  return (
-    <div className="card-surface flex flex-col items-center justify-center p-10 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-surface-secondary border border-border-default flex items-center justify-center mb-4 shadow-sm">
-        <Folder className="w-6 h-6 text-text-tertiary" />
-      </div>
-      <p className="text-[15px] font-medium text-text-secondary mb-5">{message}</p>
-      {action && (
-        <button onClick={action} className="text-[13px] font-bold text-brand hover:text-brand-600 bg-brand-subtle px-4 py-2 rounded-lg transition-colors">
-          {actionLabel}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/**
- * ProjectCardCompact - Smaller variant for lists
- */
-export function ProjectCardCompact({ project, onClick, className = '' }) {
-  const projectId = getProjectId(project);
-  const { name, progress = 0, status = 'active', emoji } = project || {};
-  const isComplete = progress >= 100 || status === 'completed';
-
-  return (
-    <div
-      onClick={() => projectId && onClick?.(project)}
-      className={cn(
-        'group flex items-center gap-3 p-3 rounded-xl cursor-pointer',
-        'bg-surface-primary border border-transparent',
-        'hover:border-border-default hover:bg-surface-secondary hover:shadow-sm',
-        'transition-all duration-200',
-        className
-      )}
-    >
-      <div className="w-9 h-9 rounded-lg bg-surface-secondary border border-border-default group-hover:bg-white group-hover:border-brand-200 group-hover:shadow-sm transition-all duration-300 flex items-center justify-center shrink-0">
-        {isComplete ? (
-          <CheckCircle2 className="w-4 h-4 text-success group-hover:scale-110 transition-transform" />
-        ) : emoji ? (
-           <span className="text-sm group-hover:scale-110 transition-transform">{emoji}</span>
-        ) : (
-          <Folder className="w-4 h-4 text-text-tertiary group-hover:text-brand group-hover:scale-110 transition-all duration-200" />
-        )}
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <p className={cn(
-          'text-[14px] font-bold truncate transition-colors duration-200 tracking-tight',
-          isComplete ? 'text-text-tertiary line-through' : 'text-text-primary group-hover:text-brand'
-        )}>
-          {name || 'Untitled'}
-        </p>
-      </div>
-      
-      <span className={cn(
-        'text-[12px] font-black tabular-nums',
-        isComplete ? 'text-success' : 'text-text-secondary'
-      )}>
-        {progress}%
-      </span>
-    </div>
-  );
-}
