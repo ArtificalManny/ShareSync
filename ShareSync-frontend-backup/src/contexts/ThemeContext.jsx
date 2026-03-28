@@ -1,7 +1,8 @@
 // src/contexts/ThemeContext.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// GLOBAL THEME PROVIDER
-// Manages the OLED/White iPhone aesthetic across the entire app globally.
+// GLOBAL THEME PROVIDER - Phase 4: Signature Dark Mode
+// Manages the transition between Light (Warm/Gallery) and Dark (Linear/Focus).
+// Injecting `data-theme` allows CSS variables to dynamically swap globally.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -21,15 +22,17 @@ export function ThemeProvider({ children }) {
     return false;
   });
 
-  // 2. The Magic: Inject class="dark" directly into the HTML root element
+  // 2. The Magic: Inject data-theme and class="dark" into the HTML root element
   useEffect(() => {
     const root = window.document.documentElement;
     
     if (isDarkMode) {
       root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark'); // Triggers CSS Token Swaps
       localStorage.setItem('ss.theme', 'dark');
     } else {
       root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
       localStorage.setItem('ss.theme', 'light');
     }
   }, [isDarkMode]);

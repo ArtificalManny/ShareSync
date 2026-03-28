@@ -1,67 +1,33 @@
 // src/components/projects/ProjectCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROJECT CARD v4.1 - "The Gallery Walk" Light Theme
-// - Unified Component: Merges Living State logic with Team Balance indicators.
-// - High-Contrast Typography & Tactile Hover States.
+// SHARESYNC PROJECT CARD v4.0 - "The Gallery Walk" Phase 4 Signature
+// FIXED: Momentum Variable hovers and Ship Cursor targeting.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from 'react';
-import { Calendar, ChevronRight, Folder, CheckCircle2, AlertTriangle, Clock, XCircle, Users, Rocket } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, ChevronRight, Folder, CheckCircle2, AlertTriangle, Clock, XCircle, Rocket } from 'lucide-react';
 import { useLivingCard } from '../../hooks/useLivingCard';
 import { getProjectId } from '../../utils/projectHelpers';
-import { labelledTimestamp } from '../../utils/formatters';
-import AvatarGroup from '../ui/AvatarGroup';
+import ShippingCeremony from '../gamification/ShippingCeremony';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
-
-// Team Balance Styles (From Discovery logic)
-function getBalanceStyle(status) {
-  switch(status) {
-    case 'heavy':
-      return { bg: 'bg-orange-50 dark:bg-orange-500/10', border: 'border-orange-200 dark:border-orange-500/20', text: 'text-orange-600 dark:text-orange-400', icon: AlertTriangle };
-    case 'moderate':
-      return { bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/20', text: 'text-amber-600 dark:text-amber-400', icon: AlertTriangle };
-    case 'balanced':
-      return { bg: 'bg-teal-50 dark:bg-teal-500/10', border: 'border-teal-200 dark:border-teal-500/20', text: 'text-teal-700 dark:text-teal-400', icon: CheckCircle2 };
-    default:
-      return null;
-  }
-}
 
 export default function ProjectCard({ 
   project, 
   onClick,
-  onShip,
   showProgress = true,
   className = '',
+  onShip // Accept the external ship handler
 }) {
   const projectId = getProjectId(project);
+  const [showCeremony, setShowCeremony] = useState(false);
   
   const { 
-    name, title,
-    client, 
-    progress = 0, 
-    dueDate, 
-    status = 'active',
-    emoji, icon, color,
-    lastActivity, lastActivityAt, updatedAt, createdAt,
-    completedAt, shippedAt,
-    isBlocked = false,
-    blockers = [],
-    priority = 'normal',
-    teamBalance,
-    members = []
+    name, client, progress = 0, dueDate, status = 'active', emoji,
+    lastActivity, completedAt, isBlocked = false, blockers = [], priority = 'normal',
   } = project || {};
-
-  const displayName = name || title || 'Untitled Project';
-  const displayIcon = emoji || icon;
-  const lastTs = lastActivity || lastActivityAt || updatedAt || createdAt;
-  const isShipped = !!shippedAt;
   
-  const livingState = useLivingCard({
-    progress, priority, status, lastActivity: lastTs, dueDate, completedAt, isBlocked, blockers,
-  });
-
+  const livingState = useLivingCard({ progress, priority, status, lastActivity, dueDate, completedAt, isBlocked, blockers });
   const isComplete = progress >= 100 || status === 'completed';
   const isNearComplete = !isComplete && progress >= 80;
   
@@ -69,7 +35,16 @@ export default function ProjectCard({
     if (isComplete) return 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)';
     if (livingState.state === 'completing') return 'linear-gradient(90deg, #06B6D4 0%, #22D3EE 100%)';
     if (livingState.state === 'blocked') return 'linear-gradient(90deg, #FCA5A5 0%, #F87171 100%)';
-    return 'linear-gradient(90deg, #8B5CF6 0%, #3B82F6 100%)'; // Brand gradient
+    return 'var(--theme-gradient)'; // Uses dynamic momentum variables
+  };
+
+  const getStatusText = () => {
+    if (livingState.state === 'blocked') return 'Blocked';
+    if (livingState.state === 'stale') return 'Stale';
+    if (livingState.state === 'overdue') return 'Overdue';
+    if (isComplete) return 'Done';
+    if (isNearComplete) return 'Almost there';
+    return status || 'Active';
   };
 
   const getStatusColor = () => {
@@ -77,123 +52,151 @@ export default function ProjectCard({
     if (livingState.state === 'stale') return 'text-slate-400';
     if (livingState.state === 'overdue') return 'text-red-600';
     if (isComplete) return 'text-teal-600';
-    if (isNearComplete) return 'text-cyan-600';
+    if (isNearComplete) return 'text-[var(--theme-accent-primary)]';
     return 'text-slate-500';
   };
 
-  const getIconBackground = () => {
-    if (isComplete) return 'bg-teal-50 dark:bg-teal-500/10';
-    if (livingState.isBlocked) return 'bg-red-50 dark:bg-red-500/10';
-    if (livingState.isPriority) return 'bg-amber-50 dark:bg-amber-500/10';
-    return 'bg-slate-100 dark:bg-white/5 group-hover:bg-white dark:group-hover:bg-white/10 group-hover:shadow-sm';
+  const handleShipClick = (e) => {
+    e.stopPropagation();
+    setShowCeremony(true); // Trigger UI Celebration overlay
+    if (onShip) onShip(project); // Pass to backend/parent
   };
-
-  const getIconColor = () => {
-    if (color) return color;
-    if (isComplete) return 'text-teal-600';
-    if (livingState.isBlocked) return 'text-red-500';
-    if (livingState.state === 'stale') return 'text-slate-400';
-    return 'text-slate-500 group-hover:text-violet-600 group-hover:scale-110';
-  };
-
-  const balanceStyle = teamBalance ? getBalanceStyle(teamBalance.status) : null;
-
+  
   return (
-    <div 
-      onClick={() => projectId && onClick?.(project)}
-      className={cn(
-        'group relative flex flex-col p-5 rounded-2xl cursor-pointer overflow-hidden',
-        'bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10',
-        'hover:border-violet-300 dark:hover:border-violet-500/30',
-        'transition-all duration-300',
-        !projectId && 'opacity-50 cursor-not-allowed',
-        className
-      )}
-      style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
-      onMouseEnter={(e) => {
-        if (projectId) e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.12)';
-        if (projectId) e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 2px 12px rgba(139, 92, 246, 0.04)';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
-    >
-      {/* Top Accent Line */}
-      <div 
-        className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-fuchsia-500 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"
-        style={color ? { background: color } : {}}
+    <>
+      {/* 🚨 PHASE 4: Inject Fullscreen Ceremony Modal 🚨 */}
+      <ShippingCeremony 
+        isActive={showCeremony} 
+        projectName={name || 'Untitled Project'} 
+        onComplete={() => setShowCeremony(false)} 
       />
 
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300', getIconBackground())}>
+      <div 
+        onClick={() => projectId && onClick?.(project)}
+        className={cn(
+          'group flex items-center gap-4 p-4 rounded-xl cursor-pointer',
+          'bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10',
+          'transition-all duration-300',
+          !projectId && 'opacity-50 cursor-not-allowed',
+          className
+        )}
+        style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)' }}
+        onMouseEnter={(e) => {
+          if (projectId) {
+            e.currentTarget.style.borderColor = 'var(--theme-accent-primary)';
+            e.currentTarget.style.boxShadow = '0 8px 32px var(--theme-accent-glow)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '';
+          e.currentTarget.style.boxShadow = '0 2px 12px rgba(0, 0, 0, 0.04)';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[var(--theme-accent-glow)]">
             {isComplete ? (
-              <CheckCircle2 className="w-5 h-5 text-teal-600" />
-            ) : livingState.isBlocked ? (
-              <XCircle className="w-5 h-5 text-red-500" />
-            ) : livingState.state === 'stale' ? (
-              <Clock className="w-5 h-5 text-slate-400" />
-            ) : displayIcon ? (
-              <span className="text-xl" style={{ color: getIconColor() }}>{displayIcon}</span>
+              <CheckCircle2 className="w-4 h-4 text-teal-500" />
+            ) : emoji ? (
+              <span className="text-lg group-hover:scale-110 transition-transform">{emoji}</span>
             ) : (
-              <Folder className={cn('w-5 h-5 transition-all duration-300', getIconColor())} style={color ? { color } : {}} />
+              <Folder className="w-4 h-4 text-slate-400 group-hover:text-[var(--theme-accent-primary)] transition-colors" />
             )}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              {livingState.isPriority && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-              <h4 className={cn('text-[16px] font-black tracking-tight truncate transition-colors', isComplete ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-white group-hover:text-violet-600')}>
-                {displayName}
+              {livingState.isPriority && <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />}
+              <h4 className={cn('text-sm font-bold truncate transition-colors duration-300', isComplete ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white group-hover:text-[var(--theme-accent-primary)]')}>
+                {name || 'Untitled Project'}
               </h4>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-[12px] font-medium text-slate-500 dark:text-zinc-400">
-              {client && <><span className="truncate max-w-[120px]">{client}</span><span>•</span></>}
-              {dueDate && <span className={cn('flex items-center gap-1 shrink-0', livingState.state === 'overdue' && 'text-red-600')}><Calendar className="w-3.5 h-3.5" />{dueDate}</span>}
-              {!dueDate && lastTs && <span className="flex items-center gap-1 shrink-0"><Clock className="w-3.5 h-3.5" />{labelledTimestamp(lastTs, 'Updated')}</span>}
+            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-medium text-slate-500 uppercase tracking-widest">
+              {client && <><span className="truncate max-w-[120px]">{client}</span><span className="opacity-50">·</span></>}
+              {dueDate && <span className={cn('flex items-center gap-1 shrink-0', livingState.state === 'overdue' && 'text-red-500')}><Calendar className="w-3 h-3" />{dueDate}</span>}
             </div>
           </div>
         </div>
 
-        {/* Action Button */}
-        {!isShipped && onShip && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onShip(project); }}
-            className="opacity-0 group-hover:opacity-100 -translate-y-1 group-hover:translate-y-0 transition-all duration-300 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md hover:shadow-lg hover:scale-105"
-          >
-            <Rocket className="w-3 h-3" /> Ship
-          </button>
-        )}
-      </div>
-
-      {/* Team Balance Indicator */}
-      {balanceStyle && teamBalance.message !== '✅ No recent activity' && (
-        <div className="mb-4">
-          <div className={cn('inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-bold border', balanceStyle.bg, balanceStyle.border)}>
-            <balanceStyle.icon className={cn('w-3.5 h-3.5', balanceStyle.text)} />
-            <span className={balanceStyle.text}>{teamBalance.message}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Progress Footer */}
-      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
-        <div className="flex items-center gap-3">
-          <AvatarGroup members={members} />
-        </div>
-        
         {showProgress && (
-          <div className="flex items-center gap-3 w-40 shrink-0">
+          <div className="hidden sm:flex items-center gap-3 w-36 shrink-0">
             <div className="flex-1">
-              <div className="h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
-                <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(progress, 100)}%`, background: getProgressGradient() }} />
+              <div className="h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(progress, 100)}%`, background: getProgressGradient() }} />
               </div>
             </div>
-            <span className={cn('text-[13px] font-black w-9 text-right tabular-nums', isComplete ? 'text-teal-600' : isNearComplete ? 'text-cyan-600' : 'text-slate-700 dark:text-zinc-300')}>{progress}%</span>
+            <span className={cn('text-[11px] font-black w-8 text-right', isComplete ? 'text-teal-500' : 'text-slate-500 group-hover:text-[var(--theme-accent-primary)] transition-colors')}>{progress}%</span>
           </div>
         )}
+
+        <div className="flex items-center gap-3 shrink-0">
+          <span className={cn('text-[11px] font-bold uppercase tracking-widest', getStatusColor())}>{getStatusText()}</span>
+          
+          {/* 🚨 PHASE 4: The Tactile Ship Button targeting CustomCursor 🚨 */}
+          {!isComplete && (
+            <button
+              onClick={handleShipClick}
+              data-cursor="ship"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--theme-accent-glow)] text-[var(--theme-accent-primary)] hover:bg-[var(--theme-accent-primary)] hover:text-white transition-all duration-300 shadow-sm opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 font-bold text-xs"
+            >
+              <Rocket className="w-3 h-3" /> Ship
+            </button>
+          )}
+          
+          <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" />
+        </div>
       </div>
+    </>
+  );
+}
+
+export function ProjectCardCompact({ project, onClick, className = '' }) {
+  const projectId = getProjectId(project);
+  const { name, progress = 0, status = 'active' } = project || {};
+  const isComplete = progress >= 100 || status === 'completed';
+
+  return (
+    <div
+      onClick={() => projectId && onClick?.(project)}
+      className={cn(
+        'group flex items-center gap-3 p-3 rounded-xl cursor-pointer',
+        'bg-white dark:bg-[#1f1f23] border border-slate-100 dark:border-white/5',
+        'transition-all duration-300',
+        className
+      )}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--theme-accent-primary)';
+        e.currentTarget.style.backgroundColor = 'var(--theme-accent-glow)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = '';
+        e.currentTarget.style.backgroundColor = '';
+      }}
+    >
+      <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-white/5 group-hover:bg-white transition-all duration-200 flex items-center justify-center shrink-0">
+        {isComplete ? (
+          <CheckCircle2 className="w-4 h-4 text-teal-500 group-hover:scale-110 transition-transform" />
+        ) : (
+          <Folder className="w-4 h-4 text-slate-400 group-hover:text-[var(--theme-accent-primary)] group-hover:scale-110 transition-all duration-300" />
+        )}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <p className={cn(
+          'text-sm font-bold truncate transition-colors duration-300',
+          isComplete ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-white group-hover:text-[var(--theme-accent-primary)]'
+        )}>
+          {name || 'Untitled'}
+        </p>
+      </div>
+      
+      <span className={cn(
+        'text-xs font-black',
+        isComplete ? 'text-teal-500' : 'text-slate-500 group-hover:text-[var(--theme-accent-primary)] transition-colors'
+      )}>
+        {progress}%
+      </span>
     </div>
   );
-};
+}

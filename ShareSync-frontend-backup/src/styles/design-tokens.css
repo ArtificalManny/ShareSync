@@ -1,352 +1,139 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARESYNC DESIGN TOKENS v3.1 - Phase 7: Visual Cohesion + Blueprint Additions
+   SHARESYNC DESIGN TOKENS v4.0 - Phase 4: Signature (Dark Mode & Momentum Shift)
    ═══════════════════════════════════════════════════════════════════════════════
    
    SINGLE SOURCE OF TRUTH for all colors, spacing, and visual properties.
    
    PHILOSOPHY:
-   - Purple is IDENTITY (brand, primary actions, progress)
-   - Teal is SUCCESS (completions, achievements, shipped)
-   - Amber is ATTENTION (warnings, deadlines, needs action)
-   - Red is ERROR ONLY (failures, destructive actions, broken)
-   
-   v3.1 CHANGELOG (Blueprint Additions):
-   - Added: Momentum STATE colors (fire/building/warming/starting/attention)
-   - Added: XP & Gamification colors (gold, legendary)
-   - Added: New gradients (legendary, fire, aurora)
-   - Added: XP/Legendary glow shadows
-   - Added: Momentum & XP utility classes
-   
-   v4.0 CHANGELOG (Gebbia Lens Foundation):
-   - Warmed up base grays to prevent clinical/sterile feel.
-   - Standardized semantic color variables for dark mode prep.
-   - Introduced modular typography and physical elevation shadows.
+   - Light Mode: Warm, calm, inviting (Gebbia-grade Airbnb aesthetics).
+   - Dark Mode: Deep, high-contrast, developer-friendly (Linear aesthetics).
+   - Momentum Shift: The UI "heats up" as the user ships. Accent colors shift 
+     dynamically from cool to warm.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════════════
-     WORLD-CLASS FOUNDATION (Gebbia Lens Blueprint)
+     LIGHT THEME (Default) - Warm, clean, spacious
      ═══════════════════════════════════════════════════════════════════════════ */
-  --color-surface-primary: #FFFFFF;
-  --color-surface-secondary: #FAFAF8; /* Warmed up from pure gray #FAFAFA */
-  --color-surface-tertiary: #F3F4F6;
+  --surface-0: #FAFAF8;           /* Page background - Warm gray/off-white */
+  --surface-1: #FFFFFF;           /* Cards, sidebars - Pure white */
+  --surface-2: #F3F4F6;           /* Elevated cards, hover states */
+  --surface-3: #E5E7EB;           /* Interactive elements, strong borders */
+  --surface-4: #D1D5DB;           /* Highest elevation */
   
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B6B72; /* Warmer secondary text */
-  --color-text-tertiary: #9CA3AF;
-  
-  --color-accent-primary: #7C3AED;
-  --color-accent-warm: #D97706; /* Unique OpenShare Amber/Gold */
-  
-  --color-border-default: #E5E7EB;
-  --color-shadow-base: rgba(0,0,0,0.06);
+  --text-primary: #111827;        /* Slate 900 */
+  --text-secondary: #4B5563;      /* Slate 600 */
+  --text-tertiary: #9CA3AF;       /* Slate 400 */
+  --text-inverse: #FFFFFF;        /* Text on dark backgrounds */
 
-  /* Typography Scale */
-  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.12);
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     SURFACE HIERARCHY (Dark Theme Foundation - Legacy/Preserved)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --surface-0: #09090B;           /* Page background - deepest */
-  --surface-1: #18181B;           /* Cards, sidebars */
-  --surface-2: #27272A;           /* Elevated cards, hover states */
-  --surface-3: #3F3F46;           /* Interactive elements, strong borders */
-  --surface-4: #52525B;           /* Highest elevation, rarely used */
-  
-  /* Legacy aliases (for existing components) */
-  --bg-void: var(--surface-0);
-  --bg-surface: var(--surface-1);
-  --bg-elevated: var(--surface-2);
+  --shadow-base: rgba(0, 0, 0, 0.06);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     BRAND (Purple → Fuchsia)
+     BRAND BASE COLORS
      ═══════════════════════════════════════════════════════════════════════════ */
-  --brand-50:  #FAF5FF;
-  --brand-100: #F3E8FF;
-  --brand-200: #E9D5FF;
-  --brand-300: #D8B4FE;
-  --brand-400: #C084FC;
-  --brand-500: #A855F7;           /* Primary brand - violet-500 */
-  --brand-600: #9333EA;
-  --brand-700: #7E22CE;
-  --brand-800: #6B21A8;
-  --brand-900: #581C87;
-  --brand-950: #3B0764;
-  
-  /* Fuchsia accent (for gradients) */
-  --accent-400: #E879F9;
-  --accent-500: #D946EF;
-  --accent-600: #C026D3;
-  
-  /* Brand gradient */
-  --gradient-brand: linear-gradient(135deg, var(--brand-500) 0%, var(--accent-500) 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, var(--brand-600) 0%, var(--accent-600) 100%);
-  
-  /* Legacy alias */
-  --accent-primary: var(--brand-500);
+  --brand-500: #8B5CF6;           /* Violet */
+  --brand-600: #7C3AED;
+  --accent-500: #D946EF;          /* Fuchsia */
+  --success-500: #10B981;         /* Emerald */
+  --warning-500: #F59E0B;         /* Amber */
+  --error-500: #EF4444;           /* Red */
+  --info-500: #3B82F6;            /* Blue */
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     SUCCESS (Teal)
+     DYNAMIC THEME ACCENTS (These power the Momentum Shift)
+     By default, the UI uses the standard Brand (Violet).
      ═══════════════════════════════════════════════════════════════════════════ */
-  --success-50:  #F0FDFA;
-  --success-100: #CCFBF1;
-  --success-200: #99F6E4;
-  --success-300: #5EEAD4;
-  --success-400: #2DD4BF;
-  --success-500: #14B8A6;         /* Primary success - teal-500 */
-  --success-600: #0D9488;
-  --success-700: #0F766E;
-  --success-800: #115E59;
-  --success-900: #134E4A;
+  --theme-accent-primary: var(--brand-500);
+  --theme-accent-hover: var(--brand-600);
+  --theme-accent-glow: rgba(139, 92, 246, 0.25);
+  --theme-gradient: linear-gradient(135deg, var(--brand-500) 0%, var(--accent-500) 100%);
   
-  /* Legacy alias */
-  --accent-success: var(--success-500);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     WARNING (Amber)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --warning-50:  #FFFBEB;
-  --warning-100: #FEF3C7;
-  --warning-200: #FDE68A;
-  --warning-300: #FCD34D;
-  --warning-400: #FBBF24;
-  --warning-500: #F59E0B;         /* Primary warning - amber-500 */
-  --warning-600: #D97706;
-  --warning-700: #B45309;
-  --warning-800: #92400E;
-  --warning-900: #78350F;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     ERROR (Red)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --error-50:  #FEF2F2;
-  --error-100: #FEE2E2;
-  --error-200: #FECACA;
-  --error-300: #FCA5A5;
-  --error-400: #F87171;
-  --error-500: #EF4444;           /* Primary error - red-500 */
-  --error-600: #DC2626;
-  --error-700: #B91C1C;
-  --error-800: #991B1B;
-  --error-900: #7F1D1D;
-  
-  /* Legacy alias */
-  --danger: var(--error-500);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     INFO (Blue)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --info-50:  #EFF6FF;
-  --info-100: #DBEAFE;
-  --info-200: #BFDBFE;
-  --info-300: #93C5FD;
-  --info-400: #60A5FA;
-  --info-500: #3B82F6;            /* Primary info - blue-500 */
-  --info-600: #2563EB;
-  --info-700: #1D4ED8;
-  --info-800: #1E40AF;
-  --info-900: #1E3A8A;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     MOMENTUM STATE COLORS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  
-  --momentum-fire: #EF4444;
-  --momentum-fire-glow: rgba(239, 68, 68, 0.4);
-  --momentum-fire-subtle: rgba(239, 68, 68, 0.15);
-  
-  --momentum-building: #F59E0B;
-  --momentum-building-glow: rgba(245, 158, 11, 0.4);
-  --momentum-building-subtle: rgba(245, 158, 11, 0.15);
-  
-  --momentum-warming: #8B5CF6;
-  --momentum-warming-glow: rgba(139, 92, 246, 0.4);
-  --momentum-warming-subtle: rgba(139, 92, 246, 0.15);
-  
-  --momentum-starting: #3B82F6;
-  --momentum-starting-glow: rgba(59, 130, 246, 0.4);
-  --momentum-starting-subtle: rgba(59, 130, 246, 0.15);
-  
-  --momentum-attention: #6B7280;
-  --momentum-attention-glow: rgba(107, 114, 128, 0.4);
-  --momentum-attention-subtle: rgba(107, 114, 128, 0.15);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     XP & GAMIFICATION
-     ═══════════════════════════════════════════════════════════════════════════ */
-  
-  --xp-gold: #FFD700;
-  --xp-gold-glow: rgba(255, 215, 0, 0.5);
-  --xp-gold-subtle: rgba(255, 215, 0, 0.15);
-  
-  --legendary-start: #FFD700;
-  --legendary-mid: #EF4444;
-  --legendary-end: #8B5CF6;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     PROGRESS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --progress-track: var(--surface-2);
-  --progress-fill: var(--brand-500);
-  --progress-fill-low: var(--brand-700);
-  --progress-fill-mid: var(--brand-500);
-  --progress-fill-high: var(--brand-400);
-  --progress-fill-complete: var(--success-500);
-  --progress-gradient: linear-gradient(90deg, var(--brand-600) 0%, var(--brand-400) 100%);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     TEXT HIERARCHY (Legacy bindings)
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --text-primary: #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-tertiary: #71717A;
-  --text-muted: #52525B;
-  --text-inverse: #09090B;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BORDERS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-brand: rgba(168, 85, 247, 0.5);
-  --border-focus: var(--brand-500);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     SHADOWS & GLOWS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
-  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.2), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
-  
-  /* Glows */
-  --glow-brand: 0 0 20px rgba(168, 85, 247, 0.25);
-  --glow-success: 0 0 16px rgba(20, 184, 166, 0.25);
-  --glow-warning: 0 0 16px rgba(245, 158, 11, 0.25);
-  --glow-error: 0 0 16px rgba(239, 68, 68, 0.25);
-  
-  --glow-xp: 0 0 20px var(--xp-gold), 0 0 40px rgba(255, 215, 0, 0.3);
-  --glow-legendary: 0 0 30px var(--legendary-start), 0 0 60px var(--legendary-mid);
-  
-  --ring-focus: 0 0 0 3px rgba(168, 85, 247, 0.25);
-  --inner-glow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
-  --inner-glow-bright: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     GRADIENTS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --gradient-legendary: linear-gradient(135deg, var(--legendary-start) 0%, var(--legendary-mid) 50%, var(--legendary-end) 100%);
-  --gradient-fire: linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%);
-  --gradient-aurora: radial-gradient(ellipse at bottom left, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BORDER RADIUS (Blueprint Standardized)
-     ═══════════════════════════════════════════════════════════════════════════ */
+  /* Shared Base Tokens */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  --radius-2xl: 20px;
   --radius-full: 9999px;
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     TRANSITIONS
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
-  --transition-slow: 300ms ease;
-  --transition-bounce: 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition-momentum: 800ms cubic-bezier(0.16, 1, 0.3, 1); /* Slow, smooth color shift */
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-     Z-INDEX SCALE
-     ═══════════════════════════════════════════════════════════════════════════ */
-  --z-base: 0;
-  --z-raised: 10;
-  --z-dropdown: 100;
-  --z-sticky: 200;
-  --z-overlay: 300;
-  --z-modal: 400;
-  --z-popover: 500;
-  --z-toast: 600;
-  --z-tooltip: 700;
+  /* XP & Gamification */
+  --xp-gold: #F59E0B;
+  --xp-gold-glow: rgba(245, 158, 11, 0.3);
+  --legendary-start: #FBBF24;
+  --legendary-mid: #EF4444;
+  --legendary-end: #8B5CF6;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   DARK MODE OVERRIDES (Prepared for Phase 4)
+   DARK THEME OVERRIDES (Linear-grade contrast)
    ═══════════════════════════════════════════════════════════════════════════════ */
-[data-theme="dark"] {
-  --color-surface-primary: #18181B;
-  --color-surface-secondary: #1F1F23;
-  --color-surface-tertiary: #27272A;
+:root[data-theme="dark"], .dark {
+  --surface-0: #09090B;           /* Deepest Void */
+  --surface-1: #18181B;           /* Cards */
+  --surface-2: #27272A;           /* Hover states */
+  --surface-3: #3F3F46;           /* Strong borders */
+  --surface-4: #52525B;           /* Elevated */
   
-  --color-text-primary: #F9FAFB;
-  --color-text-secondary: #A1A1AA;
-  --color-text-tertiary: #71717A;
-  
-  --color-accent-primary: #A78BFA;
-  --color-accent-warm: #FBBF24;
-  
-  --color-border-default: #2E2E33;
-  --color-shadow-base: rgba(0,0,0,0.3);
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+  --text-inverse: #09090B;
+
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  --shadow-base: rgba(0, 0, 0, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   UTILITY CLASSES
+   MOMENTUM COLOR SHIFT (The Behavioral Differentiator)
+   As data-momentum increases on the body, the fundamental accent colors of the 
+   app shift from cool (Blue/Violet) to warm (Fuchsia/Orange/Red).
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Gradient text */
-.text-gradient-brand {
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Level 0-1: Cool & Focused (Starting out) */
+body[data-momentum="0"], body[data-momentum="1"] {
+  --theme-accent-primary: #3B82F6; /* Blue */
+  --theme-accent-hover: #2563EB;
+  --theme-accent-glow: rgba(59, 130, 246, 0.25);
+  --theme-gradient: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
 }
 
-.text-gradient-xp {
-  background: linear-gradient(135deg, var(--xp-gold) 0%, #FFA500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Level 2-3: Warming Up (Finding flow) */
+body[data-momentum="2"], body[data-momentum="3"] {
+  --theme-accent-primary: #8B5CF6; /* Violet */
+  --theme-accent-hover: #7C3AED;
+  --theme-accent-glow: rgba(139, 92, 246, 0.25);
+  --theme-gradient: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%);
 }
 
-.text-gradient-legendary {
-  background: var(--gradient-legendary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Level 4: Surging (High velocity) */
+body[data-momentum="4"] {
+  --theme-accent-primary: #D946EF; /* Fuchsia */
+  --theme-accent-hover: #C026D3;
+  --theme-accent-glow: rgba(217, 70, 239, 0.3);
+  --theme-gradient: linear-gradient(135deg, #D946EF 0%, #F59E0B 100%);
 }
 
-/* Progress bar */
-.progress-track {
-  background-color: var(--progress-track);
-  border-radius: var(--radius-full);
-  overflow: hidden;
+/* Level 5: Fire Mode (Unstoppable) */
+body[data-momentum="5"], body[data-momentum-fire="true"] {
+  --theme-accent-primary: #F59E0B; /* Amber/Orange */
+  --theme-accent-hover: #D97706;
+  --theme-accent-glow: rgba(245, 158, 11, 0.4);
+  --theme-gradient: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
 }
 
-.progress-fill {
-  background-color: var(--progress-fill);
-  border-radius: var(--radius-full);
-  transition: width var(--transition-slow), background-color var(--transition-base);
-}
-
-.progress-fill[data-complete="true"] {
-  background-color: var(--progress-fill-complete);
-}
-
-/* Semantic backgrounds */
-.bg-success-subtle { background-color: rgba(20, 184, 166, 0.1); }
-.bg-warning-subtle { background-color: rgba(245, 158, 11, 0.1); }
-.bg-error-subtle { background-color: rgba(239, 68, 68, 0.1); }
-.bg-info-subtle { background-color: rgba(59, 130, 246, 0.1); }
-.bg-brand-subtle { background-color: rgba(168, 85, 247, 0.1); }
-
-/* Momentum state backgrounds */
-.bg-momentum-fire { background-color: var(--momentum-fire-subtle); }
-.bg-momentum-building { background-color: var(--momentum-building-subtle); }
-.bg-momentum-warming { background-color: var(--momentum-warming-subtle); }
-.bg-momentum-starting { background-color: var(--momentum-starting-subtle); }
-.bg-momentum-attention { background-color: var(--momentum-attention-subtle); }
-.bg-xp-subtle { background-color: var(--xp-gold-subtle); }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES (Bound to the dynamic theme variables)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.text-theme-accent { color: var(--theme-accent-primary); transition: color var(--transition-momentum); }
+.bg-theme-accent { background-color: var(--theme-accent-primary); transition: background-color var(--transition-momentum); }
+.border-theme-accent { border-color: var(--theme-accent-primary); transition: border-color var(--transition-momentum); }
+.shadow-theme-glow { box-shadow: 0 0 20px var(--theme-accent-glow); transition: box-shadow var(--transition-momentum); }
