@@ -1,14 +1,15 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
+// SHARESYNC SIDEBAR v5.2 - "The Gallery Walk" Light Theme (Ultra Minimalist)
 // Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES in v5.1:
-// - Removed toggle buttons (>> << arrows) completely per user request
-// - Removed auto-hide indicator wedge
-// - Cleaner minimal header
-// - IMPLEMENTED CONCEPT B: The Aperture / Prism Logo
+// CHANGES in v5.2 (Gebbia Design Audit):
+// - Removed numeric text ("75") from ProgressRing to rely on pure visual fill
+// - Removed "Idle Level" text indicator
+// - Removed "Ships today" counter to reduce visual clutter
+// - Removed "Team" and "Leaderboard" sections for a highly focused nav
+// - Left Profile area exactly untouched
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -83,7 +84,7 @@ function resolveAvatarUrl(u) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOMENTUM LEVEL INDICATOR - Light Theme
+   MOMENTUM LEVEL INDICATOR (Kept for state safety, removed from render)
 ───────────────────────────────────────────────────────────────────────── */
 function MomentumLevelIndicator({ collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -127,7 +128,7 @@ function MomentumLevelIndicator({ collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - Light Theme (ALL animations preserved)
+   PROGRESS RING - Light Theme (Removed static text for visual purity)
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -201,22 +202,18 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 
         <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "var(--theme-accent-primary)"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center">
+          {/* Visual purity update: Numbers removed, keeping only emotional celebrations */}
           {isLevelingUp ? (
             <div className="text-center level-up-number">
-              <div className="text-[8px] text-violet-500 uppercase tracking-wider font-bold">Level Up!</div>
-              <span className="text-lg font-bold text-violet-600">{level}</span>
+              <span className="text-lg font-bold text-violet-600">✨</span>
             </div>
           ) : isFireMode ? (
             <span className="text-lg animate-pulse">🔥</span>
-          ) : (
-            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
-              {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
-            </span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -254,7 +251,7 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER - Light Theme
+   SHIP COUNTER (Kept for state safety, removed from render)
 ───────────────────────────────────────────────────────────────────────── */
 function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   const prevCurrentRef = useRef(current);
@@ -300,7 +297,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   COLLAPSIBLE SECTION - Light Theme
+   COLLAPSIBLE SECTION (Kept for state safety, removed from render)
 ───────────────────────────────────────────────────────────────────────── */
 function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -321,18 +318,14 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, c
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   HOVER TRIGGER ZONE (Auto-hide functionality preserved)
+   HOVER TRIGGER ZONE
 ───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
   return <div className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer" onMouseEnter={onHover} onMouseLeave={onLeave} style={{ background: "transparent" }} />;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
-   v5.1 CHANGES:
-   - REMOVED all toggle buttons (>> << arrows)
-   - REMOVED auto-hide indicator wedge
-   - Clean minimal header
+   MAIN SIDEBAR COMPONENT - Ultra Minimal
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -340,8 +333,6 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  // Auto-hide is now disabled by default and not user-controllable via UI
-  // Users can still toggle via localStorage if they want
   const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
@@ -354,7 +345,6 @@ export default function Sidebar({ user }) {
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
-  // Priority 3.3: Focus Block auto-collapse
   const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   useEffect(() => {
     const checkFocusBlock = () => {
@@ -436,42 +426,20 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header - The Aperture / Prism (Concept B) */}
-        <div className={`flex items-center p-4 transition-all duration-300 ${collapsed ? "justify-center" : "justify-start px-5"}`}>
-          <div className="flex items-center gap-3">
-            {/* The Precision Aperture (Concept B) - Always visible */}
-            <div className={`sidebar-logo w-8 h-8 flex-shrink-0 flex items-center justify-center transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" : "drop-shadow-[0_2px_4px_rgba(139,92,246,0.3)]"}`}>
-              <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-slate-800">
-                <defs>
-                  <linearGradient id="aperture-core-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#d946ef" />
-                  </linearGradient>
-                </defs>
-                <g stroke="currentColor" strokeWidth="3.5" strokeLinecap="square" strokeLinejoin="miter" fill="none">
-                  <path d="M 12 5 L 4 13 L 4 19 L 12 27" />
-                  <path d="M 20 5 L 28 13 L 28 19 L 20 27" />
-                </g>
-                <path d="M 16 9 L 23 16 L 16 23 L 9 16 Z" fill="url(#aperture-core-grad)" />
-              </svg>
+        {/* Header - Cleaned up */}
+        <div className="flex items-center justify-center p-4">
+          {!collapsed && (
+            <div className="flex items-center gap-2.5">
+              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-[var(--theme-accent-primary)] to-[var(--theme-accent-glow)] rounded-lg flex items-center justify-center transition-all duration-500 shadow-sm ${isFireMode ? "shadow-orange-200" : ""}`}>
+                <span className="text-xs font-bold text-white">S</span>
+              </div>
+              <span className="text-sm font-bold text-slate-800">OpenShare</span>
             </div>
-            
-            {/* Text - Only visible when expanded */}
-            {!collapsed && (
-              <span className="text-[15px] font-bold tracking-tight text-slate-800">
-                OpenShare
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Progress Ring */}
         <ProgressRing collapsed={collapsed} />
-
-        {/* Momentum Indicator */}
-        <div className="mb-4">
-          <MomentumLevelIndicator collapsed={collapsed} />
-        </div>
 
         {/* League Indicator */}
         {!collapsed && (
@@ -480,8 +448,8 @@ export default function Sidebar({ user }) {
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+        {/* Navigation - Cleaned of widgets */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden mt-2">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
@@ -490,25 +458,9 @@ export default function Sidebar({ user }) {
           
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
-          
-          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
-          
-          {!collapsed && (
-            <>
-              <div className="pt-4"><div className="h-px bg-slate-200" /></div>
-              <CollapsibleSection title="Team" icon={Users} defaultOpen={true} collapsed={collapsed}>
-                <OnlineIndicator variant="compact" showAvatars={true} showCount={true} maxAvatars={3} expandable={true} defaultExpanded={false} />
-              </CollapsibleSection>
-              <div className="mt-4">
-                <CollapsibleSection title="Leaderboard" icon={Trophy} defaultOpen={false} collapsed={collapsed}>
-                  <MiniLeaderboard maxVisible={5} onViewAll={() => navigate("/leaderboard")} />
-                </CollapsibleSection>
-              </div>
-            </>
-          )}
         </nav>
 
-        {/* User Profile Card */}
+        {/* User Profile Card (Untouched per instructions) */}
         <div className="p-3">
           <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
             <div className="relative">
@@ -526,6 +478,7 @@ export default function Sidebar({ user }) {
             )}
           </div>
         </div>
+
       </aside>
 
       {/* Backdrop for auto-hide */}
