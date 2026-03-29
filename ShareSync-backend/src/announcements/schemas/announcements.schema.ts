@@ -32,29 +32,25 @@ export class Announcement {
   @Prop({ default: false })
   archived: boolean;
 
-  // ✅ NEW: Likes — array of user ObjectIds who liked this announcement
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // NEW: Likes and Comments Schema definitions so the database actually saves them
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   likes: Types.ObjectId[];
 
-  // ✅ NEW: Comments — embedded subdocuments
   @Prop({
     type: [
       {
-        authorId: { type: Types.ObjectId, ref: 'User' },
         text: { type: String, required: true },
+        authorId: { type: Types.ObjectId, ref: 'User', required: true },
         attachments: { type: [String], default: [] },
         createdAt: { type: Date, default: Date.now },
       },
     ],
     default: [],
   })
-  comments: Array<{
-    _id?: Types.ObjectId;
-    authorId: Types.ObjectId;
-    text: string;
-    attachments: string[];
-    createdAt: Date;
-  }>;
+  comments: any[];
 }
 
 export const AnnouncementSchema = SchemaFactory.createForClass(Announcement);
