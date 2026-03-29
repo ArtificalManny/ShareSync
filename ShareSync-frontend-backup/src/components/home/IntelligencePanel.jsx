@@ -1,21 +1,20 @@
 // src/components/home/IntelligencePanel.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 8.4: Intelligence Panel with Breathing Animations
+// SHARESYNC INTELLIGENCE PANEL v4.2 - "The Gallery Walk" Light Theme (Premium)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // DESIGN PHILOSOPHY:
-// The Intelligence panel should feel "alive" - like a living dashboard that's
-// actively monitoring your work. But NOT distracting or anxiety-inducing.
+// The Intelligence panel feels "alive" - a tactile dashboard actively monitoring 
+// work without being distracting. Uses premium light-theme elevations.
 //
 // MICRO-INTERACTIONS:
-// - Workload indicator: Subtle pulse when status is warning
-// - Peak Window: Highlights as you approach the window
-// - Icon: Gentle rotation/glow on hover
-// - Time display: Updates and briefly highlights
+// - Workload indicator: Tactile lift on hover, subtle amber pulse on warning
+// - Peak Window: Emerald highlights seamlessly when the local clock hits the window
+// - Co-working: Violet radar pulse
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Activity, 
   AlertCircle, 
@@ -26,7 +25,7 @@ import {
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   INSIGHT CARD - With breathing animation for warning state
+   INSIGHT CARD - Tactile surface with breathing animation for warning state
 ───────────────────────────────────────────────────────────────────────── */
 function InsightCard({ 
   icon: Icon, 
@@ -35,45 +34,55 @@ function InsightCard({
   description, 
   onClick, 
   variant = "default",
-  isLive = false, // Shows subtle "breathing" animation
+  isLive = false,
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const variants = {
-    default: "bg-surface-2",
-    success: "bg-success/10",
-    warning: "bg-warning/10",
+    default: "bg-slate-50 border-slate-200/60",
+    success: "bg-emerald-50/50 border-emerald-200/60",
+    warning: "bg-amber-50/50 border-amber-200/60",
+  };
+
+  const iconBgVariants = {
+    default: "bg-slate-100",
+    success: "bg-emerald-100/50",
+    warning: "bg-amber-100/50",
   };
 
   return (
     <div 
       className={`
-        relative p-5 rounded-xl cursor-pointer group
-        bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
-        transition-all duration-200
+        relative p-5 rounded-2xl cursor-pointer group
+        bg-white dark:bg-[#1f1f23] border border-slate-200/80 dark:border-white/10
+        transition-all duration-300 ease-out
         ${isLive && variant === 'warning' ? 'insight-breathing' : ''}
       `}
+      style={{
+        boxShadow: isHovered 
+          ? '0 8px 24px -4px rgba(139, 92, 246, 0.08), 0 4px 12px -2px rgba(139, 92, 246, 0.04)' 
+          : '0 2px 10px rgba(0, 0, 0, 0.02)'
+      }}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Live indicator dot */}
       {isLive && (
-        <div className="absolute top-4 right-4 flex items-center gap-1.5">
+        <div className="absolute top-5 right-5 flex items-center gap-1.5">
           <div className={`
             w-1.5 h-1.5 rounded-full
-            ${variant === 'warning' ? 'bg-warning animate-pulse' : 'bg-success'}
+            ${variant === 'warning' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}
           `} />
-          <span className="text-[10px] text-text-tertiary">Live</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live</span>
         </div>
       )}
 
       <div className="flex justify-between items-start mb-4">
         <div className={`
-          p-2.5 rounded-lg transition-all duration-300
-          ${variants[variant]}
-          ${isHovered ? 'scale-110' : 'scale-100'}
+          p-2.5 rounded-xl transition-transform duration-300 shadow-sm
+          ${iconBgVariants[variant]}
+          ${isHovered ? 'scale-110 -rotate-3' : 'scale-100'}
         `}>
           <Icon className={`
             w-5 h-5 transition-all duration-300
@@ -81,13 +90,16 @@ function InsightCard({
             ${isHovered && variant === 'warning' ? 'animate-pulse' : ''}
           `} />
         </div>
-        <ChevronRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronRight className={`
+          w-5 h-5 text-slate-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 
+          transition-all duration-300 transform group-hover:translate-x-1 mt-2 mr-1
+        `} />
       </div>
       
-      <h3 className="text-base font-medium text-text-primary mb-1">
+      <h3 className="text-base font-bold tracking-tight text-slate-900 dark:text-white mb-1.5 group-hover:text-violet-600 transition-colors">
         {title}
       </h3>
-      <p className="text-sm text-text-secondary">
+      <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 leading-relaxed pr-4">
         {description}
       </p>
     </div>
@@ -95,52 +107,19 @@ function InsightCard({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PEAK WINDOW - Highlights as you approach the window
-   ✅ FIX: Now handles string inputs ("10:00 PM") AND numeric hours (14)
+   PEAK WINDOW - Reacts instantly to local machine time
 ───────────────────────────────────────────────────────────────────────── */
-
-// Parse various time formats into a numeric hour (0-23)
-function parseHour(value, fallback) {
-  // Already a valid number
-  if (typeof value === 'number' && !isNaN(value)) return value;
-
-  // Null/undefined — use fallback
-  if (value == null) return fallback;
-
-  // String format: "10:00 PM", "2:00 AM", "14:00", "10 PM", etc.
-  if (typeof value === 'string') {
-    const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
-    if (match) {
-      let hour = parseInt(match[1], 10);
-      const ampm = match[3]?.toUpperCase?.();
-      if (ampm === 'PM' && hour < 12) hour += 12;
-      if (ampm === 'AM' && hour === 12) hour = 0;
-      return hour;
-    }
-
-    // Try plain numeric string
-    const num = parseInt(value, 10);
-    if (!isNaN(num) && num >= 0 && num <= 23) return num;
-  }
-
-  return fallback;
-}
-
 function PeakWindow({ 
-  startHour: startHourProp = 14, // 2PM
-  endHour: endHourProp = 16,     // 4PM
+  startHour = 14, // 2PM
+  endHour = 16,   // 4PM
   productivity = 65,
 }) {
-  // ✅ FIX: Parse string times into numeric hours
-  const startHour = parseHour(startHourProp, 14);
-  const endHour = parseHour(endHourProp, 16);
-
   const [currentHour, setCurrentHour] = useState(new Date().getHours());
   const [isInWindow, setIsInWindow] = useState(false);
   const [isApproaching, setIsApproaching] = useState(false);
   const [justEntered, setJustEntered] = useState(false);
 
-  // Update time and check window status
+  // Update time and check window status every 60s
   useEffect(() => {
     const checkTime = () => {
       const hour = new Date().getHours();
@@ -153,7 +132,6 @@ function PeakWindow({
       setIsInWindow(nowInWindow);
       setIsApproaching(nowApproaching);
       
-      // Trigger "just entered" animation
       if (nowInWindow && !wasInWindow) {
         setJustEntered(true);
         setTimeout(() => setJustEntered(false), 2000);
@@ -161,76 +139,71 @@ function PeakWindow({
     };
 
     checkTime();
-    const interval = setInterval(checkTime, 60000); // Check every minute
+    const interval = setInterval(checkTime, 60000); 
     return () => clearInterval(interval);
   }, [startHour, endHour, isInWindow]);
 
-  // ✅ FIX: Format numeric hour to display string (never double-suffix)
   const formatHour = (h) => {
-    const numH = typeof h === 'number' ? h : 0;
-    const suffix = numH >= 12 ? 'PM' : 'AM';
-    const displayHour = numH === 0 ? 12 : numH > 12 ? numH - 12 : numH;
-    return `${displayHour}:00 ${suffix}`;
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    return `${hour}${suffix}`;
   };
 
   const timeDisplay = `${formatHour(startHour)} — ${formatHour(endHour)}`;
 
   return (
     <div className={`
-      relative p-4 rounded-xl transition-all duration-500
+      relative p-5 rounded-2xl transition-all duration-500 ease-out border
       ${isInWindow 
-        ? 'bg-success/10 border border-success/20' 
+        ? 'bg-emerald-50/50 border-emerald-200/80 shadow-sm' 
         : isApproaching 
-          ? 'bg-warning/5 border border-warning/10'
-          : 'bg-surface-2 border border-transparent'
+          ? 'bg-amber-50/30 border-amber-200/50'
+          : 'bg-slate-50 border-slate-200/60'
       }
       ${justEntered ? 'peak-window-entered' : ''}
     `}>
-      {/* Header */}
-      <div className="flex justify-between items-center text-xs mb-3">
+      <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <Clock className={`
-            w-3.5 h-3.5 transition-colors duration-300
-            ${isInWindow ? 'text-success' : 'text-text-tertiary'}
+            w-4 h-4 transition-colors duration-300
+            ${isInWindow ? 'text-emerald-500' : 'text-slate-400'}
           `} />
-          <span className="text-text-tertiary">Peak Window</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Peak Window</span>
         </div>
         
         <span className={`
-          font-medium transition-all duration-300
+          font-bold tabular-nums tracking-tight transition-all duration-300
           ${isInWindow 
-            ? 'text-success scale-105' 
+            ? 'text-emerald-600 scale-105' 
             : isApproaching 
-              ? 'text-warning'
-              : 'text-text-secondary'
+              ? 'text-amber-600'
+              : 'text-slate-700'
           }
         `}>
           {timeDisplay}
         </span>
       </div>
       
-      {/* Progress bar */}
-      <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-slate-200/60 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
         <div 
           className={`
             h-full rounded-full transition-all duration-700
-            ${isInWindow ? 'bg-success peak-window-fill' : 'bg-brand'}
+            ${isInWindow ? 'bg-emerald-500 peak-window-fill' : 'bg-violet-500'}
           `}
           style={{ width: `${productivity}%` }} 
         />
       </div>
       
-      {/* Status text */}
       {isInWindow && (
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-success">
-          <Zap className="w-3 h-3" />
+        <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+          <Zap className="w-3.5 h-3.5" />
           <span>You're in your peak productivity window!</span>
         </div>
       )}
       
       {isApproaching && !isInWindow && (
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warning">
-          <Clock className="w-3 h-3" />
+        <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-amber-600">
+          <Clock className="w-3.5 h-3.5" />
           <span>Peak window starts in {60 - new Date().getMinutes()} min</span>
         </div>
       )}
@@ -239,19 +212,22 @@ function PeakWindow({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CO-WORKING BOOST INDICATOR
+   CO-WORKING BOOST INDICATOR - Violet Radar
 ───────────────────────────────────────────────────────────────────────── */
 function CoWorkingBoost({ multiplier = 2.1, isActive = true }) {
   if (!isActive) return null;
 
   return (
-    <div className="p-4 rounded-xl bg-brand/5 border border-brand/10">
+    <div className="p-5 rounded-2xl bg-violet-50 border border-violet-100/80 shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
-          <span className="text-xs text-text-tertiary">Co-working boost</span>
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center justify-center w-3 h-3">
+            <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-violet-400"></span>
+            <span className="relative inline-flex w-2 h-2 rounded-full bg-violet-500"></span>
+          </div>
+          <span className="text-xs font-bold text-violet-700 uppercase tracking-widest">Co-working boost</span>
         </div>
-        <span className="text-sm font-semibold text-brand">{multiplier}×</span>
+        <span className="text-base font-black text-violet-600 tracking-tight">{multiplier}×</span>
       </div>
     </div>
   );
@@ -270,11 +246,11 @@ export default function IntelligencePanel({
   isCoWorking = false,
 }) {
   return (
-    <div className="p-6 rounded-xl bg-surface-1 border border-white/[0.06]">
+    <div className="p-6 rounded-2xl bg-white dark:bg-[#1f1f23] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Activity className="w-4 h-4 text-success" />
-        <h2 className="text-sm font-medium text-text-secondary">
+        <Activity className="w-4 h-4 text-violet-500" />
+        <h2 className="text-sm font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-widest">
           Intelligence
         </h2>
       </div>
@@ -283,11 +259,11 @@ export default function IntelligencePanel({
         {/* Workload Balance Card */}
         <InsightCard
           icon={isBalanced ? CheckCircle2 : AlertCircle}
-          iconColor={isBalanced ? "text-success" : "text-warning"}
+          iconColor={isBalanced ? "text-emerald-500" : "text-amber-500"}
           variant={isBalanced ? "success" : "warning"}
           title={isBalanced ? "Load Balanced" : "High Workload"}
           description={isBalanced 
-            ? "Optimized across all nodes." 
+            ? "Task load is perfectly optimized." 
             : "You're doing 71% of ships. Rebalance suggested."
           }
           onClick={onBalanceClick}
@@ -308,55 +284,27 @@ export default function IntelligencePanel({
         />
       </div>
       
-      {/* Inline animations */}
+      {/* Inline animations scoped with standard RGB colors for Tailwind consistency */}
       <style>{`
         @keyframes insight-breathing {
-          0%, 100% {
-            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
-          }
-          50% {
-            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+          50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
         }
-        
-        .insight-breathing {
-          animation: insight-breathing 3s ease-in-out infinite;
-        }
+        .insight-breathing { animation: insight-breathing 3s ease-in-out infinite; }
         
         @keyframes peak-window-entered {
-          0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4);
-          }
-          50% {
-            transform: scale(1.02);
-            box-shadow: 0 0 0 8px rgba(20, 184, 166, 0);
-          }
-          100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
-          }
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+          50% { transform: scale(1.02); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-        
-        .peak-window-entered {
-          animation: peak-window-entered 0.6s ease-out;
-        }
+        .peak-window-entered { animation: peak-window-entered 0.6s ease-out; }
         
         @keyframes peak-window-fill {
-          0% {
-            opacity: 0.7;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0.7;
-          }
+          0% { opacity: 0.7; }
+          50% { opacity: 1; }
+          100% { opacity: 0.7; }
         }
-        
-        .peak-window-fill {
-          animation: peak-window-fill 2s ease-in-out infinite;
-        }
+        .peak-window-fill { animation: peak-window-fill 2s ease-in-out infinite; }
       `}</style>
     </div>
   );
