@@ -46,69 +46,24 @@ function toMissions(projects) {
  * Activities:
  * We support multiple shapes.
  * Normalize minimal fields.
- * ✅ WORLD-CLASS FIX: Acts as a strict Data Adapter so the UI never breaks.
  */
 function normalizeActivities(items) {
   return (Array.isArray(items) ? items : [])
     .map((a) => {
-      let rawType = a?.type || a?.action || a?.event || "ACTIVITY";
-      let type = String(rawType).toLowerCase();
-
-      // Normalize backend types to perfectly match ACTIVITY_CONFIGS in ActivityFeedItem
-      if (type.includes('task_completed') || type.includes('task_complete')) type = 'task_complete';
-      if (type.includes('task_started') || type.includes('focus')) type = 'focus';
-      if (type.includes('project_ship') || type === 'ship') type = 'ship';
-      if (type.includes('streak')) type = 'streak';
-
+      const type = a?.type || a?.action || a?.event || "ACTIVITY";
       const createdAt = a?.createdAt || a?.timestamp || a?.time || Date.now();
-
-      // 1. Resolve User Object (Required by ActivityFeedItem)
       const actorName =
         a?.actor?.name ||
-        a?.actor?.displayName ||
         a?.user?.name ||
-        a?.user?.displayName ||
         a?.username ||
         a?.actorName ||
-        "A teammate";
-
-      const avatar = 
-        a?.actor?.avatar || 
-        a?.user?.avatar || 
-        a?.user?.profilePicture || 
-        a?.avatar || 
-        null;
-
-      // 2. Resolve Project Name
+        "Someone";
       const projectName =
         a?.project?.name ||
         a?.projectName ||
         a?.project?.title ||
-        a?.metadata?.projectName ||
         a?.meta?.projectName ||
-        a?.raw?.projectName ||
         null;
-
-      // 3. Resolve Target (Task Name, Milestone Name) - This fixes the missing task name!
-      const target =
-        a?.target ||
-        a?.taskTitle ||
-        a?.metadata?.taskTitle ||
-        a?.metadata?.taskName ||
-        a?.meta?.taskTitle ||
-        a?.raw?.taskTitle ||
-        a?.raw?.title ||
-        projectName ||
-        "a mission";
-
-      // 4. Resolve Value (For streaks, level ups)
-      const value = 
-        a?.value || 
-        a?.metadata?.value || 
-        a?.meta?.value || 
-        a?.raw?.value || 
-        a?.raw?.xp || 
-        "";
 
       const createdMs =
         typeof createdAt === "number" ? createdAt : new Date(createdAt).getTime();
@@ -125,14 +80,6 @@ function normalizeActivities(items) {
         createdAt: createdMs,
         actorName,
         projectName,
-        target, // Plumbed through!
-        value,  // Plumbed through!
-        user: { // Perfectly shaped for ActivityFeedItem!
-          name: actorName,
-          avatar: avatar,
-          isOnline: false,
-        },
-        description: a?.description || a?.metadata?.description || null,
         raw: a,
       };
     })
@@ -183,9 +130,12 @@ function computeSummaryFromActivities(activities) {
       now - a.createdAt > 7 * 24 * 60 * 60 * 1000 &&
       now - a.createdAt <= 14 * 24 * 60 * 60 * 1000
   );
-  const shipsPrev = prev7d.filter((a) =>
-    String(a.type).toLowerCase().includes("ship")
-  ).length;
+  
+  // FIX: Ensured previous 7d checks for both 'ship' and 'completed' like the current 7d
+  const shipsPrev = prev7d.filter((a) => {
+    const t = String(a.type).toLowerCase();
+    return t.includes("ship") || t.includes("completed");
+  }).length;
 
   const efficiency =
     shipsPrev === 0 ? (ships > 0 ? 12 : 0) : Math.round(((ships - shipsPrev) / shipsPrev) * 100);
@@ -578,23 +528,26 @@ export function useHomeRealtime() {
   const activities = useMemo(() => normalizeActivities(activitiesRaw), [activitiesRaw]);
   const missions = useMemo(() => toMissions(projects), [projects]);
 
+  // FIX: Force trust local real-time calculation over stale backend 0s.
   const computedSummary = useMemo(() => {
-    if (summaryRaw && typeof summaryRaw === "object") {
-      const ships = summaryRaw.ships ?? summaryRaw.shipsLast7Days ?? summaryRaw.shipCount ?? null;
-      const streakDays = summaryRaw.streakDays ?? summaryRaw.streak ?? summaryRaw.currentStreak ?? null;
-      const focus = summaryRaw.focus ?? summaryRaw.focusPercent ?? null;
-      const efficiency = summaryRaw.efficiency ?? summaryRaw.efficiencyDelta ?? null;
+    const fallback = computeSummaryFromActivities(activities);
 
-      const fallback = computeSummaryFromActivities(activities);
+    if (summaryRaw && typeof summaryRaw === "object") {
+      const apiShips = summaryRaw.ships ?? summaryRaw.shipsLast7Days ?? summaryRaw.shipCount;
+      const apiStreak = summaryRaw.streakDays ?? summaryRaw.streak ?? summaryRaw.currentStreak;
+      const apiFocus = summaryRaw.focus ?? summaryRaw.focusPercent;
+      const apiEfficiency = summaryRaw.efficiency ?? summaryRaw.efficiencyDelta;
+
       return {
-        ships: ships ?? fallback.ships,
-        streakDays: streakDays ?? fallback.streakDays,
-        focus: focus ?? fallback.focus,
-        efficiency: efficiency ?? fallback.efficiency,
+        // Math.max guarantees that if the local activity array sees a new ship, a slow backend '0' won't overwrite it.
+        ships: typeof apiShips === 'number' ? Math.max(apiShips, fallback.ships) : fallback.ships,
+        streakDays: typeof apiStreak === 'number' ? Math.max(apiStreak, fallback.streakDays) : fallback.streakDays,
+        focus: (apiFocus && apiFocus > 0) ? apiFocus : fallback.focus,
+        efficiency: (apiEfficiency && apiEfficiency !== 0) ? apiEfficiency : fallback.efficiency,
       };
     }
 
-    return computeSummaryFromActivities(activities);
+    return fallback;
   }, [summaryRaw, activities]);
 
   const teamPulse = useMemo(() => computeTeamPulse(activities), [activities]);
