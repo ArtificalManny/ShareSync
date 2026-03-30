@@ -1,6 +1,6 @@
 // src/hooks/useGrowthTrack.js
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE K: Identity & Growth Track - Hooks
+// PHASE K: Identity & Growth Track - Hooks (STABLE)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11,9 +11,6 @@ import {
   getGrowthTrends,
 } from '../api/growthTrack';
 
-/**
- * Main hook for growth track data
- */
 export function useGrowthTrack(userId) {
   const [skillProfile, setSkillProfile] = useState(null);
   const [evolution, setEvolution] = useState([]);
@@ -22,18 +19,19 @@ export function useGrowthTrack(userId) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (silent = false) => {
     if (!userId) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
+      // We use .catch on individual promises so a single 404/429 doesn't break everything
       const [skills, evo, sugg, trend] = await Promise.all([
-        getSkillProfile(userId),
-        getEvolutionMoments(userId),
-        getGrowthSuggestions(userId),
-        getGrowthTrends(userId, 'all', 12),
+        getSkillProfile(userId).catch(() => null),
+        getEvolutionMoments(userId).catch(() => []),
+        getGrowthSuggestions(userId).catch(() => []),
+        getGrowthTrends(userId, 'all', 12).catch(() => null),
       ]);
 
       setSkillProfile(skills);
@@ -42,22 +40,11 @@ export function useGrowthTrack(userId) {
       setTrends(trend);
     } catch (err) {
       console.warn('[useGrowthTrack] Growth data unavailable:', err?.message);
-      // Set everything to null so Profile shows "unlock" empty state
-      // instead of fake/mock analytics
-      setSkillProfile(null);
-      setEvolution([]);
-      setSuggestions([]);
-      setTrends(null);
-      setError(null); // Don't show error — just show empty state
+      setError(err); 
     } finally {
-```
-
-Save that. Now we also need to check if the API functions themselves return mock data. Run this:
-```
-cat /Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup/src/api/growthTrack.js
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId]); // ⭐ Fixed: removed skillProfile to prevent infinite recreation
 
   useEffect(() => {
     fetchAll();
@@ -74,9 +61,6 @@ cat /Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup/src/api/
   };
 }
 
-/**
- * Hook for just skill profile
- */
 export function useSkillProfile(userId) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -84,14 +68,9 @@ export function useSkillProfile(userId) {
   useEffect(() => {
     async function fetch() {
       if (!userId) return;
-      try {
-        const data = await getSkillProfile(userId);
-        setProfile(data);
-      } catch (err) {
-        console.error('Skill profile error:', err);
-      } finally {
-        setLoading(false);
-      }
+      try { const data = await getSkillProfile(userId); setProfile(data); } 
+      catch (err) { console.error(err); } 
+      finally { setLoading(false); }
     }
     fetch();
   }, [userId]);
@@ -99,9 +78,6 @@ export function useSkillProfile(userId) {
   return { profile, loading };
 }
 
-/**
- * Hook for evolution moments
- */
 export function useEvolutionMoments(userId) {
   const [moments, setMoments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -109,14 +85,9 @@ export function useEvolutionMoments(userId) {
   useEffect(() => {
     async function fetch() {
       if (!userId) return;
-      try {
-        const data = await getEvolutionMoments(userId);
-        setMoments(data);
-      } catch (err) {
-        console.error('Evolution error:', err);
-      } finally {
-        setLoading(false);
-      }
+      try { const data = await getEvolutionMoments(userId); setMoments(data); } 
+      catch (err) { console.error(err); } 
+      finally { setLoading(false); }
     }
     fetch();
   }, [userId]);
@@ -124,9 +95,6 @@ export function useEvolutionMoments(userId) {
   return { moments, loading };
 }
 
-/**
- * Hook for growth suggestions
- */
 export function useGrowthSuggestions(userId) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,14 +102,9 @@ export function useGrowthSuggestions(userId) {
   useEffect(() => {
     async function fetch() {
       if (!userId) return;
-      try {
-        const data = await getGrowthSuggestions(userId);
-        setSuggestions(data);
-      } catch (err) {
-        console.error('Suggestions error:', err);
-      } finally {
-        setLoading(false);
-      }
+      try { const data = await getGrowthSuggestions(userId); setSuggestions(data); } 
+      catch (err) { console.error(err); } 
+      finally { setLoading(false); }
     }
     fetch();
   }, [userId]);
@@ -149,9 +112,6 @@ export function useGrowthSuggestions(userId) {
   return { suggestions, loading };
 }
 
-/**
- * Hook for trend data
- */
 export function useGrowthTrends(userId, metric = 'all', weeks = 12) {
   const [trends, setTrends] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -159,14 +119,9 @@ export function useGrowthTrends(userId, metric = 'all', weeks = 12) {
   useEffect(() => {
     async function fetch() {
       if (!userId) return;
-      try {
-        const data = await getGrowthTrends(userId, metric, weeks);
-        setTrends(data);
-      } catch (err) {
-        console.error('Trends error:', err);
-      } finally {
-        setLoading(false);
-      }
+      try { const data = await getGrowthTrends(userId, metric, weeks); setTrends(data); } 
+      catch (err) { console.error(err); } 
+      finally { setLoading(false); }
     }
     fetch();
   }, [userId, metric, weeks]);
