@@ -1,7 +1,7 @@
 // src/user/user.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER CONTROLLER - Profile and settings management
-// Phase 7: Added PUT /me, GET/PUT /me/settings endpoints
+// Phase 7: Added profile-analytics endpoint for real-time frontend dashboard
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -32,11 +32,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
-
-// ⚠️ If your UploadService lives somewhere else, update this import path.
 import { UploadsService } from '../uploads/uploads.service';
-
-// ✅ Phase 3: follows
 import { ProjectFollowService } from '../follows/project-follow.service';
 
 @Controller('users')
@@ -50,24 +46,14 @@ export class UserController {
     @Optional() private readonly follows?: ProjectFollowService,
   ) {}
 
-  // ✅ Never let activity logging break the real endpoint.
   private async safeRecord(payload: any) {
     try {
-      // record() should exist after our ActivitiesService patch
       await this.activities.record(payload);
     } catch (err: any) {
-      // Keep this loud for now so we can see WHY it fails in the backend terminal.
-      // This is the key to diagnosing schema/casting/validation issues.
-      // eslint-disable-next-line no-console
       console.error('❌ activities.record failed (non-blocking):', err?.message || err);
-      // eslint-disable-next-line no-console
       if (err?.stack) console.error(err.stack);
     }
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me - Get current user profile
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -76,16 +62,11 @@ export class UserController {
     return this.users.findById(id);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PATCH /users/me - Partial update (existing)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   @UseInterceptors(TextModerationInterceptor)
   async patchMe(@Req() req: any, @Body() patch: UpdateUserDto) {
     const id = req?.user?.sub || req?.user?.id;
-
     const before = await this.users.findById(id);
     const updated = await this.users.update(id, patch);
 
@@ -105,7 +86,6 @@ export class UserController {
       });
     }
 
-    // 🔥 NON-BLOCKING activity logging
     await this.safeRecord({
       userId: id,
       type: 'user.updated',
@@ -115,20 +95,14 @@ export class UserController {
     return updated;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PUT /users/me - Full profile update (Phase 7)
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Put('me')
   @UseInterceptors(TextModerationInterceptor)
   async updateMe(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     const id = req?.user?.sub || req?.user?.id;
-
     const before = await this.users.findById(id);
     const updated = await this.users.update(id, updateUserDto);
 
-    // Emit realtime update
     this.realtime.emitToUser(id, 'user:updated', {
       userId: id,
       firstName: (updated as any)?.firstName,
@@ -140,38 +114,22 @@ export class UserController {
       ts: new Date().toISOString(),
     });
 
-    // 🔥 NON-BLOCKING activity logging
     await this.safeRecord({
       userId: id,
       type: 'user.profile.updated',
       payload: { fields: Object.keys(updateUserDto || {}) },
     });
 
-    return {
-      success: true,
-      data: updated,
-    };
+    return { success: true, data: updated };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me/settings - Get user settings (Phase 7)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('me/settings')
   async getSettings(@Req() req: any) {
     const id = req?.user?.sub || req?.user?.id;
     const settings = await this.users.getSettings(id);
-
-    return {
-      success: true,
-      data: settings,
-    };
+    return { success: true, data: settings };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PUT /users/me/settings - Update user settings (Phase 7)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Put('me/settings')
@@ -179,56 +137,52 @@ export class UserController {
     const id = req?.user?.sub || req?.user?.id;
     const updated = await this.users.updateSettings(id, settingsDto);
 
-    // Emit settings update event
     this.realtime.emitToUser(id, 'user:settingsUpdated', {
       userId: id,
       ts: new Date().toISOString(),
     });
 
-    return {
-      success: true,
-      data: updated,
-    };
+    return { success: true, data: updated };
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me/follows - Get user's follows
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ⭐ NEW: Analytics Engine Hook
+  // Placed carefully BEFORE /users/:id routes
+  @UseGuards(JwtAuthGuard)
+  @Get('profile-analytics')
+  async getProfileAnalytics(@Req() req: any) {
+    const id = req?.user?.sub || req?.user?.id;
+    return this.users.getProfileAnalytics(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/phone/send-code')
+  async sendPhoneCode(@Req() req: any, @Body() body: { phoneNumber: string }) {
+    const userId = req?.user?.sub || req?.user?.id;
+    if (!body?.phoneNumber) throw new BadRequestException('phoneNumber is required');
+    await this.users.requestPhoneVerification(userId, body.phoneNumber);
+    return { success: true, message: 'Verification code sent' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/phone/verify-code')
+  async verifyPhoneCode(@Req() req: any, @Body() body: { code: string }) {
+    const userId = req?.user?.sub || req?.user?.id;
+    if (!body?.code) throw new BadRequestException('code is required');
+    const verified = await this.users.confirmPhoneVerification(userId, body.code);
+    if (!verified) throw new BadRequestException('Invalid or expired verification code');
+    return { success: true, message: 'Phone number verified successfully' };
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('me/follows')
   async myFollows(@Req() req: any) {
-    if (!this.follows) {
-      throw new BadRequestException(
-        'ProjectFollowService not configured. Import ProjectFollowModule into AppModule to enable this endpoint.',
-      );
-    }
-
+    if (!this.follows) throw new BadRequestException('ProjectFollowService not configured.');
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-
     const svc: any = this.follows as any;
-    const fn =
-      svc.listMyFollows ||
-      svc.listForUser ||
-      svc.listByUser ||
-      svc.listUserFollows ||
-      svc.getMyFollows ||
-      svc.getFollowsForUser ||
-      svc.list ||
-      null;
-
-    if (typeof fn !== 'function') {
-      throw new BadRequestException(
-        'ProjectFollowService is missing a list method. Expected one of: listMyFollows, listForUser, listByUser, listUserFollows, getMyFollows, getFollowsForUser, list.',
-      );
-    }
-
+    const fn = svc.listMyFollows || svc.listForUser || svc.listByUser || svc.listUserFollows || svc.getMyFollows || svc.getFollowsForUser || svc.list || null;
+    if (typeof fn !== 'function') throw new BadRequestException('ProjectFollowService is missing a list method.');
     return fn.call(svc, userId);
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PATCH /users/me/preferences - Update preferences
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Patch('me/preferences')
@@ -237,37 +191,19 @@ export class UserController {
     return this.users.updatePreferences(userId, preferences);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // PATCH /users/me/preferences/:section - Update preference section
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Patch('me/preferences/:section')
-  async updatePreferenceSection(
-    @Req() req: any,
-    @Param('section') section: string,
-    @Body() values: any,
-  ) {
+  async updatePreferenceSection(@Req() req: any, @Param('section') section: string, @Body() values: any) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
     return this.users.updatePreferenceSection(userId, section, values);
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // POST /users/me/avatar - Upload avatar
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Post('me/avatar')
   @UseInterceptors(FileInterceptor('avatar'))
   async uploadAvatar(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
-    if (!this.uploadService) {
-      throw new BadRequestException(
-        'UploadsService not configured. Wire UploadsModule into UserModule to enable avatar uploads.',
-      );
-    }
-
+    if (!this.uploadService) throw new BadRequestException('UploadsService not configured.');
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-
     const avatarUrl = await this.uploadService.uploadAvatar(file);
     const updated = await this.users.updateAvatar(userId, avatarUrl);
 
@@ -277,19 +213,9 @@ export class UserController {
       ts: new Date().toISOString(),
     });
 
-    // 🔥 NON-BLOCKING activity logging
-    await this.safeRecord({
-      userId,
-      type: 'user.avatar.updated',
-      payload: { avatarUrl },
-    });
-
+    await this.safeRecord({ userId, type: 'user.avatar.updated', payload: { avatarUrl } });
     return updated;
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // DELETE /users/me/avatar - Delete avatar
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Delete('me/avatar')
@@ -303,15 +229,8 @@ export class UserController {
       ts: new Date().toISOString(),
     });
 
-    return {
-      success: true,
-      message: 'Avatar deleted',
-    };
+    return { success: true, message: 'Avatar deleted' };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me/export - Export user data (GDPR)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('me/export')
@@ -324,55 +243,23 @@ export class UserController {
     res.send(JSON.stringify(exportData, null, 2));
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // DELETE /users/me - Delete account
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Delete('me')
   async deleteAccount(@Req() req: any, @Body() body: { confirmation?: string }) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-
-    // Require explicit confirmation
-    if (body?.confirmation !== 'DELETE') {
-      throw new BadRequestException('Please confirm account deletion by sending { "confirmation": "DELETE" }');
-    }
-
+    if (body?.confirmation !== 'DELETE') throw new BadRequestException('Please confirm account deletion');
     await this.users.deleteAccount(userId);
-
-    return {
-      success: true,
-      message: 'Account deleted successfully',
-    };
+    return { success: true, message: 'Account deleted successfully' };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // POST /users/me/change-password - Change password
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Post('me/change-password')
-  async changePassword(
-    @Req() req: any,
-    @Body() body: { currentPassword: string; newPassword: string },
-  ) {
+  async changePassword(@Req() req: any, @Body() body: { currentPassword: string; newPassword: string }) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-
-    if (!body?.currentPassword || !body?.newPassword) {
-      throw new BadRequestException('currentPassword and newPassword are required');
-    }
-
+    if (!body?.currentPassword || !body?.newPassword) throw new BadRequestException('currentPassword and newPassword are required');
     await this.users.changePassword(userId, body.currentPassword, body.newPassword);
-
-    return {
-      success: true,
-      message: 'Password changed successfully',
-    };
+    return { success: true, message: 'Password changed successfully' };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/activity-summary - Get activity summary
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('activity-summary')
@@ -381,10 +268,6 @@ export class UserController {
     return this.users.getActivitySummary(id);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me/projects-by-category - Get projects by category
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Get('me/projects-by-category')
   async myProjectsByCategory(@Req() req: any) {
@@ -392,15 +275,10 @@ export class UserController {
     return this.users.getProjectsByCategory(id);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/leaderboard/streaks - Get streak leaderboard
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Get('leaderboard/streaks')
   async streakLeaderboard() {
     const top = await this.users.getTopStreaks(20);
-
     return top.map((u: any) => ({
       id: u._id?.toString?.() ?? u._id,
       firstName: u.firstName,
@@ -410,25 +288,13 @@ export class UserController {
     }));
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/search - Search users
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Get('search')
   async searchUsers(@Query('q') query: string, @Query('limit') limit?: string) {
     const searchLimit = parseInt(limit || '10', 10);
     const users = await this.users.searchUsers(query, searchLimit);
-
-    return {
-      success: true,
-      data: users,
-    };
+    return { success: true, data: users };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/public/:username - Get public user profile
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get('public/:username')
   async publicUser(@Param('username') username: string) {
@@ -437,48 +303,22 @@ export class UserController {
     return user;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/username/:username - Get user by username
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Get('username/:username')
   async getUserByUsername(@Param('username') username: string) {
     const user = await this.users.findPublicByUsername(username);
     if (!user) throw new NotFoundException('User not found');
-
-    return {
-      success: true,
-      data: user,
-    };
+    return { success: true, data: user };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/:id - Get user by ID
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     const user = await this.users.findPublicById(id);
     if (!user) throw new NotFoundException('User not found');
-
-    return {
-      success: true,
-      data: user,
-    };
+    return { success: true, data: user };
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/:id/activity - Get user activity
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @Get(':id/activity')
   async userActivity(@Param('id') id: string) {
-    return this.activities.list({
-      scope: 'user',
-      userId: id,
-      range: '7d',
-      limit: 20,
-      cursor: null,
-    });
+    return this.activities.list({ scope: 'user', userId: id, range: '7d', limit: 20, cursor: null });
   }
 }

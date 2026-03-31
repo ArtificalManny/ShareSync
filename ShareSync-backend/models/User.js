@@ -27,6 +27,26 @@ const UserSchema = new mongoose.Schema({
   persona: { type: String, enum: ['student', 'creator', 'professional', 'teamlead'], default: 'creator' },
 
   // ============================================
+  // ✅ GLOBAL APP SETTINGS (PHASE 1)
+  // ============================================
+  appSettings: {
+    appearance: {
+      theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+      compactMode: { type: Boolean, default: false },
+      colorTheme: { type: String, default: 'violet' }
+    },
+    notifications: {
+      email: { type: Boolean, default: true },
+      push: { type: Boolean, default: true },
+      sounds: { type: Boolean, default: true }
+    },
+    privacy: {
+      showOnlineStatus: { type: Boolean, default: true },
+      showReadReceipts: { type: Boolean, default: true }
+    }
+  },
+
+  // ============================================
   // ✅ GAMIFICATION SYSTEM
   // ============================================
   gamification: {
@@ -362,7 +382,7 @@ UserSchema.methods.addXP = function(amount, reason) {
         id: `level-${this.gamification.level}`,
         name: `Level ${this.gamification.level} Achiever`,
         description: `Reached level ${this.gamification.level}`,
-        icon: '��',
+        icon: '🏆',
         tier: this.gamification.level >= 20 ? 'platinum' : 
               this.gamification.level >= 10 ? 'gold' : 'silver',
       });
@@ -637,7 +657,7 @@ UserSchema.methods.logEnergy = function(energyLevel, mood, context) {
 };
 
 /**
- * Generate daily summary
+ * Generate daily energy summary
  */
 UserSchema.methods.generateDailySummary = function() {
   const today = new Date().toDateString();

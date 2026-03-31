@@ -100,6 +100,15 @@ try {
   console.log('⚠️ Users routes not loaded:', e.message);
 }
 
+// ⭐ SETTINGS ROUTES (The Missing Link!)
+try {
+  const settingsRoutes = require('./routes/settings');
+  app.use('/api/settings', apiLimiter, settingsRoutes);
+  console.log('✅ Settings routes loaded');
+} catch (e) {
+  console.log('⚠️ Settings routes not loaded:', e.message);
+}
+
 // Upload routes (strict rate limiting)
 try {
   app.use('/api/uploads', uploadLimiter, require('./src/routes/uploads'));
@@ -276,7 +285,7 @@ httpServer.listen(PORT, () => {
   console.log(`📍 Server: http://localhost:${PORT}`);
   console.log(`🔌 Socket: ws://localhost:${PORT}/socket.io`);
   console.log(`🌐 CORS: ${process.env.NODE_ENV === 'production' ? 'RESTRICTED' : 'ENABLED (all origins)'}`);
-  console.log(`�� Security: Helmet enabled`);
+  console.log(`🔒 Security: Helmet enabled`);
   console.log(`⚡ Compression: Enabled`);
   console.log(`🛡️  Rate Limiting: Active`);
   console.log(`📊 Performance Monitoring: Active`);

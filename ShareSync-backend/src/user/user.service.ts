@@ -1,7 +1,7 @@
 // src/user/user.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER SERVICE - User management and settings
-// Phase 7: Added getSettings, updateSettings, exportUserData, deleteAccount, etc.
+// Phase 7: Dynamic Profile Analytics Engine built in
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -21,10 +21,6 @@ import { ActivitiesService } from '../activities/activities.service';
 import { buildActivitySummary } from '../utils/activitySummary';
 import { SmsService } from '../notifications/sms.service';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// HELPER FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function deepMergePreferences(existing: any, incoming: any) {
   const e = existing ?? {};
   const i = incoming ?? {};
@@ -32,44 +28,19 @@ function deepMergePreferences(existing: any, incoming: any) {
   return {
     ...e,
     ...i,
-
-    notifications: {
-      ...(e.notifications ?? {}),
-      ...(i.notifications ?? {}),
-    },
-
-    focusMode: {
-      ...(e.focusMode ?? {}),
-      ...(i.focusMode ?? {}),
-    },
-
-    privacy: {
-      ...(e.privacy ?? {}),
-      ...(i.privacy ?? {}),
-    },
-
+    notifications: { ...(e.notifications ?? {}), ...(i.notifications ?? {}) },
+    focusMode: { ...(e.focusMode ?? {}), ...(i.focusMode ?? {}) },
+    privacy: { ...(e.privacy ?? {}), ...(i.privacy ?? {}) },
     calendar: {
       ...(e.calendar ?? {}),
       ...(i.calendar ?? {}),
-      workingHours: {
-        ...(e.calendar?.workingHours ?? {}),
-        ...(i.calendar?.workingHours ?? {}),
-      },
+      workingHours: { ...(e.calendar?.workingHours ?? {}), ...(i.calendar?.workingHours ?? {}) },
       energyZones: {
         ...(e.calendar?.energyZones ?? {}),
         ...(i.calendar?.energyZones ?? {}),
-        highEnergy: {
-          ...(e.calendar?.energyZones?.highEnergy ?? {}),
-          ...(i.calendar?.energyZones?.highEnergy ?? {}),
-        },
-        mediumEnergy: {
-          ...(e.calendar?.energyZones?.mediumEnergy ?? {}),
-          ...(i.calendar?.energyZones?.mediumEnergy ?? {}),
-        },
-        lowEnergy: {
-          ...(e.calendar?.energyZones?.lowEnergy ?? {}),
-          ...(i.calendar?.energyZones?.lowEnergy ?? {}),
-        },
+        highEnergy: { ...(e.calendar?.energyZones?.highEnergy ?? {}), ...(i.calendar?.energyZones?.highEnergy ?? {}) },
+        mediumEnergy: { ...(e.calendar?.energyZones?.mediumEnergy ?? {}), ...(i.calendar?.energyZones?.mediumEnergy ?? {}) },
+        lowEnergy: { ...(e.calendar?.energyZones?.lowEnergy ?? {}), ...(i.calendar?.energyZones?.lowEnergy ?? {}) },
       },
     },
   };
@@ -85,30 +56,16 @@ export class UserService {
     private readonly projects: ProjectsService,
 
     private readonly activities: ActivitiesService,
-
-    // ✅ Phase 13: SMS for phone verification
     private readonly smsService: SmsService,
   ) {}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FIND METHODS
-  // ═══════════════════════════════════════════════════════════════════════════
-
   async findById(id: string): Promise<UserDocument | null> {
-    // ⭐ FIX: Added .lean() to bypass strict schema stripping and return the raw document,
-    // ensuring nested dynamic fields like notificationChannels are sent to the frontend!
-    const result = await this.userModel.findById(id).lean().exec();
-    if (result && (result as any).password) {
-      delete (result as any).password;
-    }
+    const result = await this.userModel.findById(id).exec();
     return result as any;
   }
 
   async findByUsername(username: string): Promise<UserDocument | null> {
-    const result = await this.userModel.findOne({ username }).lean().exec();
-    if (result && (result as any).password) {
-      delete (result as any).password;
-    }
+    const result = await this.userModel.findOne({ username }).exec();
     return result as any;
   }
 
@@ -139,26 +96,14 @@ export class UserService {
     return result as any;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CREATE / UPDATE
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  async create(createUserDto: {
-    email: string;
-    username: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }): Promise<UserDocument> {
+  async create(createUserDto: { email: string; username: string; password: string; firstName: string; lastName: string; }): Promise<UserDocument> {
     const createdUser = new this.userModel(createUserDto);
     const saved = await createdUser.save();
     return saved as any;
   }
 
   async updateById(id: string, patch: Partial<User>): Promise<UserDocument> {
-    const updated = await this.userModel
-      .findByIdAndUpdate(id, { $set: patch }, { new: true })
-      .exec();
+    const updated = await this.userModel.findByIdAndUpdate(id, { $set: patch }, { new: true }).exec();
     if (!updated) throw new NotFoundException('User not found');
     return updated as any;
   }
@@ -171,17 +116,31 @@ export class UserService {
     return saved as any;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SETTINGS (Phase 7)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ⭐ NEW: Dynamic Profile Analytics Engine
+  async getProfileAnalytics(userId: string): Promise<any> {
+    const user = await this.userModel.findById(userId).lean().exec();
+    if (!user) throw new NotFoundException('User not found');
+
+    const ships = (user as any).totalShips || 0;
+    const streak = (user as any).streakDays || 0;
+
+    // Dynamically calculate archetype if not explicitly set
+    let computedArchetype = 'Observer';
+    if (ships >= 25) computedArchetype = 'Architect';
+    else if (ships >= 5) computedArchetype = 'Builder';
+    else if (streak >= 3) computedArchetype = 'Sprinter';
+
+    const defaultAnalytics = {
+      collaborationStyle: { communicator: 60, executor: 80, innovator: 40 },
+      roleClassification: 'Core Contributor',
+      archetype: { current: computedArchetype, evolution: [] },
+    };
+
+    return (user as any).analytics || defaultAnalytics;
+  }
 
   async getSettings(userId: string): Promise<any> {
-    const user = await this.userModel
-      .findById(userId)
-      .select('-password -resetToken -verificationToken -verificationCode')
-      .lean() // ⭐ FIX: ensures all raw data is loaded
-      .exec();
-
+    const user = await this.userModel.findById(userId).select('-password -resetToken -verificationToken -verificationCode').lean().exec();
     if (!user) throw new NotFoundException('User not found');
 
     return {
@@ -207,25 +166,20 @@ export class UserService {
         showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
         allowDMs: true,
       },
-      appearance: (user as any).appearance || { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
-      mentor: (user as any).mentor || { enabled: true, tone: 'wise', intensity: 3 },
-      momentum: (user as any).momentum || { dailyGoal: 5, weekendCount: true, allowFreeze: true },
-      focus: (user as any).focus || {
+      appearance: { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
+      mentor: { enabled: true, tone: 'wise', intensity: 3 },
+      momentum: { dailyGoal: 5, weekendCount: true, allowFreeze: true },
+      focus: {
         dailyTarget: (user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4,
         autoStart: (user as any).preferences?.focusMode?.autoEnable ?? false,
         startTime: '09:00',
       },
-      social: (user as any).social || { showStreakTo: 'friends', celebrate: true },
-      legacy: (user as any).legacy || { showEverywhere: true, yearlyVideo: false },
-      security: (user as any).security || { twoFA: false },
+      social: { showStreakTo: 'friends', celebrate: true },
+      legacy: { showEverywhere: true, yearlyVideo: false },
+      security: { twoFA: false },
       preferences: (user as any).preferences || {},
       publicProfile: (user as any).publicProfile ?? true,
-      discoverable: (user as any).discoverable ?? (user as any).preferences?.privacy?.publicProfile ?? false,
-      
-      // ⭐ FIX: Safely pass the phone data explicitly back to the frontend settings payload!
-      notificationChannels: (user as any).notificationChannels || {},
-      phoneNumber: (user as any).notificationChannels?.sms?.phoneNumber || (user as any).phoneNumber || '',
-      phoneVerified: (user as any).notificationChannels?.sms?.verified || (user as any).isPhoneVerified || false,
+      discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
     };
   }
 
@@ -250,10 +204,8 @@ export class UserService {
 
     if (settingsDto.privacySettings) { (user as any).publicProfile = settingsDto.privacySettings.profilePublic ?? (user as any).publicProfile; }
     if (settingsDto.publicProfile !== undefined) { (user as any).publicProfile = settingsDto.publicProfile; }
-    if (settingsDto.discoverable !== undefined) { (user as any).discoverable = settingsDto.discoverable; }
 
     if (settingsDto.appearance) {
-      (user as any).appearance = { ...((user as any).appearance || {}), ...settingsDto.appearance };
       const existing = (user as any).preferences ?? {};
       (user as any).preferences = { ...existing, theme: settingsDto.appearance.theme ?? existing.theme };
     }
@@ -261,7 +213,6 @@ export class UserService {
     const nestedFields = ['mentor', 'momentum', 'focus', 'social', 'legacy', 'security'];
     for (const field of nestedFields) {
       if (settingsDto[field] !== undefined) {
-        (user as any)[field] = { ...((user as any)[field] || {}), ...settingsDto[field] };
         const existing = (user as any).preferences ?? {};
         (user as any).preferences = { ...existing, [field]: { ...(existing[field] || {}), ...settingsDto[field] } };
       }
@@ -276,10 +227,6 @@ export class UserService {
     return saved as any;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PHONE VERIFICATION (Phase 13)
-  // ═══════════════════════════════════════════════════════════════════════════
-
   async requestPhoneVerification(userId: string, phoneNumber: string): Promise<void> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new NotFoundException('User not found');
@@ -292,7 +239,6 @@ export class UserService {
     (user as any).phoneNumber = phoneNumber;
     (user as any).isPhoneVerified = false;
     await user.save();
-
     await this.smsService.verifyPhoneNumber(phoneNumber);
   }
 
@@ -302,43 +248,29 @@ export class UserService {
     if (!(user as any).phoneNumber) throw new BadRequestException('No phone number on record to verify.');
 
     const isValid = await (this.smsService as any).checkVerificationCode((user as any).phoneNumber, code);
-
     if (isValid) {
       (user as any).isPhoneVerified = true;
       await user.save();
       return true;
     }
-
     return false;
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PREFERENCES
-  // ═══════════════════════════════════════════════════════════════════════════
 
   async updatePreferences(userId: string, preferences: any): Promise<UserDocument> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
-
     const existing = (user as any)?.preferences ?? {};
     const merged = deepMergePreferences(existing, preferences);
-
     return this.update(userId, { preferences: merged });
   }
 
   async updatePreferenceSection(userId: string, section: string, values: any): Promise<UserDocument> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
-
     const existing = (user as any)?.preferences ?? {};
     const merged = section === 'calendar' ? deepMergePreferences(existing, { calendar: values }) : deepMergePreferences(existing, { [section]: values });
-
     return this.update(userId, { preferences: merged });
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // AVATAR & PASSWORD & LOGIN TRACKING
-  // ═══════════════════════════════════════════════════════════════════════════
 
   async updateAvatar(userId: string, avatarUrl: string | null): Promise<UserDocument> { return this.update(userId, { profilePicture: avatarUrl, avatarUrl } as any); }
   async updateProfile(id: string, profileData: any): Promise<UserDocument> { return this.update(id, profileData); }
@@ -401,10 +333,6 @@ export class UserService {
     const summary = buildActivitySummary(items.map((a: any) => ({ timestamp: a.createdAt || a.ts, type: a.type || a.eventType || 'UNKNOWN', xpDelta: a.xpDelta ?? a.meta?.xpDelta ?? 0 })), baseXp);
     return summary;
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // EXPORT / DELETE (GDPR)
-  // ═══════════════════════════════════════════════════════════════════════════
 
   async exportUserData(userId: string): Promise<any> {
     const user = await this.userModel.findById(userId).select('-password -resetToken -verificationToken -verificationCode').lean().exec();

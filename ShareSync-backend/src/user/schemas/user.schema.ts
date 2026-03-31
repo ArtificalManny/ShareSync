@@ -3,20 +3,13 @@ import { Document, Types } from 'mongoose';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
-// ✅ Phase 4: notification channel + digest types (non-breaking)
 export type DigestFrequency = 'daily' | 'weekly' | 'off';
 export type NotificationChannel = 'email' | 'sms' | 'inApp';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ⭐ PHASE 1 FIX: Added toJSON/toObject with virtuals: true
-//    so the virtual 'name' getter (firstName + lastName) is included
-//    in every API response that serializes a User document.
-//    Previously the 'name' virtual existed but was silently dropped from JSON.
-// ═══════════════════════════════════════════════════════════════════════════════
 @Schema({ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } })
 export class User extends Document {
   // ============================================
-  // BASIC INFO (existing)
+  // BASIC INFO
   // ============================================
   @Prop({ required: true, unique: true })
   email: string;
@@ -30,14 +23,12 @@ export class User extends Document {
   @Prop()
   lastName: string;
 
-  // NEW (safe): displayName used by frontend
   @Prop()
   displayName?: string;
 
   @Prop({ required: true })
   password: string;
 
-  // ✅ Google OAuth: links Google account to this user
   @Prop({ sparse: true })
   googleId?: string;
 
@@ -47,14 +38,12 @@ export class User extends Document {
   @Prop()
   bannerPicture?: string;
 
-  // Backward compat fields you already had
   @Prop()
   school?: string;
 
   @Prop()
   job?: string;
 
-  // NEW (blueprint-style fields)
   @Prop()
   bio?: string;
 
@@ -91,8 +80,7 @@ export class User extends Document {
   publicProfile?: boolean;
 
   // ============================================
-  // PREFERENCES (NEW, but non-breaking)
-  // Keep separate from your existing "settings" object to avoid breaking old UI.
+  // PREFERENCES
   // ============================================
   @Prop({
     type: {
@@ -173,10 +161,7 @@ export class User extends Document {
   };
 
   // ============================================
-  // ✅ PHASE 4: CHANNEL VERIFICATION + OPT-IN (NEW, SAFE)
-  // - Does NOT replace existing settings/preferences
-  // - Defaults to OFF/UNVERIFIED to enforce your rule:
-  //   "No email/SMS until verified + opted-in"
+  // CHANNEL VERIFICATION
   // ============================================
 
   @Prop({
@@ -204,14 +189,12 @@ export class User extends Document {
   @Prop({
     type: {
       channels: {
-        inApp: { type: Boolean, default: true }, // keep in-app first
-        email: { type: Boolean, default: false }, // strict default off
-        sms: { type: Boolean, default: false },   // strict default off
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: false },
+        sms: { type: Boolean, default: false },
       },
       digest: {
-        // safest MVP: digest only, default weekly
         email: { type: String, enum: ['daily', 'weekly', 'off'], default: 'weekly' },
-        // SMS digest is optional later — keep default off
         sms: { type: String, enum: ['daily', 'weekly', 'off'], default: 'off' },
       },
     },
@@ -223,7 +206,7 @@ export class User extends Document {
   };
 
   // ============================================
-  // GAMIFICATION (existing)
+  // GAMIFICATION & ANALYTICS (NEW)
   // ============================================
   @Prop({ default: 0 })
   points: number;
@@ -249,8 +232,30 @@ export class User extends Document {
   @Prop({ default: 0 })
   totalTasksCompleted: number;
 
+  // ⭐ NEW: Behavioral Analytics Storage for Profile Dashboard
+  @Prop({
+    type: {
+      collaborationStyle: {
+        communicator: { type: Number, default: 60 },
+        executor: { type: Number, default: 70 },
+        innovator: { type: Number, default: 50 },
+      },
+      roleClassification: { type: String, default: 'Core Contributor' },
+      archetype: {
+        current: { type: String, default: 'Initiator' },
+        evolution: { type: [String], default: [] },
+      }
+    },
+    default: undefined
+  })
+  analytics?: {
+    collaborationStyle?: { communicator: number; executor: number; innovator: number; };
+    roleClassification?: string;
+    archetype?: { current: string; evolution: string[]; };
+  };
+
   // ============================================
-  // ACHIEVEMENTS (existing)
+  // ACHIEVEMENTS
   // ============================================
   @Prop({
     type: [{
@@ -272,13 +277,13 @@ export class User extends Document {
   badges: string[];
 
   // ============================================
-  // PROJECTS (existing)
+  // PROJECTS
   // ============================================
   @Prop({ type: [Types.ObjectId], ref: 'Project', default: [] })
   projects: Types.ObjectId[];
 
   // ============================================
-  // NOTIFICATIONS / SETTINGS (existing - keep for compat)
+  // SETTINGS (legacy)
   // ============================================
   @Prop({ type: [String], default: [] })
   notificationPreferences: string[];
@@ -308,7 +313,7 @@ export class User extends Document {
   };
 
   // ============================================
-  // ENERGY TRACKING (existing)
+  // ENERGY TRACKING
   // ============================================
   @Prop({ enum: ['low', 'medium', 'high'], default: 'medium' })
   currentEnergy: string;
@@ -317,7 +322,7 @@ export class User extends Document {
   lastEnergyUpdate?: Date;
 
   // ============================================
-  // AUTH & SECURITY (existing + NEW fields)
+  // AUTH & SECURITY
   // ============================================
   @Prop()
   refreshToken?: string;
@@ -325,7 +330,6 @@ export class User extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
-  // ⭐ EXISTING: Keep for backward compatibility
   @Prop({ default: false })
   isEmailVerified: boolean;
 
@@ -338,25 +342,20 @@ export class User extends Document {
   @Prop()
   passwordResetExpires?: Date;
 
-  // ⭐ NEW: OTP-based verification (6-digit codes)
   @Prop({ select: false })
   verificationCode?: string;
 
   @Prop()
   verificationCodeExpiry?: Date;
 
-  // ⭐ NEW: Token versioning for session invalidation
   @Prop({ default: 0 })
   tokenVersion: number;
 
-  // ============================================
-  // TRACKING (existing)
-  // ============================================
   @Prop({ default: null })
   lastLogin?: Date;
 
   // ============================================
-  // VIRTUAL: Full Name (existing)
+  // VIRTUAL: Full Name
   // ============================================
   get name(): string {
     return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username;
