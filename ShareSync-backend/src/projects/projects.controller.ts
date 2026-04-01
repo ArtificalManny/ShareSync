@@ -30,11 +30,14 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService, ProjectQueryOptions } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
+import {
+  UpdateProjectDto,
+  UpdateProjectPreferencesDto,
+} from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { ProjectStatus } from './schemas/project.schema';
 import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
@@ -188,10 +191,7 @@ export class ProjectsController {
     };
   }
 
-  // ✅ FIX: SkipThrottle — Pulse is polled by multiple components + auto-refresh
-  // Authenticated + read-only + project-scoped = no abuse risk
   @Get(':id/pulse')
-  @SkipThrottle()
   @ApiOperation({ summary: 'Get project Pulse dashboard data' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   async getPulse(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
@@ -412,7 +412,7 @@ export class ProjectsController {
   async updatePreferences(
     @Req() req: any,
     @Param('id', ParseObjectIdPipe) id: string,
-    @Body() preferences: any,
+    @Body() preferences: UpdateProjectPreferencesDto,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.updateMemberPreferences(id, userId, preferences);

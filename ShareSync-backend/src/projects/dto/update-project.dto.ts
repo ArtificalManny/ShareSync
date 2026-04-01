@@ -3,6 +3,7 @@
 // UPDATE PROJECT DTO (safe extension)
 // - Adds optional goals patch payload
 // - Keeps existing fields unchanged to avoid breaking current clients
+// - Adds project member preference patch DTO for /projects/:id/preferences
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -57,6 +58,38 @@ export class UpdateProjectSettingsDto {
   @IsString({ each: true })
   @IsOptional()
   taskPriorities?: string[];
+}
+
+export class UpdateProjectPreferencesDto {
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  taskAssigned?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  taskCompleted?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  announcements?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  mentions?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean()
+  @IsOptional()
+  deadlines?: boolean;
+
+  @ApiPropertyOptional({ default: false })
+  @IsBoolean()
+  @IsOptional()
+  weeklyDigest?: boolean;
 }
 
 export class UpdateProjectGoalDto {
