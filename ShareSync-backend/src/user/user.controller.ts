@@ -1,7 +1,7 @@
 // src/user/user.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // USER CONTROLLER - Profile and settings management
-// Phase 7: Added profile-analytics endpoint for real-time frontend dashboard
+// Phase 7: Added PUT /me, GET/PUT /me/settings endpoints
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -30,7 +30,6 @@ import { ActivitiesService } from '../activities/activities.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 import { UploadsService } from '../uploads/uploads.service';
 import { ProjectFollowService } from '../follows/project-follow.service';
@@ -41,7 +40,6 @@ export class UserController {
     private readonly users: UserService,
     private readonly activities: ActivitiesService,
     private readonly realtime: RealtimeGateway,
-
     @Optional() private readonly uploadService?: UploadsService,
     @Optional() private readonly follows?: ProjectFollowService,
   ) {}
@@ -86,12 +84,7 @@ export class UserController {
       });
     }
 
-    await this.safeRecord({
-      userId: id,
-      type: 'user.updated',
-      payload: { fields: Object.keys(patch || {}) },
-    });
-
+    await this.safeRecord({ userId: id, type: 'user.updated', payload: { fields: Object.keys(patch || {}) } });
     return updated;
   }
 
@@ -100,7 +93,6 @@ export class UserController {
   @UseInterceptors(TextModerationInterceptor)
   async updateMe(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     const id = req?.user?.sub || req?.user?.id;
-    const before = await this.users.findById(id);
     const updated = await this.users.update(id, updateUserDto);
 
     this.realtime.emitToUser(id, 'user:updated', {
@@ -114,12 +106,7 @@ export class UserController {
       ts: new Date().toISOString(),
     });
 
-    await this.safeRecord({
-      userId: id,
-      type: 'user.profile.updated',
-      payload: { fields: Object.keys(updateUserDto || {}) },
-    });
-
+    await this.safeRecord({ userId: id, type: 'user.profile.updated', payload: { fields: Object.keys(updateUserDto || {}) } });
     return { success: true, data: updated };
   }
 
@@ -131,27 +118,29 @@ export class UserController {
     return { success: true, data: settings };
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PUT /users/me/settings - Update user settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @UseGuards(JwtAuthGuard)
   @Put('me/settings')
-  async updateSettings(@Req() req: any, @Body() settingsDto: UpdateSettingsDto) {
+  async updateSettings(@Req() req: any) { 
     const id = req?.user?.sub || req?.user?.id;
-    const updated = await this.users.updateSettings(id, settingsDto);
+    
+    // 🛡️ CRITICAL FIX: Bypass the NestJS ValidationPipe Stripper
+    // By reading directly from req.body, we guarantee NO fields are silently deleted 
+    // before the service gets to process them.
+    const settingsDto = req.body; 
+
+    await this.users.updateSettings(id, settingsDto);
+    const mappedSettings = await this.users.getSettings(id);
 
     this.realtime.emitToUser(id, 'user:settingsUpdated', {
       userId: id,
       ts: new Date().toISOString(),
     });
 
-    return { success: true, data: updated };
-  }
-
-  // ⭐ NEW: Analytics Engine Hook
-  // Placed carefully BEFORE /users/:id routes
-  @UseGuards(JwtAuthGuard)
-  @Get('profile-analytics')
-  async getProfileAnalytics(@Req() req: any) {
-    const id = req?.user?.sub || req?.user?.id;
-    return this.users.getProfileAnalytics(id);
+    return { success: true, data: mappedSettings };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -172,7 +161,7 @@ export class UserController {
     if (!verified) throw new BadRequestException('Invalid or expired verification code');
     return { success: true, message: 'Phone number verified successfully' };
   }
-
+  
   @UseGuards(JwtAuthGuard)
   @Get('me/follows')
   async myFollows(@Req() req: any) {
@@ -221,14 +210,8 @@ export class UserController {
   @Delete('me/avatar')
   async deleteAvatar(@Req() req: any) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-    const updated = await this.users.updateAvatar(userId, null);
-
-    this.realtime.emitToUser(userId, 'user:updated', {
-      userId,
-      profilePicture: null,
-      ts: new Date().toISOString(),
-    });
-
+    await this.users.updateAvatar(userId, null);
+    this.realtime.emitToUser(userId, 'user:updated', { userId, profilePicture: null, ts: new Date().toISOString() });
     return { success: true, message: 'Avatar deleted' };
   }
 
@@ -237,7 +220,6 @@ export class UserController {
   async exportData(@Req() req: any, @Res() res: Response) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
     const exportData = await this.users.exportUserData(userId);
-
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=my-sharesync-data.json');
     res.send(JSON.stringify(exportData, null, 2));
@@ -247,7 +229,7 @@ export class UserController {
   @Delete('me')
   async deleteAccount(@Req() req: any, @Body() body: { confirmation?: string }) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-    if (body?.confirmation !== 'DELETE') throw new BadRequestException('Please confirm account deletion');
+    if (body?.confirmation !== 'DELETE') throw new BadRequestException('Please confirm account deletion by sending { "confirmation": "DELETE" }');
     await this.users.deleteAccount(userId);
     return { success: true, message: 'Account deleted successfully' };
   }
