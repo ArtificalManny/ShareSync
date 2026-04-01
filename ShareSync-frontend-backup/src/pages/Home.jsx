@@ -232,13 +232,14 @@ export default function Home() {
   const showFirstMission = onboardingCtx.shouldShowOnboarding && !onboardingCtx.isCompleted;
 
   // Focus engine (safe)
+  // Focus engine (safe)
   let focusEngine = { hasUrgentMoves: false };
   try {
     focusEngine = useFocusEngine();
   } catch (e) {}
 
   // REALTIME HOME DATA (safe + polling + instant local events)
-  const {
+ const {
     loadingMissions,
     missions = [],
     activities = [],
@@ -376,45 +377,45 @@ export default function Home() {
       data-momentum={glowLevel}
     >
       {/* ═══════════════════════════════════════════════════════════════════
-          HEADER (UPGRADED: High Contrast & Momentum Variables)
+          HEADER
       ═══════════════════════════════════════════════════════════════════ */}
-      <header className="mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-6">
-        <div className="animate-fade-up">
+      <header className="mb-10 flex justify-between items-end">
+        <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2.5 h-2.5 rounded-full transition-colors duration-500 shadow-sm ${isFireMode ? "bg-orange-500 animate-pulse" : "bg-[var(--theme-accent-primary)]"}`} />
-            <span className="text-[12px] text-slate-500 dark:text-zinc-400 font-bold tracking-wide">
+            <div className={`w-2 h-2 rounded-full ${isFireMode ? "bg-orange-500 animate-pulse" : "bg-teal-500"}`} />
+            <span className="text-xs text-slate-500 dark:text-zinc-400">
               {isFireMode ? "Fire Mode Active 🔥" : "Operational Status: Live"}
             </span>
 
             {focusEngine.hasUrgentMoves && (
-              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest border border-amber-200 dark:border-amber-500/20 shadow-sm">
-                ⚠️ Urgent
+              <span className="ml-2 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200 dark:border-amber-500/20">
+                ⚠️ Urgent moves pending
               </span>
             )}
           </div>
 
-          <h1 className="text-[36px] md:text-[44px] font-black tracking-tighter text-slate-900 dark:text-white leading-none mb-2 transition-colors duration-500 drop-shadow-sm">
+          <h1 className="text-4xl font-semibold text-slate-800 dark:text-zinc-100">
             {(() => {
               const hour = new Date().getHours();
               if (hour < 12) return 'Good morning';
               if (hour < 18) return 'Good afternoon';
               return 'Good evening';
             })()},{" "}
-            <span className="bg-gradient-to-r from-[var(--theme-accent-primary)] to-fuchsia-500 bg-clip-text text-transparent transition-all duration-1000 inline-block">
+            <span className={`${isFireMode ? "text-orange-500" : "text-violet-600 dark:text-zinc-500"} transition-colors duration-500`}>
               {authUser?.firstName || "Builder"}
             </span>
           </h1>
-          <p className="text-[13px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-[var(--theme-accent-primary)] transition-colors duration-1000" />
-            Mission Control
-          </p>
+          <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Mission Control</p>
         </div>
 
-        <div className="hidden md:flex items-center gap-6 animate-fade-up" style={{ animationDelay: '100ms' }}>
+        <div className="hidden md:flex items-center gap-6">
           <div className="text-right">
-            <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Momentum</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Momentum</p>
             <div
-              className="text-2xl font-black transition-colors duration-1000 text-[var(--theme-accent-primary)] drop-shadow-sm"
+              className={`
+                text-xl font-semibold
+                ${isFireMode ? "text-orange-500" : glowLevel >= 3 ? "text-violet-600 dark:text-violet-400" : "text-slate-800 dark:text-zinc-200"}
+              `}
             >
               Level {glowLevel}
               {isFireMode && " 🔥"}
@@ -424,19 +425,36 @@ export default function Home() {
           <div className="w-px h-10 bg-slate-200 dark:bg-white/10" />
 
           <div className="text-right">
-            <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Global Rank</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-zinc-200 drop-shadow-sm">Top 2%</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Global Rank</p>
+            <p className="text-xl font-semibold text-slate-800 dark:text-zinc-200">Top 2%</p>
           </div>
         </div>
       </header>
               
-      {/* ═══════════════════════════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════════════════════════
           DAILY PULSE CHECK PROMPT (Priority 3.4)
       ═══════════════════════════════════════════════════════════════════ */}
       <PulseCheckPrompt
         suggestedTask={missions?.[0]?.title || null}
         className="mb-6"
       />
+      {/* ═══════════════════════════════════════════════════════════════════
+          TEAM PULSE BANNER
+      ═══════════════════════════════════════════════════════════════════ */}
+      {/* REMOVED: Item 5 — duplicate teammate section. MomentumContagion below handles this. */}
+      {/* <TeamPulse
+        variant="banner"
+        showAvatars={true}
+        showSummary={true}
+        showTicker={true}
+        className="mb-6"
+        pulseData={{
+          activeCount: teamPulse.activeCount,
+          shippingNow: teamPulse.shippingNow,
+          inFocus: teamPulse.inFocus,
+          actors: teamPulse.actors,
+        }}
+      /> */}
 
       <MomentumStatusBanner />
 

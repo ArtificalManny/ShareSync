@@ -30,6 +30,9 @@ import { SocketProvider } from "./context/SocketContext";
 // ⭐ PHASE N: Notifications shared state (global unread + realtime)
 import { NotificationsProvider } from "./context/NotificationsContext";
 
+// ⭐ PHASE 2: Settings Provider (Global State & Theme Sync)
+import { SettingsProvider } from "./context/SettingsContext";
+
 // ⭐ DAY 7: Context Tracking Hook
 import { useContextTracking } from "./hooks/useContextTracking";
 
@@ -392,97 +395,99 @@ function AuthenticatedApp({ children, userData }) {
       <PersonaProvider>
       <SocketProvider>
         <NotificationsProvider>
-          <UserProvider>
-            <MessageProvider>
-              <SprintProvider>
-                <Suspense fallback={null}>
-                  <ShortcutProvider>
-                <CommandControlLayer projects={[]}>
-                  <FlowStateProvider>
-                    <ContextPreservationProvider>
-                      <MomentumProvider>
-                        <AdaptiveDensityProvider
-                          userName={userData?.firstName || "there"}
-                        >
-                          <FocusEngineProvider>
-                            <FocusSessionProvider>
-                              <AppEntrance
-                                userName={userData?.firstName || "there"}
-                                streakDays={userData?.streakDays || 0}
-                                enabled={true}
-                                showWelcomeToast={true}
-                              >
-                                <HeartbeatProvider>
-                                  <Suspense fallback={null}>
-                                    <MomentumAura />
-                                  </Suspense>
-                                  {FOCUS_DOCK_V1 ? (
-                                    <FocusProvider>
-                                      <ContextTracker />
+          <SettingsProvider> {/* ⭐ PHASE 2: NEW SETTINGS PROVIDER PLACED SECURELY INSIDE AUTHENTICATED TREE */}
+            <UserProvider>
+              <MessageProvider>
+                <SprintProvider>
+                  <Suspense fallback={null}>
+                    <ShortcutProvider>
+                  <CommandControlLayer projects={[]}>
+                    <FlowStateProvider>
+                      <ContextPreservationProvider>
+                        <MomentumProvider>
+                          <AdaptiveDensityProvider
+                            userName={userData?.firstName || "there"}
+                          >
+                            <FocusEngineProvider>
+                              <FocusSessionProvider>
+                                <AppEntrance
+                                  userName={userData?.firstName || "there"}
+                                  streakDays={userData?.streakDays || 0}
+                                  enabled={true}
+                                  showWelcomeToast={true}
+                                >
+                                  <HeartbeatProvider>
+                                    <Suspense fallback={null}>
+                                      <MomentumAura />
+                                    </Suspense>
+                                    {FOCUS_DOCK_V1 ? (
+                                      <FocusProvider>
+                                        <ContextTracker />
 
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
-                                        <WelcomeBack />
-                                      </Suspense> */}
+                                        {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                        {/* <Suspense fallback={null}>
+                                          <WelcomeBack />
+                                        </Suspense> */}
 
-                                      <Suspense fallback={null}>
-                                        <ContextIndicator />
-                                      </Suspense>
-                                      <Suspense fallback={null}>
-                                        <FlowIndicator position="bottom-left" />
-                                      </Suspense>
-                                      {children}
-                                    </FocusProvider>
-                                  ) : (
-                                    <>
-                                      <ContextTracker />
+                                        <Suspense fallback={null}>
+                                          <ContextIndicator />
+                                        </Suspense>
+                                        <Suspense fallback={null}>
+                                          <FlowIndicator position="bottom-left" />
+                                        </Suspense>
+                                        {children}
+                                      </FocusProvider>
+                                    ) : (
+                                      <>
+                                        <ContextTracker />
 
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
-                                        <WelcomeBack />
-                                      </Suspense> */}
+                                        {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                        {/* <Suspense fallback={null}>
+                                          <WelcomeBack />
+                                        </Suspense> */}
 
-                                      <Suspense fallback={null}>
-                                        <ContextIndicator />
-                                      </Suspense>
-                                      <Suspense fallback={null}>
-                                        <FlowIndicator position="bottom-left" />
-                                      </Suspense>
-                                      {children}
-                                    </>
-                                  )}
-                                </HeartbeatProvider>
-                              </AppEntrance>
-                            </FocusSessionProvider>
-                          </FocusEngineProvider>
+                                        <Suspense fallback={null}>
+                                          <ContextIndicator />
+                                        </Suspense>
+                                        <Suspense fallback={null}>
+                                          <FlowIndicator position="bottom-left" />
+                                        </Suspense>
+                                        {children}
+                                      </>
+                                    )}
+                                  </HeartbeatProvider>
+                                </AppEntrance>
+                              </FocusSessionProvider>
+                            </FocusEngineProvider>
+                            <Suspense fallback={null}>
+                              <BreakReminder position="bottom-right" />
+                            </Suspense>
+                          </AdaptiveDensityProvider>
+                          {/* ✅ Priority 1: Aha Moment Toast */}
+                          <AhaMomentToast
+                            show={ahaMoment.showToast}
+                            insight={ahaMoment.currentInsight}
+                            onView={ahaMoment.viewInsight}
+                            onDismiss={ahaMoment.dismissInsight}
+                          />
+                          {/* ✅ Priority 4.2: Global Celebration Router */}
                           <Suspense fallback={null}>
-                            <BreakReminder position="bottom-right" />
+                            <CelebrationRouter />
                           </Suspense>
-                        </AdaptiveDensityProvider>
-                        {/* ✅ Priority 1: Aha Moment Toast */}
-                        <AhaMomentToast
-                          show={ahaMoment.showToast}
-                          insight={ahaMoment.currentInsight}
-                          onView={ahaMoment.viewInsight}
-                          onDismiss={ahaMoment.dismissInsight}
-                        />
-                        {/* ✅ Priority 4.2: Global Celebration Router */}
-                        <Suspense fallback={null}>
-                          <CelebrationRouter />
-                        </Suspense>
-                        {/* ✅ Priority 5.4: Shortcut Guide Modal */}
-                        <Suspense fallback={null}>
-                          <ShortcutGuide />
-                        </Suspense>
-                      </MomentumProvider>
-                    </ContextPreservationProvider>
-                  </FlowStateProvider>
-                </CommandControlLayer>
-                  </ShortcutProvider>
-                </Suspense>
-              </SprintProvider>
-            </MessageProvider>
-          </UserProvider>
+                          {/* ✅ Priority 5.4: Shortcut Guide Modal */}
+                          <Suspense fallback={null}>
+                            <ShortcutGuide />
+                          </Suspense>
+                        </MomentumProvider>
+                      </ContextPreservationProvider>
+                    </FlowStateProvider>
+                  </CommandControlLayer>
+                    </ShortcutProvider>
+                  </Suspense>
+                </SprintProvider>
+              </MessageProvider>
+            </UserProvider>
+          </SettingsProvider>
         </NotificationsProvider>
       </SocketProvider>
       </PersonaProvider>
@@ -531,9 +536,9 @@ function AppRoutes() {
         </>
       )}
 
-      {/* ⭐ WEDGE FIX: Removed !m-0 and !p-0 to let layout-system.css handle the 64px padding-top */}
-      <div className="main-content border-none outline-none ring-0 !rounded-none">
-        <div className="content-wrapper border-none shadow-none !rounded-none">
+      {/* ⭐ WEDGE FIX: Forcing explicit rounded-none, m-0, p-0, and full bleed on these wrappers */}
+      <div className="main-content border-none outline-none ring-0 !rounded-none !m-0 !p-0">
+        <div className="content-wrapper border-none shadow-none !rounded-none !m-0 !p-0">
           <Suspense
             fallback={
               <div className="px-6 py-10 text-center text-slate-500">
@@ -831,8 +836,8 @@ const App = () => {
                 <Router>
                   <Suspense fallback={<LoadingSpinner />}>
                     <LayoutSkin>
-                      {/* ⭐ WEDGE FIX: Removed !m-0 and !p-0 here as well to ensure global CSS layout constraints apply natively */}
-                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !border-0">
+                      {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
+                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
                         <AuthCheck />
                       </div>
                     </LayoutSkin>
