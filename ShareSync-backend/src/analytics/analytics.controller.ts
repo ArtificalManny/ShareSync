@@ -1,7 +1,6 @@
 // src/analytics/analytics.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // ANALYTICS CONTROLLER: REST API
-// Phase K: Added Growth Track & Identity Analytics endpoints
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -46,7 +45,10 @@ export class AnalyticsController {
     @Query() query: AnalyticsQueryDto,
   ) {
     const overview = await this.analyticsService.getProjectOverview(projectId, query);
-    return { success: true, data: overview };
+    return {
+      success: true,
+      data: overview,
+    };
   }
 
   @Get('project/:projectId/health')
@@ -54,7 +56,10 @@ export class AnalyticsController {
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   async getProjectHealth(@Param('projectId') projectId: string) {
     const health = await this.analyticsService.getProjectHealth(projectId);
-    return { success: true, data: health };
+    return {
+      success: true,
+      data: health,
+    };
   }
 
   @Get('project/:projectId/velocity')
@@ -69,7 +74,10 @@ export class AnalyticsController {
       projectId,
       days ? parseInt(days, 10) : 30,
     );
-    return { success: true, data: velocity };
+    return {
+      success: true,
+      data: velocity,
+    };
   }
 
   @Get('project/:projectId/forecast')
@@ -77,7 +85,10 @@ export class AnalyticsController {
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   async getCompletionForecast(@Param('projectId') projectId: string) {
     const forecast = await this.analyticsService.getCompletionForecast(projectId);
-    return { success: true, data: forecast };
+    return {
+      success: true,
+      data: forecast,
+    };
   }
 
   @Get('project/:projectId/team')
@@ -88,7 +99,10 @@ export class AnalyticsController {
     @Query() query: AnalyticsQueryDto,
   ) {
     const team = await this.analyticsService.getTeamProductivity(projectId, query);
-    return { success: true, data: team };
+    return {
+      success: true,
+      data: team,
+    };
   }
 
   @Get('project/:projectId/activity')
@@ -103,12 +117,37 @@ export class AnalyticsController {
       projectId,
       limit ? parseInt(limit, 10) : 50,
     );
-    return { success: true, data: activity };
+    return {
+      success: true,
+      data: activity,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // USER ANALYTICS
   // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get('me/dashboard')
+  @ApiOperation({ summary: 'Get personal dashboard stats for Home' })
+  async getMyDashboard(@Req() req: any, @Query() query: AnalyticsQueryDto) {
+    const userId = req.user.userId || req.user.sub;
+    const productivity = await this.analyticsService.getUserProductivity(userId, query);
+    return {
+      success: true,
+      data: productivity,
+    };
+  }
+
+  @Get('me/profile-stats')
+  @ApiOperation({ summary: 'Get personal profile analytics' })
+  async getMyProfileStats(@Req() req: any) {
+    const userId = req.user.userId || req.user.sub;
+    const stats = await this.analyticsService.getUserProfileAnalytics(userId);
+    return {
+      success: true,
+      data: stats,
+    };
+  }
 
   @Get('user/intelligence')
   @ApiOperation({ summary: 'Get real-time user intelligence and co-working stats' })
@@ -118,17 +157,23 @@ export class AnalyticsController {
       req.user.userId || req.user.sub,
       projectId
     );
-    return { success: true, data: intelligence };
+    return {
+      success: true,
+      data: intelligence,
+    };
   }
 
   @Get('user/productivity')
   @ApiOperation({ summary: 'Get current user productivity metrics' })
   async getUserProductivity(@Req() req: any, @Query() query: AnalyticsQueryDto) {
     const productivity = await this.analyticsService.getUserProductivity(
-      req.user.userId || req.user.sub,
+      req.user.userId,
       query,
     );
-    return { success: true, data: productivity };
+    return {
+      success: true,
+      data: productivity,
+    };
   }
 
   @Get('user/activity')
@@ -136,10 +181,13 @@ export class AnalyticsController {
   @ApiQuery({ name: 'limit', type: Number, required: false })
   async getUserActivity(@Req() req: any, @Query('limit') limit?: string) {
     const activity = await this.analyticsService.getUserActivity(
-      req.user.userId || req.user.sub,
+      req.user.userId,
       limit ? parseInt(limit, 10) : 50,
     );
-    return { success: true, data: activity };
+    return {
+      success: true,
+      data: activity,
+    };
   }
 
   @Get('user/:userId/productivity')
@@ -150,48 +198,9 @@ export class AnalyticsController {
     @Query() query: AnalyticsQueryDto,
   ) {
     const productivity = await this.analyticsService.getUserProductivity(userId, query);
-    return { success: true, data: productivity };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GROWTH TRACK & IDENTITY ANALYTICS (NEW)
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @Get('growth/:userId/skills')
-  @ApiOperation({ summary: 'Get user skill radar profile' })
-  async getSkillProfile(@Param('userId') userId: string) {
-    const data = await this.analyticsService.getSkillProfile(userId);
-    return { success: true, data };
-  }
-
-  @Get('growth/:userId/evolution')
-  @ApiOperation({ summary: 'Get user evolution moments' })
-  async getEvolutionMoments(@Param('userId') userId: string) {
-    const data = await this.analyticsService.getEvolutionMoments(userId);
-    return { success: true, data };
-  }
-
-  @Get('growth/:userId/suggestions')
-  @ApiOperation({ summary: 'Get actionable growth suggestions' })
-  async getGrowthSuggestions(@Param('userId') userId: string) {
-    const data = await this.analyticsService.getGrowthSuggestions(userId);
-    return { success: true, data };
-  }
-
-  @Get('growth/:userId/trends')
-  @ApiOperation({ summary: 'Get 12-week growth trend charts' })
-  @ApiQuery({ name: 'metric', required: false })
-  @ApiQuery({ name: 'weeks', required: false, type: Number })
-  async getGrowthTrends(
-    @Param('userId') userId: string,
-    @Query('metric') metric?: string,
-    @Query('weeks') weeks?: string,
-  ) {
-    const data = await this.analyticsService.getGrowthTrends(
-      userId,
-      metric || 'all',
-      weeks ? parseInt(weeks, 10) : 12,
-    );
-    return { success: true, data };
+    return {
+      success: true,
+      data: productivity,
+    };
   }
 }

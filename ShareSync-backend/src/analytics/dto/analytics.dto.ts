@@ -122,6 +122,9 @@ export class ProductivityMetricsDto {
 
   @ApiProperty()
   streakDays: number;
+  
+  @ApiProperty()
+  efficiency?: number; // 📈 ADDED: New field for the Home page
 }
 
 export class VelocityDataPointDto {
@@ -232,4 +235,30 @@ export class ForecastDto {
     realistic: Date;
     pessimistic: Date;
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 📈 NEW PROFILE ANALYTICS DTOs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export class GrowthTrendDto {
+  @ApiProperty()
+  date: string;
+
+  @ApiProperty()
+  value: number;
+}
+
+export class ProfileAnalyticsDto {
+  @ApiProperty()
+  qualityScore: number;
+
+  @ApiProperty()
+  collaborationScore: number;
+
+  @ApiProperty()
+  trendVector: string;
+
+  @ApiProperty({ type: [GrowthTrendDto] })
+  growthTrends: GrowthTrendDto[];
 }
