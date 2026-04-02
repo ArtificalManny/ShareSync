@@ -1,7 +1,21 @@
 // src/pages/Profile.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROFILE PAGE v5.0.2 - The "Elon Musk" Zero-Latency Architecture
-// Phase K: 3-6-3 Grid, High Density, Infinite Loop & 429 Protections
+// SHARESYNC PROFILE PAGE v4.1 - "The Gallery Walk" Light Theme
+// Phase 7: Added Profile Edit Modal
+// ⭐ Phase 1 Fix: Added error state with retry button
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// THEME: "The Personal Gallery"
+//
+// COLOR MAP:
+// - Page Background: #F8FAFC → #EEF2FF gradient
+// - Avatar Ring: Aurora Gradient
+// - Rank Badge: Violet → Indigo gradient
+// - Stats Cards: #FFFFFF
+// - Skill Bar Fill: Ocean Gradient
+// - "Core Verified" Badge: #2DD4BF bg, white text (teal)
+// - Edit Button: #3B82F6 (blue action)
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
@@ -9,22 +23,38 @@ import { useLocation, useParams } from "react-router-dom";
 import client from "../api/client";
 import { getMe, getPublicUser, updateProfile } from "../api/user";
 import {
-  Camera, TrendingUp, Brain, Activity, ShieldCheck, Download,
-  Star, Edit3, X, Save, Loader2, RefreshCw
+  Camera,
+  TrendingUp,
+  Brain,
+  Activity,
+  ShieldCheck,
+  Download,
+  Star,
+  Edit3,
+  X,
+  Save,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 import UserAvatar from "../components/ui/UserAvatar";
 import { resolveDisplayName } from "../utils/resolveDisplayName";
 
+// Analytics Components
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
 import WorkPersonality from "../components/analytics/WorkPersonality";
 import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
+
+// Growth Components (Phase K)
 import SkillRadarChart from "../components/growth/SkillRadarChart";
 import EvolutionMoments from "../components/growth/EvolutionMoments";
 import GrowthSuggestions from "../components/growth/GrowthSuggestions";
 import TrendCharts from "../components/growth/TrendCharts";
+
+// Growth Hook
 import { useGrowthTrack } from "../hooks/useGrowthTrack";
 import ProfileStrength from "../components/profile/ProfileStrength";
+import { useAnalytics } from "../contexts/AnalyticsContext";
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -46,11 +76,16 @@ function levelForXp(xp = 0) {
 }
 
 function resolveUserName(user) {
+  // Delegates to shared utility — never returns "User" as fallback
   return resolveDisplayName(user);
 }
 
 function safeParseJSON(v) {
-  try { return JSON.parse(v); } catch { return null; }
+  try {
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
 }
 
 function readStoredUser() {
@@ -59,25 +94,37 @@ function readStoredUser() {
     if (!raw) return null;
     const parsed = safeParseJSON(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function readAvatarOverride() {
-  try { return localStorage.getItem("ss.avatarOverride") || null; } catch { return null; }
+  try {
+    return localStorage.getItem("ss.avatarOverride") || null;
+  } catch {
+    return null;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROFILE EDIT MODAL
+   PROFILE EDIT MODAL - Phase 7
 ───────────────────────────────────────────────────────────────────────── */
 const ProfileEditModal = ({ user, onClose, onSave }) => {
   const [saving, setSaving] = useState(false);
   const [editData, setEditData] = useState({
-    firstName: user?.firstName || '', lastName: user?.lastName || '', bio: user?.bio || '',
-    location: user?.location || '', website: user?.website || '', jobTitle: user?.jobTitle || '',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    bio: user?.bio || '',
+    location: user?.location || '',
+    website: user?.website || '',
+    jobTitle: user?.jobTitle || '',
     company: user?.company || '',
   });
 
-  const handleChange = (field, value) => setEditData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => {
+    setEditData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -87,54 +134,157 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
       onSave?.();
       onClose();
     } catch (error) {
-      toast({ title: 'Update failed', description: error?.response?.data?.message || 'Could not save profile', variant: 'error' });
-    } finally { setSaving(false); }
+      console.error('Failed to save profile:', error);
+      toast({ 
+        title: 'Update failed', 
+        description: error?.response?.data?.message || error?.message || 'Could not save profile',
+        variant: 'error' 
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
-      <div className="w-full max-w-lg bg-white dark:bg-[#1a1a1c] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Profile</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-            <X className="w-5 h-5 text-slate-500" />
+    <div className="fixed inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
+      <div className="w-full max-w-lg bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Edit Profile</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5 text-slate-500 dark:text-zinc-400" />
           </button>
         </div>
-        <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+
+        {/* Form */}
+        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* Name Row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-900 dark:text-zinc-200 mb-1.5">First Name</label>
-              <input type="text" value={editData.firstName} onChange={(e) => handleChange('firstName', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all font-medium" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={editData.firstName}
+                onChange={(e) => handleChange('firstName', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="First name"
+              />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-900 dark:text-zinc-200 mb-1.5">Last Name</label>
-              <input type="text" value={editData.lastName} onChange={(e) => handleChange('lastName', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all font-medium" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={editData.lastName}
+                onChange={(e) => handleChange('lastName', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="Last name"
+              />
             </div>
           </div>
+
+          {/* Bio */}
           <div>
-            <label className="block text-sm font-semibold text-slate-900 dark:text-zinc-200 mb-1.5">Bio</label>
-            <textarea value={editData.bio} onChange={(e) => handleChange('bio', e.target.value)} rows={3} className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all resize-none font-medium" />
+            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+              Bio
+            </label>
+            <textarea
+              value={editData.bio}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none"
+              placeholder="Tell others about yourself..."
+            />
           </div>
+
+          {/* Location */}
           <div>
-            <label className="block text-sm font-semibold text-slate-900 dark:text-zinc-200 mb-1.5">Location</label>
-            <input type="text" value={editData.location} onChange={(e) => handleChange('location', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all font-medium" />
+            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              value={editData.location}
+              onChange={(e) => handleChange('location', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+              placeholder="City, Country"
+            />
           </div>
+
+          {/* Work Info Row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-900 dark:text-zinc-200 mb-1.5">Job Title</label>
-              <input type="text" value={editData.jobTitle} onChange={(e) => handleChange('jobTitle', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all font-medium" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Job Title
+              </label>
+              <input
+                type="text"
+                value={editData.jobTitle}
+                onChange={(e) => handleChange('jobTitle', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="e.g. Software Engineer"
+              />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-900 dark:text-zinc-200 mb-1.5">Company</label>
-              <input type="text" value={editData.company} onChange={(e) => handleChange('company', e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-zinc-700 rounded-lg bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all font-medium" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+                Company
+              </label>
+              <input
+                type="text"
+                value={editData.company}
+                onChange={(e) => handleChange('company', e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                placeholder="Company name"
+              />
             </div>
+          </div>
+
+          {/* Website */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">
+              Website
+            </label>
+            <input
+              type="url"
+              value={editData.website}
+              onChange={(e) => handleChange('website', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+              placeholder="https://yourwebsite.com"
+            />
           </div>
         </div>
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-black/20">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-slate-800 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors font-bold">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-bold shadow-md shadow-violet-500/20 hover:shadow-lg disabled:opacity-50 transition-all" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Changes
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all shadow-md disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Changes
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -143,7 +293,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROFILE PHOTO EDITOR
+   PROFILE PHOTO EDITOR - Light theme with Aurora ring
 ───────────────────────────────────────────────────────────────────────── */
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -154,14 +304,26 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   const localOverride = readAvatarOverride();
   const storedUser = readStoredUser();
-  const backendAvatar = user?.avatarUrl || user?.profilePicture || user?.avatar || null;
-  const displayUrl = previewUrl || localOverride || storedUser?.profilePicture || backendAvatar || "/default-profile.png";
+  const storedAvatar = storedUser?.avatarUrl || storedUser?.profilePicture || null;
+
+  const backendAvatar =
+    user?.avatarUrl ||
+    user?.profilePicture ||
+    user?.avatar ||
+    user?.photoUrl ||
+    user?.profile?.avatarUrl ||
+    user?.profile?.photoUrl ||
+    null;
+
+  const displayUrl =
+    previewUrl || localOverride || storedAvatar || backendAvatar || "/default-profile.png";
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const url = URL.createObjectURL(file);
     setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrl(url);
     setIsEditing(true);
   };
 
@@ -169,78 +331,150 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     try {
       const raw = localStorage.getItem("ss.user");
       const current = raw ? JSON.parse(raw) : {};
-      localStorage.setItem("ss.user", JSON.stringify({ ...current, ...nextFields }));
+      const next = { ...current, ...nextFields };
+      localStorage.setItem("ss.user", JSON.stringify(next));
       window.dispatchEvent(new Event("storage"));
     } catch {}
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      toast({ title: "No file selected", variant: "error" });
+      return;
+    }
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append("profilePicture", selectedFile);
+      formData.append("avatar", selectedFile);
       const out = await updateProfile(formData);
-      const avatarUrl = out?.avatarUrl || out?.user?.profilePicture || null;
+      const avatarUrl =
+        out?.avatarUrl || out?.user?.avatarUrl || out?.data?.avatarUrl ||
+        out?.profilePicture || out?.user?.profilePicture || out?.data?.profilePicture || null;
+
       if (avatarUrl) {
-        localStorage.removeItem("ss.avatarOverride");
+        try { localStorage.removeItem("ss.avatarOverride"); } catch {}
         applyUserEverywhere({ avatarUrl, profilePicture: avatarUrl });
         toast({ title: "Photo updated", variant: "success" });
+        setIsEditing(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        onPhotoUpdate?.();
+        return;
       }
-    } catch {
+
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = String(reader.result || "");
-        localStorage.setItem("ss.avatarOverride", dataUrl);
+        try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
         applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
-        toast({ title: "Photo updated locally", variant: "success" });
+        toast({ title: "Photo updated (local)", variant: "success" });
+        setIsEditing(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        onPhotoUpdate?.();
       };
       reader.readAsDataURL(selectedFile);
+    } catch (error) {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || "");
+          try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
+          applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
+          toast({ title: "Photo updated (local)", variant: "success" });
+          setIsEditing(false);
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          onPhotoUpdate?.();
+        };
+        reader.readAsDataURL(selectedFile);
+        return;
+      } catch {}
+      toast({
+        title: "Update failed",
+        description: error?.response?.data?.message || error?.message || "Could not upload photo",
+        variant: "error",
+      });
     } finally {
-      setIsEditing(false);
-      setSelectedFile(null);
-      setPreviewUrl(null);
       setUploading(false);
-      onPhotoUpdate?.();
     }
   };
 
+  // Aurora gradient for avatar ring
   const auroraGradient = 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)';
 
   return (
     <div className="relative flex flex-col items-center">
-      <div className="relative w-44 h-44 group">
-        <div className="absolute inset-0 rounded-full p-1 shadow-2xl shadow-violet-500/20" style={{ background: auroraGradient }}>
-          <div className="w-full h-full rounded-full bg-white dark:bg-[#0a0a0c]" />
+      <div className="relative w-40 h-40 group">
+        {/* Aurora gradient ring */}
+        <div 
+          className="absolute inset-0 rounded-full p-1"
+          style={{ background: auroraGradient }}
+        >
+          <div className="w-full h-full rounded-full bg-white dark:bg-black" />
         </div>
-        <div className="absolute inset-[5px] rounded-full overflow-hidden border-4 border-white dark:border-[#111113] bg-slate-100 dark:bg-zinc-800">
-          <UserAvatar size={160} name={user?.name || user?.username || "User"} avatarUrl={displayUrl} className="w-full h-full" ringClassName="ring-0" />
+        
+        {/* Avatar container */}
+        <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-white dark:border-[#111113] bg-slate-100 dark:bg-zinc-800 shadow-lg shadow-violet-100 dark:shadow-violet-900/20">
+          <UserAvatar
+            size={144}
+            name={user?.name || user?.username || "User"}
+            avatarUrl={displayUrl}
+            className="w-full h-full"
+            ringClassName="ring-0"
+          />
           {isOwnProfile && (
-            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              <button type="button" className="p-4 bg-violet-600 rounded-full shadow-lg hover:scale-105 transition-transform">
-                <Camera className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg"
+                aria-label="Change profile photo"
+              >
+                <Camera className="w-5 h-5 text-white" />
               </button>
             </div>
           )}
         </div>
-        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full shadow-xl border-2 border-white dark:border-[#0a0a0c]" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)' }}>
-          <span className="text-xs font-black tracking-widest text-white uppercase">RANK {levelForXp(user?.xp)}</span>
+        
+        {/* Rank badge with violet gradient */}
+        <div 
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg shadow-md"
+          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)' }}
+        >
+          <span className="text-xs font-medium text-white">Rank {levelForXp(user?.xp)}</span>
         </div>
       </div>
+      
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
       
+      {/* Upload modal */}
       {isEditing && (
-        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
-          <div className="w-full max-w-sm p-8 bg-white dark:bg-[#1a1a1c] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
-            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 text-center">Update Photo</h3>
-            <div className="w-32 h-32 rounded-full overflow-hidden mx-auto mb-8 p-1 shadow-xl shadow-violet-500/20" style={{ background: auroraGradient }}>
-              <div className="w-full h-full rounded-full border-4 border-white dark:border-[#1a1a1c] overflow-hidden">
-                <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
-              </div>
+        <div className="fixed inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
+          <div className="w-full max-w-sm p-6 bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-6 text-center">Update Photo?</h3>
+            <div 
+              className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 p-0.5 shadow-lg"
+              style={{ background: auroraGradient }}
+            >
+              <img src={previewUrl} className="w-full h-full object-cover rounded-full" alt="Preview" />
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { setIsEditing(false); setSelectedFile(null); }} className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-200 font-bold hover:bg-slate-200 transition-colors">Cancel</button>
-              <button onClick={handleUpload} disabled={uploading} className="flex-1 py-3 rounded-xl text-white font-bold shadow-lg shadow-blue-500/30 transition-all hover:shadow-xl" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}>
+              <button
+                type="button"
+                onClick={() => { setIsEditing(false); setSelectedFile(null); setPreviewUrl(null); }}
+                className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={uploading}
+                className="flex-1 py-3 rounded-xl text-white font-medium transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/20"
+                style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+              >
                 {uploading ? "Uploading..." : "Confirm"}
               </button>
             </div>
@@ -252,29 +486,51 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
-   STAT CARD 
+   STAT CARD - Light theme with violet shadows
 ───────────────────────────────────────────────────────────────────────── */
-const StatCard = ({ value, label, gradient = false }) => (
-  <div className="p-5 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200/80 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-500/30 transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-violet-500/10">
-    <div className={`text-4xl font-black tracking-tight mb-1 ${gradient ? '' : 'text-slate-900 dark:text-white'}`}
-      style={gradient ? { background: 'linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : {}}
+const StatCard = ({ value, label, color = "text-slate-800 dark:text-zinc-100", gradient = false }) => (
+  <div 
+    className="p-5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all duration-200"
+    style={{
+      boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)',
+    }}
+  >
+    <div 
+      className={`text-3xl font-semibold ${gradient ? '' : color}`}
+      style={gradient ? {
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+      } : {}}
     >
       {value}
     </div>
-    <div className="text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">{label}</div>
-  </div>
-);
-
-const SkillBar = ({ value, max = 100 }) => (
-  <div className="h-3 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-white/5 shadow-inner">
-    <div className="h-full rounded-full transition-all duration-1000 ease-out relative" style={{ width: `${Math.min(Math.max((value / max) * 100, 0), 100)}%`, background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)' }}>
-      <div className="absolute inset-0 bg-white/20" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent)', backgroundSize: '1rem 1rem' }} />
-    </div>
+    <div className="text-[10px] text-slate-500 dark:text-zinc-500 uppercase tracking-wider mt-1">{label}</div>
   </div>
 );
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN PAGE
+   SKILL BAR - Ocean Gradient
+───────────────────────────────────────────────────────────────────────── */
+const SkillBar = ({ value, max = 100 }) => {
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  
+  return (
+    <div className="h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+      <div 
+        className="h-full rounded-full transition-all duration-700"
+        style={{ 
+          width: `${percentage}%`,
+          background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)'
+        }}
+      />
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN PAGE - "The Personal Gallery"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
   const { username: routeUsername } = useParams();
@@ -283,115 +539,145 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
-  const [profileAnalytics, setProfileAnalytics] = useState(null);
+  const { profileStats: profileAnalytics } = useAnalytics();
+  
+  // Phase 7: Edit modal state
   const [isEditing, setIsEditing] = useState(false);
+
+  // ⭐ PHASE 1 FIX: Error state with retry capability
   const [error, setError] = useState(false);
 
-  const isPublicRoute = useMemo(() => Boolean(routeUsername) && location.pathname.startsWith("/u/"), [routeUsername, location.pathname]);
+  const isPublicRoute = useMemo(
+    () => Boolean(routeUsername) && location.pathname.startsWith("/u/"),
+    [routeUsername, location.pathname]
+  );
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setError(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    // ⭐ PHASE 1 FIX: Clear error state at the start of each load attempt
+    setError(false);
     try {
       if (isPublicRoute) {
         const u = await getPublicUser(routeUsername);
         setPublicUser(u);
       } else {
         const rawResponse = await getMe();
-        let userData = rawResponse?.user || rawResponse?.data?.user || rawResponse?.data || rawResponse || {};
-        
-        const storedUser = readStoredUser();
-        const storedAvatar = readAvatarOverride() || storedUser?.avatarUrl || storedUser?.profilePicture || null;
-        setMe(storedAvatar ? { ...userData, avatarUrl: storedAvatar, profilePicture: storedAvatar } : userData);
+        console.log('[Profile] getMe() raw response:', rawResponse);
 
-        try {
-          const analytics = await client.get("/users/profile-analytics");
-          setProfileAnalytics(analytics.data);
-        } catch (err) { setProfileAnalytics(null); }
+        let userData = null;
+        if (rawResponse?.user && typeof rawResponse.user === 'object') {
+          userData = rawResponse.user;
+          console.log('[Profile] Extracted user from response.user');
+        } else if (rawResponse?.data?.user && typeof rawResponse.data.user === 'object') {
+          userData = rawResponse.data.user;
+          console.log('[Profile] Extracted user from response.data.user');
+        } else if (rawResponse?.data && typeof rawResponse.data === 'object' && !Array.isArray(rawResponse.data)) {
+          userData = rawResponse.data;
+          console.log('[Profile] Extracted user from response.data');
+        } else if (rawResponse && typeof rawResponse === 'object' && (rawResponse._id || rawResponse.id || rawResponse.email)) {
+          userData = rawResponse;
+          console.log('[Profile] Using response directly as user object');
+        } else {
+          console.warn('[Profile] Could not extract user from response:', rawResponse);
+          userData = rawResponse || {};
+        }
+
+        console.log('[Profile] Final userData:', userData);
+        console.log('[Profile] User fields available:', Object.keys(userData || {}));
+
+        const storedUser = readStoredUser();
+        const storedOverride = readAvatarOverride();
+        const storedAvatar = storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null;
+        const merged = storedAvatar ? { ...userData, avatarUrl: storedAvatar, profilePicture: storedAvatar } : userData;
+        setMe(merged);
       }
     } catch (e) {
-      // If we get a 429 rate limit, don't crash the UI, just fall back to stored user
-      if (e?.response?.status === 429) {
-        console.warn("[Profile] Rate limited. Using cached profile data if available.");
-        const storedUser = readStoredUser();
-        if (storedUser) setMe(storedUser);
-      } else {
-        if (!silent) setError(true);
-      }
+      console.error('[Profile] Failed to load user data:', e);
+      console.error('[Profile] Error details:', e?.response?.data || e?.message);
+      // ⭐ PHASE 1 FIX: Set error state so we can show retry UI
+      setError(true);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   }, [isPublicRoute, routeUsername]);
 
-  // ⭐ INITIAL LOAD ONLY (Decoupled from refreshGrowth to prevent infinite loops)
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  // Derived user values
-  const user = isPublicRoute ? publicUser : me;
-  const isOwnProfile = !isPublicRoute;
-  const userId = user?._id || user?.id;
-  
-  // Connect the real-time Growth Engine Hook
-  const { skillProfile, evolution, suggestions, trends, loading: growthLoading, refresh: refreshGrowth } = useGrowthTrack(userId);
-
-  // ⭐ ZERO-LATENCY REAL-TIME EVENT LISTENERS
   useEffect(() => {
     if (isPublicRoute) return;
-
-    const handleUpdate = () => {
-      console.log('[Profile] Auto-refresh triggered via global event (Zero-Latency mode)');
-      load(true); // silent refetch
-      refreshGrowth(true); // silent refetch
+    let poll = null;
+    const onFocus = () => load();
+    const onVisibility = () => { if (document.visibilityState === "visible") load(); };
+    const onStorage = (e) => {
+      const key = e?.key || "";
+      if (key.includes("user") || key.includes("profile") || key.includes("token") || key.includes("auth") || !key) load();
     };
-    
-    // Bind to custom DOM events emitted by the rest of the application
-    window.addEventListener("taskCompleted", handleUpdate);
-    window.addEventListener("taskUpdated", handleUpdate);
-    window.addEventListener("ss:update", handleUpdate);
-    window.addEventListener("focus", handleUpdate);
-
-    // Polite polling fallback (15s instead of 8s to prevent 429s)
-    const poll = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        load(true);
-        refreshGrowth(true);
-      }
-    }, 15000);
-
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("storage", onStorage);
+    poll = window.setInterval(() => { if (document.visibilityState === "visible") load(); }, 15000);
     return () => {
-      window.removeEventListener("taskCompleted", handleUpdate);
-      window.removeEventListener("taskUpdated", handleUpdate);
-      window.removeEventListener("ss:update", handleUpdate);
-      window.removeEventListener("focus", handleUpdate);
-      clearInterval(poll);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("storage", onStorage);
+      if (poll) window.clearInterval(poll);
     };
-  }, [isPublicRoute, load, refreshGrowth]);
+  }, [isPublicRoute, load]);
 
-  // High-Density Metrics calculation
-  const totalShips = user?.totalShips || 0;
-  const completedTasks = user?.totalTasksCompleted || user?.completedTasks || 0;
-  const currentStreak = user?.streakDays || user?.currentStreak || 0;
-  // Calculate operational reliability dynamically based on real task completion ratios
-  const reliability = Math.min(calculateReliability(completedTasks, (user?.totalTasks || Math.max(completedTasks, 1))), 100) || 0; 
+  const user = isPublicRoute ? publicUser : me;
+  const isOwnProfile = !isPublicRoute;
+  const reliability = calculateReliability(user?.completedTasks, user?.totalTasks);
+  const userId = user?._id || user?.id;
+  const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
   const name = useMemo(() => resolveUserName(user), [user]);
 
-  if (loading && !user) {
+  // Phase 7: Handle edit profile
+  const handleEditProfile = () => {
+    setIsEditing(true);
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0a0c]">
-        <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-slate-500 dark:text-zinc-500">Loading...</span>
+        </div>
       </div>
     );
   }
 
+  {/* ═══════════════════════════════════════════════════════════════════════
+      ⭐ PHASE 1 FIX: Error state with branded retry UI
+      Shows when getMe() fails instead of falling back to "Anonymous".
+      Matches the app's visual style with violet accent.
+  ═══════════════════════════════════════════════════════════════════════ */}
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0a0c]">
-        <div className="flex flex-col items-center px-6">
-          <div className="w-20 h-20 rounded-3xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center mb-6 text-4xl shadow-sm">⚠️</div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Could not load profile</h2>
-          <button onClick={() => { load(); refreshGrowth(); }} className="mt-6 flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}>
-            <RefreshCw className="w-5 h-5" /> Try Again
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+      >
+        <div className="flex flex-col items-center text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-6">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">
+            Could not load profile
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6 max-w-xs">
+            We had trouble loading your profile data. Check your connection and try again.
+          </p>
+          <button
+            onClick={load}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-md hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
           </button>
         </div>
       </div>
@@ -399,139 +685,226 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen p-6 lg:p-10 max-w-[1440px] mx-auto bg-slate-50/50 dark:bg-[#0a0a0c]">
-      {isEditing && <ProfileEditModal user={user} onClose={() => setIsEditing(false)} onSave={() => { load(true); refreshGrowth(true); }} />}
+    <div 
+      className="min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto"
+      style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+    >
+      {/* Phase 7: Edit Modal */}
+      {isEditing && (
+        <ProfileEditModal 
+          user={user} 
+          onClose={() => setIsEditing(false)} 
+          onSave={load} 
+        />
+      )}
 
-      <section className="flex flex-col items-center mb-16 relative">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER SECTION
+      ═══════════════════════════════════════════════════════════════════ */}
+      <section className="flex flex-col items-center mb-16">
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
         
-        <div className="text-center mt-12">
-          <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white mb-4 drop-shadow-sm">
-            {name.fullName || user?.email?.split('@')[0]}
+        <div className="text-center mt-8">
+          <h1 className="text-4xl font-semibold text-slate-800 dark:text-white mb-3">
+            {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
           </h1>
           
-          <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
-            <span className="text-sm font-bold text-slate-600 bg-white dark:bg-[#1a1a1c] px-4 py-1.5 rounded-lg border border-slate-200 dark:border-white/5 shadow-sm">
-              ID: {user?.username || user?._id?.slice(-8) || "..."}
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-sm text-slate-500 dark:text-zinc-400">
+              ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
             </span>
-            <span className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #0D9488 100%)' }}>
-              <ShieldCheck className="w-4 h-4" /> Core Verified
+            
+            {/* Core Verified Badge - Teal (#2DD4BF) */}
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white shadow-sm shadow-teal-500/20"
+              style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Core Verified
             </span>
+            
             {skillProfile?.archetype?.current && (
-              <span className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-100 dark:bg-violet-500/20 text-violet-900 dark:text-violet-300 text-xs font-black uppercase tracking-widest border border-violet-200 dark:border-violet-500/30">
-                <Star className="w-4 h-4" /> {skillProfile.archetype.current}
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 text-xs font-medium border border-violet-200 dark:border-violet-500/20">
+                <Star className="w-3.5 h-3.5" />
+                {skillProfile.archetype.current}
               </span>
             )}
           </div>
           
-          {user?.bio && <p className="mt-8 text-lg font-medium text-slate-700 dark:text-zinc-300 max-w-2xl mx-auto leading-relaxed">{user.bio}</p>}
+          {user?.bio && (
+            <p className="mt-6 text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">{user.bio}</p>
+          )}
           
+          {/* Edit button - Blue action */}
           {isOwnProfile && (
-            <button onClick={() => setIsEditing(true)} className="mt-8 inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white text-sm font-black uppercase tracking-wider shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:-translate-y-0.5 transition-all border border-blue-400/50" style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' }}>
-              <Edit3 className="w-4 h-4" /> Edit Profile
+            <button 
+              onClick={handleEditProfile}
+              className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all shadow-md shadow-blue-200 dark:shadow-blue-900/20 hover:shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+            >
+              <Edit3 className="w-4 h-4" />
+              Edit Profile
             </button>
           )}
         </div>
       </section>
 
-      {/* ⭐ ELON MUSK GRID: 3-6-3 High-Density Architecture */}
-      <div className="grid grid-cols-12 gap-6 lg:gap-8">
-        
-        {/* LEFT COLUMN: Impact & Execution (col-span-3) */}
-        <div className="col-span-12 lg:col-span-3 space-y-6 lg:space-y-8">
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200/80 dark:border-white/5 shadow-sm">
+      {/* ═══════════════════════════════════════════════════════════════════
+          MAIN GRID
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left Column */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          {/* Impact Metrics */}
+          <div 
+            className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
+            style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
+          >
             <div className="flex items-center gap-2 mb-6">
-              <TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-              <h3 className="text-base font-black uppercase tracking-wide text-slate-900 dark:text-white">Impact Metrics</h3>
+              <TrendingUp className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Impact Metrics</h3>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <StatCard value={totalShips} label="Ships" />
-              <StatCard value={`${currentStreak}d`} label="Streak" gradient />
+              <StatCard value={user?.totalShips || 0} label="Deployments" color="text-slate-800 dark:text-white" />
+              <StatCard value={`${user?.currentStreak || 0}d`} label="Momentum" gradient />
             </div>
-            {skillProfile?.overallGrowth !== undefined && (
-              <div className="p-4 rounded-xl bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-inner">
+            {skillProfile?.overallGrowth && (
+              <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-teal-700 dark:text-teal-400" />
-                  <span className="text-sm font-bold text-teal-900 dark:text-teal-300">+{skillProfile.overallGrowth}% velocity</span>
+                  <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
+                    +{skillProfile.overallGrowth}% growth this quarter
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200/80 dark:border-white/5 shadow-sm">
+          {/* Operational Trust - with Ocean gradient bar */}
+          <div 
+            className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
+            style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
+          >
             <div className="flex items-center gap-2 mb-6">
-              <Activity className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              <h3 className="text-base font-black uppercase tracking-wide text-slate-900 dark:text-white">Operational Trust</h3>
+              <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Operational Trust</h3>
             </div>
-            <div className="flex items-end gap-3 mb-5">
-              <span className="text-6xl font-black tracking-tighter text-slate-900 dark:text-white">{reliability}%</span>
-              <span className="text-sm font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-1.5">
-                {reliability >= 85 ? "Elite" : reliability >= 60 ? "Solid" : "Building"}
+            <div className="flex items-end gap-2 mb-4">
+              <span className="text-4xl font-semibold text-slate-800 dark:text-white">{reliability}%</span>
+              <span className="text-xs text-teal-600 dark:text-teal-400 font-medium mb-1">
+                {reliability >= 70 ? "Excellent" : reliability >= 40 ? "Good" : "Building"}
               </span>
             </div>
             <SkillBar value={reliability} />
           </div>
+          {/* ✅ Priority 1: Profile Strength */}
+          {isOwnProfile && <ProfileStrength onEditClick={handleEditProfile} />}
 
-          {isOwnProfile && <ProfileStrength onEditClick={() => setIsEditing(true)} />}
           {isOwnProfile && <EvolutionMoments moments={evolution} loading={growthLoading} />}
         </div>
 
-        {/* MIDDLE COLUMN: Deep Analytics (col-span-6) */}
-        <div className="col-span-12 lg:col-span-6 space-y-6 lg:space-y-8">
+        {/* Middle Column */}
+        <div className="col-span-12 lg:col-span-5 space-y-6">
+          {/* Skill Profile - with radar chart */}
           {isOwnProfile && skillProfile?.skills && (
-            <div className="p-8 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200/80 dark:border-white/5 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <Brain className="w-7 h-7 text-violet-600 dark:text-violet-400" />
-                  <h3 className="text-xl font-black uppercase tracking-wide text-slate-900 dark:text-white">Skill Matrix</h3>
+            <div 
+              className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
+              style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-violet-500" />
+                  <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Skill Profile</h3>
                 </div>
+                {skillProfile.strengths?.length > 0 && (
+                  <div className="flex gap-1">
+                    {skillProfile.strengths.map((s) => (
+                      <span 
+                        key={s} 
+                        className="px-2 py-0.5 rounded text-[10px] bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20 capitalize"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex justify-center my-4">
-                <SkillRadarChart skills={skillProfile.skills} size={360} showLabels={true} showValues={true} />
+              <div className="flex justify-center">
+                <SkillRadarChart 
+                  skills={skillProfile.skills} 
+                  size={280} 
+                  showLabels={true} 
+                  showValues={true} 
+                  showTrends={true} 
+                />
               </div>
+              {skillProfile.growthAreas?.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mb-2">Focus areas for growth:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {skillProfile.growthAreas.map((area) => (
+                      <span 
+                        key={area} 
+                        className="px-2 py-1 rounded-lg text-xs bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20 capitalize"
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="p-8 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200/80 dark:border-white/5 shadow-sm">
-            <div className="flex items-center gap-3 mb-8">
-              <Brain className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-              <h3 className="text-xl font-black uppercase tracking-wide text-slate-900 dark:text-white">Behavioral Profile</h3>
+          {/* Behavioral Analysis */}
+          <div 
+            className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
+            style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
+          >
+            <div className="flex items-center gap-2 mb-8">
+              <Brain className="w-4 h-4 text-violet-500" />
+              <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Behavioral Analysis</h3>
             </div>
-            <div className="grid grid-cols-1 gap-8">
-              {profileAnalytics?.collaborationStyle && <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />}
-              {profileAnalytics?.roleClassification && <RoleClassificationCard data={profileAnalytics.roleClassification} />}
+            <div className="grid grid-cols-1 gap-6">
+              {profileAnalytics?.collaborationStyle && (
+                <CollaborationStyleCard data={profileAnalytics.collaborationStyle} />
+              )}
+              {profileAnalytics?.roleClassification && (
+                <RoleClassificationCard data={profileAnalytics.roleClassification} />
+              )}
             </div>
-            <div className="mt-10 pt-8 border-t border-slate-200 dark:border-white/5">
-              {user && <WorkPersonality userId={userId} />}
+            <div className="mt-10 pt-8 border-t border-slate-100 dark:border-white/5">
+              {user && <WorkPersonality userId={user._id || user.id} />}
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Growth & Forward Looking (col-span-3) */}
-        <div className="col-span-12 lg:col-span-3 space-y-6 lg:space-y-8">
+        {/* Right Column */}
+        <div className="col-span-12 lg:col-span-3 space-y-6">
           {isOwnProfile && <GrowthSuggestions suggestions={suggestions} loading={growthLoading} />}
           
+          {/* Trends */}
           {isOwnProfile && trends && (
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200/80 dark:border-white/5 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                  <h3 className="text-base font-black uppercase tracking-wide text-slate-900 dark:text-white">Trend Vector</h3>
-                </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded">12W</span>
+            <div 
+              className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
+              style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Trends</h3>
+                <span className="text-xs text-slate-400 dark:text-zinc-500">12 weeks</span>
               </div>
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {["velocity", "quality", "collaboration"].map((metric) => {
                   const growth = trends.summary?.[`${metric}Growth`] || 0;
                   const latest = trends.data?.[trends.data.length - 1]?.[metric] || 0;
                   const isPositive = growth >= 0;
                   return (
-                    <div key={metric} className="flex items-center justify-between group">
+                    <div key={metric} className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-black text-slate-800 dark:text-zinc-200 capitalize tracking-wide">{metric}</p>
-                        <p className="text-xs font-bold text-slate-500 dark:text-zinc-500 mt-0.5">Score: {latest}</p>
+                        <p className="text-sm text-slate-700 dark:text-zinc-300 capitalize">{metric}</p>
+                        <p className="text-xs text-slate-400 dark:text-zinc-500">{latest}/100</p>
                       </div>
-                      <span className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wider border ${isPositive ? "bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-500/10 dark:text-teal-400 dark:border-teal-500/20" : "bg-red-50 text-red-800 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"}`}>
+                      <span className={`text-sm font-medium ${isPositive ? "text-teal-600 dark:text-teal-400" : "text-red-500 dark:text-red-400"}`}>
                         {isPositive ? "+" : ""}{growth}%
                       </span>
                     </div>
@@ -542,12 +915,23 @@ export default function Profile() {
           )}
         </div>
 
+        {/* Trend Charts - Full Width */}
         {isOwnProfile && (
-          <div className="col-span-12 mt-4">
+          <div className="col-span-12">
             <TrendCharts trends={trends} loading={growthLoading} />
           </div>
         )}
 
+        {/* Export Button */}
+        <div className="col-span-12 flex justify-center pt-8">
+          <button 
+            className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-50 dark:hover:bg-white/5 hover:border-slate-300 dark:hover:border-white/20 transition-all duration-200 group"
+            style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+          >
+            <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+            <span className="text-sm">Export Profile Data</span>
+          </button>
+        </div>
       </div>
     </div>
   );

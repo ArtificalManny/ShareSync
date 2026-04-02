@@ -1,18 +1,20 @@
 // src/pages/Settings.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SETTINGS PAGE v4.2 - Wired to Context State
+// SHARESYNC SETTINGS PAGE v4.2 - Wired to /api/settings
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Control Room" (Adaptive Light/Dark)
 //
 // CHANGES in v4.2:
-// - Completely removed direct API fetching.
-// - Binds form fields directly to the global SettingsContext state.
-// - Ensures settings persist seamlessly between page navigation.
+// - Switched from getMe()/updateProfile()/updateNotifications
+//   to dedicated Settings API (GET/PUT /settings).
+// - Maps Nest Settings schema to existing React state.
+// - Keeps ALL UI + layout identical.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useSettings } from '../context/SettingsContext';
+// OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
+import { getSettings, updateSettings } from '../api/settings';
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
@@ -181,9 +183,7 @@ function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = 
 // MAIN SETTINGS PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
-  // 🛡️ CRITICAL FIX: Extract settings entirely from global Context
-  const { settings: globalSettings, loading: contextLoading, updateSettings: globalUpdateSettings } = useSettings();
-
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [ok, setOk] = useState('');
@@ -266,67 +266,103 @@ export default function Settings() {
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // BIND LOCAL STATE TO GLOBAL CONTEXT
+  // LOAD SETTINGS FROM /api/settings
   // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
-    // Wait until the context has successfully fetched the data
-    if (contextLoading || !globalSettings) return;
+    let ignore = false;
+    setLoading(true);
 
-    // Momentum
-    const momentum = globalSettings.momentum || {};
-    setDailyShipsGoal(momentum.dailyGoal ?? 5);
-    setWeekendShipsCount(momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true);
-    setAllowStreakFreeze(momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true);
+    getSettings()
+      .then((settings) => {
+        if (ignore || !settings) return;
 
-    // Focus
-    const focus = globalSettings.focus || {};
-    setDeepWorkTarget(focus.dailyTarget ?? 4);
-    setAutoStartFocus(Boolean(focus.autoStart ?? false));
-    setFocusStartTime(focus.startTime || '09:00');
-    setBlockedApps(Array.isArray(focus.blockedApps) ? focus.blockedApps : ['slack', 'youtube', 'tiktok']);
-    setEmergencyBreaksLeft(focus.emergencyBreaksLeft ?? 1);
+        // Momentum
+        const momentum = settings.momentum || {};
+        setDailyShipsGoal(momentum.dailyGoal ?? 5);
+        setWeekendShipsCount(
+          momentum.weekendCount !== undefined ? Boolean(momentum.weekendCount) : true
+        );
+        setAllowStreakFreeze(
+          momentum.allowFreeze !== undefined ? Boolean(momentum.allowFreeze) : true
+        );
 
-    // Social
-    const social = globalSettings.social || {};
-    setShowStreakTo(social.showStreakTo || 'friends');
-    setCelebratePublicly(Boolean(social.celebrate ?? true));
-    
-    const resolvedPublicProfile = social.publicProfile ?? globalSettings.publicProfile ?? true;
-    const resolvedDiscoverable = social.discoverable ?? globalSettings.discoverable ?? false;
-    setPublicProfile(Boolean(resolvedPublicProfile));
-    setDiscoverable(Boolean(resolvedDiscoverable));
+        // Focus
+        const focus = settings.focus || {};
+        setDeepWorkTarget(focus.dailyTarget ?? 4);
+        setAutoStartFocus(Boolean(focus.autoStart ?? false));
+        setFocusStartTime(focus.startTime || '09:00');
 
-    // Mentor
-    const mentor = globalSettings.mentor || {};
-    setMentorEnabled(Boolean(mentor.enabled ?? true));
-    setMentorTone(mentor.tone || 'wise');
-    setMentorIntensity(mentor.intensity ?? 3);
+        // Distraction shield bits (live under focus in schema)
+        setBlockedApps(Array.isArray(focus.blockedApps) ? focus.blockedApps : ['slack', 'youtube', 'tiktok']);
+        setEmergencyBreaksLeft(focus.emergencyBreaksLeft ?? 1);
 
-    // Legacy
-    const legacy = globalSettings.legacy || {};
-    setShowLegacyEverywhere(Boolean(legacy.showEverywhere ?? true));
-    setYearlyMontage(Boolean(legacy.yearlyVideo ?? false));
+        // Social
+        const social = settings.social || {};
+        setShowStreakTo(social.showStreakTo || 'friends');
+        setCelebratePublicly(Boolean(social.celebrate ?? true));
 
-    // Appearance
-    const appearance = globalSettings.appearance || {};
-    const initialTheme = appearance.theme || localStorage.getItem('ss.theme') || 'dark';
-    setTheme(initialTheme);
-    setUserMode(appearance.mode || 'pro');
-    applyTheme(initialTheme);
+        const resolvedPublicProfile =
+          social.publicProfile ??
+          settings.publicProfile ??
+          true;
+        const resolvedDiscoverable =
+          social.discoverable ??
+          settings.discoverable ??
+          false;
 
-    // Notifications
-    const notifications = globalSettings.notifications || {};
-    setEmailActivity(Boolean(notifications.emailActivity ?? true));
-    setEmailDigest(Boolean(notifications.emailDigest ?? true));
+        setPublicProfile(Boolean(resolvedPublicProfile));
+        setDiscoverable(Boolean(resolvedDiscoverable));
 
-    // Security
-    const security = globalSettings.security || {};
-    setTwoFA(Boolean(security.twoFA ?? false));
+        // Mentor
+        const mentor = settings.mentor || {};
+        setMentorEnabled(Boolean(mentor.enabled ?? true));
+        setMentorTone(mentor.tone || 'wise');
+        setMentorIntensity(mentor.intensity ?? 3);
 
-  }, [globalSettings, contextLoading]);
+        // Legacy
+        const legacy = settings.legacy || {};
+        setShowLegacyEverywhere(Boolean(legacy.showEverywhere ?? true));
+        setYearlyMontage(Boolean(legacy.yearlyVideo ?? false));
+
+        // Appearance
+        const appearance = settings.appearance || {};
+        const initialTheme =
+          appearance.theme ||
+          localStorage.getItem('ss.theme') ||
+          'dark'; // default to dark now
+        setTheme(initialTheme);
+        setUserMode(appearance.mode || 'pro');
+        applyTheme(initialTheme);
+
+        // Notifications
+        const notifications = settings.notifications || {};
+        setEmailActivity(Boolean(notifications.emailActivity ?? true));
+        setEmailDigest(Boolean(notifications.emailDigest ?? true));
+
+        // Security
+        const security = settings.security || {};
+        setTwoFA(Boolean(security.twoFA ?? false));
+      })
+      .catch((e) => {
+        if (ignore) return;
+        // Prefer backend message if present
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          'Failed to load settings';
+        setErrorMsg(String(msg));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SAVE SETTINGS -> PUT /api/settings (Using Context)
+  // SAVE SETTINGS -> PUT /api/settings
   // ═══════════════════════════════════════════════════════════════════════════
   const handleSave = async (e) => {
     e?.preventDefault?.();
@@ -336,6 +372,7 @@ export default function Settings() {
 
     try {
       const payload = {
+        // legacy flat fields for backward compatibility
         publicProfile,
         discoverable: Boolean(discoverable),
 
@@ -379,7 +416,7 @@ export default function Settings() {
         },
       };
 
-      await globalUpdateSettings(payload);
+      await updateSettings(payload);
 
       setOk('Settings saved successfully! 🎉');
       trackMentorSettings({
@@ -464,7 +501,7 @@ export default function Settings() {
     });
   };
 
-  if (contextLoading) {
+  if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#09090B]">
         <div className="flex items-center gap-3">
@@ -541,7 +578,9 @@ export default function Settings() {
             iconColor="text-fuchsia-600 dark:text-fuchsia-400"
             title="Experience Persona"
           >
-            <PersonaPicker />
+            <div className="picker-settings-wrapper">
+              <PersonaPicker />
+            </div>
           </SectionCard>
 
           {/* ⭐ Priority 4.2: Celebration Style */}
@@ -551,7 +590,9 @@ export default function Settings() {
             iconColor="text-orange-600 dark:text-orange-400"
             title="Celebration Style"
           >
-            <CelebrationStylePicker />
+            <div className="picker-settings-wrapper">
+              <CelebrationStylePicker />
+            </div>
           </SectionCard>
 
           {/* LAYER 1.5: Daily Pulse Check (Priority 3.4) */}
@@ -923,11 +964,12 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* 🛡️ Save Button */}
+          {/* Save Button */}
           <button
             type="submit"
             disabled={saving}
-            className="w-full text-white bg-violet-600 hover:bg-violet-700 px-8 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-600/50 disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500"
+            className="w-full text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500/50"
+            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
           >
             {saving ? 'Saving Your Future...' : 'Save Changes'}
           </button>

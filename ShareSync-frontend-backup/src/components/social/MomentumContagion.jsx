@@ -204,11 +204,13 @@ export default function MomentumContagion({
         <AnimatePresence initial={false}>
           {visibleItems.map((item, index) => (
             <motion.div
+              layout // ⭐ STEP 3: The magic property for smooth list shifting
               key={item.id}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.2, delay: index * 0.05 }}
+              initial={{ opacity: 0, scale: 0.95, y: -20, height: 0 }}
+              animate={{ opacity: 1, scale: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, scale: 0.95, y: 20, height: 0 }}
+              transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
+              style={{ overflow: 'hidden' }}
             >
               <ContagionFeedItem item={item} />
             </motion.div>

@@ -30,9 +30,6 @@ import { SocketProvider } from "./context/SocketContext";
 // ⭐ PHASE N: Notifications shared state (global unread + realtime)
 import { NotificationsProvider } from "./context/NotificationsContext";
 
-// ⭐ PHASE 2: Settings Provider (Global State & Theme Sync)
-import { SettingsProvider } from "./context/SettingsContext";
-
 // ⭐ DAY 7: Context Tracking Hook
 import { useContextTracking } from "./hooks/useContextTracking";
 
@@ -240,6 +237,12 @@ const MessageProvider = lazy(() =>
     default: m.MessageProvider,
   }))
 );
+// ⭐ NEW: Analytics Provider
+const AnalyticsProvider = lazy(() =>
+  import("./contexts/AnalyticsContext.jsx").then((m) => ({
+    default: m.AnalyticsProvider,
+  }))
+);
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
@@ -395,10 +398,10 @@ function AuthenticatedApp({ children, userData }) {
       <PersonaProvider>
       <SocketProvider>
         <NotificationsProvider>
-          <SettingsProvider> {/* ⭐ PHASE 2: NEW SETTINGS PROVIDER PLACED SECURELY INSIDE AUTHENTICATED TREE */}
-            <UserProvider>
-              <MessageProvider>
-                <SprintProvider>
+          <UserProvider>
+            <MessageProvider>
+              <SprintProvider>
+                <AnalyticsProvider>
                   <Suspense fallback={null}>
                     <ShortcutProvider>
                   <CommandControlLayer projects={[]}>
@@ -484,10 +487,10 @@ function AuthenticatedApp({ children, userData }) {
                   </CommandControlLayer>
                     </ShortcutProvider>
                   </Suspense>
-                </SprintProvider>
-              </MessageProvider>
-            </UserProvider>
-          </SettingsProvider>
+                </AnalyticsProvider>
+              </SprintProvider>
+            </MessageProvider>
+          </UserProvider>
         </NotificationsProvider>
       </SocketProvider>
       </PersonaProvider>

@@ -39,7 +39,6 @@ export async function fetchProjects() {
 }
 
 export async function fetchActivities({ limit = 50 } = {}) {
-  // You said you have POST /api/activities in backend branch.
   // Many implementations support GET /activities; we probe safely.
   const data =
     (await safeGet(`/activities?limit=${limit}`)) ||
@@ -50,15 +49,29 @@ export async function fetchActivities({ limit = 50 } = {}) {
 }
 
 export async function fetchActivitySummary() {
-  // Probe common summary endpoints you’ve used before
-  // (no backend edits required; if present, we use it)
-  const data =
-    (await safeGet("/user/activity-summary")) ||
-    (await safeGet("/users/activity-summary")) ||
-    (await safeGet("/users/me/activity-summary")) ||
-    (await safeGet("/users/me/summary"));
+  const res = await safeGet("/users/me");
 
-  return data || null;
+  // Handle the various ways the backend might wrap the user object
+  const user = res?.user || res?.data?.user || res?.data || res;
+
+  // If we couldn't get a real user, return null to force the fallback computation
+  if (!user || (!user._id && !user.id && !user.email)) return null;
+
+  // ⭐ BUG FIX: Safely parse the focus metric
+  // If the database stores focus as an object (e.g. { score: 85 }), drill into it.
+  let focusValue = 0;
+  if (typeof user.focus === 'number') {
+    focusValue = user.focus;
+  } else if (typeof user.focus === 'object' && user.focus !== null) {
+    focusValue = user.focus.score || user.focus.value || user.focus.current || user.focus.level || 0;
+  }
+
+  return {
+    ships: user.totalShips || 0,
+    streakDays: user.currentStreak || user.streakDays || 0,
+    focus: focusValue,
+    efficiency: 0, // Real 0 for efficiency until advanced analytics are built
+  };
 }
 
 export async function tryShipProject(projectId) {

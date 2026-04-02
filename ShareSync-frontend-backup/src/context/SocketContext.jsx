@@ -7,6 +7,7 @@
 // + STEP 6: Public project spectator rooms (public:project:{projectId})
 // ⭐ PHASE 4: Optimistic UI & React Query Cache Invalidation
 // ⭐ FIX: Added presence events (room:users, userJoined, userLeft) to the master event bus
+// ⭐ STEP 3: Passed JWT Auth Token and added team:activity_updated relay
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, {
@@ -34,6 +35,8 @@ const SocketContext = createContext(null);
 export function SocketProvider({ children }) {
   const { user } = useAuth();
   const userId = user?._id || user?.id || null;
+  // ⭐ Ensure token gets forwarded so the backend knows who we are.
+  const token = user?.token || localStorage.getItem('token') || null; 
   const queryClient = useQueryClient();
 
   // Track which rooms we're in
@@ -68,6 +71,11 @@ export function SocketProvider({ children }) {
       // Handle activity feed updates
       'activity:new': (data) => {
         eventHandlers['activity:new']?.forEach((handler) => handler(data));
+      },
+      
+      // ✅ STEP 3: Real-time team updates explicitly bridged
+      'team:activity_updated': (data) => {
+        eventHandlers['team:activity_updated']?.forEach((handler) => handler(data));
       },
 
       // Handle task updates (legacy name)
@@ -127,6 +135,7 @@ export function SocketProvider({ children }) {
   // Initialize socket with user rooms
   const { socket, state, emit, joinRoom, leaveRoom } = useSocket(activeRooms, {
     userId,
+    token, // pass token to your useSocket logic
     onEvents,
     enabled: !!userId, // Only connect when user is authenticated
   });

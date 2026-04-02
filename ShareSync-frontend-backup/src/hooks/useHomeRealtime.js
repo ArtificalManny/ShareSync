@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { fetchProjects, fetchActivities, fetchActivitySummary } from "../api/home";
 import client from "../api/client";
+// ⭐ STEP 3: Import socket event listener
+import { useSocketEvent } from "../context/SocketContext";
 
 /**
  * Convert projects -> Home "missions" shape
@@ -130,12 +132,9 @@ function computeSummaryFromActivities(activities) {
       now - a.createdAt > 7 * 24 * 60 * 60 * 1000 &&
       now - a.createdAt <= 14 * 24 * 60 * 60 * 1000
   );
-  
-  // FIX: Ensured previous 7d checks for both 'ship' and 'completed' like the current 7d
-  const shipsPrev = prev7d.filter((a) => {
-    const t = String(a.type).toLowerCase();
-    return t.includes("ship") || t.includes("completed");
-  }).length;
+  const shipsPrev = prev7d.filter((a) =>
+    String(a.type).toLowerCase().includes("ship")
+  ).length;
 
   const efficiency =
     shipsPrev === 0 ? (ships > 0 ? 12 : 0) : Math.round(((ships - shipsPrev) / shipsPrev) * 100);
@@ -525,29 +524,58 @@ export function useHomeRealtime() {
     };
   }, [safeSet, loadOnce]);
 
+  // ⭐ STEP 3: Listen for live Socket Activity events to update without refreshing
+  const handleLiveActivity = useCallback((data) => {
+    if (!data) return;
+    
+    const synthetic = {
+      id: data?.id || data?._id || `live-socket:${Date.now()}`,
+      type: data?.type || data?.action || data?.event || "ACTIVITY",
+      createdAt: data?.createdAt || Date.now(),
+      actorName: data?.actor?.name || data?.actorName || data?.user?.name || "Teammate",
+      projectName: data?.project?.name || data?.projectName || data?.project?.title || "Project",
+      raw: data
+    };
+
+    // Inject into the top of the feed
+    safeSet(setActivitiesRaw, (prev) => {
+      const arr = Array.isArray(prev) ? prev : [];
+      if (arr.some(a => a.id === synthetic.id)) return arr; // prevent UI duplicates
+      return [synthetic, ...arr];
+    });
+    
+    // Optimistically bump ships count locally if it's a ship event
+    if (String(synthetic.type).toLowerCase().includes("ship") || String(synthetic.type).toLowerCase().includes("complete")) {
+      safeSet(setSummaryRaw, (prev) => {
+        if (!prev) return prev;
+        return { ...prev, ships: (prev.ships || 0) + 1 };
+      });
+    }
+  }, [safeSet]);
+
+  useSocketEvent("activity:new", handleLiveActivity);
+  useSocketEvent("team:activity_updated", handleLiveActivity);
+
   const activities = useMemo(() => normalizeActivities(activitiesRaw), [activitiesRaw]);
   const missions = useMemo(() => toMissions(projects), [projects]);
 
-  // FIX: Force trust local real-time calculation over stale backend 0s.
   const computedSummary = useMemo(() => {
-    const fallback = computeSummaryFromActivities(activities);
-
     if (summaryRaw && typeof summaryRaw === "object") {
-      const apiShips = summaryRaw.ships ?? summaryRaw.shipsLast7Days ?? summaryRaw.shipCount;
-      const apiStreak = summaryRaw.streakDays ?? summaryRaw.streak ?? summaryRaw.currentStreak;
-      const apiFocus = summaryRaw.focus ?? summaryRaw.focusPercent;
-      const apiEfficiency = summaryRaw.efficiency ?? summaryRaw.efficiencyDelta;
+      const ships = summaryRaw.ships ?? summaryRaw.shipsLast7Days ?? summaryRaw.shipCount ?? null;
+      const streakDays = summaryRaw.streakDays ?? summaryRaw.streak ?? summaryRaw.currentStreak ?? null;
+      const focus = summaryRaw.focus ?? summaryRaw.focusPercent ?? null;
+      const efficiency = summaryRaw.efficiency ?? summaryRaw.efficiencyDelta ?? null;
 
+      const fallback = computeSummaryFromActivities(activities);
       return {
-        // Math.max guarantees that if the local activity array sees a new ship, a slow backend '0' won't overwrite it.
-        ships: typeof apiShips === 'number' ? Math.max(apiShips, fallback.ships) : fallback.ships,
-        streakDays: typeof apiStreak === 'number' ? Math.max(apiStreak, fallback.streakDays) : fallback.streakDays,
-        focus: (apiFocus && apiFocus > 0) ? apiFocus : fallback.focus,
-        efficiency: (apiEfficiency && apiEfficiency !== 0) ? apiEfficiency : fallback.efficiency,
+        ships: ships ?? fallback.ships,
+        streakDays: streakDays ?? fallback.streakDays,
+        focus: focus ?? fallback.focus,
+        efficiency: efficiency ?? fallback.efficiency,
       };
     }
 
-    return fallback;
+    return computeSummaryFromActivities(activities);
   }, [summaryRaw, activities]);
 
   const teamPulse = useMemo(() => computeTeamPulse(activities), [activities]);

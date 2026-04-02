@@ -31,6 +31,7 @@ import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
 import IntelligencePanel from "../components/home/IntelligencePanel";
 
+import { useAnalytics } from "../contexts/AnalyticsContext";
 import { EntranceHighlight, useEntranceHighlight } from "../components/onboarding/AppEntrance";
 import { useMomentumContext, useMomentumActivity } from "../contexts/MomentumContext";
 import AllShipped from "../components/empty-states/AllShipped";
@@ -239,6 +240,8 @@ export default function Home() {
   } catch (e) {}
 
   // REALTIME HOME DATA (safe + polling + instant local events)
+const { dashboardStats, loading: analyticsLoading } = useAnalytics();
+
  const {
     loadingMissions,
     missions = [],
@@ -612,29 +615,29 @@ export default function Home() {
             />
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard
+             <StatCard
                 label="Ships"
-                value={summary.ships}
+                value={summary?.ships || 0}
                 color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
-                description="Total validated deployments in the last 7 days (derived from real activity)."
+                description="Total validated deployments in the last 7 days."
               />
               <StatCard
                 label="Streak"
-                value={`${summary.streakDays}D`}
+                value={`${summary?.streakDays || 0}D`}
                 color="text-amber-600 dark:text-amber-500"
-                description="Current streak (from backend summary if available; otherwise derived from activity)."
+                description="Current streak of active days."
               />
               <StatCard
                 label="Focus"
-                value={`${summary.focus}%`}
+                value={`${summary?.focus || 0}%`}
                 color="text-teal-600 dark:text-teal-400"
-                description="Focus estimate (backend if available; otherwise derived from activity types)."
+                description="Focus estimate based on activity types."
               />
               <StatCard
                 label="Efficiency"
-                value={`${summary.efficiency >= 0 ? "+" : ""}${summary.efficiency}%`}
+                value={`${summary?.efficiency >= 0 ? "+" : ""}${summary?.efficiency || 0}%`}
                 color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
-                description="Change vs previous period (derived until backend becomes authoritative)."
+                description="Change vs previous period."
               />
             </div>
           </div>
