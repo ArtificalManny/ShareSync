@@ -275,7 +275,7 @@ export default function CreateAccount() {
     setSubmitting(true);
     try {
       // ⚠️ EXISTING API CALL - PRESERVED
-      const response = await fetch("http://localhost:3000/api/auth/register", {
+      const response = await fetch("http://localhost:5050/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -319,7 +319,7 @@ export default function CreateAccount() {
 
     try {
       // ⚠️ EXISTING API CALL - PRESERVED
-      const response = await fetch("http://localhost:3000/api/auth/verify-email", {
+      const response = await fetch("http://localhost:5050/api/auth/verify-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, code }),

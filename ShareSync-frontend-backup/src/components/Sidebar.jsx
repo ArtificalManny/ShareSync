@@ -1,16 +1,13 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.3 - "The Gallery Walk" Light Theme (Minimal UI)
+// SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
 // Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES:
-// - Removed MomentumLevelIndicator ("Idle Level 0")
-// - Removed text numbers from Progress Ring ("75")
-// - Removed ShipCounter ("Ships today")
-// - Removed Team and Leaderboard sections
-// - Removed Project Deck count, Gold League Indicator, and streak text
-// - Layout CSS kept exactly as stable baseline
+// CHANGES in v5.1:
+// - Removed toggle buttons (>> << arrows) completely per user request
+// - Removed auto-hide indicator wedge
+// - Cleaner minimal header
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -121,7 +118,7 @@ function MomentumLevelIndicator({ collapsed = false }) {
         )}
         <div className="flex-1 min-w-0">
           <div className={`text-xs font-semibold ${config.color} transition-colors duration-300`}>{config.label}</div>
-          <div className="text-[10px] text-slate-500 truncate font-medium transition-colors duration-300">Level {glowLevel}</div>
+          <div className="text-[10px] text-slate-600 truncate font-medium transition-colors duration-300">Level {glowLevel}</div>
         </div>
       </div>
     </div>
@@ -129,7 +126,7 @@ function MomentumLevelIndicator({ collapsed = false }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - Light Theme (ALL animations preserved, text removed)
+   PROGRESS RING - Light Theme (ALL animations preserved)
 ───────────────────────────────────────────────────────────────────────── */
 function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -141,12 +138,17 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - displayProgress * circumference;
+  const showStreak = streak >= 3;
+  const isImpressiveStreak = streak >= 7;
 
   const prevProgressRef = useRef(actualProgress);
   const prevLevelRef = useRef(level);
   const [isPulsing, setIsPulsing] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState("normal");
+
+  const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
+  const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
 
   useEffect(() => {
     if (!isComplete) return;
@@ -209,9 +211,20 @@ function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, 
             </div>
           ) : isFireMode ? (
             <span className="text-lg animate-pulse">🔥</span>
-          ) : null}
+          ) : (
+            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
+              {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
+            </span>
+          )}
         </div>
       </div>
+
+      {!collapsed && showStreak && (
+        <div className={`mt-3 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${isImpressiveStreak ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-500 border border-transparent"}`}>
+          <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
+          <span>{streak}d</span>
+        </div>
+      )}
 
       <style>{`
         @keyframes ring-pulse { 0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.5); opacity: 0.6; } 100% { box-shadow: 0 0 0 12px transparent; opacity: 0; } }
@@ -271,7 +284,7 @@ function ShipCounter({ current = 2, target = 5, collapsed = false }) {
   return (
     <div className={`mx-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 transition-all duration-200 ${isAnimating ? "ring-2 ring-violet-200" : ""}`}>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ships today</span>
+        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ships today</span>
         <span className={`text-xs font-bold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
           {displayCurrent}/{target}
         </span>
@@ -296,10 +309,10 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, c
     <div className="mx-3">
       <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-3.5 h-3.5 text-slate-400" />}
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
+          {Icon && <Icon className="w-3.5 h-3.5 text-slate-600" />}
+          <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">{title}</span>
         </div>
-        {isOpen ? <ChevronUp className="w-3 h-3 text-slate-400" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
+        {isOpen ? <ChevronUp className="w-3 h-3 text-slate-600" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
       </button>
       {isOpen && <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-200">{children}</div>}
     </div>
@@ -315,6 +328,10 @@ function HoverTriggerZone({ onHover, onLeave }) {
 
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
+   v5.1 CHANGES:
+   - REMOVED all toggle buttons (>> << arrows)
+   - REMOVED auto-hide indicator wedge
+   - Clean minimal header
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
   const navigate = useNavigate();
@@ -322,6 +339,8 @@ export default function Sidebar({ user }) {
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
+  // Auto-hide is now disabled by default and not user-controllable via UI
+  // Users can still toggle via localStorage if they want
   const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
@@ -334,6 +353,8 @@ export default function Sidebar({ user }) {
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
+  // Priority 3.3: Focus Block auto-collapse
+  const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   useEffect(() => {
     const checkFocusBlock = () => {
       try { setFocusBlockCollapse(localStorage.getItem('ss.focusBlock.active') === '1'); } catch {}
@@ -343,7 +364,6 @@ export default function Sidebar({ user }) {
     return () => window.removeEventListener('focus-block-change', checkFocusBlock);
   }, []);
 
-  const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   const collapsed = autoHideEnabled ? !isHovering && !isMouseInSidebar : shouldCollapseSidebar || userCollapsed || focusBlockCollapse;
 
   useEffect(() => {
@@ -415,7 +435,7 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header */}
+        {/* Header - CLEANED UP: No toggle buttons */}
         <div className="flex items-center justify-center p-4">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
@@ -425,21 +445,50 @@ export default function Sidebar({ user }) {
               <span className="text-sm font-bold text-slate-800">OpenShare</span>
             </div>
           )}
+          {/* Toggle buttons REMOVED per user request */}
         </div>
 
         {/* Progress Ring */}
         <ProgressRing collapsed={collapsed} />
 
+        {/* Momentum Indicator */}
+        <div className="mb-4">
+          <MomentumLevelIndicator collapsed={collapsed} />
+        </div>
+
+        {/* League Indicator */}
+        {!collapsed && (
+          <div className="mx-3 mb-4">
+            <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
-          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} collapsed={collapsed} />
+          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
           
           <div className="py-4"><div className="h-px bg-slate-200" /></div>
           
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
+          
+          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
+          
+          {!collapsed && (
+            <>
+              <div className="pt-4"><div className="h-px bg-slate-200" /></div>
+              <CollapsibleSection title="Team" icon={Users} defaultOpen={true} collapsed={collapsed}>
+                <OnlineIndicator variant="compact" showAvatars={true} showCount={true} maxAvatars={3} expandable={true} defaultExpanded={false} />
+              </CollapsibleSection>
+              <div className="mt-4">
+                <CollapsibleSection title="Leaderboard" icon={Trophy} defaultOpen={false} collapsed={collapsed}>
+                  <MiniLeaderboard maxVisible={5} onViewAll={() => navigate("/leaderboard")} />
+                </CollapsibleSection>
+              </div>
+            </>
+          )}
         </nav>
 
         {/* User Profile Card */}
@@ -461,6 +510,7 @@ export default function Sidebar({ user }) {
           </div>
         </div>
 
+        {/* Auto-hide indicator REMOVED per user request */}
       </aside>
 
       {/* Backdrop for auto-hide */}
