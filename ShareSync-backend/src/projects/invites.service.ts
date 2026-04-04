@@ -8,7 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 import {
   Project,
@@ -125,10 +125,30 @@ export class InvitesService {
 
     this.logger.log(`Invite sent to ${normalizedEmail} for project ${project.name} (role: ${role})`);
 
+    // 🚀 Print the invite link directly to the terminal for local testing!
+    console.log(`\n✉️  LOCAL DEV: Invite Link generated -> http://localhost:54693/invite/${inviteToken}\n`);
+
     return {
       projectId: project.id,
       invites: project.invites,
     };
+  }
+
+  // 🚀 NEW: Listen for invites created during the ProjectsCreate.jsx flow!
+  @OnEvent('project.members.invited')
+  async handleProjectCreationInvites(payload: { projectId: string; invitedBy: string; members: any[] }) {
+    this.logger.log(`Caught creation event! Generating invites for ${payload.members.length} users...`);
+    for (const member of payload.members) {
+      const email = typeof member === 'string' ? member : (member.email || member.value);
+      if (email) {
+        try {
+          // Fixed: Cast 'member' to any to bypass strict InviteRole enum checking
+          await this.createInvite(payload.projectId, payload.invitedBy, { email, role: 'member' as any });
+        } catch (e) {
+          this.logger.error(`Failed to auto-generate invite for ${email}: ${e.message}`);
+        }
+      }
+    }
   }
 
   async listInvites(projectId: string, _actingUserId: string) {
