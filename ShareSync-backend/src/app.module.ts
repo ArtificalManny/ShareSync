@@ -69,6 +69,7 @@ import { FilesModule } from './files/files.module';
 // ✅ PHASE 6: NEW MODULES
 import { MilestonesModule } from './milestones/milestones.module';
 import { ThreadsModule } from './threads/threads.module';
+import { ThreadMessagesModule } from './thread-messages/thread-messages.module'; // ⭐ ADDED THIS LINE
 import { InsightsModule } from './insights/insights.module';
 import { VaultModule } from './vault/vault.module';
 
@@ -81,7 +82,6 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportsModule } from './reports/reports.module';
 import { AIModule } from './ai/ai.module';
 import { DiscoveryModule } from './discovery/discovery.module';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module'; // <-- IMPORTED SUBSCRIPTIONS MODULE
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRUST & SAFETY MODULES
@@ -217,6 +217,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ✅ PHASE 6: ADD THESE
     MilestonesModule,
     ThreadsModule,
+    ThreadMessagesModule, // ⭐ ADDED THIS LINE
     InsightsModule,
     VaultModule,
 
@@ -230,7 +231,6 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     IntegrationsModule,
     ReportsModule,
     AIModule,
-    SubscriptionsModule, // <-- REGISTERED SUBSCRIPTIONS MODULE
 
     // ─────────────────────────────────────────────────────────────────────────
     // TRUST & SAFETY
