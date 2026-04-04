@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
+import { sendInvite } from "../api/invites"; // ⭐ ADDED: Explicitly import our invite API
 import { getCurrentSubscription } from "../api/subscriptions";
 import { toast } from "../components/ui/toast";
 import SmartStart from "../components/projects/SmartStart";
@@ -47,6 +48,23 @@ function savePhase0Prefs(prefs) {
   } catch {
     // no-op
   }
+}
+
+/**
+ * ✅ DARK INPUT REF — applies dark theme directly on each form element.
+ * Uses el.style.setProperty(..., 'important') which CANNOT be overridden
+ * by any CSS rule, including !important rules in index.css.
+ * Applied as ref={darkRef} on every input, select, and textarea.
+ */
+function darkRef(el) {
+  if (!el) return;
+  el.style.setProperty('background-color', '#0f172a', 'important');
+  el.style.setProperty('background', '#0f172a', 'important');
+  el.style.setProperty('color', '#ffffff', 'important');
+  el.style.setProperty('border', '1px solid rgba(139, 92, 246, 0.3)', 'important');
+  el.style.setProperty('box-shadow', 'none', 'important');
+  el.style.setProperty('caret-color', '#c084fc', 'important');
+  el.style.setProperty('border-radius', '0.75rem', 'important');
 }
 
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
@@ -194,6 +212,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         status,
         privacy,
         isPublic: privacy === "Public",
+        // Members might be stripped by the backend DTO whitelist, so we handle them explicitly below!
         members,
       };
 
@@ -201,6 +220,22 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
       const id = project?._id || project?.id || project?.projectId;
       if (!id) throw new Error("Backend did not return an _id");
+
+      // ⭐ THE HANDSHAKE FIX: Explicitly send the invites using our dedicated API to bypass DTO strippers!
+      if (members.length > 0) {
+        try {
+          await Promise.all(members.map(m => {
+            // Map frontend UI roles to backend InviteRole enum
+            let mappedRole = "member";
+            if (m.role === "Manager") mappedRole = "admin";
+            if (m.role === "Viewer") mappedRole = "viewer";
+            
+            return sendInvite(id, { email: m.email, role: mappedRole });
+          }));
+        } catch (inviteErr) {
+          console.warn("Failed to send some invites during project creation:", inviteErr);
+        }
+      }
 
       toast({
         title: "Project created",
@@ -244,32 +279,30 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const isPublic = privacy === "Public";
 
   return (
-    <Dialog open={true} onClose={onClose} className="fixed inset-0 z-[150]">
-      {/* Background Overlay - High-end frosted glass effect */}
-      <div className="fixed inset-0 bg-slate-900/30 dark:bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" />
+    <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px]" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="pc-create-modal relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0f172a] shadow-2xl shadow-violet-500/10 dark:shadow-none animate-in zoom-in-95 duration-200">
-          
-          {/* Header - Crisp and Clean */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 rounded-t-2xl">
+        <Dialog.Panel className="pc-create-modal relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-purple-500/30 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl shadow-purple-500/20">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-t-2xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <Dialog.Title className="text-lg font-bold text-slate-900 dark:text-white">Create New Project</Dialog.Title>
-                <p className="text-xs text-slate-500 dark:text-zinc-400">Start building your next big thing</p>
+                <Dialog.Title className="text-lg font-bold text-white">Create New Project</Dialog.Title>
+                <p className="text-xs text-slate-400">Start building your next big thing</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              className="rounded-full p-2 hover:bg-slate-700/50 transition-colors group"
               aria-label="Close create project dialog"
               disabled={submitting}
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
             </button>
           </div>
 
@@ -278,17 +311,17 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             id={formId}
             onSubmit={handleSubmit}
             onKeyDown={handleKeyDown}
-            className="flex-1 overflow-y-auto px-6 py-6 bg-white dark:bg-[#0f172a]"
+            className="flex-1 overflow-y-auto px-6 py-6"
           >
             <div className="space-y-6">
-              {/* Form-level error */}
+              {/* Form-level error (inline) */}
               {fieldErrors.form ? (
-                <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-4 py-3">
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-red-300 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-red-800 dark:text-red-200">Couldn't create project</p>
-                      <p className="text-xs text-red-600 dark:text-red-200/80 mt-1">{fieldErrors.form}</p>
+                      <p className="text-sm font-medium text-red-200">Couldn't create project</p>
+                      <p className="text-xs text-red-200/80 mt-1">{fieldErrors.form}</p>
                     </div>
                   </div>
                 </div>
@@ -298,8 +331,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               <section className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                    <Target className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
                       {smartStartMode ? 'Smart Start' : 'Project Basics'}
                     </h3>
                   </div>
@@ -309,8 +342,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     disabled={submitting || isAtLimit}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       smartStartMode
-                        ? 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-white/20'
-                        : 'bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 text-violet-700 dark:text-violet-300 hover:border-violet-300 dark:hover:border-violet-400'
+                        ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                        : 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-purple-300 hover:border-purple-400'
                     }`}
                   >
                     {smartStartMode ? (
@@ -326,7 +359,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     persona={null}
                     onCancel={() => setSmartStartMode(false)}
                     onAccept={(results) => {
-                      if (results.tasks?.[0]?.title && !title.trim()) {}
+                      // Populate form with AI results
+                      if (results.tasks?.[0]?.title && !title.trim()) {
+                        // Don't override if user already typed a title
+                      }
                       if (results.timeline) {
                         setDescription(prev => {
                           const aiSummary = `Timeline: ${results.timeline}\n\nAI-generated tasks (${results.tasks.length}):\n${results.tasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n')}`;
@@ -346,10 +382,11 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">
-                      Project Title <span className="text-violet-500">*</span>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
+                      Project Title <span className="text-fuchsia-400">*</span>
                     </label>
                     <input
+                      ref={darkRef}
                       type="text"
                       value={title}
                       onChange={(e) => {
@@ -357,37 +394,39 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         clearFieldError("title");
                       }}
                       placeholder="e.g., OpenShare Mobile App"
-                      className={`w-full rounded-xl border bg-white dark:bg-[#111113] px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-500
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all
-                        ${fieldErrors.title ? "border-red-400 dark:border-red-500/60 focus:ring-red-500" : "border-slate-300 dark:border-white/10 focus:ring-violet-500"}
+                        ${fieldErrors.title ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
                       aria-required="true"
                       autoFocus
                       disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.title ? (
-                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">{fieldErrors.title}</p>
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.title}</p>
                     ) : null}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Category</label>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">Category</label>
                     <input
+                      ref={darkRef}
                       type="text"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder="e.g., SaaS, Personal, School"
-                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111113] px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                      className="w-full rounded-xl border border-purple-500/30 px-4 py-3 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       disabled={submitting || isAtLimit}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">Initial Status</label>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">Initial Status</label>
                     <select
+                      ref={darkRef}
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111113] px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                      className="w-full rounded-xl border border-purple-500/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       disabled={submitting || isAtLimit}
                     >
                       <option>Not Started</option>
@@ -397,10 +436,11 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-2">
-                      Description <span className="text-violet-500">*</span>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
+                      Description <span className="text-fuchsia-400">*</span>
                     </label>
                     <textarea
+                      ref={darkRef}
                       value={description}
                       onChange={(e) => {
                         setDescription(e.target.value);
@@ -408,16 +448,16 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       }}
                       placeholder="What are you building? What problem does it solve? What's your goal?"
                       rows={4}
-                      className={`w-full rounded-xl border bg-white dark:bg-[#111113] px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-500
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none
-                        ${fieldErrors.description ? "border-red-400 dark:border-red-500/60 focus:ring-red-500" : "border-slate-300 dark:border-white/10 focus:ring-violet-500"}
+                        ${fieldErrors.description ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
                       disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.description ? (
-                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">{fieldErrors.description}</p>
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.description}</p>
                     ) : (
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                      <p className="text-xs text-slate-400 mt-1">
                         💡 Tip: A clear description helps your team understand the vision
                       </p>
                     )}
@@ -431,27 +471,27 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               {/* Privacy Settings */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Privacy</h3>
+                  <Shield className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Privacy</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setPrivacy("Private")}
-                    className={`rounded-xl border px-5 py-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                    className={`rounded-xl border px-5 py-4 text-left transition-all ${
                       privacy === "Private"
-                        ? "ring-2 ring-violet-500 border-violet-400 dark:border-violet-500/50 bg-violet-50 dark:bg-violet-500/10 shadow-sm"
-                        : "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111113] hover:border-violet-300 dark:hover:border-violet-500/50"
+                        ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                        : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Private"}
                     disabled={submitting || isAtLimit}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <Shield className={`w-5 h-5 ${privacy === "Private" ? "text-violet-600 dark:text-violet-400" : "text-slate-400 dark:text-zinc-500"}`} />
-                      <span className="text-base font-semibold text-slate-900 dark:text-white">Private</span>
+                      <Shield className="w-5 h-5 text-purple-400" />
+                      <span className="text-base font-semibold text-white">Private</span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-400">
                       Only invited members can view and collaborate
                     </p>
                   </button>
@@ -459,19 +499,19 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   <button
                     type="button"
                     onClick={() => setPrivacy("Public")}
-                    className={`rounded-xl border px-5 py-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                    className={`rounded-xl border px-5 py-4 text-left transition-all ${
                       privacy === "Public"
-                        ? "ring-2 ring-violet-500 border-violet-400 dark:border-violet-500/50 bg-violet-50 dark:bg-violet-500/10 shadow-sm"
-                        : "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111113] hover:border-violet-300 dark:hover:border-violet-500/50"
+                        ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                        : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Public"}
                     disabled={submitting || isAtLimit}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <Globe className={`w-5 h-5 ${privacy === "Public" ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-zinc-500"}`} />
-                      <span className="text-base font-semibold text-slate-900 dark:text-white">Public</span>
+                      <Globe className="w-5 h-5 text-blue-400" />
+                      <span className="text-base font-semibold text-white">Public</span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-400">
                       Anyone can view read-only status and progress
                     </p>
                   </button>
@@ -479,10 +519,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
                 {/* ✅ Phase 0 controls (UI only) */}
                 {isPublic ? (
-                  <div className="mt-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111113] p-4">
+                  <div className="mt-4 rounded-2xl border border-purple-500/20 bg-slate-900/40 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <ListChecks className="w-4 h-4 text-violet-500 dark:text-violet-400" />
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Public Visibility</p>
+                      <ListChecks className="w-4 h-4 text-purple-300" />
+                      <p className="text-sm font-semibold text-white">Public Visibility</p>
                       <span className="text-xs text-slate-500">(Phase 0: UI-only)</span>
                     </div>
 
@@ -490,30 +530,30 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     <button
                       type="button"
                       onClick={() => setIsListed((v) => !v)}
-                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
                         isListed
-                          ? "border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/10"
-                          : "border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:border-violet-300 dark:hover:border-violet-500/40"
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                       }`}
                       disabled={submitting || isAtLimit}
                       aria-pressed={isListed}
                     >
                       <div className="flex items-center gap-3">
-                        <ListChecks className={`w-4 h-4 ${isListed ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`} />
+                        <ListChecks className={`w-4 h-4 ${isListed ? "text-emerald-300" : "text-slate-300"}`} />
                         <div className="text-left">
-                          <p className="text-sm font-medium text-slate-900 dark:text-white">Listed in Discover & Search</p>
-                          <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          <p className="text-sm font-medium text-white">Listed in Discover & Search</p>
+                          <p className="text-xs text-slate-400">
                             If off: project is public, but only visible by direct link (unlisted)
                           </p>
                         </div>
                       </div>
                       <div
-                        className={`h-5 w-9 rounded-full p-0.5 transition-all shadow-inner ${
-                          isListed ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                        className={`h-5 w-9 rounded-full p-0.5 transition-all ${
+                          isListed ? "bg-emerald-500/60" : "bg-slate-700"
                         }`}
                       >
                         <div
-                          className={`h-4 w-4 rounded-full bg-white transition-all shadow-sm ${
+                          className={`h-4 w-4 rounded-full bg-white transition-all ${
                             isListed ? "translate-x-4" : "translate-x-0"
                           }`}
                         />
@@ -525,19 +565,19 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       <button
                         type="button"
                         onClick={() => setSpectatorMode("view")}
-                        className={`rounded-xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
                           spectatorMode === "view"
-                            ? "ring-2 ring-violet-500 border-violet-300 dark:border-violet-400/50 bg-violet-50 dark:bg-violet-500/10"
-                            : "border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:border-violet-300 dark:hover:border-violet-500/40"
+                            ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
+                            : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                         }`}
                         disabled={submitting || isAtLimit}
                         aria-pressed={spectatorMode === "view"}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <Eye className={`w-4 h-4 ${spectatorMode === "view" ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-zinc-500"}`} />
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">View-only</p>
+                          <Eye className="w-4 h-4 text-blue-300" />
+                          <p className="text-sm font-semibold text-white">View-only</p>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        <p className="text-xs text-slate-400">
                           Spectators can watch updates but can't post suggestions
                         </p>
                       </button>
@@ -545,19 +585,19 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       <button
                         type="button"
                         onClick={() => setSpectatorMode("suggest")}
-                        className={`rounded-xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
+                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
                           spectatorMode === "suggest"
-                            ? "ring-2 ring-violet-500 border-violet-300 dark:border-violet-400/50 bg-violet-50 dark:bg-violet-500/10"
-                            : "border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] hover:border-violet-300 dark:hover:border-violet-500/40"
+                            ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
+                            : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                         }`}
                         disabled={submitting || isAtLimit}
                         aria-pressed={spectatorMode === "suggest"}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <MessageSquare className={`w-4 h-4 ${spectatorMode === "suggest" ? "text-violet-600 dark:text-violet-400" : "text-slate-400 dark:text-zinc-500"}`} />
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">Allow suggestions</p>
+                          <MessageSquare className="w-4 h-4 text-purple-300" />
+                          <p className="text-sm font-semibold text-white">Allow suggestions</p>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        <p className="text-xs text-slate-400">
                           Spectators can post ideas (subject to moderation later)
                         </p>
                       </button>
@@ -565,11 +605,11 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
                     {/* Copy: approval hint */}
                     {isListed ? (
-                      <p className="mt-3 text-xs text-slate-500 dark:text-zinc-400">
+                      <p className="mt-3 text-xs text-slate-400">
                         💡 Listed projects may require approval before appearing in Discover.
                       </p>
                     ) : (
-                      <p className="mt-3 text-xs text-slate-500 dark:text-zinc-400">
+                      <p className="mt-3 text-xs text-slate-400">
                         🔗 Unlisted public projects can still be shared via direct link.
                       </p>
                     )}
@@ -580,14 +620,15 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               {/* Team Members */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <UsersIcon className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Team Members</h3>
+                  <UsersIcon className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Team Members</h3>
                   <span className="text-xs text-slate-500">(Optional)</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px] gap-3">
                   <div className="md:col-span-1">
                     <input
+                      ref={darkRef}
                       type="email"
                       value={memberEmail}
                       onChange={(e) => {
@@ -595,21 +636,22 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         clearFieldError("memberEmail");
                       }}
                       placeholder="teammate@email.com"
-                      className={`w-full rounded-xl border bg-white dark:bg-[#111113] px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-500
                         focus:outline-none focus:ring-2 focus:border-transparent transition-all
-                        ${fieldErrors.memberEmail ? "border-red-400 dark:border-red-500/60 focus:ring-red-500" : "border-slate-300 dark:border-white/10 focus:ring-violet-500"}
+                        ${fieldErrors.memberEmail ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
                       `}
                       disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.memberEmail ? (
-                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">{fieldErrors.memberEmail}</p>
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.memberEmail}</p>
                     ) : null}
                   </div>
 
                   <select
+                    ref={darkRef}
                     value={memberRole}
                     onChange={(e) => setMemberRole(e.target.value)}
-                    className="rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111113] px-3 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                    className="rounded-xl border border-purple-500/30 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     disabled={submitting || isAtLimit}
                   >
                     <option>Member</option>
@@ -620,7 +662,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   <button
                     type="button"
                     onClick={addMember}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-100 dark:bg-violet-500/20 hover:bg-violet-200 dark:hover:bg-violet-500/30 px-3 py-3 text-sm font-semibold text-violet-700 dark:text-violet-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-600/20 hover:bg-purple-600/30 px-3 py-3 text-sm font-medium text-white transition-all"
                     aria-label="Add member"
                     disabled={submitting || isAtLimit}
                   >
@@ -634,21 +676,21 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     {members.map((m) => (
                       <div
                         key={m.email}
-                        className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-[#111113] border border-slate-200 dark:border-white/10"
+                        className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-purple-500/20"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
                             {m.email[0].toUpperCase()}
                           </div>
                           <div>
-                            <span className="text-sm text-slate-900 dark:text-white font-semibold">{m.email}</span>
-                            <span className="text-xs text-slate-500 dark:text-zinc-400 ml-2">({m.role})</span>
+                            <span className="text-sm text-white font-medium">{m.email}</span>
+                            <span className="text-xs text-slate-400 ml-2">({m.role})</span>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeMember(m.email)}
-                          className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium transition-colors"
+                          className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                           aria-label={`Remove ${m.email}`}
                           disabled={submitting || isAtLimit}
                         >
@@ -659,7 +701,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   </div>
                 )}
 
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                <p className="text-xs text-slate-400">
                   💡 Tip: You can invite more members after creating the project
                 </p>
               </section>
@@ -667,16 +709,16 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
           </form>
 
           {/* Footer - Fixed (outside form) */}
-          <div className="flex items-center justify-between gap-3 px-6 py-5 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 rounded-b-2xl">
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between gap-3 px-6 py-5 border-t border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-b-2xl">
+            <div className="text-xs text-slate-400">
               {subData && !isUnlimited ? (
-                <span className={isAtLimit ? "text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5" : "flex items-center gap-1.5"}>
-                  {isAtLimit ? <AlertTriangle className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />}
+                <span className={isAtLimit ? "text-amber-400 font-medium flex items-center gap-1.5" : "flex items-center gap-1.5"}>
+                  {isAtLimit ? <AlertTriangle className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5 text-purple-400" />}
                   You have used {projectsUsed} of {projectsLimit} free projects.
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
+                  <Zap className="w-3.5 h-3.5 text-purple-400" />
                   Press ESC to cancel
                 </span>
               )}
@@ -685,7 +727,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             <div className="flex gap-3">
               <button
                 type="button"
-                className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                className="rounded-xl border border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 px-5 py-2.5 text-sm font-medium text-white transition-all"
                 onClick={onClose}
                 disabled={submitting}
               >
@@ -699,7 +741,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     onClose();
                     navigate("/settings");
                   }}
-                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
                 >
                   <Crown className="w-4 h-4 inline mr-2" />
                   Upgrade to Team
@@ -708,8 +750,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 <button
                   type="submit"
                   form={formId}
-                  className={`rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-violet-500/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
-                    submitting ? "opacity-70 cursor-wait" : "hover:-translate-y-0.5"
+                  className={`rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition-all ${
+                    submitting ? "opacity-70 cursor-wait" : "hover:scale-105"
                   }`}
                   disabled={!canSubmit}
                 >

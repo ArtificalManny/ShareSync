@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { acceptInvite } from "../api/invite";
+import { useLocation, useNavigate, useParams } from "react-router-dom"; // ⭐ ADDED: useParams
+import { acceptInvite } from "../api/invites"; // ⭐ FIXED: Updated to match your invites.js filename
 import { toast } from "../components/ui/Toaster.jsx";
 import { track } from "../utils/telemetry";
 import GradientText from "../components/ui/GradientText.jsx";
 
-function useQueryParam(name) {
-  const { search } = useLocation();
-  return new URLSearchParams(search).get(name);
-}
-
 export default function AcceptInvite() {
   const navigate = useNavigate();
-  const token = useQueryParam("token");
+  const { search } = useLocation();
+  const { token: pathToken } = useParams(); // ⭐ Grabs the token directly from /invite/:token
+
+  // ⭐ Fallback: grabs from ?token=... just in case old links use that format
+  const queryToken = new URLSearchParams(search).get("token");
+  
+  // Use whichever token exists!
+  const token = pathToken || queryToken;
+
   const [status, setStatus] = useState("pending"); // 'pending' | 'ok' | 'error'
   const [message, setMessage] = useState("");
 

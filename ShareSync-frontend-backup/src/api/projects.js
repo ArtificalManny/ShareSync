@@ -1,27 +1,35 @@
 // src/api/projects.js - Hardened create + consistent unwrapping + better errors
 // ⭐ FIX: Added ID normalization to ensure all projects have valid id/_id fields
-// ⭐ UPGRADE: Item 9 - Added follow/preference API methods
+// ⭐ FIX: Now safely includes the `members` array in the payload!
 import api from './client';
 
 // ============================================
 // HELPERS
 // ============================================
 
+// If backend returns { success: true, data: ... }, unwrap it.
+// If backend returns raw data directly, keep as-is.
+// Also tolerate common wrapper keys: { project }, { item }, { result }
 function unwrap(response) {
   const payload = response?.data;
 
   if (!payload) return payload;
 
+  // Common: { success: true, data: ... }
   if (payload && typeof payload === 'object' && 'data' in payload) {
     const d = payload.data;
+
+    // Common nested keys inside data
     if (d && typeof d === 'object') {
       if ('project' in d) return d.project;
       if ('item' in d) return d.item;
       if ('result' in d) return d.result;
     }
+
     return d;
   }
 
+  // Common: { success: true, project: {...} }
   if (payload && typeof payload === 'object') {
     if ('project' in payload) return payload.project;
     if ('item' in payload) return payload.item;
@@ -52,17 +60,27 @@ function normalizeError(err, fallback = "Request failed") {
   return enriched;
 }
 
+/**
+ * ⭐ FIX: Normalize a single project to ensure id/_id exists
+ * @param {Object} project - Raw project from API
+ * @returns {Object|null} - Normalized project or null if invalid
+ */
 function normalizeProjectId(project) {
   if (!project || typeof project !== 'object') return null;
   
+  // Extract ID from various possible fields
   const id = project._id || project.id || project.projectId;
   
+  // Validate ID
   if (!id || id === 'undefined' || id === 'null') {
     console.warn('[projects.js] Project missing valid ID:', project);
     return null;
   }
   
+  // Convert ObjectId to string if needed
   const idString = typeof id === 'object' && id.toString ? id.toString() : String(id);
+  
+  // Ensure both name/title exist for UI compatibility
   const name = project.name || project.title;
   const title = project.title || project.name;
   
@@ -75,6 +93,11 @@ function normalizeProjectId(project) {
   };
 }
 
+/**
+ * ⭐ FIX: Normalize array of projects
+ * @param {Array} projects - Array of raw projects
+ * @returns {Array} - Array of normalized projects (invalid ones filtered out)
+ */
 function normalizeProjectsArray(projects) {
   if (!Array.isArray(projects)) return [];
   return projects.map(normalizeProjectId).filter(Boolean);
@@ -88,6 +111,7 @@ export const getProjects = async () => {
   try {
     const response = await api.get('/projects');
     const data = unwrap(response);
+    // ⭐ FIX: Normalize all projects to ensure IDs exist
     return normalizeProjectsArray(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load projects");
@@ -98,6 +122,7 @@ export const getProjectsQuick = async () => {
   try {
     const response = await api.get('/projects/quick');
     const data = unwrap(response);
+    // ⭐ FIX: Normalize all projects to ensure IDs exist
     return normalizeProjectsArray(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load projects (quick)");
@@ -108,11 +133,16 @@ export const getProject = async (projectId) => {
   try {
     const response = await api.get(`/projects/${projectId}`);
     const data = unwrap(response);
+    // ⭐ FIX: Normalize single project
     return normalizeProjectId(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load project");
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE PROJECT (Compatibility Layer)
+// ─────────────────────────────────────────────────────────────────────────────
 
 function normalizeCreateProjectPayload(projectData = {}) {
   const title = (projectData.title ?? projectData.name ?? '').trim();
@@ -132,10 +162,16 @@ function normalizeCreateProjectPayload(projectData = {}) {
           : undefined;
 
   const tags = category ? [category] : undefined;
+
   const emoji = (projectData.emoji ?? '').toString().trim() || undefined;
   const icon = (projectData.icon ?? '').toString().trim() || undefined;
+
   const rawColor = (projectData.color ?? '').toString().trim();
-  const color = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(rawColor) ? rawColor : undefined;
+  const color =
+    /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(rawColor) ? rawColor : undefined;
+
+  // ⭐ BUG FIX: The frontend was silently discarding the members array!
+  const members = Array.isArray(projectData.members) ? projectData.members : undefined;
 
   return {
     name: title,
@@ -145,11 +181,15 @@ function normalizeCreateProjectPayload(projectData = {}) {
     emoji,
     icon,
     color,
+    members, // Now properly sending invites to the backend!
   };
 }
 
+// Normalize create response so callers can always find an id
 function normalizeCreatedProject(p) {
   if (!p || typeof p !== 'object') return p;
+
+  // tolerate nested project wrapper accidentally passed in
   const candidate =
     (p.project && typeof p.project === 'object') ? p.project :
     (p.item && typeof p.item === 'object') ? p.item :
@@ -157,6 +197,8 @@ function normalizeCreatedProject(p) {
     p;
 
   const id = candidate._id || candidate.id || candidate.projectId;
+
+  // Ensure both name/title exist for UI compatibility
   const name = candidate.name || candidate.title;
   const title = candidate.title || candidate.name;
 
@@ -171,13 +213,18 @@ function normalizeCreatedProject(p) {
 export const createProject = async (projectData) => {
   try {
     const payload = normalizeCreateProjectPayload(projectData);
+
     if (!payload.name || payload.name.trim().length < 2) {
       const err = new Error("Project name is required (min 2 chars).");
       err.normalizedMessage = "Project name is required (min 2 chars).";
       throw err;
     }
+
     const response = await api.post('/projects', payload);
+
+    // unwrap tolerant of {data}, {project}, etc.
     const created = unwrap(response);
+
     return normalizeCreatedProject(created);
   } catch (err) {
     throw normalizeError(err, "Failed to create project");
@@ -188,6 +235,7 @@ export const updateProject = async (projectId, updates) => {
   try {
     const response = await api.put(`/projects/${projectId}`, updates);
     const data = unwrap(response);
+    // ⭐ FIX: Normalize updated project
     return normalizeProjectId(data);
   } catch (err) {
     throw normalizeError(err, "Failed to update project");
@@ -200,28 +248,6 @@ export const deleteProject = async (projectId) => {
     return unwrap(response);
   } catch (err) {
     throw normalizeError(err, "Failed to delete project");
-  }
-};
-
-// ============================================
-// NETWORK / DISCOVERY
-// ============================================
-
-export const followProject = async (projectId) => {
-  try {
-    const response = await api.post(`/projects/${projectId}/follow`);
-    return unwrap(response);
-  } catch (err) {
-    throw normalizeError(err, "Failed to toggle follow status");
-  }
-};
-
-export const updateFollowPreferences = async (projectId, preferences) => {
-  try {
-    const response = await api.patch(`/projects/${projectId}/follow`, preferences);
-    return unwrap(response);
-  } catch (err) {
-    throw normalizeError(err, "Failed to update follow preferences");
   }
 };
 
@@ -308,6 +334,7 @@ export const deleteShip = async (projectId, shipId) => {
 };
 
 // ============================================
-// EXPORTS
+// EXPORTS FOR HELPERS (for use in other files)
 // ============================================
+
 export { normalizeProjectId, normalizeProjectsArray };

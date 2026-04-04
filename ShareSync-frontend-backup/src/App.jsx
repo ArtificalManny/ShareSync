@@ -237,12 +237,6 @@ const MessageProvider = lazy(() =>
     default: m.MessageProvider,
   }))
 );
-// ⭐ NEW: Analytics Provider
-const AnalyticsProvider = lazy(() =>
-  import("./contexts/AnalyticsContext.jsx").then((m) => ({
-    default: m.AnalyticsProvider,
-  }))
-);
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
@@ -401,93 +395,91 @@ function AuthenticatedApp({ children, userData }) {
           <UserProvider>
             <MessageProvider>
               <SprintProvider>
-                <AnalyticsProvider>
-                  <Suspense fallback={null}>
-                    <ShortcutProvider>
-                  <CommandControlLayer projects={[]}>
-                    <FlowStateProvider>
-                      <ContextPreservationProvider>
-                        <MomentumProvider>
-                          <AdaptiveDensityProvider
-                            userName={userData?.firstName || "there"}
-                          >
-                            <FocusEngineProvider>
-                              <FocusSessionProvider>
-                                <AppEntrance
-                                  userName={userData?.firstName || "there"}
-                                  streakDays={userData?.streakDays || 0}
-                                  enabled={true}
-                                  showWelcomeToast={true}
-                                >
-                                  <HeartbeatProvider>
-                                    <Suspense fallback={null}>
-                                      <MomentumAura />
-                                    </Suspense>
-                                    {FOCUS_DOCK_V1 ? (
-                                      <FocusProvider>
-                                        <ContextTracker />
+                <Suspense fallback={null}>
+                  <ShortcutProvider>
+                <CommandControlLayer projects={[]}>
+                  <FlowStateProvider>
+                    <ContextPreservationProvider>
+                      <MomentumProvider>
+                        <AdaptiveDensityProvider
+                          userName={userData?.firstName || "there"}
+                        >
+                          <FocusEngineProvider>
+                            <FocusSessionProvider>
+                              <AppEntrance
+                                userName={userData?.firstName || "there"}
+                                streakDays={userData?.streakDays || 0}
+                                enabled={true}
+                                showWelcomeToast={true}
+                              >
+                                <HeartbeatProvider>
+                                  <Suspense fallback={null}>
+                                    <MomentumAura />
+                                  </Suspense>
+                                  {FOCUS_DOCK_V1 ? (
+                                    <FocusProvider>
+                                      <ContextTracker />
 
-                                        {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                        {/* <Suspense fallback={null}>
-                                          <WelcomeBack />
-                                        </Suspense> */}
+                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                      {/* <Suspense fallback={null}>
+                                        <WelcomeBack />
+                                      </Suspense> */}
 
-                                        <Suspense fallback={null}>
-                                          <ContextIndicator />
-                                        </Suspense>
-                                        <Suspense fallback={null}>
-                                          <FlowIndicator position="bottom-left" />
-                                        </Suspense>
-                                        {children}
-                                      </FocusProvider>
-                                    ) : (
-                                      <>
-                                        <ContextTracker />
+                                      <Suspense fallback={null}>
+                                        <ContextIndicator />
+                                      </Suspense>
+                                      <Suspense fallback={null}>
+                                        <FlowIndicator position="bottom-left" />
+                                      </Suspense>
+                                      {children}
+                                    </FocusProvider>
+                                  ) : (
+                                    <>
+                                      <ContextTracker />
 
-                                        {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                        {/* <Suspense fallback={null}>
-                                          <WelcomeBack />
-                                        </Suspense> */}
+                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                      {/* <Suspense fallback={null}>
+                                        <WelcomeBack />
+                                      </Suspense> */}
 
-                                        <Suspense fallback={null}>
-                                          <ContextIndicator />
-                                        </Suspense>
-                                        <Suspense fallback={null}>
-                                          <FlowIndicator position="bottom-left" />
-                                        </Suspense>
-                                        {children}
-                                      </>
-                                    )}
-                                  </HeartbeatProvider>
-                                </AppEntrance>
-                              </FocusSessionProvider>
-                            </FocusEngineProvider>
-                            <Suspense fallback={null}>
-                              <BreakReminder position="bottom-right" />
-                            </Suspense>
-                          </AdaptiveDensityProvider>
-                          {/* ✅ Priority 1: Aha Moment Toast */}
-                          <AhaMomentToast
-                            show={ahaMoment.showToast}
-                            insight={ahaMoment.currentInsight}
-                            onView={ahaMoment.viewInsight}
-                            onDismiss={ahaMoment.dismissInsight}
-                          />
-                          {/* ✅ Priority 4.2: Global Celebration Router */}
+                                      <Suspense fallback={null}>
+                                        <ContextIndicator />
+                                      </Suspense>
+                                      <Suspense fallback={null}>
+                                        <FlowIndicator position="bottom-left" />
+                                      </Suspense>
+                                      {children}
+                                    </>
+                                  )}
+                                </HeartbeatProvider>
+                              </AppEntrance>
+                            </FocusSessionProvider>
+                          </FocusEngineProvider>
                           <Suspense fallback={null}>
-                            <CelebrationRouter />
+                            <BreakReminder position="bottom-right" />
                           </Suspense>
-                          {/* ✅ Priority 5.4: Shortcut Guide Modal */}
-                          <Suspense fallback={null}>
-                            <ShortcutGuide />
-                          </Suspense>
-                        </MomentumProvider>
-                      </ContextPreservationProvider>
-                    </FlowStateProvider>
-                  </CommandControlLayer>
-                    </ShortcutProvider>
-                  </Suspense>
-                </AnalyticsProvider>
+                        </AdaptiveDensityProvider>
+                        {/* ✅ Priority 1: Aha Moment Toast */}
+                        <AhaMomentToast
+                          show={ahaMoment.showToast}
+                          insight={ahaMoment.currentInsight}
+                          onView={ahaMoment.viewInsight}
+                          onDismiss={ahaMoment.dismissInsight}
+                        />
+                        {/* ✅ Priority 4.2: Global Celebration Router */}
+                        <Suspense fallback={null}>
+                          <CelebrationRouter />
+                        </Suspense>
+                        {/* ✅ Priority 5.4: Shortcut Guide Modal */}
+                        <Suspense fallback={null}>
+                          <ShortcutGuide />
+                        </Suspense>
+                      </MomentumProvider>
+                    </ContextPreservationProvider>
+                  </FlowStateProvider>
+                </CommandControlLayer>
+                  </ShortcutProvider>
+                </Suspense>
               </SprintProvider>
             </MessageProvider>
           </UserProvider>
@@ -594,7 +586,11 @@ function AppRoutes() {
                 }
               />
               <Route path="/landing" element={<Landing />} />
+              
+              {/* ⭐ FIX: Let React Router handle BOTH /invite/accept AND dynamic tokens! */}
               <Route path="/invite/accept" element={<AcceptInvite />} />
+              <Route path="/invite/:token" element={<AcceptInvite />} />
+              
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />
 
