@@ -2,9 +2,198 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGES API CLIENT
 // Matches backend MessagesController endpoints exactly
+// DEBUG PATCH: avatar/payload diagnostics for /messages route
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEBUG HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DEBUG_MESSAGES_AVATARS =
+  typeof import.meta !== 'undefined' &&
+  import.meta.env &&
+  import.meta.env.DEV;
+
+const safeArray = (value) => (Array.isArray(value) ? value : []);
+
+const safeObject = (value) =>
+  value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+
+const extractComparableId = (value) => {
+  if (!value) return '';
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  if (typeof value === 'object') {
+    return String(
+      value._id ||
+        value.id ||
+        value.userId?._id ||
+        value.userId?.id ||
+        value.userId ||
+        value.senderId?._id ||
+        value.senderId?.id ||
+        value.senderId ||
+        ''
+    );
+  }
+
+  return '';
+};
+
+const unwrapParticipantUser = (participant) => {
+  if (!participant) return null;
+
+  if (participant.userId && typeof participant.userId === 'object') {
+    return participant.userId;
+  }
+
+  return participant;
+};
+
+const snapshotUser = (user) => {
+  if (!user) return null;
+
+  return {
+    id: user._id || user.id || null,
+    firstName: user.firstName || null,
+    lastName: user.lastName || null,
+    username: user.username || null,
+    email: user.email || null,
+    profilePicture:
+      typeof user.profilePicture === 'object'
+        ? JSON.stringify(user.profilePicture)
+        : user.profilePicture || null,
+    avatarUrl:
+      typeof user.avatarUrl === 'object'
+        ? JSON.stringify(user.avatarUrl)
+        : user.avatarUrl || null,
+    avatar:
+      typeof user.avatar === 'object'
+        ? JSON.stringify(user.avatar)
+        : user.avatar || null,
+    photoUrl:
+      typeof user.photoUrl === 'object'
+        ? JSON.stringify(user.photoUrl)
+        : user.photoUrl || null,
+    image:
+      typeof user.image === 'object'
+        ? JSON.stringify(user.image)
+        : user.image || null,
+  };
+};
+
+const logConversationAvatarSnapshot = (conversations) => {
+  if (!DEBUG_MESSAGES_AVATARS) return;
+
+  const list = safeArray(conversations);
+
+  console.groupCollapsed(
+    `[messagesApi.getConversations] avatar snapshot (${list.length} conversations)`
+  );
+
+  list.slice(0, 10).forEach((conversation, index) => {
+    const participants = safeArray(conversation?.participants).map((participant) =>
+      snapshotUser(unwrapParticipantUser(participant))
+    );
+
+    const otherUser = snapshotUser(
+      conversation?.otherUser ||
+        conversation?.otherParticipant ||
+        conversation?.recipient ||
+        conversation?.recipientId ||
+        null
+    );
+
+    console.log(`conversation[${index}]`, {
+      id: conversation?._id || conversation?.id || null,
+      type: conversation?.type || null,
+      name: conversation?.name || null,
+      otherUser,
+      participants,
+      lastMessage: safeObject(conversation?.lastMessage)
+        ? {
+            content: conversation.lastMessage.content || null,
+            senderId:
+              conversation.lastMessage.senderId?._id ||
+              conversation.lastMessage.senderId?.id ||
+              conversation.lastMessage.senderId ||
+              null,
+          }
+        : null,
+    });
+  });
+
+  console.groupEnd();
+};
+
+const logMessagesAvatarSnapshot = (conversationId, messages, rawResponse) => {
+  if (!DEBUG_MESSAGES_AVATARS) return;
+
+  const list = safeArray(messages);
+
+  console.groupCollapsed(
+    `[messagesApi.getMessages] avatar snapshot (conversation=${conversationId}, messages=${list.length})`
+  );
+
+  console.log('raw response', rawResponse);
+
+  list.slice(0, 12).forEach((message, index) => {
+    console.log(`message[${index}]`, {
+      id: message?._id || message?.id || null,
+      content: message?.content || message?.text || null,
+      sender: snapshotUser(message?.senderId || message?.sender || message?.user || null),
+      recipient: snapshotUser(message?.recipientId || message?.recipient || null),
+    });
+  });
+
+  console.groupEnd();
+};
+
+const normalizeMessagesResponse = (responseData) => {
+  const dataLayer = responseData?.data ?? responseData;
+
+  // Shape A: { data: { messages: [...], hasMore } }
+  if (Array.isArray(dataLayer?.messages)) {
+    return {
+      messages: dataLayer.messages,
+      hasMore: Boolean(dataLayer.hasMore ?? responseData?.meta?.hasMore),
+    };
+  }
+
+  // Shape B: { messages: [...], hasMore }
+  if (Array.isArray(responseData?.messages)) {
+    return {
+      messages: responseData.messages,
+      hasMore: Boolean(responseData.hasMore ?? responseData?.meta?.hasMore),
+    };
+  }
+
+  // Shape C: { data: [...] }
+  if (Array.isArray(dataLayer)) {
+    return {
+      messages: dataLayer,
+      hasMore: Boolean(responseData?.meta?.hasMore),
+    };
+  }
+
+  // Shape D: raw [...]
+  if (Array.isArray(responseData)) {
+    return {
+      messages: responseData,
+      hasMore: false,
+    };
+  }
+
+  return {
+    messages: [],
+    hasMore: Boolean(dataLayer?.hasMore ?? responseData?.hasMore ?? responseData?.meta?.hasMore),
+  };
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONVERSATIONS
@@ -15,13 +204,26 @@ export const getConversations = async (includeArchived = false) => {
   const response = await client.get('/messages/conversations', {
     params: { includeArchived },
   });
-  return response.data?.data || response.data || [];
+
+  const payload = response.data?.data || response.data || [];
+
+  logConversationAvatarSnapshot(payload);
+
+  return payload;
 };
 
 // Get a specific conversation by ID
 export const getConversation = async (conversationId) => {
   const response = await client.get(`/messages/conversations/${conversationId}`);
-  return response.data?.data || response.data;
+  const payload = response.data?.data || response.data;
+
+  if (DEBUG_MESSAGES_AVATARS) {
+    console.groupCollapsed(`[messagesApi.getConversation] ${conversationId}`);
+    console.log('payload', payload);
+    console.groupEnd();
+  }
+
+  return payload;
 };
 
 // Create a new conversation
@@ -36,7 +238,18 @@ export const getOrCreateDirectConversation = async (recipientId) => {
   const response = await client.post('/messages/conversations/direct', {
     recipientId,
   });
-  return response.data?.data || response.data;
+
+  const payload = response.data?.data || response.data;
+
+  if (DEBUG_MESSAGES_AVATARS) {
+    console.groupCollapsed(
+      `[messagesApi.getOrCreateDirectConversation] recipient=${recipientId}`
+    );
+    console.log('payload', payload);
+    console.groupEnd();
+  }
+
+  return payload;
 };
 
 // Update conversation settings (mute, pin, archive)
@@ -79,13 +292,16 @@ export const leaveConversation = async (conversationId) => {
 // Get messages in a conversation
 export const getMessages = async (conversationId, options = {}) => {
   const { limit = 50, before, after } = options;
+
   const response = await client.get(`/messages/conversations/${conversationId}/messages`, {
     params: { limit, before, after },
   });
-  return {
-    messages: response.data?.data || response.data?.messages || [],
-    hasMore: response.data?.meta?.hasMore || false,
-  };
+
+  const normalized = normalizeMessagesResponse(response.data);
+
+  logMessagesAvatarSnapshot(conversationId, normalized.messages, response.data);
+
+  return normalized;
 };
 
 // Send a message
@@ -195,19 +411,33 @@ export const getConversationDisplayName = (conversation, currentUserId) => {
 
 // Get the other participant in a direct conversation
 export const getOtherParticipant = (conversation, currentUserId) => {
-  if (!conversation?.participants) return null;
+  if (!conversation) return null;
+
+  const explicitOther =
+    conversation.otherUser ||
+    conversation.otherParticipant ||
+    conversation.recipient ||
+    conversation.recipientId ||
+    null;
+
+  if (explicitOther) return explicitOther;
+
+  if (!conversation.participants) return null;
+
+  const currentId = String(currentUserId || '');
 
   const participant = conversation.participants.find((p) => {
-    const userId = p.userId?._id || p.userId?.id || p.userId;
-    return String(userId) !== String(currentUserId);
+    const candidate = unwrapParticipantUser(p);
+    const userId = extractComparableId(candidate);
+    return userId && userId !== currentId;
   });
 
-  return participant?.userId || participant;
+  return unwrapParticipantUser(participant) || participant || null;
 };
 
 // Get sender name from message
 export const getSenderName = (message) => {
-  const sender = message?.senderId;
+  const sender = message?.senderId || message?.sender || message?.user;
   if (!sender) return 'Unknown';
 
   if (sender.firstName || sender.lastName) {
@@ -218,7 +448,8 @@ export const getSenderName = (message) => {
 
 // Check if message is from current user
 export const isOwnMessage = (message, currentUserId) => {
-  const senderId = message?.senderId?._id || message?.senderId?.id || message?.senderId;
+  const sender = message?.senderId || message?.sender || message?.user;
+  const senderId = extractComparableId(sender);
   return String(senderId) === String(currentUserId);
 };
 

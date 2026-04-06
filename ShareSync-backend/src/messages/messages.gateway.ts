@@ -1,6 +1,7 @@
 // src/messages/messages.gateway.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGES GATEWAY: Real-time WebSocket communication
+// ⭐ PATCH: align emitted payloads with current frontend listeners
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -13,15 +14,11 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { MessagesService } from './messages.service';
-import {
-  SendMessageDto,
-  TypingIndicatorDto,
-  AddReactionDto,
-} from './dto/message.dto';
+import { SendMessageDto } from './dto/message.dto';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // INTERFACES
@@ -39,7 +36,10 @@ interface AuthenticatedSocket extends Socket {
 @WebSocketGateway({
   namespace: '/messages',
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+    origin: process.env.CORS_ORIGINS?.split(',') || [
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ],
     credentials: true,
   },
 })
@@ -50,13 +50,41 @@ export class MessagesGateway
   server: Server;
 
   private readonly logger = new Logger(MessagesGateway.name);
-  private userSockets = new Map<string, Set<string>>(); // userId -> Set<socketId>
-  private socketUsers = new Map<string, string>(); // socketId -> userId
+  private readonly userSockets = new Map<string, Set<string>>(); // userId -> Set<socketId>
+  private readonly socketUsers = new Map<string, string>(); // socketId -> userId
 
   constructor(
     private readonly messagesService: MessagesService,
     private readonly jwtService: JwtService,
   ) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // INTERNAL HELPERS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private normalizeId(value: any): string {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (typeof value?._id !== 'undefined') return this.normalizeId(value._id);
+    if (typeof value?.id !== 'undefined') return this.normalizeId(value.id);
+    if (typeof value?.toString === 'function') return value.toString();
+    return String(value);
+  }
+
+  private getClientDisplayName(client: AuthenticatedSocket): string {
+    return (
+      client.user?.username ||
+      client.user?.firstName ||
+      client.user?.email ||
+      'Someone'
+    );
+  }
+
+  private toPlain(value: any): any {
+    if (!value) return value;
+    return typeof value.toObject === 'function' ? value.toObject() : value;
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // LIFECYCLE HOOKS
@@ -68,34 +96,34 @@ export class MessagesGateway
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      // Extract token from handshake
       const token =
         client.handshake.auth?.token ||
         client.handshake.headers?.authorization?.replace('Bearer ', '');
 
       if (!token) {
-        this.logger.warn(`Connection rejected: No token provided`);
+        this.logger.warn('Connection rejected: No token provided');
         client.disconnect();
         return;
       }
 
-      // Verify JWT
       const payload = this.jwtService.verify(token);
-      client.userId = payload.sub || payload.userId;
+      client.userId = payload.sub || payload.userId || payload.id || payload._id;
       client.user = payload;
 
-      // Track socket
-      this.addUserSocket(client.userId, client.id);
+      if (!client.userId) {
+        this.logger.warn(`Connection rejected: invalid JWT payload for socket ${client.id}`);
+        client.disconnect();
+        return;
+      }
 
-      // Join user's personal room
+      this.addUserSocket(client.userId, client.id);
       client.join(`user:${client.userId}`);
 
       this.logger.log(`Client connected: ${client.id} (User: ${client.userId})`);
 
-      // Notify user is online
       this.server.emit('user:online', { userId: client.userId });
-    } catch (error) {
-      this.logger.error(`Connection error: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(`Connection error: ${error?.message || error}`);
       client.disconnect();
     }
   }
@@ -104,9 +132,10 @@ export class MessagesGateway
     if (client.userId) {
       this.removeUserSocket(client.userId, client.id);
 
-      // Check if user has no more connections
-      if (!this.userSockets.has(client.userId) || 
-          this.userSockets.get(client.userId)?.size === 0) {
+      if (
+        !this.userSockets.has(client.userId) ||
+        this.userSockets.get(client.userId)?.size === 0
+      ) {
         this.server.emit('user:offline', { userId: client.userId });
       }
     }
@@ -122,15 +151,18 @@ export class MessagesGateway
     if (!this.userSockets.has(userId)) {
       this.userSockets.set(userId, new Set());
     }
+
     this.userSockets.get(userId)!.add(socketId);
     this.socketUsers.set(socketId, userId);
   }
 
   private removeUserSocket(userId: string, socketId: string) {
     this.userSockets.get(userId)?.delete(socketId);
+
     if (this.userSockets.get(userId)?.size === 0) {
       this.userSockets.delete(userId);
     }
+
     this.socketUsers.delete(socketId);
   }
 
@@ -177,13 +209,13 @@ export class MessagesGateway
       }
 
       const message = await this.messagesService.sendMessage(client.userId, data);
+      const plainMessage = this.toPlain(message);
 
-      // Emit to conversation room
-      this.server
-        .to(`conversation:${data.conversationId}`)
-        .emit('message:new', message);
+      this.server.to(`conversation:${data.conversationId}`).emit('message:new', {
+        conversationId: data.conversationId,
+        message: plainMessage,
+      });
 
-      // Emit notification to conversation participants (except sender)
       this.emitToConversationParticipants(
         data.conversationId,
         client.userId,
@@ -191,18 +223,18 @@ export class MessagesGateway
         {
           conversationId: data.conversationId,
           message: {
-            id: message._id,
-            content: message.content.substring(0, 100),
-            senderId: client.userId,
-            energy: message.energy,
+            id: plainMessage?._id || plainMessage?.id,
+            content: (plainMessage?.content || '').substring(0, 100),
+            senderId: plainMessage?.senderId || client.userId,
+            energy: plainMessage?.energy,
           },
         },
       );
 
-      return { success: true, message };
-    } catch (error) {
-      this.logger.error(`Error sending message: ${error.message}`);
-      return { success: false, error: error.message };
+      return { success: true, message: plainMessage };
+    } catch (error: any) {
+      this.logger.error(`Error sending message: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to send message' };
     }
   }
 
@@ -222,18 +254,19 @@ export class MessagesGateway
         { content: data.content },
       );
 
-      // Emit to conversation room
-      this.server
-        .to(`conversation:${message.conversationId}`)
-        .emit('message:edited', {
-          messageId: data.messageId,
-          content: data.content,
-          editedAt: message.editedAt,
-        });
+      const conversationId = this.normalizeId((message as any)?.conversationId);
+
+      this.server.to(`conversation:${conversationId}`).emit('message:edited', {
+        messageId: data.messageId,
+        conversationId,
+        content: data.content,
+        editedAt: (message as any)?.editedAt,
+      });
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: any) {
+      this.logger.error(`Error editing message: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to edit message' };
     }
   }
 
@@ -249,14 +282,15 @@ export class MessagesGateway
 
       await this.messagesService.deleteMessage(data.messageId, client.userId);
 
-      // Emit to conversation room
-      this.server
-        .to(`conversation:${data.conversationId}`)
-        .emit('message:deleted', { messageId: data.messageId });
+      this.server.to(`conversation:${data.conversationId}`).emit('message:deleted', {
+        messageId: data.messageId,
+        conversationId: data.conversationId,
+      });
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: any) {
+      this.logger.error(`Error deleting message: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to delete message' };
     }
   }
 
@@ -269,13 +303,16 @@ export class MessagesGateway
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    client
-      .to(`conversation:${data.conversationId}`)
-      .emit('typing:update', {
-        userId: client.userId,
-        conversationId: data.conversationId,
-        isTyping: true,
-      });
+    const payload = {
+      userId: client.userId,
+      username: this.getClientDisplayName(client),
+      conversationId: data.conversationId,
+      isTyping: true,
+    };
+
+    client.to(`conversation:${data.conversationId}`).emit('typing:user', payload);
+    client.to(`conversation:${data.conversationId}`).emit('typing:update', payload);
+    return { success: true };
   }
 
   @SubscribeMessage('typing:stop')
@@ -283,13 +320,16 @@ export class MessagesGateway
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    client
-      .to(`conversation:${data.conversationId}`)
-      .emit('typing:update', {
-        userId: client.userId,
-        conversationId: data.conversationId,
-        isTyping: false,
-      });
+    const payload = {
+      userId: client.userId,
+      username: this.getClientDisplayName(client),
+      conversationId: data.conversationId,
+      isTyping: false,
+    };
+
+    client.to(`conversation:${data.conversationId}`).emit('typing:user', payload);
+    client.to(`conversation:${data.conversationId}`).emit('typing:update', payload);
+    return { success: true };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -312,17 +352,17 @@ export class MessagesGateway
         data.emoji,
       );
 
-      this.server
-        .to(`conversation:${data.conversationId}`)
-        .emit('reaction:added', {
-          messageId: data.messageId,
-          emoji: data.emoji,
-          userId: client.userId,
-        });
+      this.server.to(`conversation:${data.conversationId}`).emit('reaction:added', {
+        messageId: data.messageId,
+        emoji: data.emoji,
+        userId: client.userId,
+        conversationId: data.conversationId,
+      });
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: any) {
+      this.logger.error(`Error adding reaction: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to add reaction' };
     }
   }
 
@@ -342,17 +382,17 @@ export class MessagesGateway
         data.emoji,
       );
 
-      this.server
-        .to(`conversation:${data.conversationId}`)
-        .emit('reaction:removed', {
-          messageId: data.messageId,
-          emoji: data.emoji,
-          userId: client.userId,
-        });
+      this.server.to(`conversation:${data.conversationId}`).emit('reaction:removed', {
+        messageId: data.messageId,
+        emoji: data.emoji,
+        userId: client.userId,
+        conversationId: data.conversationId,
+      });
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: any) {
+      this.logger.error(`Error removing reaction: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to remove reaction' };
     }
   }
 
@@ -375,16 +415,21 @@ export class MessagesGateway
         client.userId,
       );
 
-      // Notify sender
-      this.emitToUser(message.senderId.toString(), 'message:read:receipt', {
-        messageId: data.messageId,
-        readBy: client.userId,
-        readAt: new Date(),
-      });
+      const senderId = this.normalizeId((message as any)?.senderId);
+
+      if (senderId) {
+        this.emitToUser(senderId, 'message:read:receipt', {
+          messageId: data.messageId,
+          conversationId: data.conversationId,
+          readBy: client.userId,
+          readAt: new Date(),
+        });
+      }
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: any) {
+      this.logger.error(`Error marking message read: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to mark message read' };
     }
   }
 
@@ -404,8 +449,12 @@ export class MessagesGateway
       );
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (error: any) {
+      this.logger.error(`Error marking conversation read: ${error?.message || error}`);
+      return {
+        success: false,
+        error: error?.message || 'Failed to mark conversation read',
+      };
     }
   }
 
@@ -430,16 +479,17 @@ export class MessagesGateway
     try {
       const conversation = await this.messagesService.getConversationById(
         conversationId,
-        excludeUserId, // Just for access check
+        excludeUserId,
       );
 
-      for (const participant of conversation.participants) {
-        if (participant.userId.toString() !== excludeUserId) {
-          this.emitToUser(participant.userId.toString(), event, data);
+      for (const participant of conversation.participants || []) {
+        const participantUserId = this.normalizeId((participant as any)?.userId);
+        if (participantUserId && participantUserId !== excludeUserId) {
+          this.emitToUser(participantUserId, event, data);
         }
       }
-    } catch (error) {
-      this.logger.error(`Error emitting to participants: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(`Error emitting to participants: ${error?.message || error}`);
     }
   }
 

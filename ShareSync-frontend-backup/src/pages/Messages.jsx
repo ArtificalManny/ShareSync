@@ -1,19 +1,13 @@
 // src/pages/Messages.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC MESSAGES PAGE v4.1 - Light Theme & Dark Mode Adapted
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// THEME: "The Communication Hub" (Adaptive Light/Dark)
-//
-// NO BACKEND CHANGES. LOGIC PRESERVED EXACTLY.
-//
+// SHARESYNC MESSAGES PAGE v4.4 - Resolved Current User + Safe Participant Logic
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Search, 
-  Plus, 
+import {
+  Search,
+  Plus,
   MoreHorizontal,
   Star,
   Archive,
@@ -29,35 +23,252 @@ import {
   User,
 } from 'lucide-react';
 
-// API
-import { 
-  messagesApi, 
-  getConversationDisplayName, 
-  getOtherParticipant,
+// API (Removed getUserInitials and getOtherParticipant - we use local pure functions now)
+import {
+  messagesApi,
   isOwnMessage,
-  getUserInitials,
   generateClientMessageId,
 } from '../lib/api/messages';
 
-// WebSocket context (Phase 2A)
+// WebSocket & Auth context
 import { useSocketContext, useSocketEvent } from '../context/SocketContext';
-
-// Auth context
 import { useAuth } from '../context/AuthContext';
-
-// Axios for user search
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ⭐ LOCAL PURE HELPERS (safe current-user resolution + safe participant logic)
+───────────────────────────────────────────────────────────────────────── */
+
+const safeParseJSON = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const readStoredUser = () => {
+  try {
+    const raw =
+      localStorage.getItem('ss.user') ||
+      localStorage.getItem('user') ||
+      localStorage.getItem('auth.user');
+
+    if (!raw) return null;
+
+    const parsed = safeParseJSON(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const readAvatarOverride = () => {
+  try {
+    return localStorage.getItem('ss.avatarOverride') || null;
+  } catch {
+    return null;
+  }
+};
+
+const resolveAvatarUrl = (u) => {
+  if (!u) return null;
+  return (
+    u.avatarUrl ||
+    u.profilePicture ||
+    u.avatar ||
+    u.photoUrl ||
+    u.profile?.avatarUrl ||
+    u.profile?.photoUrl ||
+    null
+  );
+};
+
+const extractId = (value) => {
+  if (!value) return '';
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  if (typeof value === 'object') {
+    return String(
+      value._id ||
+      value.id ||
+      value.userId?._id ||
+      value.userId?.id ||
+      value.user?._id ||
+      value.user?.id ||
+      value.member?._id ||
+      value.member?.id ||
+      value.sub ||
+      ''
+    );
+  }
+
+  return '';
+};
+
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+const unwrapParticipantUser = (participant) => {
+  if (!participant) return null;
+
+  if (participant.userId && typeof participant.userId === 'object') return participant.userId;
+  if (participant.user && typeof participant.user === 'object') return participant.user;
+  if (participant.member && typeof participant.member === 'object') return participant.member;
+
+  return participant;
+};
+
+const isSameUser = (a, b) => {
+  if (!a || !b) return false;
+
+  const aId = extractId(a);
+  const bId = extractId(b);
+  if (aId && bId) return aId === bId;
+
+  const aEmail = normalizeText(a.email);
+  const bEmail = normalizeText(b.email);
+  if (aEmail && bEmail) return aEmail === bEmail;
+
+  const aUsername = normalizeText(a.username || a.handle);
+  const bUsername = normalizeText(b.username || b.handle);
+  if (aUsername && bUsername) return aUsername === bUsername;
+
+  return false;
+};
+
+const resolveCurrentUser = (authUser) => {
+  const storedUser = readStoredUser();
+  const avatarOverride = readAvatarOverride();
+
+  const merged = {
+    ...(storedUser || {}),
+    ...(authUser || {}),
+  };
+
+  const resolvedAvatar =
+    avatarOverride ||
+    resolveAvatarUrl(authUser) ||
+    resolveAvatarUrl(storedUser) ||
+    null;
+
+  return {
+    ...merged,
+    _resolvedId: extractId(authUser) || extractId(storedUser),
+    avatarUrl: resolvedAvatar || merged.avatarUrl || merged.profilePicture || null,
+    profilePicture: resolvedAvatar || merged.profilePicture || merged.avatarUrl || null,
+  };
+};
+
+const getSafeOtherParticipant = (conversation, currentUser) => {
+  const participants = (conversation?.participants || [])
+    .map(unwrapParticipantUser)
+    .filter(Boolean);
+
+  if (!participants.length) return null;
+
+  const other = participants.find((participant) => !isSameUser(participant, currentUser));
+
+  if (other) {
+    if (typeof window !== 'undefined') {
+      console.log('[AVATAR DEBUG] other participant raw fields:', {
+        id: other._id || other.id,
+        firstName: other.firstName,
+        profilePicture: other.profilePicture,
+        avatarUrl: other.avatarUrl,
+        avatar: other.avatar,
+        photoUrl: other.photoUrl,
+        image: other.image,
+        allKeys: Object.keys(other),
+      });
+    }
+    return {
+      ...other,
+      avatarUrl: resolveAvatarUrl(other),
+      profilePicture: other.profilePicture || resolveAvatarUrl(other),
+    };
+  }
+
+  const fallback = participants[0] || null;
+
+  return fallback
+    ? {
+        ...fallback,
+        avatarUrl: resolveAvatarUrl(fallback),
+        profilePicture: fallback.profilePicture || resolveAvatarUrl(fallback),
+      }
+    : null;
+};
+
+const getSafeDisplayName = (conversation, currentUser) => {
+  if (!conversation) return 'Unknown';
+
+  if (conversation.type === 'direct') {
+    const other = getSafeOtherParticipant(conversation, currentUser);
+
+    if (other) {
+      const first = (other.firstName || '').trim();
+      const last = (other.lastName || '').trim();
+      const full = [first, last].filter(Boolean).join(' ').trim();
+
+      if (full) return full;
+      if (other.username) return other.username;
+      if (other.email) return other.email;
+    }
+
+    return 'Unknown User';
+  }
+
+  if (conversation.name) return conversation.name;
+  return conversation.type === 'group' ? 'Group Chat' : 'Conversation';
+};
+
+const getInitialsLocal = (user) => {
+  if (!user) return '?';
+
+  const first = (user.firstName || '').trim();
+  const last = (user.lastName || '').trim();
+
+  if (first || last) {
+    return `${first[0] || ''}${last[0] || ''}`.toUpperCase();
+  }
+
+  if (user.username) return user.username.slice(0, 2).toUpperCase();
+  if (user.email) return user.email.slice(0, 2).toUpperCase();
+
+  return '?';
+};
+
+const getMessageSenderCandidate = (message) => {
+  return message?.senderId || message?.sender || message?.user || null;
+};
+
+const isOwnMessageSafe = (message, currentUser) => {
+  const sender = getMessageSenderCandidate(message);
+  const currentId = extractId(currentUser);
+
+  if (sender && isSameUser(sender, currentUser)) {
+    return true;
+  }
+
+  const senderId = extractId(sender);
+  if (senderId && currentId) {
+    return senderId === currentId;
+  }
+
+  return isOwnMessage(message, currentId);
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    USER SEARCH API
 ───────────────────────────────────────────────────────────────────────── */
 const searchUsers = async (query) => {
   if (!query || query.length < 2) return [];
-  
   const token = localStorage.getItem('ss.jwt') || localStorage.getItem('token');
-  
   try {
     const res = await axios.get(`${API_BASE_URL}/users/search`, {
       params: { q: query, limit: 10 },
@@ -65,21 +276,19 @@ const searchUsers = async (query) => {
     });
     return res.data.data || res.data || [];
   } catch (err) {
-    console.warn('User search endpoint not available, trying fallback...');
     try {
       const res = await axios.get(`${API_BASE_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const users = res.data.data || res.data || [];
       const queryLower = query.toLowerCase();
-      return users.filter(u => 
+      return users.filter(u =>
         u.firstName?.toLowerCase().includes(queryLower) ||
         u.lastName?.toLowerCase().includes(queryLower) ||
         u.email?.toLowerCase().includes(queryLower) ||
         u.username?.toLowerCase().includes(queryLower)
       ).slice(0, 10);
     } catch (fallbackErr) {
-      console.error('User search failed:', fallbackErr);
       return [];
     }
   }
@@ -139,20 +348,24 @@ const ErrorState = ({ message, onRetry }) => (
    AVATAR COMPONENT - Adaptive
 ───────────────────────────────────────────────────────────────────────── */
 const Avatar = ({ user, size = 'md', className = '' }) => {
+  const [imgError, setImgError] = useState(false);
+
   const sizes = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
   };
 
-  const initials = getUserInitials(user);
-  
-  if (user?.avatar) {
+  const initials = getInitialsLocal(user);
+  const avatarUrl = resolveAvatarUrl(user);
+
+  if (avatarUrl && !imgError) {
     return (
-      <img 
-        src={user.avatar} 
-        alt={`${user.firstName || 'User'}'s avatar`}
-        className={`${sizes[size]} rounded-full object-cover ${className}`}
+      <img
+        src={avatarUrl}
+        alt={`${user?.firstName || user?.username || 'User'} avatar`}
+        className={`${sizes[size]} rounded-full object-cover flex-shrink-0 ${className}`}
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -169,13 +382,13 @@ const Avatar = ({ user, size = 'md', className = '' }) => {
 ───────────────────────────────────────────────────────────────────────── */
 const TypingIndicator = ({ users }) => {
   if (!users || users.length === 0) return null;
-  
-  const text = users.length === 1 
+
+  const text = users.length === 1
     ? `${users[0]} is typing...`
     : users.length === 2
     ? `${users[0]} and ${users[1]} are typing...`
     : `${users[0]} and ${users.length - 1} others are typing...`;
-  
+
   return (
     <div className="flex items-center gap-2 px-4 py-2 text-xs text-slate-500 dark:text-zinc-400">
       <div className="flex gap-1">
@@ -191,20 +404,23 @@ const TypingIndicator = ({ users }) => {
 /* ─────────────────────────────────────────────────────────────────────────
    CONVERSATION LIST ITEM - Adaptive
 ───────────────────────────────────────────────────────────────────────── */
-const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) => {
-  const displayName = getConversationDisplayName(conversation, currentUserId);
-  const otherUser = getOtherParticipant(conversation, currentUserId);
+const ConversationItem = ({ conversation, isSelected, onClick, currentUser }) => {
+  const otherUser = getSafeOtherParticipant(conversation, currentUser);
+  const displayName = conversation.type === 'direct'
+    ? getSafeDisplayName(conversation, currentUser)
+    : (conversation.name || 'Conversation');
+
   const unreadCount = conversation.unreadCount || 0;
   const isStarred = conversation.isPinned || false;
   const lastMessage = conversation.lastMessage?.content || 'No messages yet';
   const lastMessageAt = conversation.lastMessage?.sentAt || conversation.lastActivityAt;
-  
+
   const formatTime = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 1000 * 60 * 60) {
       const mins = Math.floor(diff / (1000 * 60));
       return mins <= 0 ? 'now' : `${mins}m`;
@@ -217,21 +433,21 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
     }
     return date.toLocaleDateString();
   };
-  
+
   return (
     <button
       onClick={onClick}
       className={`
         w-full flex items-start gap-3 p-4
         transition-all duration-200
-        ${isSelected 
-          ? 'bg-violet-50 dark:bg-violet-500/10 border-l-2 border-l-violet-500' 
+        ${isSelected
+          ? 'bg-violet-50 dark:bg-violet-500/10 border-l-2 border-l-violet-500'
           : 'hover:bg-slate-50 dark:hover:bg-[#1f1f23] border-l-2 border-l-transparent'
         }
       `}
     >
       <Avatar user={otherUser} size="md" />
-      
+
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center justify-between mb-1">
           <span className={`text-sm truncate ${unreadCount > 0 ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-zinc-200'}`}>
@@ -245,7 +461,7 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
           {lastMessage}
         </p>
       </div>
-      
+
       <div className="flex flex-col items-center gap-1">
         {isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
         {unreadCount > 0 && (
@@ -261,29 +477,55 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUserId }) 
 /* ─────────────────────────────────────────────────────────────────────────
    MESSAGE BUBBLE - Adaptive
 ───────────────────────────────────────────────────────────────────────── */
-const MessageBubble = ({ message, isOwn, showAvatar, otherUser }) => {
-  const time = new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
+const MessageBubble = ({ message, isOwn, showAvatar, currentUser, otherUser }) => {
+  const timeSource = message.createdAt || message.sentAt || message.timestamp || new Date().toISOString();
+  const time = new Date(timeSource).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const bubbleUser = isOwn ? currentUser : otherUser;
+
+  if (isOwn) {
+    return (
+      <div className="flex gap-3 justify-end">
+        <div className="max-w-[70%]">
+          <div className={`
+            px-4 py-2.5 rounded-2xl
+            bg-violet-600 text-white rounded-br-md shadow-sm
+            ${message.__optimistic ? 'opacity-70' : ''}
+          `}>
+            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+          </div>
+          <div className="flex items-center gap-2 mt-1 justify-end">
+            <span className="text-xs text-slate-500 dark:text-zinc-500">{time}</span>
+            {message.isEdited && <span className="text-xs text-slate-500 dark:text-zinc-500">(edited)</span>}
+            {message.__optimistic && <span className="text-xs text-slate-500 dark:text-zinc-500">Sending...</span>}
+          </div>
+        </div>
+
+        {showAvatar ? (
+          <Avatar user={bubbleUser} size="sm" />
+        ) : (
+          <div className="w-8 flex-shrink-0" />
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-      {showAvatar && !isOwn ? (
-        <Avatar user={otherUser} size="sm" />
+    <div className="flex gap-3 justify-start">
+      {showAvatar ? (
+        <Avatar user={bubbleUser} size="sm" />
       ) : (
-        <div className="w-8" />
+        <div className="w-8 flex-shrink-0" />
       )}
-      
-      <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+
+      <div className="max-w-[70%]">
         <div className={`
           px-4 py-2.5 rounded-2xl
-          ${isOwn 
-            ? 'bg-violet-600 text-white rounded-br-md shadow-sm' 
-            : 'bg-slate-100 dark:bg-[#1f1f23] text-slate-800 dark:text-zinc-200 rounded-bl-md border border-slate-200 dark:border-[#27272a] shadow-sm dark:shadow-none'
-          }
+          bg-slate-100 dark:bg-[#1f1f23] text-slate-800 dark:text-zinc-200 rounded-bl-md border border-slate-200 dark:border-[#27272a] shadow-sm dark:shadow-none
           ${message.__optimistic ? 'opacity-70' : ''}
         `}>
           <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         </div>
-        <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'justify-end' : ''}`}>
+        <div className="flex items-center gap-2 mt-1">
           <span className="text-xs text-slate-500 dark:text-zinc-500">{time}</span>
           {message.isEdited && <span className="text-xs text-slate-500 dark:text-zinc-500">(edited)</span>}
           {message.__optimistic && <span className="text-xs text-slate-500 dark:text-zinc-500">Sending...</span>}
@@ -304,7 +546,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
   const [messageContent, setMessageContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
-  
+
   const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -317,12 +559,14 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       const results = await searchUsers(searchQuery);
-      const filtered = results.filter(u => (u._id || u.id) !== currentUserId);
+      const filtered = results.filter(u => extractId(u) !== String(currentUserId));
       setSearchResults(filtered);
       setIsSearching(false);
     }, 300);
 
-    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
   }, [searchQuery, currentUserId]);
 
   useEffect(() => {
@@ -472,14 +716,15 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
 export default function Messages() {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef(null);
-  
+
   // Auth
-  const { user: currentUser } = useAuth?.() || { user: null };
-  const currentUserId = currentUser?._id || currentUser?.id || '';
-  
+  const { user: authUser } = useAuth?.() || { user: null };
+  const currentUser = React.useMemo(() => resolveCurrentUser(authUser), [authUser]);
+  const currentUserId = currentUser?._resolvedId || '';
+
   // WebSocket integration
   const { joinConversationRoom, leaveConversationRoom, sendTypingStart, sendTypingStop } = useSocketContext?.() || {};
-  
+
   // Local state
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -494,8 +739,8 @@ export default function Messages() {
   // DATA FETCHING
   // ═══════════════════════════════════════════════════════════════════════
 
-  const { 
-    data: conversations = [], 
+  const {
+    data: conversations = [],
     isLoading: loadingConversations,
     error: conversationsError,
     refetch: refetchConversations,
@@ -506,7 +751,7 @@ export default function Messages() {
     refetchOnWindowFocus: true,
   });
 
-  const selectedConversation = conversations.find(c => (c._id || c.id) === selectedConversationId);
+  const selectedConversation = conversations.find(c => String(c._id || c.id) === String(selectedConversationId));
 
   const {
     data: messagesData,
@@ -533,7 +778,7 @@ export default function Messages() {
   // ═══════════════════════════════════════════════════════════════════════
 
   useSocketEvent?.('message:new', useCallback((data) => {
-    if (data.conversationId === selectedConversationId) {
+    if (String(data.conversationId) === String(selectedConversationId)) {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         messages: [...(old?.messages || []), data.message],
         hasMore: old?.hasMore || false,
@@ -544,8 +789,8 @@ export default function Messages() {
   }, [selectedConversationId, queryClient]));
 
   useSocketEvent?.('typing:user', useCallback((data) => {
-    if (data.conversationId !== selectedConversationId) return;
-    
+    if (String(data.conversationId) !== String(selectedConversationId)) return;
+
     setTypingUsers(prev => {
       if (data.isTyping) {
         if (!prev.includes(data.username)) {
@@ -559,11 +804,11 @@ export default function Messages() {
   }, [selectedConversationId]));
 
   useSocketEvent?.('message:edited', useCallback((data) => {
-    if (data.conversationId === selectedConversationId) {
+    if (String(data.conversationId) === String(selectedConversationId)) {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
-        messages: (old?.messages || []).map(m => 
-          (m._id || m.id) === data.messageId 
+        messages: (old?.messages || []).map(m =>
+          String(m._id || m.id) === String(data.messageId)
             ? { ...m, content: data.content, isEdited: true, editedAt: data.editedAt }
             : m
         ),
@@ -572,11 +817,11 @@ export default function Messages() {
   }, [selectedConversationId, queryClient]));
 
   useSocketEvent?.('message:deleted', useCallback((data) => {
-    if (data.conversationId === selectedConversationId) {
+    if (String(data.conversationId) === String(selectedConversationId)) {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
-        messages: (old?.messages || []).map(m => 
-          (m._id || m.id) === data.messageId 
+        messages: (old?.messages || []).map(m =>
+          String(m._id || m.id) === String(data.messageId)
             ? { ...m, isDeleted: true, content: '[Message deleted]' }
             : m
         ),
@@ -598,19 +843,19 @@ export default function Messages() {
         createdAt: new Date().toISOString(),
         __optimistic: true,
       };
-      
+
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         messages: [...(old?.messages || []), optimisticMessage],
         hasMore: old?.hasMore || false,
       }));
-      
+
       return { optimisticMessage };
     },
     onSuccess: (newMessage, variables, context) => {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
-        messages: (old?.messages || []).map(m => 
-          m._id === variables.clientMessageId ? newMessage : m
+        messages: (old?.messages || []).map(m =>
+          String(m._id || m.id) === String(variables.clientMessageId) ? newMessage : m
         ),
       }));
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -619,7 +864,7 @@ export default function Messages() {
     onError: (error, variables, context) => {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
-        messages: (old?.messages || []).filter(m => m._id !== variables.clientMessageId),
+        messages: (old?.messages || []).filter(m => String(m._id || m.id) !== String(variables.clientMessageId)),
       }));
     },
   });
@@ -633,7 +878,7 @@ export default function Messages() {
   });
 
   const toggleStarMutation = useMutation({
-    mutationFn: ({ conversationId, isPinned }) => 
+    mutationFn: ({ conversationId, isPinned }) =>
       messagesApi.updateSettings(conversationId, { isPinned: !isPinned }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -672,7 +917,7 @@ export default function Messages() {
   const filteredConversations = conversations.filter(conv => {
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
-      const displayName = getConversationDisplayName(conv, currentUserId).toLowerCase();
+      const displayName = getSafeDisplayName(conv, currentUser).toLowerCase();
       const lastMessage = (conv.lastMessage?.content || '').toLowerCase();
       if (!displayName.includes(searchLower) && !lastMessage.includes(searchLower)) return false;
     }
@@ -688,14 +933,14 @@ export default function Messages() {
 
   const handleInputChange = (e) => {
     setMessageInput(e.target.value);
-    
+
     if (sendTypingStart && selectedConversationId) {
       const now = Date.now();
       if (now - lastTypingRef.current > 2000) {
         sendTypingStart(selectedConversationId);
         lastTypingRef.current = now;
       }
-      
+
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
         if (sendTypingStop) sendTypingStop(selectedConversationId);
@@ -705,10 +950,10 @@ export default function Messages() {
 
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedConversationId) return;
-    
+
     if (sendTypingStop) sendTypingStop(selectedConversationId);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    
+
     sendMessageMutation.mutate({
       conversationId: selectedConversationId,
       content: messageInput.trim(),
@@ -730,13 +975,16 @@ export default function Messages() {
     setSelectedConversationId(conversation._id || conversation.id);
   };
 
-  const selectedOtherUser = selectedConversation ? getOtherParticipant(selectedConversation, currentUserId) : null;
+  const selectedOtherUser = selectedConversation
+    ? getSafeOtherParticipant(selectedConversation, currentUser)
+    : null;
+
   const hasUnreadMessages = conversations.some(c => (c.unreadCount || 0) > 0);
 
   return (
     <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4 bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full">
-        
+
         {/* LEFT: Conversation List */}
         <aside className="rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex flex-col shadow-sm dark:shadow-none transition-colors duration-300">
           <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23]">
@@ -755,7 +1003,7 @@ export default function Messages() {
                 </button>
               </div>
             </div>
-            
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
               <input
@@ -766,7 +1014,7 @@ export default function Messages() {
                 className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-50 dark:bg-[#09090B] border border-slate-200 dark:border-[#1f1f23] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-colors"
               />
             </div>
-            
+
             <div className="flex gap-1 mt-3">
               {['all', 'unread', 'starred'].map(f => (
                 <button
@@ -782,7 +1030,7 @@ export default function Messages() {
               ))}
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto">
             {loadingConversations ? (
               <ConversationSkeleton />
@@ -794,9 +1042,9 @@ export default function Messages() {
                   <ConversationItem
                     key={conv._id || conv.id}
                     conversation={conv}
-                    isSelected={selectedConversationId === (conv._id || conv.id)}
+                    isSelected={String(selectedConversationId) === String(conv._id || conv.id)}
                     onClick={() => handleSelectConversation(conv)}
-                    currentUserId={currentUserId}
+                    currentUser={currentUser}
                   />
                 ))}
               </div>
@@ -819,7 +1067,7 @@ export default function Messages() {
               </div>
             )}
           </div>
-          
+
           {hasUnreadMessages && (
             <div className="p-3 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B]">
               <button
@@ -843,7 +1091,7 @@ export default function Messages() {
                   <Avatar user={selectedOtherUser} size="md" />
                   <div>
                     <h3 className="text-sm font-medium text-slate-900 dark:text-white">
-                      {getConversationDisplayName(selectedConversation, currentUserId)}
+                      {getSafeDisplayName(selectedConversation, currentUser)}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-zinc-500">
                       {selectedConversation.type === 'direct' ? 'Direct message' : selectedConversation.type}
@@ -851,7 +1099,7 @@ export default function Messages() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={() => toggleStarMutation.mutate({ conversationId: selectedConversationId, isPinned: selectedConversation.isPinned })}
                     className={`p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] transition-colors ${selectedConversation.isPinned ? 'text-amber-500' : 'text-slate-400 dark:text-zinc-500'}`}
                   >
@@ -862,7 +1110,7 @@ export default function Messages() {
                   <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
                 </div>
               </div>
-              
+
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-[#111113] transition-colors duration-300">
                 {loadingMessages ? (
@@ -875,8 +1123,9 @@ export default function Messages() {
                       <MessageBubble
                         key={msg._id || msg.id || i}
                         message={msg}
-                        isOwn={isOwnMessage(msg, currentUserId)}
-                        showAvatar={i === 0 || !isOwnMessage(messages[i-1], currentUserId)}
+                        isOwn={isOwnMessageSafe(msg, currentUser)}
+                        showAvatar={i === 0 || !isOwnMessageSafe(messages[i - 1], currentUser)}
+                        currentUser={currentUser}
                         otherUser={selectedOtherUser}
                       />
                     ))}
@@ -891,10 +1140,10 @@ export default function Messages() {
                   </div>
                 )}
               </div>
-              
+
               {/* Typing Indicator */}
               <TypingIndicator users={typingUsers} />
-              
+
               {/* Input */}
               <div className="p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
                 <div className="flex items-center gap-3">
@@ -939,7 +1188,7 @@ export default function Messages() {
           )}
         </section>
       </div>
-      
+
       <NewMessageModal
         isOpen={showComposer}
         onClose={() => setShowComposer(false)}

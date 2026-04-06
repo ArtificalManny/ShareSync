@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGES SERVICE
 // ⭐ PHASE 2A: Added AppGateway integration for real-time WebSocket emissions
+// ⭐ PATCH: Populate canonical user avatar field(s) for messaging payloads
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -45,6 +46,15 @@ export interface MessagesQueryOptions {
 @Injectable()
 export class MessagesService {
   private readonly logger = new Logger(MessagesService.name);
+
+  /**
+   * IMPORTANT:
+   * The canonical avatar field in User schema is `profilePicture`.
+   * We still include legacy/fallback fields in case some older users or payloads
+   * contain them, but `profilePicture` must be present in messaging populates.
+   */
+  private readonly userPopulateFields =
+    'firstName lastName username email profilePicture avatar avatarUrl photoUrl image';
 
   constructor(
     @InjectModel(Message.name)
@@ -271,7 +281,10 @@ export class MessagesService {
         },
       });
 
-      if (existing) return existing;
+      if (existing) {
+        await existing.populate('participants.userId', this.userPopulateFields);
+        return existing;
+      }
     }
 
     const participants = [
@@ -294,6 +307,7 @@ export class MessagesService {
     });
 
     const saved = await conversation.save();
+    await saved.populate('participants.userId', this.userPopulateFields);
 
     this.eventEmitter.emit('conversation.created', {
       conversationId: saved._id,
@@ -324,7 +338,10 @@ export class MessagesService {
       $expr: { $eq: [{ $size: '$participants' }, 2] },
     });
 
-    if (existing) return existing;
+    if (existing) {
+      await existing.populate('participants.userId', this.userPopulateFields);
+      return existing;
+    }
 
     return this.createConversation(userId, {
       type: ConversationType.DIRECT,
@@ -343,7 +360,7 @@ export class MessagesService {
 
     const conversations = await this.conversationModel
       .find(query)
-      .populate('participants.userId', 'firstName lastName email avatar')
+      .populate('participants.userId', this.userPopulateFields)
       .sort({ lastActivityAt: -1 })
       .exec();
 
@@ -375,7 +392,7 @@ export class MessagesService {
   ): Promise<ConversationDocument> {
     const conversation = await this.conversationModel
       .findById(conversationId)
-      .populate('participants.userId', 'firstName lastName email avatar');
+      .populate('participants.userId', this.userPopulateFields);
 
     if (!conversation) throw new NotFoundException('Conversation not found');
 
@@ -425,6 +442,7 @@ export class MessagesService {
     await this.sendSystemMessage(conversationId, `User was added to the conversation`);
 
     const saved = await conversation.save();
+    await saved.populate('participants.userId', this.userPopulateFields);
 
     // ⭐ PHASE 2A: Notify new participant
     this.emitToUser(newParticipantId, 'conversation:joined', {
@@ -459,6 +477,7 @@ export class MessagesService {
     await this.sendSystemMessage(conversationId, `User left the conversation`);
 
     const saved = await conversation.save();
+    await saved.populate('participants.userId', this.userPopulateFields);
 
     // ⭐ PHASE 2A: Notify removed participant
     this.emitToUser(participantToRemove, 'conversation:removed', {
@@ -489,7 +508,10 @@ export class MessagesService {
 
     if (dto.clientMessageId) {
       const existing = await this.messageModel.findOne({ clientMessageId: dto.clientMessageId });
-      if (existing) return existing;
+      if (existing) {
+        await existing.populate('senderId', this.userPopulateFields);
+        return existing;
+      }
     }
 
     const energy = dto.energy || MessageEnergy.NORMAL;
@@ -529,7 +551,7 @@ export class MessagesService {
     this.incrementUnread(conversation, userId);
     await conversation.save();
 
-    await saved.populate('senderId', 'firstName lastName email avatar');
+    await saved.populate('senderId', this.userPopulateFields);
 
     this.eventEmitter.emit('message.sent', {
       message: saved,
@@ -596,7 +618,7 @@ export class MessagesService {
 
     const messages = await this.messageModel
       .find(query)
-      .populate('senderId', 'firstName lastName email avatar')
+      .populate('senderId', this.userPopulateFields)
       .sort({ createdAt: -1 })
       .limit(limit + 1)
       .exec();
@@ -613,7 +635,7 @@ export class MessagesService {
   ): Promise<{ parent: MessageDocument; replies: MessageDocument[] }> {
     const parent = await this.messageModel
       .findById(threadParentId)
-      .populate('senderId', 'firstName lastName email avatar');
+      .populate('senderId', this.userPopulateFields);
 
     if (!parent) throw new NotFoundException('Thread not found');
 
@@ -621,7 +643,7 @@ export class MessagesService {
 
     const replies = await this.messageModel
       .find({ threadParentId: new Types.ObjectId(threadParentId), isDeleted: { $ne: true } })
-      .populate('senderId', 'firstName lastName email avatar')
+      .populate('senderId', this.userPopulateFields)
       .sort({ createdAt: 1 })
       .exec();
 
@@ -853,7 +875,7 @@ export class MessagesService {
 
     return this.messageModel
       .find(searchQuery, { score: { $meta: 'textScore' } })
-      .populate('senderId', 'firstName lastName avatar')
+      .populate('senderId', this.userPopulateFields)
       .sort({ score: { $meta: 'textScore' } })
       .limit(limit)
       .exec();

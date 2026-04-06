@@ -126,10 +126,10 @@ const ProfileDropdown = ({ user, onUploadComplete }) => {
       // Upload through moderated /api/uploads/avatar endpoint
       const formData = new FormData();
       formData.append("avatar", file);
-      const res = await client.post("/uploads/avatar", formData, {
+      const res = await client.post("/users/me/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      const avatarUrl = res.data?.url || res.data?.avatarUrl;
+      const avatarUrl = res.data?.data?.profilePicture || res.data?.profilePicture || res.data?.url || res.data?.avatarUrl;
       if (avatarUrl) {
         try { localStorage.removeItem("ss.avatarOverride"); } catch {}
         applyUserEverywhere({ avatarUrl, profilePicture: avatarUrl });
