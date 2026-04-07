@@ -539,7 +539,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState(null);
   const [publicUser, setPublicUser] = useState(null);
-  const { profileStats: profileAnalytics } = useAnalytics();
+  const [profileAnalytics, setProfileAnalytics] = useState(null);
   
   // Phase 7: Edit modal state
   const [isEditing, setIsEditing] = useState(false);
@@ -590,6 +590,14 @@ export default function Profile() {
         const storedAvatar = storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null;
         const merged = storedAvatar ? { ...userData, avatarUrl: storedAvatar, profilePicture: storedAvatar } : userData;
         setMe(merged);
+
+        try {
+          const analytics = await client.get("/users/profile-analytics");
+          setProfileAnalytics(analytics.data);
+        } catch (err) {
+          console.warn("[Profile] analytics load failed", err?.message || err);
+          setProfileAnalytics(null);
+        }
       }
     } catch (e) {
       console.error('[Profile] Failed to load user data:', e);
