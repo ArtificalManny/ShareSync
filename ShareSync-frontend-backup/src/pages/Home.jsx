@@ -236,11 +236,11 @@ export default function Home() {
   // Focus engine (safe)
   let focusEngine = { hasUrgentMoves: false };
   try {
-    focusEngine = useFocusEngine();
+    focusEngine = useFocusEngine() || { hasUrgentMoves: false };
   } catch (e) {}
 
   // REALTIME HOME DATA (safe + polling + instant local events)
-const { dashboardStats, loading: analyticsLoading } = useAnalytics();
+const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
 
  const {
     loadingMissions,
