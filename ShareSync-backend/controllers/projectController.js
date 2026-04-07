@@ -1,6 +1,14 @@
-// backend/controllers/projectController.js
+// backend/controllers/projectController.js - WITH SOCKET.IO & NOTIFICATIONS
 const Project = require('../models/Project');
 const User = require('../models/User');
+
+// Safely attempt to load the Notification model
+let Notification;
+try {
+  Notification = require('../models/Notification');
+} catch (e) {
+  console.warn('⚠️ Notification model not found at ../models/Notification. Real-time DB notifications will be skipped.');
+}
 
 // @desc    Get all projects for user
 // @route   GET /api/projects
@@ -17,7 +25,18 @@ exports.getProjects = async (req, res) => {
     .populate('members.user', 'firstName lastName profilePicture')
     .sort({ updatedAt: -1 });
 
-    res.json(projects);
+    // ⭐ PHASE 1: Add team balance to each project
+    const projectsWithBalance = await Promise.all(
+      projects.map(async (project) => {
+        const balance = await calculateTeamBalance(project._id, req.user.id);
+        return {
+          ...project.toObject(),
+          teamBalance: balance
+        };
+      })
+    );
+
+    res.json(projectsWithBalance);
   } catch (error) {
     console.error('[getProjects] Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -197,7 +216,9 @@ exports.createTask = async (req, res) => {
 
     // Emit socket event
     const io = req.app.get('io');
-    io.to(`project:${req.params.id}`).emit('task:created', task);
+    if (io) {
+      io.to(`project:${req.params.id}`).emit('task:created', task);
+    }
 
     res.status(201).json(task);
   } catch (error) {
@@ -225,7 +246,9 @@ exports.updateTask = async (req, res) => {
 
     // Emit socket event
     const io = req.app.get('io');
-    io.to(`project:${req.params.id}`).emit('task:updated', task);
+    if (io) {
+      io.to(`project:${req.params.id}`).emit('task:updated', task);
+    }
 
     res.json(task);
   } catch (error) {
@@ -261,12 +284,39 @@ exports.completeTask = async (req, res) => {
       await user.save();
     }
 
-    // Emit socket event
+    // ⭐ Emit socket event to project room
     const io = req.app.get('io');
-    io.to(`project:${req.params.id}`).emit('task:completed', {
-      task,
-      xpAwarded: 25
-    });
+    if (io) {
+      io.to(`project:${req.params.id}`).emit('task:completed', {
+        task,
+        xpAwarded: 25
+      });
+    }
+
+    // ⭐ FIX: CREATE NOTIFICATIONS AND ALERT USERS PERSONALLY
+    if (Notification && io) {
+      try {
+        const projectMembers = project.members ? project.members.map(m => m.user.toString()) : [];
+        const allParticipants = [project.owner.toString(), ...projectMembers];
+        const recipients = [...new Set(allParticipants)].filter(id => id !== req.user.id);
+
+        for (const recipientId of recipients) {
+          const notification = await Notification.create({
+            recipient: recipientId,
+            sender: req.user.id,
+            type: 'project_update',
+            title: 'Task Completed',
+            message: `A task "${task.title}" was completed in ${project.title}.`,
+            relatedItemId: project._id,
+            onModel: 'Project',
+            isRead: false
+          });
+          io.to(recipientId.toString()).emit('new_notification', notification);
+        }
+      } catch (notifErr) {
+        console.error('[completeTask] Failed to broadcast notifications:', notifErr);
+      }
+    }
 
     res.json({ task, xpAwarded: 25 });
   } catch (error) {
@@ -291,9 +341,11 @@ exports.deleteTask = async (req, res) => {
 
     // Emit socket event
     const io = req.app.get('io');
-    io.to(`project:${req.params.id}`).emit('task:deleted', {
-      taskId: req.params.taskId
-    });
+    if (io) {
+      io.to(`project:${req.params.id}`).emit('task:deleted', {
+        taskId: req.params.taskId
+      });
+    }
 
     res.json({ message: 'Task deleted' });
   } catch (error) {
@@ -390,18 +442,45 @@ exports.createShip = async (req, res) => {
       await user.save();
     }
 
-    // Emit socket event
+    // Emit socket event to project
     const io = req.app.get('io');
-    io.to(`project:${req.params.id}`).emit('ship:created', {
-      ship,
-      xpAwarded,
-      streak: user.gamification.currentStreak
-    });
+    if (io) {
+      io.to(`project:${req.params.id}`).emit('ship:created', {
+        ship,
+        xpAwarded,
+        streak: user?.gamification?.currentStreak || 0
+      });
+    }
+
+    // ⭐ FIX: CREATE NOTIFICATIONS AND ALERT USERS PERSONALLY
+    if (Notification && io) {
+      try {
+        const projectMembers = project.members ? project.members.map(m => m.user.toString()) : [];
+        const allParticipants = [project.owner.toString(), ...projectMembers];
+        const recipients = [...new Set(allParticipants)].filter(id => id !== req.user.id);
+
+        for (const recipientId of recipients) {
+          const notification = await Notification.create({
+            recipient: recipientId,
+            sender: req.user.id,
+            type: 'project_update',
+            title: 'New Ship!',
+            message: `Something new was shipped in ${project.title}.`,
+            relatedItemId: project._id,
+            onModel: 'Project',
+            isRead: false
+          });
+          io.to(recipientId.toString()).emit('new_notification', notification);
+        }
+      } catch (notifErr) {
+        console.error('[createShip] Failed to broadcast notifications:', notifErr);
+      }
+    }
 
     res.status(201).json({
       ship,
       xpAwarded,
-      streak: user.gamification.currentStreak
+      streak: user?.gamification?.currentStreak || 0
     });
   } catch (error) {
     console.error('[createShip] Error:', error);
@@ -440,9 +519,11 @@ exports.deleteShip = async (req, res) => {
 
     // Emit socket event
     const io = req.app.get('io');
-    io.to(`project:${req.params.id}`).emit('ship:deleted', {
-      shipId: req.params.shipId
-    });
+    if (io) {
+      io.to(`project:${req.params.id}`).emit('ship:deleted', {
+        shipId: req.params.shipId
+      });
+    }
 
     res.json({ message: 'Ship deleted' });
   } catch (error) {
@@ -450,5 +531,170 @@ exports.deleteShip = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+// ============================================
+// 🚀 PHASE 1: TEAM BALANCE & QUIET PROJECTS
+// ============================================
+
+/**
+ * Calculate team balance for a project
+ * Helper function used by getProjects
+ */
+async function calculateTeamBalance(projectId, userId) {
+  try {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const project = await Project.findById(projectId);
+    
+    if (!project) {
+      return {
+        status: 'unknown',
+        message: 'Project not found',
+        distribution: []
+      };
+    }
+    
+    // Get ships from last week
+    const recentShips = project.ships.filter(ship => 
+      new Date(ship.createdAt) >= weekAgo
+    );
+    
+    if (recentShips.length === 0) {
+      return {
+        status: 'quiet',
+        message: 'No activity this week',
+        distribution: []
+      };
+    }
+    
+    // Count contributions per user
+    const contributions = {};
+    recentShips.forEach(ship => {
+      const authorId = ship.author.toString();
+      contributions[authorId] = (contributions[authorId] || 0) + 1;
+    });
+    
+    // Calculate percentages
+    const distribution = Object.entries(contributions).map(([userId, count]) => ({
+      userId,
+      ships: count,
+      percentage: Math.round((count / recentShips.length) * 100)
+    })).sort((a, b) => b.ships - a.ships);
+    
+    // Determine balance status
+    const top2Percentage = distribution
+      .slice(0, 2)
+      .reduce((sum, user) => sum + user.percentage, 0);
+    
+    let status, message;
+    
+    if (top2Percentage > 80) {
+      status = 'heavy';
+      message = '⚠️ 2 people carrying most work';
+    } else if (top2Percentage > 60) {
+      status = 'moderate';
+      message = '⚡ Work somewhat concentrated';
+    } else {
+      status = 'balanced';
+      message = '✅ Work well distributed';
+    }
+    
+    return {
+      status,
+      message,
+      distribution
+    };
+  } catch (error) {
+    console.error('Error calculating team balance:', error);
+    return {
+      status: 'error',
+      message: 'Could not calculate balance',
+      distribution: []
+    };
+  }
+}
+
+/**
+ * Get quiet projects (no activity in 3+ days)
+ * @route GET /api/projects/quiet
+ */
+exports.getQuietProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const projects = await Project.find({
+      $or: [
+        { owner: userId },
+        { 'members.user': userId }
+      ],
+      status: { $ne: 'Completed' } // Exclude completed projects
+    });
+    
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    
+    const quietProjects = [];
+    
+    for (const project of projects) {
+      // Get most recent ship
+      const sortedShips = project.ships.sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      
+      const lastShip = sortedShips[0];
+      const isQuiet = !lastShip || new Date(lastShip.createdAt) < threeDaysAgo;
+      
+      if (isQuiet) {
+        const daysSinceActivity = lastShip 
+          ? Math.floor((Date.now() - new Date(lastShip.createdAt)) / (1000 * 60 * 60 * 24))
+          : 999;
+        
+        // Generate quick win suggestion
+        const quickWin = await generateQuickWin(project);
+        
+        quietProjects.push({
+          _id: project._id,
+          title: project.title,
+          daysSinceActivity,
+          quickWin
+        });
+      }
+    }
+    
+    return res.json({
+      count: quietProjects.length,
+      projects: quietProjects
+    });
+    
+  } catch (error) {
+    console.error('Error finding quiet projects:', error);
+    res.status(500).json({ error: 'Failed to find quiet projects' });
+  }
+};
+
+/**
+ * Generate quick win suggestion for a project
+ * Helper function
+ */
+async function generateQuickWin(project) {
+  try {
+    // Simple heuristics for quick wins
+    const suggestions = [
+      'Update README (2 min)',
+      'Review pending tasks (5 min)',
+      'Add one small task (3 min)',
+      'Check in with team (1 min)',
+      'Document one decision (4 min)',
+      'Update project status (2 min)',
+      'Review last week\'s progress (5 min)',
+      'Set next milestone (3 min)'
+    ];
+    
+    // Return random suggestion
+    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  } catch (error) {
+    console.error('Error generating quick win:', error);
+    return 'Quick check-in (2 min)';
+  }
+}
 
 module.exports = exports;

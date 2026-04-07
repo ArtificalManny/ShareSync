@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Message, MessageContext, MessageEnergy } from './message.schema';
+import { ModuleRef } from '@nestjs/core';
 
 // Energy costs
 const ENERGY_COSTS = {
@@ -17,6 +18,7 @@ const DAILY_ENERGY_LIMIT = 100;
 export class MessageService {
   constructor(
     @InjectModel(Message.name) private messageModel: Model<Message>,
+    private moduleRef: ModuleRef
   ) {}
 
   // Get user's conversations (grouped by conversationId)
@@ -158,10 +160,49 @@ export class MessageService {
       });
     }
 
-    return saved.populate([
+    const populatedMessage = await saved.populate([
       { path: 'senderId', select: 'firstName lastName username profilePicture' },
       { path: 'recipientId', select: 'firstName lastName username profilePicture' },
     ]);
+
+    // ⭐ THE FIX: Native DB Notification Creation & Internal Event Broadcast
+    if (recipientId) {
+      try {
+        // 1. Force the database to securely save the notification
+        const db = this.messageModel.db;
+        const notifResult = await db.collection('notifications').insertOne({
+          recipient: new Types.ObjectId(recipientId),
+          sender: new Types.ObjectId(senderId),
+          type: 'message',
+          title: 'New Message',
+          message: content.length > 50 ? content.substring(0, 50) + '...' : content,
+          relatedItemId: saved._id,
+          onModel: 'Message',
+          isRead: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        
+        console.log(`✅ [MessageService] Native DB Notification created for ${recipientId}`);
+
+        // 2. Safely shout the event across NestJS modules so RealtimeGateway can hear it
+        try {
+          const eventEmitter = this.moduleRef.get('EventEmitter2', { strict: false });
+          if (eventEmitter) {
+            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
+            eventEmitter.emit('notification.created', newNotif);
+            eventEmitter.emit('message.new', populatedMessage);
+            console.log(`📢 [MessageService] Internal Realtime Events Broadcasted`);
+          }
+        } catch (eeErr) {
+          // Silent catch: EventEmitter isn't strictly required, DB is our failsafe
+        }
+      } catch (dbErr) {
+        console.error('⚠️ [MessageService] Failed to create DB notification:', dbErr);
+      }
+    }
+
+    return populatedMessage;
   }
 
   // Mark message as read

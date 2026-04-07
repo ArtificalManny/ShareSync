@@ -1,6 +1,14 @@
-// backend/controllers/messageController.js - WITH SOCKET.IO
+// backend/controllers/messageController.js - WITH SOCKET.IO & NOTIFICATIONS
 const Message = require('../models/Message');
 const Project = require('../models/Project');
+
+// Safely attempt to load the Notification model
+let Notification;
+try {
+  Notification = require('../models/Notification');
+} catch (e) {
+  console.warn('⚠️ Notification model not found at ../models/Notification. Real-time DB notifications will be skipped.');
+}
 
 // Helper to get socket.io instance
 const getIO = (req) => req.app.get('io');
@@ -91,9 +99,40 @@ exports.createMessage = async (req, res) => {
 
     await message.populate('author', 'firstName lastName profilePicture');
 
-    // ⭐ EMIT SOCKET EVENT
+    // ⭐ EMIT SOCKET EVENT TO PROJECT ROOM
     const io = getIO(req);
-    io.to(`project:${projectId}`).emit('message:new', message);
+    if (io) {
+      io.to(`project:${projectId}`).emit('message:new', message);
+    }
+
+    // ⭐ FIX: CREATE NOTIFICATIONS AND ALERT USERS PERSONALLY
+    if (Notification && io) {
+      try {
+        const projectMembers = project.members ? project.members.map(m => m.user.toString()) : [];
+        const allParticipants = [project.owner.toString(), ...projectMembers];
+        const recipients = [...new Set(allParticipants)].filter(id => id !== req.user.id);
+
+        for (const recipientId of recipients) {
+          const notification = await Notification.create({
+            recipient: recipientId,
+            sender: req.user.id,
+            type: 'message',
+            title: `New message in ${project.title}`,
+            message: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+            relatedItemId: message._id,
+            onModel: 'Message',
+            isRead: false
+          });
+          
+          // Emit to the user's personal socket room so their top-bar red badge updates instantly
+          io.to(recipientId.toString()).emit('new_notification', notification);
+          // Also emit a personal direct message event just in case the frontend is listening for it
+          io.to(recipientId.toString()).emit('new_message', message);
+        }
+      } catch (notifErr) {
+        console.error('[createMessage] Failed to broadcast notifications:', notifErr);
+      }
+    }
 
     res.status(201).json(message);
 
@@ -133,7 +172,9 @@ exports.updateMessage = async (req, res) => {
 
     // ⭐ EMIT SOCKET EVENT
     const io = getIO(req);
-    io.to(`project:${projectId}`).emit('message:updated', message);
+    if (io) {
+      io.to(`project:${projectId}`).emit('message:updated', message);
+    }
 
     res.json(message);
 
@@ -168,7 +209,9 @@ exports.deleteMessage = async (req, res) => {
 
     // ⭐ EMIT SOCKET EVENT
     const io = getIO(req);
-    io.to(`project:${projectId}`).emit('message:deleted', { messageId });
+    if (io) {
+      io.to(`project:${projectId}`).emit('message:deleted', { messageId });
+    }
 
     res.json({ message: 'Message deleted successfully' });
 
@@ -205,14 +248,16 @@ exports.addReaction = async (req, res) => {
 
     // ⭐ EMIT SOCKET EVENT
     const io = getIO(req);
-    const reaction = message.reactions[message.reactions.length - 1];
-    io.to(`project:${projectId}`).emit('reaction:added', {
-      messageId,
-      reaction: {
-        emoji: reaction.emoji,
-        userId: reaction.user._id
-      }
-    });
+    if (io) {
+      const reaction = message.reactions[message.reactions.length - 1];
+      io.to(`project:${projectId}`).emit('reaction:added', {
+        messageId,
+        reaction: {
+          emoji: reaction.emoji,
+          userId: reaction.user._id
+        }
+      });
+    }
 
     res.json(message);
 
@@ -244,11 +289,13 @@ exports.removeReaction = async (req, res) => {
 
     // ⭐ EMIT SOCKET EVENT
     const io = getIO(req);
-    io.to(`project:${projectId}`).emit('reaction:removed', {
-      messageId,
-      emoji,
-      userId: req.user.id
-    });
+    if (io) {
+      io.to(`project:${projectId}`).emit('reaction:removed', {
+        messageId,
+        emoji,
+        userId: req.user.id
+      });
+    }
 
     res.json(message);
 
@@ -280,15 +327,17 @@ exports.resolveMessage = async (req, res) => {
 
     // ⭐ EMIT SOCKET EVENT
     const io = getIO(req);
-    io.to(`project:${projectId}`).emit('message:resolved', {
-      messageId,
-      resolvedBy: {
-        _id: message.resolvedBy._id,
-        firstName: message.resolvedBy.firstName,
-        lastName: message.resolvedBy.lastName
-      },
-      resolvedAt: message.resolvedAt
-    });
+    if (io) {
+      io.to(`project:${projectId}`).emit('message:resolved', {
+        messageId,
+        resolvedBy: {
+          _id: message.resolvedBy._id,
+          firstName: message.resolvedBy.firstName,
+          lastName: message.resolvedBy.lastName
+        },
+        resolvedAt: message.resolvedAt
+      });
+    }
 
     res.json(message);
 
@@ -315,7 +364,9 @@ exports.unresolveMessage = async (req, res) => {
 
     // ⭐ EMIT SOCKET EVENT
     const io = getIO(req);
-    io.to(`project:${projectId}`).emit('message:unresolved', { messageId });
+    if (io) {
+      io.to(`project:${projectId}`).emit('message:unresolved', { messageId });
+    }
 
     res.json(message);
 
