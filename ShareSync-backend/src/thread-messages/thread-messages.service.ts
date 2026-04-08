@@ -9,6 +9,8 @@ export interface GetThreadMessagesOptions {
   before?: string;
 }
 
+const USER_POPULATE_FIELDS = 'firstName lastName username email profilePicture avatar avatarUrl';
+
 @Injectable()
 export class ThreadMessagesService {
   constructor(
@@ -45,7 +47,7 @@ export class ThreadMessagesService {
 
     return this.messageModel
       .find(query)
-      .populate('userId', 'firstName lastName username avatar')
+      .populate('userId', USER_POPULATE_FIELDS)
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();

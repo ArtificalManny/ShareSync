@@ -27,6 +27,8 @@ export interface FindThreadsOptions {
   isPinned?: boolean;
 }
 
+const USER_POPULATE_FIELDS = 'firstName lastName username email profilePicture avatar avatarUrl';
+
 @Injectable()
 export class ThreadsService {
   constructor(
@@ -62,8 +64,8 @@ export class ThreadsService {
   async findById(id: string): Promise<ThreadDocument> {
     const thread = await this.threadModel
       .findById(id)
-      .populate('createdBy', 'firstName lastName username avatar')
-      .populate('lastReplyBy', 'firstName lastName username avatar')
+      .populate('createdBy', USER_POPULATE_FIELDS)
+      .populate('lastReplyBy', USER_POPULATE_FIELDS)
       .exec();
 
     if (!thread) {
@@ -86,8 +88,8 @@ export class ThreadsService {
 
     let threads = await this.threadModel
       .find(query)
-      .populate('createdBy', 'firstName lastName username avatar')
-      .populate('lastReplyBy', 'firstName lastName username avatar')
+      .populate('createdBy', USER_POPULATE_FIELDS)
+      .populate('lastReplyBy', USER_POPULATE_FIELDS)
       .sort({ isPinned: -1, lastReplyAt: -1, createdAt: -1 })
       .exec();
 
@@ -159,7 +161,7 @@ export class ThreadsService {
 
     return this.messageModel
       .find(query)
-      .populate('userId', 'firstName lastName username avatar')
+      .populate('userId', USER_POPULATE_FIELDS)
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
@@ -346,7 +348,7 @@ export class ThreadsService {
         threadId: { $in: threadIds },
         content: { $regex: query, $options: 'i' },
       })
-      .populate('userId', 'firstName lastName username avatar')
+      .populate('userId', USER_POPULATE_FIELDS)
       .populate('threadId', 'title')
       .sort({ createdAt: -1 })
       .limit(50)
