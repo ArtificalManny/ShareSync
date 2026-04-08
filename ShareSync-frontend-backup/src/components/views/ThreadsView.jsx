@@ -75,41 +75,50 @@ function ThreadItem({ thread, isActive, onClick }) {
 
 function MessageBubble({ msg, isOwn }) {
   const userObj = msg.userId || {};
-  const name = userObj.firstName ? (userObj.firstName + ' ' + (userObj.lastName || '')).trim() : (msg.authorName || 'Team Member');
+  const name = isOwn ? 'You' : (userObj.firstName ? (userObj.firstName + ' ' + (userObj.lastName || '')).trim() : (msg.authorName || 'Team Member'));
   const initial = name[0]?.toUpperCase() || '?';
   
   // ⭐ AVATAR RESOLUTION CHAIN ⭐
   const avatarUrl = userObj.profilePicture || userObj.avatarUrl || userObj.avatar || userObj.photoUrl || null;
 
   return (
-    <div className={'flex gap-2.5 ' + (isOwn ? 'flex-row-reverse' : '')}>
-      <div className={'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0 overflow-hidden relative ' + (isOwn ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-white/50')}>
-        {avatarUrl ? (
-          <img 
-            src={avatarUrl} 
-            alt={name} 
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none'; // Hide broken image
-              if (e.target.nextSibling) {
-                e.target.nextSibling.style.display = 'flex'; // Show initials fallback
-              }
-            }}
-          />
-        ) : null}
-        <span 
-          style={{ display: avatarUrl ? 'none' : 'flex' }} 
-          className="items-center justify-center w-full h-full absolute inset-0"
-        >
-          {initial}
-        </span>
-      </div>
-      <div className={'max-w-[75%] ' + (isOwn ? 'text-right' : '')}>
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[11px] font-medium text-slate-700 dark:text-white/70">{name}</span>
-          <span className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(msg.createdAt)}</span>
+    <div className={'flex w-full mb-1 ' + (isOwn ? 'justify-end' : 'justify-start')}>
+      <div className={'flex gap-2.5 max-w-[85%] ' + (isOwn ? 'flex-row-reverse' : 'flex-row')}>
+        
+        {/* Avatar Container */}
+        <div className={'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0 overflow-hidden relative mt-auto mb-1 ' + (isOwn ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-white/50')}>
+          {avatarUrl ? (
+            <img 
+              src={avatarUrl} 
+              alt={name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none'; 
+                if (e.target.nextSibling) {
+                  e.target.nextSibling.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          <span 
+            style={{ display: avatarUrl ? 'none' : 'flex' }} 
+            className="items-center justify-center w-full h-full absolute inset-0"
+          >
+            {initial}
+          </span>
         </div>
-        <div className={'inline-block px-3 py-2 rounded-xl text-sm leading-relaxed ' + (isOwn ? 'bg-violet-600 text-white rounded-tr-sm' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-white/80 rounded-tl-sm')}>{msg.content || ''}</div>
+
+        {/* Message Bubble & Metadata Container */}
+        <div className={'flex flex-col ' + (isOwn ? 'items-end' : 'items-start')}>
+          <div className={'flex items-center gap-2 mb-1 ' + (isOwn ? 'flex-row-reverse' : 'flex-row')}>
+            <span className="text-[11px] font-medium text-slate-700 dark:text-white/70">{name}</span>
+            <span className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(msg.createdAt)}</span>
+          </div>
+          <div className={'inline-block px-4 py-2.5 shadow-sm text-sm leading-relaxed ' + (isOwn ? 'bg-violet-600 text-white rounded-t-2xl rounded-bl-2xl rounded-br-md' : 'bg-slate-100 dark:bg-[#2a2a2e] text-slate-800 dark:text-white/90 rounded-t-2xl rounded-br-2xl rounded-bl-md')}>
+            {msg.content || ''}
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -163,7 +172,7 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
           <div className="text-center py-12"><div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3"><MessageCircle className="w-6 h-6 text-violet-500" /></div><p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">Start the conversation</p><p className="text-xs text-slate-400 dark:text-white/30">Send a message to get things going</p></div>
         ) : messages.map((msg, idx) => {
           
-          // ⭐ ROBUST OWNERSHIP CHECK ⭐
+          // ⭐ BULLETPROOF OWNERSHIP CHECK ⭐
           const isOptimistic = Boolean(msg._id && String(msg._id).startsWith('temp-'));
           const rawUserId = msg.userId?._id || msg.userId?.id || (typeof msg.userId === 'string' ? msg.userId : null) || msg.authorId?._id || msg.authorId?.id || (typeof msg.authorId === 'string' ? msg.authorId : null);
           const currIdStr = currentUserId ? String(currentUserId) : null;
@@ -289,8 +298,46 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
   const [showCreate, setShowCreate] = useState(false);
 
   const projectMembers = useMemo(() => extractMembers(project), [project]);
+  
+  // ⭐ ULTRA AGGRESSIVE USER ID EXTRACTION ⭐
   const currentUserId = useMemo(() => {
-    try { const s = localStorage.getItem('user') || localStorage.getItem('auth_user'); if (s) { const u = JSON.parse(s); return u?.id || u?._id; } } catch {} return null;
+    try {
+      const keys = ['user', 'auth_user', 'authUser', 'session'];
+      for (const key of keys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          const u = JSON.parse(val);
+          if (u?.id) return String(u.id);
+          if (u?._id) return String(u._id);
+        }
+      }
+      
+      const zustandKeys = ['auth-storage', 'user-storage'];
+      for (const key of zustandKeys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          const parsed = JSON.parse(val);
+          const u = parsed?.state?.user || parsed?.state;
+          if (u?.id) return String(u.id);
+          if (u?._id) return String(u._id);
+        }
+      }
+
+      const tokenKeys = ['token', 'accessToken', 'access_token'];
+      for (const key of tokenKeys) {
+        const token = localStorage.getItem(key);
+        if (token && token.split('.').length === 3) {
+          const decoded = JSON.parse(atob(token.split('.')[1]));
+          if (decoded?.sub) return String(decoded.sub);
+          if (decoded?.id) return String(decoded.id);
+          if (decoded?._id) return String(decoded._id);
+          if (decoded?.userId) return String(decoded.userId);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not extract user ID", err);
+    }
+    return null;
   }, []);
 
   useEffect(() => {
