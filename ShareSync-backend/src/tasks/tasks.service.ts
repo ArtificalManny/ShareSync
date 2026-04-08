@@ -3,9 +3,9 @@
 // TASKS SERVICE: Business Logic with Gamification Integration
 // + Normalized Task Mutation Events (3.3)
 // + Realtime Socket Emits (Step 4)
-// + Step 5 Notification Touchpoints
-// + ⚡️ Populated Projects for Focus Engine rendering
-// + 🚨 FIX: Assignee/Creator Access Bypass to prevent 404s on completion
+// + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
+// + ✅ Public Spectator Stream (public:project:{projectId}) (Step 6)
+// + ⭐ Native DB Insert + Shotgun Gateway Broadcast + Live Room Override
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -18,6 +18,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ModuleRef } from '@nestjs/core';
+
 import {
   Task,
   TaskDocument,
@@ -84,6 +86,7 @@ export class TasksService {
     private readonly projectsService: ProjectsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly realtime: RealtimeService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   private async emitPublicProjectUpdate(projectId: string, payload: any): Promise<void> {
@@ -160,6 +163,118 @@ export class TasksService {
       });
     }
 
+    // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
+    let rtGateway: any = null;
+    let notifGateway: any = null;
+    try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+    try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+
+    try {
+      if (rtGateway && rtGateway.server) {
+        const payload = buildTaskSnapshot(saved);
+        rtGateway.server.to(`project:${dto.projectId}`).emit('taskUpdated', payload);
+        rtGateway.server.to(dto.projectId).emit('taskUpdated', payload);
+        rtGateway.server.to(`project:${dto.projectId}`).emit('taskCreated', payload);
+        rtGateway.server.to(dto.projectId).emit('taskCreated', payload);
+      }
+    } catch (err) {}
+
+    // ⭐ 1-TO-MANY BROADCAST: Notify all project members + LIVE ROOM OVERRIDE
+    try {
+      const db = this.taskModel.db;
+      const projectDoc = await db.collection('projects').findOne({ _id: new Types.ObjectId(dto.projectId) });
+
+      if (projectDoc) {
+        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
+        
+        // Grab owner, ownerId, and all members to ensure no one is missed
+        const allAssociatedIds: any[] = [
+          projectDoc.ownerId,
+          projectDoc.owner,
+          ...rawMembers.map((m: any) => m?.userId || m?._id || m)
+        ];
+
+        const memberIdsToNotify: string[] = allAssociatedIds
+          .filter(Boolean) // Remove undefined/null
+          .map(id => id.toString())
+          .filter(id => id !== userId);
+
+        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
+        const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
+        const safeTaskTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Task';
+
+        // 1. Notify Official DB Members
+        for (const recipientId of uniqueMembers) {
+          try {
+            const notifResult = await db.collection('notifications').insertOne({
+              userId: new Types.ObjectId(recipientId as string),
+              type: 'task_created',
+              title: `📝 New Task in ${safeProjectName}`,
+              body: safeTaskTitle,
+              data: {
+                projectId: dto.projectId,
+                projectName: safeProjectName,
+                extra: { taskId: saved._id.toString() }
+              },
+              channels: ['in_app'],
+              priority: 'normal',
+              isRead: false,
+              isClicked: false,
+              isDismissed: false,
+              groupCount: 1,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+
+            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
+
+            if (notifGateway && notifGateway.server) {
+              notifGateway.server.to(recipientId as string).emit('new_notification', newNotif);
+              notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+            }
+            if (rtGateway && rtGateway.server) {
+              rtGateway.server.to(recipientId as string).emit('new_notification', newNotif);
+              rtGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+            }
+
+            this.eventEmitter.emit('notification.created', newNotif);
+          } catch (innerErr) {
+            this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
+          }
+        }
+        
+        // 2. LIVE ROOM OVERRIDE: Blast notification to anyone currently viewing the project board
+        const liveRoomNotif = {
+          _id: new Types.ObjectId(), // Ephemeral ID for the frontend to render
+          type: 'task_created',
+          title: `📝 New Task in ${safeProjectName}`,
+          body: safeTaskTitle,
+          data: {
+            projectId: dto.projectId,
+            projectName: safeProjectName,
+            extra: { taskId: saved._id.toString() }
+          },
+          channels: ['in_app'],
+          priority: 'normal',
+          isRead: false,
+          createdAt: new Date()
+        };
+
+        if (notifGateway && notifGateway.server) {
+          notifGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
+          notifGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
+        }
+        if (rtGateway && rtGateway.server) {
+          rtGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
+          rtGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
+        }
+
+        this.logger.log(`✅ Task ${saved._id.toString()} natively notified ${uniqueMembers.length} DB recipient(s) AND broadcasted to Live Rooms`);
+      }
+    } catch (err) {
+      this.logger.error('⚠️ Failed to process native task notifications:', err);
+    }
+
     this.logger.log(`Task created: ${saved._id}`);
     return saved;
   }
@@ -172,20 +287,9 @@ export class TasksService {
     return task;
   }
 
-  // 🚨 CRITICAL BACKEND FIX: Project Access Bypass
   async findByIdWithAccess(taskId: string, userId: string): Promise<TaskDocument> {
     const task = await this.findById(taskId);
-    
-    // If the user is the assignee or the creator, they inherently have access
-    // to view and complete this task, regardless of project permissions.
-    const isAssignee = task.assigneeId?.toString() === userId;
-    const isCreator = task.createdBy?.toString() === userId;
-    
-    if (!isAssignee && !isCreator) {
-      // Only run the strict project check if they don't own the task
-      await this.projectsService.findByIdWithAccess(task.projectId.toString(), userId);
-    }
-    
+    await this.projectsService.findByIdWithAccess(task.projectId.toString(), userId);
     return task;
   }
 
@@ -226,7 +330,6 @@ export class TasksService {
     const [tasks, total] = await Promise.all([
       this.taskModel
         .find(query)
-        .populate('projectId', 'name color icon')
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
         .skip(offset)
         .limit(limit)
@@ -279,7 +382,6 @@ export class TasksService {
 
     return this.taskModel
       .find(query)
-      .populate('projectId', 'name color icon')
       .sort({
         priority: -1,
         isBlocking: -1,
@@ -320,7 +422,6 @@ export class TasksService {
         status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
         completedAt: null,
       })
-      .populate('projectId', 'name color icon')
       .sort({
         priority: -1,
         isBlocking: -1,
@@ -395,6 +496,17 @@ export class TasksService {
 
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
 
+    // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
+    try {
+      let rtGateway: any = null;
+      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+      if (rtGateway && rtGateway.server) {
+        const payload = buildTaskSnapshot(updated);
+        rtGateway.server.to(`project:${task.projectId.toString()}`).emit('taskUpdated', payload);
+        rtGateway.server.to(task.projectId.toString()).emit('taskUpdated', payload);
+      }
+    } catch (err) {}
+
     await this.emitPublicProjectUpdate(task.projectId.toString(), {
       type: 'task.updated',
       projectId: task.projectId.toString(),
@@ -458,6 +570,17 @@ export class TasksService {
     }
 
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
+
+    // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
+    try {
+      let rtGateway: any = null;
+      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+      if (rtGateway && rtGateway.server) {
+        const payload = buildTaskSnapshot(updated);
+        rtGateway.server.to(`project:${task.projectId.toString()}`).emit('taskUpdated', payload);
+        rtGateway.server.to(task.projectId.toString()).emit('taskUpdated', payload);
+      }
+    } catch (err) {}
 
     await this.emitPublicProjectUpdate(task.projectId.toString(), {
       type: 'task.moved',
