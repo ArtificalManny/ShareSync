@@ -74,11 +74,36 @@ function ThreadItem({ thread, isActive, onClick }) {
 }
 
 function MessageBubble({ msg, isOwn }) {
-  const name = msg.userId?.firstName ? (msg.userId.firstName + ' ' + (msg.userId.lastName || '')).trim() : (msg.authorName || 'Team Member');
+  const userObj = msg.userId || {};
+  const name = userObj.firstName ? (userObj.firstName + ' ' + (userObj.lastName || '')).trim() : (msg.authorName || 'Team Member');
   const initial = name[0]?.toUpperCase() || '?';
+  
+  // ⭐ AVATAR RESOLUTION CHAIN ⭐
+  const avatarUrl = userObj.profilePicture || userObj.avatarUrl || userObj.avatar || userObj.photoUrl || null;
+
   return (
     <div className={'flex gap-2.5 ' + (isOwn ? 'flex-row-reverse' : '')}>
-      <div className={'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0 ' + (isOwn ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-white/50')}>{initial}</div>
+      <div className={'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0 overflow-hidden relative ' + (isOwn ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-white/50')}>
+        {avatarUrl ? (
+          <img 
+            src={avatarUrl} 
+            alt={name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none'; // Hide broken image
+              if (e.target.nextSibling) {
+                e.target.nextSibling.style.display = 'flex'; // Show initials fallback
+              }
+            }}
+          />
+        ) : null}
+        <span 
+          style={{ display: avatarUrl ? 'none' : 'flex' }} 
+          className="items-center justify-center w-full h-full absolute inset-0"
+        >
+          {initial}
+        </span>
+      </div>
       <div className={'max-w-[75%] ' + (isOwn ? 'text-right' : '')}>
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-[11px] font-medium text-slate-700 dark:text-white/70">{name}</span>
@@ -137,8 +162,14 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
         ) : messages.length === 0 ? (
           <div className="text-center py-12"><div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3"><MessageCircle className="w-6 h-6 text-violet-500" /></div><p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">Start the conversation</p><p className="text-xs text-slate-400 dark:text-white/30">Send a message to get things going</p></div>
         ) : messages.map((msg, idx) => {
-          const msgUserId = msg.userId?._id || msg.userId;
-          const isOwn = msg._isOwn || (currentUserId && msgUserId === currentUserId);
+          
+          // ⭐ ROBUST OWNERSHIP CHECK ⭐
+          const isOptimistic = Boolean(msg._id && String(msg._id).startsWith('temp-'));
+          const rawUserId = msg.userId?._id || msg.userId?.id || (typeof msg.userId === 'string' ? msg.userId : null) || msg.authorId?._id || msg.authorId?.id || (typeof msg.authorId === 'string' ? msg.authorId : null);
+          const currIdStr = currentUserId ? String(currentUserId) : null;
+          const msgUserIdStr = rawUserId ? String(rawUserId) : null;
+          const isOwn = isOptimistic || (currIdStr && msgUserIdStr && currIdStr === msgUserIdStr);
+          
           return <MessageBubble key={msg._id || idx} msg={msg} isOwn={isOwn} />;
         })}
       </div>
@@ -314,31 +345,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
       </div>
 
       <div className={'flex-1 flex flex-col ' + (!activeThread ? 'hidden lg:flex' : 'flex')}>
-        {activeThread ? (
-          <ConversationPanel thread={activeThread} currentUserId={currentUserId} onBack={() => setActiveThread(null)} />
-        ) : (
-          <div className="flex-1 flex items-center justify-center bg-slate-50/50 dark:bg-[#1f1f23]/50">
-            <div className="text-center max-w-sm mx-auto">
-              <div className="relative w-24 h-24 mx-auto mb-6">
-                <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-2xl animate-pulse" />
-                <div className="relative w-full h-full rounded-3xl bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.08] shadow-xl flex items-center justify-center transform -rotate-3">
-                  <Hash className="w-10 h-10 text-violet-600 dark:text-violet-400 rotate-3" />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">Start a new discussion</h3>
-              <p className="text-sm text-slate-500 dark:text-white/50 mb-8 leading-relaxed">
-                Threads keep your team's ideas organized and actionable. Launch a new topic to get the conversation flowing.
-              </p>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-[#1f1f23] border-2 border-slate-200 dark:border-white/[0.1] text-slate-800 dark:text-white text-sm font-bold shadow-sm hover:border-violet-300 dark:hover:border-violet-500/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23] transition-all active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                Create Thread
-              </button>
-            </div>
-          </div>
-        )}
+        {activeThread ? <ConversationPanel thread={activeThread} currentUserId={currentUserId} onBack={() => setActiveThread(null)} />
+        : <div className="flex-1 flex items-center justify-center"><div className="text-center"><div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-4"><MessageCircle className="w-8 h-8 text-violet-500" /></div><h3 className="text-lg font-semibold text-slate-700 dark:text-white/70 mb-1">Select a thread</h3><p className="text-sm text-slate-400">Choose a conversation or start a new one</p></div></div>}
       </div>
 
       {showCreate && <CreateThreadModal projectId={projectId} members={projectMembers} onClose={() => setShowCreate(false)} onCreated={(t) => { setThreads(prev => [{ ...t, id: t._id || t.id, category: t.category || 'general', participantCount: 0, replyCount: 0, lastMessage: 'No messages yet' }, ...prev]); setActiveThread(t); }} />}
