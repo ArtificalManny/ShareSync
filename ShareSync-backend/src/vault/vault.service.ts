@@ -1,6 +1,8 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ModuleRef } from '@nestjs/core';
 import { VaultFolder, VaultFolderDocument } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileDocument } from './schemas/vault-file.schema';
 
@@ -9,9 +11,13 @@ const PROJECT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
 
 @Injectable()
 export class VaultService {
+  private readonly logger = new Logger(VaultService.name);
+
   constructor(
     @InjectModel(VaultFolder.name) private folderModel: Model<VaultFolderDocument>,
     @InjectModel(VaultFile.name) private fileModel: Model<VaultFileDocument>,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,7 +68,111 @@ export class VaultService {
       uploadedBy: new Types.ObjectId(userId),
     });
 
-    return newFile.save();
+    const saved = await newFile.save();
+
+    // ⭐ DIRECT REALTIME NOTIFICATIONS & LIVE ROOM OVERRIDE
+    try {
+      let rtGateway: any = null;
+      let notifGateway: any = null;
+      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+      try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+
+      const db = this.fileModel.db;
+      const projectObjectId = new Types.ObjectId(projectId);
+      const projectDoc = await db.collection('projects').findOne({ _id: projectObjectId });
+
+      if (projectDoc) {
+        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
+
+        // Grab owner, ownerId, and all members to ensure no one is missed
+        const allAssociatedIds: any[] = [
+          projectDoc.ownerId,
+          projectDoc.owner,
+          ...rawMembers.map((m: any) => m?.userId || m?._id || m)
+        ];
+
+        const memberIdsToNotify: string[] = allAssociatedIds
+          .filter(Boolean)
+          .map(id => id.toString())
+          .filter(id => id !== userId);
+
+        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
+        const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
+        const safeFileName = file.originalname || 'New File';
+
+        // 1. Notify Official DB Members
+        for (const recipientId of uniqueMembers) {
+          try {
+            const notifResult = await db.collection('notifications').insertOne({
+              userId: new Types.ObjectId(recipientId as string),
+              type: 'file_uploaded',
+              title: `📁 New File in ${safeProjectName}`,
+              body: safeFileName,
+              data: {
+                projectId: projectId,
+                projectName: safeProjectName,
+                extra: { fileId: saved._id.toString() }
+              },
+              channels: ['in_app'],
+              priority: 'normal',
+              isRead: false,
+              isClicked: false,
+              isDismissed: false,
+              groupCount: 1,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+
+            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
+
+            if (notifGateway && notifGateway.server) {
+              notifGateway.server.to(recipientId as string).emit('new_notification', newNotif);
+              notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+            }
+            if (rtGateway && rtGateway.server) {
+              rtGateway.server.to(recipientId as string).emit('new_notification', newNotif);
+              rtGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+            }
+
+            this.eventEmitter.emit('notification.created', newNotif);
+          } catch (innerErr) {
+            this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
+          }
+        }
+
+        // 2. LIVE ROOM OVERRIDE: Blast notification to anyone currently viewing the project board
+        const liveRoomNotif = {
+          _id: new Types.ObjectId(), // Ephemeral ID for the frontend to render
+          type: 'file_uploaded',
+          title: `📁 New File in ${safeProjectName}`,
+          body: safeFileName,
+          data: {
+            projectId: projectId,
+            projectName: safeProjectName,
+            extra: { fileId: saved._id.toString() }
+          },
+          channels: ['in_app'],
+          priority: 'normal',
+          isRead: false,
+          createdAt: new Date()
+        };
+
+        if (notifGateway && notifGateway.server) {
+          notifGateway.server.to(`project:${projectId}`).emit('new_notification', liveRoomNotif);
+          notifGateway.server.to(projectId).emit('new_notification', liveRoomNotif);
+        }
+        if (rtGateway && rtGateway.server) {
+          rtGateway.server.to(`project:${projectId}`).emit('new_notification', liveRoomNotif);
+          rtGateway.server.to(projectId).emit('new_notification', liveRoomNotif);
+        }
+
+        this.logger.log(`✅ File ${saved._id.toString()} natively notified ${uniqueMembers.length} DB recipient(s) AND broadcasted to Live Rooms`);
+      }
+    } catch (err) {
+      this.logger.error('⚠️ Failed to process native file notifications:', err);
+    }
+
+    return saved;
   }
 
   async createFolder(projectId: string, userId: string, name: string, accessLevel: 'public' | 'private', allowedUserIds: string[] = []) {
