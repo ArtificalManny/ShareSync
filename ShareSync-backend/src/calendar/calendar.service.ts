@@ -1,6 +1,7 @@
 // src/calendar/calendar.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // CALENDAR SERVICE: Event scheduling and management
+// + ⭐ Native DB Insert + Shotgun Gateway Broadcast + Live Room Override
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -12,6 +13,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ModuleRef } from '@nestjs/core';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   CalendarEvent,
@@ -42,6 +44,7 @@ export class CalendarService {
     @InjectModel(Sprint.name)
     private readonly sprintModel: Model<SprintDocument>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -150,6 +153,116 @@ export class CalendarService {
 
     if (dto.isRecurring && dto.recurrence) {
       await this.generateRecurringInstances(saved);
+    }
+
+    // ⭐ DIRECT REALTIME NOTIFICATIONS & LIVE ROOM OVERRIDE
+    try {
+      let rtGateway: any = null;
+      let notifGateway: any = null;
+      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+      try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+
+      const db = this.eventModel.db;
+      
+      // Start with all explicit attendees
+      let allAssociatedIds: any[] = [...attendees.map(a => a.userId)];
+
+      // If it's a project event, pull in the whole project team
+      let safeProjectName = 'Project';
+      if (dto.projectId) {
+        const projectObjectId = new Types.ObjectId(dto.projectId);
+        const projectDoc = await db.collection('projects').findOne({ _id: projectObjectId });
+        if (projectDoc) {
+          safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
+          const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
+          allAssociatedIds.push(
+            projectDoc.ownerId,
+            projectDoc.owner,
+            ...rawMembers.map((m: any) => m?.userId || m?._id || m)
+          );
+        }
+      }
+
+      const memberIdsToNotify: string[] = allAssociatedIds
+        .filter(Boolean)
+        .map(id => id.toString())
+        .filter(id => id !== userId);
+
+      const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
+      const safeEventTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Event';
+      const notifTitle = dto.projectId ? `📅 New Event in ${safeProjectName}` : `📅 You're invited: ${safeEventTitle}`;
+
+      // 1. Notify Official DB Members & Attendees
+      for (const recipientId of uniqueMembers) {
+        try {
+          const notifResult = await db.collection('notifications').insertOne({
+            userId: new Types.ObjectId(recipientId as string),
+            type: 'event_created',
+            title: notifTitle,
+            body: safeEventTitle,
+            data: {
+              projectId: dto.projectId,
+              projectName: safeProjectName,
+              extra: { eventId: saved._id.toString() }
+            },
+            channels: ['in_app'],
+            priority: 'normal',
+            isRead: false,
+            isClicked: false,
+            isDismissed: false,
+            groupCount: 1,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+
+          const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
+
+          if (notifGateway && notifGateway.server) {
+            notifGateway.server.to(recipientId as string).emit('new_notification', newNotif);
+            notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+          }
+          if (rtGateway && rtGateway.server) {
+            rtGateway.server.to(recipientId as string).emit('new_notification', newNotif);
+            rtGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+          }
+
+          this.eventEmitter.emit('notification.created', newNotif);
+        } catch (innerErr) {
+          this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
+        }
+      }
+
+      // 2. LIVE ROOM OVERRIDE (Only if tied to a project)
+      if (dto.projectId) {
+        const liveRoomNotif = {
+          _id: new Types.ObjectId(),
+          type: 'event_created',
+          title: notifTitle,
+          body: safeEventTitle,
+          data: {
+            projectId: dto.projectId,
+            projectName: safeProjectName,
+            extra: { eventId: saved._id.toString() }
+          },
+          channels: ['in_app'],
+          priority: 'normal',
+          isRead: false,
+          createdAt: new Date()
+        };
+
+        if (notifGateway && notifGateway.server) {
+          notifGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
+          notifGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
+        }
+        if (rtGateway && rtGateway.server) {
+          rtGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
+          rtGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
+        }
+      }
+
+      this.logger.log(`✅ Event ${saved._id.toString()} natively notified ${uniqueMembers.length} DB recipient(s) AND broadcasted to Live Rooms`);
+    } catch (err) {
+      this.logger.error('⚠️ Failed to process native event notifications:', err);
     }
 
     return saved;
@@ -483,7 +596,7 @@ export class CalendarService {
           type: event.type,
           startTime: instanceStart,
           endTime: instanceEnd,
-          isAllDay: event.isAllDay, // ✅ FIXED: Removed the slash here
+          isAllDay: event.isAllDay,
           timezone: event.timezone,
           projectId: event.projectId,
           createdBy: event.createdBy,
