@@ -1,39 +1,63 @@
 // src/components/pulse/PulsePanel.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PULSE PANEL (Phase 2): Lightweight heartbeat widget (Gallery Walk Polish)
-// - High-Contrast text colors.
-// - Smooth tactile hover states for metric cards.
+// PULSE PANEL (Phase 2): Lightweight heartbeat widget
+// ⭐ UPGRADE: Real-time Socket listeners for "Live" stat refreshing
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Flame, Zap, AlertTriangle, TrendingUp, RefreshCw } from "lucide-react";
 import { fetchPulseMetrics } from "../../api/taskApi";
+import { useRealtime } from "../../context/RealtimeContext"; // Ensure this path is correct
 
 export default function PulsePanel({ projectId, refreshKey = 0, className = "" }) {
   const [pulse, setPulse] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { socket } = useRealtime(); // ⭐ Hook into the shotgun broadcast
 
-  useEffect(() => {
+  const loadMetrics = useCallback(async () => {
     if (!projectId) return;
+    setLoading(true);
+    try {
+      const data = await fetchPulseMetrics({ projectId });
+      setPulse(data);
+    } catch (e) {
+      setPulse(null);
+      console.warn("[PulsePanel] fetch failed:", e?.message || e);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
 
-    let cancelled = false;
+  // Initial Load
+  useEffect(() => {
+    loadMetrics();
+  }, [loadMetrics, refreshKey]);
 
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await fetchPulseMetrics({ projectId });
-        if (!cancelled) setPulse(data);
-      } catch (e) {
-        if (!cancelled) setPulse(null);
-        console.warn("[PulsePanel] fetch failed:", e?.message || e);
-      } finally {
-        if (!cancelled) setLoading(false);
+  // ⭐ REALTIME LISTENER ⭐
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    // Listen for ANY project activity that would change metrics
+    const handleUpdate = (data) => {
+      // If the update belongs to this project, refresh the pulse!
+      if (data?.projectId === projectId || data?.data?.projectId === projectId) {
+        console.log("[Pulse] Activity detected, syncing metrics...");
+        loadMetrics();
       }
     };
 
-    load();
-    return () => { cancelled = true; };
-  }, [projectId, refreshKey]);
+    socket.on("task_updated", handleUpdate);
+    socket.on("task_created", handleUpdate);
+    socket.on("milestone_updated", handleUpdate);
+    socket.on("new_notification", handleUpdate);
+
+    return () => {
+      socket.off("task_updated", handleUpdate);
+      socket.off("task_created", handleUpdate);
+      socket.off("milestone_updated", handleUpdate);
+      socket.off("new_notification", handleUpdate);
+    };
+  }, [socket, projectId, loadMetrics]);
 
   if (!projectId) return null;
 
