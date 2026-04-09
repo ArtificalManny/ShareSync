@@ -1,7 +1,9 @@
 // src/threads/threads.service.ts
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ModuleRef } from '@nestjs/core';
 import { Thread, ThreadDocument } from './schemas/thread.schema';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
 
@@ -31,9 +33,13 @@ const USER_POPULATE_FIELDS = 'firstName lastName username email profilePicture a
 
 @Injectable()
 export class ThreadsService {
+  private readonly logger = new Logger(ThreadsService.name);
+
   constructor(
     @InjectModel(Thread.name) private threadModel: Model<ThreadDocument>,
     @InjectModel(ThreadMessage.name) private messageModel: Model<ThreadMessageDocument>,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async create(userId: string, dto: CreateThreadDto): Promise<ThreadDocument> {
@@ -51,6 +57,62 @@ export class ThreadsService {
     });
 
     const savedThread = await thread.save();
+
+    // ⭐ NOTIFY: NEW THREAD CREATED
+    try {
+      let rtGateway: any = null;
+      let notifGateway: any = null;
+      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+      try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+
+      const db = this.threadModel.db;
+      const projectDoc = await db.collection('projects').findOne({ _id: new Types.ObjectId(dto.projectId) });
+
+      if (projectDoc) {
+        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
+        const allAssociatedIds: any[] = [
+          projectDoc.ownerId,
+          projectDoc.owner,
+          ...rawMembers.map((m: any) => m?.userId || m?._id || m)
+        ];
+
+        const memberIdsToNotify: string[] = allAssociatedIds
+          .filter(Boolean)
+          .map(id => id.toString())
+          .filter(id => id !== userId);
+
+        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
+        const safeProjectName = projectDoc.name || projectDoc.title || 'Project';
+
+        for (const recipientId of uniqueMembers) {
+          try {
+            const notifResult = await db.collection('notifications').insertOne({
+              userId: new Types.ObjectId(recipientId),
+              type: 'thread_created',
+              title: `💬 New Thread in ${safeProjectName}`,
+              body: dto.title,
+              data: { projectId: dto.projectId, projectName: safeProjectName, extra: { threadId: savedThread._id.toString() } },
+              channels: ['in_app'],
+              priority: 'normal',
+              isRead: false,
+              isClicked: false,
+              isDismissed: false,
+              groupCount: 1,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+
+            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
+            if (notifGateway?.server) {
+              notifGateway.server.to(recipientId).emit('new_notification', newNotif);
+              notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (err) {
+      this.logger.error('Failed thread creation broadcast', err);
+    }
 
     if (dto.content) {
       await this.addMessage(savedThread._id.toString(), userId, {
@@ -101,7 +163,6 @@ export class ThreadsService {
         content: "Welcome to the project! This is the general discussion thread. Feel free to start chatting."
       });
       
-      // ✅ FIX: Added `as any` to bypass Mongoose strict typings
       threads = [await this.findById(generalThread._id.toString())] as any;
     }
 
@@ -148,101 +209,124 @@ export class ThreadsService {
       },
     );
 
+    // ⭐ NOTIFY: NEW MESSAGE (With DB Insertion Loop)
+    try {
+      let rtGateway: any = null;
+      let notifGateway: any = null;
+      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+      try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+
+      const db = this.threadModel.db;
+      const projectDoc = await db.collection('projects').findOne({ _id: thread.projectId });
+      
+      if (projectDoc) {
+        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
+        const allAssociatedIds: any[] = [
+          projectDoc.ownerId,
+          projectDoc.owner,
+          ...rawMembers.map((m: any) => m?.userId || m?._id || m)
+        ];
+
+        const memberIdsToNotify: string[] = allAssociatedIds
+          .filter(Boolean)
+          .map(id => id.toString())
+          .filter(id => id !== userId);
+
+        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
+        const safeProjectName = projectDoc.name || projectDoc.title || 'Project';
+
+        // 1. Save to DB for each recipient and emit
+        for (const recipientId of uniqueMembers) {
+          try {
+            const notifResult = await db.collection('notifications').insertOne({
+              userId: new Types.ObjectId(recipientId),
+              type: 'thread_message',
+              title: `💬 New message in ${thread.title}`,
+              body: dto.content,
+              data: { 
+                projectId: thread.projectId.toString(), 
+                projectName: safeProjectName,
+                extra: { threadId: thread._id.toString() } 
+              },
+              channels: ['in_app'],
+              priority: 'normal',
+              isRead: false,
+              isClicked: false,
+              isDismissed: false,
+              groupCount: 1,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+
+            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
+            if (notifGateway?.server) {
+              notifGateway.server.to(recipientId).emit('new_notification', newNotif);
+              notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
+            }
+          } catch (e) {}
+        }
+
+        // 2. Live Room Override (Chat Updates)
+        if (notifGateway?.server) {
+          notifGateway.server.to(`project:${thread.projectId}`).emit('new_thread_message', savedMessage);
+          notifGateway.server.to(`thread:${thread._id}`).emit('new_thread_message', savedMessage);
+        }
+      }
+    } catch (e) {
+      this.logger.error('Message notification failed', e);
+    }
+
     return savedMessage;
   }
 
   async getMessages(threadId: string, options: GetMessagesOptions = {}): Promise<ThreadMessageDocument[]> {
     const limit = options.limit || 50;
     const query: any = { threadId: new Types.ObjectId(threadId) };
-
-    if (options.before) {
-      query.createdAt = { $lt: new Date(options.before) };
-    }
-
-    return this.messageModel
-      .find(query)
-      .populate('userId', USER_POPULATE_FIELDS)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .exec();
+    if (options.before) query.createdAt = { $lt: new Date(options.before) };
+    return this.messageModel.find(query).populate('userId', USER_POPULATE_FIELDS).sort({ createdAt: -1 }).limit(limit).exec();
   }
 
   async updateMessage(messageId: string, userId: string, content: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
-
-    if (!message) {
-      throw new NotFoundException(`Message with ID ${messageId} not found`);
-    }
-
-    if (!message.userId.equals(new Types.ObjectId(userId))) {
-      throw new ForbiddenException('You can only edit your own messages');
-    }
-
+    if (!message) throw new NotFoundException(`Message with ID ${messageId} not found`);
+    if (!message.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only edit your own messages');
     message.content = content;
     message.isEdited = true;
     message.editedAt = new Date();
-
     return message.save();
   }
 
   async deleteMessage(messageId: string, userId: string): Promise<void> {
     const message = await this.messageModel.findById(messageId);
-
-    if (!message) {
-      throw new NotFoundException(`Message with ID ${messageId} not found`);
-    }
-
-    if (!message.userId.equals(new Types.ObjectId(userId))) {
-      throw new ForbiddenException('You can only delete your own messages');
-    }
-
+    if (!message) throw new NotFoundException(`Message with ID ${messageId} not found`);
+    if (!message.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only delete your own messages');
     const threadId = message.threadId;
     await this.messageModel.deleteOne({ _id: message._id });
-
     await this.threadModel.updateOne({ _id: threadId }, { $inc: { replyCount: -1 } });
   }
 
   async addReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
-
-    if (!message) {
-      throw new NotFoundException(`Message with ID ${messageId} not found`);
-    }
-
+    if (!message) throw new NotFoundException(`Message with ID ${messageId} not found`);
     const userObjectId = new Types.ObjectId(userId);
     const existingReaction = message.reactions.find((r: any) => r.emoji === emoji);
-
     if (existingReaction) {
-      if (!existingReaction.users.some((u: Types.ObjectId) => u.equals(userObjectId))) {
-        existingReaction.users.push(userObjectId);
-      }
+      if (!existingReaction.users.some((u: Types.ObjectId) => u.equals(userObjectId))) existingReaction.users.push(userObjectId);
     } else {
-      message.reactions.push({
-        emoji,
-        users: [userObjectId],
-      } as any);
+      message.reactions.push({ emoji, users: [userObjectId] } as any);
     }
-
     return message.save();
   }
 
   async removeReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const message = await this.messageModel.findById(messageId);
-
-    if (!message) {
-      throw new NotFoundException(`Message with ID ${messageId} not found`);
-    }
-
+    if (!message) throw new NotFoundException(`Message with ID ${messageId} not found`);
     const userObjectId = new Types.ObjectId(userId);
     const reaction = message.reactions.find((r: any) => r.emoji === emoji);
-    
     if (reaction) {
       reaction.users = reaction.users.filter((u: Types.ObjectId) => !u.equals(userObjectId));
-      if (reaction.users.length === 0) {
-        message.reactions = message.reactions.filter((r: any) => r.emoji !== emoji);
-      }
+      if (reaction.users.length === 0) message.reactions = message.reactions.filter((r: any) => r.emoji !== emoji);
     }
-
     return message.save();
   }
 
@@ -260,98 +344,45 @@ export class ThreadsService {
 
   async markAsRead(threadId: string, userId: string): Promise<void> {
     const userObjectId = new Types.ObjectId(userId);
-
-    await this.threadModel.updateOne(
-      {
-        _id: new Types.ObjectId(threadId),
-        'readStatus.userId': { $ne: userObjectId },
-      },
-      {
-        $push: {
-          readStatus: {
-            userId: userObjectId,
-            lastReadAt: new Date(),
-          },
-        },
-      },
-    );
-
-    await this.threadModel.updateOne(
-      {
-        _id: new Types.ObjectId(threadId),
-        'readStatus.userId': userObjectId,
-      },
-      {
-        $set: {
-          'readStatus.$.lastReadAt': new Date(),
-        },
-      },
-    );
+    await this.threadModel.updateOne({ _id: new Types.ObjectId(threadId), 'readStatus.userId': { $ne: userObjectId } }, { $push: { readStatus: { userId: userObjectId, lastReadAt: new Date() } } });
+    await this.threadModel.updateOne({ _id: new Types.ObjectId(threadId), 'readStatus.userId': userObjectId }, { $set: { 'readStatus.$.lastReadAt': new Date() } });
   }
 
   async getUnreadCount(projectId: string, userId: string): Promise<number> {
     const userObjectId = new Types.ObjectId(userId);
-    const threads = await this.threadModel.find({
-      projectId: new Types.ObjectId(projectId),
-      participants: userObjectId,
-    });
-
+    const threads = await this.threadModel.find({ projectId: new Types.ObjectId(projectId), participants: userObjectId });
     let unreadCount = 0;
-
     for (const thread of threads) {
       const readStatus = thread.readStatus.find((rs: any) => rs.userId.equals(userObjectId));
-
-      if (!readStatus) {
-        unreadCount += thread.replyCount;
-      } else if (thread.lastReplyAt && thread.lastReplyAt > readStatus.lastReadAt) {
-        const newMessages = await this.messageModel.countDocuments({
-          threadId: thread._id,
-          createdAt: { $gt: readStatus.lastReadAt },
-          userId: { $ne: userObjectId },
-        });
+      if (!readStatus) unreadCount += thread.replyCount;
+      else if (thread.lastReplyAt && thread.lastReplyAt > readStatus.lastReadAt) {
+        const newMessages = await this.messageModel.countDocuments({ threadId: thread._id, createdAt: { $gt: readStatus.lastReadAt }, userId: { $ne: userObjectId } });
         unreadCount += newMessages;
       }
     }
-
     return unreadCount;
   }
 
   async linkTask(threadId: string, taskId: string): Promise<ThreadDocument> {
     const thread = await this.findById(threadId);
     const taskObjectId = new Types.ObjectId(taskId);
-
     if (!thread.linkedTasks.some((id: Types.ObjectId) => id.equals(taskObjectId))) {
       thread.linkedTasks.push(taskObjectId);
       await thread.save();
     }
-
     return thread;
   }
 
   async unlinkTask(threadId: string, taskId: string): Promise<ThreadDocument> {
     const thread = await this.findById(threadId);
-    thread.linkedTasks = thread.linkedTasks.filter(
-      (id: Types.ObjectId) => !id.equals(new Types.ObjectId(taskId)),
-    );
+    thread.linkedTasks = thread.linkedTasks.filter((id: Types.ObjectId) => !id.equals(new Types.ObjectId(taskId)));
     return thread.save();
   }
 
   async search(projectId: string, query: string): Promise<ThreadMessageDocument[]> {
-    const threads = await this.threadModel
-      .find({ projectId: new Types.ObjectId(projectId) })
-      .select('_id');
-
+    const threads = await this.threadModel.find({ projectId: new Types.ObjectId(projectId) }).select('_id');
     const threadIds = threads.map((t: any) => t._id);
-
-    return this.messageModel
-      .find({
-        threadId: { $in: threadIds },
-        content: { $regex: query, $options: 'i' },
-      })
-      .populate('userId', USER_POPULATE_FIELDS)
-      .populate('threadId', 'title')
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .exec();
+    return this.messageModel.find({ threadId: { $in: threadIds }, content: { $regex: query, $options: 'i' } })
+      .populate('userId', USER_POPULATE_FIELDS).populate('threadId', 'title').sort({ createdAt: -1 }).limit(50).exec();
   }
 }
