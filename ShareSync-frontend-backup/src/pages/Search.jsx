@@ -2,19 +2,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 1: Discover + Search — One source of truth for public listings
 //
-// ✅ Phase 2: Now uses real search across all existing backend endpoints:
-//   - GET /discovery?q=...     → public/listed projects
-//   - GET /projects?search=... → user's own projects
-//   - GET /users/search?q=...  → users by name/username
-//   - GET /tasks?search=...    → tasks across user's projects
-//
-// All calls run in parallel via Promise.allSettled for resilience.
-// No dedicated /api/search backend endpoint needed.
-//
-// Phase 2: Moderation Gate (optional)
-// - If VITE_MODERATION_GATE_V1 === "true": filter out non-approved projects defensively
-//   (missing moderationStatus treated as approved for backwards compatibility)
-//
+// ✅ Phase 2: Now uses real search across all existing backend endpoints
+// ✅ Phase 3: Added Facebook/LinkedIn style rich User searching
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
@@ -34,8 +23,9 @@ import {
 import EmptySearch from "../components/empty-states/EmptySearch";
 import { useMomentumContext } from "../contexts/MomentumContext";
 
-// ✅ Phase 2: Unified search across all existing endpoints
+// API endpoints
 import { searchAll } from "../api/search";
+import { searchGlobalUsers } from "../api/users"; // ⭐ NEW API helper added
 
 // ──────────────────────────────────────────────────────────────
 // Phase 2 Moderation Gate (frontend-safe)
@@ -46,6 +36,11 @@ function isModerationApproved(item) {
   if (!MODERATION_GATE_V1) return true;
   const s = String(item?.moderationStatus || item?.raw?.moderationStatus || "approved").toLowerCase();
   return s === "approved";
+}
+
+// Helper to pull photos safely
+function getPhoto(u) {
+  return u?.profilePicture || u?.avatarUrl || u?.avatar || null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -66,6 +61,46 @@ const RESULT_TYPES = {
    SEARCH RESULT ITEM
 ───────────────────────────────────────────────────────────────────────── */
 const SearchResultItem = ({ result, onClick, isSelected }) => {
+  // ⭐ FIX: Special Facebook-style row for Users
+  if (result.type === 'person' || result.type === 'user') {
+    const user = result.raw || result;
+    const photo = getPhoto(user);
+    const fullName = result.title || 'Unknown User';
+    const initials = fullName !== 'Unknown User' ? fullName.charAt(0).toUpperCase() : 'U';
+
+    return (
+      <button
+        onClick={() => onClick(result)}
+        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-200 ${
+          isSelected ? "bg-brand-500/10 border border-brand-500/20" : "hover:bg-surface-2 border border-transparent"
+        }`}
+      >
+        <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 flex items-center justify-center font-bold overflow-hidden flex-shrink-0">
+          {photo ? (
+            <img src={photo} alt={fullName} className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
+        </div>
+
+        <div className="flex-1 text-left min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-text-primary truncate">{fullName}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning-500/10 text-warning-400">
+              Person
+            </span>
+          </div>
+          {user?.username && (
+            <p className="text-xs text-text-tertiary truncate">@{user.username}</p>
+          )}
+        </div>
+
+        <ArrowRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+    );
+  }
+
+  // Standard Row for Projects, Tasks, etc.
   const typeConfig = RESULT_TYPES[result.type] || RESULT_TYPES.document;
   const Icon = typeConfig.icon;
 
@@ -186,27 +221,21 @@ export default function Search() {
     }
   });
 
-  // Momentum context
   let momentumContext = { glowLevel: 2, isFireMode: false };
   try {
     momentumContext = useMomentumContext();
   } catch {}
   const { isFireMode } = momentumContext;
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // ✅ IMPORTANT: If Navbar routes to /search?q=... while Search.jsx is already mounted,
-  // sync the input with the URL.
   useEffect(() => {
     const urlQ = searchParams.get("q") || "";
     setQuery((prev) => (prev === urlQ ? prev : urlQ));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Update URL when query changes
   useEffect(() => {
     const q = String(query || "");
     if (q) setSearchParams({ q });
@@ -214,7 +243,7 @@ export default function Search() {
   }, [query, setSearchParams]);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PERFORM SEARCH — calls real endpoints in parallel via searchAll()
+  // PERFORM SEARCH — Parallelized execution
   // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     let alive = true;
@@ -230,21 +259,43 @@ export default function Search() {
       setLoading(true);
 
       try {
-        // ✅ Phase 2: Real unified search across all existing endpoints
-        const allResults = await searchAll({
-          q,
-          types: ['project', 'task', 'person'],
-          limit: 25,
-        });
+        // ⭐ FIX: Run unified search & global user search in parallel!
+        const [unifiedRes, usersRes] = await Promise.allSettled([
+          searchAll({
+            q,
+            types: ['project', 'task'], // Exclude 'person' here so we don't get duplicates
+            limit: 25,
+          }),
+          searchGlobalUsers(q) // Our new LinkedIn-style user search
+        ]);
 
         if (!alive) return;
 
-        // Apply moderation gate if enabled
-        const filtered = MODERATION_GATE_V1
-          ? allResults.filter(isModerationApproved)
-          : allResults;
+        let combined = [];
 
-        setResults(filtered);
+        // 1. Process users first (puts them at the top of the feed)
+        if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
+          const userMapped = usersRes.value.map(u => ({
+            id: u._id || u.id,
+            type: 'person',
+            title: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || 'User',
+            description: `@${u.username || 'user'}`,
+            url: `/profile/${u._id || u.id}`, // Route straight to profile!
+            raw: u
+          }));
+          combined = [...combined, ...userMapped];
+        }
+
+        // 2. Process unified results (projects, tasks)
+        if (unifiedRes.status === 'fulfilled' && Array.isArray(unifiedRes.value)) {
+          let otherResults = unifiedRes.value;
+          if (MODERATION_GATE_V1) {
+            otherResults = otherResults.filter(isModerationApproved);
+          }
+          combined = [...combined, ...otherResults];
+        }
+
+        setResults(combined);
         setSelectedIndex(0);
       } catch (error) {
         if (!alive) return;
@@ -263,53 +314,42 @@ export default function Search() {
     };
   }, [query]);
 
-  // Filter results
   const filteredResults = useMemo(() => {
     if (activeFilter === "all") return results;
-    // Map "person" filter to match both "person" and "user" types
     if (activeFilter === "person") {
       return results.filter((r) => r.type === "person" || r.type === "user");
     }
     return results.filter((r) => r.type === activeFilter);
   }, [results, activeFilter]);
 
-  // Count results by type
   const resultCounts = useMemo(() => {
     return results.reduce((acc, r) => {
-      // Normalize "user" type to "person" for counting
       const type = r.type === 'user' ? 'person' : r.type;
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
   }, [results]);
 
-  // Handle result click
   const handleResultClick = (result) => {
     const q = String(query || "").trim();
-
-    // Add to recent searches
     if (q && !recentSearches.includes(q)) {
       const updated = [q, ...recentSearches.slice(0, 4)];
       setRecentSearches(updated);
       localStorage.setItem("recentSearches", JSON.stringify(updated));
     }
-
     navigate(result.url);
   };
 
-  // Handle search from empty state
   const handleSearchFromEmpty = (searchTerm) => {
     setQuery(searchTerm);
     inputRef.current?.focus();
   };
 
-  // Clear recent searches
   const handleClearRecent = () => {
     setRecentSearches([]);
     localStorage.removeItem("recentSearches");
   };
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "ArrowDown") {
@@ -334,9 +374,8 @@ export default function Search() {
     <div className="min-h-screen p-6 lg:p-10 max-w-[900px] mx-auto">
       {/* HEADER */}
       <header className="mb-8">
-        <h1 className="text-3xl font-semibold text-text-primary mb-6">Search</h1>
+        <h1 className="text-3xl font-semibold text-text-primary mb-6">Search OpenShare</h1>
 
-        {/* Search Input */}
         <div className="relative">
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
           <input
@@ -356,10 +395,8 @@ export default function Search() {
             `}
           />
 
-          {/* Loading indicator */}
           {loading && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 animate-spin" />}
 
-          {/* Clear button */}
           {query && !loading && (
             <button
               onClick={() => setQuery("")}
@@ -370,7 +407,6 @@ export default function Search() {
           )}
         </div>
 
-        {/* Keyboard hint */}
         <div className="flex items-center justify-center gap-4 mt-3 text-xs text-text-tertiary">
           <span className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono">↑</kbd>
@@ -397,14 +433,12 @@ export default function Search() {
       {/* RESULTS */}
       {query && query.length >= 2 ? (
         <>
-          {/* Filters */}
           {results.length > 0 && (
             <div className="mb-6">
               <SearchFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} resultCounts={resultCounts} />
             </div>
           )}
 
-          {/* Results list */}
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (

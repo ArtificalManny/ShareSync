@@ -23,6 +23,15 @@ export async function fetchUserActivity(userId, limit = 80) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SEARCH GLOBAL USERS
+// ─────────────────────────────────────────────────────────────────────────────
+export async function searchGlobalUsers(query) {
+  if (!query) return [];
+  const res = await client.get(`/users/search?q=${encodeURIComponent(query)}`);
+  return res.data?.data || res.data;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PHONE VERIFICATION API CALLS
 // ─────────────────────────────────────────────────────────────────────────────
 
