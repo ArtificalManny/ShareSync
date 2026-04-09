@@ -22,54 +22,6 @@ import { buildActivitySummary } from '../utils/activitySummary';
 import { SmsService } from '../notifications/sms.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SETTINGS DEFAULTS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEFAULT_MODULAR_SETTINGS = {
-  appearance: {
-    theme: 'system',
-    mode: 'pro',
-  },
-  mentor: {
-    enabled: true,
-    tone: 'wise',
-    intensity: 3,
-  },
-  momentum: {
-    dailyGoal: 5,
-    weekendCount: true,
-    allowFreeze: true,
-  },
-  focus: {
-    dailyTarget: 4,
-    autoStart: false,
-    startTime: '09:00',
-    blockedApps: [],
-    emergencyBreaksLeft: 1,
-  },
-  social: {
-    showStreakTo: 'friends',
-    celebrate: true,
-    publicProfile: true,
-    discoverable: false,
-  },
-  legacy: {
-    showEverywhere: true,
-    yearlyVideo: false,
-  },
-  notifications: {
-    emailActivity: true,
-    emailDigest: true,
-    pushNotifications: true,
-    mentionAlerts: true,
-    weeklyReport: true,
-  },
-  security: {
-    twoFA: false,
-  },
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -94,44 +46,6 @@ function deepMergePreferences(existing: any, incoming: any) {
     privacy: {
       ...(e.privacy ?? {}),
       ...(i.privacy ?? {}),
-    },
-
-    appearance: {
-      ...(e.appearance ?? {}),
-      ...(i.appearance ?? {}),
-    },
-
-    mentor: {
-      ...(e.mentor ?? {}),
-      ...(i.mentor ?? {}),
-    },
-
-    momentum: {
-      ...(e.momentum ?? {}),
-      ...(i.momentum ?? {}),
-    },
-
-    focus: {
-      ...(e.focus ?? {}),
-      ...(i.focus ?? {}),
-      blockedApps: Array.isArray(i.focus?.blockedApps)
-        ? i.focus.blockedApps
-        : (e.focus?.blockedApps ?? []),
-    },
-
-    social: {
-      ...(e.social ?? {}),
-      ...(i.social ?? {}),
-    },
-
-    legacy: {
-      ...(e.legacy ?? {}),
-      ...(i.legacy ?? {}),
-    },
-
-    security: {
-      ...(e.security ?? {}),
-      ...(i.security ?? {}),
     },
 
     calendar: {
@@ -159,304 +73,6 @@ function deepMergePreferences(existing: any, incoming: any) {
       },
     },
   };
-}
-
-function flattenDefinedValues(
-  source: Record<string, any>,
-  prefix: string,
-  target: Record<string, any>,
-) {
-  if (!source || typeof source !== 'object') return;
-
-  for (const [key, value] of Object.entries(source)) {
-    if (value === undefined) continue;
-
-    const fullPath = `${prefix}.${key}`;
-
-    if (
-      value !== null &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      !(value instanceof Date)
-    ) {
-      flattenDefinedValues(value as Record<string, any>, fullPath, target);
-      continue;
-    }
-
-    target[fullPath] = value;
-  }
-}
-
-function normalizeSettingsFromUser(user: any): Record<string, any> {
-  const preferences = user?.preferences ?? {};
-  const legacySettings = user?.settings ?? {};
-
-  const appearance = {
-    ...DEFAULT_MODULAR_SETTINGS.appearance,
-    ...(preferences.appearance ?? {}),
-    theme:
-      preferences.appearance?.theme ??
-      preferences.theme ??
-      DEFAULT_MODULAR_SETTINGS.appearance.theme,
-  };
-
-  const mentor = {
-    ...DEFAULT_MODULAR_SETTINGS.mentor,
-    ...(preferences.mentor ?? {}),
-  };
-
-  const momentum = {
-    ...DEFAULT_MODULAR_SETTINGS.momentum,
-    ...(preferences.momentum ?? {}),
-  };
-
-  const focus = {
-    ...DEFAULT_MODULAR_SETTINGS.focus,
-    ...(preferences.focus ?? {}),
-    dailyTarget:
-      preferences.focus?.dailyTarget ??
-      (
-        typeof preferences.focusMode?.duration === 'number'
-          ? Math.floor(preferences.focusMode.duration / 60)
-          : DEFAULT_MODULAR_SETTINGS.focus.dailyTarget
-      ),
-    autoStart:
-      preferences.focus?.autoStart ??
-      preferences.focusMode?.autoEnable ??
-      DEFAULT_MODULAR_SETTINGS.focus.autoStart,
-    startTime:
-      preferences.focus?.startTime ??
-      DEFAULT_MODULAR_SETTINGS.focus.startTime,
-    blockedApps: Array.isArray(preferences.focus?.blockedApps)
-      ? preferences.focus.blockedApps
-      : DEFAULT_MODULAR_SETTINGS.focus.blockedApps,
-    emergencyBreaksLeft:
-      preferences.focus?.emergencyBreaksLeft ??
-      DEFAULT_MODULAR_SETTINGS.focus.emergencyBreaksLeft,
-  };
-
-  const social = {
-    ...DEFAULT_MODULAR_SETTINGS.social,
-    ...(preferences.social ?? {}),
-    publicProfile:
-      preferences.social?.publicProfile ??
-      user?.publicProfile ??
-      DEFAULT_MODULAR_SETTINGS.social.publicProfile,
-    discoverable:
-      preferences.social?.discoverable ??
-      DEFAULT_MODULAR_SETTINGS.social.discoverable,
-  };
-
-  const legacy = {
-    ...DEFAULT_MODULAR_SETTINGS.legacy,
-    ...(preferences.legacy ?? {}),
-  };
-
-  const notifications = {
-    ...DEFAULT_MODULAR_SETTINGS.notifications,
-    emailActivity:
-      legacySettings.emailNotifications ??
-      DEFAULT_MODULAR_SETTINGS.notifications.emailActivity,
-    emailDigest:
-      legacySettings.weeklyDigest ??
-      DEFAULT_MODULAR_SETTINGS.notifications.emailDigest,
-    pushNotifications:
-      legacySettings.pushNotifications ??
-      DEFAULT_MODULAR_SETTINGS.notifications.pushNotifications,
-    weeklyReport:
-      legacySettings.weeklyDigest ??
-      DEFAULT_MODULAR_SETTINGS.notifications.weeklyReport,
-  };
-
-  const security = {
-    ...DEFAULT_MODULAR_SETTINGS.security,
-    ...(preferences.security ?? {}),
-  };
-
-  return {
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    username: user?.username || '',
-    email: user?.email || '',
-    bio: user?.bio || '',
-    timezone: user?.timezone || 'America/Los_Angeles',
-    location: user?.location || '',
-    jobTitle: user?.jobTitle || '',
-    company: user?.company || '',
-    website: user?.website || '',
-
-    appearance,
-    mentor,
-    momentum,
-    focus,
-    social,
-    legacy,
-    notifications,
-    security,
-
-    // Backward-compat aliases
-    notificationSettings: {
-      emailDigest: notifications.emailDigest,
-      pushNotifications: notifications.pushNotifications,
-      mentionAlerts: notifications.mentionAlerts,
-      weeklyReport: notifications.weeklyReport,
-      emailActivity: notifications.emailActivity,
-    },
-    privacySettings: {
-      profilePublic: social.publicProfile,
-      showActivity: preferences?.privacy?.showActivity ?? true,
-      allowDMs: true,
-    },
-
-    preferences,
-    publicProfile: social.publicProfile,
-    discoverable: social.discoverable,
-  };
-}
-
-function buildSettingsUpdatePayload(settingsDto: any): Record<string, any> {
-  const payload: Record<string, any> = {};
-
-  const profileFields = [
-    'firstName',
-    'lastName',
-    'username',
-    'email',
-    'bio',
-    'timezone',
-    'location',
-    'jobTitle',
-    'company',
-    'website',
-  ];
-
-  for (const field of profileFields) {
-    if (settingsDto[field] !== undefined) {
-      payload[field] = settingsDto[field];
-    }
-  }
-
-  const incomingNotifications =
-    settingsDto.notifications ?? settingsDto.notificationSettings;
-
-  if (incomingNotifications) {
-    if (incomingNotifications.emailActivity !== undefined) {
-      payload['settings.emailNotifications'] = Boolean(incomingNotifications.emailActivity);
-    }
-
-    if (incomingNotifications.pushNotifications !== undefined) {
-      payload['settings.pushNotifications'] = Boolean(incomingNotifications.pushNotifications);
-    }
-
-    const weeklyDigestValue =
-      incomingNotifications.emailDigest !== undefined
-        ? incomingNotifications.emailDigest
-        : incomingNotifications.weeklyReport;
-
-    if (weeklyDigestValue !== undefined) {
-      payload['settings.weeklyDigest'] = Boolean(weeklyDigestValue);
-    }
-  }
-
-  if (settingsDto.privacySettings?.profilePublic !== undefined) {
-    payload.publicProfile = Boolean(settingsDto.privacySettings.profilePublic);
-  }
-
-  if (settingsDto.privacySettings?.showActivity !== undefined) {
-    payload['preferences.privacy.showActivity'] = Boolean(settingsDto.privacySettings.showActivity);
-  }
-
-  if (settingsDto.publicProfile !== undefined) {
-    payload.publicProfile = Boolean(settingsDto.publicProfile);
-    payload['preferences.social.publicProfile'] = Boolean(settingsDto.publicProfile);
-    payload['preferences.privacy.publicProfile'] = Boolean(settingsDto.publicProfile);
-  }
-
-  if (settingsDto.discoverable !== undefined) {
-    payload['preferences.social.discoverable'] = Boolean(settingsDto.discoverable);
-  }
-
-  if (settingsDto.appearance) {
-    flattenDefinedValues(settingsDto.appearance, 'preferences.appearance', payload);
-
-    if (settingsDto.appearance.theme !== undefined) {
-      payload['preferences.theme'] = settingsDto.appearance.theme;
-      payload['preferences.appearance.theme'] = settingsDto.appearance.theme;
-    }
-
-    if (settingsDto.appearance.sounds !== undefined) {
-      payload['settings.soundEffects'] = Boolean(settingsDto.appearance.sounds);
-    }
-  }
-
-  if (settingsDto.mentor) {
-    flattenDefinedValues(settingsDto.mentor, 'preferences.mentor', payload);
-  }
-
-  if (settingsDto.momentum) {
-    flattenDefinedValues(settingsDto.momentum, 'preferences.momentum', payload);
-  }
-
-  if (settingsDto.focus) {
-    flattenDefinedValues(settingsDto.focus, 'preferences.focus', payload);
-
-    if (settingsDto.focus.dailyTarget !== undefined) {
-      payload['preferences.focusMode.duration'] = Number(settingsDto.focus.dailyTarget) * 60;
-    }
-
-    if (settingsDto.focus.autoStart !== undefined) {
-      payload['preferences.focusMode.autoEnable'] = Boolean(settingsDto.focus.autoStart);
-    }
-  }
-
-  if (settingsDto.social) {
-    flattenDefinedValues(settingsDto.social, 'preferences.social', payload);
-
-    if (settingsDto.social.publicProfile !== undefined) {
-      payload.publicProfile = Boolean(settingsDto.social.publicProfile);
-      payload['preferences.privacy.publicProfile'] = Boolean(settingsDto.social.publicProfile);
-    }
-
-    if (settingsDto.social.discoverable !== undefined) {
-      payload['preferences.social.discoverable'] = Boolean(settingsDto.social.discoverable);
-    }
-  }
-
-  if (settingsDto.legacy) {
-    flattenDefinedValues(settingsDto.legacy, 'preferences.legacy', payload);
-  }
-
-  if (settingsDto.security) {
-    flattenDefinedValues(settingsDto.security, 'preferences.security', payload);
-  }
-
-  if (settingsDto.preferences) {
-    flattenDefinedValues(settingsDto.preferences, 'preferences', payload);
-
-    if (settingsDto.preferences.theme !== undefined) {
-      payload['preferences.theme'] = settingsDto.preferences.theme;
-    }
-
-    if (settingsDto.preferences.appearance?.theme !== undefined) {
-      payload['preferences.theme'] = settingsDto.preferences.appearance.theme;
-    }
-
-    if (settingsDto.preferences.focus?.dailyTarget !== undefined) {
-      payload['preferences.focusMode.duration'] =
-        Number(settingsDto.preferences.focus.dailyTarget) * 60;
-    }
-
-    if (settingsDto.preferences.focus?.autoStart !== undefined) {
-      payload['preferences.focusMode.autoEnable'] =
-        Boolean(settingsDto.preferences.focus.autoStart);
-    }
-
-    if (settingsDto.preferences.privacy?.publicProfile !== undefined) {
-      payload.publicProfile = Boolean(settingsDto.preferences.privacy.publicProfile);
-    }
-  }
-
-  return payload;
 }
 
 @Injectable()
@@ -535,7 +151,6 @@ export class UserService {
     const updated = await this.userModel
       .findByIdAndUpdate(id, { $set: patch }, { new: true })
       .exec();
-
     if (!updated) throw new NotFoundException('User not found');
     return updated as any;
   }
@@ -543,9 +158,7 @@ export class UserService {
   async update(id: string, updateUserDto: any): Promise<UserDocument> {
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('User not found');
-
     Object.assign(user, updateUserDto);
-
     const saved = await user.save();
     return saved as any;
   }
@@ -563,26 +176,88 @@ export class UserService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    return normalizeSettingsFromUser(user);
+    return {
+      firstName: (user as any).firstName || '',
+      lastName: (user as any).lastName || '',
+      username: (user as any).username || '',
+      email: (user as any).email || '',
+      bio: (user as any).bio || '',
+      timezone: (user as any).timezone || 'America/Los_Angeles',
+      location: (user as any).location || '',
+      jobTitle: (user as any).jobTitle || '',
+      company: (user as any).company || '',
+      website: (user as any).website || '',
+      notificationSettings: {
+        emailDigest: (user as any).settings?.weeklyDigest ?? true,
+        pushNotifications: (user as any).settings?.pushNotifications ?? true,
+        mentionAlerts: true,
+        weeklyReport: (user as any).settings?.weeklyDigest ?? true,
+        emailActivity: (user as any).settings?.emailNotifications ?? true,
+      },
+      privacySettings: {
+        profilePublic: (user as any).publicProfile ?? true,
+        showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
+        allowDMs: true,
+      },
+      appearance: { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
+      mentor: { enabled: true, tone: 'wise', intensity: 3 },
+      momentum: { dailyGoal: 5, weekendCount: true, allowFreeze: true },
+      focus: {
+        dailyTarget: (user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4,
+        autoStart: (user as any).preferences?.focusMode?.autoEnable ?? false,
+        startTime: '09:00',
+      },
+      social: { showStreakTo: 'friends', celebrate: true },
+      legacy: { showEverywhere: true, yearlyVideo: false },
+      security: { twoFA: false },
+      preferences: (user as any).preferences || {},
+      publicProfile: (user as any).publicProfile ?? true,
+      discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
+    };
   }
 
-  async updateSettings(userId: string, settingsDto: any): Promise<any> {
-    const existingUser = await this.userModel.exists({ _id: userId });
-    if (!existingUser) throw new NotFoundException('User not found');
+  async updateSettings(userId: string, settingsDto: any): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new NotFoundException('User not found');
 
-    const updatePayload = buildSettingsUpdatePayload(settingsDto);
-
-    if (Object.keys(updatePayload).length > 0) {
-      await this.userModel
-        .updateOne(
-          { _id: userId },
-          { $set: updatePayload },
-          { runValidators: true },
-        )
-        .exec();
+    const profileFields = ['firstName', 'lastName', 'username', 'email', 'bio', 'timezone', 'location', 'jobTitle', 'company', 'website'];
+    for (const field of profileFields) {
+      if (settingsDto[field] !== undefined) { (user as any)[field] = settingsDto[field]; }
     }
 
-    return this.getSettings(userId);
+    if (settingsDto.notificationSettings) {
+      const ns = settingsDto.notificationSettings;
+      (user as any).settings = {
+        ...((user as any).settings || {}),
+        emailNotifications: ns.emailActivity ?? (user as any).settings?.emailNotifications ?? true,
+        pushNotifications: ns.pushNotifications ?? (user as any).settings?.pushNotifications ?? true,
+        weeklyDigest: ns.weeklyReport ?? (user as any).settings?.weeklyDigest ?? true,
+      };
+    }
+
+    if (settingsDto.privacySettings) { (user as any).publicProfile = settingsDto.privacySettings.profilePublic ?? (user as any).publicProfile; }
+    if (settingsDto.publicProfile !== undefined) { (user as any).publicProfile = settingsDto.publicProfile; }
+
+    if (settingsDto.appearance) {
+      const existing = (user as any).preferences ?? {};
+      (user as any).preferences = { ...existing, theme: settingsDto.appearance.theme ?? existing.theme };
+    }
+
+    const nestedFields = ['mentor', 'momentum', 'focus', 'social', 'legacy', 'security'];
+    for (const field of nestedFields) {
+      if (settingsDto[field] !== undefined) {
+        const existing = (user as any).preferences ?? {};
+        (user as any).preferences = { ...existing, [field]: { ...(existing[field] || {}), ...settingsDto[field] } };
+      }
+    }
+
+    if (settingsDto.preferences) {
+      const existing = (user as any).preferences ?? {};
+      (user as any).preferences = deepMergePreferences(existing, settingsDto.preferences);
+    }
+
+    const saved = await user.save();
+    return saved as any;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -611,15 +286,10 @@ export class UserService {
   async confirmPhoneVerification(userId: string, code: string): Promise<boolean> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new NotFoundException('User not found');
-    if (!(user as any).phoneNumber) {
-      throw new BadRequestException('No phone number on record to verify.');
-    }
+    if (!(user as any).phoneNumber) throw new BadRequestException('No phone number on record to verify.');
 
     // Check with Twilio
-    const isValid = await (this.smsService as any).checkVerificationCode(
-      (user as any).phoneNumber,
-      code,
-    );
+    const isValid = await (this.smsService as any).checkVerificationCode((user as any).phoneNumber, code);
 
     if (isValid) {
       (user as any).isPhoneVerified = true;
@@ -644,19 +314,12 @@ export class UserService {
     return this.update(userId, { preferences: merged });
   }
 
-  async updatePreferenceSection(
-    userId: string,
-    section: string,
-    values: any,
-  ): Promise<UserDocument> {
+  async updatePreferenceSection(userId: string, section: string, values: any): Promise<UserDocument> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
     const existing = (user as any)?.preferences ?? {};
-    const merged =
-      section === 'calendar'
-        ? deepMergePreferences(existing, { calendar: values })
-        : deepMergePreferences(existing, { [section]: values });
+    const merged = section === 'calendar' ? deepMergePreferences(existing, { calendar: values }) : deepMergePreferences(existing, { [section]: values });
 
     return this.update(userId, { preferences: merged });
   }
@@ -665,51 +328,28 @@ export class UserService {
   // AVATAR & PASSWORD & LOGIN TRACKING
   // ═══════════════════════════════════════════════════════════════════════════
 
-  async updateAvatar(userId: string, avatarUrl: string | null): Promise<UserDocument> {
-    return this.update(userId, { profilePicture: avatarUrl, avatarUrl } as any);
-  }
-
-  async updateProfile(id: string, profileData: any): Promise<UserDocument> {
-    return this.update(id, profileData);
-  }
-
-  async updateNotificationPreferences(id: string, preferences: any): Promise<UserDocument> {
-    const patch = Array.isArray(preferences)
-      ? { notificationPreferences: preferences }
-      : { notifications: preferences };
-
-    return this.update(id, patch);
-  }
+  async updateAvatar(userId: string, avatarUrl: string | null): Promise<UserDocument> { return this.update(userId, { profilePicture: avatarUrl, avatarUrl } as any); }
+  async updateProfile(id: string, profileData: any): Promise<UserDocument> { return this.update(id, profileData); }
+  async updateNotificationPreferences(id: string, preferences: any): Promise<UserDocument> { const patch = Array.isArray(preferences) ? { notificationPreferences: preferences } : { notifications: preferences }; return this.update(id, patch); }
 
   async getProjectsByCategory(userId: string): Promise<any> {
     const projects = await this.projects.findAll(userId);
-
-    return {
-      School: projects.filter((p: any) => p.category === 'School'),
-      Job: projects.filter((p: any) => p.category === 'Job'),
-      Personal: projects.filter((p: any) => p.category === 'Personal'),
-    };
+    return { School: projects.filter((p: any) => p.category === 'School'), Job: projects.filter((p: any) => p.category === 'Job'), Personal: projects.filter((p: any) => p.category === 'Personal') };
   }
 
   async updatePassword(email: string, newPasswordHash: string): Promise<UserDocument | null> {
-    const result = await this.userModel
-      .findOneAndUpdate({ email }, { password: newPasswordHash }, { new: true })
-      .exec();
-
+    const result = await this.userModel.findOneAndUpdate({ email }, { password: newPasswordHash }, { new: true }).exec();
     return result as any;
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this.userModel.findById(userId).select('+password').exec();
     if (!user) throw new NotFoundException('User not found');
-
     const isValid = await bcrypt.compare(currentPassword, (user as any).password);
     if (!isValid) throw new BadRequestException('Current password is incorrect');
-
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     (user as any).password = hashedPassword;
     (user as any).tokenVersion = ((user as any).tokenVersion || 0) + 1;
-
     await user.save();
   }
 
@@ -719,77 +359,60 @@ export class UserService {
 
     const now = new Date();
     const last = user.lastLogin ? new Date(user.lastLogin as any) : null;
-    const diffDays = last
-      ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
-      : null;
+    const diffDays = last ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
-    if (diffDays === 1) {
-      (user as any).streakDays = ((user as any).streakDays || 0) + 1;
-    } else if (diffDays !== 0) {
-      (user as any).streakDays = 1;
-    }
+    if (diffDays === 1) { (user as any).streakDays = ((user as any).streakDays || 0) + 1; } 
+    else if (diffDays !== 0) { (user as any).streakDays = 1; }
 
     (user as any).lastLogin = now;
-
     const saved = await user.save();
     return saved as any;
   }
 
   async getTopStreaks(limit = 10): Promise<any[]> {
-    const result = await this.userModel
-      .find({}, { firstName: 1, streakDays: 1, profilePicture: 1 })
-      .sort({ streakDays: -1 })
-      .limit(limit)
-      .exec();
-
+    const result = await this.userModel.find({}, { firstName: 1, streakDays: 1, profilePicture: 1 }).sort({ streakDays: -1 }).limit(limit).exec();
     return result as any;
   }
 
+  // ⭐ FIX: Tokenized robust Search method
   async searchUsers(query: string, limit = 10): Promise<any[]> {
-    if (!query || query.length < 2) return [];
-
-    const regex = new RegExp(query, 'i');
-
-    const users = await this.userModel
-      .find({
+    if (!query || query.trim().length < 2) return [];
+    
+    // Split the query into individual words (e.g. "Manny Rivas" -> ["Manny", "Rivas"])
+    const terms = query.trim().split(/\s+/);
+    
+    // Require that EVERY word typed matches AT LEAST ONE field
+    const andClauses = terms.map(term => {
+      const regex = new RegExp(term, 'i');
+      return {
         $or: [
           { username: regex },
           { firstName: regex },
           { lastName: regex },
-          { email: regex },
-        ],
-        publicProfile: { $ne: false },
-      })
-      .select('_id username firstName lastName profilePicture bio')
-      .limit(limit)
-      .exec();
+          { email: regex }
+        ]
+      };
+    });
 
+    const users = await this.userModel
+      .find({
+        $and: andClauses,
+        publicProfile: { $ne: false } // Respect privacy settings
+      })
+      .select('_id username firstName lastName profilePicture avatarUrl avatar bio') // Fully pull photo endpoints
+      .limit(limit)
+      .lean() // Keep response fast and light
+      .exec();
+      
     return users as any;
   }
 
   async getActivitySummary(userId: string): Promise<any> {
     const user = await this.userModel.findById(userId).lean();
     if (!user) throw new NotFoundException('User not found');
-
     const baseXp = (user as any).xp ?? (user as any).points ?? 0;
-
-    const { items } = await this.activities.list({
-      scope: 'user',
-      userId,
-      range: '30d',
-      cursor: null,
-      limit: 500,
-    });
-
-    const summary = buildActivitySummary(
-      items.map((a: any) => ({
-        timestamp: a.createdAt || a.ts,
-        type: a.type || a.eventType || 'UNKNOWN',
-        xpDelta: a.xpDelta ?? a.meta?.xpDelta ?? 0,
-      })),
-      baseXp,
-    );
-
+    const { items } = await this.activities.list({ scope: 'user', userId, range: '30d', cursor: null, limit: 500 });
+    const summary = buildActivitySummary(items.map((a: any) => ({ timestamp: a.createdAt || a.ts, type: a.type || a.eventType || 'UNKNOWN', xpDelta: a.xpDelta ?? a.meta?.xpDelta ?? 0 })), baseXp);
     return summary;
   }
 
@@ -798,67 +421,23 @@ export class UserService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   async exportUserData(userId: string): Promise<any> {
-    const user = await this.userModel
-      .findById(userId)
-      .select('-password -resetToken -verificationToken -verificationCode')
-      .lean()
-      .exec();
-
+    const user = await this.userModel.findById(userId).select('-password -resetToken -verificationToken -verificationCode').lean().exec();
     if (!user) throw new NotFoundException('User not found');
 
     let projects = [];
-    try {
-      projects = await this.projects.findAll(userId);
-    } catch (e) {}
+    try { projects = await this.projects.findAll(userId); } catch (e) {}
 
     let activities = [];
     try {
-      const result = await this.activities.list({
-        scope: 'user',
-        userId,
-        range: '365d',
-        cursor: null,
-        limit: 1000,
-      });
+      const result = await this.activities.list({ scope: 'user', userId, range: '365d', cursor: null, limit: 1000 });
       activities = result.items || [];
     } catch (e) {}
 
     return {
       exportedAt: new Date().toISOString(),
-      user: {
-        id: (user as any)._id,
-        email: (user as any).email,
-        username: (user as any).username,
-        firstName: (user as any).firstName,
-        lastName: (user as any).lastName,
-        bio: (user as any).bio,
-        location: (user as any).location,
-        timezone: (user as any).timezone,
-        publicProfile: (user as any).publicProfile,
-        createdAt: (user as any).createdAt,
-        lastLogin: (user as any).lastLogin,
-        xp: (user as any).xp,
-        level: (user as any).level,
-        streakDays: (user as any).streakDays,
-        totalShips: (user as any).totalShips,
-        achievements: (user as any).achievements,
-        badges: (user as any).badges,
-        settings: (user as any).settings,
-        preferences: (user as any).preferences,
-      },
-      projects: projects.map((p: any) => ({
-        id: p._id,
-        name: p.name || p.title,
-        description: p.description,
-        category: p.category,
-        status: p.status,
-        createdAt: p.createdAt,
-      })),
-      activities: activities.map((a: any) => ({
-        type: a.type,
-        createdAt: a.createdAt,
-        payload: a.payload,
-      })),
+      user: { id: (user as any)._id, email: (user as any).email, username: (user as any).username, firstName: (user as any).firstName, lastName: (user as any).lastName, bio: (user as any).bio, location: (user as any).location, timezone: (user as any).timezone, publicProfile: (user as any).publicProfile, createdAt: (user as any).createdAt, lastLogin: (user as any).lastLogin, xp: (user as any).xp, level: (user as any).level, streakDays: (user as any).streakDays, totalShips: (user as any).totalShips, achievements: (user as any).achievements, badges: (user as any).badges, settings: (user as any).settings, preferences: (user as any).preferences },
+      projects: projects.map((p: any) => ({ id: p._id, name: p.name || p.title, description: p.description, category: p.category, status: p.status, createdAt: p.createdAt })),
+      activities: activities.map((a: any) => ({ type: a.type, createdAt: a.createdAt, payload: a.payload })),
     };
   }
 
