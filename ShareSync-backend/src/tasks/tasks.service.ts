@@ -1,11 +1,6 @@
 // src/tasks/tasks.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
-// TASKS SERVICE: Business Logic with Gamification Integration
-// + Normalized Task Mutation Events (3.3)
-// + Realtime Socket Emits (Step 4)
-// + Step 5 Notification Touchpoints (task.assigned / task.completed / task.moved_to_review)
-// + ✅ Public Spectator Stream (public:project:{projectId}) (Step 6)
-// + ⭐ Native DB Insert + Shotgun Gateway Broadcast + Live Room Override
+// TASKS SERVICE: Business Logic with Gamification & Real-time Shotgun Engine
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -89,6 +84,39 @@ export class TasksService {
     private readonly moduleRef: ModuleRef,
   ) {}
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // PULSE METRICS ENGINE
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  async getPulseMetrics(projectId: string): Promise<any> {
+    const projId = new Types.ObjectId(projectId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+
+    const [doneToday, createdToday, inMotion, blocked, movedToReviewToday, doneLast7Days] = await Promise.all([
+      this.taskModel.countDocuments({ projectId: projId, status: TaskStatus.DONE, completedAt: { $gte: today } }),
+      this.taskModel.countDocuments({ projectId: projId, createdAt: { $gte: today } }),
+      this.taskModel.countDocuments({ projectId: projId, status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] } }),
+      this.taskModel.countDocuments({ projectId: projId, blockedBy: { $exists: true, $not: { $size: 0 } }, status: { $ne: TaskStatus.DONE } }),
+      this.taskModel.countDocuments({ projectId: projId, status: TaskStatus.REVIEW, updatedAt: { $gte: today } }),
+      this.taskModel.countDocuments({ projectId: projId, status: TaskStatus.DONE, completedAt: { $gte: sevenDaysAgo } })
+    ]);
+
+    return {
+      doneToday,
+      createdToday,
+      inMotion,
+      blocked,
+      movedToReviewToday,
+      doneLast7Days
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // CORE OPERATIONS
+  // ═══════════════════════════════════════════════════════════════════════════════
+
   private async emitPublicProjectUpdate(projectId: string, payload: any): Promise<void> {
     try {
       const project = await this.projectsService.findById(projectId);
@@ -96,6 +124,51 @@ export class TasksService {
         this.realtime.roomEmit?.(`public:project:${projectId}`, 'public:project:update', payload);
       }
     } catch (_err) {}
+  }
+
+  // Helper for Shotgun Broadcasts
+  private async shotgunBroadcast(projectId: string, userId: string, type: string, title: string, body: string, extraData: any = {}) {
+    let rtGateway: any = null;
+    let notifGateway: any = null;
+    try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+    try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+
+    try {
+      const db = this.taskModel.db;
+      const projectDoc = await db.collection('projects').findOne({ _id: new Types.ObjectId(projectId) });
+
+      if (projectDoc) {
+        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
+        const allAssociatedIds: any[] = [projectDoc.ownerId, projectDoc.owner, ...rawMembers.map((m: any) => m?.userId || m?._id || m)];
+        const memberIdsToNotify = [...new Set(allAssociatedIds.filter(Boolean).map(id => id.toString()).filter(id => id !== userId))];
+        const safeProjectName = projectDoc.name || projectDoc.title || 'Project';
+
+        for (const recipientId of memberIdsToNotify) {
+          const notif = {
+            userId: new Types.ObjectId(recipientId),
+            type,
+            title,
+            body,
+            data: { projectId, projectName: safeProjectName, ...extraData },
+            channels: ['in_app'],
+            priority: 'normal',
+            isRead: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          const res = await db.collection('notifications').insertOne(notif);
+          const savedNotif = await db.collection('notifications').findOne({ _id: res.insertedId });
+
+          if (notifGateway?.server) notifGateway.server.to(recipientId).emit('new_notification', savedNotif);
+          if (rtGateway?.server) rtGateway.server.to(recipientId).emit('new_notification', savedNotif);
+        }
+
+        // Live Room Override
+        const liveNotif = { type, title, body, data: { projectId, ...extraData }, createdAt: new Date() };
+        if (notifGateway?.server) notifGateway.server.to(`project:${projectId}`).emit('new_notification', liveNotif);
+        if (rtGateway?.server) rtGateway.server.to(`project:${projectId}`).emit('new_notification', liveNotif);
+      }
+    } catch (err) { this.logger.error('Shotgun failed', err); }
   }
 
   async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
@@ -124,166 +197,24 @@ export class TasksService {
     });
 
     const saved = await task.save();
-
     await this.projectsService.incrementTaskCount(dto.projectId);
 
-    if (dto.blockedBy?.length) {
-      await this.updateBlockingRelationships(saved);
-    }
+    if (dto.blockedBy?.length) await this.updateBlockingRelationships(saved);
 
-    emitTaskEvent({
-      eventEmitter: this.eventEmitter,
-      type: TaskEventType.TASK_CREATED,
-      projectId: dto.projectId,
-      actorId: userId,
-      taskId: saved._id.toString(),
-      snapshot: buildTaskSnapshot(saved),
-      meta: { assigneeId: dto.assigneeId },
-    });
-
-    if (dto.assigneeId && dto.assigneeId !== userId) {
-      this.eventEmitter.emit('task.assigned', {
-        taskId: saved._id.toString(),
-        taskTitle: saved.title,
-        assigneeId: dto.assigneeId,
-        assignedBy: userId,
-        projectId: dto.projectId,
-        projectName: project?.name || '',
-      });
-    }
-
-    this.realtime.projectEmit(dto.projectId, 'taskUpdated', buildTaskSnapshot(saved));
-
-    if ((project as any)?.public === true) {
-      await this.emitPublicProjectUpdate(dto.projectId, {
-        type: 'task.created',
-        projectId: dto.projectId,
-        data: buildTaskSnapshot(saved),
-        createdAt: new Date(),
-      });
-    }
-
-    // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
+    // ⭐ BROADCAST
+    await this.shotgunBroadcast(dto.projectId, userId, 'task_created', `📝 New Task in ${project?.name || 'Project'}`, dto.title, { taskId: saved._id });
+    
+    // Board Refresh
     let rtGateway: any = null;
-    let notifGateway: any = null;
     try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
-    try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+    if (rtGateway?.server) rtGateway.server.to(`project:${dto.projectId}`).emit('taskUpdated', buildTaskSnapshot(saved));
 
-    try {
-      if (rtGateway && rtGateway.server) {
-        const payload = buildTaskSnapshot(saved);
-        rtGateway.server.to(`project:${dto.projectId}`).emit('taskUpdated', payload);
-        rtGateway.server.to(dto.projectId).emit('taskUpdated', payload);
-        rtGateway.server.to(`project:${dto.projectId}`).emit('taskCreated', payload);
-        rtGateway.server.to(dto.projectId).emit('taskCreated', payload);
-      }
-    } catch (err) {}
-
-    // ⭐ 1-TO-MANY BROADCAST: Notify all project members + LIVE ROOM OVERRIDE
-    try {
-      const db = this.taskModel.db;
-      const projectDoc = await db.collection('projects').findOne({ _id: new Types.ObjectId(dto.projectId) });
-
-      if (projectDoc) {
-        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
-        
-        // Grab owner, ownerId, and all members to ensure no one is missed
-        const allAssociatedIds: any[] = [
-          projectDoc.ownerId,
-          projectDoc.owner,
-          ...rawMembers.map((m: any) => m?.userId || m?._id || m)
-        ];
-
-        const memberIdsToNotify: string[] = allAssociatedIds
-          .filter(Boolean) // Remove undefined/null
-          .map(id => id.toString())
-          .filter(id => id !== userId);
-
-        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
-        const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
-        const safeTaskTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Task';
-
-        // 1. Notify Official DB Members
-        for (const recipientId of uniqueMembers) {
-          try {
-            const notifResult = await db.collection('notifications').insertOne({
-              userId: new Types.ObjectId(recipientId as string),
-              type: 'task_created',
-              title: `📝 New Task in ${safeProjectName}`,
-              body: safeTaskTitle,
-              data: {
-                projectId: dto.projectId,
-                projectName: safeProjectName,
-                extra: { taskId: saved._id.toString() }
-              },
-              channels: ['in_app'],
-              priority: 'normal',
-              isRead: false,
-              isClicked: false,
-              isDismissed: false,
-              groupCount: 1,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            });
-
-            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
-
-            if (notifGateway && notifGateway.server) {
-              notifGateway.server.to(recipientId as string).emit('new_notification', newNotif);
-              notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
-            }
-            if (rtGateway && rtGateway.server) {
-              rtGateway.server.to(recipientId as string).emit('new_notification', newNotif);
-              rtGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
-            }
-
-            this.eventEmitter.emit('notification.created', newNotif);
-          } catch (innerErr) {
-            this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
-          }
-        }
-        
-        // 2. LIVE ROOM OVERRIDE: Blast notification to anyone currently viewing the project board
-        const liveRoomNotif = {
-          _id: new Types.ObjectId(), // Ephemeral ID for the frontend to render
-          type: 'task_created',
-          title: `📝 New Task in ${safeProjectName}`,
-          body: safeTaskTitle,
-          data: {
-            projectId: dto.projectId,
-            projectName: safeProjectName,
-            extra: { taskId: saved._id.toString() }
-          },
-          channels: ['in_app'],
-          priority: 'normal',
-          isRead: false,
-          createdAt: new Date()
-        };
-
-        if (notifGateway && notifGateway.server) {
-          notifGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
-          notifGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
-        }
-        if (rtGateway && rtGateway.server) {
-          rtGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
-          rtGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
-        }
-
-        this.logger.log(`✅ Task ${saved._id.toString()} natively notified ${uniqueMembers.length} DB recipient(s) AND broadcasted to Live Rooms`);
-      }
-    } catch (err) {
-      this.logger.error('⚠️ Failed to process native task notifications:', err);
-    }
-
-    this.logger.log(`Task created: ${saved._id}`);
     return saved;
   }
 
   async findById(taskId: string): Promise<TaskDocument> {
     const task = await this.taskModel.findById(taskId);
-    if (!task) {
-      throw new NotFoundException(`Task ${taskId} not found`);
-    }
+    if (!task) throw new NotFoundException(`Task ${taskId} not found`);
     return task;
   }
 
@@ -293,32 +224,13 @@ export class TasksService {
     return task;
   }
 
-  async find(
-    userId: string,
-    options: TaskQueryOptions = {},
-  ): Promise<{ tasks: any[]; total: number }> {
-    const {
-      projectId,
-      assigneeId,
-      status,
-      priority,
-      sprintId,
-      search,
-      tags,
-      isBlocking,
-      limit = 50,
-      offset = 0,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = options;
-
+  async find(userId: string, options: TaskQueryOptions = {}): Promise<{ tasks: any[]; total: number }> {
+    const { projectId, assigneeId, status, priority, sprintId, search, tags, isBlocking, limit = 50, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     const query: any = {};
-
     if (projectId) {
       await this.projectsService.findByIdWithAccess(projectId, userId);
       query.projectId = new Types.ObjectId(projectId);
     }
-
     if (assigneeId) query.assigneeId = new Types.ObjectId(assigneeId);
     if (status) query.status = Array.isArray(status) ? { $in: status } : status;
     if (priority) query.priority = Array.isArray(priority) ? { $in: priority } : priority;
@@ -328,67 +240,27 @@ export class TasksService {
     if (typeof isBlocking === 'boolean') query.isBlocking = isBlocking;
 
     const [tasks, total] = await Promise.all([
-      this.taskModel
-        .find(query)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(offset)
-        .limit(limit)
-        .lean(),
+      this.taskModel.find(query).sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }).skip(offset).limit(limit).lean(),
       this.taskModel.countDocuments(query),
     ]);
-
     return { tasks, total };
   }
 
   async getKanbanBoard(projectId: string, userId: string, sprintId?: string): Promise<KanbanBoard> {
     await this.projectsService.findByIdWithAccess(projectId, userId);
-
     const query: any = { projectId: new Types.ObjectId(projectId) };
     if (sprintId) query.sprintId = new Types.ObjectId(sprintId);
-
     const tasks = await this.taskModel.find(query).sort({ order: 1 }).lean();
-
-    const board: KanbanBoard = {
-      [TaskStatus.BACKLOG]: [],
-      [TaskStatus.TODO]: [],
-      [TaskStatus.IN_PROGRESS]: [],
-      [TaskStatus.REVIEW]: [],
-      [TaskStatus.DONE]: [],
-    };
-
-    for (const task of tasks) {
-      if (board[task.status]) board[task.status].push(task);
-    }
-
+    const board: KanbanBoard = { [TaskStatus.BACKLOG]: [], [TaskStatus.TODO]: [], [TaskStatus.IN_PROGRESS]: [], [TaskStatus.REVIEW]: [], [TaskStatus.DONE]: [] };
+    for (const task of tasks) if (board[task.status]) board[task.status].push(task);
     return board;
   }
 
-  async getPriorityStack(
-    projectId: string,
-    userId: string,
-    assigneeId?: string,
-    limit: number = 10,
-  ): Promise<TaskDocument[]> {
+  async getPriorityStack(projectId: string, userId: string, assigneeId?: string, limit: number = 10): Promise<TaskDocument[]> {
     await this.projectsService.findByIdWithAccess(projectId, userId);
-
-    const query: any = {
-      projectId: new Types.ObjectId(projectId),
-      status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] },
-    };
-
-    if (assigneeId) {
-      query.assigneeId = new Types.ObjectId(assigneeId);
-    }
-
-    return this.taskModel
-      .find(query)
-      .sort({
-        priority: -1,
-        isBlocking: -1,
-        stackOrder: 1,
-        dueDate: 1,
-      })
-      .limit(limit);
+    const query: any = { projectId: new Types.ObjectId(projectId), status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] } };
+    if (assigneeId) query.assigneeId = new Types.ObjectId(assigneeId);
+    return this.taskModel.find(query).sort({ priority: -1, isBlocking: -1, stackOrder: 1, dueDate: 1 }).limit(limit);
   }
 
   async getSubtasks(taskId: string, userId: string): Promise<TaskDocument[]> {
@@ -396,478 +268,140 @@ export class TasksService {
     return this.taskModel.find({ parentId: task._id }).sort({ order: 1 });
   }
 
-  async getMyPriorityTasks(
-    userId: string,
-    limit: number = 3,
-    projectId?: string,
-  ): Promise<TaskDocument[]> {
-    this.logger.log(`getMyPriorityTasks called for user: ${userId}`);
-
-    if (projectId) {
-      if (!Types.ObjectId.isValid(projectId)) {
-        throw new BadRequestException('Invalid projectId');
-      }
-      await this.projectsService.findByIdWithAccess(projectId, userId);
-    }
-
-    const tasks = await this.taskModel
-      .find({
+  async getMyPriorityTasks(userId: string, limit: number = 3, projectId?: string): Promise<TaskDocument[]> {
+    if (projectId) await this.projectsService.findByIdWithAccess(projectId, userId);
+    return this.taskModel.find({
         ...(projectId ? { projectId: new Types.ObjectId(projectId) } : {}),
-        $or: [
-          { assigneeId: new Types.ObjectId(userId) },
-          { assignee: new Types.ObjectId(userId) },
-          { reporterId: new Types.ObjectId(userId) },
-          { reporter: new Types.ObjectId(userId) },
-        ],
+        $or: [{ assigneeId: new Types.ObjectId(userId) }, { assignee: new Types.ObjectId(userId) }, { reporterId: new Types.ObjectId(userId) }, { reporter: new Types.ObjectId(userId) }],
         status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
         completedAt: null,
-      })
-      .sort({
-        priority: -1,
-        isBlocking: -1,
-        dueDate: 1,
-        createdAt: -1,
-      })
-      .limit(limit)
-      .exec();
-
-    this.logger.log(`Found ${tasks.length} priority tasks`);
-    return tasks;
+      }).sort({ priority: -1, isBlocking: -1, dueDate: 1, createdAt: -1 }).limit(limit).exec();
   }
 
   async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
-    const previousAssigneeId = task.assigneeId?.toString?.() || null;
-
-    if (dto.status && dto.status !== task.status) {
-      if (dto.status === TaskStatus.DONE) {
-        throw new BadRequestException('Use the complete endpoint to mark tasks as done');
-      }
+    if (dto.status && dto.status !== task.status && dto.status === TaskStatus.DONE) {
+      throw new BadRequestException('Use the complete endpoint to mark tasks as done');
     }
-
-    if (dto.assigneeId !== undefined) {
-      task.assigneeId = dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined;
-      delete (dto as any).assigneeId;
-    }
-
-    if (dto.sprintId !== undefined) {
-      task.sprintId = dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined;
-      delete (dto as any).sprintId;
-    }
-
-    if (dto.milestoneId !== undefined) {
-      task.milestoneId = dto.milestoneId ? new Types.ObjectId(dto.milestoneId) : undefined;
-      delete (dto as any).milestoneId;
-    }
-
+    if (dto.assigneeId !== undefined) task.assigneeId = dto.assigneeId ? new Types.ObjectId(dto.assigneeId) : undefined;
+    if (dto.sprintId !== undefined) task.sprintId = dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined;
+    if (dto.milestoneId !== undefined) task.milestoneId = dto.milestoneId ? new Types.ObjectId(dto.milestoneId) : undefined;
     if ((dto as any).blockedBy) {
       task.blockedBy = (dto as any).blockedBy.map((id: string) => new Types.ObjectId(id));
       await this.updateBlockingRelationships(task);
-      delete (dto as any).blockedBy;
     }
-
     Object.assign(task, dto);
     const updated = await task.save();
 
-    emitTaskEvent({
-      eventEmitter: this.eventEmitter,
-      type: TaskEventType.TASK_UPDATED,
-      projectId: task.projectId.toString(),
-      actorId: userId,
-      taskId: updated._id.toString(),
-      snapshot: buildTaskSnapshot(updated),
-      changes: dto as any,
-    });
-
-    const newAssigneeId = updated.assigneeId?.toString?.() || null;
-    const assigneeChanged = newAssigneeId !== previousAssigneeId;
-
-    if (assigneeChanged && newAssigneeId && newAssigneeId !== userId) {
-      const project = await this.projectsService.findById(updated.projectId.toString());
-      this.eventEmitter.emit('task.assigned', {
-        taskId: updated._id.toString(),
-        taskTitle: updated.title,
-        assigneeId: newAssigneeId,
-        assignedBy: userId,
-        projectId: updated.projectId.toString(),
-        projectName: project?.name || '',
-      });
+    // ⭐ SHOTGUN
+    let rtGateway: any = null;
+    try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+    if (rtGateway?.server) {
+      const payload = buildTaskSnapshot(updated);
+      rtGateway.server.to(`project:${task.projectId}`).emit('taskUpdated', payload);
     }
-
-    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
-
-    // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
-    try {
-      let rtGateway: any = null;
-      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
-      if (rtGateway && rtGateway.server) {
-        const payload = buildTaskSnapshot(updated);
-        rtGateway.server.to(`project:${task.projectId.toString()}`).emit('taskUpdated', payload);
-        rtGateway.server.to(task.projectId.toString()).emit('taskUpdated', payload);
-      }
-    } catch (err) {}
-
-    await this.emitPublicProjectUpdate(task.projectId.toString(), {
-      type: 'task.updated',
-      projectId: task.projectId.toString(),
-      data: buildTaskSnapshot(updated),
-      createdAt: new Date(),
-    });
 
     return updated;
   }
 
   async move(taskId: string, userId: string, dto: MoveTaskDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
-    const previousStatus = task.status;
-
-    if (dto.status) {
-      if (dto.status === TaskStatus.DONE) {
-        throw new BadRequestException('Use the complete endpoint to mark tasks as done');
-      }
-      task.status = dto.status;
-    }
-
-    if (typeof dto.order === 'number') {
-      task.order = dto.order;
-    }
-
-    if (dto.sprintId !== undefined) {
-      task.sprintId = dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined;
-    }
-
+    if (dto.status === TaskStatus.DONE) throw new BadRequestException('Use the complete endpoint');
+    if (dto.status) task.status = dto.status;
+    if (typeof dto.order === 'number') task.order = dto.order;
     const updated = await task.save();
 
-    emitTaskEvent({
-      eventEmitter: this.eventEmitter,
-      type: TaskEventType.TASK_MOVED,
-      projectId: task.projectId.toString(),
-      actorId: userId,
-      taskId: updated._id.toString(),
-      snapshot: buildTaskSnapshot(updated),
-      changes: {
-        previousStatus,
-        newStatus: updated.status,
-        order: dto.order,
-        sprintId: dto.sprintId,
-      },
-    });
-
-    if (previousStatus !== updated.status && updated.status === TaskStatus.REVIEW) {
-      const project = await this.projectsService.findById(updated.projectId.toString());
-      this.eventEmitter.emit('task.moved_to_review', {
-        taskId: updated._id.toString(),
-        taskTitle: updated.title,
-        projectId: updated.projectId.toString(),
-        projectName: project?.name || '',
-        movedBy: userId,
-        assigneeId: updated.assigneeId?.toString?.() || null,
-        reporterId:
-          (updated as any).reporterId?.toString?.() ||
-          (updated as any).createdBy?.toString?.() ||
-          null,
-      });
+    // ⭐ SHOTGUN
+    let rtGateway: any = null;
+    try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+    if (rtGateway?.server) {
+      const payload = buildTaskSnapshot(updated);
+      rtGateway.server.to(`project:${task.projectId}`).emit('taskUpdated', payload);
+      rtGateway.server.to(`project:${task.projectId}`).emit('taskMoved', payload);
     }
-
-    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
-
-    // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
-    try {
-      let rtGateway: any = null;
-      try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
-      if (rtGateway && rtGateway.server) {
-        const payload = buildTaskSnapshot(updated);
-        rtGateway.server.to(`project:${task.projectId.toString()}`).emit('taskUpdated', payload);
-        rtGateway.server.to(task.projectId.toString()).emit('taskUpdated', payload);
-      }
-    } catch (err) {}
-
-    await this.emitPublicProjectUpdate(task.projectId.toString(), {
-      type: 'task.moved',
-      projectId: task.projectId.toString(),
-      data: buildTaskSnapshot(updated),
-      createdAt: new Date(),
-    });
 
     return updated;
   }
 
-  async completeTask(
-    taskId: string,
-    userId: string,
-    options?: { inFocusMode?: boolean },
-  ): Promise<TaskDocument> {
-    const result = await this.complete(taskId, userId, {
-      ...(options?.inFocusMode !== undefined ? { inFocusMode: options.inFocusMode } : {}),
-    } as any);
-
-    return result.task;
-  }
-
   async complete(taskId: string, userId: string, dto: CompleteTaskDto = {}): Promise<CompletionResult> {
     const task = await this.findByIdWithAccess(taskId, userId);
-
-    if (task.status === TaskStatus.DONE) {
-      throw new BadRequestException('Task is already completed');
-    }
+    if (task.status === TaskStatus.DONE) throw new BadRequestException('Task already completed');
 
     const variableRewards = this.calculateVariableRewards(task.xpValue);
-
     task.status = TaskStatus.DONE;
     task.completedAt = new Date();
     task.completedBy = new Types.ObjectId(userId);
     task.bonusXP = variableRewards.bonusXP;
     task.isLegendary = variableRewards.isLegendary;
-
-    if ((dto as any).actualHours) {
-      task.actualHours = (dto as any).actualHours;
-    }
-
-    let ceremonyTier = task.determineCeremonyTier();
-    if (variableRewards.isLegendary) ceremonyTier = CeremonyTier.PROJECT_SHIP;
-    task.ceremonyTier = ceremonyTier;
+    task.ceremonyTier = variableRewards.isLegendary ? CeremonyTier.PROJECT_SHIP : task.determineCeremonyTier();
 
     const totalXP = task.xpValue + variableRewards.bonusXP;
-
     await task.save();
     await this.projectsService.markTaskCompleted(task.projectId.toString());
-
     const unblocked = await this.unblockDependentTasks(task);
 
-    emitTaskEvent({
-      eventEmitter: this.eventEmitter,
-      type: TaskEventType.TASK_COMPLETED,
-      projectId: task.projectId.toString(),
-      actorId: userId,
-      taskId: task._id.toString(),
-      snapshot: buildTaskSnapshot(task),
-      meta: {
-        xpAwarded: totalXP,
-        bonusXP: variableRewards.bonusXP,
-        isLegendary: variableRewards.isLegendary,
-        ceremonyTier,
-        unblockedTaskIds: unblocked.map((t) => t._id.toString()),
-        inFocusMode: !!(dto as any)?.inFocusMode,
-      },
-    });
+    // ⭐ SHOTGUN
+    await this.shotgunBroadcast(task.projectId.toString(), userId, 'task_completed', `🔥 Task Completed!`, task.title, { taskId: task._id, xp: totalXP });
+    
+    let rtGateway: any = null;
+    try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+    if (rtGateway?.server) {
+      const payload = buildTaskSnapshot(task);
+      rtGateway.server.to(`project:${task.projectId}`).emit('taskUpdated', payload);
+      rtGateway.server.to(`project:${task.projectId}`).emit('taskCompleted', { ...payload, totalXP, isLegendary: task.isLegendary });
+    }
 
-    this.eventEmitter.emit('task.completed', {
-      taskId: task._id.toString(),
-      projectId: task.projectId.toString(),
-      userId,
-      xpAwarded: totalXP,
-      isLegendary: variableRewards.isLegendary,
-      ceremonyTier: ceremonyTier as any,
-    });
-
-    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(task));
-
-    await this.emitPublicProjectUpdate(task.projectId.toString(), {
-      type: 'task.completed',
-      projectId: task.projectId.toString(),
-      data: buildTaskSnapshot(task),
-      createdAt: new Date(),
-    });
-
-    const completedAt = task.completedAt || new Date();
-    const wasOnTime = task.dueDate ? completedAt <= new Date(task.dueDate) : true;
-    const hour = completedAt.getHours();
-    const isEarlyBird = hour < 9;
-
-    const gamificationEvent: TaskCompletedEvent = {
-      taskId: task._id.toString(),
-      projectId: task.projectId.toString(),
-      userId,
-      title: task.title,
-      priority: (task.priority as any) || 'medium',
-      isBlocking: !!task.isBlocking,
-      storyPoints: (task as any).storyPoints || 1,
-      dueDate: task.dueDate,
-      completedAt,
-      wasOnTime,
-      isEarlyBird,
-      inFocusMode: !!(dto as any)?.inFocusMode,
-    };
-
-    this.eventEmitter.emit(EVENTS.TASK_COMPLETED, gamificationEvent);
-    this.logger.log(`Task completed: ${taskId}, XP: ${totalXP}, Legendary: ${variableRewards.isLegendary}`);
-
-    return {
-      task,
-      xpAwarded: totalXP,
-      bonusXP: variableRewards.bonusXP,
-      isLegendary: variableRewards.isLegendary,
-      ceremonyTier,
-      unblocked,
-    };
+    return { task, xpAwarded: totalXP, bonusXP: variableRewards.bonusXP, isLegendary: variableRewards.isLegendary, ceremonyTier: task.ceremonyTier, unblocked };
   }
 
   async delete(taskId: string, userId: string): Promise<void> {
     const task = await this.findByIdWithAccess(taskId, userId);
     const wasCompleted = task.status === TaskStatus.DONE;
-
     await this.taskModel.updateMany({ blockedBy: task._id }, { $pull: { blockedBy: task._id } });
-    await this.taskModel.updateMany({ blocks: task._id }, { $pull: { blocks: task._id } });
     await this.taskModel.deleteMany({ parentId: task._id });
     await this.taskModel.deleteOne({ _id: task._id });
-
     await this.projectsService.decrementTaskCount(task.projectId.toString(), wasCompleted);
-
-    emitTaskEvent({
-      eventEmitter: this.eventEmitter,
-      type: TaskEventType.TASK_DELETED,
-      projectId: task.projectId.toString(),
-      actorId: userId,
-      taskId: task._id.toString(),
-      snapshot: buildTaskSnapshot(task),
-    });
-
-    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', {
-      id: task._id.toString(),
-      projectId: task.projectId.toString(),
-      deleted: true,
-    });
-
-    await this.emitPublicProjectUpdate(task.projectId.toString(), {
-      type: 'task.deleted',
-      projectId: task.projectId.toString(),
-      data: {
-        id: task._id.toString(),
-        projectId: task.projectId.toString(),
-        deleted: true,
-      },
-      createdAt: new Date(),
-    });
-
-    this.logger.log(`Task deleted: ${taskId}`);
+    
+    let rtGateway: any = null;
+    try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
+    if (rtGateway?.server) rtGateway.server.to(`project:${task.projectId}`).emit('taskDeleted', { id: task._id });
   }
 
   async addComment(taskId: string, userId: string, dto: AddCommentDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
-
-    task.comments.push({
-      _id: new Types.ObjectId(),
-      userId: new Types.ObjectId(userId),
-      content: (dto as any).content,
-      mentions: (dto as any).mentions?.map((id: string) => new Types.ObjectId(id)) || [],
-      createdAt: new Date(),
-      isEdited: false,
-    } as any);
-
-    const updated = await task.save();
-
-    this.eventEmitter.emit('task.comment.added', {
-      taskId: task._id,
-      projectId: task.projectId,
-      userId,
-      mentions: (dto as any).mentions,
-    });
-
-    return updated;
-  }
-
-  async deleteComment(taskId: string, commentId: string, userId: string): Promise<TaskDocument> {
-    const task = await this.findByIdWithAccess(taskId, userId);
-
-    const commentIndex = task.comments.findIndex((c: any) => c._id.toString() === commentId);
-    if (commentIndex === -1) {
-      throw new NotFoundException('Comment not found');
-    }
-
-    if (task.comments[commentIndex].userId.toString() !== userId) {
-      throw new ForbiddenException('You can only delete your own comments');
-    }
-
-    task.comments.splice(commentIndex, 1);
+    task.comments.push({ _id: new Types.ObjectId(), userId: new Types.ObjectId(userId), content: (dto as any).content, createdAt: new Date(), isEdited: false } as any);
     return task.save();
   }
 
   async logTime(taskId: string, userId: string, dto: LogTimeDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
-
-    task.timeLogs.push({
-      userId: new Types.ObjectId(userId),
-      minutes: (dto as any).minutes,
-      description: (dto as any).description,
-      loggedAt: new Date(),
-    } as any);
-
-    task.actualHours = task.timeLogs.reduce(
-      (total: number, log: any) => total + log.minutes / 60,
-      0,
-    );
-
+    task.timeLogs.push({ userId: new Types.ObjectId(userId), minutes: (dto as any).minutes, loggedAt: new Date() } as any);
+    task.actualHours = task.timeLogs.reduce((total: number, log: any) => total + log.minutes / 60, 0);
     return task.save();
   }
 
   private calculateBaseXP(priority: TaskPriority): number {
-    const baseXP: Record<string, number> = {
-      [TaskPriority.LOW]: 10,
-      [TaskPriority.MEDIUM]: 25,
-      [TaskPriority.HIGH]: 40,
-      [TaskPriority.CRITICAL]: 75,
-    };
+    const baseXP: Record<string, number> = { [TaskPriority.LOW]: 10, [TaskPriority.MEDIUM]: 25, [TaskPriority.HIGH]: 40, [TaskPriority.CRITICAL]: 75 };
     return baseXP[priority] || 25;
   }
 
-  private calculateVariableRewards(baseXP: number): {
-    bonusXP: number;
-    isLegendary: boolean;
-    multiplier: number;
-  } {
-    let bonusXP = 0;
-    let isLegendary = false;
-    let multiplier = 1;
-
-    if (Math.random() < VARIABLE_REWARDS.LEGENDARY_CHANCE) {
-      isLegendary = true;
-      bonusXP = 1000;
-      return { bonusXP, isLegendary, multiplier };
-    }
-
-    if (Math.random() < VARIABLE_REWARDS.BONUS_CHANCE) {
-      bonusXP = Math.floor(baseXP * (0.5 + Math.random() * 1.5));
-    }
-
-    if (Math.random() < VARIABLE_REWARDS.MULTIPLIER_CHANCE) {
-      multiplier = 1.5 + Math.random() * 1.5;
-      bonusXP = Math.floor(bonusXP * multiplier);
-    }
-
-    return { bonusXP, isLegendary, multiplier };
+  private calculateVariableRewards(baseXP: number) {
+    let bonusXP = 0; let isLegendary = false;
+    if (Math.random() < 0.01) { isLegendary = true; bonusXP = 1000; }
+    else if (Math.random() < 0.15) { bonusXP = Math.floor(baseXP * (0.5 + Math.random())); }
+    return { bonusXP, isLegendary };
   }
 
   private async updateBlockingRelationships(task: TaskDocument): Promise<void> {
     if (task.blockedBy?.length) {
-      await this.taskModel.updateMany(
-        { _id: { $in: task.blockedBy } },
-        { $addToSet: { blocks: task._id }, $set: { isBlocking: true } },
-      );
-
-      for (const blockingId of task.blockedBy) {
-        const count = await this.taskModel.countDocuments({
-          blockedBy: blockingId,
-          status: { $ne: TaskStatus.DONE },
-        });
-
-        await this.taskModel.updateOne({ _id: blockingId }, { $set: { blockingCount: count } });
-      }
+      await this.taskModel.updateMany({ _id: { $in: task.blockedBy } }, { $addToSet: { blocks: task._id }, $set: { isBlocking: true } });
     }
   }
 
   private async unblockDependentTasks(completedTask: TaskDocument): Promise<TaskDocument[]> {
     const unblocked = await this.taskModel.find({ blockedBy: completedTask._id });
-
-    await this.taskModel.updateMany(
-      { blockedBy: completedTask._id },
-      { $pull: { blockedBy: completedTask._id } },
-    );
-
-    await this.taskModel.updateOne(
-      { _id: completedTask._id },
-      { $set: { isBlocking: false, blockingCount: 0 } },
-    );
-
+    await this.taskModel.updateMany({ blockedBy: completedTask._id }, { $pull: { blockedBy: completedTask._id } });
+    await this.taskModel.updateOne({ _id: completedTask._id }, { $set: { isBlocking: false, blockingCount: 0 } });
     return unblocked;
   }
 }
