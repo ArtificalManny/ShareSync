@@ -8,6 +8,7 @@
 // - Removed toggle buttons (>> << arrows) completely per user request
 // - Removed auto-hide indicator wedge
 // - Cleaner minimal header
+// ⭐ ADDED: Engineered OpenShare Kinetic Monogram Logo that persists on collapse
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -30,6 +31,7 @@ import {
 
 import SidebarItem from "./nav/SidebarItem";
 import UserAvatar from "./ui/UserAvatar";
+import OpenShareLogo from "./ui/OpenShareLogo"; // ⭐ IMPORTING NEW LOGO
 import { useFlowState } from "../contexts/FlowStateContext";
 import { useMomentumContext } from "../contexts/MomentumContext";
 import { useEntrance } from "./onboarding/AppEntrance";
@@ -435,17 +437,18 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header - CLEANED UP: No toggle buttons */}
-        <div className="flex items-center justify-center p-4">
-          {!collapsed && (
-            <div className="flex items-center gap-2.5">
-              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
-                <span className="text-xs font-bold text-white">S</span>
-              </div>
-              <span className="text-sm font-bold text-slate-800">OpenShare</span>
+        {/* ⭐ NEW HEADER: Logo persists, text hides cleanly, alignments snap perfectly to grid */}
+        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-start px-5"} py-5 min-h-[68px] transition-all duration-300`}>
+          <div className="flex items-center gap-3">
+            <div className={`shrink-0 transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_12px_rgba(249,115,22,0.4)]" : "drop-shadow-[0_2px_4px_rgba(139,92,246,0.15)]"}`}>
+              <OpenShareLogo className="w-8 h-8 text-slate-800 dark:text-slate-100" />
             </div>
-          )}
-          {/* Toggle buttons REMOVED per user request */}
+            {!collapsed && (
+              <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap overflow-hidden select-none">
+                OpenShare
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Progress Ring */}
