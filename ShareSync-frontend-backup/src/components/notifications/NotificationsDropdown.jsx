@@ -323,13 +323,14 @@ export default function NotificationsDropdown({
       {/* Footer */}
       <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50">
         <button
-          onClick={() => {
-            navigate('/notifications');
-            onClose();
+          onClick={(e) => {
+            e.preventDefault();
+            // navigate('/notifications'); // Disabled until the dedicated page is built
           }}
-          className="w-full text-center text-xs font-medium text-slate-500 hover:text-violet-600 transition-colors py-1.5"
+          className="w-full text-center text-xs font-medium text-slate-400 cursor-not-allowed py-1.5"
+          title="Full notifications page coming soon"
         >
-          View all notifications
+          View all notifications (Coming Soon)
         </button>
       </div>
     </div>
