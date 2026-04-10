@@ -3,6 +3,7 @@
 // SHARESYNC PROFILE PAGE v4.1 - "The Gallery Walk" Light Theme
 // Phase 7: Added Profile Edit Modal
 // ⭐ Phase 1 Fix: Added error state with retry button
+// ⭐ Phase 3 Fix: Smart URL ID handling to view other users' profiles
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // THEME: "The Personal Gallery"
@@ -21,7 +22,8 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import client from "../api/client";
-import { getMe, getPublicUser, updateProfile } from "../api/user";
+// ⭐ NEW: Imported getUserById
+import { getMe, getPublicUser, updateProfile, getUserById } from "../api/user";
 import {
   Camera,
   TrendingUp,
@@ -533,7 +535,8 @@ const SkillBar = ({ value, max = 100 }) => {
    MAIN PAGE - "The Personal Gallery"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
-  const { username: routeUsername } = useParams();
+  // ⭐ FIX: Safely pull the ID directly from the URL if it exists
+  const { username: routeUsername, id } = useParams();
   const location = useLocation();
 
   const [loading, setLoading] = useState(true);
@@ -547,20 +550,42 @@ export default function Profile() {
   // ⭐ PHASE 1 FIX: Error state with retry capability
   const [error, setError] = useState(false);
 
+  // ⭐ FIX: Treat this as a public route if an ID is present in the URL
   const isPublicRoute = useMemo(
-    () => Boolean(routeUsername) && location.pathname.startsWith("/u/"),
-    [routeUsername, location.pathname]
+    () => Boolean(id) || (Boolean(routeUsername) && location.pathname.startsWith("/u/")),
+    [id, routeUsername, location.pathname]
   );
 
   const load = useCallback(async () => {
     setLoading(true);
-    // ⭐ PHASE 1 FIX: Clear error state at the start of each load attempt
     setError(false);
     try {
       if (isPublicRoute) {
-        const u = await getPublicUser(routeUsername);
+        // ⭐ FIX: If we have an ID, grab that exact user from the database
+        const u = id ? await getUserById(id) : await getPublicUser(routeUsername);
         setPublicUser(u);
+
+        // We still need to fetch "Me" silently to check if we happen to be viewing our own profile
+        try {
+          const rawResponse = await getMe();
+          let userData = null;
+          if (rawResponse?.user && typeof rawResponse.user === 'object') userData = rawResponse.user;
+          else if (rawResponse?.data?.user && typeof rawResponse.data.user === 'object') userData = rawResponse.data.user;
+          else if (rawResponse?.data && typeof rawResponse.data === 'object' && !Array.isArray(rawResponse.data)) userData = rawResponse.data;
+          else if (rawResponse && typeof rawResponse === 'object' && (rawResponse._id || rawResponse.id || rawResponse.email)) userData = rawResponse;
+          else userData = rawResponse || {};
+
+          const storedUser = readStoredUser();
+          const storedOverride = readAvatarOverride();
+          const storedAvatar = storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null;
+          const merged = storedAvatar ? { ...userData, avatarUrl: storedAvatar, profilePicture: storedAvatar } : userData;
+          setMe(merged);
+        } catch (e) {
+          // Ignore error silently. It just means edit privileges will default to false.
+        }
+
       } else {
+        // EXACT EXISTING GET ME LOGIC
         const rawResponse = await getMe();
         console.log('[Profile] getMe() raw response:', rawResponse);
 
@@ -602,12 +627,11 @@ export default function Profile() {
     } catch (e) {
       console.error('[Profile] Failed to load user data:', e);
       console.error('[Profile] Error details:', e?.response?.data || e?.message);
-      // ⭐ PHASE 1 FIX: Set error state so we can show retry UI
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [isPublicRoute, routeUsername]);
+  }, [isPublicRoute, routeUsername, id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -633,10 +657,18 @@ export default function Profile() {
   }, [isPublicRoute, load]);
 
   const user = isPublicRoute ? publicUser : me;
-  const isOwnProfile = !isPublicRoute;
+  
+  // ⭐ FIX: Safely check if the profile we are viewing belongs to us
+  const myId = me?._id || me?.id;
+  const viewId = user?._id || user?.id;
+  const isOwnProfile = !isPublicRoute || (myId && viewId && String(myId) === String(viewId));
+
   const reliability = calculateReliability(user?.completedTasks, user?.totalTasks);
   const userId = user?._id || user?.id;
+  
+  // Growth hook will silently return empty objects if it doesn't have permission to view private tasks
   const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
+  
   const name = useMemo(() => resolveUserName(user), [user]);
 
   // Phase 7: Handle edit profile

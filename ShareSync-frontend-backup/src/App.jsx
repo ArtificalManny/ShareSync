@@ -586,11 +586,7 @@ function AppRoutes() {
                 }
               />
               <Route path="/landing" element={<Landing />} />
-              
-              {/* ⭐ FIX: Let React Router handle BOTH /invite/accept AND dynamic tokens! */}
               <Route path="/invite/accept" element={<AcceptInvite />} />
-              <Route path="/invite/:token" element={<AcceptInvite />} />
-              
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />
 
@@ -658,6 +654,7 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
+              
               <Route
                 path="/profile"
                 element={
@@ -666,7 +663,18 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/profile/:username" element={<PublicProfile />} />
+              {/* ⭐ ADDED: Added /profile/:id for smart profile lookups */}
+              <Route
+                path="/profile/:id"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ⭐ CHANGED: Changed username route to /u/:username to avoid collisions */}
+              <Route path="/u/:username" element={<PublicProfile />} />
+              
               <Route
                 path="/me"
                 element={
