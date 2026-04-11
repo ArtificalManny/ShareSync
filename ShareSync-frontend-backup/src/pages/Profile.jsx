@@ -589,6 +589,10 @@ export default function Profile() {
           // Ignore error silently. It just means edit privileges will default to false.
         }
 
+      } else if (isViewingOtherUser) {
+        const otherUser = await getUserById(id || routeUserId);
+        console.log('[Profile] getUserById response:', otherUser);
+        setMe(otherUser);
       } else {
         // EXACT EXISTING GET ME LOGIC
         const rawResponse = await getMe();
