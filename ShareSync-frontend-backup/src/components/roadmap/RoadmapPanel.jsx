@@ -12,6 +12,10 @@
 // - Uses client.patch/client.delete for API calls
 // - Tries multiple endpoint patterns for resilience
 // - Optimistic UI with rollback on failure
+//
+// ⭐ LIGHT MODE CONTRAST FIX:
+// - Explicit light-mode text colors for header, subtitle, filters, sort, and states
+// - Preserves dark-mode token behavior
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
@@ -61,8 +65,6 @@ function normalizeStatus(status) {
   return (status || "").toLowerCase();
 }
 
-// ✅ Safe "done" detection without backend dependency.
-// Adjust later if your backend uses different status values.
 function isTaskDone(task) {
   if (!task) return false;
   if (task.completed === true) return true;
@@ -125,7 +127,6 @@ function applySort(items, sortId) {
 
   const getValue = (m) => {
     if (field === "createdAt") return parseDateMaybe(m?.createdAt)?.getTime() ?? 0;
-    // default: dueDate
     return parseDateMaybe(m?.dueDate || m?.targetDate)?.getTime() ?? 0;
   };
 
@@ -138,20 +139,14 @@ function applySort(items, sortId) {
   return arr;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ✅ NEW: API helpers for update/delete (tries multiple endpoint patterns)
-// ═══════════════════════════════════════════════════════════════════════════════
-
 async function updateMilestoneApi(milestoneId, data) {
   if (!milestoneId) throw new Error("milestoneId is required");
 
-  // Try every reasonable method + URL combination.
-  // NestJS CRUD generators can use PATCH or PUT depending on config.
   const attempts = [
     { method: "patch", url: `/milestones/${milestoneId}` },
-    { method: "put",   url: `/milestones/${milestoneId}` },
+    { method: "put", url: `/milestones/${milestoneId}` },
     { method: "patch", url: `/milestones/${milestoneId}/update` },
-    { method: "put",   url: `/milestones/${milestoneId}/update` },
+    { method: "put", url: `/milestones/${milestoneId}/update` },
   ];
 
   for (const { method, url } of attempts) {
@@ -160,7 +155,6 @@ async function updateMilestoneApi(milestoneId, data) {
       return res.data?.data || res.data;
     } catch (e) {
       const status = e?.response?.status;
-      // 404 = route not found, 405 = method not allowed → try next combo
       if (status === 404 || status === 405) continue;
       throw e;
     }
@@ -172,9 +166,7 @@ async function updateMilestoneApi(milestoneId, data) {
 async function deleteMilestoneApi(milestoneId) {
   if (!milestoneId) throw new Error("milestoneId is required");
 
-  const endpoints = [
-    `/milestones/${milestoneId}`,
-  ];
+  const endpoints = [`/milestones/${milestoneId}`];
 
   for (const url of endpoints) {
     try {
@@ -188,10 +180,6 @@ async function deleteMilestoneApi(milestoneId) {
 
   throw new Error("Could not delete milestone — no working endpoint found. Check backend routes.");
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ✅ NEW: Edit Milestone Modal
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const EDIT_STATUS_OPTIONS = [
   { value: "planned", label: "Planned" },
@@ -212,7 +200,6 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
   });
   const [status, setStatus] = useState(() => {
     const s = normalizeStatus(milestone?.status);
-    // Normalize to backend-friendly values
     if (s === "in-progress" || s === "inprogress" || s === "active") return "in_progress";
     if (s === "done" || s === "complete" || s === "completed") return "completed";
     if (s === "at-risk" || s === "at_risk") return "at_risk";
@@ -237,35 +224,32 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* Backdrop */}
       <button
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-label="Close"
       />
 
-      {/* Modal */}
-      <div className="relative w-[92vw] max-w-[520px] rounded-2xl border border-white/[0.10] bg-surface-1 shadow-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
+      <div className="relative w-[92vw] max-w-[520px] rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-surface-1 shadow-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Flag className="w-4 h-4 text-brand-300" />
-            <h3 className="text-base font-semibold text-text-primary">
+            <Flag className="w-4 h-4 text-violet-500 dark:text-brand-300" />
+            <h3 className="text-base font-semibold text-slate-900 dark:text-text-primary">
               Edit Milestone
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-white/[0.06] transition-colors"
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
             aria-label="Close modal"
           >
-            <X className="w-4 h-4 text-text-tertiary" />
+            <X className="w-4 h-4 text-slate-500 dark:text-text-tertiary" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Title */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-tertiary">
+            <label className="text-xs uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
               Title
             </label>
             <input
@@ -274,17 +258,17 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
               placeholder="Milestone title..."
               className="
                 mt-2 w-full px-3 py-2 rounded-xl
-                bg-surface-2 border border-white/[0.10]
-                text-text-secondary
-                focus:outline-none focus:ring-2 focus:ring-brand-500/30
+                bg-white dark:bg-surface-2
+                border border-slate-200 dark:border-white/[0.10]
+                text-slate-900 dark:text-text-secondary
+                focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:focus:ring-brand-500/30
               "
               autoFocus
             />
           </div>
 
-          {/* Description */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-tertiary">
+            <label className="text-xs uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
               Description
             </label>
             <textarea
@@ -294,16 +278,16 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
               rows={3}
               className="
                 mt-2 w-full px-3 py-2 rounded-xl resize-none
-                bg-surface-2 border border-white/[0.10]
-                text-text-secondary
-                focus:outline-none focus:ring-2 focus:ring-brand-500/30
+                bg-white dark:bg-surface-2
+                border border-slate-200 dark:border-white/[0.10]
+                text-slate-900 dark:text-text-secondary
+                focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:focus:ring-brand-500/30
               "
             />
           </div>
 
-          {/* Target Date */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-tertiary flex items-center gap-2">
+            <label className="text-xs uppercase tracking-wider text-slate-500 dark:text-text-tertiary flex items-center gap-2">
               <Calendar className="w-4 h-4" /> Target date
             </label>
             <input
@@ -312,16 +296,16 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
               onChange={(e) => setTargetDate(e.target.value)}
               className="
                 mt-2 w-full px-3 py-2 rounded-xl
-                bg-surface-2 border border-white/[0.10]
-                text-text-secondary
-                focus:outline-none focus:ring-2 focus:ring-brand-500/30
+                bg-white dark:bg-surface-2
+                border border-slate-200 dark:border-white/[0.10]
+                text-slate-900 dark:text-text-secondary
+                focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:focus:ring-brand-500/30
               "
             />
           </div>
 
-          {/* Status */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-text-tertiary">
+            <label className="text-xs uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
               Status
             </label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -335,8 +319,8 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
                     className={`
                       px-3 py-1.5 rounded-xl text-sm transition-all border
                       ${active
-                        ? "bg-brand-500/10 border-brand-500/25 text-brand-300 ring-1 ring-brand-500/20"
-                        : "bg-surface-2 border-white/[0.08] text-text-secondary hover:bg-surface-3 hover:border-white/[0.12]"
+                        ? "bg-violet-50 border-violet-200 text-violet-700 ring-1 ring-violet-200/70 dark:bg-brand-500/10 dark:border-brand-500/25 dark:text-brand-300 dark:ring-brand-500/20"
+                        : "bg-white dark:bg-surface-2 border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-3"
                       }
                     `}
                   >
@@ -347,24 +331,22 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
             </div>
           </div>
 
-          {/* Error */}
           {saveError ? (
-            <div className="p-3 rounded-xl bg-error-500/10 border border-error-500/15 text-sm text-error-200 flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 dark:bg-error-500/10 border border-red-200 dark:border-error-500/15 text-sm text-red-600 dark:text-error-200 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{saveError}</span>
             </div>
           ) : null}
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               className="
                 px-4 py-2 rounded-xl
-                bg-surface-2 border border-white/[0.10]
-                text-text-secondary text-sm
-                hover:bg-surface-1 transition-colors
+                bg-white dark:bg-surface-2 border border-slate-200 dark:border-white/[0.10]
+                text-slate-700 dark:text-text-secondary text-sm
+                hover:bg-slate-50 dark:hover:bg-surface-1 transition-colors
               "
             >
               Cancel
@@ -374,8 +356,8 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
               disabled={!canSave}
               className={`
                 inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                text-sm font-medium text-white transition-colors
-                ${canSave ? "bg-brand-500 hover:bg-brand-400" : "bg-white/[0.10] text-white/40"}
+                text-sm font-medium transition-colors
+                ${canSave ? "bg-violet-600 hover:bg-violet-500 dark:bg-brand-500 dark:hover:bg-brand-400 text-white" : "bg-slate-200 dark:bg-white/[0.10] text-slate-400 dark:text-white/40"}
               `}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -388,39 +370,33 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ✅ NEW: Delete Confirmation Modal
-// ═══════════════════════════════════════════════════════════════════════════════
-
 function DeleteConfirmModal({ milestone, onClose, onConfirm, deleting, error: deleteError }) {
   const title = milestone?.title || milestone?.name || "this milestone";
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* Backdrop */}
       <button
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-label="Close"
       />
 
-      {/* Modal */}
-      <div className="relative w-[92vw] max-w-[400px] rounded-2xl border border-white/[0.10] bg-surface-1 shadow-2xl p-6">
+      <div className="relative w-[92vw] max-w-[400px] rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-surface-1 shadow-2xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-error-500/10 flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-error-500" />
+          <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-error-500/10 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-red-500 dark:text-error-500" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-text-primary">Delete Milestone?</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-text-primary">Delete Milestone?</h3>
           </div>
         </div>
 
-        <p className="text-sm text-text-secondary mb-6">
-          Are you sure you want to delete <strong className="text-text-primary">"{title}"</strong>? This action cannot be undone.
+        <p className="text-sm text-slate-600 dark:text-text-secondary mb-6">
+          Are you sure you want to delete <strong className="text-slate-900 dark:text-text-primary">"{title}"</strong>? This action cannot be undone.
         </p>
 
         {deleteError ? (
-          <div className="p-3 mb-4 rounded-xl bg-error-500/10 border border-error-500/15 text-sm text-error-200">
+          <div className="p-3 mb-4 rounded-xl bg-red-50 dark:bg-error-500/10 border border-red-200 dark:border-error-500/15 text-sm text-red-600 dark:text-error-200">
             {deleteError}
           </div>
         ) : null}
@@ -430,8 +406,9 @@ function DeleteConfirmModal({ milestone, onClose, onConfirm, deleting, error: de
             onClick={onClose}
             className="
               flex-1 py-2.5 rounded-xl
-              bg-surface-2 text-text-secondary text-sm
-              hover:bg-surface-3 hover:text-text-primary
+              bg-white dark:bg-surface-2 border border-slate-200 dark:border-transparent
+              text-slate-700 dark:text-text-secondary text-sm
+              hover:bg-slate-50 dark:hover:bg-surface-3 hover:text-slate-900 dark:hover:text-text-primary
               transition-colors
             "
           >
@@ -442,8 +419,8 @@ function DeleteConfirmModal({ milestone, onClose, onConfirm, deleting, error: de
             disabled={deleting}
             className="
               flex-1 py-2.5 rounded-xl
-              bg-error-500 text-white text-sm font-medium
-              hover:bg-error-600
+              bg-red-500 dark:bg-error-500 text-white text-sm font-medium
+              hover:bg-red-600 dark:hover:bg-error-600
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors flex items-center justify-center gap-2
             "
@@ -457,22 +434,12 @@ function DeleteConfirmModal({ milestone, onClose, onConfirm, deleting, error: de
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export default function RoadmapPanel({
   projectId,
   onMilestoneClick,
   onAddMilestone,
-
-  // ✅ SAFE: liveTasks passed from ProjectHome for frontend-only progress
   liveTasks = [],
-
-  // ✅ highlight selected milestone (optional)
   selectedMilestoneId = null,
-
-  // optional knobs
   defaultStatus = "all",
   defaultSort = "dueDate:asc",
   className = "",
@@ -484,7 +451,6 @@ export default function RoadmapPanel({
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
 
-  // ✅ NEW: edit/delete modal state
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [deletingMilestone, setDeletingMilestone] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -526,7 +492,6 @@ export default function RoadmapPanel({
     };
   }, [projectId, fetchData]);
 
-  // ✅ allow AddMilestoneModal to trigger a refetch safely
   useEffect(() => {
     const onRefresh = () => fetchData();
     window.addEventListener("milestones:refresh", onRefresh);
@@ -553,13 +518,11 @@ export default function RoadmapPanel({
         return;
       }
 
-      // default bucket
       c.planned += 1;
     });
     return c;
   }, [items]);
 
-  // ✅ Compute progress per milestone from liveTasks (frontend-only).
   const progressByMilestoneId = useMemo(() => {
     const map = new Map();
     const tasksArr = Array.isArray(liveTasks) ? liveTasks : [];
@@ -612,9 +575,6 @@ export default function RoadmapPanel({
     [onMilestoneClick]
   );
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ✅ NEW: Edit handler
-  // ═══════════════════════════════════════════════════════════════════════════
   const handleEdit = useCallback((milestoneId, milestone) => {
     setSaveError("");
     setEditingMilestone(milestone);
@@ -628,7 +588,6 @@ export default function RoadmapPanel({
       setSaving(true);
       setSaveError("");
 
-      // Optimistic update
       const prevItems = items;
       setItems((prev) =>
         prev.map((m) =>
@@ -639,7 +598,6 @@ export default function RoadmapPanel({
       try {
         await updateMilestoneApi(mid, data);
         setEditingMilestone(null);
-        // Refetch to get fresh server state
         await fetchData();
       } catch (e) {
         const msg =
@@ -647,7 +605,6 @@ export default function RoadmapPanel({
             ? e.response.data.message.join(" • ")
             : e?.response?.data?.message || e?.message || "Failed to save";
         setSaveError(msg);
-        // Rollback
         setItems(prevItems);
       } finally {
         setSaving(false);
@@ -656,9 +613,6 @@ export default function RoadmapPanel({
     [editingMilestone, items, fetchData]
   );
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ✅ NEW: Delete handler
-  // ═══════════════════════════════════════════════════════════════════════════
   const handleDelete = useCallback((milestoneId, milestone) => {
     setDeleteError("");
     setDeletingMilestone(milestone);
@@ -671,34 +625,27 @@ export default function RoadmapPanel({
     setDeleting(true);
     setDeleteError("");
 
-    // Optimistic removal
     const prevItems = items;
     setItems((prev) => prev.filter((m) => getMilestoneId(m) !== mid));
 
     try {
       await deleteMilestoneApi(mid);
       setDeletingMilestone(null);
-      // Dispatch refresh event so AddMilestoneModal/other listeners update too
       window.dispatchEvent(new CustomEvent("milestones:refresh"));
     } catch (e) {
       const msg =
         e?.response?.data?.message || e?.message || "Failed to delete";
       setDeleteError(typeof msg === "string" ? msg : JSON.stringify(msg));
-      // Rollback
       setItems(prevItems);
     } finally {
       setDeleting(false);
     }
   }, [deletingMilestone, items]);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ✅ NEW: Status change handler (called from MilestoneCard dropdown)
-  // ═══════════════════════════════════════════════════════════════════════════
   const handleStatusChange = useCallback(
     async (milestoneId, newStatus) => {
       if (!milestoneId || !newStatus) return;
 
-      // Optimistic update
       const prevItems = items;
       setItems((prev) =>
         prev.map((m) =>
@@ -708,10 +655,8 @@ export default function RoadmapPanel({
 
       try {
         await updateMilestoneApi(milestoneId, { status: newStatus });
-        // Refetch for fresh data
         await fetchData();
       } catch (e) {
-        // Rollback silently
         setItems(prevItems);
         console.error("[RoadmapPanel] Status change failed:", e?.message);
       }
@@ -725,13 +670,13 @@ export default function RoadmapPanel({
       <div className="flex items-start justify-between gap-6 mb-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <MapIcon className="w-5 h-5 text-brand-400" />
-            <h2 className="text-xl font-semibold text-text-primary">Roadmap</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-text-tertiary">
+            <MapIcon className="w-5 h-5 text-violet-500 dark:text-brand-400" />
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-text-primary">Roadmap</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200/70 text-violet-700 dark:bg-white/[0.06] dark:border-transparent dark:text-text-tertiary">
               {counts.all} milestones
             </span>
           </div>
-          <p className="text-sm text-text-tertiary">
+          <p className="text-sm text-slate-600 dark:text-text-tertiary">
             Track milestones and deadlines. Progress updates instantly as tasks change.
           </p>
         </div>
@@ -741,9 +686,11 @@ export default function RoadmapPanel({
             onClick={fetchData}
             className="
               inline-flex items-center gap-2 px-3 py-2 rounded-xl
-              bg-surface-1 border border-white/[0.08]
-              text-text-secondary text-sm
-              hover:bg-surface-2 hover:border-white/[0.12]
+              bg-white dark:bg-surface-1
+              border border-slate-200 dark:border-white/[0.08]
+              text-slate-700 dark:text-text-secondary text-sm
+              hover:bg-slate-50 dark:hover:bg-surface-2
+              hover:border-slate-300 dark:hover:border-white/[0.12]
               transition-all
             "
             title="Refresh"
@@ -756,8 +703,8 @@ export default function RoadmapPanel({
             onClick={() => onAddMilestone?.()}
             className="
               inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-brand-500 text-white text-sm font-medium
-              hover:bg-brand-400 transition-colors
+              bg-rose-500 dark:bg-brand-500 text-white text-sm font-medium
+              hover:bg-rose-400 dark:hover:bg-brand-400 transition-colors
             "
           >
             <Plus className="w-4 h-4" />
@@ -768,7 +715,7 @@ export default function RoadmapPanel({
 
       {/* Filter bar */}
       <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-6">
-        <div className="flex items-center gap-2 text-text-tertiary">
+        <div className="flex items-center gap-2 text-slate-500 dark:text-text-tertiary">
           <Filter className="w-4 h-4" />
           <span className="text-xs uppercase tracking-wider">Filter</span>
         </div>
@@ -782,17 +729,16 @@ export default function RoadmapPanel({
                 key={opt.id}
                 onClick={() => setStatus(opt.id)}
                 className={`
-                  px-3 py-1.5 rounded-xl text-sm transition-all
-                  border
+                  px-3 py-1.5 rounded-xl text-sm transition-all border
                   ${
                     active
-                      ? "bg-brand-500/10 border-brand-500/25 text-brand-300"
-                      : "bg-surface-1 border-white/[0.08] text-text-secondary hover:bg-surface-2 hover:border-white/[0.12]"
+                      ? "bg-violet-50 border-violet-200 text-violet-700 dark:bg-brand-500/10 dark:border-brand-500/25 dark:text-brand-300"
+                      : "bg-white dark:bg-surface-1 border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-2 hover:border-slate-300 dark:hover:border-white/[0.12]"
                   }
                 `}
               >
                 <span>{opt.label}</span>
-                <span className={`ml-2 text-xs ${active ? "text-brand-300" : "text-text-tertiary"}`}>
+                <span className={`ml-2 text-xs ${active ? "text-violet-700 dark:text-brand-300" : "text-slate-500 dark:text-text-tertiary"}`}>
                   {n}
                 </span>
               </button>
@@ -801,7 +747,7 @@ export default function RoadmapPanel({
         </div>
 
         <div className="lg:ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-2 text-text-tertiary">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-text-tertiary">
             <ArrowUpDown className="w-4 h-4" />
             <span className="text-xs uppercase tracking-wider">Sort</span>
           </div>
@@ -811,9 +757,10 @@ export default function RoadmapPanel({
             onChange={(e) => setSort(e.target.value)}
             className="
               px-3 py-2 rounded-xl text-sm
-              bg-surface-1 border border-white/[0.08]
-              text-text-secondary
-              focus:outline-none focus:ring-2 focus:ring-brand-500/30
+              bg-white dark:bg-surface-1
+              border border-slate-200 dark:border-white/[0.08]
+              text-slate-700 dark:text-text-secondary
+              focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:focus:ring-brand-500/30
             "
           >
             {SORT_OPTIONS.map((opt) => (
@@ -827,19 +774,19 @@ export default function RoadmapPanel({
 
       {/* Content */}
       {loading && (
-        <div className="p-10 rounded-2xl bg-surface-1 border border-white/[0.06] text-center">
-          <div className="w-10 h-10 rounded-full border-2 border-brand-500/20 border-t-brand-500 animate-spin mx-auto mb-4" />
-          <p className="text-text-tertiary text-sm">Loading milestones...</p>
+        <div className="p-10 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] text-center">
+          <div className="w-10 h-10 rounded-full border-2 border-violet-200 dark:border-brand-500/20 border-t-violet-500 dark:border-t-brand-500 animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 dark:text-text-tertiary text-sm">Loading milestones...</p>
         </div>
       )}
 
       {!loading && error && (
-        <div className="p-8 rounded-2xl bg-error-500/10 border border-error-500/15">
-          <div className="text-error-300 font-medium mb-2">Couldn't load milestones</div>
-          <div className="text-sm text-text-secondary mb-4">{error}</div>
+        <div className="p-8 rounded-2xl bg-red-50 dark:bg-error-500/10 border border-red-200 dark:border-error-500/15">
+          <div className="text-red-600 dark:text-error-300 font-medium mb-2">Couldn't load milestones</div>
+          <div className="text-sm text-slate-600 dark:text-text-secondary mb-4">{error}</div>
           <button
             onClick={fetchData}
-            className="px-4 py-2 rounded-xl bg-surface-1 border border-white/[0.08] text-text-secondary hover:bg-surface-2 transition-colors"
+            className="px-4 py-2 rounded-xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-2 transition-colors"
           >
             Try again
           </button>
@@ -847,25 +794,20 @@ export default function RoadmapPanel({
       )}
 
       {!loading && !error && (items?.length || 0) === 0 && (
-        <div 
-          onClick={() => onAddMilestone?.()}
-          className="py-20 mt-4 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.15] rounded-3xl bg-slate-50/50 dark:bg-surface-1/30 hover:bg-slate-50 dark:hover:bg-surface-1/50 transition-all duration-300 group cursor-pointer"
-        >
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 bg-brand-500/20 rounded-full blur-2xl group-hover:animate-pulse transition-all duration-300" />
-            <div className="relative w-full h-full rounded-3xl bg-white dark:bg-surface-2 border border-slate-200 dark:border-white/[0.05] shadow-xl flex items-center justify-center transform group-hover:scale-105 group-hover:shadow-2xl transition-all duration-300">
-              <MapIcon className="w-10 h-10 text-brand-500" />
-            </div>
+        <div className="p-12 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] text-center">
+          <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-brand-500/10 text-violet-500 dark:text-brand-400 flex items-center justify-center mx-auto mb-4">
+            <MapIcon className="w-6 h-6" />
           </div>
-          <h3 className="text-2xl font-bold text-slate-800 dark:text-text-primary mb-3">The future is unwritten.</h3>
-          <p className="text-sm text-slate-500 dark:text-text-tertiary max-w-md mx-auto text-center mb-8 leading-relaxed">
-            Every massive achievement starts with a single point on the map. Define your next big release, demo, or deadline.
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary mb-2">No milestones yet</h3>
+          <p className="text-sm text-slate-600 dark:text-text-tertiary mb-6 max-w-md mx-auto">
+            Create a milestone for your next release, demo, or deadline — and track progress as tasks get completed.
           </p>
           <button
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 group-hover:border-brand-400 pointer-events-none"
+            onClick={() => onAddMilestone?.()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-500 dark:bg-brand-500 text-white text-sm font-medium hover:bg-rose-400 dark:hover:bg-brand-400 transition-colors"
           >
-            <Plus className="w-5 h-5" />
-            Plot your first Milestone
+            <Plus className="w-4 h-4" />
+            Create first milestone
           </button>
         </div>
       )}
@@ -892,7 +834,6 @@ export default function RoadmapPanel({
         </div>
       )}
 
-      {/* ✅ NEW: Edit Modal */}
       {editingMilestone ? (
         <EditMilestoneModal
           milestone={editingMilestone}
@@ -903,7 +844,6 @@ export default function RoadmapPanel({
         />
       ) : null}
 
-      {/* ✅ NEW: Delete Confirmation */}
       {deletingMilestone ? (
         <DeleteConfirmModal
           milestone={deletingMilestone}
