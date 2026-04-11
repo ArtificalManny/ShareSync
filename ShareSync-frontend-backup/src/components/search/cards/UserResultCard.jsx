@@ -7,7 +7,7 @@ const DEFAULT_PIC = "/default-profile.png";
 
 export default function UserResultCard({ user = {} }) {
   const username = user.username || user.handle || user.slug || user.id;
-  const href = username ? `/u/${username}` : "/profile";
+  const uid = user._id || user.id; const href = uid ? `/user/${uid}` : "/profile";
   const name = user.name || user.firstName || user.fullName || username || "User";
   const xp = user.xp ?? user.points ?? null;
   const streak = user.streak ?? user.currentStreak ?? null;
