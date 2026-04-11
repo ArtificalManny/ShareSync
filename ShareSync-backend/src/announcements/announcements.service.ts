@@ -49,6 +49,9 @@ export class AnnouncementsService {
     @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
+  private readonly userPopulateFields =
+    'firstName lastName username email profilePicture avatar avatarUrl';
+
   private toObjectId(id: string, label: string): Types.ObjectId {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException(`Invalid ${label}`);
@@ -106,7 +109,7 @@ export class AnnouncementsService {
 
     if (opts.pinnedOnly) query.pinned = true;
 
-    return this.announcementModel.find(query).sort({ pinned: -1, createdAt: -1 }).exec();
+    return this.announcementModel.find(query).populate('authorId', this.userPopulateFields).sort({ pinned: -1, createdAt: -1 }).exec();
   }
 
   public async create(input: CreateAnnouncementInput) {
@@ -123,6 +126,7 @@ export class AnnouncementsService {
       attachments: input.attachments || [],
       readBy: [],
     });
+    await doc.populate('authorId', this.userPopulateFields);
 
     const project = await this.projectModel
       .findById(projectObjectId)
@@ -238,6 +242,7 @@ export class AnnouncementsService {
         { $addToSet: { readBy: userObjectId } },
         { new: true },
       )
+      .populate('authorId', this.userPopulateFields)
       .exec();
 
     if (!updated) throw new NotFoundException('Announcement not found');
@@ -252,6 +257,7 @@ export class AnnouncementsService {
 
     (existing as any).pinned = !(existing as any).pinned;
     await existing.save();
+    await existing.populate('authorId', this.userPopulateFields);
 
     return existing;
   }
@@ -307,6 +313,7 @@ export class AnnouncementsService {
     doc.likes = likedBy.length;
 
     await ann.save();
+    await ann.populate('authorId', this.userPopulateFields);
     return ann;
   }
 
@@ -348,6 +355,7 @@ export class AnnouncementsService {
     doc.commentCount = doc.comments.length;
 
     await ann.save();
+    await ann.populate('authorId', this.userPopulateFields);
     return ann;
   }
 
@@ -401,6 +409,7 @@ export class AnnouncementsService {
     doc.commentCount = doc.comments.length;
 
     await ann.save();
+    await ann.populate('authorId', this.userPopulateFields);
     return ann;
   }
 }
