@@ -6,7 +6,8 @@
 // ⭐ FIX: Announcements moved to the very front of the array
 // ⭐ FIX: Z-Index increased to [100] to brutally override Vault & Insights
 // ⭐ FIX: Stripped bg-white. Nav and Header perfectly sync with bg-slate-50
-// ⭐ FEATURE: Members Modal replaced "Activity" button for enhanced social presence
+// ⭐ FIX: Project subnav now uses a SOLID light surface (not translucent glass)
+//     so it no longer renders as a muddy gray strip against the gallery gradient.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -52,11 +53,6 @@ import {
   ArrowRight,
   Sparkles,
   Megaphone, // Added for Announcements
-  X,
-  UserPlus,
-  Shield,
-  Crown,
-  User,
 } from "lucide-react";
 
 // Hooks
@@ -87,7 +83,7 @@ import { getStatusColor } from "../utils/statusColor";
 import PulseWidget from "../components/pulse/PulseWidget";
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW COMPONENTS 
+// VIEW COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 import StackPanel from "../features/stack/StackPanel";
 import FlowBoard from "../features/flow/FlowBoard";
@@ -158,180 +154,6 @@ function ErrorState({ error, onRetry }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MEMBERS MODAL
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function MembersModal({ isOpen, onClose, project }) {
-  if (!isOpen) return null;
-
-  const AVATAR_COLORS = [
-    { bg: 'bg-violet-100 dark:bg-violet-500/20', text: 'text-violet-700 dark:text-violet-300' },
-    { bg: 'bg-cyan-100 dark:bg-cyan-500/20', text: 'text-cyan-700 dark:text-cyan-300' },
-    { bg: 'bg-amber-100 dark:bg-amber-500/20', text: 'text-amber-700 dark:text-amber-300' },
-    { bg: 'bg-emerald-100 dark:bg-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-300' },
-    { bg: 'bg-rose-100 dark:bg-rose-500/20', text: 'text-rose-700 dark:text-rose-300' },
-  ];
-  const getColor = (name) => AVATAR_COLORS[(name || 'A').charCodeAt(0) % AVATAR_COLORS.length];
-
-  const ROLE_CFG = {
-    owner:  { label: 'Owner',  Ic: Crown,  bg: 'bg-amber-50 dark:bg-amber-500/10',  bd: 'border-amber-200 dark:border-amber-500/20',  tx: 'text-amber-700 dark:text-amber-400',  ic: 'text-amber-500' },
-    admin:  { label: 'Admin',  Ic: Shield, bg: 'bg-violet-50 dark:bg-violet-500/10', bd: 'border-violet-200 dark:border-violet-500/20', tx: 'text-violet-700 dark:text-violet-400', ic: 'text-violet-500' },
-    member: { label: 'Member', Ic: User,   bg: 'bg-slate-50 dark:bg-white/[0.04]',   bd: 'border-slate-200 dark:border-white/[0.08]',  tx: 'text-slate-600 dark:text-white/50',   ic: 'text-slate-400' },
-  };
-
-  const owner = project?.ownerId;
-  const ownerId = owner?._id || owner?.id || owner;
-  const rawMembers = Array.isArray(project?.members) ? project.members : [];
-  const memberList = [];
-
-  if (owner && typeof owner === 'object' && (owner.firstName || owner.username)) {
-    memberList.push({ id: String(owner._id || owner.id), firstName: owner.firstName || '', lastName: owner.lastName || '', username: owner.username || '', avatar: owner.avatar || owner.profilePicture || null, bio: owner.bio || owner.headline || '', email: owner.email || '', role: 'owner' });
-  } else if (ownerId) {
-    memberList.push({ id: String(ownerId), firstName: 'Project', lastName: 'Owner', username: '', avatar: null, bio: '', email: '', role: 'owner' });
-  }
-
-  rawMembers.forEach((m) => {
-    const u = m.userId || m;
-    const uid = String(u?._id || u?.id || u);
-    if (uid === String(ownerId)) return;
-    memberList.push({ id: uid, firstName: u?.firstName || '', lastName: u?.lastName || '', username: u?.username || '', avatar: u?.avatar || u?.profilePicture || null, bio: u?.bio || u?.headline || '', email: u?.email || '', role: m.role || 'member' });
-  });
-
-  const roleOrder = { owner: 0, admin: 1, member: 2 };
-  memberList.sort((a, b) => (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9));
-  if (memberList.length === 0) memberList.push({ id: 'fb', firstName: 'You', lastName: '', username: '', avatar: null, bio: 'Project Creator', email: '', role: 'owner' });
-
-  const getName = (m) => m.firstName ? (m.firstName + ' ' + (m.lastName || '')).trim() : (m.username || 'Unknown');
-  const getInit = (m) => getName(m).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
-  const [showInviteInput, setShowInviteInput] = React.useState(false);
-  const [inviteEmail, setInviteEmail] = React.useState('');
-  const [inviteRole, setInviteRole] = React.useState('member');
-  const [inviting, setInviting] = React.useState(false);
-
-  const handleRequestAdd = async () => {
-    if (!inviteEmail.trim() || !inviteEmail.includes('@')) {
-      toast({ title: "Enter a valid email address", variant: "error" });
-      return;
-    }
-    setInviting(true);
-    try {
-      toast({ title: "Request Sent", description: "A notification has been sent to the moderator to review " + inviteEmail, variant: "success" });
-      setInviteEmail('');
-      setShowInviteInput(false);
-    } catch (err) {
-      toast({ title: err?.message || "Failed to send request", variant: "error" });
-    } finally {
-      setInviting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
-              <Users className="w-4 h-4 text-violet-500" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">Project Members</h2>
-              <p className="text-xs text-slate-400 dark:text-white/30">{memberList.length} {memberList.length === 1 ? 'member' : 'members'}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-zinc-300 dark:hover:bg-white/5 transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="p-2 max-h-[60vh] overflow-y-auto space-y-1">
-          {memberList.map((m) => {
-            const name = getName(m);
-            const r = ROLE_CFG[m.role] || ROLE_CFG.member;
-            const RIcon = r.Ic;
-            const color = getColor(name);
-            const isOwnerRow = m.role === 'owner';
-
-            return (
-              <div key={m.id} className={"flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all " + (isOwnerRow ? "bg-amber-50/50 dark:bg-amber-500/[0.05] border border-amber-100 dark:border-amber-500/10" : "hover:bg-slate-50 dark:hover:bg-white/5")}>
-                <div className="relative flex-shrink-0">
-                  {m.avatar ? (
-                    <img src={m.avatar} alt={name} className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-white/10" />
-                  ) : (
-                    <div className={"w-10 h-10 rounded-full flex items-center justify-center font-semibold border-2 border-white dark:border-white/10 " + color.bg + " " + color.text}>{getInit(m)}</div>
-                  )}
-                  {isOwnerRow && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center shadow-sm">
-                      <Crown className="w-2.5 h-2.5 text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{name}</p>
-                  {m.bio ? (
-                    <p className="text-xs text-slate-500 dark:text-white/40 truncate">{m.bio}</p>
-                  ) : m.email ? (
-                    <p className="text-xs text-slate-400 dark:text-white/30 truncate">{m.email}</p>
-                  ) : m.username ? (
-                    <p className="text-xs text-slate-400 dark:text-white/30 truncate">@{m.username}</p>
-                  ) : (
-                    <p className="text-xs text-slate-400 dark:text-white/30 truncate">{m.role === 'owner' ? 'Project Moderator' : 'Collaborator'}</p>
-                  )}
-                </div>
-                <div className={"px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 flex-shrink-0 border " + r.bg + " " + r.bd + " " + r.tx}>
-                  <RIcon className={"w-3 h-3 " + r.ic} />
-                  {r.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-[#1f1f23]/50 space-y-3">
-          {showInviteInput ? (
-            <>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleRequestAdd(); }}
-                  placeholder="email@example.com"
-                  autoFocus
-                  className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.10] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                />
-                <button
-                  onClick={handleRequestAdd}
-                  disabled={inviting || !inviteEmail.trim()}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 transition-colors"
-                >
-                  {inviting ? '...' : 'Send'}
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setInviteRole('member')} className={"flex-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all " + (inviteRole === 'member' ? "bg-violet-50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/20 text-violet-700 dark:text-violet-400" : "bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-white/40")}>
-                  Member
-                </button>
-                <button onClick={() => setInviteRole('admin')} className={"flex-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all " + (inviteRole === 'admin' ? "bg-violet-50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/20 text-violet-700 dark:text-violet-400" : "bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-500 dark:text-white/40")}>
-                  Admin
-                </button>
-              </div>
-              <button onClick={() => { setShowInviteInput(false); setInviteEmail(''); }} className="w-full text-xs text-slate-400 dark:text-white/30 hover:text-slate-600 dark:hover:text-white/50 transition-colors py-1">
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button onClick={() => setShowInviteInput(true)} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 font-medium text-sm hover:bg-violet-200 dark:hover:bg-violet-500/20 transition-colors">
-              <UserPlus className="w-4 h-4" />
-              Request to Add Member
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-// ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HEADER (Perfectly synced to bg-slate-50)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -340,7 +162,6 @@ function ProjectHeader({
   metrics,
   activeUsers,
   onShipUpdate,
-  onMembersClick,
   onSettings,
   onBackToProjects,
 }) {
@@ -357,7 +178,6 @@ function ProjectHeader({
   const state = getMomentumState();
 
   return (
-    // ⭐ MATCHING THEME: bg-slate-50 completely removes the ugly gray/white block clash.
     <header className="px-10 py-6 border-b border-slate-200/60 bg-slate-50 dark:bg-[#0f172a] dark:border-white/10">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
@@ -447,14 +267,14 @@ function ProjectHeader({
           </button>
 
           <button
-            onClick={onMembersClick}
+            type="button"
             className="
-            flex items-center gap-2 px-4 py-2.5 rounded-xl
-            bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm
-            text-slate-700 dark:text-zinc-300 text-sm
-            hover:bg-slate-50 dark:hover:bg-zinc-800
-            transition-all duration-200
-          "
+              flex items-center gap-2 px-4 py-2.5 rounded-xl
+              bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm
+              text-slate-700 dark:text-zinc-300 text-sm font-medium
+              hover:bg-slate-50 dark:hover:bg-zinc-800
+              transition-all duration-200
+            "
           >
             <Users className="w-4 h-4" />
             <span>Members</span>
@@ -462,11 +282,15 @@ function ProjectHeader({
 
           <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
 
-          <button className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all">
+          <button
+            type="button"
+            className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
+          >
             <Share2 className="w-4 h-4" />
           </button>
 
           <button
+            type="button"
             onClick={onSettings}
             className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
           >
@@ -479,18 +303,23 @@ function ProjectHeader({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW NAVIGATION (FLAT ARRAY + Z-INDEX SUPREMACY)
+// VIEW NAVIGATION (SOLID LIGHT SURFACE - NO MUDDY TRANSPARENCY)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   return (
-    // ⭐ FIX: bg-slate-50/80 perfectly matches the background to create seamless glass.
-    // ⭐ FIX: z-[100] absolutely blocks Vault dropzones or Insights charts from bleeding over.
-    <nav className="px-10 border-b border-slate-200/60 dark:border-white/10 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-[100] transition-colors duration-300">
-      
-      {/* ⭐ FIX: Hidden custom scrollbar injected so it scrolls elegantly on small screens but looks perfect on wide screens */}
+    <nav
+      className="
+        px-10
+        border-b border-slate-200/90 dark:border-white/10
+        bg-white dark:bg-[#0f172a]
+        sticky top-0 z-[100]
+        transition-colors duration-300
+        shadow-[0_1px_0_rgba(226,232,240,0.85)] dark:shadow-none
+      "
+    >
       <style>{`.hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
-      
+
       <div className="flex items-center gap-2 -mb-px overflow-x-auto hide-scroll w-full">
         {views.map((view) => {
           const Icon = view.icon;
@@ -502,31 +331,41 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               onClick={() => onViewChange(view.id)}
               className={`
                 relative flex items-center gap-2.5 px-4 py-4 whitespace-nowrap
-                text-sm font-medium transition-all duration-200
-                rounded-t-lg
-                ${isActive 
-                  ? "text-slate-900 dark:text-white" 
-                  : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-white/5"}
+                text-sm font-medium transition-all duration-200 rounded-t-lg
+                ${isActive
+                  ? "text-violet-700 dark:text-white bg-violet-50 dark:bg-transparent"
+                  : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5"
+                }
               `}
               title={view.description}
             >
-              <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-violet-600 dark:text-violet-400" : ""}`} />
+              <Icon
+                className={`
+                  w-4 h-4 transition-colors
+                  ${isActive
+                    ? "text-violet-600 dark:text-violet-400"
+                    : "text-slate-500 group-hover:text-slate-700 dark:text-zinc-400 dark:group-hover:text-zinc-200"
+                  }
+                `}
+              />
               <span>{view.label}</span>
 
               {view.badge && (
-                <span className={`
-                  px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors
-                  ${isActive 
-                    ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400" 
-                    : "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400"}
-                `}>
+                <span
+                  className={`
+                    px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors
+                    ${isActive
+                      ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400"
+                      : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    }
+                  `}
+                >
                   {view.badge}
                 </span>
               )}
 
-              {/* High-contrast crisp border for active state */}
               {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-500 shadow-[0_-2px_8px_rgba(124,58,237,0.3)] rounded-t-sm" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-500 rounded-t-sm" />
               )}
             </button>
           );
@@ -559,7 +398,6 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
       </header>
 
       <div className="flex items-center gap-5">
-        {/* Progress ring */}
         <div className="relative flex-shrink-0">
           <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
             <circle cx="44" cy="44" r={radius} fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-100 dark:text-zinc-800" />
@@ -576,7 +414,6 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="flex-1 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500 dark:text-zinc-400">Weekly ships</span>
@@ -697,12 +534,10 @@ function PulseView({
 }) {
   return (
     <div className="p-10 max-w-[1600px] mx-auto">
-      {/* Row 0: Pulse mini widget */}
       <div className="mb-8">
         <PulseWidget tasks={tasks} />
       </div>
 
-      {/* Row 1: Momentum + Priority Stack */}
       <div className="grid grid-cols-12 gap-8 mb-8">
         <div className="col-span-4">
           <MomentumCard
@@ -716,14 +551,12 @@ function PulseView({
         </div>
       </div>
 
-      {/* Row 2: Sprint + Foresight + Activity */}
       <div className="grid grid-cols-3 gap-8 mb-8">
         <SprintCard sprint={sprint} onAction={onSprintAction} />
         <ForesightCard metrics={metrics} />
         <LiveActivityCard activities={activity} />
       </div>
 
-      {/* Row 3: Team Capacity + Active Goals */}
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-5">
           <TeamCapacityCard metrics={metrics} />
@@ -746,21 +579,15 @@ export default function ProjectHome() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  // DEV-only: flip to false whenever you want a clean UI again
   const SHOW_DEBUG = import.meta?.env?.DEV === true;
 
-  // Mount log
   useEffect(() => {
     console.log("[ProjectHome] mounted id:", id);
   }, [id]);
 
-  // purely UI-only layout knob (no backend impact)
   const pagePad = isMobile ? "p-6" : "p-10";
   const pageWrap = `${pagePad} max-w-[1600px] mx-auto`;
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ⭐ FIX: VALIDATION - Redirect if project ID is missing or invalid
-  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     if (!id || id === "undefined" || id === "null") {
       console.error("[ProjectHome] Invalid project ID detected:", id);
@@ -773,32 +600,25 @@ export default function ProjectHome() {
     }
   }, [id, navigate]);
 
-  // Early return while redirecting (show loading state briefly)
   if (!id || id === "undefined" || id === "null") {
     return <LoadingState />;
   }
 
-  // View state: Force active view to 'announcements' since it is the first tab
   const [activeView, setActiveView] = useState("announcements");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
 
-  const [showAddMilestone, setShowAddMilestone] = useState(false);
-  const [showMembersModal, setShowMembersModal] = useState(false);
-
-  // Presence
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
   const { projectStats } = usePresence({ autoDetectIdle: true });
   const { triggerPulse } = useGlobalPulse();
 
-  // Realtime
   const { joinProjectRoom, leaveProjectRoom, subscribe } = useSocketContext();
 
-  // Local "live" tasks patched by socket events (keeps hook untouched)
   const [liveTasks, setLiveTasks] = useState([]);
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
 
-  // Project data from your existing hook
+  const [showAddMilestone, setShowAddMilestone] = useState(false);
+
   const {
     project,
     metrics,
@@ -821,7 +641,6 @@ export default function ProjectHome() {
     files,
   } = useProjectOverview(id);
 
-  // Render heartbeat log (helps debug silent black screens)
   useEffect(() => {
     console.log("[ProjectHome] render-state", {
       id,
@@ -842,7 +661,6 @@ export default function ProjectHome() {
     setLiveTasks(baseTasks);
   }, [baseTasks]);
 
-  // Join project room + listen for realtime task updates
   useEffect(() => {
     if (!id) return;
 
@@ -867,14 +685,12 @@ export default function ProjectHome() {
     };
   }, [id, joinProjectRoom, leaveProjectRoom, subscribe]);
 
-  // Join/leave project presence
   useEffect(() => {
     if (!id) return;
     joinProject(id);
     return () => leaveProject(id);
   }, [id, joinProject, leaveProject]);
 
-  // Handle ship update
   const handleShipUpdate = useCallback(
     async (description) => {
       try {
@@ -890,7 +706,6 @@ export default function ProjectHome() {
     [shipUpdate, flashShip, triggerPulse]
   );
 
-  // Navigation handlers
   const handleSettings = useCallback(() => {
     navigate(`/projects/${id}/settings`);
   }, [navigate, id]);
@@ -919,7 +734,6 @@ export default function ProjectHome() {
     [navigate, id]
   );
 
-  // VIEW-SPECIFIC HANDLERS (placeholders)
   const handleMilestoneClick = useCallback((milestone) => {
     console.log("Milestone clicked:", milestone?._id || milestone?.id);
   }, []);
@@ -949,13 +763,10 @@ export default function ProjectHome() {
     console.log("Create folder");
   }, []);
 
-  // Loading state
   if (loading) return <LoadingState />;
 
-  // Error state
   if (error) return <ErrorState error={error?.message || String(error)} onRetry={refresh} />;
 
-  // SAFETY: If hook did not throw an error but project is missing, show readable fallback
   if (!project) {
     return (
       <ErrorState
@@ -968,10 +779,10 @@ export default function ProjectHome() {
   const renderViewContent = () => {
     try {
       switch (activeView) {
-        case "announcements": // Fully wired and now naturally the default fallback
+        case "announcements":
           return (
             <div className={pageWrap}>
-               <AnnouncementsView projectId={id} announcements={announcements || []} />
+              <AnnouncementsView projectId={id} announcements={announcements || []} />
             </div>
           );
 
@@ -1059,9 +870,7 @@ export default function ProjectHome() {
   };
 
   return (
-    // ⭐ MATCHING THEME: This is the parent div that everything rests on. bg-slate-50 forces the whole page to a unified color.
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-zinc-100">
-      {/* DEV Debug strip (non-invasive). Remove anytime. */}
       {SHOW_DEBUG && (
         <div className="px-10 py-3 border-b border-slate-200/60 bg-white/40 text-xs text-slate-500 flex flex-wrap gap-3">
           <span>ProjectHome OK</span>
@@ -1072,43 +881,30 @@ export default function ProjectHome() {
         </div>
       )}
 
-      {/* Header */}
       <ProjectHeader
         project={project}
         metrics={metrics}
         activeUsers={projectStats?.online || 0}
         onShipUpdate={handleShipUpdate}
-        onMembersClick={() => setShowMembersModal(true)}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
       />
 
-      {/* View Navigation */}
       <ViewNavigation activeView={activeView} onViewChange={setActiveView} />
 
-      {/* View Content */}
       <main key={pulseRefreshKey}>{renderViewContent()}</main>
 
-      {/* Global Pulse Bar */}
       <GlobalPulseBar position="bottom" color="brand" />
 
-      {/* Utilities */}
       <QuickActionsManager projectId={id} />
       <KeyboardShortcuts />
 
-       {showAddMilestone && (
+      {showAddMilestone && (
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}
         />
       )}
-
-      <MembersModal 
-        isOpen={showMembersModal} 
-        onClose={() => setShowMembersModal(false)} 
-        project={project} 
-      />
-
     </div>
   );
 }
