@@ -1,10 +1,11 @@
-// src/components/roadmap/RoadmapView.jsx
+// src/components/views/RoadmapView.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // Roadmap View Component - Main view for displaying project milestones
-// ⚠️ Uses /milestones?projectId=xxx endpoint (matches your backend)
+// ⭐ FIX: Now fetches milestones directly when projectId is provided
+// ⭐ Backward compatible: still accepts milestones as props
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Flag,
   Grid,
@@ -16,11 +17,59 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  MoreHorizontal,
+  Target,
 } from 'lucide-react';
+import client from '../../api/client';
 
-import MilestoneCard from './MilestoneCard';
-import MilestoneRow from './MilestoneRow';
-import MilestoneTimeline from './MilestoneTimeline';
+/* ─────────────────────────────────────────────────────────────────────────
+   API FUNCTIONS
+───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Fetch milestones for a project
+ * Tries multiple endpoint patterns to ensure compatibility
+ */
+async function fetchMilestones(projectId) {
+  if (!projectId) return [];
+  
+  // Try different endpoint patterns
+  const endpoints = [
+    `/milestones?projectId=${projectId}`,
+    `/projects/${projectId}/milestones`,
+    `/milestones/project/${projectId}`,
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await client.get(endpoint);
+      const data = response?.data;
+      
+      // Handle different response shapes
+      if (Array.isArray(data)) return data;
+      if (data?.milestones && Array.isArray(data.milestones)) return data.milestones;
+      if (data?.data && Array.isArray(data.data)) return data.data;
+      if (data?.items && Array.isArray(data.items)) return data.items;
+      
+      // If we got here with a 200, but no array, try next endpoint
+      console.log(`[RoadmapView] Endpoint ${endpoint} returned non-array:`, data);
+    } catch (err) {
+      // 404 is expected for some endpoints, try next
+      if (err?.response?.status === 404) {
+        console.log(`[RoadmapView] Endpoint ${endpoint} not found, trying next...`);
+        continue;
+      }
+      // Other errors, log but try next
+      console.warn(`[RoadmapView] Error fetching from ${endpoint}:`, err?.message);
+    }
+  }
+  
+  console.warn('[RoadmapView] All milestone endpoints failed for project:', projectId);
+  return [];
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    SKELETON COMPONENTS
@@ -132,52 +181,448 @@ const STATUS_FILTERS = [
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────
-   NORMALIZE MILESTONE - Handle different status formats
+   STATUS HELPERS
+───────────────────────────────────────────────────────────────────────── */
+const STATUS_CONFIG = {
+  planned: {
+    label: 'Planned',
+    color: 'text-text-tertiary',
+    bg: 'bg-surface-3',
+    icon: Clock,
+  },
+  'in-progress': {
+    label: 'In Progress',
+    color: 'text-brand',
+    bg: 'bg-brand/10',
+    icon: Target,
+  },
+  'in_progress': {
+    label: 'In Progress',
+    color: 'text-brand',
+    bg: 'bg-brand/10',
+    icon: Target,
+  },
+  completed: {
+    label: 'Completed',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    icon: CheckCircle2,
+  },
+  'at-risk': {
+    label: 'At Risk',
+    color: 'text-error-500',
+    bg: 'bg-error-500/10',
+    icon: AlertTriangle,
+  },
+  'at_risk': {
+    label: 'At Risk',
+    color: 'text-error-500',
+    bg: 'bg-error-500/10',
+    icon: AlertTriangle,
+  },
+};
+
+const getStatusConfig = (status) => {
+  const normalized = status?.toLowerCase?.()?.replace('-', '_') || 'planned';
+  return STATUS_CONFIG[normalized] || STATUS_CONFIG.planned;
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   NORMALIZE MILESTONE - Handle different API response formats
 ───────────────────────────────────────────────────────────────────────── */
 const normalizeMilestone = (milestone) => {
-  // Backend uses 'in_progress', frontend components might expect 'in-progress'
-  const status = milestone?.status?.replace('_', '-') || 'planned';
+  if (!milestone) return null;
+  
+  // Extract ID
+  const id = milestone._id || milestone.id || milestone.milestoneId;
+  if (!id) {
+    console.warn('[RoadmapView] Milestone missing ID:', milestone);
+    return null;
+  }
+  
+  // Normalize status (backend uses 'in_progress', frontend might use 'in-progress')
+  const rawStatus = milestone?.status || 'planned';
+  const status = rawStatus.replace('_', '-');
+  
+  // Extract title from various possible fields
+  const title = 
+    milestone?.title || 
+    milestone?.name || 
+    milestone?.label ||
+    milestone?.milestone?.title ||
+    'Untitled Milestone';
+  
+  // Extract description
+  const description = 
+    milestone?.description || 
+    milestone?.summary ||
+    milestone?.details ||
+    '';
+  
+  // Extract dates
+  const dueDate = milestone?.dueDate || milestone?.targetDate || milestone?.endDate;
+  const startDate = milestone?.startDate || milestone?.createdAt;
+  
+  // Extract task counts
+  const completedTasks = milestone?.completedTasks || milestone?.tasksCompleted || 0;
+  const totalTasks = milestone?.totalTasks || milestone?.taskCount || 0;
+  
+  // Calculate progress
+  const progress = totalTasks > 0 
+    ? Math.round((completedTasks / totalTasks) * 100) 
+    : (milestone?.progress || 0);
   
   return {
     ...milestone,
+    id,
+    _id: id,
     status,
-    // Ensure common fields exist with fallbacks
-    title: milestone?.title || milestone?.name || 'Untitled Milestone',
-    dueDate: milestone?.dueDate || milestone?.targetDate,
-    completedTasks: milestone?.completedTasks || 0,
-    totalTasks: milestone?.totalTasks || 0,
+    title,
+    description,
+    dueDate,
+    startDate,
+    completedTasks,
+    totalTasks,
+    progress,
   };
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MILESTONE CARD COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const statusConfig = getStatusConfig(milestone.status);
+  const StatusIcon = statusConfig.icon;
+  
+  const progress = milestone.progress || 0;
+  const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < new Date() && milestone.status !== 'completed';
+  
+  return (
+    <div 
+      className="
+        group p-5 rounded-xl bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200 cursor-pointer
+      "
+      onClick={() => onClick?.(milestone)}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <span className={`
+          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium
+          ${statusConfig.bg} ${statusConfig.color}
+        `}>
+          <StatusIcon className="w-3 h-3" />
+          {statusConfig.label}
+        </span>
+        
+        {(onEdit || onDelete) && (
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-surface-3 transition-all"
+            >
+              <MoreHorizontal className="w-4 h-4 text-text-tertiary" />
+            </button>
+            
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                <div className="absolute right-0 top-full mt-1 z-20 w-32 py-1 rounded-lg bg-surface-2 border border-white/[0.08] shadow-lg">
+                  {onEdit && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onEdit(milestone); setShowMenu(false); }}
+                      className="w-full px-3 py-2 text-sm text-left text-text-secondary hover:text-text-primary hover:bg-surface-3"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(milestone); setShowMenu(false); }}
+                      className="w-full px-3 py-2 text-sm text-left text-error-500 hover:bg-error-500/10"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Title & Description */}
+      <h3 className="text-base font-semibold text-white drop-shadow-md mb-1 line-clamp-2">
+        {milestone.title}
+      </h3>
+      {milestone.description && (
+        <p className="text-sm text-text-tertiary mb-4 line-clamp-2">
+          {milestone.description}
+        </p>
+      )}
+      
+      {/* Due Date */}
+      {milestone.dueDate && (
+        <div className={`flex items-center gap-1.5 text-xs mb-4 ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+          <Clock className="w-3 h-3" />
+          <span>
+            {isOverdue ? 'Overdue: ' : 'Due: '}
+            {new Date(milestone.dueDate).toLocaleDateString()}
+          </span>
+        </div>
+      )}
+      
+      {/* Progress Bar */}
+      <div className="mb-3">
+        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${
+              milestone.status === 'completed' ? 'bg-success' :
+              isOverdue ? 'bg-error-500' : 'bg-brand'
+            }`}
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+        <span className="text-xs text-text-tertiary">
+          {milestone.completedTasks}/{milestone.totalTasks} tasks
+        </span>
+        <span className={`text-xs font-medium ${
+          progress >= 100 ? 'text-success' : 
+          progress >= 50 ? 'text-brand' : 'text-text-tertiary'
+        }`}>
+          {progress}%
+        </span>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MILESTONE ROW COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const MilestoneRow = ({ milestone, onClick }) => {
+  const statusConfig = getStatusConfig(milestone.status);
+  const StatusIcon = statusConfig.icon;
+  const progress = milestone.progress || 0;
+  const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < new Date() && milestone.status !== 'completed';
+  
+  return (
+    <div 
+      className="
+        flex items-center gap-4 p-4 rounded-xl bg-surface-1 border border-white/[0.06]
+        hover:bg-surface-2 hover:border-white/[0.1]
+        transition-all duration-200 cursor-pointer
+      "
+      onClick={() => onClick?.(milestone)}
+    >
+      {/* Status Badge */}
+      <span className={`
+        inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium min-w-[100px]
+        ${statusConfig.bg} ${statusConfig.color}
+      `}>
+        <StatusIcon className="w-3 h-3" />
+        {statusConfig.label}
+      </span>
+      
+      {/* Title */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-semibold text-white drop-shadow-md truncate">
+          {milestone.title}
+        </h3>
+      </div>
+      
+      {/* Progress Bar */}
+      <div className="w-32 flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${
+              milestone.status === 'completed' ? 'bg-success' :
+              isOverdue ? 'bg-error-500' : 'bg-brand'
+            }`}
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+        <span className="text-xs text-text-tertiary w-8 text-right">{progress}%</span>
+      </div>
+      
+      {/* Tasks */}
+      <span className="text-xs text-text-tertiary w-20 text-right">
+        {milestone.completedTasks}/{milestone.totalTasks} tasks
+      </span>
+      
+      {/* Due Date */}
+      <span className={`text-xs w-24 text-right ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+        {milestone.dueDate ? new Date(milestone.dueDate).toLocaleDateString() : '—'}
+      </span>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MILESTONE TIMELINE COMPONENT
+───────────────────────────────────────────────────────────────────────── */
+const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
+  // Sort by due date
+  const sorted = [...milestones].sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  });
+  
+  return (
+    <div className="relative pl-8">
+      {/* Timeline line */}
+      <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-surface-3" />
+      
+      {sorted.map((milestone, index) => {
+        const statusConfig = getStatusConfig(milestone.status);
+        const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < new Date() && milestone.status !== 'completed';
+        
+        return (
+          <div 
+            key={milestone.id || milestone._id} 
+            className="relative pb-8 last:pb-0"
+          >
+            {/* Timeline dot */}
+            <div className={`
+              absolute left-[-20px] w-6 h-6 rounded-full border-2 flex items-center justify-center
+              ${milestone.status === 'completed' 
+                ? 'bg-success border-success' 
+                : isOverdue 
+                  ? 'bg-error-500 border-error-500'
+                  : 'bg-surface-1 border-surface-3'
+              }
+            `}>
+              {milestone.status === 'completed' && (
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              )}
+            </div>
+            
+            {/* Content */}
+            <div 
+              className="
+                p-4 rounded-xl bg-surface-1 border border-white/[0.06]
+                hover:bg-surface-2 hover:border-white/[0.1]
+                transition-all duration-200 cursor-pointer
+              "
+              onClick={() => onMilestoneClick?.(milestone)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className={`
+                  inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium
+                  ${statusConfig.bg} ${statusConfig.color}
+                `}>
+                  {statusConfig.label}
+                </span>
+                {milestone.dueDate && (
+                  <span className={`text-xs ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+                    {new Date(milestone.dueDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-sm font-semibold text-white drop-shadow-md mb-1">
+                {milestone.title}
+              </h3>
+              <div className="flex items-center gap-4 text-xs text-text-tertiary">
+                <span>{milestone.completedTasks}/{milestone.totalTasks} tasks</span>
+                <span>{milestone.progress}% complete</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
 const RoadmapView = ({
-  // Data props (can come from parent or hook)
-  milestones: propMilestones = [],
-  isLoading = false,
-  error = null,
+  // ⭐ projectId - if provided, will fetch milestones automatically
+  projectId,
+  
+  // Data props (can come from parent OR be fetched)
+  milestones: propMilestones,
+  isLoading: propIsLoading,
+  error: propError,
   
   // Callbacks
   onMilestoneClick,
   onCreateMilestone,
   onEditMilestone,
   onDeleteMilestone,
-  onRefresh,
+  onAddMilestone, // Alias for onCreateMilestone
+  onRefresh: propOnRefresh,
 }) => {
   const [viewMode, setViewMode] = useState('grid');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  
+  // ⭐ Internal state for self-fetching
+  const [fetchedMilestones, setFetchedMilestones] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Determine if we should fetch ourselves
+  const shouldFetch = projectId && (!propMilestones || propMilestones.length === 0);
+  
+  // Fetch function
+  const loadMilestones = useCallback(async () => {
+    if (!projectId) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await fetchMilestones(projectId);
+      console.log('[RoadmapView] Fetched milestones:', data);
+      setFetchedMilestones(data);
+    } catch (err) {
+      console.error('[RoadmapView] Failed to fetch milestones:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [projectId]);
+  
+  // Fetch on mount if needed
+  useEffect(() => {
+    if (shouldFetch) {
+      loadMilestones();
+    }
+  }, [shouldFetch, loadMilestones]);
+  
+  // Combine refresh handlers
+  const handleRefresh = useCallback(() => {
+    if (propOnRefresh) {
+      propOnRefresh();
+    }
+    if (shouldFetch) {
+      loadMilestones();
+    }
+  }, [propOnRefresh, shouldFetch, loadMilestones]);
+  
+  // Use prop data OR fetched data
+  const rawMilestones = propMilestones?.length > 0 ? propMilestones : fetchedMilestones;
+  const loading = propIsLoading ?? isLoading;
+  const err = propError ?? error;
 
   // Normalize milestones for consistent display
   const normalizedMilestones = useMemo(() => {
-    return propMilestones.map(normalizeMilestone);
-  }, [propMilestones]);
+    return rawMilestones.map(normalizeMilestone).filter(Boolean);
+  }, [rawMilestones]);
 
   // Filter milestones
   const filteredMilestones = useMemo(() => {
     if (statusFilter === 'all') return normalizedMilestones;
-    const filterValue = statusFilter.replace('-', '_'); // Convert back for comparison
+    const filterValue = statusFilter.replace('-', '_');
     return normalizedMilestones.filter((m) => {
       const milestoneStatus = m.status?.replace('-', '_');
       return milestoneStatus === filterValue;
@@ -197,9 +642,12 @@ const RoadmapView = ({
     return { total, completed, inProgress, atRisk };
   }, [normalizedMilestones]);
 
+  // Use onAddMilestone if onCreateMilestone not provided
+  const createHandler = onCreateMilestone || onAddMilestone;
+
   // Render content based on state
   const renderContent = () => {
-    if (isLoading) {
+    if (loading) {
       return viewMode === 'list' ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
@@ -211,12 +659,12 @@ const RoadmapView = ({
       );
     }
 
-    if (error) {
-      return <ErrorState error={error} onRetry={onRefresh} />;
+    if (err) {
+      return <ErrorState error={err} onRetry={handleRefresh} />;
     }
 
     if (!filteredMilestones.length) {
-      return <EmptyState onCreateMilestone={onCreateMilestone} />;
+      return <EmptyState onCreateMilestone={createHandler} />;
     }
 
     switch (viewMode) {
@@ -260,7 +708,28 @@ const RoadmapView = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 lg:p-10 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-text-primary">Roadmap</h1>
+          <p className="text-sm text-text-tertiary mt-1">
+            Track project milestones and deliverables
+          </p>
+        </div>
+        
+        {handleRefresh && (
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        )}
+      </div>
+      
       {/* Stats Bar */}
       <div className="flex items-center gap-6 p-4 rounded-xl bg-surface-1 border border-white/[0.06]">
         <div className="flex items-center gap-2">
@@ -355,9 +824,9 @@ const RoadmapView = ({
           </div>
 
           {/* Create Button */}
-          {onCreateMilestone && (
+          {createHandler && (
             <button
-              onClick={onCreateMilestone}
+              onClick={createHandler}
               className="
                 flex items-center gap-2 px-4 py-2 rounded-lg
                 bg-brand text-white text-sm font-medium

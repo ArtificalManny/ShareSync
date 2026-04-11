@@ -293,8 +293,8 @@ export default function RoadmapTimeline({
 
                     {/* Title */}
                     <span className={`
-                      text-[11px] font-medium truncate
-                      ${isComplete ? 'line-through text-slate-400 dark:text-zinc-600' : 'text-slate-700 dark:text-zinc-200'}
+                      text-[11px] font-semibold truncate text-white drop-shadow-md
+                      ${isComplete ? 'line-through opacity-80' : ''}
                     `}>
                       {task.title}
                     </span>
