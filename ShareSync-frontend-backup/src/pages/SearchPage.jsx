@@ -186,8 +186,8 @@ export default function SearchPage() {
       if (pid) navigate(`/projects/${pid}?task=${data._id || data.id}`);
       else navigate(`/projects`);
     } else if (type === "user") {
-      const uname = data.username || data.handle || data.slug || data.id;
-      navigate(uname ? `/u/${uname}` : `/profile`);
+      const uid = data._id || data.id;
+      navigate(uid ? `/user/${uid}` : `/profile`);
     } else if (type === "post") {
       const pid = data.projectId || data.project?.id || data.project?._id;
       if (pid) navigate(`/projects/${pid}`);
@@ -230,7 +230,7 @@ export default function SearchPage() {
         
         {/* Search Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Search ShareSync</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Search OpenShare</h1>
           <p className="text-slate-500 dark:text-zinc-400">Find projects, tasks, people, and files across your workspace.</p>
         </div>
 

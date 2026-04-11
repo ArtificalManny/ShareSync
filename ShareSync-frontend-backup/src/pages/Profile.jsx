@@ -636,7 +636,7 @@ export default function Profile() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    if (isPublicRoute) return;
+    if (isPublicRoute || isViewingOtherUser) return;
     let poll = null;
     const onFocus = () => load();
     const onVisibility = () => { if (document.visibilityState === "visible") load(); };
@@ -654,7 +654,7 @@ export default function Profile() {
       window.removeEventListener("storage", onStorage);
       if (poll) window.clearInterval(poll);
     };
-  }, [isPublicRoute, load]);
+  }, [isPublicRoute, isViewingOtherUser, load]);
 
   const user = isPublicRoute ? publicUser : me;
   
