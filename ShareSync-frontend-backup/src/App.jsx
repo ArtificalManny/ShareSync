@@ -673,6 +673,14 @@ function AppRoutes() {
                 }
               />
               {/* ⭐ CHANGED: Changed username route to /u/:username to avoid collisions */}
+                            <Route
+                path="/user/:userId"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/u/:username" element={<PublicProfile />} />
               
               <Route

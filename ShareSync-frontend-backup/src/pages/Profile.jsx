@@ -536,7 +536,7 @@ const SkillBar = ({ value, max = 100 }) => {
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
   // ⭐ FIX: Safely pull the ID directly from the URL if it exists
-  const { username: routeUsername, id } = useParams();
+  const { username: routeUsername, id, userId: routeUserId } = useParams();
   const location = useLocation();
 
   const [loading, setLoading] = useState(true);
@@ -552,8 +552,13 @@ export default function Profile() {
 
   // ⭐ FIX: Treat this as a public route if an ID is present in the URL
   const isPublicRoute = useMemo(
-    () => Boolean(id) || (Boolean(routeUsername) && location.pathname.startsWith("/u/")),
+    () => Boolean(routeUsername) && location.pathname.startsWith("/u/"),
     [id, routeUsername, location.pathname]
+  );
+
+  const isViewingOtherUser = useMemo(
+    () => Boolean(id || routeUserId),
+    [id, routeUserId]
   );
 
   const load = useCallback(async () => {
@@ -562,7 +567,7 @@ export default function Profile() {
     try {
       if (isPublicRoute) {
         // ⭐ FIX: If we have an ID, grab that exact user from the database
-        const u = id ? await getUserById(id) : await getPublicUser(routeUsername);
+        const u = (id || routeUserId) ? await getUserById(id || routeUserId) : await getPublicUser(routeUsername);
         setPublicUser(u);
 
         // We still need to fetch "Me" silently to check if we happen to be viewing our own profile
@@ -631,7 +636,7 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-  }, [isPublicRoute, routeUsername, id]);
+  }, [isPublicRoute, isViewingOtherUser, routeUsername, id, routeUserId]);
 
   useEffect(() => { load(); }, [load]);
 
