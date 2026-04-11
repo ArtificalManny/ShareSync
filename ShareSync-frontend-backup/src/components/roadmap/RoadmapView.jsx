@@ -1,4 +1,4 @@
-// src/components/views/RoadmapView.jsx
+// src/components/roadmap/RoadmapView.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // Roadmap View Component - Main view for displaying project milestones
 // ⭐ FIX: Now fetches milestones directly when projectId is provided
@@ -75,29 +75,29 @@ async function fetchMilestones(projectId) {
    SKELETON COMPONENTS
 ───────────────────────────────────────────────────────────────────────── */
 const SkeletonCard = () => (
-  <div className="p-5 rounded-xl bg-surface-1 border border-white/[0.06] animate-pulse">
+  <div className="p-5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 animate-pulse">
     <div className="flex items-center justify-between mb-4">
-      <div className="h-6 w-24 bg-surface-3 rounded-md" />
-      <div className="h-6 w-6 bg-surface-3 rounded" />
+      <div className="h-6 w-24 bg-slate-100 dark:bg-white/10 rounded-md" />
+      <div className="h-6 w-6 bg-slate-100 dark:bg-white/10 rounded" />
     </div>
-    <div className="h-5 w-3/4 bg-surface-3 rounded mb-2" />
-    <div className="h-4 w-full bg-surface-3 rounded mb-4" />
-    <div className="h-3 w-1/2 bg-surface-3 rounded mb-4" />
-    <div className="h-2 w-full bg-surface-3 rounded mb-3" />
-    <div className="flex justify-between pt-3 border-t border-white/[0.06]">
-      <div className="h-4 w-16 bg-surface-3 rounded" />
-      <div className="h-4 w-4 bg-surface-3 rounded" />
+    <div className="h-5 w-3/4 bg-slate-100 dark:bg-white/10 rounded mb-2" />
+    <div className="h-4 w-full bg-slate-100 dark:bg-white/10 rounded mb-4" />
+    <div className="h-3 w-1/2 bg-slate-100 dark:bg-white/10 rounded mb-4" />
+    <div className="h-2 w-full bg-slate-100 dark:bg-white/10 rounded mb-3" />
+    <div className="flex justify-between pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+      <div className="h-4 w-16 bg-slate-100 dark:bg-white/10 rounded" />
+      <div className="h-4 w-4 bg-slate-100 dark:bg-white/10 rounded" />
     </div>
   </div>
 );
 
 const SkeletonRow = () => (
-  <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-1 border border-white/[0.06] animate-pulse">
-    <div className="h-7 w-24 bg-surface-3 rounded-md" />
-    <div className="flex-1 h-4 bg-surface-3 rounded" />
-    <div className="w-32 h-2 bg-surface-3 rounded-full" />
-    <div className="w-16 h-4 bg-surface-3 rounded" />
-    <div className="w-16 h-4 bg-surface-3 rounded" />
+  <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 animate-pulse">
+    <div className="h-7 w-24 bg-slate-100 dark:bg-white/10 rounded-md" />
+    <div className="flex-1 h-4 bg-slate-100 dark:bg-white/10 rounded" />
+    <div className="w-32 h-2 bg-slate-100 dark:bg-white/10 rounded-full" />
+    <div className="w-16 h-4 bg-slate-100 dark:bg-white/10 rounded" />
+    <div className="w-16 h-4 bg-slate-100 dark:bg-white/10 rounded" />
   </div>
 );
 
@@ -109,10 +109,10 @@ const EmptyState = ({ onCreateMilestone }) => (
     <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center mb-6">
       <Flag className="w-8 h-8 text-brand" />
     </div>
-    <h3 className="text-lg font-semibold text-text-primary mb-2">
+    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
       No milestones yet
     </h3>
-    <p className="text-sm text-text-secondary max-w-sm mb-6">
+    <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mb-6">
       Create your first milestone to start tracking progress on your project roadmap.
     </p>
     {onCreateMilestone && (
@@ -140,10 +140,10 @@ const ErrorState = ({ error, onRetry }) => (
     <div className="w-16 h-16 rounded-2xl bg-error-500/10 flex items-center justify-center mb-6">
       <AlertCircle className="w-8 h-8 text-error-500" />
     </div>
-    <h3 className="text-lg font-semibold text-text-primary mb-2">
+    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
       Failed to load milestones
     </h3>
-    <p className="text-sm text-text-secondary max-w-sm mb-6">
+    <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mb-6">
       {error?.message || 'Something went wrong while fetching milestones.'}
     </p>
     {onRetry && (
@@ -151,8 +151,8 @@ const ErrorState = ({ error, onRetry }) => (
         onClick={onRetry}
         className="
           flex items-center gap-2 px-4 py-2.5 rounded-lg
-          bg-surface-2 text-text-primary text-sm font-medium
-          hover:bg-surface-3 border border-white/[0.06]
+          bg-slate-50 dark:bg-[#27272a] text-slate-900 dark:text-white text-sm font-medium
+          hover:bg-slate-100 dark:hover:bg-[#3f3f46] border border-slate-200 dark:border-white/10
           transition-all duration-200
         "
       >
@@ -186,8 +186,8 @@ const STATUS_FILTERS = [
 const STATUS_CONFIG = {
   planned: {
     label: 'Planned',
-    color: 'text-text-tertiary',
-    bg: 'bg-surface-3',
+    color: 'text-slate-500 dark:text-zinc-400',
+    bg: 'bg-slate-100 dark:bg-white/[0.08]',
     icon: Clock,
   },
   'in-progress': {
@@ -301,8 +301,8 @@ const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
   return (
     <div 
       className="
-        group p-5 rounded-xl bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
+        group p-5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+        hover:shadow-md dark:hover:bg-[#27272a] hover:border-slate-300 dark:hover:border-white/20
         transition-all duration-200 cursor-pointer
       "
       onClick={() => onClick?.(milestone)}
@@ -321,19 +321,19 @@ const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
           <div className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-surface-3 transition-all"
+              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all"
             >
-              <MoreHorizontal className="w-4 h-4 text-text-tertiary" />
+              <MoreHorizontal className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
             </button>
             
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-                <div className="absolute right-0 top-full mt-1 z-20 w-32 py-1 rounded-lg bg-surface-2 border border-white/[0.08] shadow-lg">
+                <div className="absolute right-0 top-full mt-1 z-20 w-32 py-1 rounded-lg bg-white dark:bg-[#27272a] border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-black/40">
                   {onEdit && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onEdit(milestone); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-sm text-left text-text-secondary hover:text-text-primary hover:bg-surface-3"
+                      className="w-full px-3 py-2 text-sm text-left text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/10"
                     >
                       Edit
                     </button>
@@ -341,7 +341,7 @@ const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
                   {onDelete && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(milestone); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-sm text-left text-error-500 hover:bg-error-500/10"
+                      className="w-full px-3 py-2 text-sm text-left text-error-500 hover:bg-error-50 dark:hover:bg-error-500/10"
                     >
                       Delete
                     </button>
@@ -354,18 +354,18 @@ const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
       </div>
       
       {/* Title & Description */}
-      <h3 className="text-base font-semibold text-white drop-shadow-md mb-1 line-clamp-2">
+      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1 line-clamp-2">
         {milestone.title}
       </h3>
       {milestone.description && (
-        <p className="text-sm text-text-tertiary mb-4 line-clamp-2">
+        <p className="text-sm text-slate-500 dark:text-zinc-400 mb-4 line-clamp-2">
           {milestone.description}
         </p>
       )}
       
       {/* Due Date */}
       {milestone.dueDate && (
-        <div className={`flex items-center gap-1.5 text-xs mb-4 ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+        <div className={`flex items-center gap-1.5 text-xs mb-4 ${isOverdue ? 'text-error-500' : 'text-slate-500 dark:text-zinc-500'}`}>
           <Clock className="w-3 h-3" />
           <span>
             {isOverdue ? 'Overdue: ' : 'Due: '}
@@ -376,7 +376,7 @@ const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
       
       {/* Progress Bar */}
       <div className="mb-3">
-        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-500 ${
               milestone.status === 'completed' ? 'bg-success' :
@@ -388,13 +388,13 @@ const MilestoneCard = ({ milestone, onClick, onEdit, onDelete }) => {
       </div>
       
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-        <span className="text-xs text-text-tertiary">
+      <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+        <span className="text-xs text-slate-500 dark:text-zinc-400">
           {milestone.completedTasks}/{milestone.totalTasks} tasks
         </span>
         <span className={`text-xs font-medium ${
           progress >= 100 ? 'text-success' : 
-          progress >= 50 ? 'text-brand' : 'text-text-tertiary'
+          progress >= 50 ? 'text-brand' : 'text-slate-500 dark:text-zinc-400'
         }`}>
           {progress}%
         </span>
@@ -415,8 +415,8 @@ const MilestoneRow = ({ milestone, onClick }) => {
   return (
     <div 
       className="
-        flex items-center gap-4 p-4 rounded-xl bg-surface-1 border border-white/[0.06]
-        hover:bg-surface-2 hover:border-white/[0.1]
+        flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+        hover:shadow-sm dark:hover:bg-[#27272a] hover:border-slate-300 dark:hover:border-white/20
         transition-all duration-200 cursor-pointer
       "
       onClick={() => onClick?.(milestone)}
@@ -432,14 +432,14 @@ const MilestoneRow = ({ milestone, onClick }) => {
       
       {/* Title */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-white drop-shadow-md truncate">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
           {milestone.title}
         </h3>
       </div>
       
       {/* Progress Bar */}
       <div className="w-32 flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-500 ${
               milestone.status === 'completed' ? 'bg-success' :
@@ -448,16 +448,16 @@ const MilestoneRow = ({ milestone, onClick }) => {
             style={{ width: `${Math.min(progress, 100)}%` }}
           />
         </div>
-        <span className="text-xs text-text-tertiary w-8 text-right">{progress}%</span>
+        <span className="text-xs text-slate-500 dark:text-zinc-400 w-8 text-right">{progress}%</span>
       </div>
       
       {/* Tasks */}
-      <span className="text-xs text-text-tertiary w-20 text-right">
+      <span className="text-xs text-slate-500 dark:text-zinc-400 w-20 text-right">
         {milestone.completedTasks}/{milestone.totalTasks} tasks
       </span>
       
       {/* Due Date */}
-      <span className={`text-xs w-24 text-right ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+      <span className={`text-xs w-24 text-right ${isOverdue ? 'text-error-500' : 'text-slate-500 dark:text-zinc-400'}`}>
         {milestone.dueDate ? new Date(milestone.dueDate).toLocaleDateString() : '—'}
       </span>
     </div>
@@ -478,7 +478,7 @@ const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
   return (
     <div className="relative pl-8">
       {/* Timeline line */}
-      <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-surface-3" />
+      <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-white/10" />
       
       {sorted.map((milestone, index) => {
         const statusConfig = getStatusConfig(milestone.status);
@@ -496,7 +496,7 @@ const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
                 ? 'bg-success border-success' 
                 : isOverdue 
                   ? 'bg-error-500 border-error-500'
-                  : 'bg-surface-1 border-surface-3'
+                  : 'bg-white dark:bg-[#1f1f23] border-slate-300 dark:border-white/20'
               }
             `}>
               {milestone.status === 'completed' && (
@@ -507,8 +507,8 @@ const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
             {/* Content */}
             <div 
               className="
-                p-4 rounded-xl bg-surface-1 border border-white/[0.06]
-                hover:bg-surface-2 hover:border-white/[0.1]
+                p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+                hover:shadow-sm dark:hover:bg-[#27272a] hover:border-slate-300 dark:hover:border-white/20
                 transition-all duration-200 cursor-pointer
               "
               onClick={() => onMilestoneClick?.(milestone)}
@@ -521,15 +521,15 @@ const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
                   {statusConfig.label}
                 </span>
                 {milestone.dueDate && (
-                  <span className={`text-xs ${isOverdue ? 'text-error-500' : 'text-text-tertiary'}`}>
+                  <span className={`text-xs ${isOverdue ? 'text-error-500' : 'text-slate-500 dark:text-zinc-400'}`}>
                     {new Date(milestone.dueDate).toLocaleDateString()}
                   </span>
                 )}
               </div>
-              <h3 className="text-sm font-semibold text-white drop-shadow-md mb-1">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
                 {milestone.title}
               </h3>
-              <div className="flex items-center gap-4 text-xs text-text-tertiary">
+              <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-zinc-400">
                 <span>{milestone.completedTasks}/{milestone.totalTasks} tasks</span>
                 <span>{milestone.progress}% complete</span>
               </div>
@@ -545,81 +545,57 @@ const MilestoneTimeline = ({ milestones, onMilestoneClick }) => {
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
 const RoadmapView = ({
-  // ⭐ projectId - if provided, will fetch milestones automatically
   projectId,
-  
-  // Data props (can come from parent OR be fetched)
   milestones: propMilestones,
   isLoading: propIsLoading,
   error: propError,
-  
-  // Callbacks
   onMilestoneClick,
   onCreateMilestone,
   onEditMilestone,
   onDeleteMilestone,
-  onAddMilestone, // Alias for onCreateMilestone
+  onAddMilestone,
   onRefresh: propOnRefresh,
 }) => {
   const [viewMode, setViewMode] = useState('grid');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   
-  // ⭐ Internal state for self-fetching
   const [fetchedMilestones, setFetchedMilestones] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Determine if we should fetch ourselves
   const shouldFetch = projectId && (!propMilestones || propMilestones.length === 0);
   
-  // Fetch function
   const loadMilestones = useCallback(async () => {
     if (!projectId) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
+    setIsLoading(true); setError(null);
     try {
       const data = await fetchMilestones(projectId);
-      console.log('[RoadmapView] Fetched milestones:', data);
       setFetchedMilestones(data);
     } catch (err) {
-      console.error('[RoadmapView] Failed to fetch milestones:', err);
       setError(err);
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
   
-  // Fetch on mount if needed
   useEffect(() => {
-    if (shouldFetch) {
-      loadMilestones();
-    }
+    if (shouldFetch) loadMilestones();
   }, [shouldFetch, loadMilestones]);
   
-  // Combine refresh handlers
   const handleRefresh = useCallback(() => {
-    if (propOnRefresh) {
-      propOnRefresh();
-    }
-    if (shouldFetch) {
-      loadMilestones();
-    }
+    if (propOnRefresh) propOnRefresh();
+    if (shouldFetch) loadMilestones();
   }, [propOnRefresh, shouldFetch, loadMilestones]);
   
-  // Use prop data OR fetched data
   const rawMilestones = propMilestones?.length > 0 ? propMilestones : fetchedMilestones;
   const loading = propIsLoading ?? isLoading;
   const err = propError ?? error;
 
-  // Normalize milestones for consistent display
   const normalizedMilestones = useMemo(() => {
     return rawMilestones.map(normalizeMilestone).filter(Boolean);
   }, [rawMilestones]);
 
-  // Filter milestones
   const filteredMilestones = useMemo(() => {
     if (statusFilter === 'all') return normalizedMilestones;
     const filterValue = statusFilter.replace('-', '_');
@@ -629,7 +605,6 @@ const RoadmapView = ({
     });
   }, [normalizedMilestones, statusFilter]);
 
-  // Stats
   const stats = useMemo(() => {
     const total = normalizedMilestones.length;
     const completed = normalizedMilestones.filter((m) => m.status === 'completed').length;
@@ -642,10 +617,8 @@ const RoadmapView = ({
     return { total, completed, inProgress, atRisk };
   }, [normalizedMilestones]);
 
-  // Use onAddMilestone if onCreateMilestone not provided
   const createHandler = onCreateMilestone || onAddMilestone;
 
-  // Render content based on state
   const renderContent = () => {
     if (loading) {
       return viewMode === 'list' ? (
@@ -659,48 +632,26 @@ const RoadmapView = ({
       );
     }
 
-    if (err) {
-      return <ErrorState error={err} onRetry={handleRefresh} />;
-    }
-
-    if (!filteredMilestones.length) {
-      return <EmptyState onCreateMilestone={createHandler} />;
-    }
+    if (err) return <ErrorState error={err} onRetry={handleRefresh} />;
+    if (!filteredMilestones.length) return <EmptyState onCreateMilestone={createHandler} />;
 
     switch (viewMode) {
       case 'timeline':
-        return (
-          <MilestoneTimeline
-            milestones={filteredMilestones}
-            onMilestoneClick={onMilestoneClick}
-          />
-        );
-
+        return <MilestoneTimeline milestones={filteredMilestones} onMilestoneClick={onMilestoneClick} />;
       case 'list':
         return (
           <div className="space-y-3">
             {filteredMilestones.map((milestone) => (
-              <MilestoneRow
-                key={milestone._id || milestone.id}
-                milestone={milestone}
-                onClick={onMilestoneClick}
-              />
+              <MilestoneRow key={milestone._id || milestone.id} milestone={milestone} onClick={onMilestoneClick} />
             ))}
           </div>
         );
-
       case 'grid':
       default:
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredMilestones.map((milestone) => (
-              <MilestoneCard
-                key={milestone._id || milestone.id}
-                milestone={milestone}
-                onClick={onMilestoneClick}
-                onEdit={onEditMilestone}
-                onDelete={onDeleteMilestone}
-              />
+              <MilestoneCard key={milestone._id || milestone.id} milestone={milestone} onClick={onMilestoneClick} onEdit={onEditMilestone} onDelete={onDeleteMilestone} />
             ))}
           </div>
         );
@@ -712,8 +663,8 @@ const RoadmapView = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-text-primary">Roadmap</h1>
-          <p className="text-sm text-text-tertiary mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Roadmap</h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
             Track project milestones and deliverables
           </p>
         </div>
@@ -722,7 +673,7 @@ const RoadmapView = ({
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-2 transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -731,14 +682,14 @@ const RoadmapView = ({
       </div>
       
       {/* Stats Bar */}
-      <div className="flex items-center gap-6 p-4 rounded-xl bg-surface-1 border border-white/[0.06]">
+      <div className="flex items-center gap-6 p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
         <div className="flex items-center gap-2">
           <Flag className="w-4 h-4 text-brand" />
-          <span className="text-sm font-medium text-text-primary">{stats.total}</span>
-          <span className="text-xs text-text-tertiary">Total</span>
+          <span className="text-sm font-medium text-slate-900 dark:text-white">{stats.total}</span>
+          <span className="text-xs text-slate-500 dark:text-zinc-400">Total</span>
         </div>
-        <div className="h-4 w-px bg-white/[0.1]" />
-        <div className="flex items-center gap-4 text-xs">
+        <div className="h-4 w-px bg-slate-200 dark:bg-white/10" />
+        <div className="flex items-center gap-4 text-xs font-medium">
           <span className="text-success">{stats.completed} completed</span>
           <span className="text-brand">{stats.inProgress} in progress</span>
           {stats.atRisk > 0 && (
@@ -755,9 +706,9 @@ const RoadmapView = ({
             onClick={() => setShowFilterMenu(!showFilterMenu)}
             className="
               flex items-center gap-2 px-3 py-2 rounded-lg
-              bg-surface-1 border border-white/[0.06] text-sm
-              text-text-secondary hover:text-text-primary hover:bg-surface-2
-              transition-all duration-200
+              bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 text-sm font-medium
+              text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#27272a]
+              transition-all duration-200 shadow-sm dark:shadow-none
             "
           >
             <Filter className="w-4 h-4" />
@@ -771,8 +722,8 @@ const RoadmapView = ({
               <div className="
                 absolute left-0 top-full mt-1 z-20
                 w-40 py-1 rounded-lg
-                bg-surface-2 border border-white/[0.08]
-                shadow-lg shadow-black/20
+                bg-white dark:bg-[#27272a] border border-slate-200 dark:border-white/10
+                shadow-lg dark:shadow-black/40
               ">
                 {STATUS_FILTERS.map((filter) => (
                   <button
@@ -782,10 +733,10 @@ const RoadmapView = ({
                       setShowFilterMenu(false);
                     }}
                     className={`
-                      w-full px-3 py-2 text-sm text-left
+                      w-full px-3 py-2 text-sm text-left font-medium
                       ${statusFilter === filter.value
                         ? 'text-brand bg-brand/10'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-3'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/10'
                       }
                       transition-colors
                     `}
@@ -801,7 +752,7 @@ const RoadmapView = ({
         {/* Right: View Toggle + Create */}
         <div className="flex items-center gap-3">
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-surface-1 rounded-lg border border-white/[0.06]">
+          <div className="flex items-center gap-1 p-1 bg-white dark:bg-[#1f1f23] rounded-lg border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
             {Object.entries(VIEW_MODES).map(([mode, config]) => {
               const Icon = config.icon;
               return (
@@ -811,8 +762,8 @@ const RoadmapView = ({
                   className={`
                     p-2 rounded-md transition-all
                     ${viewMode === mode
-                      ? 'bg-surface-2 text-text-primary'
-                      : 'text-text-tertiary hover:text-text-secondary'
+                      ? 'bg-slate-100 dark:bg-[#27272a] text-slate-900 dark:text-white'
+                      : 'text-slate-500 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/5'
                     }
                   `}
                   title={config.label}
@@ -830,7 +781,7 @@ const RoadmapView = ({
               className="
                 flex items-center gap-2 px-4 py-2 rounded-lg
                 bg-brand text-white text-sm font-medium
-                hover:bg-brand-600 hover:shadow-glow-brand
+                hover:bg-brand-600 hover:shadow-md
                 transition-all duration-200
               "
             >

@@ -18,12 +18,14 @@ const ZOOM_LEVELS = [
   { id: 'quarter', label: '3M', days: 90, dayWidth: 10 },
 ];
 
+// Keep existing priority palette intact.
+// The bug fix is surgical: force the title text itself to be high-contrast.
 const PRIORITY_COLORS = {
-  urgent: { bar: 'bg-red-500', light: 'bg-red-100 dark:bg-red-500/20' },
-  high: { bar: 'bg-orange-500', light: 'bg-orange-100 dark:bg-orange-500/20' },
-  medium: { bar: 'bg-amber-500', light: 'bg-amber-100 dark:bg-amber-500/20' },
-  low: { bar: 'bg-blue-500', light: 'bg-blue-100 dark:bg-blue-500/20' },
-  none: { bar: 'bg-violet-500', light: 'bg-violet-100 dark:bg-violet-500/20' },
+  urgent: { bar: 'bg-red-500', light: 'bg-red-100 dark:bg-red-500/20', text: 'text-red-900 dark:text-red-50' },
+  high: { bar: 'bg-orange-500', light: 'bg-orange-100 dark:bg-orange-500/20', text: 'text-orange-900 dark:text-orange-50' },
+  medium: { bar: 'bg-amber-500', light: 'bg-amber-100 dark:bg-amber-500/20', text: 'text-amber-900 dark:text-amber-50' },
+  low: { bar: 'bg-blue-500', light: 'bg-blue-100 dark:bg-blue-500/20', text: 'text-blue-900 dark:text-blue-50' },
+  none: { bar: 'bg-violet-500', light: 'bg-violet-100 dark:bg-violet-500/20', text: 'text-violet-900 dark:text-violet-50' },
 };
 
 function startOfDay(date) {
@@ -292,14 +294,19 @@ export default function RoadmapTimeline({
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityColors.bar}`} />
 
                     {/* Title */}
-                    <span className={`
-                      text-[11px] font-semibold truncate text-white drop-shadow-md
-                      ${isComplete ? 'line-through opacity-80' : ''}
-                    `}>
+                    {/* Surgical fix: force strong contrast regardless of inherited text color */}
+                    <span
+                      className={`
+                        text-[11px] font-semibold text-white
+                        drop-shadow-[0_1px_2px_rgba(15,23,42,0.55)]
+                        truncate
+                        ${isComplete ? 'line-through opacity-70' : ''}
+                      `}
+                    >
                       {task.title}
                     </span>
 
-                    {/* Resize handles (visual only — full drag implemented above) */}
+                    {/* Resize handles */}
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-violet-500/20 rounded-l-lg" />
                     <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-violet-500/20 rounded-r-lg" />
                   </div>
