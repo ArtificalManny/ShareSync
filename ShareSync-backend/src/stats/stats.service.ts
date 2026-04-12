@@ -1,5 +1,7 @@
 // src/stats/stats.service.ts
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 type Activity = {
   projectId: string;
@@ -33,6 +35,138 @@ export type ProjectStats = {
 @Injectable()
 export class StatsService {
   private readonly logger = new Logger(StatsService.name);
+
+  constructor(
+    @InjectModel('User') private readonly userModel: Model<any>,
+    @InjectModel('Task') private readonly taskModel: Model<any>,
+  ) {}
+
+  // ─── recalculateForUser ──────────────────────────────────────────────
+  // Queries real task data, computes dashboard metrics, caches on user doc.
+  // Called on task completion events and on GET /users/me/stats if stale.
+  // ─────────────────────────────────────────────────────────────────────
+  async recalculateForUser(userId: string): Promise<any> {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+
+    try {
+      // Ships this week (last 7 days)
+      const weeklyShips = await this.taskModel.countDocuments({
+        $or: [
+          { assignedTo: userId },
+          { completedBy: userId },
+          { userId: userId },
+        ],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+        completedAt: { $gte: sevenDaysAgo },
+      });
+
+      // Ships last week (7-14 days ago)
+      const lastWeekShips = await this.taskModel.countDocuments({
+        $or: [
+          { assignedTo: userId },
+          { completedBy: userId },
+          { userId: userId },
+        ],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+        completedAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo },
+      });
+
+      // Completion rate: completed / total assigned
+      const totalAssigned = await this.taskModel.countDocuments({
+        $or: [
+          { assignedTo: userId },
+          { userId: userId },
+        ],
+      });
+      const totalCompleted = await this.taskModel.countDocuments({
+        $or: [
+          { assignedTo: userId },
+          { completedBy: userId },
+          { userId: userId },
+        ],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+      });
+      const completionRate = totalAssigned > 0
+        ? Math.round((totalCompleted / totalAssigned) * 100)
+        : 0;
+
+      // Efficiency: ((thisWeek - lastWeek) / lastWeek) * 100
+      let efficiency = 0;
+      if (lastWeekShips > 0) {
+        efficiency = Math.round(((weeklyShips - lastWeekShips) / lastWeekShips) * 100);
+      } else if (weeklyShips > 0) {
+        efficiency = 100; // went from 0 to something
+      }
+
+      // Streak: count consecutive days with at least one completion
+      // Walk backward from today
+      let streakDays = 0;
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      for (let i = 0; i < 365; i++) {
+        const dayStart = new Date(todayMidnight.getTime() - i * 86400000);
+        const dayEnd = new Date(dayStart.getTime() + 86400000);
+        const hasActivity = await this.taskModel.countDocuments({
+          $or: [
+            { completedBy: userId },
+            { userId: userId },
+          ],
+          completedAt: { $gte: dayStart, $lt: dayEnd },
+        });
+        if (hasActivity > 0) {
+          streakDays++;
+        } else if (i === 0) {
+          // Today has no activity yet — check if yesterday had activity
+          continue;
+        } else {
+          break;
+        }
+      }
+
+      // Update user document with cached stats
+      const updatePayload = {
+        weeklyShips,
+        lastWeekShips,
+        completionRate,
+        statsLastCalculated: now,
+        streakDays,
+        totalShips: totalCompleted,
+        totalTasksCompleted: totalCompleted,
+      };
+
+      await this.userModel.findByIdAndUpdate(userId, { $set: updatePayload });
+
+      this.logger.log(
+        `[Stats] Recalculated for user ${userId}: ships=${weeklyShips}, streak=${streakDays}, completion=${completionRate}%, efficiency=${efficiency}%`,
+      );
+
+      return {
+        ships: weeklyShips,
+        streakDays,
+        focus: completionRate,
+        efficiency,
+        weeklyShips,
+        lastWeekShips,
+        completionRate,
+        totalShips: totalCompleted,
+        statsLastCalculated: now,
+      };
+    } catch (err) {
+      this.logger.error(`[Stats] recalculateForUser failed for ${userId}:`, err?.message || err);
+      return {
+        ships: 0,
+        streakDays: 0,
+        focus: 0,
+        efficiency: 0,
+        weeklyShips: 0,
+        lastWeekShips: 0,
+        completionRate: 0,
+        totalShips: 0,
+        statsLastCalculated: now,
+      };
+    }
+  }
 
   // MOCK DATA — Replace with real DB later
   private mockActivities: Activity[] = [

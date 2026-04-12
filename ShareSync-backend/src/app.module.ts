@@ -64,6 +64,7 @@ import { FollowsModule } from './follows/follows.module';
 
 import { SprintsModule } from './sprints/sprints.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { StatsModule } from './stats/stats.module';
 import { FilesModule } from './files/files.module';
 
 // ✅ PHASE 6: NEW MODULES
@@ -212,6 +213,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     // ─────────────────────────────────────────────────────────────────────────
     SprintsModule,
     AnalyticsModule,
+    StatsModule,
     FilesModule,
 
     // ✅ PHASE 6: ADD THESE

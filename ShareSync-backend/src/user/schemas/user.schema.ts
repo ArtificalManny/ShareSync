@@ -351,6 +351,23 @@ export class User extends Document {
   totalTasksCompleted: number;
 
   // ============================================
+  // DASHBOARD STATS CACHE (Phase 2)
+  // These are recalculated by StatsService and cached here
+  // so GET /users/me doesn't need expensive aggregations.
+  // ============================================
+  @Prop({ default: 0 })
+  weeklyShips: number;
+
+  @Prop({ default: 0 })
+  lastWeekShips: number;
+
+  @Prop({ default: 0 })
+  completionRate: number;
+
+  @Prop()
+  statsLastCalculated?: Date;
+
+  // ============================================
   // ACHIEVEMENTS (existing)
   // ============================================
   @Prop({

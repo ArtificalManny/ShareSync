@@ -38,6 +38,7 @@ import { UploadsService } from '../uploads/uploads.service';
 
 // ✅ Phase 3: follows
 import { ProjectFollowService } from '../follows/project-follow.service';
+import { StatsService } from '../stats/stats.service';
 
 @Controller('users')
 export class UserController {
@@ -48,6 +49,7 @@ export class UserController {
 
     @Optional() private readonly uploadService?: UploadsService,
     @Optional() private readonly follows?: ProjectFollowService,
+    @Optional() private readonly statsService?: StatsService,
   ) {}
 
   // ✅ Never let activity logging break the real endpoint.
@@ -243,6 +245,67 @@ export class UserController {
     };
   }
   
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GET /users/me/stats - Dashboard velocity metrics (Phase 3)
+  // Self-healing: recalculates if statsLastCalculated > 5 min old
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/stats')
+  async getMyStats(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.id;
+
+    if (!this.statsService) {
+      // Fallback: return cached fields from user document
+      const user = await this.users.findById(userId);
+      return {
+        success: true,
+        data: {
+          ships: (user as any)?.weeklyShips || 0,
+          streakDays: (user as any)?.streakDays || 0,
+          focus: (user as any)?.completionRate || 0,
+          efficiency: 0,
+        },
+      };
+    }
+
+    // Check if stats are stale (> 5 minutes old)
+    const user = await this.users.findById(userId);
+    const lastCalc = (user as any)?.statsLastCalculated;
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const isStale = !lastCalc || new Date(lastCalc) < fiveMinAgo;
+
+    if (isStale) {
+      const fresh = await this.statsService.recalculateForUser(userId);
+      return { success: true, data: fresh };
+    }
+
+    // Return cached stats
+    const weeklyShips = (user as any)?.weeklyShips || 0;
+    const lastWeekShips = (user as any)?.lastWeekShips || 0;
+    let efficiency = 0;
+    if (lastWeekShips > 0) {
+      efficiency = Math.round(((weeklyShips - lastWeekShips) / lastWeekShips) * 100);
+    } else if (weeklyShips > 0) {
+      efficiency = 100;
+    }
+
+    return {
+      success: true,
+      data: {
+        ships: weeklyShips,
+        streakDays: (user as any)?.streakDays || 0,
+        focus: (user as any)?.completionRate || 0,
+        efficiency,
+        weeklyShips,
+        lastWeekShips,
+        completionRate: (user as any)?.completionRate || 0,
+        totalShips: (user as any)?.totalShips || 0,
+        statsLastCalculated: lastCalc,
+      },
+    };
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // GET /users/me/follows - Get user's follows
   // ─────────────────────────────────────────────────────────────────────────────

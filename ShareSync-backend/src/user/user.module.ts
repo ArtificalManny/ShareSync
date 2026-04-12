@@ -18,6 +18,7 @@ import { UploadsModule } from '../uploads/uploads.module';
 import { ProjectFollowModule } from '../follows/project-follow.module';
 import { SmsModule } from '../notifications/sms.module';
 import { ModerationModule } from '../moderation/moderation.module';
+import { StatsModule } from '../stats/stats.module';
 
 @Module({
   imports: [
@@ -39,6 +40,9 @@ import { ModerationModule } from '../moderation/moderation.module';
 
     // ✅ Content moderation for bio/profile updates
     ModerationModule,
+
+    // ✅ Phase 3: Stats service for dashboard metrics
+    forwardRef(() => StatsModule),
   ],
   controllers: [UserController],
   providers: [UserService],
