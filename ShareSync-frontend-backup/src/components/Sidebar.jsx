@@ -1,14 +1,13 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v5.1 - "The Gallery Walk" Light Theme
-// Phase C: Momentum Engine + Phase E: Social Proof + Phase N: Auto-Hide
+// SHARESYNC SIDEBAR v6.0 - "Telemetry & Telepresence HUD"
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES in v5.1:
-// - Removed toggle buttons (>> << arrows) completely per user request
-// - Removed auto-hide indicator wedge
-// - Cleaner minimal header
-// ⭐ ADDED: Engineered OpenShare Kinetic Monogram Logo that persists on collapse
+// CHANGES in v6.0:
+// - Removed negative framing ("Idle", "Level 0", numerical quotas)
+// - Replaced static bottom links with Personal Telemetry (Momentum Sparkline)
+// - Replaced toxic Leaderboard with Team Telepresence (Status Halos)
+// - Added Catalyst Action Button ("Focus Next Mission")
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -21,25 +20,13 @@ import {
   Flame,
   Terminal,
   LayoutGrid,
-  ShieldCheck,
   Zap,
-  TrendingUp,
-  Users,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 
 import SidebarItem from "./nav/SidebarItem";
 import UserAvatar from "./ui/UserAvatar";
-import OpenShareLogo from "./ui/OpenShareLogo"; // ⭐ IMPORTING NEW LOGO
 import { useFlowState } from "../contexts/FlowStateContext";
 import { useMomentumContext } from "../contexts/MomentumContext";
-import { useEntrance } from "./onboarding/AppEntrance";
-import useAnimatedNumber from "../hooks/useAnimatedNumber";
-
-import { MiniLeaderboard } from "./social/Leaderboard";
-import OnlineIndicator from "./social/OnlineIndicator";
-import { MiniLeagueIndicator } from "./social/MomentumLeague";
 
 const LS_KEY = "ss.sidebar.collapsed";
 const LS_AUTOHIDE_KEY = "ss.sidebar.autohide";
@@ -73,276 +60,163 @@ function getUserFromLocalStorage() {
   return null;
 }
 
-function getAvatarOverride() {
-  try { return localStorage.getItem("ss.avatarOverride") || null; } catch { return null; }
-}
-
 function resolveAvatarUrl(u) {
-  const override = getAvatarOverride();
-  if (override) return override;
-  return u?.avatarUrl || u?.profilePicture || u?.avatar || u?.photoUrl || u?.profile?.avatarUrl || u?.profile?.photoUrl || null;
+  try {
+    const override = localStorage.getItem("ss.avatarOverride");
+    if (override) return override;
+  } catch {}
+  return u?.avatarUrl || u?.profilePicture || u?.avatar || u?.photoUrl || u?.profile?.avatarUrl || null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MOMENTUM LEVEL INDICATOR - Light Theme
+   COMPONENT 1: PERSONAL TELEMETRY (The Momentum Core)
 ───────────────────────────────────────────────────────────────────────── */
-function MomentumLevelIndicator({ collapsed = false }) {
-  const { glowLevel, isFireMode } = useMomentumContext();
+function PersonalTelemetryHUD({ user, glowLevel, isFireMode, collapsed }) {
+  // In a real implementation, pull streak from your real-time backend hook.
+  const streak = 7; 
+  
+  // Color Theory: Slate for rest, Violet for building, Orange/Rose for flow.
+  const sparklineColor = isFireMode 
+    ? "bg-gradient-to-r from-orange-400 to-rose-500" 
+    : glowLevel > 0 
+      ? "bg-gradient-to-r from-violet-400 to-violet-600" 
+      : "bg-slate-300 dark:bg-zinc-600";
+      
+  const statusText = isFireMode 
+    ? "Fire Mode 🔥" 
+    : glowLevel >= 3 
+      ? "Deep Flow" 
+      : glowLevel > 0 
+        ? "Gaining Traction" 
+        : "Warming up...";
 
-  const levelConfig = {
-    0: { icon: null, color: "text-slate-400", bg: "bg-slate-50", label: "Idle" },
-    1: { icon: Zap, color: "text-violet-500", bg: "bg-violet-50", label: "Warming" },
-    2: { icon: Zap, color: "text-violet-600", bg: "bg-violet-100", label: "Building" },
-    3: { icon: TrendingUp, color: "text-violet-600", bg: "bg-violet-100", label: "Flowing" },
-    4: { icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-50", label: "Peak" },
-    5: { icon: Flame, color: "text-orange-500", bg: "bg-orange-50", label: "On Fire" },
-  };
-
-  const config = levelConfig[glowLevel] || levelConfig[0];
-  const Icon = config.icon;
+  const ringStyle = isFireMode 
+    ? 'ring-orange-500 animate-pulse' 
+    : glowLevel >= 3 
+      ? 'ring-violet-500' 
+      : 'ring-transparent';
 
   if (collapsed) {
-    if (!Icon) return null;
     return (
-      <div className={`mx-auto w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${config.bg} ${isFireMode ? "animate-pulse" : ""}`}>
-        <Icon className={`w-4 h-4 ${config.color}`} />
+      <div className="flex justify-center mt-2 mb-4 relative" title={statusText}>
+        <div className="relative">
+          <UserAvatar size={32} name={user.name} avatarUrl={user.avatarUrl} />
+          <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#111113] ${isFireMode ? 'bg-orange-500 animate-pulse' : 'bg-emerald-500'}`} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`mx-3 px-3 py-2 rounded-xl transition-all duration-500 ${config.bg} border border-slate-200 ${isFireMode ? "border-orange-300" : ""}`}>
-      <div className="flex items-center gap-2">
-        {Icon && (
-          <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors duration-300 ${glowLevel >= 3 ? "bg-white/80" : "bg-white"} ${isFireMode ? "animate-bounce" : ""}`}>
-            <Icon className={`w-3.5 h-3.5 ${config.color}`} />
+    <div className="px-3 py-3 mx-3 mb-2 bg-slate-50 dark:bg-[#1f1f23] rounded-xl border border-slate-200 dark:border-white/10 shadow-sm transition-all duration-300">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <UserAvatar size={32} name={user.name} avatarUrl={user.avatarUrl} />
+            <div className={`absolute inset-0 rounded-full ring-2 ring-offset-2 ring-offset-slate-50 dark:ring-offset-[#1f1f23] ${ringStyle} transition-all duration-300`} />
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className={`text-xs font-semibold ${config.color} transition-colors duration-300`}>{config.label}</div>
-          <div className="text-[10px] text-slate-600 truncate font-medium transition-colors duration-300">Level {glowLevel}</div>
+          <div>
+            <div className="text-xs font-bold text-slate-800 dark:text-zinc-100 truncate max-w-[90px]">{user.name}</div>
+            <div className="text-[10px] font-medium text-slate-500 dark:text-zinc-400">{statusText}</div>
+          </div>
         </div>
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-500/20 shadow-sm">
+            {streak}-Day 🔥
+          </span>
+        </div>
+      </div>
+      
+      {/* Energy Sparkline */}
+      <div className="h-1.5 w-full bg-slate-200 dark:bg-zinc-700 rounded-full overflow-hidden flex">
+        <div className={`h-full ${sparklineColor} transition-all duration-1000 ease-out`} style={{ width: `${Math.max(10, glowLevel * 20)}%` }} />
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PROGRESS RING - Light Theme (ALL animations preserved)
+   COMPONENT 2: TEAM TELEPRESENCE (Communal Contagion)
 ───────────────────────────────────────────────────────────────────────── */
-function ProgressRing({ progress: actualProgress = 0.75, level = 1, streak = 7, collapsed = false }) {
-  const { glowLevel, isFireMode } = useMomentumContext();
-  const entrance = useEntrance();
-  const { progress: entranceProgress, isAnimatingRing, isComplete } = entrance || { progress: 100, isAnimatingRing: false, isComplete: true };
-  const displayProgress = isComplete ? actualProgress : (entranceProgress / 100) * actualProgress;
-  const size = collapsed ? 40 : 56;
-  const strokeWidth = collapsed ? 3 : 4;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - displayProgress * circumference;
-  const showStreak = streak >= 3;
-  const isImpressiveStreak = streak >= 7;
-
-  const prevProgressRef = useRef(actualProgress);
-  const prevLevelRef = useRef(level);
-  const [isPulsing, setIsPulsing] = useState(false);
-  const [isLevelingUp, setIsLevelingUp] = useState(false);
-  const [pulseIntensity, setPulseIntensity] = useState("normal");
-
-  const displayValue = isComplete ? Math.round(actualProgress * 100) : Math.round(displayProgress * 100);
-  const { value: animatedPercent, isAnimating: isCountAnimating } = useAnimatedNumber(displayValue, { duration: 500, enabled: !collapsed && isComplete });
-
-  useEffect(() => {
-    if (!isComplete) return;
-    const prevProgress = prevProgressRef.current;
-    const currentProgress = actualProgress;
-    const THRESHOLDS = [0.25, 0.5, 0.75, 1.0];
-    const crossedThreshold = THRESHOLDS.some((t) => prevProgress < t && currentProgress >= t);
-
-    if (currentProgress > prevProgress) {
-      setIsPulsing(true);
-      setPulseIntensity(crossedThreshold ? "strong" : "normal");
-      const timer = setTimeout(() => { setIsPulsing(false); setPulseIntensity("normal"); }, 600);
-      prevProgressRef.current = currentProgress;
-      return () => clearTimeout(timer);
-    }
-    prevProgressRef.current = currentProgress;
-  }, [actualProgress, isComplete]);
-
-  useEffect(() => {
-    if (level > prevLevelRef.current) {
-      setIsLevelingUp(true);
-      const timer = setTimeout(() => setIsLevelingUp(false), 1200);
-      prevLevelRef.current = level;
-      return () => clearTimeout(timer);
-    }
-    prevLevelRef.current = level;
-  }, [level]);
-
-  const glowStyle = useMemo(() => {
-    if (isAnimatingRing) return { filter: `drop-shadow(0 0 12px rgb(139 92 246 / 0.4))` };
-    if (isFireMode) return { filter: `drop-shadow(0 0 16px rgb(139 92 246 / 0.5)) drop-shadow(0 0 30px rgb(249 115 22 / 0.3))` };
-    if (glowLevel === 0) return {};
-    return { filter: `drop-shadow(0 0 ${6 + glowLevel * 3}px rgb(139 92 246 / ${glowLevel * 0.12}))` };
-  }, [glowLevel, isAnimatingRing, isFireMode]);
-
-  const breathingClass = useMemo(() => {
-    if (isFireMode) return "animate-ring-fire";
-    if (glowLevel >= 4) return "animate-ring-breathe-strong";
-    if (glowLevel >= 3) return "animate-ring-breathe";
-    return "";
-  }, [glowLevel, isFireMode]);
-
-  return (
-    <div className="flex flex-col items-center py-6">
-      <div className={`relative ${isPulsing ? "animate-bounce-subtle" : ""} ${isLevelingUp ? "scale-110" : "scale-100"} ${isAnimatingRing ? "progress-ring-entrance" : ""} transition-transform duration-300`} data-momentum={glowLevel}>
-        {isPulsing && <div className={`absolute inset-0 rounded-full ${pulseIntensity === "strong" ? "ring-pulse-strong" : "ring-pulse"}`} style={{ width: size, height: size }} />}
-        {isLevelingUp && <div className="absolute inset-0 rounded-full level-up-flash" style={{ width: size, height: size, background: "radial-gradient(circle, rgb(167 139 250) 0%, transparent 70%)" }} />}
-        {isFireMode && <div className="absolute inset-0 rounded-full animate-fire-ring" style={{ width: size + 8, height: size + 8, top: -4, left: -4, border: "2px solid rgb(249 115 22 / 0.4)" }} />}
-
-        <svg width={size} height={size} className={`xp-ring-progress transform -rotate-90 ${isPulsing ? "scale-105" : "scale-100"} ${breathingClass} transition-transform duration-200`} style={glowStyle}>
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="stroke-slate-200 transition-colors duration-300" strokeWidth={strokeWidth} />
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={isLevelingUp ? "#10B981" : isFireMode ? "#F97316" : "#8B5CF6"} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={isPulsing ? "stroke-violet-400" : ""} style={{ transition: isAnimatingRing ? "stroke-dashoffset 50ms linear" : "stroke-dashoffset 700ms ease-out, stroke 300ms ease" }} />
-        </svg>
-
-        <div className="absolute inset-0 flex items-center justify-center">
-          {isLevelingUp ? (
-            <div className="text-center level-up-number">
-              <div className="text-[8px] text-violet-500 uppercase tracking-wider font-bold">Level Up!</div>
-              <span className="text-lg font-bold text-violet-600">{level}</span>
-            </div>
-          ) : isFireMode ? (
-            <span className="text-lg animate-pulse">🔥</span>
-          ) : (
-            <span className={`font-bold text-slate-800 tabular-nums ${collapsed ? "text-xs" : "text-lg"} ${isPulsing || isCountAnimating ? "scale-110 text-violet-600" : "scale-100"} ${isAnimatingRing ? "text-violet-500" : ""} transition-all duration-200`}>
-              {isComplete ? animatedPercent : Math.round(displayProgress * 100)}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {!collapsed && showStreak && (
-        <div className={`mt-3 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${isImpressiveStreak ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-500 border border-transparent"}`}>
-          <Flame className={`w-3 h-3 ${isImpressiveStreak ? "text-amber-500" : "text-slate-400"}`} />
-          <span>{streak}d</span>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes ring-pulse { 0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.5); opacity: 0.6; } 100% { box-shadow: 0 0 0 12px transparent; opacity: 0; } }
-        .ring-pulse { animation: ring-pulse 0.6s ease-out forwards; }
-        @keyframes ring-pulse-strong { 0% { box-shadow: 0 0 0 0 rgb(167 139 250 / 0.6); opacity: 0.7; } 50% { box-shadow: 0 0 16px 4px rgb(139 92 246 / 0.4); opacity: 0.5; } 100% { box-shadow: 0 0 0 16px transparent; opacity: 0; } }
-        .ring-pulse-strong { animation: ring-pulse-strong 0.8s ease-out forwards; }
-        @keyframes level-up-flash { 0% { transform: scale(0.8); opacity: 0; } 30% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
-        .level-up-flash { animation: level-up-flash 0.6s ease-out forwards; }
-        @keyframes level-up-number { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-        .level-up-number { animation: level-up-number 0.5s ease-out forwards; }
-        @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-        .animate-bounce-subtle { animation: bounce-subtle 0.3s ease-out; }
-        .progress-ring-entrance { animation: ring-entrance 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        @keyframes ring-entrance { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes ring-breathe { 0%, 100% { filter: drop-shadow(0 0 10px rgb(139 92 246 / 0.25)); } 50% { filter: drop-shadow(0 0 14px rgb(139 92 246 / 0.35)); } }
-        .animate-ring-breathe { animation: ring-breathe 3s ease-in-out infinite; }
-        @keyframes ring-breathe-strong { 0%, 100% { filter: drop-shadow(0 0 12px rgb(139 92 246 / 0.35)); } 50% { filter: drop-shadow(0 0 18px rgb(167 139 250 / 0.45)); } }
-        .animate-ring-breathe-strong { animation: ring-breathe-strong 2.5s ease-in-out infinite; }
-        @keyframes ring-fire { 0%, 100% { filter: drop-shadow(0 0 14px rgb(139 92 246 / 0.4)); } 50% { filter: drop-shadow(0 0 20px rgb(167 139 250 / 0.5)) drop-shadow(0 0 30px rgb(249 115 22 / 0.25)); } }
-        .animate-ring-fire { animation: ring-fire 2s ease-in-out infinite; }
-        @keyframes fire-ring { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
-        .animate-fire-ring { animation: fire-ring 1.5s ease-in-out infinite; }
-      `}</style>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   SHIP COUNTER - Light Theme
-───────────────────────────────────────────────────────────────────────── */
-function ShipCounter({ current = 2, target = 5, collapsed = false }) {
-  const prevCurrentRef = useRef(current);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [justFilledIndex, setJustFilledIndex] = useState(-1);
-  const { value: displayCurrent } = useAnimatedNumber(current, { duration: 400 });
-
-  useEffect(() => {
-    if (current > prevCurrentRef.current) {
-      setIsAnimating(true);
-      setJustFilledIndex(current - 1);
-      const timer = setTimeout(() => { setIsAnimating(false); setJustFilledIndex(-1); }, 500);
-      prevCurrentRef.current = current;
-      return () => clearTimeout(timer);
-    }
-    prevCurrentRef.current = current;
-  }, [current]);
+function TeamTelepresenceHUD({ collapsed }) {
+  // Hardcoded visual mock representing network activity (to be wired to backend later)
+  const team = [
+    { id: 1, initial: "A", color: "bg-blue-500", ring: "ring-violet-500", shadow: "shadow-[0_0_8px_rgba(139,92,246,0.6)]" }, // Deep flow
+    { id: 2, initial: "S", color: "bg-emerald-500", ring: "ring-emerald-500", shadow: "" }, // Online
+    { id: 3, initial: "J", color: "bg-orange-400", ring: "ring-amber-500", shadow: "shadow-[0_0_8px_rgba(245,158,11,0.6)]" } // Shipping
+  ];
 
   if (collapsed) {
-    const progress = Math.min(1, current / target);
     return (
-      <div className="mx-auto mt-4 w-8 h-1 bg-slate-200 rounded-full overflow-hidden">
-        <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${progress * 100}%` }} />
+      <div className="flex justify-center mb-6" title="3 in flow · 2 shipping">
+        <div className="flex -space-x-2">
+          {team.slice(0, 2).map(t => (
+            <div key={t.id} className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#111113] ${t.color}`} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`mx-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 transition-all duration-200 ${isAnimating ? "ring-2 ring-violet-200" : ""}`}>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ships today</span>
-        <span className={`text-xs font-bold tabular-nums ${isAnimating ? "text-violet-600 scale-110" : "text-slate-700 scale-100"} transition-all duration-200`}>
-          {displayCurrent}/{target}
-        </span>
-      </div>
-      <div className="flex gap-1">
-        {[...Array(target)].map((_, i) => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i < current ? "bg-violet-500" : "bg-slate-200"} ${i === justFilledIndex ? "scale-y-150 bg-violet-400" : "scale-y-100"}`} style={{ transitionDelay: i === justFilledIndex ? "0ms" : `${i * 50}ms` }} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   COLLAPSIBLE SECTION - Light Theme
-───────────────────────────────────────────────────────────────────────── */
-function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, collapsed: sidebarCollapsed = false }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  if (sidebarCollapsed) return null;
-
-  return (
-    <div className="mx-3">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-3.5 h-3.5 text-slate-600" />}
-          <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">{title}</span>
+    <div className="px-4 py-2 mb-3">
+      <div className="flex items-center gap-3">
+        <div className="flex -space-x-2 shrink-0">
+          {team.map(t => (
+            <div key={t.id} className={`relative w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#111113] ${t.color}`}>
+              {t.initial}
+              <div className={`absolute inset-0 rounded-full border border-transparent ${t.ring} ${t.shadow} scale-110`} />
+            </div>
+          ))}
         </div>
-        {isOpen ? <ChevronUp className="w-3 h-3 text-slate-600" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
-      </button>
-      {isOpen && <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-200">{children}</div>}
+        <div className="flex flex-col min-w-0">
+          <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 truncate">3 in deep flow · 2 shipping</span>
+          <span className="text-[10px] text-slate-500 dark:text-zinc-500 truncate">The factory is humming</span>
+        </div>
+      </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   HOVER TRIGGER ZONE (Auto-hide functionality preserved)
+   COMPONENT 3: CATALYST BUTTON (Time to Action)
+───────────────────────────────────────────────────────────────────────── */
+function CatalystButton({ collapsed }) {
+  return (
+    <div className="px-3 pb-5">
+      <button 
+        className={`
+          w-full flex items-center justify-center gap-2 py-2.5 rounded-xl 
+          border border-slate-200 dark:border-white/10 shadow-sm
+          bg-white dark:bg-[#111113] text-slate-700 dark:text-zinc-300
+          hover:border-violet-300 dark:hover:border-violet-500/30 
+          hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300 
+          transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-violet-500
+        `}
+        title="Focus Next Mission"
+      >
+        <Zap className="w-4 h-4 text-violet-500 group-hover:scale-110 transition-transform" />
+        {!collapsed && <span className="text-xs font-bold tracking-wide">Focus Next Mission</span>}
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   HOVER TRIGGER ZONE
 ───────────────────────────────────────────────────────────────────────── */
 function HoverTriggerZone({ onHover, onLeave }) {
   return <div className="fixed left-0 top-0 w-4 h-screen z-[60] cursor-pointer" onMouseEnter={onHover} onMouseLeave={onLeave} style={{ background: "transparent" }} />;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   MAIN SIDEBAR COMPONENT - Light Theme "Gallery Wall"
-   v5.1 CHANGES:
-   - REMOVED all toggle buttons (>> << arrows)
-   - REMOVED auto-hide indicator wedge
-   - Clean minimal header
+   MAIN SIDEBAR COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
-  const navigate = useNavigate();
   const { shouldCollapseSidebar, isInFlow } = useFlowState();
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
 
-  // Auto-hide is now disabled by default and not user-controllable via UI
-  // Users can still toggle via localStorage if they want
   const [autoHideEnabled] = useState(() => {
     try { return localStorage.getItem(LS_AUTOHIDE_KEY) === "1"; } catch { return false; }
   });
@@ -355,7 +229,6 @@ export default function Sidebar({ user }) {
   const [isMouseInSidebar, setIsMouseInSidebar] = useState(false);
   const hoverTimeoutRef = useRef(null);
 
-  // Priority 3.3: Focus Block auto-collapse
   const [focusBlockCollapse, setFocusBlockCollapse] = useState(false);
   useEffect(() => {
     const checkFocusBlock = () => {
@@ -410,7 +283,6 @@ export default function Sidebar({ user }) {
   const me = useMemo(() => {
     return {
       name: buildDisplayName(effectiveUser),
-      status: "online",
       avatarUrl: resolveAvatarUrl(effectiveUser),
     };
   }, [effectiveUser]);
@@ -437,83 +309,38 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* ⭐ NEW HEADER: Logo persists, text hides cleanly, alignments snap perfectly to grid */}
-        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-start px-5"} py-5 min-h-[68px] transition-all duration-300`}>
-          <div className="flex items-center gap-3">
-            <div className={`shrink-0 transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_12px_rgba(249,115,22,0.4)]" : "drop-shadow-[0_2px_4px_rgba(139,92,246,0.15)]"}`}>
-              <OpenShareLogo className="w-8 h-8 text-slate-800 dark:text-slate-100" />
+        {/* Header - Intact OpenShare Logo */}
+        <div className="flex items-center justify-center p-4 pt-6 pb-6">
+          {!collapsed && (
+            <div className="flex items-center gap-2.5">
+              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
+                <span className="text-xs font-bold text-white">S</span>
+              </div>
+              <span className="text-sm font-bold text-slate-800 tracking-wide">OpenShare</span>
             </div>
-            {!collapsed && (
-              <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap overflow-hidden select-none">
-                OpenShare
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Progress Ring */}
-        <ProgressRing collapsed={collapsed} />
-
-        {/* Momentum Indicator */}
-        <div className="mb-4">
-          <MomentumLevelIndicator collapsed={collapsed} />
-        </div>
-
-        {/* League Indicator */}
-        {!collapsed && (
-          <div className="mx-3 mb-4">
-            <MiniLeagueIndicator currentXP={1250} onClick={() => navigate("/leaderboard")} />
-          </div>
-        )}
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+        {/* Navigation - Structural and Muted */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
           <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
           
-          <div className="py-4"><div className="h-px bg-slate-200" /></div>
+          <div className="py-4"><div className="h-px bg-slate-100" /></div>
           
           <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
           <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
-          
-          <div className="pt-4"><ShipCounter collapsed={collapsed} /></div>
-          
-          {!collapsed && (
-            <>
-              <div className="pt-4"><div className="h-px bg-slate-200" /></div>
-              <CollapsibleSection title="Team" icon={Users} defaultOpen={true} collapsed={collapsed}>
-                <OnlineIndicator variant="compact" showAvatars={true} showCount={true} maxAvatars={3} expandable={true} defaultExpanded={false} />
-              </CollapsibleSection>
-              <div className="mt-4">
-                <CollapsibleSection title="Leaderboard" icon={Trophy} defaultOpen={false} collapsed={collapsed}>
-                  <MiniLeaderboard maxVisible={5} onViewAll={() => navigate("/leaderboard")} />
-                </CollapsibleSection>
-              </div>
-            </>
-          )}
         </nav>
 
-        {/* User Profile Card */}
-        <div className="p-3">
-          <div onClick={() => navigate("/profile")} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer bg-slate-50 border border-slate-200 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${collapsed ? "justify-center" : ""}`}>
-            <div className="relative">
-              <UserAvatar size={32} name={me.name} avatarUrl={me.avatarUrl} />
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-slate-800 truncate transition-colors">{me.name}</div>
-                <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 transition-colors">
-                  <ShieldCheck className="w-3 h-3" />
-                  <span>Online</span>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* ═══════════════════════════════════════════════════════════════════
+            THE NEW TELEMETRY HUD (Replaces all bottom stats/collapsibles)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="mt-auto flex flex-col">
+          <PersonalTelemetryHUD user={me} glowLevel={glowLevel} isFireMode={isFireMode} collapsed={collapsed} />
+          <TeamTelepresenceHUD collapsed={collapsed} />
+          <CatalystButton collapsed={collapsed} />
         </div>
-
-        {/* Auto-hide indicator REMOVED per user request */}
       </aside>
 
       {/* Backdrop for auto-hide */}
