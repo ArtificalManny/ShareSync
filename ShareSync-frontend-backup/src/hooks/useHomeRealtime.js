@@ -317,6 +317,24 @@ async function fetchUserIntelligence() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// USER STATS FETCH (Phase 4)
+// Fetches real dashboard metrics from GET /users/me/stats
+// Self-healing: backend recalculates if cache is >5min stale
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function fetchUserStats() {
+  try {
+    const response = await client.get('/users/me/stats');
+    const data = response.data?.data || response.data;
+    if (!data || typeof data !== 'object') return null;
+    return data;
+  } catch (err) {
+    console.warn('[useHomeRealtime] Stats fetch failed:', err?.message);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN HOOK
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -351,11 +369,12 @@ export function useHomeRealtime() {
     safeSet(setLoadingMissions, true);
 
     try {
-      const [pRes, aRes, sRes, iRes] = await Promise.allSettled([
+      const [pRes, aRes, sRes, iRes, statsRes] = await Promise.allSettled([
         fetchProjects(),
         fetchActivities({ limit: 80 }),
         fetchActivitySummary(),
         fetchUserIntelligence(),
+        fetchUserStats(),
       ]);
 
       let anySuccess = false;
@@ -410,6 +429,21 @@ export function useHomeRealtime() {
       // Intelligence
       if (iRes.status === "fulfilled" && iRes.value) {
         safeSet(setIntelligenceData, iRes.value);
+      }
+
+      // ⭐ Phase 4: Merge real stats from /users/me/stats into summary
+      if (statsRes.status === "fulfilled" && statsRes.value) {
+        const stats = statsRes.value;
+        const merged = {
+          ...(lastGoodRef.current.summary || {}),
+          ships: stats.ships ?? stats.weeklyShips ?? 0,
+          streakDays: stats.streakDays ?? 0,
+          focus: stats.focus ?? stats.completionRate ?? 0,
+          efficiency: stats.efficiency ?? 0,
+        };
+        lastGoodRef.current.summary = merged;
+        safeSet(setSummaryRaw, merged);
+        anySuccess = true;
       }
 
       safeSet(setIsConnected, anySuccess);
