@@ -410,28 +410,6 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
           </h1>
           <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Mission Control</p>
         </div>
-
-        <div className="hidden md:flex items-center gap-6">
-          <div className="text-right">
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Momentum</p>
-            <div
-              className={`
-                text-xl font-semibold
-                ${isFireMode ? "text-orange-500" : glowLevel >= 3 ? "text-violet-600 dark:text-violet-400" : "text-slate-800 dark:text-zinc-200"}
-              `}
-            >
-              Level {glowLevel}
-              {isFireMode && " 🔥"}
-            </div>
-          </div>
-
-          <div className="w-px h-10 bg-slate-200 dark:bg-white/10" />
-
-          <div className="text-right">
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-1">Global Rank</p>
-            <p className="text-xl font-semibold text-slate-800 dark:text-zinc-200">Top 2%</p>
-          </div>
-        </div>
       </header>
               
         {/* ═══════════════════════════════════════════════════════════════════
