@@ -51,6 +51,7 @@ import FirstMission from "../components/onboarding/FirstMission";
 import { useOnboardingContext } from "../context/OnboardingContext";
 
 import { useAuth } from "../context/AuthContext";
+import MissionClock from "../components/home/MissionClock";
 import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
 
@@ -409,6 +410,9 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
             </span>
           </h1>
           <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Mission Control</p>
+        </div>
+        <div className="hidden md:flex items-center gap-6">
+          <MissionClock />
         </div>
       </header>
               
