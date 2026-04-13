@@ -1,12 +1,10 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v6.1 - "Telemetry & Telepresence HUD" + Custom Logo
+// SHARESYNC SIDEBAR v6.2 - "Telemetry & Telepresence HUD" + Persistent Logo
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES in v6.1:
-// - Implemented custom OpenShareLogo component in the header.
-// - Cleaned out all deprecated v5.1 components (ProgressRing, ShipCounter, etc.)
-// - Retained the v6.0 Momentum Core and Team Telepresence HUD.
+// CHANGES in v6.2:
+// - Fixed the header so the OpenShare logo remains visible when sidebar collapses.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -311,15 +309,17 @@ export default function Sidebar({ user }) {
       >
         {/* Header - Integrating OpenShareLogo */}
         <div className="flex items-center justify-center p-4 pt-6 pb-6">
-          {!collapsed && (
-            <div className="flex items-center gap-2.5">
-              <OpenShareLogo 
-                className={`w-7 h-7 transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] scale-110" : ""}`} 
-                monochrome={false} 
-              />
-              <span className="text-sm font-bold text-slate-800 tracking-wide">OpenShare</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2.5">
+            <OpenShareLogo 
+              className={`w-7 h-7 shrink-0 transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] scale-110" : ""}`} 
+              monochrome={false} 
+            />
+            {!collapsed && (
+              <span className="text-sm font-bold text-slate-800 tracking-wide whitespace-nowrap animate-in fade-in duration-200">
+                OpenShare
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Navigation - Structural and Muted */}
