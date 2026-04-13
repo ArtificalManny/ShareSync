@@ -59,6 +59,9 @@ export class Activity {
       'announcement_created',
       'project_shipped',
       'comment_added',
+      'focus_started',
+      'focus_ended',
+      'momentum_level_up',
     ],
     default: 'comment_added',
     index: true,
@@ -107,3 +110,6 @@ ActivitySchema.index({ projectId: 1, type: 1, _id: -1 });
 ActivitySchema.index({ projectId: 1, entityId: 1, _id: -1 });
 ActivitySchema.index({ userId: 1, createdAt: -1 });
 ActivitySchema.index({ actorId: 1, createdAt: -1 });
+
+// TTL: auto-delete activities older than 30 days
+ActivitySchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 86400 });

@@ -6,14 +6,21 @@
 // - Designed to map from TaskEvent (task.mutation bus)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type ActivityEntityType = 'task';
+export type ActivityEntityType = 'task' | 'project' | 'user' | 'announcement' | 'focus';
 
 export type ActivityType =
   | 'TASK_CREATED'
   | 'TASK_UPDATED'
   | 'TASK_MOVED'
   | 'TASK_COMPLETED'
-  | 'TASK_DELETED';
+  | 'TASK_DELETED'
+  | 'TASK_STARTED'
+  | 'PROJECT_SHIP'
+  | 'COMMENT_ADDED'
+  | 'ANNOUNCEMENT_CREATED'
+  | 'FOCUS_START'
+  | 'FOCUS_END'
+  | 'MOMENTUM_LEVEL_UP';
 
 export type CreateActivityFromTaskEventArgs = {
   projectId: string;

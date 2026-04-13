@@ -55,10 +55,11 @@ function normalizeActivities(items) {
       const type = a?.type || a?.action || a?.event || "ACTIVITY";
       const createdAt = a?.createdAt || a?.timestamp || a?.time || Date.now();
       const actorName =
+        a?.actorName ||
         a?.actor?.name ||
         a?.user?.name ||
+        (a?.userId?.firstName ? `${a.userId.firstName} ${a.userId.lastName || ""}`.trim() : null) ||
         a?.username ||
-        a?.actorName ||
         "Someone";
       const projectName =
         a?.project?.name ||
@@ -194,7 +195,35 @@ function computeStreakComparison(summary, activities) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CROSS-PROJECT TASK FALLBACK
+// ACTIVITY FEED — Fetches from GET /activities/feed with real user names
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function fetchActivityFeed(limit = 50) {
+  try {
+    const response = await client.get('/activities/feed', { params: { limit } });
+    const data = response.data;
+    const items = data?.items || data?.data?.items || [];
+    if (!items.length) return [];
+    // Map to the shape normalizeActivities expects
+    return items.map((item) => ({
+      _id: item._id || item.id,
+      type: item.type || item.action || 'ACTIVITY',
+      actorName: item.actorName || item.actor?.name || 'Someone',
+      username: item.actor?.username || item.username,
+      projectName: item.details?.projectName || item.metadata?.projectName || item.payload?.projectName || null,
+      createdAt: item.createdAt,
+      timestamp: item.createdAt,
+      raw: item,
+      actor: item.actor || null,
+    }));
+  } catch (err) {
+    console.warn('[useHomeRealtime] Activity feed fetch failed:', err?.message);
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CROSS-PROJECT TASK FALLBACK (legacy — used only if /activities/feed fails)
 // When the activities endpoint returns empty (no EventLog entries), we fetch
 // real tasks across all projects and convert them into activity items.
 // Same pattern as the project-level ActivityFeed fallback.
@@ -400,12 +429,21 @@ export function useHomeRealtime() {
         // ═════════════════════════════════════════════════════════════════
         if (a.length === 0) {
           try {
-            const taskItems = await fetchCrossProjectTasks(30);
-            if (taskItems.length > 0) {
-              a = taskItems;
+            // Primary: use /activities/feed with real user names
+            const feedItems = await fetchActivityFeed(50);
+            if (feedItems.length > 0) {
+              a = feedItems;
+            } else {
+              // Legacy fallback: cross-project tasks
+              const taskItems = await fetchCrossProjectTasks(30);
+              if (taskItems.length > 0) a = taskItems;
             }
           } catch (fallbackErr) {
-            console.warn('[useHomeRealtime] Task fallback failed:', fallbackErr?.message);
+            console.warn('[useHomeRealtime] Feed fallback failed:', fallbackErr?.message);
+            try {
+              const taskItems = await fetchCrossProjectTasks(30);
+              if (taskItems.length > 0) a = taskItems;
+            } catch (_) {}
           }
         }
 
@@ -488,9 +526,18 @@ export function useHomeRealtime() {
         // ═════════════════════════════════════════════════════════════════
         if (safeA.length === 0) {
           try {
-            const taskItems = await fetchCrossProjectTasks(30);
-            if (taskItems.length > 0) safeA = taskItems;
-          } catch (_) {}
+            const feedItems = await fetchActivityFeed(50);
+            if (feedItems.length > 0) safeA = feedItems;
+            else {
+              const taskItems = await fetchCrossProjectTasks(30);
+              if (taskItems.length > 0) safeA = taskItems;
+            }
+          } catch (_) {
+            try {
+              const taskItems = await fetchCrossProjectTasks(30);
+              if (taskItems.length > 0) safeA = taskItems;
+            } catch (__) {}
+          }
         }
 
         lastGoodRef.current.activities = safeA;

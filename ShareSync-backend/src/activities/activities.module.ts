@@ -2,7 +2,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { ActivitiesController } from './activities.controller';
+import { ActivitiesController, ActivityFeedController } from './activities.controller';
+import { TaskMutationActivityListener } from './listeners/task-mutation-activity.listener';
 import { ActivitiesService } from './activities.service';
 import { Activity, ActivitySchema } from './schemas/activity.schema';
 
@@ -19,8 +20,8 @@ import { ProjectAccessGuard } from '../common/guards/project-access.guard';
       { name: Project.name, schema: ProjectSchema },
     ]),
   ],
-  controllers: [ActivitiesController],
-  providers: [ActivitiesService, ProjectAccessGuard],
+  controllers: [ActivitiesController, ActivityFeedController],
+  providers: [ActivitiesService, ProjectAccessGuard, TaskMutationActivityListener],
 
   // ✅ THIS is what fixes UserService DI
   exports: [ActivitiesService],

@@ -4,9 +4,7 @@
 // Routes:
 //   GET  /api/projects/:projectId/activity      (read)
 //   POST /api/projects/:projectId/activity/test (write - dev smoke test)
-// Enforces:
-//   • private/team → members only
-//   • public → read allowed (non-members), write still members
+//   GET  /api/activities/feed                   (global feed for dashboard)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -102,5 +100,31 @@ export class ActivitiesController {
       const msg = err?.message || String(err);
       throw new InternalServerErrorException(`Activity test failed: ${msg}`);
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GLOBAL ACTIVITY FEED CONTROLLER
+// GET /api/activities/feed — Dashboard Team Activity panel
+// Returns recent activities with populated user names and avatars
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Controller('activities')
+export class ActivityFeedController {
+  constructor(private readonly activities: ActivitiesService) {}
+
+  @Get('feed')
+  @UseGuards(JwtAuthGuard)
+  async getActivityFeed(
+    @Req() req: any,
+    @Query('limit') limitRaw?: string,
+  ) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    if (!userId) {
+      throw new BadRequestException('Missing user identity');
+    }
+
+    const limit = Math.max(1, Math.min(100, Number.parseInt(String(limitRaw ?? '50'), 10) || 50));
+    return this.activities.getFeed(userId, limit);
   }
 }

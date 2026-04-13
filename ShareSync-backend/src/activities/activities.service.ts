@@ -161,6 +161,52 @@ export class ActivitiesService {
     return this.record(args);
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // getFeed: Returns recent activities with populated user data
+  // Used by GET /activities/feed for the dashboard Team Activity panel
+  // ─────────────────────────────────────────────────────────────────────
+  async getFeed(userId: string, limit = 50) {
+    const safeLimit = Math.max(1, Math.min(200, limit));
+
+    try {
+      // Get all activities for this user's scope (their own + their projects)
+      const items = await this.activityModel
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(safeLimit)
+        .populate('userId', 'firstName lastName username profilePicture')
+        .populate('actorId', 'firstName lastName username profilePicture')
+        .lean()
+        .exec();
+
+      // Transform: resolve actor name from populated userId/actorId
+      const transformed = (items || []).map((item: any) => {
+        const actor = item.actorId || item.userId;
+        const actorName = actor?.firstName
+          ? `${actor.firstName} ${actor.lastName || ''}`.trim()
+          : actor?.username || 'Someone';
+        const actorAvatar = actor?.profilePicture || null;
+
+        return {
+          ...item,
+          actorName,
+          actorAvatar,
+          actor: actor ? {
+            _id: actor._id,
+            name: actorName,
+            avatar: actorAvatar,
+            username: actor.username,
+          } : null,
+        };
+      });
+
+      return { items: transformed, nextCursor: null };
+    } catch (err: any) {
+      this.logger.error('getFeed failed:', err?.message || err);
+      return { items: [], nextCursor: null };
+    }
+  }
+
   async createFromTaskEvent(event: any) {
     return this.record({
       userId: String(event?.userId || event?.actorId || event?.by || event?.sub || ''),
