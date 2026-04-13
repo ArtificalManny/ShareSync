@@ -233,12 +233,22 @@ function normalizeInjected(items) {
     const rawType = String(a?.type || 'activity').toLowerCase();
 
     let type = 'task_complete';
-    if (rawType.includes('ship')) type = 'ship';
+    if (rawType.includes('ship') || rawType.includes('project_ship')) type = 'ship';
     else if (rawType.includes('streak')) type = 'streak';
     else if (rawType.includes('achievement')) type = 'achievement';
     else if (rawType.includes('level')) type = 'level_up';
     else if (rawType.includes('focus')) type = 'focus';
     else if (rawType.includes('milestone')) type = 'milestone';
+    else if (rawType.includes('announcement')) type = 'announcement';
+    else if (rawType.includes('comment') || rawType.includes('thread') || rawType.includes('message_sent')) type = 'comment';
+    else if (rawType.includes('avatar') || rawType.includes('profile')) type = 'profile_update';
+    else if (rawType.includes('task_created') || rawType.includes('task.created')) type = 'task_created';
+    else if (rawType.includes('task_updated') || rawType.includes('task.updated') || rawType.includes('task.moved') || rawType.includes('task_moved')) type = 'task_updated';
+    else if (rawType.includes('task_completed') || rawType.includes('task.completed') || rawType.includes('completed') || rawType.includes('task_complete')) type = 'task_complete';
+    else if (rawType.includes('task_deleted') || rawType.includes('task.deleted')) type = 'task_deleted';
+    else if (rawType.includes('member_added') || rawType.includes('join')) type = 'join';
+    else if (rawType.includes('file') || rawType.includes('upload')) type = 'file_upload';
+    else if (rawType.includes('user.updated') || rawType.includes('user.avatar') || rawType.includes('user.profile')) type = 'profile_update';
 
     const baseId = a?.id || a?._id || `tmp-${Date.now()}-${idx}`;
 
@@ -252,8 +262,8 @@ function normalizeInjected(items) {
         isOnline: true,
       },
       timestamp: new Date(a?.createdAt || a?.timestamp || Date.now()),
-      target: a?.projectName || a?.raw?.target || a?.raw?.projectName || null,
-      description: a?.raw?.description || a?.description || null,
+      target: a?.raw?.payload?.snapshot?.title || a?.raw?.raw?.payload?.snapshot?.title || a?.raw?.taskTitle || a?.raw?.raw?.taskTitle || a?.raw?.target || null,
+      description: a?.projectName || a?.raw?.projectName || a?.raw?.description || a?.description || null,
       reactions: a?.raw?.reactions ?? a?.reactions ?? 0,
       comments: a?.raw?.comments ?? a?.comments ?? 0,
       raw: a,

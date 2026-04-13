@@ -1,0 +1,19 @@
+<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" fill="none" shape-rendering="geometricPrecision">
+  <style>
+    .orbit { stroke: #0f172a; } /* slate-900 for light tabs */
+    @media (prefers-color-scheme: dark) {
+      .orbit { stroke: #f8fafc; } /* slate-50 for dark tabs */
+    }
+  </style>
+  <defs>
+    <linearGradient id="openshare-flow" x1="9" y1="26" x2="27" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="55%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+  </defs>
+
+  <path class="orbit" d="M24.2 4.4A14 14 0 1 1 6 26.5" stroke-width="3.2" stroke-linecap="round" />
+
+  <path d="M23.1 10.2 C20.7 8.4 16 8.1 12.8 9.4 C9.8 10.7 9.5 13.8 12.3 15 C13.4 15.4 14.8 15.8 16.4 16.1 C18.7 16.5 20.4 16.9 21.5 17.7 C24 19.4 23.8 22.7 21.1 24.5 C18.2 26.4 13.6 26.2 10.8 24.2" stroke="url(#openshare-flow)" stroke-width="4.3" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
