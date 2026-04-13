@@ -325,7 +325,7 @@ export default function Sidebar({ user }) {
         {/* Navigation - Structural and Muted */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
           <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
-          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
+          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} collapsed={collapsed} />
           <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
           
           <div className="py-4"><div className="h-px bg-slate-100" /></div>
