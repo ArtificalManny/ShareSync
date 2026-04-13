@@ -1,13 +1,12 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v6.0 - "Telemetry & Telepresence HUD"
+// SHARESYNC SIDEBAR v6.1 - "Telemetry & Telepresence HUD" + Custom Logo
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// CHANGES in v6.0:
-// - Removed negative framing ("Idle", "Level 0", numerical quotas)
-// - Replaced static bottom links with Personal Telemetry (Momentum Sparkline)
-// - Replaced toxic Leaderboard with Team Telepresence (Status Halos)
-// - Added Catalyst Action Button ("Focus Next Mission")
+// CHANGES in v6.1:
+// - Implemented custom OpenShareLogo component in the header.
+// - Cleaned out all deprecated v5.1 components (ProgressRing, ShipCounter, etc.)
+// - Retained the v6.0 Momentum Core and Team Telepresence HUD.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -17,7 +16,6 @@ import {
   User as UserIcon,
   Settings,
   Trophy,
-  Flame,
   Terminal,
   LayoutGrid,
   Zap,
@@ -25,6 +23,7 @@ import {
 
 import SidebarItem from "./nav/SidebarItem";
 import UserAvatar from "./ui/UserAvatar";
+import OpenShareLogo from "./ui/OpenShareLogo";
 import { useFlowState } from "../contexts/FlowStateContext";
 import { useMomentumContext } from "../contexts/MomentumContext";
 
@@ -213,6 +212,7 @@ function HoverTriggerZone({ onHover, onLeave }) {
    MAIN SIDEBAR COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
 export default function Sidebar({ user }) {
+  const navigate = useNavigate();
   const { shouldCollapseSidebar, isInFlow } = useFlowState();
   const { glowLevel, isFireMode } = useMomentumContext();
   const sidebarRef = useRef(null);
@@ -309,13 +309,14 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        {/* Header - Intact OpenShare Logo */}
+        {/* Header - Integrating OpenShareLogo */}
         <div className="flex items-center justify-center p-4 pt-6 pb-6">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className={`sidebar-logo w-7 h-7 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center transition-all duration-500 shadow-md shadow-violet-200 ${isFireMode ? "shadow-orange-200" : ""}`}>
-                <span className="text-xs font-bold text-white">S</span>
-              </div>
+              <OpenShareLogo 
+                className={`w-7 h-7 transition-all duration-500 ${isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] scale-110" : ""}`} 
+                monochrome={false} 
+              />
               <span className="text-sm font-bold text-slate-800 tracking-wide">OpenShare</span>
             </div>
           )}

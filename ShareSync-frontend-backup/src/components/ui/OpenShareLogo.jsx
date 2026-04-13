@@ -1,53 +1,73 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 /**
- * OpenShare "Kinetic Monogram" Logo
- * * Engineered using principles from:
- * - George Bokhua (Grid systems, 16-Pixel Test, Silhouette Test)
- * - Marty Neumeier (Lock-in, Brand Gap stability)
- * - Jens Müller (Modernist geometric reduction)
- * - Jason Beaird (Focal hierarchy and adaptive contrast)
- * * @param {string} className - Tailwind classes to control size and text color. 
- * Example: "w-12 h-12 text-slate-800 dark:text-white"
+ * OpenShare logo
+ *
+ * Design goals:
+ * - Memorable at 16px
+ * - Works in monochrome
+ * - One dominant idea: open orbit + shared flow
+ * - Feels premium, calm, and precise
  */
-export default function OpenShareLogo({ className = "w-8 h-8 text-slate-800 dark:text-slate-100" }) {
+export default function OpenShareLogo({
+  className = "w-8 h-8 text-slate-900 dark:text-slate-100",
+  title = "OpenShare Logo",
+  monochrome = false,
+}) {
+  const id = useId();
+  const gradientId = `${id}-openshare-flow`;
+  const accent = monochrome ? "currentColor" : `url(#${gradientId})`;
+
   return (
-    <svg 
-      viewBox="0 0 32 32" 
-      xmlns="http://www.w3.org/2000/svg" 
+    <svg
+      viewBox="0 0 36 36"
+      xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="OpenShare Logo"
       role="img"
+      aria-label={title}
+      fill="none"
+      shapeRendering="geometricPrecision"
     >
+      <title>{title}</title>
+
       <defs>
-        {/* The Velocity Gradient: Driving the Zeigarnik Effect through color progression */}
-        <linearGradient id="kinetic-core-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#8b5cf6" /> {/* Violet */}
-          <stop offset="100%" stopColor="#d946ef" /> {/* Fuchsia */}
+        <linearGradient
+          id={gradientId}
+          x1="9"
+          y1="26"
+          x2="27"
+          y2="8"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#7C3AED" />
+          <stop offset="55%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#06B6D4" />
         </linearGradient>
       </defs>
-      
-      {/* THE LOCK-IN RING
-        A heavy, grounded geometric track. We leave a precise gap in the top-left 
-        quadrant to break the boundary, creating visual tension and entry flow.
-        Inherits 'currentColor' to seamlessly adapt to Light/Dark modes.
-      */}
-      <path 
-        d="M 16 2.5 A 13.5 13.5 0 1 1 2.5 16" 
-        stroke="currentColor" 
-        strokeWidth="3.5" 
-        strokeLinecap="square" 
-        fill="none" 
+
+      {/* Open orbit: signals openness, system, continuity */}
+      <path
+        d="M24.2 4.4A14 14 0 1 1 6 26.5"
+        stroke="currentColor"
+        strokeWidth="3.2"
+        strokeLinecap="round"
       />
 
-      {/* THE KINETIC MÖBIUS 'S'
-        A continuous, interlocking ribbon that forms an aggressive, forward-leaning 'S'. 
-        It snaps perfectly to the exact geometry of the 32x32 grid.
-        Passes the Silhouette and 16-Pixel tests flawlessly.
-      */}
-      <path 
-        d="M 10 8 H 26 L 14 16 L 22 24 H 6 L 18 16 Z" 
-        fill="url(#kinetic-core-grad)" 
+      {/* Shared flow: one continuous motion inside the orbit */}
+      <path
+        d="
+          M23.1 10.2
+          C20.7 8.4 16 8.1 12.8 9.4
+          C9.8 10.7 9.5 13.8 12.3 15
+          C13.4 15.4 14.8 15.8 16.4 16.1
+          C18.7 16.5 20.4 16.9 21.5 17.7
+          C24 19.4 23.8 22.7 21.1 24.5
+          C18.2 26.4 13.6 26.2 10.8 24.2
+        "
+        stroke={accent}
+        strokeWidth="4.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
