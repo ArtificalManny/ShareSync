@@ -82,13 +82,35 @@ export default function WeekInMotion({ className = "", onShipNow }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch + re-fetch on task completions + gentle poll every 60s
+  const refetch = React.useCallback(() => {
+    fetchWeeklyRhythm().then((result) => {
+      if (result) setData(result);
+      setLoading(false);
+    });
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     fetchWeeklyRhythm().then((result) => {
       if (mounted) { setData(result); setLoading(false); }
     });
-    return () => { mounted = false; };
-  }, []);
+
+    // Re-fetch when a task is completed or shipped
+    const onTaskDone = () => refetch();
+    window.addEventListener("task.completed", onTaskDone);
+    window.addEventListener("local-ship", onTaskDone);
+
+    // Gentle poll every 60s to stay fresh
+    const poll = setInterval(refetch, 60000);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("task.completed", onTaskDone);
+      window.removeEventListener("local-ship", onTaskDone);
+      clearInterval(poll);
+    };
+  }, [refetch]);
 
   const maxCount = useMemo(() => {
     if (!data?.days) return 0;
