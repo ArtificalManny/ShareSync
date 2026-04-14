@@ -8,35 +8,44 @@
     />
     <title>OpenShare</title>
 
+    <!-- SEO -->
     <meta
       name="description"
       content="The only project tracker that prevents burnout before it happens. Stop burning out, start shipping."
     />
     <link rel="canonical" href="https://example.com/" />
 
+    <!-- ⭐ PWA Meta Tags -->
     <meta name="theme-color" content="#a855f7" />
     <meta name="color-scheme" content="light dark" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="ShareSync" />
+    <meta name="apple-mobile-web-app-title" content="OpenShare" />
 
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/openshare-icon.svg" />
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="mask-icon" href="/openshare-icon.svg" color="#a855f7" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#a855f7" />
 
+    <!-- iOS Splash Screens (Optional) -->
     <link rel="apple-touch-startup-image" href="/splash/iphone5_splash.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
     <link rel="apple-touch-startup-image" href="/splash/iphone6_splash.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
     <link rel="apple-touch-startup-image" href="/splash/iphonex_splash.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
 
+    <!-- Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
 
+    <!-- Early theme boot (prevents flash of wrong theme) -->
     <script>
       (function () {
         try {
@@ -57,6 +66,7 @@
       })();
     </script>
 
+    <!-- Fonts (preload + stylesheet) -->
     <link
       rel="preload"
       as="style"
@@ -80,6 +90,7 @@
 
     <script type="module" src="/src/main.jsx"></script>
 
+    <!-- ✅ Service Worker Registration (PROD only; never on localhost) -->
     <script>
       (function () {
         var isLocalhost =
