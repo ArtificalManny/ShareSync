@@ -1,7 +1,7 @@
 // src/stats/stats.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 type Activity = {
   projectId: string;
@@ -51,12 +51,13 @@ export class StatsService {
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
 
     try {
+      const uid = new Types.ObjectId(userId);
       // Ships this week (last 7 days)
       const weeklyShips = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: userId },
-          { completedBy: userId },
-          { userId: userId },
+          { assignedTo: uid },
+          { completedBy: uid },
+          { userId: uid },
         ],
         status: { $in: ['completed', 'done', 'Done', 'Completed'] },
         completedAt: { $gte: sevenDaysAgo },
@@ -65,9 +66,9 @@ export class StatsService {
       // Ships last week (7-14 days ago)
       const lastWeekShips = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: userId },
-          { completedBy: userId },
-          { userId: userId },
+          { assignedTo: uid },
+          { completedBy: uid },
+          { userId: uid },
         ],
         status: { $in: ['completed', 'done', 'Done', 'Completed'] },
         completedAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo },
@@ -76,15 +77,15 @@ export class StatsService {
       // Completion rate: completed / total assigned
       const totalAssigned = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: userId },
-          { userId: userId },
+          { assignedTo: uid },
+          { userId: uid },
         ],
       });
       const totalCompleted = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: userId },
-          { completedBy: userId },
-          { userId: userId },
+          { assignedTo: uid },
+          { completedBy: uid },
+          { userId: uid },
         ],
         status: { $in: ['completed', 'done', 'Done', 'Completed'] },
       });
@@ -109,8 +110,8 @@ export class StatsService {
         const dayEnd = new Date(dayStart.getTime() + 86400000);
         const hasActivity = await this.taskModel.countDocuments({
           $or: [
-            { completedBy: userId },
-            { userId: userId },
+            { completedBy: uid },
+            { userId: uid },
           ],
           completedAt: { $gte: dayStart, $lt: dayEnd },
         });
@@ -178,6 +179,7 @@ export class StatsService {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     try {
+      const uid = new Types.ObjectId(userId);
       // Build 7-day array (oldest first: index 0 = 6 days ago, index 6 = today)
       const days: any[] = [];
       for (let i = 6; i >= 0; i--) {
@@ -186,9 +188,9 @@ export class StatsService {
 
         const count = await this.taskModel.countDocuments({
           $or: [
-            { assignedTo: userId },
-            { completedBy: userId },
-            { userId: userId },
+            { assignedTo: uid },
+            { completedBy: uid },
+            { userId: uid },
           ],
           status: { $in: ['completed', 'done', 'Done', 'Completed'] },
           completedAt: { $gte: dayStart, $lt: dayEnd },
@@ -214,9 +216,9 @@ export class StatsService {
       const lastWeekEnd = new Date(today.getTime() - 6 * 86400000);
       const lastWeekTotal = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: userId },
-          { completedBy: userId },
-          { userId: userId },
+          { assignedTo: uid },
+          { completedBy: uid },
+          { userId: uid },
         ],
         status: { $in: ['completed', 'done', 'Done', 'Completed'] },
         completedAt: { $gte: lastWeekStart, $lt: lastWeekEnd },
@@ -240,8 +242,8 @@ export class StatsService {
       const sevenDaysAgo = new Date(today.getTime() - 6 * 86400000);
       const recentTasks = await this.taskModel.find({
         $or: [
-          { completedBy: userId },
-          { userId: userId },
+          { completedBy: uid },
+          { userId: uid },
         ],
         status: { $in: ['completed', 'done', 'Done', 'Completed'] },
         completedAt: { $gte: sevenDaysAgo },
