@@ -1,0 +1,164 @@
+// src/components/home/WeekInMotion.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import { TrendingUp, TrendingDown, Minus, Zap, Sparkles } from "lucide-react";
+import client from "../../api/client";
+
+async function fetchWeeklyRhythm() {
+  try {
+    const res = await client.get("/users/me/weekly-rhythm");
+    return res.data?.data || res.data || null;
+  } catch (err) {
+    console.warn("[WeekInMotion] Fetch failed:", err?.message);
+    return null;
+  }
+}
+
+function RhythmBar({ day, count, maxCount, isToday, isPeak }) {
+  const fillPercent = maxCount > 0 ? Math.max(8, (count / maxCount) * 100) : 0;
+  const isEmpty = count === 0;
+
+  return (
+    <div className="flex flex-col items-center gap-2 flex-1">
+      <div className="relative w-full flex justify-center">
+        <div
+          className={`
+            relative w-7 sm:w-8 rounded-t-lg rounded-b-sm overflow-hidden
+            transition-all duration-700 ease-out
+            ${isEmpty
+              ? "border border-dashed border-slate-200 dark:border-white/10 bg-transparent"
+              : "bg-gradient-to-t from-violet-500/80 via-violet-400/60 to-teal-400/40 dark:from-violet-500 dark:via-violet-400/80 dark:to-teal-400/60"
+            }
+            ${isToday && !isEmpty ? "ring-2 ring-violet-400/50 dark:ring-violet-400/40 ring-offset-2 ring-offset-white dark:ring-offset-[#1f1f23]" : ""}
+            ${isPeak && !isEmpty ? "shadow-lg shadow-violet-500/20" : ""}
+          `}
+          style={{
+            height: `${isEmpty ? 12 : Math.max(12, fillPercent * 0.72)}px`,
+            minHeight: "12px",
+            maxHeight: "72px",
+          }}
+        >
+          {isToday && !isEmpty && (
+            <div
+              className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent animate-pulse"
+              style={{ animationDuration: "2.5s" }}
+            />
+          )}
+        </div>
+        {count > 0 && (
+          <span className={`absolute -top-5 text-[10px] font-semibold tabular-nums ${isPeak ? "text-violet-600 dark:text-violet-400" : "text-slate-500 dark:text-zinc-400"}`}>
+            {count}
+          </span>
+        )}
+      </div>
+      <span className={`text-[10px] font-medium tracking-wide ${isToday ? "text-violet-600 dark:text-violet-400 font-semibold" : isEmpty ? "text-slate-300 dark:text-zinc-600" : "text-slate-500 dark:text-zinc-400"}`}>
+        {day}
+      </span>
+      {isToday && (
+        <div className="w-1.5 h-1.5 rounded-full bg-violet-500 dark:bg-violet-400 -mt-1 animate-pulse" />
+      )}
+    </div>
+  );
+}
+
+function MomentumIndicator({ momentum, label }) {
+  const configs = {
+    rising: { Icon: TrendingUp, color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10", border: "border-teal-200 dark:border-teal-500/20" },
+    steady: { Icon: Minus, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10", border: "border-violet-200 dark:border-violet-500/20" },
+    recharging: { Icon: TrendingDown, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", border: "border-amber-200 dark:border-amber-500/20" },
+    idle: { Icon: Sparkles, color: "text-slate-500 dark:text-zinc-400", bg: "bg-slate-50 dark:bg-zinc-800", border: "border-slate-200 dark:border-white/10" },
+  };
+  const config = configs[momentum] || configs.idle;
+  const { Icon } = config;
+
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${config.bg} ${config.border} ${config.color}`}>
+      <Icon className="w-3.5 h-3.5" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+export default function WeekInMotion({ className = "", onShipNow }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchWeeklyRhythm().then((result) => {
+      if (mounted) { setData(result); setLoading(false); }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const maxCount = useMemo(() => {
+    if (!data?.days) return 0;
+    return Math.max(...data.days.map((d) => d.count), 0);
+  }, [data]);
+
+  const peakDate = data?.peakDay?.day || null;
+  const showCTA = data && (data.momentum === "recharging" || data.momentum === "idle" || data.momentum === "steady");
+
+  if (loading) {
+    return (
+      <div className={`p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-[0_4px_24px_rgba(139,92,246,0.06)] animate-pulse ${className}`}>
+        <div className="h-4 bg-slate-100 dark:bg-zinc-800 rounded w-40 mb-6" />
+        <div className="flex items-end gap-3 justify-between h-24 mb-6">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex-1 flex justify-center">
+              <div className="w-7 bg-slate-100 dark:bg-zinc-800 rounded" style={{ height: `${20 + Math.random() * 40}px` }} />
+            </div>
+          ))}
+        </div>
+        <div className="h-3 bg-slate-100 dark:bg-zinc-800 rounded w-3/4" />
+      </div>
+    );
+  }
+
+  if (!data || !data.days?.length) return null;
+
+  return (
+    <div className={`p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-500/30 shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)] transition-all duration-300 ${className}`}>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+          <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Your Week in Motion</h3>
+        </div>
+        <MomentumIndicator momentum={data.momentum} label={data.momentumLabel} />
+      </div>
+
+      <div className="flex items-end gap-1 sm:gap-2 justify-between px-1 mb-6" style={{ minHeight: "96px" }}>
+        {data.days.map((d, i) => (
+          <RhythmBar key={d.date || i} day={d.day} count={d.count} maxCount={maxCount} isToday={d.isToday} isPeak={peakDate && d.day === peakDate} />
+        ))}
+      </div>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent mb-4" />
+
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <p className="text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">{data.insight}</p>
+          <div className="flex items-center gap-4 mt-3">
+            <span className="text-xs text-slate-400 dark:text-zinc-500">
+              <span className="font-semibold text-slate-600 dark:text-zinc-300">{data.thisWeekTotal}</span> shipped this week
+            </span>
+            {data.activeDays > 0 && (
+              <span className="text-xs text-slate-400 dark:text-zinc-500">
+                <span className="font-semibold text-slate-600 dark:text-zinc-300">{data.activeDays}</span>/{data.totalDays} days active
+              </span>
+            )}
+            {data.lastWeekTotal > 0 && (
+              <span className="text-xs text-slate-400 dark:text-zinc-500">
+                vs <span className="font-semibold text-slate-600 dark:text-zinc-300">{data.lastWeekTotal}</span> last week
+              </span>
+            )}
+          </div>
+        </div>
+        {showCTA && onShipNow && (
+          <button onClick={onShipNow} className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 hover:bg-violet-100 dark:hover:bg-violet-500/20 hover:border-violet-300 dark:hover:border-violet-500/30 transition-all duration-200 active:scale-95">
+            Ship something
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

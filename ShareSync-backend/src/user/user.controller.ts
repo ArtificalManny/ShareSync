@@ -246,6 +246,36 @@ export class UserController {
   }
   
   // ─────────────────────────────────────────────────────────────────────────────
+  // GET /users/me/weekly-rhythm - Your Week in Motion data
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/weekly-rhythm')
+  async getMyWeeklyRhythm(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.id;
+
+    if (!this.statsService) {
+      return {
+        success: true,
+        data: {
+          days: [],
+          thisWeekTotal: 0,
+          lastWeekTotal: 0,
+          momentum: 'idle',
+          momentumLabel: 'Ready to launch',
+          insight: 'Stats service not available.',
+          peakDay: null,
+          peakHour: null,
+          activeDays: 0,
+          totalDays: 7,
+        },
+      };
+    }
+
+    const rhythm = await this.statsService.getWeeklyRhythm(userId);
+    return { success: true, data: rhythm };
+  }
+
   // GET /users/me/stats - Dashboard velocity metrics (Phase 3)
   // Self-healing: recalculates if statsLastCalculated > 5 min old
   // ─────────────────────────────────────────────────────────────────────────────

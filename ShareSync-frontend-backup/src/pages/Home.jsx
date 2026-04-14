@@ -29,6 +29,7 @@ import TeamBalancePanel from "../components/home/TeamBalancePanel";
 import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
+import WeekInMotion from "../components/home/WeekInMotion";
 import IntelligencePanel from "../components/home/IntelligencePanel";
 
 import { useAnalytics } from "../contexts/AnalyticsContext";
@@ -548,6 +549,12 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
               </div>
             )}
           </div>
+
+          {/* Your Week in Motion — personal velocity narrative */}
+          <WeekInMotion
+            className="mt-6"
+            onShipNow={() => refreshAll?.()}
+          />
         </div>
 
         {/* Right sidebar */}

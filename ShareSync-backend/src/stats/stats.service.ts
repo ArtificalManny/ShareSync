@@ -168,6 +168,148 @@ export class StatsService {
     }
   }
 
+  // ─── getWeeklyRhythm ──────────────────────────────────────────────
+  // Returns 7-day activity breakdown with behavioral insights.
+  // Powers the "Your Week in Motion" dashboard card.
+  // ─────────────────────────────────────────────────────────────────────
+  async getWeeklyRhythm(userId: string): Promise<any> {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    try {
+      // Build 7-day array (oldest first: index 0 = 6 days ago, index 6 = today)
+      const days: any[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(today.getTime() - i * 86400000);
+        const dayEnd = new Date(dayStart.getTime() + 86400000);
+
+        const count = await this.taskModel.countDocuments({
+          $or: [
+            { assignedTo: userId },
+            { completedBy: userId },
+            { userId: userId },
+          ],
+          status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+          completedAt: { $gte: dayStart, $lt: dayEnd },
+        });
+
+        days.push({
+          day: dayNames[dayStart.getDay()],
+          date: dayStart.toISOString().slice(0, 10),
+          count,
+          isToday: i === 0,
+        });
+      }
+
+      // Peak day
+      const maxCount = Math.max(...days.map((d: any) => d.count), 0);
+      const peakDay = days.find((d: any) => d.count === maxCount && d.count > 0) || null;
+
+      // This week total
+      const thisWeekTotal = days.reduce((sum: number, d: any) => sum + d.count, 0);
+
+      // Last week total (7-13 days ago)
+      const lastWeekStart = new Date(today.getTime() - 13 * 86400000);
+      const lastWeekEnd = new Date(today.getTime() - 6 * 86400000);
+      const lastWeekTotal = await this.taskModel.countDocuments({
+        $or: [
+          { assignedTo: userId },
+          { completedBy: userId },
+          { userId: userId },
+        ],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+        completedAt: { $gte: lastWeekStart, $lt: lastWeekEnd },
+      });
+
+      // Momentum direction
+      let momentum = 'steady';
+      let momentumLabel = 'Holding steady';
+      if (lastWeekTotal === 0 && thisWeekTotal === 0) {
+        momentum = 'idle';
+        momentumLabel = 'Ready to launch';
+      } else if (thisWeekTotal > lastWeekTotal * 1.2) {
+        momentum = 'rising';
+        momentumLabel = 'Building steam';
+      } else if (thisWeekTotal < lastWeekTotal * 0.8) {
+        momentum = 'recharging';
+        momentumLabel = 'Recharging';
+      }
+
+      // Peak hour (from completedAt timestamps this week)
+      const sevenDaysAgo = new Date(today.getTime() - 6 * 86400000);
+      const recentTasks = await this.taskModel.find({
+        $or: [
+          { completedBy: userId },
+          { userId: userId },
+        ],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+        completedAt: { $gte: sevenDaysAgo },
+      }).select('completedAt').lean();
+
+      const hourBuckets = new Array(24).fill(0);
+      for (const t of recentTasks) {
+        if (t.completedAt) {
+          hourBuckets[new Date(t.completedAt).getHours()]++;
+        }
+      }
+      const peakHour = hourBuckets.some((v: number) => v > 0)
+        ? hourBuckets.indexOf(Math.max(...hourBuckets))
+        : null;
+
+      // Behavioral insight
+      let insight = '';
+      const activeDays = days.filter((d: any) => d.count > 0).length;
+
+      if (thisWeekTotal === 0) {
+        insight = 'Start your week strong \u2014 complete one task to build momentum.';
+      } else if (peakDay && peakDay.count >= 3) {
+        insight = `Your strongest day was ${peakDay.day} with ${peakDay.count} tasks shipped.`;
+      } else if (peakHour !== null && thisWeekTotal >= 2) {
+        const hourLabel = peakHour === 0 ? '12 AM' : peakHour <= 11 ? `${peakHour} AM` : peakHour === 12 ? '12 PM' : `${peakHour - 12} PM`;
+        insight = `You ship most around ${hourLabel}. Protect that window.`;
+      } else if (activeDays >= 5) {
+        insight = `${activeDays} active days this week \u2014 you\u2019re in a rhythm.`;
+      } else if (thisWeekTotal === 1) {
+        insight = 'One down. Ship one more today to start a streak.';
+      } else {
+        insight = `${thisWeekTotal} tasks shipped across ${activeDays} day${activeDays !== 1 ? 's' : ''}. Keep building.`;
+      }
+
+      return {
+        days,
+        thisWeekTotal,
+        lastWeekTotal,
+        momentum,
+        momentumLabel,
+        insight,
+        peakDay: peakDay ? { day: peakDay.day, count: peakDay.count } : null,
+        peakHour,
+        activeDays,
+        totalDays: 7,
+      };
+    } catch (err: any) {
+      this.logger.error(`[Stats] getWeeklyRhythm failed for ${userId}:`, err?.message || err);
+      return {
+        days: Array.from({ length: 7 }, (_, i) => ({
+          day: dayNames[(today.getDay() - 6 + i + 7) % 7],
+          date: new Date(today.getTime() - (6 - i) * 86400000).toISOString().slice(0, 10),
+          count: 0,
+          isToday: i === 6,
+        })),
+        thisWeekTotal: 0,
+        lastWeekTotal: 0,
+        momentum: 'idle',
+        momentumLabel: 'Ready to launch',
+        insight: 'Start your week strong \u2014 complete one task to build momentum.',
+        peakDay: null,
+        peakHour: null,
+        activeDays: 0,
+        totalDays: 7,
+      };
+    }
+  }
+
   // MOCK DATA — Replace with real DB later
   private mockActivities: Activity[] = [
     { projectId: "1", type: "task.completed", createdAt: new Date() },
