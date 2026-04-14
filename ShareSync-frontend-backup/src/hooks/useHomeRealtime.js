@@ -551,11 +551,17 @@ export function useHomeRealtime() {
 
     pollingRef.current.summary = setInterval(async () => {
       try {
-        const s = await fetchActivitySummary();
-        const safeS = s && typeof s === "object" ? s : null;
-        if (safeS) {
-          lastGoodRef.current.summary = safeS;
-          safeSet(setSummaryRaw, safeS);
+        const stats = await fetchUserStats();
+        if (stats) {
+          const merged = {
+            ...(lastGoodRef.current.summary || {}),
+            ships: stats.ships ?? stats.weeklyShips ?? 0,
+            streakDays: stats.streakDays ?? 0,
+            focus: stats.focus ?? stats.completionRate ?? 0,
+            efficiency: stats.efficiency ?? 0,
+          };
+          lastGoodRef.current.summary = merged;
+          safeSet(setSummaryRaw, merged);
         }
         safeSet(setIsConnected, true);
       } catch (e) {

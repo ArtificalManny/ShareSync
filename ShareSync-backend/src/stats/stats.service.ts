@@ -55,7 +55,7 @@ export class StatsService {
       // Ships this week (last 7 days)
       const weeklyShips = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: uid },
+          { assigneeId: uid },
           { completedBy: uid },
           { userId: uid },
         ],
@@ -66,7 +66,7 @@ export class StatsService {
       // Ships last week (7-14 days ago)
       const lastWeekShips = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: uid },
+          { assigneeId: uid },
           { completedBy: uid },
           { userId: uid },
         ],
@@ -77,13 +77,13 @@ export class StatsService {
       // Completion rate: completed / total assigned
       const totalAssigned = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: uid },
+          { assigneeId: uid },
           { userId: uid },
         ],
       });
       const totalCompleted = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: uid },
+          { assigneeId: uid },
           { completedBy: uid },
           { userId: uid },
         ],
@@ -188,7 +188,7 @@ export class StatsService {
 
         const count = await this.taskModel.countDocuments({
           $or: [
-            { assignedTo: uid },
+            { assigneeId: uid },
             { completedBy: uid },
             { userId: uid },
           ],
@@ -216,7 +216,7 @@ export class StatsService {
       const lastWeekEnd = new Date(today.getTime() - 6 * 86400000);
       const lastWeekTotal = await this.taskModel.countDocuments({
         $or: [
-          { assignedTo: uid },
+          { assigneeId: uid },
           { completedBy: uid },
           { userId: uid },
         ],
