@@ -35,10 +35,9 @@ export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
   constructor(
-    @InjectModel(DailySnapshot.name)
-    private readonly snapshotModel: Model<DailySnapshotDocument>,
-    @InjectModel(EventLog.name)
-    private readonly eventLogModel: Model<EventLogDocument>,
+    @InjectModel(DailySnapshot.name) private readonly snapshotModel: Model<DailySnapshotDocument>,
+    @InjectModel(EventLog.name) private readonly eventLogModel: Model<EventLogDocument>,
+    @InjectModel('Task') private readonly taskModel: Model<any>,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -279,86 +278,108 @@ export class AnalyticsService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   async getIntelligence(userId: string, projectId?: string): Promise<any> {
-    // 1. Peak Window (Analyze last 14 days of TASK_COMPLETED events)
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    const uid = new Types.ObjectId(userId);
+    const now = new Date();
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
 
-    const completions = await this.eventLogModel.aggregate([
-      {
-        $match: {
-          userId: new Types.ObjectId(userId),
-          type: EventType.TASK_COMPLETED,
-          timestamp: { $gte: twoWeeksAgo }
-        }
-      },
-      {
-        $project: {
-          hour: { $hour: "$timestamp" } // Basic UTC hour clustering
-        }
-      },
-      {
-        $group: {
-          _id: "$hour",
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: 1 }
-    ]);
+    try {
+      // 1. Peak Window — from real task completedAt timestamps
+      const recentTasks = await this.taskModel.find({
+        $or: [{ completedBy: uid }, { userId: uid }, { createdBy: uid }],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+        completedAt: { $gte: twoWeeksAgo },
+      }).select('completedAt').lean();
 
-    let peakHour = 10; // Default to 10:00 AM if insufficient data
-    if (completions.length > 0 && completions[0]._id !== null) {
-      peakHour = completions[0]._id;
-    }
+      const hourBuckets = new Array(24).fill(0);
+      for (const t of recentTasks) {
+        if (t.completedAt) hourBuckets[new Date(t.completedAt).getHours()]++;
+      }
 
-    const formatHour = (h: number) => {
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const hr = h % 12 || 12;
-      return `${hr}:00 ${ampm}`;
-    };
+      const hasData = hourBuckets.some(v => v > 0);
+      const peakHour = hasData ? hourBuckets.indexOf(Math.max(...hourBuckets)) : null;
 
-    const peakWindowStart = formatHour(peakHour);
-    const peakWindowEnd = formatHour((peakHour + 2) % 24);
+      const formatHour = (h: number) => {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const hr = h % 12 || 12;
+        return `${hr}:00 ${ampm}`;
+      };
 
-    // 2. Co-working Multiplier (Check if team members fired events in the last 15 mins)
-    let coWorkingMultiplier = 1.0;
-    let isCoWorking = false;
+      const peakWindowStart = peakHour !== null ? formatHour(peakHour) : '10:00 AM';
+      const peakWindowEnd = peakHour !== null ? formatHour((peakHour + 2) % 24) : '12:00 PM';
 
-    if (projectId && Types.ObjectId.isValid(projectId)) {
-      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
-      
-      const activeOthers = await this.eventLogModel.distinct('userId', {
-        projectId: new Types.ObjectId(projectId),
-        userId: { $ne: new Types.ObjectId(userId) },
-        timestamp: { $gte: fifteenMinsAgo }
+      // 2. Productivity — completion rate from real tasks
+      const totalAssigned = await this.taskModel.countDocuments({
+        $or: [{ assigneeId: uid }, { createdBy: uid }, { userId: uid }],
+      });
+      const totalCompleted = await this.taskModel.countDocuments({
+        $or: [{ completedBy: uid }, { createdBy: uid }, { userId: uid }],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+      });
+      const productivity = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
+
+      // 3. Workload indicator — ships this week vs capacity
+      const weeklyShips = await this.taskModel.countDocuments({
+        $or: [{ completedBy: uid }, { userId: uid }],
+        status: { $in: ['completed', 'done', 'Done', 'Completed'] },
+        completedAt: { $gte: sevenDaysAgo },
       });
 
-      if (activeOthers.length > 0) {
-        isCoWorking = true;
-        // Base 1.0 + 0.2 per active teammate, capped at 1.5x
-        coWorkingMultiplier = Math.min(1.0 + (activeOthers.length * 0.2), 1.5);
+      const openTasks = await this.taskModel.countDocuments({
+        $or: [{ assigneeId: uid }, { createdBy: uid }, { userId: uid }],
+        status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
+      });
+
+      // 4. Co-working check (if projectId provided)
+      let coWorkingMultiplier = 1.0;
+      let isCoWorking = false;
+
+      if (projectId && Types.ObjectId.isValid(projectId)) {
+        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+        try {
+          const activeOthers = await this.eventLogModel.distinct('userId', {
+            projectId: new Types.ObjectId(projectId),
+            userId: { $ne: uid },
+            timestamp: { $gte: fifteenMinsAgo },
+          });
+          if (activeOthers.length > 0) {
+            isCoWorking = true;
+            coWorkingMultiplier = 1.0 + Math.min(activeOthers.length * 0.1, 0.5);
+          }
+        } catch (_) {}
       }
+
+      // 5. Current hour check — is user in their peak window right now?
+      const currentHour = new Date().getHours();
+      const inPeakWindow = peakHour !== null && currentHour >= peakHour && currentHour < (peakHour + 2);
+
+      return {
+        peakWindowStart,
+        peakWindowEnd,
+        peakHour,
+        inPeakWindow,
+        productivity,
+        weeklyShips,
+        openTasks,
+        totalCompleted,
+        coWorkingMultiplier,
+        isCoWorking,
+      };
+    } catch (err) {
+      this.logger.error('[Analytics] getIntelligence failed:', err?.message);
+      return {
+        peakWindowStart: '10:00 AM',
+        peakWindowEnd: '12:00 PM',
+        peakHour: null,
+        inPeakWindow: false,
+        productivity: 0,
+        weeklyShips: 0,
+        openTasks: 0,
+        totalCompleted: 0,
+        coWorkingMultiplier: 1.0,
+        isCoWorking: false,
+      };
     }
-
-    // 3. Productivity Score
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const todayEventsCount = await this.eventLogModel.countDocuments({
-      userId: new Types.ObjectId(userId),
-      timestamp: { $gte: today }
-    });
-
-    // Realistic scale capping at 98
-    const productivity = Math.min(75 + (todayEventsCount * 2), 98);
-
-    return {
-      peakWindowStart,
-      peakWindowEnd,
-      productivity,
-      coWorkingMultiplier: Number(coWorkingMultiplier.toFixed(1)),
-      isCoWorking
-    };
   }
 
   async getUserProductivity(

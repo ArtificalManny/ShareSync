@@ -149,7 +149,7 @@ export class AnalyticsController {
     };
   }
 
-  @Get('user/intelligence')
+  @Get('me/intelligence')
   @ApiOperation({ summary: 'Get real-time user intelligence and co-working stats' })
   @ApiQuery({ name: 'projectId', required: false })
   async getIntelligence(@Req() req: any, @Query('projectId') projectId?: string) {

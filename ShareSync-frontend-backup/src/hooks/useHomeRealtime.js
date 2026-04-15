@@ -340,7 +340,7 @@ function parseTimeStringToHour(timeStr) {
 
 async function fetchUserIntelligence() {
   try {
-    const response = await client.get('/analytics/user/intelligence');
+    const response = await client.get('/analytics/me/intelligence');
     const data = response.data?.data || response.data;
 
     if (!data) return null;
