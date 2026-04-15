@@ -222,6 +222,23 @@ async function fetchActivityFeed(limit = 50) {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PRIORITY TASKS FETCH
+// Powers "Recommended for Today" with real task cards instead of projects
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function fetchPriorityTasks(limit = 5) {
+  try {
+    const response = await client.get('/tasks/priorities', { params: { limit } });
+    const data = response.data?.data || response.data;
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.warn('[useHomeRealtime] Priority tasks fetch failed:', err?.message);
+    return [];
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CROSS-PROJECT TASK FALLBACK (legacy — used only if /activities/feed fails)
 // When the activities endpoint returns empty (no EventLog entries), we fetch
@@ -373,6 +390,7 @@ export function useHomeRealtime() {
   const [summaryRaw, setSummaryRaw] = useState(null);
   const [intelligenceData, setIntelligenceData] = useState(null);
 
+  const [priorityTasks, setPriorityTasks] = useState([]);
   const [loadingMissions, setLoadingMissions] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
 
@@ -407,6 +425,12 @@ export function useHomeRealtime() {
       ]);
 
       let anySuccess = false;
+
+      // Priority Tasks (for Recommended for Today)
+      try {
+        const pt = await fetchPriorityTasks(5);
+        safeSet(setPriorityTasks, pt);
+      } catch (_) {}
 
       // Projects
       if (pRes.status === "fulfilled") {
@@ -707,6 +731,7 @@ export function useHomeRealtime() {
   return {
     loadingMissions,
     missions,
+    priorityTasks,
     projects,
     activities,
     summary: computedSummary,

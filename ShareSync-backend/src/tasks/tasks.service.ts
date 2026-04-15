@@ -416,6 +416,7 @@ export class TasksService {
         $or: [
           { assigneeId: new Types.ObjectId(userId) },
           { assignee: new Types.ObjectId(userId) },
+          { createdBy: new Types.ObjectId(userId) },
           { reporterId: new Types.ObjectId(userId) },
           { reporter: new Types.ObjectId(userId) },
         ],

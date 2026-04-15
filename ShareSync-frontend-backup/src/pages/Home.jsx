@@ -247,6 +247,7 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
  const {
     loadingMissions,
     missions = [],
+    priorityTasks = [],
     activities = [],
     summary = { ships: 0, streakDays: 0, focus: 0, efficiency: 0 },
     teamPulse = { activeCount: 0, shippingNow: 0, inFocus: 0, actors: [] },
@@ -509,6 +510,52 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
             <div className="space-y-3">
               {loadingMissions ? (
                 <MissionCardSkeleton count={3} />
+              ) : priorityTasks.length > 0 ? (
+                priorityTasks.map((task, index) => {
+                  const taskId = task._id || task.id;
+                  return (
+                    <div
+                      key={taskId}
+                      className={`
+                        flex items-center gap-3 p-4 rounded-xl
+                        bg-white/60 dark:bg-white/[0.04]
+                        border border-gray-200/60 dark:border-white/[0.06]
+                        hover:border-violet-300 dark:hover:border-violet-500/30
+                        transition-all duration-200 group cursor-pointer
+                        ${showEntranceHighlight && index === 0 ? "ring-2 ring-violet-200 dark:ring-violet-500/30" : ""}
+                      `}
+                      style={{ animationDelay: showEntranceHighlight ? `${index * 100}ms` : "0ms" }}
+                    >
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const client = (await import("../api/client")).default;
+                            await client.patch(`/tasks/${taskId}/complete`);
+                            window.dispatchEvent(new CustomEvent("task.completed"));
+                            refreshAll?.();
+                          } catch (err) {
+                            console.error("Complete failed:", err);
+                          }
+                        }}
+                        className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-violet-500 hover:bg-violet-500 transition-colors flex-shrink-0 flex items-center justify-center group/check"
+                        title="Complete task"
+                      >
+                        <svg className="w-3 h-3 text-white opacity-0 group-hover/check:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {task.priority === "high" || task.priority === "urgent" ? "🔥 " : ""}{task.priority || "medium"} priority
+                          {task.dueDate ? ` · Due ${new Date(task.dueDate).toLocaleDateString()}` : ""}
+                        </p>
+                      </div>
+                      <span className="text-xs px-2 py-1 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 font-medium flex-shrink-0">
+                        {task.status === "in_progress" ? "In Progress" : "To Do"}
+                      </span>
+                    </div>
+                  );
+                })
               ) : missions.length > 0 ? (
                 missions.map((mission, index) => (
                   <div
