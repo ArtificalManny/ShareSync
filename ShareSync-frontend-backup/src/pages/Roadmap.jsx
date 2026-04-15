@@ -16,11 +16,13 @@ import {
 import RoadmapView from '../components/roadmap/RoadmapView';
 import { getMilestones, createMilestone, updateMilestone, deleteMilestone } from '../api/milestones';
 import { toast } from '../components/ui/toast';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /* ─────────────────────────────────────────────────────────────────────────
    MILESTONE MODAL (Placeholder - can be expanded)
 ───────────────────────────────────────────────────────────────────────── */
 const MilestoneModal = ({ milestone, projectId, onClose, onSave }) => {
+  useDocumentTitle("Roadmap");
   const [title, setTitle] = useState(milestone?.title || '');
   const [description, setDescription] = useState(milestone?.description || '');
   const [dueDate, setDueDate] = useState(

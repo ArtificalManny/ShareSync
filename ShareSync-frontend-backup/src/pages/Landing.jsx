@@ -8,8 +8,10 @@ import {
   Linkedin, Menu, XIcon
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function Landing() {
+  useDocumentTitle("OpenShare");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentTestimonial, setCurrentTestimonial] = useState(0);

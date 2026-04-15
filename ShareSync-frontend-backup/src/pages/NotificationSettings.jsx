@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Mail, MessageSquare, Moon, Phone, Check, X } from 'lucide-react';
 import { updateNotificationSettings, updatePhoneNumber } from '../api/notifications';
 import { toast } from '../components/ui/toast';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const NotificationSettings = () => {
+  useDocumentTitle("Notification Settings");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   

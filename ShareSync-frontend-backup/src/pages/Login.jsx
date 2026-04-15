@@ -12,8 +12,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function Login() {
+  useDocumentTitle("OpenShare");
   const navigate = useNavigate();
   const { login } = useAuth();
 

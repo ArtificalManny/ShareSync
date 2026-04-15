@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import { User, Mail, Lock, AlertCircle } from 'lucide-react';
 import './Register.css';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const Register = () => {
+  useDocumentTitle("OpenShare");
   const navigate = useNavigate();
   const { register, isAuthenticated, isLoading, authError, setAuthError } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');

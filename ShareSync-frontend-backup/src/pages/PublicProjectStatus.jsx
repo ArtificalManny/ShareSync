@@ -11,6 +11,7 @@ import FollowButton from "../components/follow/FollowButton.jsx";
 // ✅ Step 6: join public project room + live feed
 import { useSocketContext } from "../context/SocketContext.jsx";
 import PublicProjectLiveFeed from "../components/public/PublicProjectLiveFeed.jsx";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /** Simple KPI card */
 function Kpi({ label, value, hint }) {
@@ -55,6 +56,7 @@ function getTokenAny() {
 }
 
 export default function PublicProjectStatus() {
+  useDocumentTitle("Project Status");
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

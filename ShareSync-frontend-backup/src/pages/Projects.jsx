@@ -22,6 +22,7 @@ import EmptySearch from '../components/empty-states/EmptySearch';
 
 // Use API helpers that already unwrap backend shapes correctly
 import { getProjects } from '../api/projects';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /* ─────────────────────────────────────────────────────────────────────────
    HELPER: Safely get project ID (handles both _id and id)
@@ -55,6 +56,7 @@ const VelocityBar = ({ percentage }) => {
    PROJECT CARD - Grid View (World Class Tactile UI)
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectCard({ project, onProjectClick, onStartSprint }) {
+  useDocumentTitle("Projects");
   const getSeasonEmoji = (season) => {
     switch (season) {
       case 'shipping': return '🚀';

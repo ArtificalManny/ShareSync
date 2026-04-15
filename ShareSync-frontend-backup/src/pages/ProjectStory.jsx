@@ -27,6 +27,7 @@ import {
 
 // API
 import { getProject } from '../api/projects';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const TABS = [
   { id: 'timeline', label: 'Timeline', icon: History },
@@ -35,6 +36,7 @@ const TABS = [
 ];
 
 export default function ProjectStory() {
+  useDocumentTitle("Project Story");
   const { projectId } = useParams();
   const [activeTab, setActiveTab] = useState('timeline');
   const [project, setProject] = useState(null);

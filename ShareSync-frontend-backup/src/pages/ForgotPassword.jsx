@@ -10,8 +10,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout, AuthButton, AuthError } from '../layouts/AuthLayout';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function ForgotPassword() {
+  useDocumentTitle("Forgot Password");
   const navigate = useNavigate();
   const { forgotPassword, user, loading } = useAuth();
   

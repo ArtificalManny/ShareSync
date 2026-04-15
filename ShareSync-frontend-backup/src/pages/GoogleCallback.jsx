@@ -9,8 +9,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function GoogleCallback() {
+  useDocumentTitle("OpenShare");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setToken, setUser } = useAuth();

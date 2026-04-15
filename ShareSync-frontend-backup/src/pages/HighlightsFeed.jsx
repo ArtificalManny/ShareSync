@@ -5,8 +5,10 @@ import { getAllActivities } from '../api/activity'; // 👈 You must have this a
 import { formatDistanceToNow } from 'date-fns';
 import { Sparkles } from 'lucide-react';
 import '../index.css';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const HighlightsFeed = () => {
+  useDocumentTitle("Highlights");
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 

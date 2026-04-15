@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Save, Clock, BellRing, CheckCircle2 } from "lucide-react";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
@@ -28,6 +29,7 @@ function ToggleRow({ label, checked, onChange }) {
  * User preferences: workdays, quiet hours, nudges, weekly reminder.
  */
 export default function SettingsHabits() {
+  useDocumentTitle("Settings");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

@@ -8,8 +8,10 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import useOnboarding from '../hooks/useOnboarding';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function Onboarding() {
+  useDocumentTitle("Onboarding");
   const { user, loading } = useAuth();
   const { isCompleted } = useOnboarding();
   

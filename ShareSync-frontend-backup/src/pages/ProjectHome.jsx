@@ -93,6 +93,7 @@ import InsightsTab from "../components/insights/InsightsTab";
 import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
 import AnnouncementsView from "../components/views/AnnouncementsView";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -650,6 +651,8 @@ export default function ProjectHome() {
       activeView,
     });
   }, [id, loading, error, project, activeView]);
+
+  useDocumentTitle(project?.name || "Project");
 
   const baseTasks = useMemo(() => {
     if (Array.isArray(tasks)) return tasks;

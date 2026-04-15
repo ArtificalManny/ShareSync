@@ -1,8 +1,10 @@
 // /src/components/LevelUpBadge.jsx
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const LevelUpBadge = ({ newTier, onClose }) => {
+  useDocumentTitle("Level Up");
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();

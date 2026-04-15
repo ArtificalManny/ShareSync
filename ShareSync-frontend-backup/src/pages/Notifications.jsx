@@ -1,6 +1,8 @@
 import React from 'react';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const Notifications = ({ user }) => {
+  useDocumentTitle("Notifications");
   const notifications = [
     {
       id: 1,

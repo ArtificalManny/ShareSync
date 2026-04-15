@@ -55,6 +55,7 @@ import { useAuth } from "../context/AuthContext";
 import MissionClock from "../components/home/MissionClock";
 import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /* ───────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet-tinted shadows
@@ -211,6 +212,7 @@ const MomentumStatusBanner = () => {
    MAIN HOME PAGE
 ─────────────────────────────────────────────────────────────────────────── */
 export default function Home() {
+  useDocumentTitle("Home");
   const { user: authUser } = useAuth();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelContent, setPanelContent] = useState("balance");

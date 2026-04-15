@@ -26,6 +26,7 @@ import { useMomentumContext } from "../contexts/MomentumContext";
 // API endpoints
 import { searchAll } from "../api/search";
 import { searchGlobalUsers } from "../api/users"; // ⭐ NEW API helper added
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 // ──────────────────────────────────────────────────────────────
 // Phase 2 Moderation Gate (frontend-safe)
@@ -199,6 +200,7 @@ const TRENDING_ITEMS = [
    MAIN SEARCH PAGE
 ───────────────────────────────────────────────────────────────────────── */
 export default function Search() {
+  useDocumentTitle("Search");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef(null);

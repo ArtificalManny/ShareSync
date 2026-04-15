@@ -7,8 +7,10 @@ import {
   Zap, Heart, Target, X
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const PrivacyManifesto = () => {
+  useDocumentTitle("Privacy");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 

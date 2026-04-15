@@ -7,8 +7,10 @@ import TipCard from '../components/community/TipCard';
 import TemplateCreation from '../components/community/TemplateCreation';
 import TemplateCard from '../components/community/TemplateCard';
 import { toast } from '../components/ui/toast';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const Community = () => {
+  useDocumentTitle("Community");
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('tips'); // 'tips' or 'templates'
   const [showTipSubmission, setShowTipSubmission] = useState(false);

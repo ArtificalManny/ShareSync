@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { getPublicProject } from '../api/share';
 import AvatarGroup from '../components/AvatarGroup.jsx';
 import SectionHeader from '../components/ui/SectionHeader.jsx';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function PublicProject() {
+  useDocumentTitle("Project");
   const { token } = useParams();
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');

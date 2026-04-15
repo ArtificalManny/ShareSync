@@ -10,8 +10,10 @@ import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, Check, AlertTriangle } from 'lucide-react';
 import { AuthContext } from '../AuthContext';
 import { AuthLayout, AuthButton, AuthError } from '../layouts/AuthLayout';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function ResetPassword() {
+  useDocumentTitle("Reset Password");
   const { token } = useParams();
   const navigate = useNavigate();
   const { resetPassword, isAuthenticated, isLoading, authError, setAuthError } = useContext(AuthContext);

@@ -7,8 +7,10 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import LiveArena from '../components/arena/LiveArena';
 import { PresenceProvider } from '../contexts/PresenceContext';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function Arena() {
+  useDocumentTitle("Arena");
   const navigate = useNavigate();
 
   const handleCoworkRequest = (member) => {

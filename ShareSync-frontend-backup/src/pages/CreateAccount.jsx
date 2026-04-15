@@ -18,6 +18,7 @@ import {
   AtSign, ArrowLeft
 } from "lucide-react";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PASSWORD STRENGTH METER
@@ -191,6 +192,7 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
 }
 
 export default function CreateAccount() {
+  useDocumentTitle("OpenShare");
   const navigate = useNavigate();
 
   // Form state

@@ -10,8 +10,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BarChart3, Activity, TrendingUp, ArrowLeft } from 'lucide-react';
 import CursorHeatmap from '../components/analytics/CursorHeatmap';
 import ActivityTimeline from '../components/analytics/ActivityTimeline';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function Analytics() {
+  useDocumentTitle("Analytics");
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [timeWindow, setTimeWindow] = useState(86400); // 24 hours default

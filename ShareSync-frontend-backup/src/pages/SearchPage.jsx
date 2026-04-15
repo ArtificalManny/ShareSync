@@ -18,6 +18,7 @@ import TaskResultCard from "../components/search/cards/TaskResultCard";
 import SearchFilters from "../components/search/SearchFilters";
 // Tokens
 import { parseSearchTokens, normalizeTypes } from "../utils/searchTokens";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const TYPE_META = {
   project: { icon: Folder, label: "Projects" },
@@ -63,6 +64,7 @@ function coerceResults(data) {
 }
 
 export default function SearchPage() {
+  useDocumentTitle("Search");
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();

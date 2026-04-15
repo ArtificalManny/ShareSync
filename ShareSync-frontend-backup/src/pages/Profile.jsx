@@ -57,6 +57,7 @@ import TrendCharts from "../components/growth/TrendCharts";
 import { useGrowthTrack } from "../hooks/useGrowthTrack";
 import ProfileStrength from "../components/profile/ProfileStrength";
 import { useAnalytics } from "../contexts/AnalyticsContext";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -535,6 +536,7 @@ const SkillBar = ({ value, max = 100 }) => {
    MAIN PAGE - "The Personal Gallery"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
+  useDocumentTitle("Profile");
   // ⭐ FIX: Safely pull the ID directly from the URL if it exists
   const { username: routeUsername, id, userId: routeUserId } = useParams();
   const location = useLocation();

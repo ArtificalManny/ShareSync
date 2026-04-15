@@ -3,12 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Crown, Flame, Users, Zap, Trophy, TrendingUp } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
 import LeaderboardCard from '../components/leaderboard/LeaderboardCard';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /**
  * HallOfFame - Showcase top performers
  * Categories: Top Streakers, Most Collaborative, Fastest Shippers
  */
 const HallOfFame = () => {
+  useDocumentTitle("Hall of Fame");
   const isMobile = useIsMobile();
   const [activeCategory, setActiveCategory] = useState('streakers');
   const [loading, setLoading] = useState(true);

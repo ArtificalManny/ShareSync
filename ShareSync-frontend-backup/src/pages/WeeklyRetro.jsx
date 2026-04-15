@@ -7,8 +7,10 @@ import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import WeeklyRetro from '../components/retro/WeeklyRetro';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function WeeklyRetroPage() {
+  useDocumentTitle("Weekly Retro");
   const navigate = useNavigate();
 
   return (

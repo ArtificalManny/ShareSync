@@ -16,8 +16,10 @@ import BurnoutAlert from '../components/ecosystem/BurnoutAlert';
 import FeaturedProjects from '../components/ecosystem/FeaturedProjects';
 import { formatActivityItems } from '../utils/formatActivityText';
 import { useAuth } from '../context/AuthContext';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 export default function Discover() {
+  useDocumentTitle("Discover");
   const isMobile = useIsMobile();
   const { user } = useAuth();
   

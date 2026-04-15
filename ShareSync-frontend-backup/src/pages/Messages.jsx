@@ -34,6 +34,7 @@ import {
 import { useSocketContext, useSocketEvent } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
 
@@ -714,6 +715,7 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
    MAIN MESSAGES PAGE
 ───────────────────────────────────────────────────────────────────────── */
 export default function Messages() {
+  useDocumentTitle("Messages");
   const queryClient = useQueryClient();
   const messagesEndRef = useRef(null);
 

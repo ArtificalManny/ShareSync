@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useChat } from "../context/ChatContext.jsx";
 import DMList from "../components/messenger/DMList.jsx";
 import DMThread from "../components/messenger/DMThread.jsx";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 /**
  * DMPage
@@ -16,6 +17,7 @@ import DMThread from "../components/messenger/DMThread.jsx";
  * - ESC navigates back
  */
 export default function DMPage() {
+  useDocumentTitle("Messages");
   const chat = useChat();
   const { id: routeId } = useParams();
   const navigate = useNavigate();

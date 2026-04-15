@@ -23,6 +23,7 @@ import { getCurrentSubscription } from "../api/subscriptions";
 import { toast } from "../components/ui/toast";
 import SmartStart from "../components/projects/SmartStart";
 import "./ProjectsCreate.css";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 function isValidEmail(email) {
   // Lightweight check (good UX). Backend should still validate.
@@ -68,6 +69,7 @@ function darkRef(el) {
 }
 
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
+  useDocumentTitle("New Project");
   const navigate = useNavigate();
 
   const formId = "create-project-form"; // ✅ used to bind footer button to form

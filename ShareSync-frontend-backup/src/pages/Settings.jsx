@@ -31,6 +31,7 @@ import PrivacyCard from "../components/settings/PrivacyCard";
 import BillingSettings from "../components/settings/BillingSettings";
 import PersonaPicker from "../components/settings/PersonaPicker";
 import CelebrationStylePicker from "../components/settings/CelebrationStylePicker";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLIDER COMPONENT - Adaptive
@@ -183,6 +184,7 @@ function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = 
 // MAIN SETTINGS PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
+  useDocumentTitle("Settings");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
