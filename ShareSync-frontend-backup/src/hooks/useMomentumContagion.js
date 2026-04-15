@@ -48,8 +48,15 @@ function normalizeActivity(raw) {
   if (raw._normalized) return raw;
 
   const id = raw.id || raw._id || `contagion-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-  const userName = raw.userName || raw.user?.name || raw.actor || raw.name || 'A teammate';
-  const userAvatar = raw.userAvatar || raw.user?.avatar || raw.avatar || null;
+  const userName = raw.userName
+    || raw.actorName
+    || raw.user?.name
+    || (raw.userId?.firstName ? raw.userId.firstName + ' ' + (raw.userId.lastName || '') : null)
+    || (raw.actorId?.firstName ? raw.actorId.firstName + ' ' + (raw.actorId.lastName || '') : null)
+    || raw.actor
+    || raw.name
+    || 'A teammate';
+  const userAvatar = raw.userAvatar || raw.user?.avatar || raw.userId?.profilePicture || raw.actorId?.profilePicture || raw.avatar || null;
 
   // Determine action type
   let actionType = raw.actionType || raw.type || raw.action || 'activity';
@@ -58,7 +65,14 @@ function normalizeActivity(raw) {
   }
 
   // Determine what they did
-  const taskName = raw.taskName || raw.task?.title || raw.title || raw.description || raw.message || '';
+  const taskName = raw.taskName
+    || raw.payload?.snapshot?.title
+    || raw.metadata?.taskTitle
+    || raw.task?.title
+    || raw.title
+    || raw.description
+    || raw.message
+    || '';
   const projectName = raw.projectName || raw.project?.name || raw.project || '';
 
   // Timestamp
