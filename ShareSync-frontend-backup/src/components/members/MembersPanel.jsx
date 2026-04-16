@@ -22,7 +22,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
   const { sortedMembers, isOwner, isModerator } = useMemo(() => {
     if (!project) return { sortedMembers: [], isOwner: false, isModerator: false };
 
-    const owner = project.ownerId;
+    const owner = project.owner || project.ownerId;
     const ownerId = owner?._id || owner?.id || owner;
     const members = project.members || [];
 
@@ -30,10 +30,10 @@ const MembersPanel = ({ projectId, project, onClose }) => {
     const memberList = [];
 
     // 1) Owner first
-    if (owner && typeof owner === 'object' && (owner.firstName || owner.username)) {
+    if (owner && typeof owner === 'object' && (owner.name || owner.firstName || owner.lastName || owner.username)) {
       memberList.push({
         id: String(owner._id || owner.id),
-        name: `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || owner.username || 'Owner',
+        name: owner.name || `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || owner.username || 'Project Owner',
         firstName: owner.firstName || '',
         lastName: owner.lastName || '',
         username: owner.username || '',
@@ -58,7 +58,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
 
     // 2) Other members (admins then members)
     members.forEach((m) => {
-      const u = m.userId || m;
+      const u = m.user || m.userId || m;
       const uid = String(u?._id || u?.id || u);
 
       // Skip if this is the owner (already added)
@@ -66,7 +66,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
 
       memberList.push({
         id: uid,
-        name: `${u?.firstName || ''} ${u?.lastName || ''}`.trim() || u?.username || 'Member',
+        name: u?.name || `${u?.firstName || ''} ${u?.lastName || ''}`.trim() || u?.username || 'Member',
         firstName: u?.firstName || '',
         lastName: u?.lastName || '',
         username: u?.username || '',
