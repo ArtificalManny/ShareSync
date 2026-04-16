@@ -67,6 +67,8 @@ function normalizeActivity(raw) {
   // Determine what they did
   const taskName = raw.taskName
     || raw.payload?.snapshot?.title
+    || raw.raw?.payload?.snapshot?.title
+    || raw.raw?.taskTitle
     || raw.metadata?.taskTitle
     || raw.task?.title
     || raw.title

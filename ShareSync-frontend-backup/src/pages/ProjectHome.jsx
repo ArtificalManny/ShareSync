@@ -94,6 +94,7 @@ import ThreadsView from "../components/views/ThreadsView";
 import VaultView from "../components/views/VaultView";
 import AnnouncementsView from "../components/views/AnnouncementsView";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import MembersPanel from "../components/members/MembersPanel";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -165,6 +166,7 @@ function ProjectHeader({
   onShipUpdate,
   onSettings,
   onBackToProjects,
+  onMembersClick,
 }) {
   const [isStarred, setIsStarred] = useState(false);
   const momentum = metrics?.momentum || 0;
@@ -269,6 +271,7 @@ function ProjectHeader({
 
           <button
             type="button"
+            onClick={onMembersClick}
             className="
               flex items-center gap-2 px-4 py-2.5 rounded-xl
               bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm
@@ -607,6 +610,7 @@ export default function ProjectHome() {
 
   const [activeView, setActiveView] = useState("announcements");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
+  const [isMembersPanelOpen, setIsMembersPanelOpen] = useState(false);
 
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
@@ -891,6 +895,7 @@ export default function ProjectHome() {
         onShipUpdate={handleShipUpdate}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
+        onMembersClick={() => setIsMembersPanelOpen(true)}
       />
 
       <ViewNavigation activeView={activeView} onViewChange={setActiveView} />
@@ -906,6 +911,17 @@ export default function ProjectHome() {
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}
+        />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          MEMBERS POPUP
+      ═══════════════════════════════════════════════════════════════════ */}
+      {isMembersPanelOpen && (
+        <MembersPanel 
+          projectId={id} 
+          project={project}
+          onClose={() => setIsMembersPanelOpen(false)} 
         />
       )}
     </div>

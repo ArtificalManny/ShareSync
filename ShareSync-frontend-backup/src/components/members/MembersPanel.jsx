@@ -33,6 +33,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
     if (owner && typeof owner === 'object' && (owner.firstName || owner.username)) {
       memberList.push({
         id: String(owner._id || owner.id),
+        name: `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || owner.username || 'Owner',
         firstName: owner.firstName || '',
         lastName: owner.lastName || '',
         username: owner.username || '',
@@ -44,6 +45,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
     } else if (ownerId) {
       memberList.push({
         id: String(ownerId),
+        name: 'Project Owner',
         firstName: 'Project',
         lastName: 'Owner',
         username: '',
@@ -64,6 +66,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
 
       memberList.push({
         id: uid,
+        name: `${u?.firstName || ''} ${u?.lastName || ''}`.trim() || u?.username || 'Member',
         firstName: u?.firstName || '',
         lastName: u?.lastName || '',
         username: u?.username || '',

@@ -38,6 +38,7 @@ import EmptyTasks, {
   EmptyTasksCompact, 
   AllTasksComplete 
 } from './empty-states/EmptyTasks';
+import MembersPanel from './members/MembersPanel';
 
 // Import momentum context
 import { useMomentumContext, useMomentumActivity } from '../contexts/MomentumContext';
@@ -191,6 +192,7 @@ export default function ProjectDetail() {
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'kanban'
   const [filter, setFilter] = useState('all'); // 'all' | 'todo' | 'in-progress' | 'done'
   const [selectedTask, setSelectedTask] = useState(null);
+  const [isMembersPanelOpen, setIsMembersPanelOpen] = useState(false);
   
   // Momentum context
   let momentumContext = { glowLevel: 2, isFireMode: false, recordActivity: () => {} };
@@ -472,12 +474,40 @@ export default function ProjectDetail() {
             </div>
           ))}
           
-          <button className="w-10 h-10 rounded-full border border-dashed border-white/[0.1] flex items-center justify-center text-text-tertiary hover:border-brand-500/30 hover:text-brand-400 transition-colors">
+          <button onClick={() => setIsMembersPanelOpen(true)} className="w-10 h-10 rounded-full border border-dashed border-slate-300 dark:border-white/[0.1] flex items-center justify-center text-slate-500 dark:text-text-tertiary hover:border-brand-500/30 hover:text-brand-500 transition-colors cursor-pointer">
             <Plus className="w-4 h-4" />
           </button>
         </div>
       </section>
       
+      {/* ═══════════════════════════════════════════════════════════════════
+          MEMBERS PANEL (SLIDE-OUT)
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div
+        className={`
+          fixed inset-0 bg-slate-900/20 dark:bg-black/50 backdrop-blur-sm z-[60]
+          transition-opacity duration-300
+          ${isMembersPanelOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
+        `}
+        onClick={() => setIsMembersPanelOpen(false)}
+      />
+      <div
+        className={`
+          fixed top-0 right-0 h-full w-full max-w-[480px]
+          bg-white dark:bg-[#111113] border-l border-slate-200 dark:border-white/10
+          z-[70] shadow-2xl shadow-slate-900/10 dark:shadow-black/50
+          transition-transform duration-300 ease-out flex flex-col overflow-hidden
+          ${isMembersPanelOpen ? "translate-x-0" : "translate-x-full"}
+        `}
+      >
+        {isMembersPanelOpen && (
+          <MembersPanel 
+            projectId={projectId || (project && project.id)} 
+            onClose={() => setIsMembersPanelOpen(false)} 
+          />
+        )}
+      </div>
+
       {/* Inline styles */}
       <style>{`
         .shadow-glow-brand {

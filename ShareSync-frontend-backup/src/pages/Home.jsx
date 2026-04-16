@@ -453,7 +453,8 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
       <MomentumContagion
         activities={activities}
         maxVisible={3}
-        showCTA={true}
+        maxItems={5}
+        showCTA={false}
         onPickMove={() => console.log("Pick move from contagion")}
         variant="compact"
         className="mb-6"
