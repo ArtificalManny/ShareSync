@@ -185,6 +185,10 @@ export class ProjectsController {
   async findOne(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.findByIdWithAccess(id, userId);
+    if (project && typeof project.populate === 'function') {
+      await project.populate('ownerId', 'firstName lastName username email avatar profilePicture');
+      await project.populate('members.userId', 'firstName lastName username email avatar profilePicture');
+    }
     return {
       success: true,
       data: project,
@@ -197,6 +201,10 @@ export class ProjectsController {
   async getPulse(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const pulseData = await this.projectsService.getPulseData(id, userId);
+    if (pulseData && pulseData.project && typeof pulseData.project.populate === 'function') {
+      await pulseData.project.populate('ownerId', 'firstName lastName username email avatar profilePicture');
+      await pulseData.project.populate('members.userId', 'firstName lastName username email avatar profilePicture');
+    }
     return {
       success: true,
       data: pulseData,
