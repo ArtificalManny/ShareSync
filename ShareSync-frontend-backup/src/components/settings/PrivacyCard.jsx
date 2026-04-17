@@ -51,10 +51,10 @@ const PrivacyCard = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-purple-500/30 p-6">
+    <div className="bg-white dark:bg-[#1f1f23] rounded-2xl border border-slate-200 dark:border-white/10 p-6 shadow-sm dark:shadow-none">
       <div className="flex items-center gap-3 mb-6">
         <Shield className="w-6 h-6 text-purple-400" />
-        <h2 className="text-xl font-bold text-white">Privacy & Encryption</h2>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Privacy & Encryption</h2>
       </div>
 
       <div className="space-y-4 mb-6">
@@ -63,7 +63,7 @@ const PrivacyCard = () => {
           return (
             <div
               key={index}
-              className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hover:border-purple-500/30 transition-all"
+              className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-purple-500/30 transition-all"
             >
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 ${getBgColorClass(feature.color)} rounded-lg flex items-center justify-center flex-shrink-0`}>
@@ -72,7 +72,7 @@ const PrivacyCard = () => {
                 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-white">{feature.title}</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
                     {feature.status === 'active' && (
                       <CheckCircle className="w-4 h-4 text-emerald-400" />
                     )}
@@ -99,7 +99,7 @@ const PrivacyCard = () => {
       {/* Learn More Button */}
       <button
         onClick={() => navigate('/privacy-manifesto')}
-        className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group"
+        className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-slate-900 dark:text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group"
       >
         <span>Learn More About Our Privacy</span>
         <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -107,17 +107,17 @@ const PrivacyCard = () => {
 
       {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-        <div className="bg-slate-900/50 rounded-lg p-3">
+        <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
           <div className="text-xs text-slate-500 mb-1">Zero-knowledge</div>
-          <div className="text-sm font-bold text-white">✓</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white">✓</div>
         </div>
-        <div className="bg-slate-900/50 rounded-lg p-3">
+        <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
           <div className="text-xs text-slate-500 mb-1">Data sold</div>
-          <div className="text-sm font-bold text-white">Never</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white">Never</div>
         </div>
-        <div className="bg-slate-900/50 rounded-lg p-3">
+        <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
           <div className="text-xs text-slate-500 mb-1">Your control</div>
-          <div className="text-sm font-bold text-white">100%</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white">100%</div>
         </div>
       </div>
     </div>

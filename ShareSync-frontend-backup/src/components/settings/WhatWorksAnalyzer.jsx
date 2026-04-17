@@ -23,14 +23,14 @@ export default function WhatWorksAnalyzer() {
 
   if (loading) {
     return (
-      <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 animate-pulse">
-        <div className="h-40 bg-slate-700/50 rounded-xl" />
+      <div className="bg-transparent animate-pulse">
+        <div className="h-40 bg-slate-200 dark:bg-white/5 rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-xl">
+    <div className="bg-transparent">
       <div className="flex items-center gap-2 mb-4">
         <Brain className="w-5 h-5 text-cyan-400" />
         <h3 className="text-lg font-semibold">What Works For You</h3>
@@ -39,7 +39,7 @@ export default function WhatWorksAnalyzer() {
       {!insights || insights.totalExperiments === 0 ? (
         <div className="text-center py-8">
           <Brain className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 mb-2">No insights yet</p>
+          <p className="text-slate-500 dark:text-zinc-400 mb-2">No insights yet</p>
           <p className="text-sm text-slate-500">
             Complete experiments to discover your optimal work patterns
           </p>
@@ -54,7 +54,7 @@ export default function WhatWorksAnalyzer() {
                 {insights.totalExperiments} experiments completed
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
               You're actively learning what makes you productive!
             </p>
           </div>
@@ -62,7 +62,7 @@ export default function WhatWorksAnalyzer() {
           {/* Discoveries */}
           {insights.discoveries && insights.discoveries.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-yellow-400" />
                 Key Discoveries
               </h4>
@@ -70,9 +70,9 @@ export default function WhatWorksAnalyzer() {
                 {insights.discoveries.map((discovery, index) => (
                   <div
                     key={index}
-                    className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-3"
+                    className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-3"
                   >
-                    <p className="text-sm text-slate-300">{discovery}</p>
+                    <p className="text-sm text-slate-700 dark:text-zinc-300">{discovery}</p>
                   </div>
                 ))}
               </div>
@@ -82,7 +82,7 @@ export default function WhatWorksAnalyzer() {
           {/* Recommendations */}
           {insights.recommendations && insights.recommendations.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                 <Target className="w-4 h-4 text-emerald-400" />
                 Personalized Recommendations
               </h4>

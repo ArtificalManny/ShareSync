@@ -26,8 +26,8 @@ export default function PersonaPicker() {
       <div className="flex items-center gap-2">
         <Sparkles className="w-5 h-5 text-purple-400" />
         <div>
-          <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Experience Mode</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider">Experience Mode</h3>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
             Choose how ShareSync talks to you — same features, different personality
           </p>
         </div>
@@ -48,7 +48,7 @@ export default function PersonaPicker() {
                 relative p-4 rounded-xl border text-left transition-all duration-200
                 ${isActive
                   ? 'ring-2 ring-purple-500 border-purple-400 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                  : 'border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/30'
+                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-purple-500/30'
                 }
               `}
             >
@@ -63,20 +63,20 @@ export default function PersonaPicker() {
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-2xl">{p.emoji}</span>
                 <div>
-                  <span className="text-base font-semibold text-white">{p.label}</span>
-                  <p className="text-[10px] text-slate-400">{p.tone}</p>
+                  <span className="text-base font-semibold text-slate-900 dark:text-white">{p.label}</span>
+                  <p className="text-[10px] text-slate-500 dark:text-zinc-400">{p.tone}</p>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-xs text-slate-400 mb-3">{p.description}</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mb-3">{p.description}</p>
 
               {/* Sample preview */}
               <div className={`
                 px-3 py-2 rounded-lg text-[11px] italic leading-relaxed
                 ${isActive
                   ? 'bg-purple-500/10 text-purple-200/80 border border-purple-500/20'
-                  : 'bg-slate-800/50 text-slate-400 border border-slate-700/50'
+                  : 'bg-slate-800/50 text-slate-500 dark:text-zinc-400 border border-slate-700/50'
                 }
               `}>
                 {getSamplePreview(id)}
@@ -95,7 +95,7 @@ export default function PersonaPicker() {
                       px-2 py-0.5 rounded-full text-[10px] font-medium
                       ${isActive
                         ? 'bg-purple-500/20 text-purple-300 border border-purple-500/20'
-                        : 'bg-slate-700/50 text-slate-400 border border-slate-700'
+                        : 'bg-slate-700/50 text-slate-500 dark:text-zinc-400 border border-slate-700'
                       }
                     `}
                   >

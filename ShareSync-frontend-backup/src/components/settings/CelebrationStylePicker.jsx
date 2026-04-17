@@ -183,7 +183,7 @@ export default function CelebrationStylePicker() {
                   px-2 py-2 rounded-lg text-center transition-all border text-xs
                   ${isActive
                     ? 'border-purple-400 bg-purple-500/10 text-purple-300 ring-1 ring-purple-500/30'
-                    : 'border-slate-700 bg-slate-800/30 text-slate-400 hover:border-purple-500/30 hover:bg-slate-800/50'
+                    : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-zinc-400 hover:border-purple-300 dark:hover:border-purple-500/30 hover:bg-slate-100 dark:hover:bg-white/10'
                   }
                 `}
               >
@@ -204,7 +204,7 @@ export default function CelebrationStylePicker() {
           text-sm font-medium transition-all
           ${previewActive
             ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 cursor-wait'
-            : 'bg-slate-800/50 text-slate-300 border border-slate-700 hover:bg-purple-500/10 hover:border-purple-500/30 hover:text-purple-300'
+            : 'bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/10 hover:border-purple-300 dark:hover:border-purple-500/30 hover:text-purple-600 dark:hover:text-purple-300'
           }
         `}
       >

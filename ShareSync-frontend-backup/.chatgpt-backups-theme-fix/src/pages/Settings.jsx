@@ -239,43 +239,34 @@ export default function Settings() {
 
   const applyTheme = (mode) => {
     const root = document.documentElement;
-    const media = window.matchMedia
-      ? window.matchMedia("(prefers-color-scheme: dark)")
-      : null;
 
-    const applyResolvedTheme = (nextMode) => {
-      const isDark =
-        nextMode === "dark" ||
-        (nextMode === "system" && Boolean(media?.matches));
-
-      root.classList.toggle("dark", isDark);
-      root.dataset.theme = isDark ? "dark" : "light";
-      document.body.style.backgroundColor = isDark ? "#09090B" : "#F8FAFC";
+    const setDark = (isDark) => {
+      root.classList.toggle('dark', isDark);
+      root.dataset.theme = isDark ? 'dark' : 'light';
+      // Force the global browser body to match the theme to prevent white scroll gaps
+      document.body.style.backgroundColor = isDark ? '#09090B' : '#f8fafc';
     };
 
     if (mqlRef.current?.removeEventListener && mqlRef.current?._handler) {
-      mqlRef.current.removeEventListener("change", mqlRef.current._handler);
-      mqlRef.current = null;
-    } else if (mqlRef.current?.removeListener && mqlRef.current?._handler) {
-      mqlRef.current.removeListener(mqlRef.current._handler);
+      mqlRef.current.removeEventListener('change', mqlRef.current._handler);
       mqlRef.current = null;
     }
 
-    if (mode === "system" && media) {
-      const handler = () => applyResolvedTheme("system");
-
-      if (media.addEventListener) {
-        media.addEventListener("change", handler);
-      } else if (media.addListener) {
-        media.addListener(handler);
-      }
-
-      media._handler = handler;
-      mqlRef.current = media;
+    if (mode === 'dark') {
+      setDark(true);
+      localStorage.setItem('ss.theme', 'dark');
+      return;
     }
 
-    localStorage.setItem("ss.theme", mode);
-    applyResolvedTheme(mode);
+    if (mode === 'light') {
+      setDark(false);
+      localStorage.setItem('ss.theme', 'light');
+      return;
+    }
+
+    // System mode
+    setDark(false);
+    localStorage.setItem('ss.theme', 'system');
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
