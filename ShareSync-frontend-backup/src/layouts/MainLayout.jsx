@@ -15,49 +15,63 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 
-export default function MainLayout({ 
-  sidebar = null, 
+export default function MainLayout({
+  sidebar = null,
   navbar = null,
-  children 
+  children,
 }) {
   return (
-    // ⭐ FIX: Added dark background and text transitions
     <div className="main-layout min-h-screen bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
-      
       {/* ═══════════════════════════════════════════════════════════════════════
-          ATMOSPHERIC GLOWS 
-          ⭐ FIX: Split into Light Mode div and Dark Mode div so inline styles don't clash!
+          ATMOSPHERIC GLOWS
+          Split into Light Mode div and Dark Mode div so inline styles don't clash.
           ═══════════════════════════════════════════════════════════════════════ */}
-      
+
       {/* --- LIGHT MODE GLOWS --- */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 dark:hidden">
-        <div 
+        <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)' }}
+          style={{
+            background: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)",
+          }}
         />
-        <div 
+        <div
           className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          style={{
+            background: "radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
         />
-        <div 
+        <div
           className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          style={{
+            background: "radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
         />
       </div>
 
       {/* --- DARK MODE GLOWS --- */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 hidden dark:block">
-        <div 
+        <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b 100%)' }}
+          style={{
+            background: "linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b 100%)",
+          }}
         />
-        <div 
+        <div
           className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          style={{
+            background: "radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
         />
-        <div 
+        <div
           className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(45, 212, 191, 0.02) 0%, transparent 70%)', filter: 'blur(40px)' }}
+          style={{
+            background: "radial-gradient(circle, rgba(45, 212, 191, 0.02) 0%, transparent 70%)",
+            filter: "blur(40px)",
+          }}
         />
       </div>
 
@@ -66,25 +80,15 @@ export default function MainLayout({
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="relative z-10 flex min-h-screen">
         {/* Sidebar slot */}
-        {sidebar && (
-          <aside className="flex-shrink-0">
-            {sidebar}
-          </aside>
-        )}
+        {sidebar && <aside className="flex-shrink-0">{sidebar}</aside>}
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top navigation slot */}
-          {navbar && (
-            <header className="flex-shrink-0">
-              {navbar}
-            </header>
-          )}
+          {navbar && <header className="flex-shrink-0">{navbar}</header>}
 
           {/* Page content */}
-          <main className="flex-1 overflow-auto">
-            {children || <Outlet />}
-          </main>
+          <main className="flex-1 overflow-auto">{children || <Outlet />}</main>
         </div>
       </div>
     </div>
@@ -104,37 +108,35 @@ export function PageContainer({ children, className = "" }) {
   );
 }
 
-export function PageHeader({ 
-  title, 
-  subtitle, 
+export function PageHeader({
+  title,
+  subtitle,
   actions,
-  className = "" 
+  className = "",
 }) {
   return (
     <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 ${className}`}>
       <div>
-        {/* ⭐ FIX: Added dark:text-white */}
-        <h1 className="text-2xl font-semibold text-slate-800 dark:text-white transition-colors">{title}</h1>
+        <h1 className="text-2xl font-semibold text-slate-800 dark:text-white transition-colors">
+          {title}
+        </h1>
         {subtitle && (
-          {/* ⭐ FIX: Added dark:text-zinc-400 */}
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400 transition-colors">{subtitle}</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400 transition-colors">
+            {subtitle}
+          </p>
         )}
       </div>
-      {actions && (
-        <div className="flex items-center gap-3">
-          {actions}
-        </div>
-      )}
+      {actions && <div className="flex items-center gap-3">{actions}</div>}
     </div>
   );
 }
 
-export function PageSection({ 
-  title, 
+export function PageSection({
+  title,
   description,
   actions,
   children,
-  className = "" 
+  className = "",
 }) {
   return (
     <section className={`mb-8 ${className}`}>
@@ -142,18 +144,17 @@ export function PageSection({
         <div className="flex items-center justify-between mb-4">
           <div>
             {title && (
-              {/* ⭐ FIX: Added dark mode text colors */}
-              <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 transition-colors">{title}</h2>
+              <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 transition-colors">
+                {title}
+              </h2>
             )}
             {description && (
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400 transition-colors">{description}</p>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400 transition-colors">
+                {description}
+              </p>
             )}
           </div>
-          {actions && (
-            <div className="flex items-center gap-2">
-              {actions}
-            </div>
-          )}
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       )}
       {children}
@@ -161,23 +162,23 @@ export function PageSection({
   );
 }
 
-export function ContentCard({ 
-  children, 
-  className = "", 
+export function ContentCard({
+  children,
+  className = "",
   hover = true,
   padding = true,
-  ...props 
+  ...props
 }) {
   return (
-    <div 
+    <div
       className={`
         bg-white dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#27272a]
         shadow-sm transition-all duration-300
-        ${hover ? 'hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60 dark:hover:border-violet-500/30' : ''}
-        ${padding ? 'p-6' : ''}
+        ${hover ? "hover:shadow-lg hover:shadow-violet-500/[0.06] hover:border-violet-200/60 dark:hover:border-violet-500/30" : ""}
+        ${padding ? "p-6" : ""}
         ${className}
       `}
-      style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+      style={{ boxShadow: "0 2px 12px rgba(139, 92, 246, 0.04)" }}
       {...props}
     >
       {children}
@@ -186,36 +187,38 @@ export function ContentCard({
 }
 
 // Stat card for dashboards
-export function StatCard({ 
-  label, 
-  value, 
-  trend, 
-  trendDirection = 'up',
+export function StatCard({
+  label,
+  value,
+  trend,
+  trendDirection = "up",
   icon: Icon,
-  className = "" 
+  className = "",
 }) {
   const trendColors = {
-    up: 'text-emerald-600 dark:text-emerald-400',
-    down: 'text-red-500 dark:text-red-400',
-    neutral: 'text-slate-500 dark:text-zinc-400',
+    up: "text-emerald-600 dark:text-emerald-400",
+    down: "text-red-500 dark:text-red-400",
+    neutral: "text-slate-500 dark:text-zinc-400",
   };
 
   return (
     <ContentCard className={className}>
       <div className="flex items-start justify-between">
         <div>
-          {/* ⭐ FIX: Dark mode text colors */}
-          <p className="text-sm text-slate-500 dark:text-zinc-400 transition-colors">{label}</p>
-          <p className="text-2xl font-semibold text-slate-800 dark:text-white mt-1 transition-colors">{value}</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 transition-colors">
+            {label}
+          </p>
+          <p className="text-2xl font-semibold text-slate-800 dark:text-white mt-1 transition-colors">
+            {value}
+          </p>
           {trend && (
             <p className={`text-sm mt-1 transition-colors ${trendColors[trendDirection]}`}>
-              {trendDirection === 'up' ? '↑' : trendDirection === 'down' ? '↓' : ''}
+              {trendDirection === "up" ? "↑" : trendDirection === "down" ? "↓" : ""}
               {trend}
             </p>
           )}
         </div>
         {Icon && (
-          {/* ⭐ FIX: Dark mode subtle backgrounds */}
           <div className="w-10 h-10 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center transition-colors">
             <Icon className="w-5 h-5 text-violet-500 dark:text-violet-400" />
           </div>
