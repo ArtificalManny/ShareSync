@@ -62,7 +62,7 @@ export default function BillingSettings() {
       <div className={`rounded-xl border p-5 ${
         isPremium
           ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 border-amber-200 dark:border-amber-500/30'
-          : 'bg-transparent border-slate-200 dark:border-white/10'
+          : 'bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800'
       }`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ function UsageStat({ label, current, limit, unit = '' }) {
   const isNearLimit = percentage > 80;
 
   return (
-    <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-3">
+    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl p-3">
       <div className="text-xs text-slate-500 dark:text-zinc-400 mb-1">{label}</div>
       <div className="text-lg font-bold text-slate-800 dark:text-white">
         {current.toLocaleString()}{unit}
@@ -194,7 +194,7 @@ function UsageStat({ label, current, limit, unit = '' }) {
           {' '}/ {isUnlimited ? '∞' : `${limit.toLocaleString()}${unit}`}
         </span>
       </div>
-      <div className="h-1.5 bg-slate-200 dark:bg-white/10 rounded-full mt-2 overflow-hidden">
+      <div className="h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full mt-2 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${
             isNearLimit ? 'bg-amber-500' : 'bg-teal-500'
