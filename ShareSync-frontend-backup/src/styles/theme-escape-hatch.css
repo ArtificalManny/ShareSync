@@ -1,0 +1,231 @@
+/* src/styles/theme-escape-hatch.css
+   FINAL THEME OVERRIDE LAYER
+   Imported last on purpose so older light-only shell rules cannot win.
+*/
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROOT TOKENS
+───────────────────────────────────────────────────────────────────────────── */
+html:not(.dark),
+html[data-theme="light"] {
+  --surface-0: #F8FAFC !important;
+  --surface-1: #FFFFFF !important;
+  --surface-2: #F1F5F9 !important;
+
+  --text-primary: #1E293B !important;
+  --text-secondary: #475569 !important;
+  --text-tertiary: #64748B !important;
+
+  --border-default: #E2E8F0 !important;
+  --border-subtle: #F1F5F9 !important;
+
+  --bg-shell: #F8FAFC !important;
+  --bg-shell-elevated: #FFFFFF !important;
+  --bg-page: linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%) !important;
+  --bg-page-flat: #F8FAFC !important;
+  --bg-sidebar: #FFFFFF !important;
+  --bg-navbar: rgba(255, 255, 255, 0.88) !important;
+  --bg-card: #FFFFFF !important;
+  --bg-card-muted: #F8FAFC !important;
+
+  color-scheme: light !important;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  --surface-0: #09090B !important;
+  --surface-1: #18181B !important;
+  --surface-2: #27272A !important;
+
+  --text-primary: #F5F5F7 !important;
+  --text-secondary: #CBD5E1 !important;
+  --text-tertiary: #94A3B8 !important;
+
+  --border-default: rgba(255, 255, 255, 0.10) !important;
+  --border-subtle: rgba(255, 255, 255, 0.06) !important;
+
+  --bg-shell: #09090B !important;
+  --bg-shell-elevated: #111113 !important;
+  --bg-page: linear-gradient(180deg, #09090B 0%, #0B1120 48%, #09090B 100%) !important;
+  --bg-page-flat: #09090B !important;
+  --bg-sidebar: #0B1120 !important;
+  --bg-navbar: rgba(9, 9, 11, 0.88) !important;
+  --bg-card: #18181B !important;
+  --bg-card-muted: #111113 !important;
+
+  color-scheme: dark !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GLOBAL CANVAS FILL
+───────────────────────────────────────────────────────────────────────────── */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html:not(.dark),
+html[data-theme="light"] {
+  background: var(--bg-shell) !important;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  background: var(--bg-shell) !important;
+}
+
+body,
+#root,
+.layout-skin,
+.app-canvas,
+.app-container,
+.main-layout,
+.app-layout,
+.main-content,
+.content-wrapper {
+  min-height: 100vh;
+  background: var(--bg-shell) !important;
+  color: var(--text-primary) !important;
+}
+
+main {
+  background: transparent !important;
+}
+
+/* Page-level canvases that should inherit the theme */
+.home-page,
+.profile-page,
+.projects-page,
+.settings-page,
+.search-page,
+.discover-page {
+  background: var(--bg-page) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Generic inner wrappers that frequently leave pale gaps */
+.page-shell,
+.page-canvas,
+.page-content,
+.content-shell,
+.content-canvas {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   NAVBAR + SIDEBAR
+───────────────────────────────────────────────────────────────────────────── */
+.navbar,
+header.navbar {
+  background: var(--bg-navbar) !important;
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .navbar,
+html[data-theme="light"] .navbar {
+  border-bottom-color: rgba(226, 232, 240, 0.90) !important;
+}
+
+html.dark .navbar,
+html[data-theme="dark"] .navbar {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+#app-sidebar,
+.sidebar {
+  background: var(--bg-sidebar) !important;
+}
+
+html:not(.dark) #app-sidebar,
+html:not(.dark) .sidebar,
+html[data-theme="light"] #app-sidebar,
+html[data-theme="light"] .sidebar {
+  border-right-color: #E2E8F0 !important;
+}
+
+html.dark #app-sidebar,
+html.dark .sidebar,
+html[data-theme="dark"] #app-sidebar,
+html[data-theme="dark"] .sidebar {
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CARDS + PANELS
+───────────────────────────────────────────────────────────────────────────── */
+.card,
+.bento-card,
+.glass,
+.glass-card,
+.panel,
+.surface,
+.tile,
+[class*="Card"] {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Subtle nested surfaces */
+.bg-card-muted,
+.surface-muted,
+.panel-muted {
+  background: var(--bg-card-muted) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FORMS
+───────────────────────────────────────────────────────────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MENUS + MODALS
+───────────────────────────────────────────────────────────────────────────── */
+[role="menu"],
+[role="listbox"],
+.dropdown-menu,
+.modal-content,
+[role="dialog"] > div {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .modal-backdrop,
+html.dark [class*="backdrop"],
+html[data-theme="dark"] .modal-backdrop,
+html[data-theme="dark"] [class*="backdrop"] {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SAFE FILL FOR STRAY LIGHT PATCHES
+───────────────────────────────────────────────────────────────────────────── */
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-white,
+html[data-theme="dark"] .bg-slate-50,
+html[data-theme="dark"] .bg-slate-100,
+html[data-theme="dark"] .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html[data-theme="dark"] .text-slate-800,
+html[data-theme="dark"] .text-slate-900 {
+  color: var(--text-primary) !important;
+}

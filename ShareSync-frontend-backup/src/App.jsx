@@ -99,6 +99,7 @@ import "./styles/heartbeat.css";
 import "./styles/palette.override.css";
 import "./styles/wedge-hotfix.css";
 import "./styles/mobile-overrides.css";
+import "./styles/theme-escape-hatch.css";
 
 // ✅ Priority 4.1: Persona theme overrides
 import "./styles/persona-themes.css";
@@ -815,20 +816,58 @@ function AppRoutes() {
 // This physically adds or removes the 'dark' class from the <html> tag
 function ThemeSync() {
   const { user } = useAuth();
-  
-  useEffect(() => {
-    // Check user preferences, fallback to local storage, fallback to system
-    const theme = user?.preferences?.theme || localStorage.getItem('ss.theme') || 'system';
-    const root = document.documentElement;
-    
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [user?.preferences?.theme]); // Re-run whenever the user changes their theme
 
-  return null; // This component is invisible
+  useEffect(() => {
+    const root = document.documentElement;
+    const media = window.matchMedia
+      ? window.matchMedia("(prefers-color-scheme: dark)")
+      : null;
+
+    const applyResolvedTheme = () => {
+      const savedTheme =
+        user?.preferences?.theme || localStorage.getItem("ss.theme") || "system";
+
+      const isDark =
+        savedTheme === "dark" ||
+        (savedTheme === "system" && Boolean(media?.matches));
+
+      root.classList.toggle("dark", isDark);
+      root.dataset.theme = isDark ? "dark" : "light";
+      document.body.style.backgroundColor = isDark ? "#09090B" : "#F8FAFC";
+    };
+
+    applyResolvedTheme();
+
+    const handleMediaChange = () => {
+      applyResolvedTheme();
+    };
+
+    const handleStorage = (event) => {
+      if (!event.key || event.key === "ss.theme") {
+        applyResolvedTheme();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    if (media?.addEventListener) {
+      media.addEventListener("change", handleMediaChange);
+    } else if (media?.addListener) {
+      media.addListener(handleMediaChange);
+    }
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+
+      if (media?.removeEventListener) {
+        media.removeEventListener("change", handleMediaChange);
+      } else if (media?.removeListener) {
+        media.removeListener(handleMediaChange);
+      }
+    };
+  }, [user?.preferences?.theme]);
+
+  return null;
 }
 
 const App = () => {
@@ -849,10 +888,11 @@ const App = () => {
             <ToastProvider>
               <OldToastProvider>
                 <Router>
+                  <ThemeSync />
                   <Suspense fallback={<LoadingSpinner />}>
                     <LayoutSkin>
                       {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
-                      <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
+                      <div className="app-container w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-white transition-colors duration-300 !rounded-none !m-0 !p-0 !border-0">
                         <AuthCheck />
                       </div>
                     </LayoutSkin>

@@ -1,45 +1,39 @@
 // src/components/LayoutSkin.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYOUT SKIN - Theme Application Layer
-// 
-// This component applies the "Gallery Walk" theme to the entire app.
-// It ensures:
-// - Proper CSS variable scoping
-// - Light mode for app pages
-// - Dark mode for auth pages (via .auth-layout class)
-// - Height normalization
 //
-// NO BACKEND CHANGES - This is purely visual theming.
+// Purpose:
+// - Provide a stable shell wrapper for the whole app
+// - Normalize height / stacking context
+// - Do NOT force light mode
+// - Leave theme authority to ThemeSync + CSS token layers
+//
+// NO BACKEND CHANGES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect } from "react";
 
 export default function LayoutSkin({ children, className = "" }) {
-  // Apply height fix on mount
   useEffect(() => {
-    // Ensure body doesn't have overflow issues
+    const previousMinHeight = document.body.style.minHeight;
+    const previousHeight = document.body.style.height;
+
     document.body.style.minHeight = "100vh";
     document.body.style.height = "auto";
-    
-    // Add the light theme class to html element
-    document.documentElement.classList.add("light-theme");
-    
-    console.log("✅ LayoutSkin applied - Gallery Walk theme active");
-    
+
     return () => {
-      document.documentElement.classList.remove("light-theme");
+      document.body.style.minHeight = previousMinHeight;
+      document.body.style.height = previousHeight;
     };
   }, []);
 
   return (
-    <div 
+    <div
       className={`layout-skin app-canvas min-h-screen ${className}`}
       style={{
-        // Ensure proper stacking context
         isolation: "isolate",
-        // Prevent layout shifts
         minHeight: "100vh",
-        height: "auto"
+        height: "auto",
       }}
     >
       {children}
@@ -49,33 +43,62 @@ export default function LayoutSkin({ children, className = "" }) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // THEME UTILITIES
-// Helper functions for theme management
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function useTheme() {
-  const [theme, setTheme] = React.useState("light");
+  const getTheme = () => {
+    const root = document.documentElement;
+    if (root.classList.contains("dark") || root.dataset.theme === "dark") {
+      return "dark";
+    }
+    return "light";
+  };
+
+  const [theme, setTheme] = React.useState(getTheme);
 
   useEffect(() => {
-    // Check for auth pages
-    const isAuthPage = window.location.pathname.includes("/login") ||
-                       window.location.pathname.includes("/create-account") ||
-                       window.location.pathname.includes("/forgot-password") ||
-                       window.location.pathname.includes("/reset-password");
-    
-    setTheme(isAuthPage ? "dark" : "light");
+    const syncTheme = () => setTheme(getTheme());
+
+    syncTheme();
+
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const handleMedia = () => syncTheme();
+    const handleStorage = (event) => {
+      if (!event.key || event.key === "ss.theme") {
+        syncTheme();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    if (media?.addEventListener) {
+      media.addEventListener("change", handleMedia);
+    } else if (media?.addListener) {
+      media.addListener(handleMedia);
+    }
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+
+      if (media?.removeEventListener) {
+        media.removeEventListener("change", handleMedia);
+      } else if (media?.removeListener) {
+        media.removeListener(handleMedia);
+      }
+    };
   }, []);
 
   return { theme, isLight: theme === "light", isDark: theme === "dark" };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// THEME PROVIDER (Optional - for more complex theme needs)
+// THEME PROVIDER
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ThemeContext = React.createContext({
   theme: "light",
   isLight: true,
-  isDark: false
+  isDark: false,
 });
 
 export function ThemeProvider({ children }) {
@@ -83,9 +106,7 @@ export function ThemeProvider({ children }) {
 
   return (
     <ThemeContext.Provider value={themeValue}>
-      <LayoutSkin>
-        {children}
-      </LayoutSkin>
+      <LayoutSkin>{children}</LayoutSkin>
     </ThemeContext.Provider>
   );
 }
