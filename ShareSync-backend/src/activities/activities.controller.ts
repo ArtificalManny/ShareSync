@@ -22,11 +22,10 @@ import { Types } from 'mongoose';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ActivitiesService } from './activities.service';
-
 import { ProjectAccessGuard, ProjectAccess } from '../common/guards/project-access.guard';
 
 @Controller('projects/:projectId/activity')
-export class ActivitiesController {
+class ActivitiesController {
   constructor(private readonly activities: ActivitiesService) {}
 
   @Get()
@@ -68,7 +67,6 @@ export class ActivitiesController {
     });
   }
 
-  // ✅ Dev-only smoke test: proves writes hit Mongo and show up in GET + mongosh.
   @Post('test')
   @ProjectAccess({ param: 'projectId', intent: 'write' })
   @UseGuards(JwtAuthGuard, ProjectAccessGuard)
@@ -110,7 +108,7 @@ export class ActivitiesController {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @Controller('activities')
-export class ActivityFeedController {
+class ActivityFeedController {
   constructor(private readonly activities: ActivitiesService) {}
 
   @Get('feed')
@@ -124,7 +122,21 @@ export class ActivityFeedController {
       throw new BadRequestException('Missing user identity');
     }
 
-    const limit = Math.max(1, Math.min(100, Number.parseInt(String(limitRaw ?? '50'), 10) || 50));
-    return this.activities.getFeed(userId, limit);
+    const limit = Math.max(
+      1,
+      Math.min(100, Number.parseInt(String(limitRaw ?? '50'), 10) || 50),
+    );
+
+    return this.activities.list({
+      scope: 'global',
+      userId,
+      limit,
+      range: 'all',
+      cursor: null,
+      type: null,
+      entityId: null,
+    });
   }
 }
+
+export { ActivitiesController, ActivityFeedController };

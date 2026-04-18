@@ -40,14 +40,10 @@ export class ActivitiesService {
       const projectObjectId = toObjectId(data.projectId ?? null);
       const entityObjectId = toObjectId(data.entityId ?? null);
 
-      // IMPORTANT:
-      // Do NOT write nulls for fields with enum/default validators.
-      // Omit the property entirely so Mongoose can apply defaults cleanly.
       const doc: AnyObj = {
         userId: userObjectId,
         type: data.type,
         entityType: data.entityType ?? null,
-
         details: data.details || {},
         metadata: data.metadata || {},
         payload: data.payload || {},
@@ -55,8 +51,8 @@ export class ActivitiesService {
 
       if (projectObjectId) doc.projectId = projectObjectId;
       if (entityObjectId) doc.entityId = entityObjectId;
-      if (data.entityId) doc.entityKey = data.entityId; // extra debug string
-      if (data.action) doc.action = data.action; // otherwise schema default applies
+      if (data.entityId) doc.entityKey = data.entityId;
+      if (data.action) doc.action = data.action;
 
       const saved = await new this.activityModel(doc).save();
       return saved;
@@ -153,58 +149,24 @@ export class ActivitiesService {
     });
   }
 
+  async getFeed(userId: string, limit = 50) {
+    return this.list({
+      scope: 'global',
+      userId,
+      limit,
+      range: 'all',
+      cursor: null,
+      type: null,
+      entityId: null,
+    });
+  }
+
   async listProjectActivityTimeline(args: any) {
     return this.listProject(args);
   }
 
   async logActivity(args: any) {
     return this.record(args);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────
-  // getFeed: Returns recent activities with populated user data
-  // Used by GET /activities/feed for the dashboard Team Activity panel
-  // ─────────────────────────────────────────────────────────────────────
-  async getFeed(userId: string, limit = 50) {
-    const safeLimit = Math.max(1, Math.min(200, limit));
-
-    try {
-      // Get all activities for this user's scope (their own + their projects)
-      const items = await this.activityModel
-        .find({})
-        .sort({ createdAt: -1 })
-        .limit(safeLimit)
-        .populate('userId', 'firstName lastName username profilePicture')
-        .populate('actorId', 'firstName lastName username profilePicture')
-        .lean()
-        .exec();
-
-      // Transform: resolve actor name from populated userId/actorId
-      const transformed = (items || []).map((item: any) => {
-        const actor = item.actorId || item.userId;
-        const actorName = actor?.firstName
-          ? `${actor.firstName} ${actor.lastName || ''}`.trim()
-          : actor?.username || 'Someone';
-        const actorAvatar = actor?.profilePicture || null;
-
-        return {
-          ...item,
-          actorName,
-          actorAvatar,
-          actor: actor ? {
-            _id: actor._id,
-            name: actorName,
-            avatar: actorAvatar,
-            username: actor.username,
-          } : null,
-        };
-      });
-
-      return { items: transformed, nextCursor: null };
-    } catch (err: any) {
-      this.logger.error('getFeed failed:', err?.message || err);
-      return { items: [], nextCursor: null };
-    }
   }
 
   async createFromTaskEvent(event: any) {
@@ -214,7 +176,7 @@ export class ActivitiesService {
       type: String(event?.type || 'task.mutation'),
       entityType: 'TASK',
       entityId: event?.taskId ? String(event.taskId) : undefined,
-      action: event?.action ? String(event.action) : undefined, // omit if absent
+      action: event?.action ? String(event.action) : undefined,
       details: event?.details || {},
       metadata: event?.metadata || {},
       payload: event || {},
