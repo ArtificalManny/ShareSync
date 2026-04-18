@@ -208,7 +208,7 @@ async function fetchActivityFeed(limit = 50) {
     return items.map((item) => ({
       _id: item._id || item.id,
       type: item.type || item.action || 'ACTIVITY',
-      actorName: item.actorName || item.actor?.name || 'Someone',
+      actorName: item.actorName || (item.userId?.firstName ? `${item.userId.firstName} ${item.userId.lastName || ''}`.trim() : null) || item.actor?.name || 'Someone',
       username: item.actor?.username || item.username,
       projectName: item.details?.projectName || item.metadata?.projectName || item.payload?.projectName || null,
       createdAt: item.createdAt,
