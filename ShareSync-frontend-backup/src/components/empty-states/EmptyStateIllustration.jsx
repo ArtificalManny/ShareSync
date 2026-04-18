@@ -382,10 +382,9 @@ export function SearchIllustration({ glowLevel = 2, accentColor = 'brand', isFir
       
       {/* Magnifying glass */}
       <motion.g
-        style={{ filter: glowFilter }}
+        style={{ filter: glowFilter, transformOrigin: '70px 70px' }}
         animate={shouldAnimate ? { rotate: [0, 5, 0, -5, 0] } : {}}
         transition={{ duration: 4, repeat: Infinity }}
-        style={{ transformOrigin: '70px 70px' }}
       >
         {/* Glass circle */}
         <circle cx="65" cy="65" r="35" stroke={primaryColor} strokeWidth="4" fill="none" />
@@ -569,10 +568,9 @@ export function TeamIllustration({ glowLevel = 2, accentColor = 'brand', isFireM
       
       {/* Main user (you) */}
       <motion.g
-        style={{ filter: glowFilter }}
+        style={{ filter: glowFilter, transformOrigin: '80px 50px' }}
         animate={shouldAnimate ? { scale: [1, 1.05, 1] } : {}}
         transition={{ duration: 2, repeat: Infinity }}
-        style={{ transformOrigin: '80px 50px' }}
       >
         <circle cx="80" cy="40" r="18" fill={primaryColor} />
         <circle cx="80" cy="35" r="8" fill="#1A1A1D" />
