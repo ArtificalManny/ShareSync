@@ -154,10 +154,15 @@ export default function Discover() {
               </div>
             </div>
           ) : (
-            <ActivityFeed activities={formatActivityItems(feed.filter(item => {
-              const name = item.user?.displayName || item.user?.username || item.user || '';
-              return name !== 'demo' && name !== 'Demo User';
-            }))} />
+            <>
+              <div className="mb-8">
+                <FeaturedProjects maxVisible={6} />
+              </div>
+              <ActivityFeed activities={formatActivityItems(feed.filter(item => {
+                const name = item.user?.displayName || item.user?.username || item.user || '';
+                return name !== 'demo' && name !== 'Demo User';
+              }))} />
+            </>
           )}
           
           <div ref={loaderRef} className="w-full flex justify-center py-8">

@@ -1,5 +1,5 @@
 // src/components/ecosystem/ProjectsOverview.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flame, ChevronRight, Plus, Target, AlertCircle } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useMobile';
@@ -8,11 +8,38 @@ const ProjectsOverview = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  const [projects] = useState([
-    { _id: '1', name: 'ShareSync v2', emoji: '🚀', progress: 68, streak: 7, nextTask: 'Fix login page CSS', isAtRisk: false },
-    { _id: '2', name: 'AI Writing Tool', emoji: '✨', progress: 85, streak: 120, nextTask: 'Write API docs', isAtRisk: false },
-    { _id: '3', name: 'Math Homework', emoji: '📐', progress: 45, streak: 3, nextTask: null, isAtRisk: true }
-  ]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const { default: client } = await import('../../api/client');
+        const { data } = await client.get('/projects');
+        const items = Array.isArray(data) ? data : (data?.data || data?.projects || []);
+        if (!cancelled) {
+          setProjects(items.slice(0, 5).map(p => ({
+            _id: p._id || p.id,
+            name: p.name || p.title || 'Untitled',
+            emoji: p.emoji || p.icon || '📁',
+            progress: p.metrics?.totalTasks > 0
+              ? Math.round((p.metrics.completedTasks || 0) / p.metrics.totalTasks * 100)
+              : 0,
+            streak: p.streakDays || 0,
+            nextTask: null,
+            isAtRisk: (p.metrics?.weeklyShips || 0) === 0 && (p.metrics?.totalTasks || 0) > 5,
+          })));
+        }
+      } catch (err) {
+        console.warn('[ProjectsOverview] Failed to load:', err?.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const getProgressColor = (progress, isAtRisk) => {
     if (isAtRisk) return 'bg-warning';
