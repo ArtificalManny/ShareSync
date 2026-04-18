@@ -37,6 +37,10 @@ import {
   Save,
   Loader2,
   RefreshCw,
+  Folder,
+  CheckCircle2,
+  Clock,
+  Flame,
 } from "lucide-react";
 import { toast } from "../components/ui/toast";
 import UserAvatar from "../components/ui/UserAvatar";
@@ -548,6 +552,8 @@ export default function Profile() {
   
   // Phase 7: Edit modal state
   const [isEditing, setIsEditing] = useState(false);
+  const [userProjects, setUserProjects] = useState([]);
+  const [recentShips, setRecentShips] = useState([]);
 
   // ⭐ PHASE 1 FIX: Error state with retry capability
   const [error, setError] = useState(false);
@@ -652,6 +658,20 @@ export default function Profile() {
         } catch (err) {
           console.warn("[Profile] stats load failed", err?.message || err);
         }
+
+        // Fetch user's projects for portfolio
+        try {
+          const projRes = await client.get("/projects");
+          const projs = Array.isArray(projRes.data) ? projRes.data : (projRes.data?.data || projRes.data?.projects || []);
+          setUserProjects(projs.slice(0, 6));
+        } catch (_) {}
+
+        // Fetch recent completed tasks
+        try {
+          const shipsRes = await client.get("/tasks", { params: { status: "done", limit: 5, sortBy: "completedAt", sortOrder: "desc" } });
+          const tasks = shipsRes.data?.data?.tasks || shipsRes.data?.tasks || (Array.isArray(shipsRes.data?.data) ? shipsRes.data.data : []);
+          setRecentShips(Array.isArray(tasks) ? tasks.slice(0, 5) : []);
+        } catch (_) {}
       }
     } catch (e) {
       console.error('[Profile] Failed to load user data:', e);
@@ -816,6 +836,91 @@ export default function Profile() {
           )}
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          STATS BAR — Compact social proof
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-center gap-6 mb-12 text-sm text-slate-500 dark:text-zinc-400">
+        <span className="flex items-center gap-1.5">
+          <CheckCircle2 className="w-4 h-4 text-violet-500" />
+          <strong className="text-slate-800 dark:text-white">{user?.totalShips || 0}</strong> ships
+        </span>
+        <span className="text-slate-300 dark:text-zinc-600">·</span>
+        <span className="flex items-center gap-1.5">
+          <Folder className="w-4 h-4 text-blue-500" />
+          <strong className="text-slate-800 dark:text-white">{userProjects.length}</strong> projects
+        </span>
+        <span className="text-slate-300 dark:text-zinc-600">·</span>
+        <span className="flex items-center gap-1.5">
+          <Flame className="w-4 h-4 text-amber-500" />
+          <strong className="text-slate-800 dark:text-white">{user?.currentStreak || 0}d</strong> streak
+        </span>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROJECT PORTFOLIO — What they're building
+      ═══════════════════════════════════════════════════════════════════ */}
+      {userProjects.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <Folder className="w-4 h-4 text-violet-500" />
+            <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Projects</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {userProjects.map(p => (
+              <a
+                key={p._id || p.id}
+                href={'/projects/' + (p._id || p.id)}
+                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-violet-500/30 transition-all group"
+                style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+              >
+                <span className="text-2xl shrink-0">{p.emoji || p.icon || '📁'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-violet-600 transition-colors">
+                    {p.name || p.title || 'Untitled'}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{p.description || 'No description'}</p>
+                </div>
+                {(p.streakDays > 0) && (
+                  <span className="text-[10px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0">
+                    🔥{p.streakDays}d
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          RECENT SHIPS — Proof of work
+      ═══════════════════════════════════════════════════════════════════ */}
+      {recentShips.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle2 className="w-4 h-4 text-teal-500" />
+            <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Recent Ships</h3>
+          </div>
+          <div className="space-y-2">
+            {recentShips.map(task => (
+              <div
+                key={task._id || task.id}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06]"
+                style={{ boxShadow: '0 1px 6px rgba(139, 92, 246, 0.03)' }}
+              >
+                <CheckCircle2 className="w-4 h-4 text-teal-500 shrink-0" />
+                <p className="text-sm text-slate-800 dark:text-white truncate flex-1">{task.title}</p>
+                {task.completedAt && (
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 shrink-0 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {new Date(task.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
