@@ -40,6 +40,7 @@ export default function MomentumContagion({
 
   const { feed, stats, optedIn, setOptedIn } = useMomentumContagion({
     injectedActivities: activities,
+    maxItems: maxVisible + 2,
     enabled: true,
   });
 

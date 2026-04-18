@@ -257,7 +257,7 @@ function normalizeInjected(items) {
       type,
       user: {
         id: a?.raw?.actorId || a?.raw?.userId || a?.actorName || 'user',
-        name: a?.actorName || 'Someone',
+        name: a?.actorName || (a?.raw?.userId?.firstName ? `${a.raw.userId.firstName} ${a.raw.userId.lastName || ''}`.trim() : null) || (a?.userId?.firstName ? `${a.userId.firstName} ${a.userId.lastName || ''}`.trim() : null) || 'Someone',
         avatar: a?.raw?.avatar || null,
         isOnline: true,
       },
