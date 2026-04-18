@@ -1,97 +1,114 @@
-// src/layouts/MainLayout.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// THE GALLERY - Main App Layout (Light Mode)
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// v5.0 "The Gallery Walk" - THE LIGHT GALLERY
-// After passing through the grand entrance (auth), users enter this light,
-// airy gallery space. The subtle violet/teal atmospheric glows echo the
-// entrance but in a much more subdued way.
-//
-// NO BACKEND CHANGES - This is purely a visual wrapper.
-//
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Outlet } from "react-router-dom";
+import QuickNotesDrawer from "../components/global/QuickNotesDrawer";
+import { NotesProvider, useNotes } from "../context/NotesContext";
 
-export default function MainLayout({
+export default function MainLayout(props) {
+  return (
+    <NotesProvider>
+      <MainLayoutShell {...props} />
+    </NotesProvider>
+  );
+}
+
+function MainLayoutShell({
   sidebar = null,
   navbar = null,
   children,
 }) {
+  const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
+  const { notes } = useNotes();
+
+  const quickNotesCount = notes.length;
+
+  const navbarWithInjectedProps = useMemo(() => {
+    if (!navbar || !React.isValidElement(navbar)) {
+      return navbar;
+    }
+
+    return React.cloneElement(navbar, {
+      onOpenQuickNotes: () => setIsQuickNotesOpen(true),
+      quickNotesCount,
+    });
+  }, [navbar, quickNotesCount]);
+
   return (
-    <div className="main-layout min-h-screen bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
-      {/* ═══════════════════════════════════════════════════════════════════════
-          ATMOSPHERIC GLOWS
-          Split into Light Mode div and Dark Mode div so inline styles don't clash.
-          ═══════════════════════════════════════════════════════════════════════ */}
+    <>
+      <div className="main-layout min-h-screen bg-slate-50 dark:bg-[#09090b] transition-colors duration-300">
+        {/* ═══════════════════════════════════════════════════════════════════════
+            ATMOSPHERIC GLOWS
+            Split into Light Mode div and Dark Mode div so inline styles don't clash.
+            ═══════════════════════════════════════════════════════════════════════ */}
 
-      {/* --- LIGHT MODE GLOWS --- */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 dark:hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)",
-          }}
-        />
-        <div
-          className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
-        />
-        <div
-          className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
-        />
-      </div>
+        {/* --- LIGHT MODE GLOWS --- */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 dark:hidden">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)",
+            }}
+          />
+          <div
+            className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
+            style={{
+              background: "radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+          <div
+            className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
+            style={{
+              background: "radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+        </div>
 
-      {/* --- DARK MODE GLOWS --- */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 hidden dark:block">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b 100%)",
-          }}
-        />
-        <div
-          className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
-        />
-        <div
-          className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(45, 212, 191, 0.02) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
-        />
-      </div>
+        {/* --- DARK MODE GLOWS --- */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 hidden dark:block">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b 100%)",
+            }}
+          />
+          <div
+            className="absolute -top-[20%] -left-[15%] w-[50vw] h-[50vw] rounded-full"
+            style={{
+              background: "radial-gradient(circle, rgba(139, 92, 246, 0.03) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+          <div
+            className="absolute -bottom-[20%] -right-[15%] w-[45vw] h-[45vw] rounded-full"
+            style={{
+              background: "radial-gradient(circle, rgba(45, 212, 191, 0.02) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+        </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          LAYOUT STRUCTURE - No dark borders
-          ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="relative z-10 flex min-h-screen">
-        {/* Sidebar slot */}
-        {sidebar && <aside className="flex-shrink-0">{sidebar}</aside>}
+        {/* ═══════════════════════════════════════════════════════════════════════
+            LAYOUT STRUCTURE - No dark borders
+            ═══════════════════════════════════════════════════════════════════════ */}
+        <div className="relative z-10 flex min-h-screen">
+          {sidebar && <aside className="flex-shrink-0">{sidebar}</aside>}
 
-        {/* Main content area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Top navigation slot */}
-          {navbar && <header className="flex-shrink-0">{navbar}</header>}
+          <div className="flex-1 flex flex-col min-w-0">
+            {navbarWithInjectedProps && (
+              <header className="flex-shrink-0">{navbarWithInjectedProps}</header>
+            )}
 
-          {/* Page content */}
-          <main className="flex-1 overflow-auto">{children || <Outlet />}</main>
+            <main className="flex-1 overflow-auto">{children || <Outlet />}</main>
+          </div>
         </div>
       </div>
-    </div>
+
+      <QuickNotesDrawer
+        open={isQuickNotesOpen}
+        onClose={() => setIsQuickNotesOpen(false)}
+      />
+    </>
   );
 }
 
@@ -186,7 +203,6 @@ export function ContentCard({
   );
 }
 
-// Stat card for dashboards
 export function StatCard({
   label,
   value,

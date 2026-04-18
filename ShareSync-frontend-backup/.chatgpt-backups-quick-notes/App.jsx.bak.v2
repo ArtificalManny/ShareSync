@@ -19,7 +19,6 @@ import {
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NotesProvider, useNotes } from "./context/NotesContext";
-import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 // ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
@@ -172,7 +171,7 @@ const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
 // ❌ TEMPORARILY DISABLED - Component has dependency issues
-
+// const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));

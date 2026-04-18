@@ -18,8 +18,6 @@ import {
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { NotesProvider, useNotes } from "./context/NotesContext";
-import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 // ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
@@ -172,7 +170,7 @@ const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
 // ❌ TEMPORARILY DISABLED - Component has dependency issues
-
+// const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
@@ -497,8 +495,6 @@ function AppRoutes() {
   const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [quickNotesOpen, setQuickNotesOpen] = useState(false);
-  const { notes = [] } = useNotes();
 
   const isAuthPage = [
     "/login",
@@ -532,19 +528,7 @@ function AppRoutes() {
           </Suspense>
 
           {/* IMPORTANT: do NOT wrap Navbar in another .navbar div (it already renders a .navbar header) */}
-          <Navbar
-            user={authUser}
-            onLogout={logout}
-            onOpenQuickNotes={() => setQuickNotesOpen(true)}
-            quickNotesCount={notes.length}
-          />
-
-          <Suspense fallback={null}>
-            <QuickNotesDrawer
-              open={quickNotesOpen}
-              onClose={() => setQuickNotesOpen(false)}
-            />
-          </Suspense>
+          <Navbar user={authUser} onLogout={logout} />
         </>
       )}
 
@@ -909,9 +893,7 @@ const App = () => {
                     <LayoutSkin>
                       {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
                       <div className="app-container w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-white transition-colors duration-300 !rounded-none !m-0 !p-0 !border-0">
-                        <NotesProvider>
-                          <AuthCheck />
-                        </NotesProvider>
+                        <AuthCheck />
                       </div>
                     </LayoutSkin>
                   </Suspense>
