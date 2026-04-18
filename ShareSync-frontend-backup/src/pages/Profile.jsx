@@ -634,6 +634,24 @@ export default function Profile() {
           console.warn("[Profile] analytics load failed", err?.message || err);
           setProfileAnalytics(null);
         }
+
+        // Fetch real stats and merge into user object
+        try {
+          const statsRes = await client.get("/users/me/stats");
+          const stats = statsRes.data?.data || statsRes.data;
+          if (stats) {
+            setMe(prev => ({
+              ...prev,
+              totalShips: stats.totalShips ?? stats.ships ?? prev?.totalShips ?? 0,
+              currentStreak: stats.streakDays ?? prev?.currentStreak ?? 0,
+              weeklyShips: stats.weeklyShips ?? 0,
+              completionRate: stats.completionRate ?? stats.focus ?? 0,
+              efficiency: stats.efficiency ?? 0,
+            }));
+          }
+        } catch (err) {
+          console.warn("[Profile] stats load failed", err?.message || err);
+        }
       }
     } catch (e) {
       console.error('[Profile] Failed to load user data:', e);
@@ -674,7 +692,7 @@ export default function Profile() {
   const viewId = user?._id || user?.id;
   const isOwnProfile = !isPublicRoute || (myId && viewId && String(myId) === String(viewId));
 
-  const reliability = calculateReliability(user?.completedTasks, user?.totalTasks);
+  const reliability = Math.min(100, user?.completionRate ?? calculateReliability(user?.completedTasks, user?.totalTasks));
   const userId = user?._id || user?.id;
   
   // Growth hook will silently return empty objects if it doesn't have permission to view private tasks
