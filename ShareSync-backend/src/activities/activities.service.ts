@@ -118,6 +118,7 @@ export class ActivitiesService {
       .find(q)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
+      .populate('userId', 'firstName lastName username profilePicture')
       .lean()
       .exec();
 
