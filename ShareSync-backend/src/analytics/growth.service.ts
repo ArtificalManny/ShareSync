@@ -1,0 +1,558 @@
+// src/analytics/growth.service.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// GROWTH ANALYTICS SERVICE — Rule-Based Behavioral Intelligence Engine
+//
+// Analyzes real task data to generate:
+// - Skill profiles (radar chart)
+// - Evolution moments (milestone timeline)
+// - Growth suggestions (actionable coaching)
+// - Trend lines (12-week velocity/quality/collaboration)
+//
+// Zero LLM dependency — pure pattern matching against MongoDB task data.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+
+@Injectable()
+export class GrowthService {
+  private readonly logger = new Logger(GrowthService.name);
+
+  constructor(
+    @InjectModel('Task') private readonly taskModel: Model<any>,
+    @InjectModel('User') private readonly userModel: Model<any>,
+  ) {}
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SKILL PROFILE — Radar chart data from real task patterns
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getSkillProfile(userId: string) {
+    const uid = new Types.ObjectId(userId);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+
+    try {
+      // All tasks touched by this user
+      const allTasks = await this.taskModel.find({
+        $or: [{ completedBy: uid }, { createdBy: uid }, { userId: uid }, { assigneeId: uid }],
+      }).select('status priority completedAt createdAt comments tags').lean();
+
+      const recentTasks = allTasks.filter(
+        t => t.completedAt && new Date(t.completedAt) >= thirtyDaysAgo,
+      );
+
+      const totalTasks = allTasks.length;
+      const completedTasks = allTasks.filter(t =>
+        ['done', 'completed', 'Done', 'Completed'].includes(t.status),
+      ).length;
+
+      // Velocity: completed tasks per week (normalized 0-100)
+      const weeksActive = Math.max(1, Math.ceil((Date.now() - new Date(allTasks[allTasks.length - 1]?.createdAt || Date.now()).getTime()) / (7 * 86400000)));
+      const velocityRaw = completedTasks / weeksActive;
+      const velocity = Math.min(100, Math.round(velocityRaw * 20)); // 5/week = 100
+
+      // Execution: completion rate
+      const execution = totalTasks > 0 ? Math.min(100, Math.round((completedTasks / totalTasks) * 100)) : 0;
+
+      // Quality: percentage of high/critical priority tasks completed
+      const highPriorityDone = allTasks.filter(
+        t => ['high', 'critical', 'urgent'].includes(t.priority) && ['done', 'completed', 'Done', 'Completed'].includes(t.status),
+      ).length;
+      const highPriorityTotal = allTasks.filter(
+        t => ['high', 'critical', 'urgent'].includes(t.priority),
+      ).length;
+      const quality = highPriorityTotal > 0 ? Math.min(100, Math.round((highPriorityDone / highPriorityTotal) * 100)) : 50;
+
+      // Consistency: how many of last 14 days had at least one completion
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000);
+      const recentCompletions = allTasks.filter(
+        t => t.completedAt && new Date(t.completedAt) >= fourteenDaysAgo,
+      );
+      const activeDays = new Set(
+        recentCompletions.map(t => new Date(t.completedAt).toISOString().slice(0, 10)),
+      ).size;
+      const consistency = Math.min(100, Math.round((activeDays / 14) * 100));
+
+      // Collaboration: tasks with comments or multiple assignees
+      const withComments = allTasks.filter(t => t.comments?.length > 0).length;
+      const collaboration = totalTasks > 0 ? Math.min(100, Math.round((withComments / totalTasks) * 150)) : 20;
+
+      // Initiative: tasks created by this user
+      const created = allTasks.filter(t => String(t.createdBy) === userId).length;
+      const initiative = totalTasks > 0 ? Math.min(100, Math.round((created / totalTasks) * 100)) : 30;
+
+      const skills = { velocity, execution, quality, consistency, collaboration, initiative };
+
+      // Identify strengths and growth areas
+      const entries = Object.entries(skills).sort(([, a], [, b]) => b - a);
+      const strengths = entries.slice(0, 2).map(([k]) => k);
+      const growthAreas = entries.slice(-2).map(([k]) => k);
+
+      // Overall growth: compare last 2 weeks vs prior 2 weeks
+      const priorTwoWeeks = allTasks.filter(t => {
+        if (!t.completedAt) return false;
+        const d = new Date(t.completedAt).getTime();
+        return d >= fourteenDaysAgo.getTime() - 14 * 86400000 && d < fourteenDaysAgo.getTime();
+      }).length;
+      const recentTwoWeeks = recentCompletions.length;
+      const overallGrowth = priorTwoWeeks > 0
+        ? Math.round(((recentTwoWeeks - priorTwoWeeks) / priorTwoWeeks) * 100)
+        : recentTwoWeeks > 0 ? 100 : 0;
+
+      // Archetype
+      const archetype = this.determineArchetype(skills);
+
+      return {
+        skills,
+        strengths,
+        growthAreas,
+        overallGrowth,
+        archetype: { current: archetype },
+        totalTasks,
+        completedTasks,
+        activeDaysLast14: activeDays,
+      };
+    } catch (err) {
+      this.logger.error(`[Growth] getSkillProfile failed for ${userId}:`, err?.message);
+      return this.emptySkillProfile();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EVOLUTION MOMENTS — Milestone timeline
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getEvolutionMoments(userId: string) {
+    const uid = new Types.ObjectId(userId);
+
+    try {
+      // Get significant completed tasks (high priority or with XP)
+      const milestones = await this.taskModel.find({
+        $or: [{ completedBy: uid }, { userId: uid }],
+        status: { $in: ['done', 'completed', 'Done', 'Completed'] },
+        completedAt: { $exists: true },
+      })
+        .sort({ completedAt: -1 })
+        .limit(20)
+        .select('title completedAt priority xpValue projectId')
+        .populate('projectId', 'name emoji')
+        .lean();
+
+      // Get user for level/XP info
+      const user: any = await this.userModel.findById(uid).select('totalXP level badges createdAt').lean();
+
+      const moments = [];
+
+      // Account creation
+      if (user?.createdAt) {
+        moments.push({
+          type: 'milestone',
+          title: 'Joined OpenShare',
+          description: 'Started the journey',
+          date: user.createdAt,
+          icon: 'rocket',
+          xp: 0,
+        });
+      }
+
+      // First task completion
+      const firstTask = milestones[milestones.length - 1];
+      if (firstTask) {
+        moments.push({
+          type: 'milestone',
+          title: 'First Ship',
+          description: `Completed "${firstTask.title}"`,
+          date: firstTask.completedAt,
+          icon: 'star',
+          xp: firstTask.xpValue || 25,
+        });
+      }
+
+      // Significant completions (high priority)
+      const highPriority = milestones.filter(t => ['high', 'critical', 'urgent'].includes(t.priority));
+      for (const task of highPriority.slice(0, 5)) {
+        const projectName = (task as any).projectId?.name || 'a project';
+        moments.push({
+          type: 'ship',
+          title: task.title,
+          description: `High-priority ship in ${projectName}`,
+          date: task.completedAt,
+          icon: 'zap',
+          xp: task.xpValue || 50,
+          projectName,
+        });
+      }
+
+      // Task count milestones
+      const totalCompleted = milestones.length;
+      const countMilestones = [10, 25, 50, 100];
+      for (const count of countMilestones) {
+        if (totalCompleted >= count) {
+          moments.push({
+            type: 'milestone',
+            title: `${count} Ships`,
+            description: `Completed ${count} tasks — proof of work`,
+            date: milestones[Math.max(0, milestones.length - count)]?.completedAt || new Date(),
+            icon: 'trophy',
+            xp: count * 5,
+          });
+        }
+      }
+
+      // Sort by date descending
+      moments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      return moments.slice(0, 15);
+    } catch (err) {
+      this.logger.error(`[Growth] getEvolutionMoments failed for ${userId}:`, err?.message);
+      return [];
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROWTH SUGGESTIONS — Rule-based behavioral coaching
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getGrowthSuggestions(userId: string) {
+    const uid = new Types.ObjectId(userId);
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+
+    try {
+      const user = await this.userModel.findById(uid).select('streakDays totalXP').lean();
+
+      // Gather behavioral signals
+      const weeklyCompleted = await this.taskModel.countDocuments({
+        $or: [{ completedBy: uid }, { userId: uid }],
+        status: { $in: ['done', 'completed', 'Done', 'Completed'] },
+        completedAt: { $gte: sevenDaysAgo },
+      });
+
+      const priorWeekCompleted = await this.taskModel.countDocuments({
+        $or: [{ completedBy: uid }, { userId: uid }],
+        status: { $in: ['done', 'completed', 'Done', 'Completed'] },
+        completedAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo },
+      });
+
+      const openTasks = await this.taskModel.countDocuments({
+        $or: [{ assigneeId: uid }, { createdBy: uid }, { userId: uid }],
+        status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
+      });
+
+      const highPriorityOpen = await this.taskModel.countDocuments({
+        $or: [{ assigneeId: uid }, { createdBy: uid }, { userId: uid }],
+        status: { $in: ['todo', 'in_progress', 'TODO', 'IN_PROGRESS'] },
+        priority: { $in: ['high', 'critical', 'urgent'] },
+      });
+
+      const totalCompleted = await this.taskModel.countDocuments({
+        $or: [{ completedBy: uid }, { userId: uid }],
+        status: { $in: ['done', 'completed', 'Done', 'Completed'] },
+      });
+
+      // Peak hour analysis
+      const recentTasks = await this.taskModel.find({
+        $or: [{ completedBy: uid }, { userId: uid }],
+        completedAt: { $gte: fourteenDaysAgo },
+        status: { $in: ['done', 'completed', 'Done', 'Completed'] },
+      }).select('completedAt').lean();
+
+      const hourBuckets = new Array(24).fill(0);
+      for (const t of recentTasks) {
+        if (t.completedAt) hourBuckets[new Date(t.completedAt).getHours()]++;
+      }
+      const peakHour = hourBuckets.some(v => v > 0)
+        ? hourBuckets.indexOf(Math.max(...hourBuckets))
+        : null;
+
+      // Active days in last 7
+      const activeDays = new Set(
+        recentTasks
+          .filter(t => t.completedAt && new Date(t.completedAt) >= sevenDaysAgo)
+          .map(t => new Date(t.completedAt).toISOString().slice(0, 10)),
+      ).size;
+
+      const streak = (user as any)?.streakDays || 0;
+
+      // ─── Generate Suggestions ──────────────────────────────────────────
+      const suggestions: any[] = [];
+
+      // 1. Streak recovery
+      if (streak === 0 && priorWeekCompleted > 0) {
+        suggestions.push({
+          id: 'streak-restart',
+          title: 'Restart Your Streak',
+          description: 'You were active last week but haven\'t shipped today. Complete one small task to start a new streak.',
+          reason: `You completed ${priorWeekCompleted} tasks last week — the momentum is there.`,
+          priority: 'high',
+          type: 'habit',
+          expectedImpact: 'Rebuilds daily shipping habit',
+          timeEstimate: '15 min',
+          actionItems: [
+            { text: 'Pick the smallest open task in any project', completed: false },
+            { text: 'Complete it and mark as done', completed: false },
+            { text: 'Check your streak counter on the dashboard', completed: false },
+          ],
+        });
+      }
+
+      // 2. Velocity decline
+      if (priorWeekCompleted > 0 && weeklyCompleted < priorWeekCompleted * 0.5) {
+        suggestions.push({
+          id: 'velocity-recovery',
+          title: 'Velocity Is Dropping',
+          description: `You shipped ${weeklyCompleted} tasks this week vs ${priorWeekCompleted} last week. Time to recalibrate.`,
+          reason: 'A 50%+ drop often means blocked tasks or context switching.',
+          priority: 'high',
+          type: 'skill',
+          expectedImpact: 'Prevents momentum collapse',
+          timeEstimate: '30 min',
+          actionItems: [
+            { text: 'Review your open tasks — are any blocked?', completed: false },
+            { text: 'Move blocked tasks to backlog and pick unblocked ones', completed: false },
+            { text: 'Ship 2 small tasks today to rebuild rhythm', completed: false },
+          ],
+        });
+      }
+
+      // 3. High-priority neglect
+      if (highPriorityOpen >= 3 && weeklyCompleted > 0) {
+        suggestions.push({
+          id: 'priority-focus',
+          title: 'Tackle High-Priority Work',
+          description: `You have ${highPriorityOpen} high-priority tasks waiting. Shipping these will have the biggest impact.`,
+          reason: 'You\'re active but may be picking easier tasks first.',
+          priority: 'high',
+          type: 'skill',
+          expectedImpact: 'Boosts impact score and team trust',
+          timeEstimate: '1-2 hours',
+          actionItems: [
+            { text: 'Open your priority queue on the dashboard', completed: false },
+            { text: 'Pick the highest-priority task', completed: false },
+            { text: 'Break it into subtasks if it feels too large', completed: false },
+            { text: 'Ship it', completed: false },
+          ],
+        });
+      }
+
+      // 4. Peak window optimization
+      if (peakHour !== null && weeklyCompleted >= 3) {
+        const formatHour = (h: number) => {
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          const hr = h % 12 || 12;
+          return `${hr} ${ampm}`;
+        };
+        suggestions.push({
+          id: 'peak-window',
+          title: 'Protect Your Peak Window',
+          description: `You ship most around ${formatHour(peakHour)}. Block this time for deep work to maximize output.`,
+          reason: `${recentTasks.filter(t => t.completedAt && new Date(t.completedAt).getHours() === peakHour).length} of your recent ships happened at this hour.`,
+          priority: 'medium',
+          type: 'habit',
+          expectedImpact: 'Up to 40% more output during focus blocks',
+          timeEstimate: '5 min to set up',
+          actionItems: [
+            { text: `Block ${formatHour(peakHour)} - ${formatHour((peakHour + 2) % 24)} on your calendar`, completed: false },
+            { text: 'Turn on Focus Mode during this window', completed: false },
+            { text: 'Queue your hardest task for this time slot', completed: false },
+          ],
+        });
+      }
+
+      // 5. Overloaded
+      if (openTasks > 15) {
+        suggestions.push({
+          id: 'workload-triage',
+          title: 'Lighten Your Load',
+          description: `You have ${openTasks} open tasks. Research shows that having too many open items increases cognitive load and reduces completion rates.`,
+          reason: 'Optimal open task count is 5-10 for sustained productivity.',
+          priority: 'medium',
+          type: 'skill',
+          expectedImpact: 'Clearer focus, faster completion',
+          timeEstimate: '20 min',
+          actionItems: [
+            { text: 'Review all open tasks', completed: false },
+            { text: 'Archive or defer anything not needed this week', completed: false },
+            { text: 'Keep only 5-7 tasks in active rotation', completed: false },
+          ],
+        });
+      }
+
+      // 6. Consistency gap
+      if (activeDays <= 2 && weeklyCompleted > 0) {
+        suggestions.push({
+          id: 'consistency-build',
+          title: 'Spread Your Work Across the Week',
+          description: `You shipped ${weeklyCompleted} tasks but only on ${activeDays} day${activeDays !== 1 ? 's' : ''}. Spreading work out builds stronger habits.`,
+          reason: 'Burst shipping followed by silence creates uneven momentum.',
+          priority: 'medium',
+          type: 'habit',
+          expectedImpact: 'More sustainable rhythm, longer streaks',
+          timeEstimate: '10 min daily',
+          actionItems: [
+            { text: 'Set a daily reminder to ship at least one task', completed: false },
+            { text: 'Start each day by picking your #1 task', completed: false },
+            { text: 'Aim for 5 active days this week', completed: false },
+          ],
+        });
+      }
+
+      // 7. First-time user encouragement
+      if (totalCompleted <= 5) {
+        suggestions.push({
+          id: 'getting-started',
+          title: 'Build Your Foundation',
+          description: 'You\'re just getting started. The first 10 ships build the habit that carries everything else.',
+          reason: `${totalCompleted} ships so far — ${10 - totalCompleted} more to hit your first milestone.`,
+          priority: 'medium',
+          type: 'stretch',
+          expectedImpact: 'Unlocks the "10 Ships" milestone badge',
+          timeEstimate: 'This week',
+          actionItems: [
+            { text: 'Create a project if you haven\'t already', completed: totalCompleted > 0 },
+            { text: 'Add 3 small tasks to your project', completed: totalCompleted >= 3 },
+            { text: 'Complete them one by one', completed: totalCompleted >= 5 },
+            { text: 'Celebrate hitting 10 ships', completed: totalCompleted >= 10 },
+          ],
+        });
+      }
+
+      // 8. Positive reinforcement (always include one if doing well)
+      if (weeklyCompleted >= 5 && activeDays >= 3) {
+        suggestions.push({
+          id: 'doing-great',
+          title: 'You\'re in a Flow State',
+          description: `${weeklyCompleted} ships across ${activeDays} days this week. This is elite-level consistency.`,
+          reason: 'You\'re outperforming 90% of users. Keep this rhythm.',
+          priority: 'low',
+          type: 'habit',
+          expectedImpact: 'Maintaining this pace unlocks advanced badges',
+          timeEstimate: 'Keep going',
+          actionItems: [
+            { text: 'Review your Week in Motion on the dashboard', completed: true },
+            { text: 'Share a win with your team', completed: false },
+            { text: 'Set a stretch goal for next week', completed: false },
+          ],
+        });
+      }
+
+      // Sort: high priority first, then medium, then low
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      suggestions.sort((a, b) => (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1));
+
+      return suggestions.slice(0, 5); // Max 5 suggestions
+    } catch (err) {
+      this.logger.error(`[Growth] getGrowthSuggestions failed for ${userId}:`, err?.message);
+      return [];
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROWTH TRENDS — 12-week trend lines
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getGrowthTrends(userId: string, metric = 'all', weeks = 12) {
+    const uid = new Types.ObjectId(userId);
+    const now = new Date();
+    const startDate = new Date(now.getTime() - weeks * 7 * 86400000);
+
+    try {
+      const tasks = await this.taskModel.find({
+        $or: [{ completedBy: uid }, { userId: uid }, { createdBy: uid }],
+        completedAt: { $gte: startDate },
+        status: { $in: ['done', 'completed', 'Done', 'Completed'] },
+      }).select('completedAt priority comments createdBy').lean();
+
+      // Group by week
+      const weeklyData: any[] = [];
+      for (let w = 0; w < weeks; w++) {
+        const weekStart = new Date(now.getTime() - (weeks - w) * 7 * 86400000);
+        const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
+
+        const weekTasks = tasks.filter(t => {
+          const d = new Date(t.completedAt).getTime();
+          return d >= weekStart.getTime() && d < weekEnd.getTime();
+        });
+
+        // Velocity: raw completion count (normalized later)
+        const velocity = weekTasks.length;
+
+        // Quality: percentage of high-priority completions
+        const highPri = weekTasks.filter(t => ['high', 'critical', 'urgent'].includes(t.priority)).length;
+        const quality = weekTasks.length > 0 ? Math.round((highPri / weekTasks.length) * 100) : 0;
+
+        // Collaboration: tasks with comments
+        const withComments = weekTasks.filter(t => t.comments?.length > 0).length;
+        const collaboration = weekTasks.length > 0 ? Math.round((withComments / weekTasks.length) * 100) : 0;
+
+        weeklyData.push({
+          week: w + 1,
+          weekStart: weekStart.toISOString().slice(0, 10),
+          velocity: Math.min(100, velocity * 15), // Normalize: ~7/week = 100
+          quality,
+          collaboration,
+          rawCount: velocity,
+        });
+      }
+
+      // Compute summary growth percentages
+      const recentHalf = weeklyData.slice(-Math.ceil(weeks / 2));
+      const olderHalf = weeklyData.slice(0, Math.floor(weeks / 2));
+
+      const avg = (arr: any[], key: string) =>
+        arr.length > 0 ? arr.reduce((s, w) => s + (w[key] || 0), 0) / arr.length : 0;
+
+      const calcGrowth = (key: string) => {
+        const recent = avg(recentHalf, key);
+        const older = avg(olderHalf, key);
+        if (older === 0) return recent > 0 ? 100 : 0;
+        return Math.round(((recent - older) / older) * 100);
+      };
+
+      return {
+        data: weeklyData,
+        summary: {
+          velocityGrowth: calcGrowth('velocity'),
+          qualityGrowth: calcGrowth('quality'),
+          collaborationGrowth: calcGrowth('collaboration'),
+        },
+        meta: { weeks, startDate: startDate.toISOString(), endDate: now.toISOString() },
+      };
+    } catch (err) {
+      this.logger.error(`[Growth] getGrowthTrends failed for ${userId}:`, err?.message);
+      return { data: [], summary: { velocityGrowth: 0, qualityGrowth: 0, collaborationGrowth: 0 }, meta: { weeks } };
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  private determineArchetype(skills: Record<string, number>): string {
+    const { velocity, execution, quality, consistency, collaboration, initiative } = skills;
+
+    if (velocity >= 70 && execution >= 70) return 'The Shipper';
+    if (quality >= 70 && consistency >= 70) return 'The Craftsman';
+    if (collaboration >= 60 && initiative >= 60) return 'The Catalyst';
+    if (consistency >= 70 && velocity >= 50) return 'The Machine';
+    if (initiative >= 70) return 'The Pioneer';
+    if (quality >= 60 && execution >= 60) return 'The Strategist';
+    if (velocity >= 50 || execution >= 50) return 'The Builder';
+    return 'The Explorer';
+  }
+
+  private emptySkillProfile() {
+    return {
+      skills: { velocity: 0, execution: 0, quality: 0, consistency: 0, collaboration: 0, initiative: 0 },
+      strengths: [],
+      growthAreas: [],
+      overallGrowth: 0,
+      archetype: { current: 'The Explorer' },
+      totalTasks: 0,
+      completedTasks: 0,
+      activeDaysLast14: 0,
+    };
+  }
+}
