@@ -364,7 +364,10 @@ const ProjectSettings = () => {
 
           <p className="text-sm text-slate-300 mb-4">
             Once you leave this project, you will lose access to all project data and won't be able to rejoin unless invited again.
-            {role === 'owner' && <span className="font-bold text-error-300 block mt-2">⚠️ You are the Owner. You cannot leave until you transfer ownership.</span>}
+            {role === 'owner' && (project?.members?.filter(m => String(m?.userId?._id || m?.userId || '') !== currentUserId).length > 0
+              ? <span className="font-bold text-error-300 block mt-2">⚠️ You are the Owner. Transfer ownership to another member first.</span>
+              : <span className="font-bold text-amber-300 block mt-2">⚠️ You are the only member. Leaving will archive this project.</span>
+            )}
           </p>
 
           {showLeaveConfirm ? (
@@ -379,10 +382,10 @@ const ProjectSettings = () => {
                 </button>
                 <button
                   onClick={handleLeaveProject}
-                  disabled={role === 'owner'}
+                  disabled={role === 'owner' && project?.members?.filter(m => String(m?.userId?._id || m?.userId || '') !== currentUserId).length > 0}
                   className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-error-500/20"
                 >
-                  Yes, Leave Project
+                  {role === 'owner' && (!project?.members || project.members.length === 0) ? 'Yes, Archive & Leave' : 'Yes, Leave Project'}
                 </button>
               </div>
             </div>
