@@ -57,8 +57,13 @@ export class AIService {
       }
 
       // 2. SYSTEM INSTRUCTION: Invisible prompt to guide the AI
+      const mentorTone = contextData?.mentorTone || '';
       const systemInstruction = `You are an elite productivity coach in an app called OpenShare. 
-      Your tone is sharp, encouraging, concise, and highly actionable. Keep responses short and formatted with markdown. 
+      Your tone adapts to the user's preference. Keep responses short and formatted with markdown.
+      ${mentorTone === 'drill' ? 'Be direct, tough, no-nonsense. Push hard. Challenge excuses. Use short, commanding sentences.' : ''}
+      ${mentorTone === 'kind' ? 'Be warm, gentle, encouraging. Celebrate small wins. Use supportive language and positive reinforcement.' : ''}
+      ${mentorTone === 'wise' ? 'Be calm, insightful, philosophical. Share perspective. Use metaphors and thoughtful observations.' : ''}
+      ${!mentorTone ? 'Be sharp, encouraging, concise, and highly actionable.' : ''} 
       Do not be overly chatty.
       
       DATABASE CONTEXT (Treat as absolute fact):

@@ -79,8 +79,10 @@ type AnyProject = {
     return Math.round((onTime.length / withDue.length) * 100);
   }
   
-  /** Cadence score over last 14d: unique active days vs target 10 days (weekend grace). */
-  export function cadence14d(project: AnyProject): number {
+  /** Cadence score over last 14d: unique active days vs target. 
+   * weekendCount=true means weekends count, so target is 14. 
+   * weekendCount=false means weekdays only, target is 10. */
+  export function cadence14d(project: AnyProject, weekendCount = false): number {
     const updates = Array.isArray(project?.updates) ? project.updates : [];
     const tasks = Array.isArray(project?.tasks) ? project.tasks : [];
   
@@ -100,7 +102,7 @@ type AnyProject = {
     });
   
     const active = days.size;           // 0..14
-    const target = 10;                  // grace for weekends
+    const target = weekendCount ? 14 : 10; // 14 if weekends count, 10 if weekday-only
     const score = Math.min(1, active / target) * 100;
     return Math.round(score);
   }

@@ -14,11 +14,12 @@ export class AIController {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Post('chat')
-  async chat(@Body() body: ChatRequestDto) {
+  async chat(@Body() body: any) {
     const contextData = {
       scope: body.scope,
       projectId: body.projectId,
       items: body.items,
+      mentorTone: body.mentorTone || '',
     };
 
     const text = await this.aiService.generateChatResponse(body.prompt, contextData);

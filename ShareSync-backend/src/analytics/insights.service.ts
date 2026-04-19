@@ -96,7 +96,7 @@ export class InsightsService {
       })
       .lean();
 
-    const dailyGoal = 5;
+    const dailyGoal = (user as any)?.preferences?.momentum?.dailyGoal ?? 5;
     const todayStart = new Date(now.setHours(0, 0, 0, 0));
     const todayShips = thisWeekShips.filter(
       (s) => new Date(s.createdAt) >= todayStart,
@@ -104,7 +104,7 @@ export class InsightsService {
 
     const predictions = [];
 
-    // Prediction 1: Daily goal
+    // Prediction 1: Daily goal (reads user's setting)
     const remaining = dailyGoal - todayShips;
     if (remaining > 0 && remaining <= 3) {
       predictions.push({
@@ -329,7 +329,8 @@ export class InsightsService {
       (s) => new Date(s.createdAt) >= todayStart,
     ).length;
 
-    const dailyGoal = 5;
+    const userPrefs = await this.userModel.findById(userId).select('preferences').lean();
+    const dailyGoal = (userPrefs as any)?.preferences?.momentum?.dailyGoal ?? 5;
 
     const shouldNudge =
       todayShips < dailyGoal &&
