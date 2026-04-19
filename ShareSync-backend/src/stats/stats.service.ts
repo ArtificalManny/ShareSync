@@ -90,7 +90,7 @@ export class StatsService {
         status: { $in: ['completed', 'done', 'Done', 'Completed'] },
       });
       const completionRate = totalAssigned > 0
-        ? Math.round((totalCompleted / totalAssigned) * 100)
+        ? Math.min(100, Math.round((totalCompleted / totalAssigned) * 100))
         : 0;
 
       // Efficiency: ((thisWeek - lastWeek) / lastWeek) * 100
@@ -145,7 +145,7 @@ export class StatsService {
       return {
         ships: weeklyShips,
         streakDays,
-        focus: completionRate,
+        focus: Math.min(100, completionRate),
         efficiency,
         weeklyShips,
         lastWeekShips,

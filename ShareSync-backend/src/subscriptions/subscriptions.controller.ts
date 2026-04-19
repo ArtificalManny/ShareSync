@@ -28,6 +28,8 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SubscriptionsService, PLAN_CONFIGS } from './subscriptions.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import {
   CreateCheckoutDto,
   UpdateBudgetCapDto,
@@ -39,7 +41,10 @@ import {
 export class SubscriptionsController {
   private readonly logger = new Logger(SubscriptionsController.name);
 
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    @InjectModel('Project') private readonly projectModel: Model<any>,
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // GET CURRENT SUBSCRIPTION
@@ -54,13 +59,24 @@ export class SubscriptionsController {
     const userId = req.user?.sub || req.user?.userId;
     const subscription = await this.subscriptionsService.getOrCreateSubscription(userId);
 
+    // Get real project count instead of subscription doc's stale value
+    const oid = new Types.ObjectId(userId);
+    const realProjectCount = await this.projectModel.countDocuments({
+      $or: [
+        { ownerId: oid },
+        { owner: oid },
+        { 'members.userId': oid },
+      ],
+      isArchived: { $ne: true },
+    });
+
     return {
       success: true,
       data: {
         plan: subscription.plan,
         status: subscription.status,
         billingInterval: subscription.billingInterval,
-        usage: subscription.usage,
+        usage: { ...JSON.parse(JSON.stringify(subscription.usage || {})), projects: realProjectCount },
         limits: subscription.limits,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
