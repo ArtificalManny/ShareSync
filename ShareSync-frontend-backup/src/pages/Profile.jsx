@@ -1004,7 +1004,7 @@ export default function Profile() {
               </div>
               <div className="flex justify-center">
                 <SkillRadarChart 
-                  skills={skillProfile.skills} 
+                  skills={Array.isArray(skillProfile.skills) ? skillProfile.skills : Object.entries(skillProfile.skills).map(([name, value]) => ({ name, value }))} 
                   size={280} 
                   showLabels={true} 
                   showValues={true} 
