@@ -55,6 +55,7 @@ export const SettingsProvider = ({ children }) => {
         
         const extractedSettings = extractModularSettings(data);
         setSettings(extractedSettings);
+        try { localStorage.setItem('ss.settings', JSON.stringify(extractedSettings)); } catch (_) {}
         
         if (extractedSettings?.appearance?.theme) {
           applyGlobalTheme(extractedSettings.appearance.theme);
