@@ -62,6 +62,7 @@ import { useGrowthTrack } from "../hooks/useGrowthTrack";
 import ProfileStrength from "../components/profile/ProfileStrength";
 import { useAnalytics } from "../contexts/AnalyticsContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { useSettings } from "../context/SettingsContext";
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -711,6 +712,10 @@ export default function Profile() {
   const myId = me?._id || me?.id;
   const viewId = user?._id || user?.id;
   const isOwnProfile = !isPublicRoute || (myId && viewId && String(myId) === String(viewId));
+  const { settings: appSettings } = useSettings?.() || {};
+  const showStreakTo = appSettings?.social?.showStreakTo || 'friends';
+  // Determine if streak should be visible to this viewer
+  const streakVisible = isOwnProfile || showStreakTo === 'everyone' || (showStreakTo === 'friends');
 
   const reliability = Math.min(100, user?.completionRate ?? calculateReliability(user?.completedTasks, user?.totalTasks));
   const userId = user?._id || user?.id;
@@ -853,7 +858,7 @@ export default function Profile() {
         <span className="text-slate-300 dark:text-zinc-600">·</span>
         <span className="flex items-center gap-1.5">
           <Flame className="w-4 h-4 text-amber-500" />
-          <strong className="text-slate-800 dark:text-white">{user?.currentStreak || 0}d</strong> streak
+          {streakVisible && <><strong className="text-slate-800 dark:text-white">{user?.currentStreak || 0}d</strong> streak</>}
         </span>
       </div>
 

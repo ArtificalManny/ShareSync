@@ -64,6 +64,14 @@ export default function useShipCeremony({
       
       // Broadcast to team via socket
       if (broadcastToTeam && socket?.socket?.connected) {
+        // Check if user wants to celebrate publicly
+        const celebratePublicly = (() => {
+          try {
+            const s = JSON.parse(localStorage.getItem('ss.settings') || '{}');
+            return s?.social?.celebrate !== false;
+          } catch { return true; }
+        })();
+        if (!celebratePublicly) return; // Skip public broadcast
         socket.socket.emit('ship:completed', {
           itemId,
           itemTitle,

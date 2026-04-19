@@ -40,6 +40,7 @@ import AllShipped from "../components/empty-states/AllShipped";
 import TeamPulse from "../components/social/TeamPulse";
 import LiveActivityFeed from "../components/social/LiveActivityFeed";
 import StreakComparison from "../components/social/StreakComparison";
+import { StreakProtectionModal } from "../components/ceremony/StreakProtection";
 import MomentumContagion from "../components/social/MomentumContagion";
 import PulseCheckPrompt from "../components/pulse/PulseCheckPrompt";
 

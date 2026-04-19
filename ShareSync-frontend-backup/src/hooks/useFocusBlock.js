@@ -128,6 +128,34 @@ export function useFocusBlock() {
     }
   }, []);
 
+  // ── Auto-start focus mode from settings ──
+  useEffect(() => {
+    if (isActive) return; // Already in focus mode
+    try {
+      const raw = localStorage.getItem('ss.settings');
+      if (!raw) return;
+      const settings = JSON.parse(raw);
+      const autoStart = settings?.focus?.autoStart;
+      const startTime = settings?.focus?.startTime || '09:00';
+      if (!autoStart) return;
+
+      const now = new Date();
+      const day = now.getDay();
+      if (day === 0 || day === 6) return; // Skip weekends
+
+      const [startH, startM] = startTime.split(':').map(Number);
+      const startDate = new Date(now);
+      startDate.setHours(startH, startM, 0, 0);
+
+      const diffMs = now.getTime() - startDate.getTime();
+      // Auto-start if within 2 minutes of the scheduled time
+      if (diffMs >= 0 && diffMs < 120000) {
+        const dailyTarget = settings?.focus?.dailyTarget || 4;
+        start({ minutes: dailyTarget * 60, label: 'Auto Focus' });
+      }
+    } catch (_) {}
+  }, []); // Run once on mount
+
   // ── Countdown timer ──
   useEffect(() => {
     if (!isActive || remainingSeconds <= 0) {
