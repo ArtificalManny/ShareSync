@@ -295,7 +295,25 @@ export class ProjectsService {
 
   async leaveProject(projectId: string, userId: string): Promise<void> {
     const project = await this.findByIdWithAccess(projectId, userId);
-    if (project.ownerId.toString() === userId) throw new BadRequestException('Owner cannot leave project. Transfer ownership first.');
+    const isOwner = project.ownerId.toString() === userId;
+    const otherMembers = (project.members || []).filter(
+      (m) => m.userId.toString() !== userId,
+    );
+
+    if (isOwner && otherMembers.length > 0) {
+      throw new BadRequestException('Owner cannot leave project with other members. Transfer ownership first.');
+    }
+
+    if (isOwner && otherMembers.length === 0) {
+      // Solo owner — archive the project instead of leaving
+      project.status = 'archived' as any;
+      project.isArchived = true;
+      project.archivedAt = new Date();
+      await project.save();
+      this.eventEmitter.emit('project.archived', { projectId: project._id, userId });
+      return;
+    }
+
     const memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
     if (memberIndex === -1) throw new BadRequestException('You are not a member of this project');
     project.members.splice(memberIndex, 1);
