@@ -324,7 +324,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
     >
       <style>{`.hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
 
-      <div className="flex items-center gap-2 -mb-px overflow-x-auto hide-scroll w-full">
+      <div className="flex items-center gap-1 sm:gap-2 -mb-px overflow-x-auto hide-scroll w-full scroll-smooth">
         {views.map((view) => {
           const Icon = view.icon;
           const isActive = activeView === view.id;

@@ -565,13 +565,13 @@ export default function Navbar({
               <span className="text-sm hidden sm:inline">New</span>
             </button>
 
-            <FocusModeToggle />
+            <div className="hidden sm:block"><FocusModeToggle /></div>
             <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block transition-colors duration-200" />
 
-            <NavbarSoundToggle />
+            <div className="hidden md:block"><NavbarSoundToggle /></div>
             <BackgroundColorPicker />
 
-            <SubscriptionButton />
+            <div className="hidden md:block"><SubscriptionButton /></div>
 
             <NotificationCenter />
 
@@ -583,28 +583,32 @@ export default function Navbar({
               <MessageCircle className="w-5 h-5" />
             </IconButton>
 
-            <IconButton
-              onClick={toggleDarkMode}
-              title={isDarkMode ? "Light mode" : "Dark mode"}
-            >
-              {isDarkMode ? (
-                <Sun className="w-5 h-5" />
-              ) : (
-                <Moon className="w-5 h-5" />
-              )}
-            </IconButton>
+            <div className="hidden sm:block">
+              <IconButton
+                onClick={toggleDarkMode}
+                title={isDarkMode ? "Light mode" : "Dark mode"}
+              >
+                {isDarkMode ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </IconButton>
+            </div>
 
-            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 transition-colors duration-200" />
+            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block transition-colors duration-200" />
 
             <ProfileDropdown user={user} onUploadComplete={() => {}} />
 
-            <IconButton
-              onClick={onLogout}
-              className="hover:text-red-500 dark:hover:text-red-400"
-              title="Sign out"
-            >
-              <LogOut className="w-5 h-5" />
-            </IconButton>
+            <div className="hidden sm:block">
+              <IconButton
+                onClick={onLogout}
+                className="hover:text-red-500 dark:hover:text-red-400"
+                title="Sign out"
+              >
+                <LogOut className="w-5 h-5" />
+              </IconButton>
+            </div>
           </div>
         </div>
       </header>
