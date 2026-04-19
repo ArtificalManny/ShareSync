@@ -2,13 +2,12 @@
 import client from './client';
 
 export async function getSettings() {
-  // Pointing to the correct NestJS UserController endpoint
   const res = await client.get('/users/me/settings');
-  return res.data;
+  // Extract the nested data object so Settings.jsx can read fields directly
+  return res.data?.data || res.data;
 }
 
 export async function updateSettings(payload) {
-  // Pointing to the correct NestJS UserController endpoint
   const res = await client.put('/users/me/settings', payload);
-  return res.data;
+  return res.data?.data || res.data;
 }
