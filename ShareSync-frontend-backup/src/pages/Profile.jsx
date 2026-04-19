@@ -62,6 +62,7 @@ import { useGrowthTrack } from "../hooks/useGrowthTrack";
 import ProfileStrength from "../components/profile/ProfileStrength";
 import { useAnalytics } from "../contexts/AnalyticsContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import Tooltip from "../components/ui/Tooltip";
 import { useSettings } from "../context/SettingsContext";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -649,7 +650,7 @@ export default function Profile() {
           if (stats) {
             setMe(prev => ({
               ...prev,
-              totalShips: stats.totalShips ?? stats.ships ?? prev?.totalShips ?? 0,
+              totalShips: stats.totalShips ?? stats.<Tooltip label="Tasks you\'ve completed">ships</Tooltip> ?? prev?.totalShips ?? 0,
               currentStreak: stats.streakDays ?? prev?.currentStreak ?? 0,
               weeklyShips: stats.weeklyShips ?? 0,
               completionRate: stats.completionRate ?? stats.focus ?? 0,
@@ -858,7 +859,7 @@ export default function Profile() {
         <span className="text-slate-300 dark:text-zinc-600">·</span>
         <span className="flex items-center gap-1.5">
           <Flame className="w-4 h-4 text-amber-500" />
-          {streakVisible && <><strong className="text-slate-800 dark:text-white">{user?.currentStreak || 0}d</strong> streak</>}
+          {streakVisible && <Tooltip label="Consecutive days with at least one ship"><strong className="text-slate-800 dark:text-white">{user?.currentStreak || 0}d</strong> streak</Tooltip>}
         </span>
       </div>
 

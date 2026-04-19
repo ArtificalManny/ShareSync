@@ -224,6 +224,8 @@ export default function Settings() {
 
   // Existing settings
   const [theme, setTheme] = useState('system');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showPowerUser, setShowPowerUser] = useState(false);
   const [emailActivity, setEmailActivity] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
   const [twoFA, setTwoFA] = useState(false);
@@ -584,6 +586,26 @@ export default function Settings() {
             />
           </SectionCard>
 
+          {/* Advanced Settings Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Advanced Settings</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400">Persona, celebrations, focus, social, AI mentor</p>
+              </div>
+            </div>
+            <span className={`text-sm font-medium text-violet-600 dark:text-violet-400 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>▶</span>
+          </button>
+
+          {showAdvanced && (
+          <>
           {/* ⭐ Priority 4.1: Persona / Experience Mode */}
           <SectionCard
             icon={Sparkles}
@@ -728,6 +750,29 @@ export default function Settings() {
             )}
           </SectionCard>
 
+          </>
+          )}
+
+          {/* Power User Settings Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowPowerUser(!showPowerUser)}
+            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
+                <Beaker className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Power User</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400">Cursor privacy, legacy mode, experiments</p>
+              </div>
+            </div>
+            <span className={`text-sm font-medium text-amber-600 dark:text-amber-400 transition-transform ${showPowerUser ? 'rotate-90' : ''}`}>▶</span>
+          </button>
+
+          {showPowerUser && (
+          <>
           {/* Cursor Presence Settings */}
           <SectionCard
             icon={Eye}
@@ -819,6 +864,9 @@ export default function Settings() {
             <ExperimentHistory />
             <WhatWorksAnalyzer />
           </SectionCard>
+
+          </>
+          )}
 
           {/* PHASE 4: PRIVACY TRANSPARENCY */}
           <PrivacyCard />
