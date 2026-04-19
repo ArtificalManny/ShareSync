@@ -56,7 +56,7 @@ function normalizeActivity(raw) {
     || raw.actor
     || raw.name
     || 'A teammate';
-  const userAvatar = raw.userAvatar || raw.user?.avatar || raw.userId?.profilePicture || raw.actorId?.profilePicture || raw.avatar || null;
+  const userAvatar = raw.userAvatar || raw.profilePicture || raw.user?.avatar || raw.userId?.profilePicture || raw.actorId?.profilePicture || raw.avatar || raw.raw?.userId?.profilePicture || null;
 
   // Determine action type
   let actionType = raw.actionType || raw.type || raw.action || 'activity';
