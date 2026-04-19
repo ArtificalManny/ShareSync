@@ -156,14 +156,14 @@ const ProjectSettings = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617, #0f172a, #020617)' }} className="text-white pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] text-slate-800 dark:text-white pb-20 transition-colors">
       <div className="max-w-4xl mx-auto px-6 py-8">
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate(`/projects/${id}`)}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -175,7 +175,7 @@ const ProjectSettings = () => {
               <span className={`text-xs px-2 py-0.5 rounded-md border ${role === 'owner' ? 'border-warning-500 text-warning-500' : 'border-slate-500 text-slate-400'}`}>
                 {role.toUpperCase()}
               </span>
-              <p className="text-slate-400 text-sm">{project?.name}</p>
+              <p className="text-slate-400 dark:text-slate-500 dark:text-slate-400 text-sm">{project?.name}</p>
             </div>
           </div>
         </div>
@@ -196,13 +196,13 @@ const ProjectSettings = () => {
 
           <div className="flex items-center gap-3 mb-6">
             <Settings className={`w-5 h-5 ${canEditProjectInfo ? 'text-brand-400' : 'text-slate-500'}`} />
-            <h2 className="text-xl font-bold">Project Information</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Project Information</h2>
           </div>
 
           <div className={!canEditProjectInfo ? 'opacity-60 pointer-events-none grayscale-[0.5]' : ''}>
             {/* Banner */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-white mb-2">Project Banner</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Banner</label>
               <div className="relative h-40 rounded-xl overflow-hidden bg-slate-700 group">
                 {formData.banner ? (
                   <img src={formData.banner} alt="Banner" className="w-full h-full object-cover" />
@@ -237,7 +237,7 @@ const ProjectSettings = () => {
             {/* Project Picture & Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Project Icon</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Icon</label>
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold relative group">
                     {formData.picture}
@@ -257,33 +257,33 @@ const ProjectSettings = () => {
                       value={formData.picture}
                       onChange={(e) => setFormData({ ...formData, picture: e.target.value })}
                       placeholder="Enter emoji or icon URL"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Project Name</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Name</label>
                 <input
                   type="text"
                   disabled={!canEditProjectInfo}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
                 />
               </div>
             </div>
 
             {/* Description */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-white mb-2">Description</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Description</label>
               <textarea
                 value={formData.description}
                 disabled={!canEditProjectInfo}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 resize-none transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 resize-none transition-colors disabled:bg-slate-800 disabled:text-slate-500"
               />
             </div>
 
@@ -303,24 +303,24 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 2: NOTIFICATIONS (User Specific)           */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
+        <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
           <div className="flex items-center gap-3 mb-6">
             <Bell className="w-5 h-5 text-blue-400" />
-            <h2 className="text-xl font-bold">Your Notification Preferences</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Your Notification Preferences</h2>
           </div>
 
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
             Control what you hear from this project. These settings are personal to you and will not affect the rest of the team.
           </p>
 
           <div className="space-y-4 mb-6">
             {Object.entries(notificationSettings).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/[0.04]">
+              <div key={key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/[0.04]">
                 <div>
-                  <div className="font-semibold text-white capitalize">
+                  <div className="font-semibold text-slate-800 dark:text-white capitalize">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
-                  <div className="text-sm text-slate-400">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
                     {key === 'taskAssigned' && 'Get notified when you are assigned to a task'}
                     {key === 'taskCompleted' && 'Get notified when team tasks are completed'}
                     {key === 'announcements' && 'Get notified of project-wide announcements'}
@@ -362,7 +362,7 @@ const ProjectSettings = () => {
             <h2 className="text-xl font-bold text-error-400">Danger Zone</h2>
           </div>
 
-          <p className="text-sm text-slate-300 mb-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
             Once you leave this project, you will lose access to all project data and won't be able to rejoin unless invited again.
             {role === 'owner' && (project?.members?.filter(m => String(m?.userId?._id || m?.userId || '') !== currentUserId).length > 0
               ? <span className="font-bold text-error-300 block mt-2">⚠️ You are the Owner. Transfer ownership to another member first.</span>
@@ -371,7 +371,7 @@ const ProjectSettings = () => {
           </p>
 
           {showLeaveConfirm ? (
-            <div className="bg-slate-900/80 rounded-xl p-5 border border-error-500/50">
+            <div className="bg-white dark:bg-slate-900/80 rounded-xl p-5 border border-error-200 dark:border-error-500/50">
               <p className="text-white font-semibold mb-4">Are you absolutely sure you want to leave {project?.name}?</p>
               <div className="flex gap-3">
                 <button
