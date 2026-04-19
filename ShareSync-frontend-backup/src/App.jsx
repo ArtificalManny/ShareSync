@@ -698,7 +698,7 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/u/:username" element={<PublicProfile />} />
+              <Route path="/u/:username" element={<Profile />} />
               
               <Route
                 path="/me"

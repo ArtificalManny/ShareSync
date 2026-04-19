@@ -432,6 +432,12 @@ export function ChatProvider({ children, enabled: enabledProp, userId, user: use
     },
   });
 
+  // Compute total unread count
+  const unreadTotal = useMemo(
+    () => Object.values(unread).reduce((sum, n) => sum + (Number(n) || 0), 0),
+    [unread]
+  );
+
   // Public API
   const value = useMemo(
     () => ({
@@ -441,6 +447,7 @@ export function ChatProvider({ children, enabled: enabledProp, userId, user: use
       meId,
       conversations,
       unread,
+      unreadTotal,
       presence,
       activeId,
       // Both for compatibility:
@@ -470,6 +477,7 @@ export function ChatProvider({ children, enabled: enabledProp, userId, user: use
       meId,
       conversations,
       unread,
+      unreadTotal,
       presence,
       activeId,
       messages,
