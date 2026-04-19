@@ -199,17 +199,40 @@ export class UserService {
         showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
         allowDMs: true,
       },
-      appearance: { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
-      mentor: { enabled: true, tone: 'wise', intensity: 3 },
-      momentum: { dailyGoal: 5, weekendCount: true, allowFreeze: true },
-      focus: {
-        dailyTarget: (user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4,
-        autoStart: (user as any).preferences?.focusMode?.autoEnable ?? false,
-        startTime: '09:00',
+      appearance: {
+        theme: (user as any).preferences?.appearance?.theme || (user as any).preferences?.theme || 'system',
+        mode: (user as any).preferences?.appearance?.mode || 'pro',
       },
-      social: { showStreakTo: 'friends', celebrate: true },
-      legacy: { showEverywhere: true, yearlyVideo: false },
-      security: { twoFA: false },
+      mentor: {
+        enabled: (user as any).preferences?.mentor?.enabled ?? true,
+        tone: (user as any).preferences?.mentor?.tone || 'wise',
+        intensity: (user as any).preferences?.mentor?.intensity ?? 3,
+      },
+      momentum: {
+        dailyGoal: (user as any).preferences?.momentum?.dailyGoal ?? 5,
+        weekendCount: (user as any).preferences?.momentum?.weekendCount ?? true,
+        allowFreeze: (user as any).preferences?.momentum?.allowFreeze ?? true,
+      },
+      focus: {
+        dailyTarget: (user as any).preferences?.focus?.dailyTarget ?? ((user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4),
+        autoStart: (user as any).preferences?.focus?.autoStart ?? (user as any).preferences?.focusMode?.autoEnable ?? false,
+        startTime: (user as any).preferences?.focus?.startTime || '09:00',
+        blockedApps: (user as any).preferences?.focus?.blockedApps || [],
+        emergencyBreaksLeft: (user as any).preferences?.focus?.emergencyBreaksLeft ?? 1,
+      },
+      social: {
+        showStreakTo: (user as any).preferences?.social?.showStreakTo || 'friends',
+        celebrate: (user as any).preferences?.social?.celebrate ?? true,
+        publicProfile: (user as any).preferences?.social?.publicProfile ?? (user as any).publicProfile ?? true,
+        discoverable: (user as any).preferences?.social?.discoverable ?? false,
+      },
+      legacy: {
+        showEverywhere: (user as any).preferences?.legacy?.showEverywhere ?? true,
+        yearlyVideo: (user as any).preferences?.legacy?.yearlyVideo ?? false,
+      },
+      security: {
+        twoFA: (user as any).preferences?.security?.twoFA ?? false,
+      },
       preferences: (user as any).preferences || {},
       publicProfile: (user as any).publicProfile ?? true,
       discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
@@ -225,8 +248,9 @@ export class UserService {
       if (settingsDto[field] !== undefined) { (user as any)[field] = settingsDto[field]; }
     }
 
-    if (settingsDto.notificationSettings) {
-      const ns = settingsDto.notificationSettings;
+    const notifPayload = settingsDto.notificationSettings || settingsDto.notifications;
+    if (notifPayload) {
+      const ns = notifPayload;
       (user as any).settings = {
         ...((user as any).settings || {}),
         emailNotifications: ns.emailActivity ?? (user as any).settings?.emailNotifications ?? true,
