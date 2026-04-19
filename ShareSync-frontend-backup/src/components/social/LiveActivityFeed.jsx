@@ -258,7 +258,7 @@ function normalizeInjected(items) {
       user: {
         id: a?.raw?.actorId || a?.raw?.userId || a?.actorName || 'user',
         name: a?.actorName || (a?.raw?.userId?.firstName ? `${a.raw.userId.firstName} ${a.raw.userId.lastName || ''}`.trim() : null) || (a?.userId?.firstName ? `${a.userId.firstName} ${a.userId.lastName || ''}`.trim() : null) || 'Someone',
-        avatar: a?.raw?.avatar || null,
+        avatar: a?.profilePicture || a?.raw?.userId?.profilePicture || a?.raw?.profilePicture || a?.raw?.avatar || null,
         isOnline: true,
       },
       timestamp: new Date(a?.createdAt || a?.timestamp || Date.now()),

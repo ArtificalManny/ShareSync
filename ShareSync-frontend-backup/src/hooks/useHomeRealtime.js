@@ -82,6 +82,7 @@ function normalizeActivities(items) {
         type,
         createdAt: createdMs,
         actorName,
+        profilePicture: a?.profilePicture || a?.userId?.profilePicture || a?.actor?.profilePicture || null,
         projectName,
         raw: a,
       };
@@ -209,6 +210,7 @@ async function fetchActivityFeed(limit = 50) {
       _id: item._id || item.id,
       type: item.type || item.action || 'ACTIVITY',
       actorName: item.actorName || (item.userId?.firstName ? `${item.userId.firstName} ${item.userId.lastName || ''}`.trim() : null) || item.actor?.name || 'Someone',
+      profilePicture: item.userId?.profilePicture || item.actor?.profilePicture || item.profilePicture || null,
       username: item.actor?.username || item.username,
       projectName: item.details?.projectName || item.metadata?.projectName || item.payload?.projectName || null,
       createdAt: item.createdAt,
