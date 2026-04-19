@@ -66,7 +66,7 @@ function ShipCard({ item }) {
             <IconComp className={'w-4 h-4 ' + c.text} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{item.user}</p>
+            <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{item.displayName || item.userName || item.user}</p>
             <p className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(item.timestamp)}</p>
           </div>
           <div className={'w-1.5 h-1.5 rounded-full flex-shrink-0 ' + c.dot} />

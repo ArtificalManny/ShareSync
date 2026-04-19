@@ -1004,7 +1004,23 @@ export default function Profile() {
               </div>
               <div className="flex justify-center">
                 <SkillRadarChart 
-                  skills={Array.isArray(skillProfile.skills) ? skillProfile.skills : Object.entries(skillProfile.skills).map(([name, value]) => ({ name, value }))} 
+                  skills={(() => {
+                    const raw = skillProfile.skills;
+                    if (Array.isArray(raw)) return raw;
+                    // Map backend fields to radar chart expected names
+                    const fieldMap = {
+                      velocity: 'execution',
+                      execution: 'technical',
+                      quality: 'strategy',
+                      consistency: 'communication',
+                      collaboration: 'collaboration',
+                      initiative: 'leadership',
+                    };
+                    return Object.entries(raw).map(([key, val]) => ({
+                      name: fieldMap[key] || key,
+                      score: typeof val === 'number' ? val : (val?.score ?? val?.value ?? 0),
+                    }));
+                  })()} 
                   size={280} 
                   showLabels={true} 
                   showValues={true} 
