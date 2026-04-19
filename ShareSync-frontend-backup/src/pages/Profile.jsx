@@ -973,13 +973,13 @@ export default function Profile() {
           {/* ✅ Priority 1: Profile Strength */}
           {isOwnProfile && <ProfileStrength onEditClick={handleEditProfile} />}
 
-          {isOwnProfile && <EvolutionMoments moments={evolution} loading={growthLoading} />}
+          {<EvolutionMoments moments={evolution} loading={growthLoading} />}
         </div>
 
         {/* Middle Column */}
         <div className="col-span-12 lg:col-span-5 space-y-6">
           {/* Skill Profile - with radar chart */}
-          {isOwnProfile && skillProfile?.skills && (
+          {skillProfile?.skills && (
             <div 
               className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
               style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
