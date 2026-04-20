@@ -229,3 +229,110 @@ html[data-theme="dark"] .text-slate-800,
 html[data-theme="dark"] .text-slate-900 {
   color: var(--text-primary) !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   QUICK NOTES DRAWER - CONTRAST LOCK
+   Added last on purpose so global dialog/input rules cannot wash out note text.
+───────────────────────────────────────────────────────────────────────────── */
+
+html:not(.dark) .quick-notes-drawer,
+html[data-theme="light"] .quick-notes-drawer {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .quick-notes-drawer .quick-notes-list,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-list {
+  background: #ffffff !important;
+}
+
+html:not(.dark) .quick-notes-drawer .quick-notes-editor,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-editor {
+  background: #ffffff !important;
+}
+
+html:not(.dark) .quick-notes-drawer .quick-notes-note-title,
+html:not(.dark) .quick-notes-drawer .quick-notes-title-input,
+html:not(.dark) .quick-notes-drawer .quick-notes-body,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-note-title,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-title-input,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-body {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html:not(.dark) .quick-notes-drawer .quick-notes-preview,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-preview {
+  color: #475569 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #475569 !important;
+}
+
+html:not(.dark) .quick-notes-drawer .quick-notes-title-input,
+html:not(.dark) .quick-notes-drawer .quick-notes-body,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-title-input,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-body {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  caret-color: #0f172a !important;
+}
+
+html:not(.dark) .quick-notes-drawer .quick-notes-title-input::placeholder,
+html:not(.dark) .quick-notes-drawer .quick-notes-body::placeholder,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-title-input::placeholder,
+html[data-theme="light"] .quick-notes-drawer .quick-notes-body::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+html.dark .quick-notes-drawer,
+html[data-theme="dark"] .quick-notes-drawer {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-list,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-list {
+  background: #0f172a !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-editor,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-editor {
+  background: #111827 !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-note-title,
+html.dark .quick-notes-drawer .quick-notes-title-input,
+html.dark .quick-notes-drawer .quick-notes-body,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-note-title,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-title-input,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-body {
+  color: #f8fafc !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-preview,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-preview {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-title-input,
+html.dark .quick-notes-drawer .quick-notes-body,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-title-input,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-body {
+  background: #111827 !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  caret-color: #f8fafc !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-title-input::placeholder,
+html.dark .quick-notes-drawer .quick-notes-body::placeholder,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-title-input::placeholder,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-body::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}

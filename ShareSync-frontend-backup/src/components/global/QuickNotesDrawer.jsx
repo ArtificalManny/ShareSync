@@ -53,14 +53,14 @@ export default function QuickNotesDrawer({
       )}
 
       <aside
-        className={`fixed top-0 right-0 z-[80] flex h-screen w-[380px] max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 dark:border-white/10 dark:bg-[#0F172A] ${
+        className={`quick-notes-drawer fixed top-0 right-0 z-[80] flex h-screen w-[380px] max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 dark:border-white/10 dark:bg-[#0F172A] ${
           open ? "translate-x-0" : "translate-x-full pointer-events-none"
         }`}
         role="dialog"
         aria-modal="true"
         aria-label="Quick Notes"
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white/10">
+        <div className="quick-notes-header flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white/10">
           <div>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Quick Notes
@@ -94,29 +94,56 @@ export default function QuickNotesDrawer({
         </div>
 
         <div className="flex min-h-0 flex-1">
-          <nav className="w-40 shrink-0 overflow-y-auto border-r border-slate-200 dark:border-white/10">
+          <nav className="quick-notes-list w-40 shrink-0 overflow-y-auto border-r border-slate-200 dark:border-white/10">
             {notes.length > 0 ? (
               <ul className="divide-y divide-slate-200 dark:divide-white/10">
-                {notes.map((note) => (
-                  <li key={note.id}>
-                    <button
-                      type="button"
-                      onClick={() => setActiveNote(note.id)}
-                      className={`flex w-full items-center gap-2 px-3 py-3 text-left text-sm transition-colors ${
-                        note.id === activeNoteId
-                          ? "bg-violet-50 font-medium text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"
-                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5"
-                      }`}
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        {note.title || "Untitled"}
-                      </span>
-                      {note.pinned ? (
-                        <Pin className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                      ) : null}
-                    </button>
-                  </li>
-                ))}
+                {notes.map((note) => {
+                  const isActive = note.id === activeNoteId;
+                  const preview =
+                    typeof note.content === "string" && note.content.trim().length > 0
+                      ? note.content.trim()
+                      : "Empty note";
+
+                  return (
+                    <li key={note.id}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveNote(note.id)}
+                        className={`flex w-full items-start gap-2 px-3 py-3 text-left transition-colors ${
+                          isActive
+                            ? "bg-violet-50 dark:bg-violet-500/15"
+                            : "hover:bg-slate-50 dark:hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className={`quick-notes-note-title truncate text-sm font-semibold ${
+                              isActive
+                                ? "text-violet-700 dark:text-violet-300"
+                                : "text-slate-900 dark:text-slate-100"
+                            }`}
+                          >
+                            {note.title || "Untitled"}
+                          </div>
+
+                          <div
+                            className={`quick-notes-preview mt-1 truncate text-[11px] leading-4 ${
+                              isActive
+                                ? "text-violet-600/90 dark:text-violet-300/90"
+                                : "text-slate-500 dark:text-slate-400"
+                            }`}
+                          >
+                            {preview}
+                          </div>
+                        </div>
+
+                        {note.pinned ? (
+                          <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-70 text-violet-600 dark:text-violet-300" />
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <div className="flex h-full flex-col items-center justify-center px-3 text-center">
@@ -134,43 +161,45 @@ export default function QuickNotesDrawer({
             )}
           </nav>
 
-          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="quick-notes-editor flex min-h-0 flex-1 flex-col">
             {active ? (
               <>
-                <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-white/10">
-                  <input
-                    value={active.title}
-                    onChange={(e) =>
-                      updateNote(active.id, { title: e.target.value })
-                    }
-                    placeholder="Title"
-                    className="flex-1 bg-transparent text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
-                  />
+                <div className="border-b border-slate-200 px-3 py-2 dark:border-white/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <input
+                      value={active.title}
+                      onChange={(e) =>
+                        updateNote(active.id, { title: e.target.value })
+                      }
+                      placeholder="Title"
+                      className="quick-notes-title-input flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-white/10 dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
+                    />
 
-                  <div className="ml-2 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => pinNote(active.id, !active.pinned)}
-                      className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
-                      title={active.pinned ? "Unpin note" : "Pin note"}
-                      aria-label={active.pinned ? "Unpin note" : "Pin note"}
-                    >
-                      {active.pinned ? (
-                        <PinOff className="h-4 w-4" />
-                      ) : (
-                        <Pin className="h-4 w-4" />
-                      )}
-                    </button>
+                    <div className="ml-2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => pinNote(active.id, !active.pinned)}
+                        className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+                        title={active.pinned ? "Unpin note" : "Pin note"}
+                        aria-label={active.pinned ? "Unpin note" : "Pin note"}
+                      >
+                        {active.pinned ? (
+                          <PinOff className="h-4 w-4" />
+                        ) : (
+                          <Pin className="h-4 w-4" />
+                        )}
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handleDeleteActive}
-                      className="rounded p-1.5 text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
-                      title="Delete note"
-                      aria-label="Delete note"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteActive}
+                        className="rounded p-1.5 text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                        title="Delete note"
+                        aria-label="Delete note"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -180,7 +209,7 @@ export default function QuickNotesDrawer({
                     updateNote(active.id, { content: e.target.value })
                   }
                   placeholder="Write your note here..."
-                  className="min-h-0 flex-1 resize-none bg-transparent p-4 text-sm leading-6 text-slate-800 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
+                  className="quick-notes-body min-h-0 flex-1 resize-none bg-slate-50 p-4 text-sm leading-6 text-slate-800 placeholder:text-slate-400 focus:outline-none dark:bg-[#111827] dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </>
             ) : (
