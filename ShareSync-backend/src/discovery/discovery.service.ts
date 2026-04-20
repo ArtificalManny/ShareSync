@@ -293,6 +293,8 @@ export class DiscoveryService {
 
   private mapProjectToFeedItem(p: any) {
     const owner = p.ownerId || p.owner || {};
+    const displayName = this.getOwnerDisplayName(owner);
+
     return {
       id: String(p._id ?? p.id), _id: String(p._id ?? p.id), projectName: p.name || p.title || 'Untitled Project', name: p.name || p.title || 'Untitled Project',
       description: p.description || '', teamName: this.getTeamName(p), emoji: p.emoji || p.icon || '📁', color: p.color || '#7C3AED', category: p.category || null,
@@ -301,13 +303,26 @@ export class DiscoveryService {
       tags: Array.isArray(p.tags) ? p.tags : [],
       stats: { memberCount: Number(p.metrics?.memberCount ?? p.members?.length ?? 1), totalShips: Number(p.metrics?.totalShips ?? p.metrics?.weeklyShips ?? 0), likes: Number(p.metrics?.likes ?? 0), comments: Number(p.metrics?.comments ?? 0) },
       ownerInfo: { _id: owner._id, firstName: owner.firstName, lastName: owner.lastName, username: owner.username, avatarUrl: owner.avatarUrl },
+      user: displayName,
+      displayName,
+      ownerName: displayName,
       isFollowing: false, moderationStatus: 'approved',
       trendingScore: p.trendingScore // Expose to frontend
     };
   }
 
+  private getOwnerDisplayName(owner: any): string {
+    const first = String(owner?.firstName || '').trim();
+    const last = String(owner?.lastName || '').trim();
+    const full = [first, last].filter(Boolean).join(' ').trim();
+
+    if (full) return full;
+    if (owner?.username) return String(owner.username).trim();
+    return 'Unknown';
+  }
+
   private getTeamName(p: any): string { const owner = p.ownerId || p.owner || {}; return ( p.teamName || p.orgName || p.ownerName || owner.username || (owner.firstName ? `${owner.firstName} ${owner.lastName || ''}`.trim() : null) || 'Unknown' ); }
-  private getOwnerName(p: any): string { const owner = p.ownerId || p.owner || {}; return ( owner.username || (owner.firstName ? `${owner.firstName} ${owner.lastName || ''}`.trim() : null) || p.ownerName || 'Unknown' ); }
+  private getOwnerName(p: any): string { const owner = p.ownerId || p.owner || {}; return ( this.getOwnerDisplayName(owner) || p.ownerName || 'Unknown' ); }
   private getMomentumLevel(p: any): string { const ships = p.metrics?.weeklyShips || 0; const streak = p.streakDays || 0; if (ships >= 10 || streak >= 14) return 'blazing'; if (ships >= 5 || streak >= 7) return 'high'; if (ships >= 2 || streak >= 3) return 'steady'; return 'warming'; }
   private getCompletionRate(p: any): number { const total = p.metrics?.totalTasks || 0; const completed = p.metrics?.completedTasks || 0; if (total === 0) return 0; return Math.round((completed / total) * 100); }
   private getLastActivityText(p: any): string { const lastActivity = p.metrics?.lastActivityAt || p.updatedAt; if (!lastActivity) return 'Unknown'; const diff = Date.now() - new Date(lastActivity).getTime(); const days = Math.floor(diff / (1000 * 60 * 60 * 24)); if (days === 0) return 'Today'; if (days === 1) return 'Yesterday'; if (days < 7) return `${days} days ago`; if (days < 30) return `${Math.floor(days / 7)} weeks ago`; return `${Math.floor(days / 30)} months ago`; }
