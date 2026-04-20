@@ -18,8 +18,6 @@ import {
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
 import Navbar from "./components/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { NotesProvider, useNotes } from "./context/NotesContext";
-import QuickNotesDrawer from "./components/global/QuickNotesDrawer";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
 // ⭐ NEW TOAST SYSTEM (MetaLab Design Sprint - Day 5)
@@ -46,6 +44,9 @@ import { MomentumProvider } from "./contexts/MomentumContext";
 
 // ⭐ PHASE 10.3: Focus Session Provider
 import { FocusSessionProvider } from "./contexts/FocusSessionContext";
+
+// ⭐ QUICK NOTES
+import { NotesProvider, useNotes } from "./context/NotesContext";
 
 // ⭐ PHASE A: Entrance Animation + Momentum Heartbeat
 import AppEntrance from "./components/onboarding/AppEntrance";
@@ -101,7 +102,6 @@ import "./styles/heartbeat.css";
 import "./styles/palette.override.css";
 import "./styles/wedge-hotfix.css";
 import "./styles/mobile-overrides.css";
-import "./styles/theme-escape-hatch.css";
 
 // ✅ Priority 4.1: Persona theme overrides
 import "./styles/persona-themes.css";
@@ -171,8 +171,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Sidebar = lazy(() => import("./components/Sidebar"));
 const LayoutSkin = lazy(() => import("./components/LayoutSkin.jsx"));
 const MiniSprintWidget = lazy(() => import("./components/global/MiniSprintWidget"));
-// ❌ TEMPORARILY DISABLED - Component has dependency issues
-
+const QuickNotesDrawer = lazy(() => import("./components/global/QuickNotesDrawer"));
 const PinnedDrawer = lazy(() => import("./components/global/PinnedDrawer.jsx"));
 const FocusDock = lazy(() => import("./components/focus/FocusDock.jsx"));
 const FocusToasts = lazy(() => import("./components/toast/FocusToasts.jsx"));
@@ -388,106 +387,106 @@ function CommandControlLayer({ children, projects = [] }) {
 }
 
 function AuthenticatedApp({ children, userData }) {
-   const ahaMoment = useAhaMoment();
+  const ahaMoment = useAhaMoment();
 
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <PersonaProvider>
-      <SocketProvider>
-        <NotificationsProvider>
-          <UserProvider>
-            <MessageProvider>
-              <SprintProvider>
-                <Suspense fallback={null}>
-                  <ShortcutProvider>
-                <CommandControlLayer projects={[]}>
-                  <FlowStateProvider>
-                    <ContextPreservationProvider>
-                      <MomentumProvider>
-                        <AdaptiveDensityProvider
-                          userName={userData?.firstName || "there"}
-                        >
-                          <FocusEngineProvider>
-                            <FocusSessionProvider>
-                              <AppEntrance
+        <SocketProvider>
+          <NotificationsProvider>
+            <UserProvider>
+              <MessageProvider>
+                <SprintProvider>
+                  <Suspense fallback={null}>
+                    <ShortcutProvider>
+                      <CommandControlLayer projects={[]}>
+                        <FlowStateProvider>
+                          <ContextPreservationProvider>
+                            <MomentumProvider>
+                              <AdaptiveDensityProvider
                                 userName={userData?.firstName || "there"}
-                                streakDays={userData?.streakDays || 0}
-                                enabled={true}
-                                showWelcomeToast={true}
                               >
-                                <HeartbeatProvider>
-                                  <Suspense fallback={null}>
-                                    <MomentumAura />
-                                  </Suspense>
-                                  {FOCUS_DOCK_V1 ? (
-                                    <FocusProvider>
-                                      <ContextTracker />
+                                <FocusEngineProvider>
+                                  <FocusSessionProvider>
+                                    <AppEntrance
+                                      userName={userData?.firstName || "there"}
+                                      streakDays={userData?.streakDays || 0}
+                                      enabled={true}
+                                      showWelcomeToast={true}
+                                    >
+                                      <HeartbeatProvider>
+                                        <Suspense fallback={null}>
+                                          <MomentumAura />
+                                        </Suspense>
+                                        {FOCUS_DOCK_V1 ? (
+                                          <FocusProvider>
+                                            <ContextTracker />
 
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
-                                        <WelcomeBack />
-                                      </Suspense> */}
+                                            {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                            {/* <Suspense fallback={null}>
+                                              <WelcomeBack />
+                                            </Suspense> */}
 
-                                      <Suspense fallback={null}>
-                                        <ContextIndicator />
-                                      </Suspense>
-                                      <Suspense fallback={null}>
-                                        <FlowIndicator position="bottom-left" />
-                                      </Suspense>
-                                      {children}
-                                    </FocusProvider>
-                                  ) : (
-                                    <>
-                                      <ContextTracker />
+                                            <Suspense fallback={null}>
+                                              <ContextIndicator />
+                                            </Suspense>
+                                            <Suspense fallback={null}>
+                                              <FlowIndicator position="bottom-left" />
+                                            </Suspense>
+                                            {children}
+                                          </FocusProvider>
+                                        ) : (
+                                          <>
+                                            <ContextTracker />
 
-                                      {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
-                                      {/* <Suspense fallback={null}>
-                                        <WelcomeBack />
-                                      </Suspense> */}
+                                            {/* TEMP DEBUG: disable WelcomeBack modal to rule out full-screen dark backdrop */}
+                                            {/* <Suspense fallback={null}>
+                                              <WelcomeBack />
+                                            </Suspense> */}
 
-                                      <Suspense fallback={null}>
-                                        <ContextIndicator />
-                                      </Suspense>
-                                      <Suspense fallback={null}>
-                                        <FlowIndicator position="bottom-left" />
-                                      </Suspense>
-                                      {children}
-                                    </>
-                                  )}
-                                </HeartbeatProvider>
-                              </AppEntrance>
-                            </FocusSessionProvider>
-                          </FocusEngineProvider>
-                          <Suspense fallback={null}>
-                            <BreakReminder position="bottom-right" />
-                          </Suspense>
-                        </AdaptiveDensityProvider>
-                        {/* ✅ Priority 1: Aha Moment Toast */}
-                        <AhaMomentToast
-                          show={ahaMoment.showToast}
-                          insight={ahaMoment.currentInsight}
-                          onView={ahaMoment.viewInsight}
-                          onDismiss={ahaMoment.dismissInsight}
-                        />
-                        {/* ✅ Priority 4.2: Global Celebration Router */}
-                        <Suspense fallback={null}>
-                          <CelebrationRouter />
-                        </Suspense>
-                        {/* ✅ Priority 5.4: Shortcut Guide Modal */}
-                        <Suspense fallback={null}>
-                          <ShortcutGuide />
-                        </Suspense>
-                      </MomentumProvider>
-                    </ContextPreservationProvider>
-                  </FlowStateProvider>
-                </CommandControlLayer>
-                  </ShortcutProvider>
-                </Suspense>
-              </SprintProvider>
-            </MessageProvider>
-          </UserProvider>
-        </NotificationsProvider>
-      </SocketProvider>
+                                            <Suspense fallback={null}>
+                                              <ContextIndicator />
+                                            </Suspense>
+                                            <Suspense fallback={null}>
+                                              <FlowIndicator position="bottom-left" />
+                                            </Suspense>
+                                            {children}
+                                          </>
+                                        )}
+                                      </HeartbeatProvider>
+                                    </AppEntrance>
+                                  </FocusSessionProvider>
+                                </FocusEngineProvider>
+                                <Suspense fallback={null}>
+                                  <BreakReminder position="bottom-right" />
+                                </Suspense>
+                              </AdaptiveDensityProvider>
+                              {/* ✅ Priority 1: Aha Moment Toast */}
+                              <AhaMomentToast
+                                show={ahaMoment.showToast}
+                                insight={ahaMoment.currentInsight}
+                                onView={ahaMoment.viewInsight}
+                                onDismiss={ahaMoment.dismissInsight}
+                              />
+                              {/* ✅ Priority 4.2: Global Celebration Router */}
+                              <Suspense fallback={null}>
+                                <CelebrationRouter />
+                              </Suspense>
+                              {/* ✅ Priority 5.4: Shortcut Guide Modal */}
+                              <Suspense fallback={null}>
+                                <ShortcutGuide />
+                              </Suspense>
+                            </MomentumProvider>
+                          </ContextPreservationProvider>
+                        </FlowStateProvider>
+                      </CommandControlLayer>
+                    </ShortcutProvider>
+                  </Suspense>
+                </SprintProvider>
+              </MessageProvider>
+            </UserProvider>
+          </NotificationsProvider>
+        </SocketProvider>
       </PersonaProvider>
     </Suspense>
   );
@@ -671,7 +670,6 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
-              
               <Route
                 path="/profile"
                 element={
@@ -680,26 +678,7 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
-              {/* ⭐ ADDED: Added /profile/:id for smart profile lookups */}
-              <Route
-                path="/profile/:id"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              {/* ⭐ CHANGED: Changed username route to /u/:username to avoid collisions */}
-                            <Route
-                path="/user/:userId"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/u/:username" element={<Profile />} />
-              
+              <Route path="/profile/:username" element={<PublicProfile />} />
               <Route
                 path="/me"
                 element={
@@ -834,56 +813,21 @@ function ThemeSync() {
   const { user } = useAuth();
 
   useEffect(() => {
+    // Check user preferences, fallback to local storage, fallback to system
+    const theme = user?.preferences?.theme || localStorage.getItem("ss.theme") || "system";
     const root = document.documentElement;
-    const media = window.matchMedia
-      ? window.matchMedia("(prefers-color-scheme: dark)")
-      : null;
 
-    const applyResolvedTheme = () => {
-      const savedTheme =
-        user?.preferences?.theme || localStorage.getItem("ss.theme") || "system";
-
-      const isDark =
-        savedTheme === "dark" ||
-        (savedTheme === "system" && Boolean(media?.matches));
-
-      root.classList.toggle("dark", isDark);
-      root.dataset.theme = isDark ? "dark" : "light";
-      document.body.style.backgroundColor = isDark ? "#09090B" : "#F8FAFC";
-    };
-
-    applyResolvedTheme();
-
-    const handleMediaChange = () => {
-      applyResolvedTheme();
-    };
-
-    const handleStorage = (event) => {
-      if (!event.key || event.key === "ss.theme") {
-        applyResolvedTheme();
-      }
-    };
-
-    window.addEventListener("storage", handleStorage);
-
-    if (media?.addEventListener) {
-      media.addEventListener("change", handleMediaChange);
-    } else if (media?.addListener) {
-      media.addListener(handleMediaChange);
+    if (
+      theme === "dark" ||
+      (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    ) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
     }
+  }, [user?.preferences?.theme]); // Re-run whenever the user changes their theme
 
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-
-      if (media?.removeEventListener) {
-        media.removeEventListener("change", handleMediaChange);
-      } else if (media?.removeListener) {
-        media.removeListener(handleMediaChange);
-      }
-    };
-  }, [user?.preferences?.theme]);
-
-  return null;
+  return null; // This component is invisible
 }
 
 const App = () => {
@@ -903,19 +847,18 @@ const App = () => {
           <NewToastProvider>
             <ToastProvider>
               <OldToastProvider>
-                <Router>
-                  <ThemeSync />
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <LayoutSkin>
-                      {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
-                      <div className="app-container w-full min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-white transition-colors duration-300 !rounded-none !m-0 !p-0 !border-0">
-                        <NotesProvider>
+                <NotesProvider>
+                  <Router>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <LayoutSkin>
+                        {/* ⭐ WEDGE FIX: Force w-full, h-full, min-h-screen, remove all rounding and margins */}
+                        <div className="app-container w-full min-h-screen bg-slate-50 !rounded-none !m-0 !p-0 !border-0">
                           <AuthCheck />
-                        </NotesProvider>
-                      </div>
-                    </LayoutSkin>
-                  </Suspense>
-                </Router>
+                        </div>
+                      </LayoutSkin>
+                    </Suspense>
+                  </Router>
+                </NotesProvider>
               </OldToastProvider>
             </ToastProvider>
           </NewToastProvider>
