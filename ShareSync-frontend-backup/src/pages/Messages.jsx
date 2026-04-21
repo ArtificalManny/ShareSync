@@ -990,8 +990,13 @@ export default function Messages() {
         {/* LEFT: Conversation List */}
         <aside className="rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex flex-col shadow-sm dark:shadow-none transition-colors duration-300">
           <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23]">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Messages</h2>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Messages</h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Direct and private conversations
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowComposer(true)}
@@ -1010,7 +1015,7 @@ export default function Messages() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
               <input
                 type="text"
-                placeholder="Search messages..."
+                placeholder="Search direct messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-50 dark:bg-[#09090B] border border-slate-200 dark:border-[#1f1f23] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-colors"
@@ -1053,7 +1058,7 @@ export default function Messages() {
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center">
                 <MessageCircle className="w-12 h-12 text-slate-300 dark:text-zinc-700 mx-auto mb-3" />
-                <p className="text-sm text-slate-500 dark:text-zinc-500">No conversations yet</p>
+                <p className="text-sm text-slate-500 dark:text-zinc-500">No direct messages yet</p>
                 <button
                   onClick={() => setShowComposer(true)}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700 shadow-sm transition-colors"
@@ -1065,7 +1070,7 @@ export default function Messages() {
             ) : (
               <div className="p-8 text-center">
                 <Search className="w-8 h-8 text-slate-300 dark:text-zinc-700 mx-auto mb-3" />
-                <p className="text-sm text-slate-500 dark:text-zinc-500">No messages found</p>
+                <p className="text-sm text-slate-500 dark:text-zinc-500">No direct messages found</p>
               </div>
             )}
           </div>
@@ -1176,8 +1181,8 @@ export default function Messages() {
                 <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 flex items-center justify-center mx-auto mb-4">
                   <Send className="w-8 h-8 text-violet-600 dark:text-violet-400" />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Select a conversation</h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-500 max-w-sm">Choose a message from the list or start a new conversation</p>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Select a direct message</h3>
+                <p className="text-sm text-slate-500 dark:text-zinc-500 max-w-sm">Choose a direct message from the list or start a new one</p>
                 <button
                   onClick={() => setShowComposer(true)}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 shadow-sm transition-colors"

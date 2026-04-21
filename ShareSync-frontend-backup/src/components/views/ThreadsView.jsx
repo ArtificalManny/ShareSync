@@ -1,5 +1,5 @@
 // src/components/views/ThreadsView.jsx
-// Split-panel Threads with Messenger-style member picker
+// Split-panel project discussion view with Messenger-style member picker
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   MessageCircle, Pin, Search, Plus, Clock, Users,
@@ -55,16 +55,29 @@ function extractMembers(project) {
 
 function ThreadItem({ thread, isActive, onClick }) {
   return (
-    <button onClick={() => onClick(thread)}
-      className={'w-full text-left p-3 rounded-xl transition-all duration-150 ' + (isActive ? 'bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20' : 'bg-white dark:bg-white/[0.03] border border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.05]')}>
+    <button
+      onClick={() => onClick(thread)}
+      className={
+        'w-full text-left p-3 rounded-xl transition-all duration-150 ' +
+        (isActive
+          ? 'bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20'
+          : 'bg-white dark:bg-white/[0.03] border border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.05]')
+      }
+    >
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {thread.isPinned && <Pin className="w-3 h-3 text-amber-500 flex-shrink-0 fill-current" />}
-          <span className={'text-sm font-medium truncate ' + (isActive ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-white')}>{thread.title}</span>
+          <span className={'text-sm font-medium truncate ' + (isActive ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-white')}>
+            {thread.title}
+          </span>
         </div>
-        <span className="text-[10px] text-slate-400 dark:text-white/30 flex-shrink-0">{timeAgo(thread.lastReplyAt || thread.createdAt)}</span>
+        <span className="text-[10px] text-slate-400 dark:text-white/30 flex-shrink-0">
+          {timeAgo(thread.lastReplyAt || thread.createdAt)}
+        </span>
       </div>
-      <p className="text-xs text-slate-500 dark:text-white/40 truncate mb-1.5">{thread.lastMessage || 'No messages yet'}</p>
+      <p className="text-xs text-slate-500 dark:text-white/40 truncate mb-1.5">
+        {thread.lastMessage || 'No discussion yet'}
+      </p>
       <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-white/30">
         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{thread.participantCount || 0}</span>
         <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{thread.replyCount || 0}</span>
@@ -77,31 +90,37 @@ function MessageBubble({ msg, isOwn }) {
   const userObj = msg.userId || {};
   const name = isOwn ? 'You' : (userObj.firstName ? (userObj.firstName + ' ' + (userObj.lastName || '')).trim() : (msg.authorName || 'Team Member'));
   const initial = name[0]?.toUpperCase() || '?';
-  
+
   // ⭐ AVATAR RESOLUTION CHAIN ⭐
   const avatarUrl = userObj.profilePicture || userObj.avatarUrl || userObj.avatar || userObj.photoUrl || null;
 
   return (
     <div className={'flex w-full mb-1 ' + (isOwn ? 'justify-end' : 'justify-start')}>
       <div className={'flex gap-2.5 max-w-[85%] ' + (isOwn ? 'flex-row-reverse' : 'flex-row')}>
-        
         {/* Avatar Container */}
-        <div className={'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0 overflow-hidden relative mt-auto mb-1 ' + (isOwn ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-white/50')}>
+        <div
+          className={
+            'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0 overflow-hidden relative mt-auto mb-1 ' +
+            (isOwn
+              ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400'
+              : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-white/50')
+          }
+        >
           {avatarUrl ? (
-            <img 
-              src={avatarUrl} 
-              alt={name} 
+            <img
+              src={avatarUrl}
+              alt={name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.style.display = 'none'; 
+                e.target.style.display = 'none';
                 if (e.target.nextSibling) {
                   e.target.nextSibling.style.display = 'flex';
                 }
               }}
             />
           ) : null}
-          <span 
-            style={{ display: avatarUrl ? 'none' : 'flex' }} 
+          <span
+            style={{ display: avatarUrl ? 'none' : 'flex' }}
             className="items-center justify-center w-full h-full absolute inset-0"
           >
             {initial}
@@ -114,11 +133,17 @@ function MessageBubble({ msg, isOwn }) {
             <span className="text-[11px] font-medium text-slate-700 dark:text-white/70">{name}</span>
             <span className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(msg.createdAt)}</span>
           </div>
-          <div className={'inline-block px-4 py-2.5 shadow-sm text-sm leading-relaxed ' + (isOwn ? 'bg-violet-600 text-white rounded-t-2xl rounded-bl-2xl rounded-br-md' : 'bg-slate-100 dark:bg-[#2a2a2e] text-slate-800 dark:text-white/90 rounded-t-2xl rounded-br-2xl rounded-bl-md')}>
+          <div
+            className={
+              'inline-block px-4 py-2.5 shadow-sm text-sm leading-relaxed ' +
+              (isOwn
+                ? 'bg-violet-600 text-white rounded-t-2xl rounded-bl-2xl rounded-br-md'
+                : 'bg-slate-100 dark:bg-[#2a2a2e] text-slate-800 dark:text-white/90 rounded-t-2xl rounded-br-2xl rounded-bl-md')
+            }
+          >
             {msg.content || ''}
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -136,11 +161,16 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
     if (!threadId) return;
     let mounted = true;
     setLoading(true);
-    getThreadMessages(threadId).then(data => { if (mounted) setMessages(Array.isArray(data) ? data : []); }).catch(() => {}).finally(() => { if (mounted) setLoading(false); });
+    getThreadMessages(threadId)
+      .then(data => { if (mounted) setMessages(Array.isArray(data) ? data : []); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, [threadId]);
 
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
 
   const handleSend = useCallback(async () => {
     const content = newMsg.trim();
@@ -152,40 +182,78 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
     try {
       const created = await postThreadMessage(threadId, content);
       if (created) setMessages(prev => prev.map(m => m._id === optimistic._id ? { ...created, _isOwn: true } : m));
-    } catch { setMessages(prev => prev.filter(m => m._id !== optimistic._id)); toast({ title: 'Failed to send', variant: 'error' }); }
-    finally { setSending(false); }
+    } catch {
+      setMessages(prev => prev.filter(m => m._id !== optimistic._id));
+      toast({ title: 'Failed to send', variant: 'error' });
+    } finally {
+      setSending(false);
+    }
   }, [newMsg, threadId, sending]);
 
   if (!thread) return null;
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center gap-3">
-        <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] lg:hidden"><ChevronLeft className="w-4 h-4 text-slate-500" /></button>
+        <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] lg:hidden">
+          <ChevronLeft className="w-4 h-4 text-slate-500" />
+        </button>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-white truncate">{thread.title}</h3>
-          <p className="text-[11px] text-slate-400 dark:text-white/30">{thread.participantCount || thread.participants?.length || 0} members</p>
+          <p className="text-[11px] text-slate-400 dark:text-white/30">
+            {thread.participantCount || thread.participants?.length || 0} members
+          </p>
         </div>
       </div>
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {loading ? (<div className="flex items-center justify-center py-12 text-slate-400"><Loader2 className="w-5 h-5 animate-spin mr-2" /><span className="text-sm">Loading...</span></div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-slate-400">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            <span className="text-sm">Loading...</span>
+          </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-12"><div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3"><MessageCircle className="w-6 h-6 text-violet-500" /></div><p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">Start the conversation</p><p className="text-xs text-slate-400 dark:text-white/30">Send a message to get things going</p></div>
+          <div className="text-center py-12">
+            <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3">
+              <MessageCircle className="w-6 h-6 text-violet-500" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">Start the project discussion</p>
+            <p className="text-xs text-slate-400 dark:text-white/30">Send a message to get this discussion moving</p>
+          </div>
         ) : messages.map((msg, idx) => {
-          
           // ⭐ BULLETPROOF OWNERSHIP CHECK ⭐
           const isOptimistic = Boolean(msg._id && String(msg._id).startsWith('temp-'));
-          const rawUserId = msg.userId?._id || msg.userId?.id || (typeof msg.userId === 'string' ? msg.userId : null) || msg.authorId?._id || msg.authorId?.id || (typeof msg.authorId === 'string' ? msg.authorId : null);
+          const rawUserId =
+            msg.userId?._id ||
+            msg.userId?.id ||
+            (typeof msg.userId === 'string' ? msg.userId : null) ||
+            msg.authorId?._id ||
+            msg.authorId?.id ||
+            (typeof msg.authorId === 'string' ? msg.authorId : null);
           const currIdStr = currentUserId ? String(currentUserId) : null;
           const msgUserIdStr = rawUserId ? String(rawUserId) : null;
           const isOwn = isOptimistic || (currIdStr && msgUserIdStr && currIdStr === msgUserIdStr);
-          
+
           return <MessageBubble key={msg._id || idx} msg={msg} isOwn={isOwn} />;
         })}
       </div>
+
       <div className="px-5 py-3 border-t border-slate-100 dark:border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <input type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Type a message..." maxLength={5000}
-            className="flex-1 text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30" />
+          <input
+            type="text"
+            value={newMsg}
+            onChange={e => setNewMsg(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Add to this discussion..."
+            maxLength={5000}
+            className="flex-1 text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+          />
           <button onClick={handleSend} disabled={sending || !newMsg.trim()} className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
           </button>
@@ -218,9 +286,12 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
       const created = await createThread({ projectId, title: title.trim(), category });
       onCreated?.(created);
       onClose();
-      toast({ title: 'Thread created', variant: 'success' });
-    } catch (err) { toast({ title: err?.message || 'Failed', variant: 'error' }); }
-    finally { setCreating(false); }
+      toast({ title: 'Discussion created', variant: 'success' });
+    } catch (err) {
+      toast({ title: err?.message || 'Failed', variant: 'error' });
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -228,8 +299,10 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-[#1f1f23] shadow-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">New Conversation</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06]"><X className="w-4 h-4 text-slate-400" /></button>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">New Discussion</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06]">
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
         </div>
         <div className="p-5 space-y-4">
           <div>
@@ -240,9 +313,13 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
                   {m.name}<button onClick={() => toggleMember(m)}><X className="w-3 h-3" /></button>
                 </span>
               ))}
-              <input type="text" value={memberSearch} onChange={e => setMemberSearch(e.target.value)}
+              <input
+                type="text"
+                value={memberSearch}
+                onChange={e => setMemberSearch(e.target.value)}
                 placeholder={selectedMembers.length === 0 ? 'Search members...' : ''}
-                className="flex-1 min-w-[100px] text-sm bg-transparent text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 outline-none" />
+                className="flex-1 min-w-[100px] text-sm bg-transparent text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 outline-none"
+              />
             </div>
             {members.length > 0 && (
               <div className="mt-2 max-h-[160px] overflow-y-auto rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#1f1f23]">
@@ -251,10 +328,21 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
                 ) : filteredMembers.map(m => {
                   const sel = selectedMembers.some(s => s.id === m.id);
                   return (
-                    <button key={m.id} onClick={() => toggleMember(m)}
-                      className={'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ' + (sel ? 'bg-violet-50 dark:bg-violet-500/10' : 'hover:bg-slate-50 dark:hover:bg-white/[0.04]')}>
-                      <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-[11px] font-medium text-slate-600 dark:text-white/50">{m.name[0]?.toUpperCase()}</div>
-                      <div className="flex-1 min-w-0"><p className="text-sm font-medium text-slate-800 dark:text-white truncate">{m.name}</p><p className="text-[10px] text-slate-400 capitalize">{m.role}</p></div>
+                    <button
+                      key={m.id}
+                      onClick={() => toggleMember(m)}
+                      className={
+                        'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ' +
+                        (sel ? 'bg-violet-50 dark:bg-violet-500/10' : 'hover:bg-slate-50 dark:hover:bg-white/[0.04]')
+                      }
+                    >
+                      <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-[11px] font-medium text-slate-600 dark:text-white/50">
+                        {m.name[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{m.name}</p>
+                        <p className="text-[10px] text-slate-400 capitalize">{m.role}</p>
+                      </div>
                       {sel && <Check className="w-4 h-4 text-violet-600 dark:text-violet-400" />}
                     </button>
                   );
@@ -262,25 +350,49 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
               </div>
             )}
           </div>
+
           <div>
-            <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Thread Name</label>
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Sprint Planning..." maxLength={100}
-              className="mt-1.5 w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.10] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30" />
+            <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Discussion Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. Sprint Planning..."
+              maxLength={100}
+              className="mt-1.5 w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.10] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+            />
           </div>
+
           <div>
             <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Channel</label>
             <div className="flex gap-2 mt-2 flex-wrap">
               {['general', 'planning', 'design', 'ops'].map(ch => (
-                <button key={ch} onClick={() => setCategory(ch)}
-                  className={'px-3 py-1.5 rounded-lg text-xs font-medium capitalize border transition-all ' + (category === ch ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/20' : 'bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/40 border-slate-200 dark:border-white/[0.08]')}>{ch}</button>
+                <button
+                  key={ch}
+                  onClick={() => setCategory(ch)}
+                  className={
+                    'px-3 py-1.5 rounded-lg text-xs font-medium capitalize border transition-all ' +
+                    (category === ch
+                      ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/20'
+                      : 'bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/40 border-slate-200 dark:border-white/[0.08]')
+                  }
+                >
+                  {ch}
+                </button>
               ))}
             </div>
           </div>
+
           <div className="flex gap-3 pt-2">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/60">Cancel</button>
-            <button onClick={handleCreate} disabled={!title.trim() || creating}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm">
-              {creating ? 'Creating...' : 'Create Thread'}
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/60">
+              Cancel
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={!title.trim() || creating}
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm"
+            >
+              {creating ? 'Creating...' : 'Create Discussion'}
             </button>
           </div>
         </div>
@@ -298,7 +410,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
   const [showCreate, setShowCreate] = useState(false);
 
   const projectMembers = useMemo(() => extractMembers(project), [project]);
-  
+
   // ⭐ ULTRA AGGRESSIVE USER ID EXTRACTION ⭐
   const currentUserId = useMemo(() => {
     try {
@@ -311,7 +423,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           if (u?._id) return String(u._id);
         }
       }
-      
+
       const zustandKeys = ['auth-storage', 'user-storage'];
       for (const key of zustandKeys) {
         const val = localStorage.getItem(key);
@@ -344,10 +456,23 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
     if (!projectId) return;
     let mounted = true;
     setLoading(true);
-    getProjectThreads(projectId).then(data => {
-      if (!mounted) return;
-      setThreads((Array.isArray(data) ? data : []).map(t => ({ ...t, id: t._id || t.id, title: t.title || 'Untitled', lastMessage: t.replyCount > 0 ? 'Recent activity' : 'No messages yet', participantCount: t.participants?.length || 0, replyCount: t.replyCount || 0, category: t.category || 'general' })));
-    }).catch(() => {}).finally(() => { if (mounted) setLoading(false); });
+    getProjectThreads(projectId)
+      .then(data => {
+        if (!mounted) return;
+        setThreads(
+          (Array.isArray(data) ? data : []).map(t => ({
+            ...t,
+            id: t._id || t.id,
+            title: t.title || 'Untitled',
+            lastMessage: t.replyCount > 0 ? 'Recent activity' : 'No discussion yet',
+            participantCount: t.participants?.length || 0,
+            replyCount: t.replyCount || 0,
+            category: t.category || 'general',
+          }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, [projectId]);
 
@@ -365,38 +490,120 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
       <div className={'w-80 flex-shrink-0 border-r border-slate-100 dark:border-white/[0.06] flex flex-col ' + (activeThread ? 'hidden lg:flex' : 'flex')}>
         <div className="px-4 py-4 border-b border-slate-100 dark:border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-slate-800 dark:text-white">Threads</h2>
-            <button onClick={() => setShowCreate(true)} className="p-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-sm"><Plus className="w-4 h-4" /></button>
+            <h2 className="text-base font-semibold text-slate-800 dark:text-white">Discussion</h2>
+            <button onClick={() => setShowCreate(true)} className="p-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search threads..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg text-xs bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search discussions..."
+              className="w-full pl-9 pr-3 py-2 rounded-lg text-xs bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+            />
           </div>
         </div>
+
         <div className="px-4 py-2 border-b border-slate-100 dark:border-white/[0.06] flex gap-1 overflow-x-auto">
           {CHANNELS.map(ch => (
-            <button key={ch.id} onClick={() => setActiveChannel(ch.id)} className={'px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap ' + (activeChannel === ch.id ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04]')}>{ch.label}</button>
+            <button
+              key={ch.id}
+              onClick={() => setActiveChannel(ch.id)}
+              className={
+                'px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap ' +
+                (activeChannel === ch.id
+                  ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400'
+                  : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04]')
+              }
+            >
+              {ch.label}
+            </button>
           ))}
         </div>
+
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-          {loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
-          : filtered.length === 0 ? <div className="text-center py-12"><MessageCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" /><p className="text-xs text-slate-400">No threads found</p></div>
-          : <>
-            {pinnedThreads.length > 0 && <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-amber-600"><Pin className="w-3 h-3 fill-current" /> Pinned</div>}
-            {pinnedThreads.map(t => <ThreadItem key={t.id} thread={t} isActive={(activeThread?._id || activeThread?.id) === (t._id || t.id)} onClick={setActiveThread} />)}
-            {pinnedThreads.length > 0 && regularThreads.length > 0 && <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-slate-400 mt-2"><Clock className="w-3 h-3" /> Recent</div>}
-            {regularThreads.map(t => <ThreadItem key={t.id} thread={t} isActive={(activeThread?._id || activeThread?.id) === (t._id || t.id)} onClick={setActiveThread} />)}
-          </>}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <MessageCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs text-slate-400">No discussions found</p>
+            </div>
+          ) : (
+            <>
+              {pinnedThreads.length > 0 && (
+                <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-amber-600">
+                  <Pin className="w-3 h-3 fill-current" /> Pinned
+                </div>
+              )}
+              {pinnedThreads.map(t => (
+                <ThreadItem
+                  key={t.id}
+                  thread={t}
+                  isActive={(activeThread?._id || activeThread?.id) === (t._id || t.id)}
+                  onClick={setActiveThread}
+                />
+              ))}
+              {pinnedThreads.length > 0 && regularThreads.length > 0 && (
+                <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-slate-400 mt-2">
+                  <Clock className="w-3 h-3" /> Recent
+                </div>
+              )}
+              {regularThreads.map(t => (
+                <ThreadItem
+                  key={t.id}
+                  thread={t}
+                  isActive={(activeThread?._id || activeThread?.id) === (t._id || t.id)}
+                  onClick={setActiveThread}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
 
       <div className={'flex-1 flex flex-col ' + (!activeThread ? 'hidden lg:flex' : 'flex')}>
-        {activeThread ? <ConversationPanel thread={activeThread} currentUserId={currentUserId} onBack={() => setActiveThread(null)} />
-        : <div className="flex-1 flex items-center justify-center"><div className="text-center"><div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-4"><MessageCircle className="w-8 h-8 text-violet-500" /></div><h3 className="text-lg font-semibold text-slate-700 dark:text-white/70 mb-1">Select a thread</h3><p className="text-sm text-slate-400">Choose a conversation or start a new one</p></div></div>}
+        {activeThread ? (
+          <ConversationPanel thread={activeThread} currentUserId={currentUserId} onBack={() => setActiveThread(null)} />
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-8 h-8 text-violet-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-white/70 mb-1">Select a discussion</h3>
+              <p className="text-sm text-slate-400">Choose a project discussion or start a new one</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {showCreate && <CreateThreadModal projectId={projectId} members={projectMembers} onClose={() => setShowCreate(false)} onCreated={(t) => { setThreads(prev => [{ ...t, id: t._id || t.id, category: t.category || 'general', participantCount: 0, replyCount: 0, lastMessage: 'No messages yet' }, ...prev]); setActiveThread(t); }} />}
+      {showCreate && (
+        <CreateThreadModal
+          projectId={projectId}
+          members={projectMembers}
+          onClose={() => setShowCreate(false)}
+          onCreated={(t) => {
+            setThreads(prev => [
+              {
+                ...t,
+                id: t._id || t.id,
+                category: t.category || 'general',
+                participantCount: 0,
+                replyCount: 0,
+                lastMessage: 'No discussion yet',
+              },
+              ...prev,
+            ]);
+            setActiveThread(t);
+          }}
+        />
+      )}
     </div>
   );
 }

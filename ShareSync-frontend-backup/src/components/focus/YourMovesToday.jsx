@@ -2,14 +2,23 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 5: Your 3 Moves Today - Cross-Project Focus View
 // UPGRADED: "Progress Should Be Visible" & Gallery Walk Light/Dark Integration
+// SURGICAL PASS:
+// - Prevent NaN momentum output
+// - Keep existing component contract intact
+// - Preserve layout and behavior
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Target, Zap, RefreshCw, ChevronRight, Flame, AlertCircle } from 'lucide-react';
 import MoveCard, { MoveCardSkeleton } from './MoveCard';
 import { getStatusColor } from '../../utils/statusColor';
 import { useFocusEngine } from '../../contexts/FocusEngineContext';
 import { useUserFocusMoves } from '../../hooks/useFocusMoves';
+
+function toFiniteNumber(value, fallback = 0) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
 
 export default function YourMovesToday({
   variant = 'default',
@@ -46,6 +55,23 @@ export default function YourMovesToday({
 
   const displayMoves = (topMoves.length > 0 ? topMoves : moves).slice(0, maxMoves);
 
+  const computedMomentumTotal = useMemo(() => {
+    return displayMoves.reduce((sum, move) => {
+      return sum + toFiniteNumber(move?.momentum, 0);
+    }, 0);
+  }, [displayMoves]);
+
+  const resolvedTotalMomentum = useMemo(() => {
+    const impactMomentum = toFiniteNumber(impactSummary?.totalMomentum, NaN);
+    return Number.isFinite(impactMomentum) && impactMomentum > 0
+      ? impactMomentum
+      : computedMomentumTotal;
+  }, [impactSummary?.totalMomentum, computedMomentumTotal]);
+
+  const resolvedTotalUnblocks = useMemo(() => {
+    return toFiniteNumber(impactSummary?.totalUnblocks, 0);
+  }, [impactSummary?.totalUnblocks]);
+
   const handleRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
     await refresh?.();
@@ -63,19 +89,27 @@ export default function YourMovesToday({
   const isCompact = variant === 'compact' || variant === 'sidebar';
 
   return (
-    <div className={`
-      card-action
-      ${isCompact ? 'p-5' : 'p-6'} rounded-xl
-      bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
-      shadow-[0_4px_24px_rgba(139,92,246,0.04)]
-      ${hasUrgentMoves ? 'border-l-4 border-l-amber-500' : ''}
-      ${className}
-    `}>
+    <div
+      className={`
+        card-action
+        ${isCompact ? 'p-5' : 'p-6'} rounded-xl
+        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+        shadow-[0_4px_24px_rgba(139,92,246,0.04)]
+        ${hasUrgentMoves ? 'border-l-4 border-l-amber-500' : ''}
+        ${className}
+      `}
+    >
       {/* Header */}
       {showHeader && (
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl shadow-sm ${hasUrgentMoves ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-slate-50 dark:bg-white/5'}`}>
+            <div
+              className={`p-2.5 rounded-xl shadow-sm ${
+                hasUrgentMoves
+                  ? 'bg-amber-50 dark:bg-amber-500/10'
+                  : 'bg-slate-50 dark:bg-white/5'
+              }`}
+            >
               {hasUrgentMoves ? (
                 <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
               ) : (
@@ -87,16 +121,20 @@ export default function YourMovesToday({
                 Your 3 Moves Today
               </h3>
               {hasUrgentMoves && (
-                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mt-0.5">Action needed</p>
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mt-0.5">
+                  Action needed
+                </p>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {(isRefreshing || isManualRefreshing) && (
-              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Updating...</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                Updating...
+              </span>
             )}
-            
+
             {showRefresh && (
               <button
                 onClick={handleRefresh}
@@ -104,7 +142,11 @@ export default function YourMovesToday({
                 className="p-2 rounded-lg text-slate-400 hover:text-[var(--theme-accent-primary)] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
                 title="Refresh moves"
               >
-                <RefreshCw className={`w-4 h-4 ${(isRefreshing || isManualRefreshing) ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${
+                    isRefreshing || isManualRefreshing ? 'animate-spin' : ''
+                  }`}
+                />
               </button>
             )}
 
@@ -127,8 +169,13 @@ export default function YourMovesToday({
       ) : error ? (
         <div className="py-8 text-center bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/10">
           <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Failed to load moves</p>
-          <button onClick={handleRefresh} className="text-xs font-black uppercase tracking-widest text-[var(--theme-accent-primary)] hover:brightness-110">
+          <p className="text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">
+            Failed to load moves
+          </p>
+          <button
+            onClick={handleRefresh}
+            className="text-xs font-black uppercase tracking-widest text-[var(--theme-accent-primary)] hover:brightness-110"
+          >
             Try again
           </button>
         </div>
@@ -157,17 +204,23 @@ export default function YourMovesToday({
         <div className="mt-5 pt-4 border-t border-slate-100 dark:border-white/10">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-widest">
-              Complete all <strong className="text-slate-800 dark:text-zinc-200">{displayMoves.length}</strong> to unlock
+              Complete all{' '}
+              <strong className="text-slate-800 dark:text-zinc-200">
+                {displayMoves.length}
+              </strong>{' '}
+              to unlock
             </span>
+
             <div className="flex items-center gap-4">
-              {impactSummary.totalUnblocks > 0 && (
+              {resolvedTotalUnblocks > 0 && (
                 <span className="text-[11px] font-black text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 px-2 py-1 rounded-md uppercase tracking-wider">
-                  Unblock {impactSummary.totalUnblocks} teammates
+                  Unblock {resolvedTotalUnblocks} teammates
                 </span>
               )}
+
               <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--theme-accent-primary)] bg-[var(--theme-accent-glow)] px-2.5 py-1 rounded-md">
                 <Zap className="w-3.5 h-3.5 fill-[var(--theme-accent-primary)]/20" />
-                +{impactSummary.totalMomentum || displayMoves.reduce((s, m) => s + m.momentum, 0)} Momentum
+                +{resolvedTotalMomentum} Momentum
               </span>
             </div>
           </div>
@@ -214,42 +267,60 @@ export function YourMovesWidget({ onMoveClick, onViewAll }) {
 }
 
 export function FocusBanner({ className = '' }) {
-  const { topMoves, hasUrgentMoves, impactSummary } = useFocusEngine();
-  
+  const { topMoves, hasUrgentMoves } = useFocusEngine();
+
   if (!topMoves.length) return null;
   const topMove = topMoves[0];
-  
+  const topMoveMomentum = toFiniteNumber(topMove?.momentum, 0);
+
   return (
-    <div className={`
-      px-5 py-3.5 rounded-xl shadow-sm
-      ${hasUrgentMoves ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' : 'bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10'}
-      flex flex-col sm:flex-row sm:items-center justify-between gap-3
-      ${className}
-    `}>
+    <div
+      className={`
+        px-5 py-3.5 rounded-xl shadow-sm
+        ${
+          hasUrgentMoves
+            ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20'
+            : 'bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10'
+        }
+        flex flex-col sm:flex-row sm:items-center justify-between gap-3
+        ${className}
+      `}
+    >
       <div className="flex items-center gap-3">
-        <Target className={`w-5 h-5 flex-shrink-0 ${hasUrgentMoves ? 'text-amber-600 dark:text-amber-500' : 'text-[var(--theme-accent-primary)]'}`} />
+        <Target
+          className={`w-5 h-5 flex-shrink-0 ${
+            hasUrgentMoves
+              ? 'text-amber-600 dark:text-amber-500'
+              : 'text-[var(--theme-accent-primary)]'
+          }`}
+        />
         <div>
-          <p className="text-[10px] font-black text-slate-500 dark:text-zinc-400 uppercase tracking-widest mb-0.5">Top priority</p>
-          <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{topMove.title}</p>
+          <p className="text-[10px] font-black text-slate-500 dark:text-zinc-400 uppercase tracking-widest mb-0.5">
+            Top priority
+          </p>
+          <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+            {topMove.title}
+          </p>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-2">
         {topMove.project && (
-          <span 
+          <span
             className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm"
-            style={{ 
+            style={{
               backgroundColor: `${topMove.project.color}15`,
               color: topMove.project.color,
-              border: `1px solid ${topMove.project.color}30`
+              border: `1px solid ${topMove.project.color}30`,
             }}
           >
             {topMove.project.name}
           </span>
         )}
+
         <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black text-[var(--theme-accent-primary)] bg-[var(--theme-accent-glow)]">
           <Zap className="w-3.5 h-3.5" />
-          +{topMove.momentum}
+          +{topMoveMomentum}
         </span>
       </div>
     </div>

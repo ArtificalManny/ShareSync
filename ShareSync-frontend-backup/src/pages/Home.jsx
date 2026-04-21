@@ -18,9 +18,15 @@
 //
 // NO BACKEND CHANGES
 //
+// SURGICAL PASS:
+// - Put "Your 3 Moves Today" first
+// - Keep "Recommended for Today" second
+// - Demote secondary status modules
+// - Add stricter conditional rendering for low-signal sections
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Zap, Clock, TrendingUp, Flame, Rocket, X, Wifi, WifiOff } from "lucide-react";
 import "./Home.css";
 
@@ -54,16 +60,16 @@ import { useAuth } from "../context/AuthContext";
 import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
 import useDocumentTitle from "../hooks/useDocumentTitle";
-import StreakProtectionModal from "../components/streak/StreakProtectionModal";
-import {
-  getStreakProtectionStatus,
-  useStreakFreeze as triggerStreakFreeze,
-} from "../api/user";
 
 /* ───────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet-tinted shadows
 ─────────────────────────────────────────────────────────────────────────── */
-const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400", description }) => {
+const StatCard = ({
+  label,
+  value,
+  color = "text-violet-600 dark:text-violet-400",
+  description,
+}) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { glowLevel, isFireMode } = useMomentumContext();
@@ -116,7 +122,9 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
             animate-in fade-in slide-in-from-bottom-2 duration-200
           "
         >
-          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">{description}</p>
+          <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+            {description}
+          </p>
         </div>
       )}
     </div>
@@ -225,11 +233,6 @@ const MomentumStatusBanner = () => {
   );
 };
 
-const getReadableErrorMessage = (error, fallback = "Unable to update streak protection right now.") => {
-  const message = error?.response?.data?.message ?? error?.message ?? fallback;
-  return Array.isArray(message) ? message.join(", ") : message;
-};
-
 /* ───────────────────────────────────────────────────────────────────────────
    MAIN HOME PAGE
 ─────────────────────────────────────────────────────────────────────────── */
@@ -244,13 +247,6 @@ export default function Home() {
 
   const [showEntranceHighlight, setShowEntranceHighlight] = useState(false);
 
-  const [streakProtection, setStreakProtection] = useState(null);
-  const [isStreakProtectionOpen, setIsStreakProtectionOpen] = useState(false);
-  const [isStreakProtectionLoading, setIsStreakProtectionLoading] = useState(false);
-  const [isUsingStreakFreeze, setIsUsingStreakFreeze] = useState(false);
-  const [streakProtectionError, setStreakProtectionError] = useState("");
-  const [hasAutoOpenedStreakProtection, setHasAutoOpenedStreakProtection] = useState(false);
-
   const { glowLevel, isFireMode, recordActivity } = useMomentumContext();
   const { recordTaskCompletion } = useMomentumActivity();
 
@@ -264,7 +260,8 @@ export default function Home() {
     onboardingCtx = useOnboardingContext?.() || onboardingCtx;
   } catch (e) {}
 
-  const showFirstMission = onboardingCtx.shouldShowOnboarding && !onboardingCtx.isCompleted;
+  const showFirstMission =
+    onboardingCtx.shouldShowOnboarding && !onboardingCtx.isCompleted;
 
   let focusEngine = { hasUrgentMoves: false };
   try {
@@ -292,60 +289,6 @@ export default function Home() {
     isConnected,
   } = useHomeRealtime();
 
-  const loadStreakProtection = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) {
-      setIsStreakProtectionLoading(true);
-    }
-
-    try {
-      const nextStatus = await getStreakProtectionStatus();
-      setStreakProtection(nextStatus);
-      return nextStatus;
-    } catch (error) {
-      console.error("[Home] Failed to load streak protection status:", error);
-      setStreakProtectionError(
-        getReadableErrorMessage(error, "Unable to load streak protection status right now.")
-      );
-      return null;
-    } finally {
-      if (!silent) {
-        setIsStreakProtectionLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const authUserId = authUser?._id || authUser?.userId || authUser?.id;
-    if (!authUserId) return;
-
-    let isActive = true;
-
-    (async () => {
-      const nextStatus = await loadStreakProtection();
-      if (!isActive || !nextStatus) return;
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, [authUser?._id, authUser?.userId, authUser?.id, loadStreakProtection]);
-
-  useEffect(() => {
-    if (!streakProtection) return;
-    if (hasAutoOpenedStreakProtection) return;
-
-    const shouldAutoOpen =
-      Boolean(streakProtection?.supported) &&
-      Boolean(streakProtection?.isAtRisk) &&
-      Boolean(streakProtection?.allowFreeze) &&
-      Number(streakProtection?.freezeCount || 0) > 0;
-
-    if (shouldAutoOpen) {
-      setIsStreakProtectionOpen(true);
-      setHasAutoOpenedStreakProtection(true);
-    }
-  }, [streakProtection, hasAutoOpenedStreakProtection]);
-
   useEntranceHighlight?.(() => {
     setShowEntranceHighlight(true);
     setTimeout(() => setShowEntranceHighlight(false), 600);
@@ -366,62 +309,21 @@ export default function Home() {
     setIsPanelOpen(false);
   }, [playClick]);
 
-  const handleOpenStreakProtection = useCallback(() => {
-    playClick();
-    setStreakProtectionError("");
-    setIsStreakProtectionOpen(true);
-  }, [playClick]);
+  const handleFocusMoveClick = useCallback(
+    (move) => {
+      playClick();
+      console.log("Focus move clicked:", move);
+    },
+    [playClick]
+  );
 
-  const handleCloseStreakProtection = useCallback(() => {
-    playClick();
-    setStreakProtectionError("");
-    setIsStreakProtectionOpen(false);
-  }, [playClick]);
-
-  const handleRefreshStreakProtection = useCallback(async () => {
-    playClick();
-    setStreakProtectionError("");
-    await loadStreakProtection({ silent: false });
-  }, [playClick, loadStreakProtection]);
-
-  const handleUseStreakFreeze = useCallback(async () => {
-    setIsUsingStreakFreeze(true);
-    setStreakProtectionError("");
-
-    try {
-      const nextStatus = await triggerStreakFreeze();
-      setStreakProtection(nextStatus);
-      setIsStreakProtectionOpen(false);
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("streak-freeze-used", {
-            detail: nextStatus,
-          })
-        );
-      }
-
-      await loadStreakProtection({ silent: true });
-      refreshAll?.();
-    } catch (error) {
-      console.error("[Home] Failed to use streak freeze:", error);
-      setStreakProtectionError(
-        getReadableErrorMessage(error, "Unable to use a streak freeze right now.")
-      );
-    } finally {
-      setIsUsingStreakFreeze(false);
-    }
-  }, [loadStreakProtection, refreshAll]);
-
-  const handleFocusMoveClick = useCallback((move) => {
-    playClick();
-    console.log("Focus move clicked:", move);
-  }, [playClick]);
-
-  const handleActivityClick = useCallback((activity) => {
-    playClick();
-    console.log("Activity clicked:", activity);
-  }, [playClick]);
+  const handleActivityClick = useCallback(
+    (activity) => {
+      playClick();
+      console.log("Activity clicked:", activity);
+    },
+    [playClick]
+  );
 
   const handleShipped = useCallback(
     (projectId) => {
@@ -434,7 +336,10 @@ export default function Home() {
 
       const isLastMission = missions.length <= 1;
 
-      recordActivity("PROJECT_SHIP", { projectId, projectName: shippedMission?.title });
+      recordActivity("PROJECT_SHIP", {
+        projectId,
+        projectName: shippedMission?.title,
+      });
 
       const baseXP = 50;
       const momentumBonus = glowLevel >= 3 ? 10 : 0;
@@ -477,7 +382,16 @@ export default function Home() {
 
       setTimeout(() => refreshAll?.(), 800);
     },
-    [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll]
+    [
+      missions,
+      recordActivity,
+      glowLevel,
+      isFireMode,
+      playShipSound,
+      playXP,
+      playAchievementUnlock,
+      refreshAll,
+    ]
   );
 
   const sectionCardClasses = useMemo(() => {
@@ -485,22 +399,11 @@ export default function Home() {
       "p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 momentum-responsive-card momentum-card";
     const shadow =
       "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
+
     if (isFireMode) return `${base} ${shadow} border-orange-200 dark:border-orange-500/30`;
     if (glowLevel >= 4) return `${base} ${shadow} border-violet-200 dark:border-violet-500/30`;
     return `${base} ${shadow}`;
   }, [glowLevel, isFireMode]);
-
-  const canUseAvailableFreeze = Boolean(
-    streakProtection?.supported &&
-      streakProtection?.isAtRisk &&
-      streakProtection?.allowFreeze &&
-      Number(streakProtection?.freezeCount || 0) > 0
-  );
-
-  const shouldShowStreakProtectionEntry = Boolean(
-    streakProtection?.supported &&
-      (streakProtection?.isAtRisk || Number(streakProtection?.freezeCount || 0) > 0)
-  );
 
   const LivePill = useMemo(() => {
     const live = Boolean(isConnected);
@@ -525,12 +428,45 @@ export default function Home() {
     );
   }, [isConnected]);
 
+  const hasSuggestedTask = Boolean(missions?.[0]?.title);
+  const hasTeamActivity = Array.isArray(activities) && activities.length > 0;
+  const hasUsefulIntelligence = Boolean(
+    intelligence?.peakWindowStart ||
+      intelligence?.peakWindowEnd ||
+      Number(intelligence?.productivity || 0) > 0 ||
+      Number(intelligence?.coWorkingMultiplier || 0) > 1 ||
+      intelligence?.isCoWorking
+  );
+  const hasCompetitiveStreakSignal = Boolean(
+    Number(streakComparison?.userStreakDays || 0) > 0 ||
+      Number(streakComparison?.teamAvgDays || 0) > 0 ||
+      (streakComparison?.rankText && streakComparison.rankText !== "--")
+  );
+  const hasMeaningfulVelocity = Boolean(
+    Number(summary?.ships || 0) > 0 ||
+      Number(summary?.streakDays || 0) > 0 ||
+      Number(summary?.focus || 0) > 0 ||
+      Number(summary?.efficiency || 0) !== 0
+  );
+  const hasRightRail =
+    hasUsefulIntelligence || hasTeamActivity || hasCompetitiveStreakSignal;
+
   return (
-    <div className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto" data-momentum={glowLevel}>
+    <div
+      className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto"
+      data-momentum={glowLevel}
+    >
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
       <header className="mb-10 flex justify-between items-end">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2 h-2 rounded-full ${isFireMode ? "bg-orange-500 animate-pulse" : "bg-teal-500"}`} />
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isFireMode ? "bg-orange-500 animate-pulse" : "bg-teal-500"
+              }`}
+            />
             <span className="text-xs text-slate-500 dark:text-zinc-400">
               {isFireMode ? "Fire Mode Active 🔥" : "Operational Status: Live"}
             </span>
@@ -549,30 +485,25 @@ export default function Home() {
               if (hour < 18) return "Good afternoon";
               return "Good evening";
             })()},{" "}
-            <span className={`${isFireMode ? "text-orange-500" : "text-violet-600 dark:text-zinc-500"} transition-colors duration-500`}>
+            <span
+              className={`${
+                isFireMode
+                  ? "text-orange-500"
+                  : "text-violet-600 dark:text-zinc-500"
+              } transition-colors duration-500`}
+            >
               {authUser?.firstName || "Builder"}
             </span>
           </h1>
-          <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Mission Control</p>
+          <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">
+            Mission Control
+          </p>
         </div>
       </header>
 
-      <PulseCheckPrompt
-        suggestedTask={missions?.[0]?.title || null}
-        className="mb-6"
-      />
-
-      <MomentumStatusBanner />
-
-      <MomentumContagion
-        activities={activities}
-        maxVisible={3}
-        showCTA={true}
-        onPickMove={() => console.log("Pick move from contagion")}
-        variant="compact"
-        className="mb-6"
-      />
-
+      {/* ═══════════════════════════════════════════════════════════════════
+          PRIMARY ACTION ZONE
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-8">
         <YourMovesToday
           variant="default"
@@ -596,13 +527,21 @@ export default function Home() {
         </div>
       )}
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          MAIN GRID
+      ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 xl:col-span-8">
+        {/* Missions */}
+        <div className={hasRightRail ? "col-span-12 xl:col-span-8" : "col-span-12"}>
           <div
             className={`
               ${sectionCardClasses}
               transition-all duration-300
-              ${showEntranceHighlight ? "ring-2 ring-violet-300 dark:ring-violet-500/50 animate-pulse-once" : ""}
+              ${
+                showEntranceHighlight
+                  ? "ring-2 ring-violet-300 dark:ring-violet-500/50 animate-pulse-once"
+                  : ""
+              }
             `}
             data-momentum={glowLevel}
           >
@@ -624,9 +563,15 @@ export default function Home() {
                     key={mission.id}
                     className={`
                       transition-all duration-300
-                      ${showEntranceHighlight && index === 0 ? "ring-2 ring-violet-200 dark:ring-violet-500/30 rounded-xl" : ""}
+                      ${
+                        showEntranceHighlight && index === 0
+                          ? "ring-2 ring-violet-200 dark:ring-violet-500/30 rounded-xl"
+                          : ""
+                      }
                     `}
-                    style={{ animationDelay: showEntranceHighlight ? `${index * 100}ms` : "0ms" }}
+                    style={{
+                      animationDelay: showEntranceHighlight ? `${index * 100}ms` : "0ms",
+                    }}
                   >
                     <MissionCard
                       project={mission}
@@ -646,7 +591,9 @@ export default function Home() {
                   onViewStats={() => handleOpenPanel("balance")}
                   showConfetti={shippedStats.tasksCompleted > 0}
                   confettiIntensity={isFireMode ? "high" : "medium"}
-                  variant={shippedStats.tasksCompleted > 0 ? "celebratory" : "illustrated"}
+                  variant={
+                    shippedStats.tasksCompleted > 0 ? "celebratory" : "illustrated"
+                  }
                 />
               )}
             </div>
@@ -654,121 +601,137 @@ export default function Home() {
             {!isConnected && (
               <div className="mt-4 text-[11px] text-slate-500 dark:text-zinc-500 flex items-center gap-2">
                 <WifiOff className="w-3.5 h-3.5" />
-                Showing last known data — updates will resume automatically when you're back online.
+                Showing last known data — updates will resume automatically when
+                you're back online.
               </div>
             )}
           </div>
         </div>
 
-        <div className="col-span-12 xl:col-span-4 space-y-6">
-          <IntelligencePanel
-            isBalanced={false}
-            onBalanceClick={() => handleOpenPanel("balance")}
-            peakWindowStart={intelligence.peakWindowStart}
-            peakWindowEnd={intelligence.peakWindowEnd}
-            productivity={intelligence.productivity}
-            coWorkingMultiplier={intelligence.coWorkingMultiplier}
-            isCoWorking={intelligence.isCoWorking}
-            momentumLevel={glowLevel}
-            isFireMode={isFireMode}
-          />
+        {/* Right sidebar */}
+        {hasRightRail && (
+          <div className="col-span-12 xl:col-span-4 space-y-6">
+            {hasUsefulIntelligence && (
+              <IntelligencePanel
+                isBalanced={false}
+                onBalanceClick={() => handleOpenPanel("balance")}
+                peakWindowStart={intelligence.peakWindowStart}
+                peakWindowEnd={intelligence.peakWindowEnd}
+                productivity={intelligence.productivity}
+                coWorkingMultiplier={intelligence.coWorkingMultiplier}
+                isCoWorking={intelligence.isCoWorking}
+                momentumLevel={glowLevel}
+                isFireMode={isFireMode}
+              />
+            )}
 
-          <LiveActivityFeed
-            variant="sidebar"
-            maxItems={10}
-            showFilters={false}
-            showSummary={false}
-            onActivityClick={handleActivityClick}
-            injectedItems={activities}
-          />
+            {hasTeamActivity && (
+              <LiveActivityFeed
+                variant="sidebar"
+                maxItems={10}
+                showFilters={false}
+                showSummary={false}
+                onActivityClick={handleActivityClick}
+                injectedItems={activities}
+              />
+            )}
 
-          <StreakComparison
-            variant="compact"
-            showChart={false}
-            showLeader={true}
-            showRank={true}
-            userStreakDays={streakComparison.userStreakDays}
-            teamAvgDays={streakComparison.teamAvgDays}
-            rankText={streakComparison.rankText}
-          />
-        </div>
+            {hasCompetitiveStreakSignal && (
+              <StreakComparison
+                variant="compact"
+                showChart={false}
+                showLeader={true}
+                showRank={true}
+                userStreakDays={streakComparison.userStreakDays}
+                teamAvgDays={streakComparison.teamAvgDays}
+                rankText={streakComparison.rankText}
+              />
+            )}
+          </div>
+        )}
 
-        <div className="col-span-12">
-          <div className={sectionCardClasses} data-momentum={glowLevel}>
-            <SectionHeader
-              icon={TrendingUp}
-              iconColor="text-violet-600 dark:text-violet-400"
-              title="Velocity Metrics"
-              rightSlot={LivePill}
+        {/* ═══════════════════════════════════════════════════════════════════
+            SECONDARY SUPPORT ZONE
+        ═══════════════════════════════════════════════════════════════════ */}
+        {hasSuggestedTask && (
+          <div className="col-span-12">
+            <PulseCheckPrompt
+              suggestedTask={missions?.[0]?.title || null}
+              className="mb-0"
             />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard
-                label="Ships"
-                value={summary?.ships || 0}
-                color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
-                description="Total validated deployments in the last 7 days."
-              />
-              <StatCard
-                label="Streak"
-                value={`${summary?.streakDays || 0}D`}
-                color="text-amber-600 dark:text-amber-500"
-                description="Current streak of active days."
-              />
-              <StatCard
-                label="Focus"
-                value={`${summary?.focus || 0}%`}
-                color="text-teal-600 dark:text-teal-400"
-                description="Focus estimate based on activity types."
-              />
-              <StatCard
-                label="Efficiency"
-                value={`${summary?.efficiency >= 0 ? "+" : ""}${summary?.efficiency || 0}%`}
-                color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
-                description="Change vs previous period."
-              />
-            </div>
-
-            {streakProtection?.supported && (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-900/60 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-300">
-                  {canUseAvailableFreeze ? "🛡️" : "❄️"} Streak Protection
-                </span>
-
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                  {canUseAvailableFreeze
-                    ? `${streakProtection.freezeCount} freeze${Number(streakProtection.freezeCount) === 1 ? "" : "s"} ready`
-                    : streakProtection?.isAtRisk
-                      ? "Streak is at risk, but no freeze is currently available."
-                      : "Streak protection is standing by."}
-                </span>
-
-                {shouldShowStreakProtectionEntry && (
-                  <button
-                    type="button"
-                    onClick={handleOpenStreakProtection}
-                    className="text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-                  >
-                    Review
-                  </button>
-                )}
-              </div>
-            )}
           </div>
-        </div>
+        )}
+
+        {glowLevel >= 3 && (
+          <div className="col-span-12">
+            <MomentumStatusBanner />
+          </div>
+        )}
+
+        {hasTeamActivity && (
+          <div className="col-span-12">
+            <MomentumContagion
+              activities={activities}
+              maxVisible={3}
+              showCTA={true}
+              onPickMove={() => console.log("Pick move from contagion")}
+              variant="compact"
+            />
+          </div>
+        )}
+
+        {hasMeaningfulVelocity && (
+          <div className="col-span-12">
+            <div className={sectionCardClasses} data-momentum={glowLevel}>
+              <SectionHeader
+                icon={TrendingUp}
+                iconColor="text-violet-600 dark:text-violet-400"
+                title="Velocity Metrics"
+                rightSlot={LivePill}
+              />
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard
+                  label="Ships"
+                  value={summary?.ships || 0}
+                  color={
+                    isFireMode
+                      ? "text-orange-500"
+                      : "text-violet-600 dark:text-violet-400"
+                  }
+                  description="Total validated deployments in the last 7 days."
+                />
+                <StatCard
+                  label="Streak"
+                  value={`${summary?.streakDays || 0}D`}
+                  color="text-amber-600 dark:text-amber-500"
+                  description="Current streak of active days."
+                />
+                <StatCard
+                  label="Focus"
+                  value={`${summary?.focus || 0}%`}
+                  color="text-teal-600 dark:text-teal-400"
+                  description="Focus estimate based on activity types."
+                />
+                <StatCard
+                  label="Efficiency"
+                  value={`${summary?.efficiency >= 0 ? "+" : ""}${summary?.efficiency || 0}%`}
+                  color={
+                    isFireMode
+                      ? "text-orange-500"
+                      : "text-violet-600 dark:text-violet-400"
+                  }
+                  description="Change vs previous period."
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <StreakProtectionModal
-        open={isStreakProtectionOpen}
-        onClose={handleCloseStreakProtection}
-        protection={streakProtection}
-        onUseFreeze={handleUseStreakFreeze}
-        onRefresh={handleRefreshStreakProtection}
-        isLoading={isStreakProtectionLoading}
-        isSubmitting={isUsingStreakFreeze}
-        error={streakProtectionError}
-      />
-
+      {/* ═══════════════════════════════════════════════════════════════════
+          SLIDE-OUT PANEL - Light theme
+      ═══════════════════════════════════════════════════════════════════ */}
       <div
         className={`
           fixed inset-0 bg-slate-900/20 dark:bg-black/50 backdrop-blur-sm z-[60]
