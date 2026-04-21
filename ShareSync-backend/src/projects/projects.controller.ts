@@ -2,6 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECTS CONTROLLER: REST API Endpoints
 // + Phase 3: spectator follows (/projects/:id/follow)
+// + Overview route for ProjectHome richer dashboard payload
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import {
@@ -176,6 +177,37 @@ export class ProjectsController {
     };
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OVERVIEW — MUST BE BEFORE :id
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Get(':id/overview')
+  @ApiOperation({ summary: 'Get rich overview data for ProjectHome' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Overview data found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
+  async getOverview(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
+    const userId = req.user?.sub || req.user?.userId;
+    const overview = await this.projectsService.getOverviewData(id, userId);
+
+    if (overview?.project && typeof overview.project.populate === 'function') {
+      await overview.project.populate(
+        'ownerId',
+        'firstName lastName username email avatar profilePicture',
+      );
+      await overview.project.populate(
+        'members.userId',
+        'firstName lastName username email avatar profilePicture',
+      );
+    }
+
+    return {
+      success: true,
+      data: overview,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a project by ID' })
   @ApiParam({ name: 'id', description: 'Project ID' })
@@ -185,10 +217,18 @@ export class ProjectsController {
   async findOne(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const project = await this.projectsService.findByIdWithAccess(id, userId);
+
     if (project && typeof project.populate === 'function') {
-      await project.populate('ownerId', 'firstName lastName username email avatar profilePicture');
-      await project.populate('members.userId', 'firstName lastName username email avatar profilePicture');
+      await project.populate(
+        'ownerId',
+        'firstName lastName username email avatar profilePicture',
+      );
+      await project.populate(
+        'members.userId',
+        'firstName lastName username email avatar profilePicture',
+      );
     }
+
     return {
       success: true,
       data: project,
@@ -201,10 +241,18 @@ export class ProjectsController {
   async getPulse(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
     const pulseData = await this.projectsService.getPulseData(id, userId);
+
     if (pulseData && pulseData.project && typeof pulseData.project.populate === 'function') {
-      await pulseData.project.populate('ownerId', 'firstName lastName username email avatar profilePicture');
-      await pulseData.project.populate('members.userId', 'firstName lastName username email avatar profilePicture');
+      await pulseData.project.populate(
+        'ownerId',
+        'firstName lastName username email avatar profilePicture',
+      );
+      await pulseData.project.populate(
+        'members.userId',
+        'firstName lastName username email avatar profilePicture',
+      );
     }
+
     return {
       success: true,
       data: pulseData,
@@ -238,7 +286,6 @@ export class ProjectsController {
   ) {
     const userId = req.user?.sub || req.user?.userId;
 
-    // Reuse followProject upsert behavior (safe + idempotent)
     const updated = await this.projectFollowService.followProject(id, userId, dto as any);
     return { success: true, data: updated };
   }
@@ -413,7 +460,6 @@ export class ProjectsController {
     };
   }
 
-  // ✅ ADDED: Update User-Specific Notification Preferences
   @Patch(':id/preferences')
   @ApiOperation({ summary: 'Update user-specific notification preferences for a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
