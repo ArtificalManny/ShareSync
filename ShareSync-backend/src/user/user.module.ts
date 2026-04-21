@@ -18,7 +18,9 @@ import { UploadsModule } from '../uploads/uploads.module';
 import { ProjectFollowModule } from '../follows/project-follow.module';
 import { SmsModule } from '../notifications/sms.module';
 import { ModerationModule } from '../moderation/moderation.module';
-import { StatsModule } from '../stats/stats.module';
+
+// ✅ Added so UserService can inject StreakService for streak protection endpoints
+import { GamificationModule } from '../gamification/gamification.module';
 
 @Module({
   imports: [
@@ -41,8 +43,8 @@ import { StatsModule } from '../stats/stats.module';
     // ✅ Content moderation for bio/profile updates
     ModerationModule,
 
-    // ✅ Phase 3: Stats service for dashboard metrics
-    forwardRef(() => StatsModule),
+    // ✅ Streak protection / allowFreeze backend wiring
+    GamificationModule,
   ],
   controllers: [UserController],
   providers: [UserService],

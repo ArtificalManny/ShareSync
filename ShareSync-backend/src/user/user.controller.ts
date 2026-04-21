@@ -11,7 +11,7 @@ import {
   Put,
   Post,
   Delete,
-  Body, 
+  Body,
   UseGuards,
   Req,
   Param,
@@ -38,7 +38,6 @@ import { UploadsService } from '../uploads/uploads.service';
 
 // ✅ Phase 3: follows
 import { ProjectFollowService } from '../follows/project-follow.service';
-import { StatsService } from '../stats/stats.service';
 
 @Controller('users')
 export class UserController {
@@ -49,7 +48,6 @@ export class UserController {
 
     @Optional() private readonly uploadService?: UploadsService,
     @Optional() private readonly follows?: ProjectFollowService,
-    @Optional() private readonly statsService?: StatsService,
   ) {}
 
   // ✅ Never let activity logging break the real endpoint.
@@ -172,6 +170,56 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // GET /users/me/streak-protection - Backend-authoritative streak protection
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/streak-protection')
+  async getStreakProtection(@Req() req: any) {
+    const id = req?.user?.sub || req?.user?.id;
+    const status = await this.users.getStreakProtectionStatus(id);
+
+    return {
+      success: true,
+      data: status,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // POST /users/me/streak-protection/use-freeze - Consume a freeze if allowed
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/streak-protection/use-freeze')
+  async useStreakFreeze(@Req() req: any) {
+    const id = req?.user?.sub || req?.user?.id;
+    const result = await this.users.useStreakFreeze(id);
+
+    // Non-blocking activity log so streak protection use shows up later if desired
+    await this.safeRecord({
+      userId: id,
+      type: 'user.streak.freeze_used',
+      payload: {
+        freezeCount: result?.freezeCount ?? 0,
+        streakDays: result?.streakDays ?? 0,
+      },
+    });
+
+    this.realtime.emitToUser(id, 'user:streakProtectionUpdated', {
+      userId: id,
+      freezeCount: result?.freezeCount ?? 0,
+      streakDays: result?.streakDays ?? 0,
+      isAtRisk: result?.isAtRisk ?? false,
+      ts: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // PUT /users/me/settings - Update user settings (Phase 7)
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -242,97 +290,6 @@ export class UserController {
     return {
       success: true,
       message: 'Phone number verified successfully',
-    };
-  }
-  
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me/weekly-rhythm - Your Week in Motion data
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me/weekly-rhythm')
-  async getMyWeeklyRhythm(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.id;
-
-    if (!this.statsService) {
-      return {
-        success: true,
-        data: {
-          days: [],
-          thisWeekTotal: 0,
-          lastWeekTotal: 0,
-          momentum: 'idle',
-          momentumLabel: 'Ready to launch',
-          insight: 'Stats service not available.',
-          peakDay: null,
-          peakHour: null,
-          activeDays: 0,
-          totalDays: 7,
-        },
-      };
-    }
-
-    const rhythm = await this.statsService.getWeeklyRhythm(userId);
-    return { success: true, data: rhythm };
-  }
-
-  // GET /users/me/stats - Dashboard velocity metrics (Phase 3)
-  // Self-healing: recalculates if statsLastCalculated > 5 min old
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me/stats')
-  async getMyStats(@Req() req: any) {
-    const userId = req?.user?.sub || req?.user?.id;
-
-    if (!this.statsService) {
-      // Fallback: return cached fields from user document
-      const user = await this.users.findById(userId);
-      return {
-        success: true,
-        data: {
-          ships: (user as any)?.weeklyShips || 0,
-          streakDays: (user as any)?.streakDays || 0,
-          focus: (user as any)?.completionRate || 0,
-          efficiency: 0,
-        },
-      };
-    }
-
-    // Check if stats are stale (> 5 minutes old)
-    const user = await this.users.findById(userId);
-    const lastCalc = (user as any)?.statsLastCalculated;
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const isStale = !lastCalc || new Date(lastCalc) < fiveMinAgo;
-
-    if (isStale) {
-      const fresh = await this.statsService.recalculateForUser(userId);
-      return { success: true, data: fresh };
-    }
-
-    // Return cached stats
-    const weeklyShips = (user as any)?.weeklyShips || 0;
-    const lastWeekShips = (user as any)?.lastWeekShips || 0;
-    let efficiency = 0;
-    if (lastWeekShips > 0) {
-      efficiency = Math.round(((weeklyShips - lastWeekShips) / lastWeekShips) * 100);
-    } else if (weeklyShips > 0) {
-      efficiency = 100;
-    }
-
-    return {
-      success: true,
-      data: {
-        ships: weeklyShips,
-        streakDays: (user as any)?.streakDays || 0,
-        focus: (user as any)?.completionRate || 0,
-        efficiency,
-        weeklyShips,
-        lastWeekShips,
-        completionRate: (user as any)?.completionRate || 0,
-        totalShips: (user as any)?.totalShips || 0,
-        statsLastCalculated: lastCalc,
-      },
     };
   }
 
@@ -460,13 +417,14 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me/export')
-  async exportData(@Req() req: any, @Res() res: Response) {
+  async exportUserData(@Req() req: any) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-    const exportData = await this.users.exportUserData(userId);
+    const data = await this.users.exportUserData(userId);
 
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=my-sharesync-data.json');
-    res.send(JSON.stringify(exportData, null, 2));
+    return {
+      success: true,
+      data,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -475,10 +433,12 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Delete('me')
-  async deleteAccount(@Req() req: any, @Body() body: { confirmation?: string }) {
+  async deleteAccount(
+    @Req() req: any,
+    @Body() body: { confirmation?: string },
+  ) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
 
-    // Require explicit confirmation
     if (body?.confirmation !== 'DELETE') {
       throw new BadRequestException('Please confirm account deletion by sending { "confirmation": "DELETE" }');
     }
@@ -492,104 +452,66 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // POST /users/me/change-password - Change password
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Post('me/change-password')
-  async changePassword(
-    @Req() req: any,
-    @Body() body: { currentPassword: string; newPassword: string },
-  ) {
-    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
-
-    if (!body?.currentPassword || !body?.newPassword) {
-      throw new BadRequestException('currentPassword and newPassword are required');
-    }
-
-    await this.users.changePassword(userId, body.currentPassword, body.newPassword);
-
-    return {
-      success: true,
-      message: 'Password changed successfully',
-    };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/activity-summary - Get activity summary
+  // GET /users/activity-summary - Summary for Home dashboard
   // ─────────────────────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('activity-summary')
   async getActivitySummary(@Req() req: any) {
-    const id = req?.user?.sub || req?.user?.id;
-    return this.users.getActivitySummary(id);
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    return this.users.getActivitySummary(userId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/me/projects-by-category - Get projects by category
+  // GET /users/search?q=...&limit=10
   // ─────────────────────────────────────────────────────────────────────────────
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me/projects-by-category')
-  async myProjectsByCategory(@Req() req: any) {
-    const id = req?.user?.sub || req?.user?.id;
-    return this.users.getProjectsByCategory(id);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/leaderboard/streaks - Get streak leaderboard
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
-  @Get('leaderboard/streaks')
-  async streakLeaderboard() {
-    const top = await this.users.getTopStreaks(20);
-
-    return top.map((u: any) => ({
-      id: u._id?.toString?.() ?? u._id,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      streakDays: u.streakDays ?? 0,
-      profilePicture: u.profilePicture ?? null,
-    }));
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/search - Search users
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @UseGuards(JwtAuthGuard)
   @Get('search')
-  async searchUsers(@Query('q') query: string, @Query('limit') limit?: string) {
-    const searchLimit = parseInt(limit || '10', 10);
-    const users = await this.users.searchUsers(query, searchLimit);
+  async search(
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+  ) {
+    const lim = Math.min(Math.max(parseInt(limit || '10', 10) || 10, 1), 25);
+    const users = await this.users.searchUsers(q, lim);
 
     return {
       success: true,
-      data: users,
+      data: users.map((u: any) => ({
+        id: u._id,
+        username: u.username,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        name:
+          u.name ||
+          [u.firstName, u.lastName].filter(Boolean).join(' ') ||
+          u.username,
+        profilePicture: u.profilePicture || null,
+        bio: u.bio || '',
+      })),
     };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/public/:username - Get public user profile
+  // GET /users/username/:username - existing helper
   // ─────────────────────────────────────────────────────────────────────────────
 
-  @Get('public/:username')
-  async publicUser(@Param('username') username: string) {
-    const user = await this.users.findPublicByUsername(username);
-    if (!user) throw new NotFoundException();
+  @Get('username/:username')
+  async getByUsername(@Param('username') username: string) {
+    const user = await this.users.findByUsername(username);
+    if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/username/:username - Get user by username
+  // GET /users/public/:username - PUBLIC PROFILE ENDPOINT (NEW)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  @Get('username/:username')
-  async getUserByUsername(@Param('username') username: string) {
+  @Get('public/:username')
+  async getPublicProfile(@Param('username') username: string) {
     const user = await this.users.findPublicByUsername(username);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) {
+      throw new NotFoundException('Public profile not found');
+    }
 
     return {
       success: true,
@@ -598,32 +520,13 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/:id - Get user by ID
+  // GET /users/:id
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Get(':id')
-  async getUserById(@Param('id') id: string) {
-    const user = await this.users.findPublicById(id);
+  async getById(@Param('id') id: string) {
+    const user = await this.users.findById(id);
     if (!user) throw new NotFoundException('User not found');
-
-    return {
-      success: true,
-      data: user,
-    };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // GET /users/:id/activity - Get user activity
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @Get(':id/activity')
-  async userActivity(@Param('id') id: string) {
-    return this.activities.list({
-      scope: 'user',
-      userId: id,
-      range: '7d',
-      limit: 20,
-      cursor: null,
-    });
+    return user;
   }
 }

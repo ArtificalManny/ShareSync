@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -20,6 +21,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { buildActivitySummary } from '../utils/activitySummary';
 import { SmsService } from '../notifications/sms.service';
+import { StreakService } from '../gamification/services/streak.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -88,6 +90,9 @@ export class UserService {
 
     // ✅ Phase 13: SMS for phone verification
     private readonly smsService: SmsService,
+
+    // ✅ Optional to avoid boot failures if UserModule has not imported/exported the streak provider yet
+    @Optional() private readonly streakService?: StreakService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -199,40 +204,17 @@ export class UserService {
         showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
         allowDMs: true,
       },
-      appearance: {
-        theme: (user as any).preferences?.appearance?.theme || (user as any).preferences?.theme || 'system',
-        mode: (user as any).preferences?.appearance?.mode || 'pro',
-      },
-      mentor: {
-        enabled: (user as any).preferences?.mentor?.enabled ?? true,
-        tone: (user as any).preferences?.mentor?.tone || 'wise',
-        intensity: (user as any).preferences?.mentor?.intensity ?? 3,
-      },
-      momentum: {
-        dailyGoal: (user as any).preferences?.momentum?.dailyGoal ?? 5,
-        weekendCount: (user as any).preferences?.momentum?.weekendCount ?? true,
-        allowFreeze: (user as any).preferences?.momentum?.allowFreeze ?? true,
-      },
+      appearance: { theme: (user as any).preferences?.theme || 'system', mode: 'pro' },
+      mentor: { enabled: true, tone: 'wise', intensity: 3 },
+      momentum: { dailyGoal: 5, weekendCount: true, allowFreeze: true },
       focus: {
-        dailyTarget: (user as any).preferences?.focus?.dailyTarget ?? ((user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4),
-        autoStart: (user as any).preferences?.focus?.autoStart ?? (user as any).preferences?.focusMode?.autoEnable ?? false,
-        startTime: (user as any).preferences?.focus?.startTime || '09:00',
-        blockedApps: (user as any).preferences?.focus?.blockedApps || [],
-        emergencyBreaksLeft: (user as any).preferences?.focus?.emergencyBreaksLeft ?? 1,
+        dailyTarget: (user as any).preferences?.focusMode?.duration ? Math.floor((user as any).preferences.focusMode.duration / 60) : 4,
+        autoStart: (user as any).preferences?.focusMode?.autoEnable ?? false,
+        startTime: '09:00',
       },
-      social: {
-        showStreakTo: (user as any).preferences?.social?.showStreakTo || 'friends',
-        celebrate: (user as any).preferences?.social?.celebrate ?? true,
-        publicProfile: (user as any).preferences?.social?.publicProfile ?? (user as any).publicProfile ?? true,
-        discoverable: (user as any).preferences?.social?.discoverable ?? false,
-      },
-      legacy: {
-        showEverywhere: (user as any).preferences?.legacy?.showEverywhere ?? true,
-        yearlyVideo: (user as any).preferences?.legacy?.yearlyVideo ?? false,
-      },
-      security: {
-        twoFA: (user as any).preferences?.security?.twoFA ?? false,
-      },
+      social: { showStreakTo: 'friends', celebrate: true },
+      legacy: { showEverywhere: true, yearlyVideo: false },
+      security: { twoFA: false },
       preferences: (user as any).preferences || {},
       publicProfile: (user as any).publicProfile ?? true,
       discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
@@ -248,9 +230,8 @@ export class UserService {
       if (settingsDto[field] !== undefined) { (user as any)[field] = settingsDto[field]; }
     }
 
-    const notifPayload = settingsDto.notificationSettings || settingsDto.notifications;
-    if (notifPayload) {
-      const ns = notifPayload;
+    if (settingsDto.notificationSettings) {
+      const ns = settingsDto.notificationSettings;
       (user as any).settings = {
         ...((user as any).settings || {}),
         emailNotifications: ns.emailActivity ?? (user as any).settings?.emailNotifications ?? true,
@@ -385,7 +366,7 @@ export class UserService {
     const last = user.lastLogin ? new Date(user.lastLogin as any) : null;
     const diffDays = last ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
-    if (diffDays === 1) { (user as any).streakDays = ((user as any).streakDays || 0) + 1; } 
+    if (diffDays === 1) { (user as any).streakDays = ((user as any).streakDays || 0) + 1; }
     else if (diffDays !== 0) { (user as any).streakDays = 1; }
 
     (user as any).lastLogin = now;
@@ -398,37 +379,144 @@ export class UserService {
     return result as any;
   }
 
-  // ⭐ FIX: Tokenized robust Search method
   async searchUsers(query: string, limit = 10): Promise<any[]> {
-    if (!query || query.trim().length < 2) return [];
-    
-    // Split the query into individual words (e.g. "Manny Rivas" -> ["Manny", "Rivas"])
-    const terms = query.trim().split(/\s+/);
-    
-    // Require that EVERY word typed matches AT LEAST ONE field
-    const andClauses = terms.map(term => {
-      const regex = new RegExp(term, 'i');
-      return {
-        $or: [
-          { username: regex },
-          { firstName: regex },
-          { lastName: regex },
-          { email: regex }
-        ]
-      };
-    });
-
-    const users = await this.userModel
-      .find({
-        $and: andClauses,
-        publicProfile: { $ne: false } // Respect privacy settings
-      })
-      .select('_id username firstName lastName profilePicture avatarUrl avatar bio') // Fully pull photo endpoints
-      .limit(limit)
-      .lean() // Keep response fast and light
-      .exec();
-      
+    if (!query || query.length < 2) return [];
+    const regex = new RegExp(query, 'i');
+    const users = await this.userModel.find({ $or: [ { username: regex }, { firstName: regex }, { lastName: regex }, { email: regex } ], publicProfile: { $ne: false } }).select('_id username firstName lastName profilePicture bio').limit(limit).exec();
     return users as any;
+  }
+
+  async getStreakProtectionStatus(userId: string): Promise<any> {
+    const user = await this.userModel
+      .findById(userId)
+      .select('preferences')
+      .lean()
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!this.streakService) {
+      return {
+        supported: false,
+        streakState: 'unavailable',
+        isAtRisk: false,
+        allowFreeze: false,
+        canUseFreeze: false,
+        freezeCount: 0,
+        streakDays: 0,
+        lastActivityDate: null,
+        nextMilestone: 0,
+        daysUntilMilestone: 0,
+        message:
+          'Streak protection service is not configured yet. Import/export StreakService in the module wiring before enabling this endpoint.',
+        riskWindowText: '',
+        source: 'backend',
+      };
+    }
+
+    const allowFreezeSetting =
+      (user as any)?.preferences?.momentum?.allowFreeze ?? true;
+
+    const streak = await this.streakService.getStreakStatus(userId);
+    const freezeCount = streak.freezesAvailable || 0;
+    const isAtRisk = Boolean(streak.isAtRisk);
+    const streakDays = streak.currentStreak || 0;
+    const canUseFreeze = Boolean(
+      allowFreezeSetting && isAtRisk && freezeCount > 0,
+    );
+
+    const streakState = isAtRisk
+      ? 'at_risk'
+      : streak.isActive
+        ? 'active'
+        : 'safe';
+
+    let message = 'Your streak is currently safe.';
+    if (!allowFreezeSetting) {
+      message =
+        'Streak protection is turned off in your momentum settings.';
+    } else if (isAtRisk && freezeCount > 0) {
+      message =
+        'Your streak is at risk. You can use a freeze to protect it.';
+    } else if (isAtRisk) {
+      message =
+        'Your streak is at risk, but you do not have any freezes available.';
+    } else if (!streak.isActive) {
+      message = 'You do not have an active streak yet.';
+    }
+
+    let riskWindowText = '';
+    if (streak.lastActivityDate) {
+      riskWindowText = `Last activity recorded: ${new Date(
+        streak.lastActivityDate,
+      ).toISOString()}`;
+    }
+
+    return {
+      supported: true,
+      streakState,
+      isAtRisk,
+      allowFreeze: canUseFreeze,
+      canUseFreeze,
+      allowFreezeSetting,
+      freezeCount,
+      streakDays,
+      lastActivityDate: streak.lastActivityDate || null,
+      streakStartDate: streak.streakStartDate || null,
+      nextMilestone: streak.nextMilestone,
+      daysUntilMilestone: streak.daysUntilMilestone,
+      message,
+      riskWindowText,
+      source: 'backend',
+    };
+  }
+
+  async useStreakFreeze(userId: string): Promise<any> {
+    const user = await this.userModel
+      .findById(userId)
+      .select('preferences')
+      .lean()
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!this.streakService) {
+      throw new BadRequestException(
+        'Streak protection service is not configured yet.',
+      );
+    }
+
+    const allowFreezeSetting =
+      (user as any)?.preferences?.momentum?.allowFreeze ?? true;
+
+    if (!allowFreezeSetting) {
+      throw new BadRequestException(
+        'Streak protection is disabled in your momentum settings.',
+      );
+    }
+
+    const result = await this.streakService.useStreakFreeze(userId);
+
+    if (!result.success) {
+      throw new BadRequestException(
+        result.message || 'Unable to use streak freeze.',
+      );
+    }
+
+    const refreshed = await this.getStreakProtectionStatus(userId);
+
+    return {
+      ...refreshed,
+      success: true,
+      message:
+        result.message ||
+        'Streak freeze activated! Your streak is protected for now.',
+      freezeCount: result.freezesRemaining ?? refreshed.freezeCount ?? 0,
+    };
   }
 
   async getActivitySummary(userId: string): Promise<any> {
