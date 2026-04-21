@@ -1,13 +1,20 @@
 // src/pages/ProjectHome.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT HOME: Mission Control with Premium View Navigation
-// Integrates existing hooks/context with new Pulse/Stack/Flow/etc. views
-// ⭐ FIX: Navigation Bar flattened to a single continuous row (No Dropdowns)
-// ⭐ FIX: Announcements moved to the very front of the array
-// ⭐ FIX: Z-Index increased to [100] to brutally override Vault & Insights
-// ⭐ FIX: Stripped bg-white. Nav and Header perfectly sync with bg-slate-50
-// ⭐ FIX: Project subnav now uses a SOLID light surface (not translucent glass)
-//     so it no longer renders as a muddy gray strip against the gallery gradient.
+// PROJECT HOME: Mission Control with Clear Default Overview
+// SURGICAL OVERVIEW PASS
+//
+// WHAT CHANGED:
+// - "Overview" is now the dominant default view
+// - Top-level nav uses clearer language:
+//   Tasks, Board, Schedule, Discussion, Files
+// - Overview now answers:
+//   what’s next / what’s blocked / who owns it
+// - Discussion remains a subview, not the whole project experience
+//
+// NOTE:
+// - No backend changes
+// - No child component rewrites
+// - Existing architecture preserved
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -52,7 +59,7 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
-  Megaphone, // Added for Announcements
+  Megaphone,
 } from "lucide-react";
 
 // Hooks
@@ -100,20 +107,71 @@ const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW CONFIGURATION - Completely Flattened, Announcements First
+// VIEW CONFIGURATION - Clearer top-level language
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const PROJECT_VIEWS = [
-  { id: "announcements", label: "Announcements", icon: Megaphone, description: "Broadcasts" },
-  { id: "pulse", label: "Pulse", icon: Gauge, description: "Project heartbeat" },
-  { id: "stack", label: "Stack", icon: Layers, description: "Your work queue" },
-  { id: "flow", label: "Flow", icon: GitBranch, description: "Workflow lanes" },
-  { id: "roadmap", label: "Roadmap", icon: Map, description: "Timeline view" },
-  { id: "rhythm", label: "Rhythm", icon: Calendar, description: "Schedule & tempo" },
-  { id: "insights", label: "Insights", icon: BarChart3, description: "AI analytics" },
-  { id: "suggestions", label: "Suggestions", icon: Sparkles, description: "AI next moves" },
-  { id: "threads", label: "Threads", icon: MessageCircle, badge: 3, description: "Conversations" },
-  { id: "vault", label: "Vault", icon: Archive, description: "Files & assets" },
+  {
+    id: "overview",
+    label: "Overview",
+    icon: Eye,
+    description: "Status, blockers, next moves",
+  },
+  {
+    id: "tasks",
+    label: "Tasks",
+    icon: Layers,
+    description: "Priority queue",
+  },
+  {
+    id: "board",
+    label: "Board",
+    icon: GitBranch,
+    description: "Workflow lanes",
+  },
+  {
+    id: "roadmap",
+    label: "Roadmap",
+    icon: Map,
+    description: "Timeline view",
+  },
+  {
+    id: "schedule",
+    label: "Schedule",
+    icon: Calendar,
+    description: "Cadence & timing",
+  },
+  {
+    id: "discussion",
+    label: "Discussion",
+    icon: MessageCircle,
+    badge: 3,
+    description: "Project-bound conversation",
+  },
+  {
+    id: "files",
+    label: "Files",
+    icon: Archive,
+    description: "Files & assets",
+  },
+  {
+    id: "announcements",
+    label: "Announcements",
+    icon: Megaphone,
+    description: "Broadcasts",
+  },
+  {
+    id: "insights",
+    label: "Insights",
+    icon: BarChart3,
+    description: "Analytics",
+  },
+  {
+    id: "suggestions",
+    label: "Next Moves",
+    icon: Sparkles,
+    description: "AI guidance",
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -156,7 +214,7 @@ function ErrorState({ error, onRetry }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT HEADER (Perfectly synced to bg-slate-50)
+// PROJECT HEADER
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ProjectHeader({
@@ -193,7 +251,9 @@ function ProjectHeader({
           Projects
         </span>
         <ArrowRight className="w-3 h-3" />
-        <span className="text-slate-700 dark:text-slate-300">{project?.name || "Project"}</span>
+        <span className="text-slate-700 dark:text-slate-300">
+          {project?.name || "Project"}
+        </span>
       </nav>
 
       {/* Main header */}
@@ -245,7 +305,9 @@ function ProjectHeader({
               <div className={`flex items-center gap-2 text-sm font-medium ${state.color}`}>
                 <Zap className="w-4 h-4" />
                 <span>{momentum}</span>
-                <span className="text-slate-500 dark:text-zinc-400 font-normal">· {state.label}</span>
+                <span className="text-slate-500 dark:text-zinc-400 font-normal">
+                  · {state.label}
+                </span>
               </div>
             </div>
           </div>
@@ -307,7 +369,7 @@ function ProjectHeader({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VIEW NAVIGATION (SOLID LIGHT SURFACE - NO MUDDY TRANSPARENCY)
+// VIEW NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
@@ -322,7 +384,10 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
         shadow-[0_1px_0_rgba(226,232,240,0.85)] dark:shadow-none
       "
     >
-      <style>{`.hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
+      <style>{`
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
 
       <div className="flex items-center gap-1 sm:gap-2 -mb-px overflow-x-auto hide-scroll w-full scroll-smooth">
         {views.map((view) => {
@@ -336,9 +401,10 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               className={`
                 relative flex items-center gap-2.5 px-4 py-4 whitespace-nowrap
                 text-sm font-medium transition-all duration-200 rounded-t-lg
-                ${isActive
-                  ? "text-violet-700 dark:text-white bg-violet-50 dark:bg-transparent"
-                  : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5"
+                ${
+                  isActive
+                    ? "text-violet-700 dark:text-white bg-violet-50 dark:bg-transparent"
+                    : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5"
                 }
               `}
               title={view.description}
@@ -346,9 +412,10 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               <Icon
                 className={`
                   w-4 h-4 transition-colors
-                  ${isActive
-                    ? "text-violet-600 dark:text-violet-400"
-                    : "text-slate-500 group-hover:text-slate-700 dark:text-zinc-400 dark:group-hover:text-zinc-200"
+                  ${
+                    isActive
+                      ? "text-violet-600 dark:text-violet-400"
+                      : "text-slate-500 group-hover:text-slate-700 dark:text-zinc-400 dark:group-hover:text-zinc-200"
                   }
                 `}
               />
@@ -358,9 +425,10 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                 <span
                   className={`
                     px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors
-                    ${isActive
-                      ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400"
-                      : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    ${
+                      isActive
+                        ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400"
+                        : "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
                     }
                   `}
                 >
@@ -404,8 +472,27 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
       <div className="flex items-center gap-5">
         <div className="relative flex-shrink-0">
           <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
-            <circle cx="44" cy="44" r={radius} fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-100 dark:text-zinc-800" />
-            <circle cx="44" cy="44" r={radius} fill="none" stroke="url(#momentum-grad)" strokeWidth="6" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="transition-all duration-700" />
+            <circle
+              cx="44"
+              cy="44"
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="6"
+              className="text-slate-100 dark:text-zinc-800"
+            />
+            <circle
+              cx="44"
+              cy="44"
+              r={radius}
+              fill="none"
+              stroke="url(#momentum-grad)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              className="transition-all duration-700"
+            />
             <defs>
               <linearGradient id="momentum-grad" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#7C3AED" />
@@ -414,22 +501,30 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
             </defs>
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-bold text-slate-800 dark:text-zinc-100">{momentum}</span>
+            <span className="text-xl font-bold text-slate-800 dark:text-zinc-100">
+              {momentum}
+            </span>
           </div>
         </div>
 
         <div className="flex-1 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500 dark:text-zinc-400">Weekly ships</span>
-            <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100">{weeklyShips}</span>
+            <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
+              {weeklyShips}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500 dark:text-zinc-400">Trend</span>
-            <span className={`text-sm font-semibold ${
-              trend > 0 ? "text-emerald-600 dark:text-emerald-400" :
-              trend < 0 ? "text-red-500" :
-              "text-slate-500 dark:text-zinc-400"
-            }`}>
+            <span
+              className={`text-sm font-semibold ${
+                trend > 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : trend < 0
+                    ? "text-red-500"
+                    : "text-slate-500 dark:text-zinc-400"
+              }`}
+            >
               {trend > 0 ? `+${trend}` : trend ?? "—"}
             </span>
           </div>
@@ -456,7 +551,10 @@ function PriorityStack({ moves }) {
       {items.length > 0 ? (
         <ul className="space-y-2">
           {items.slice(0, 5).map((m, i) => (
-            <li key={m?._id || m?.id || i} className={`text-xs text-slate-700 dark:text-zinc-300 pl-3 py-2 rounded-lg border-l-2 border-violet-400 bg-slate-50 dark:bg-zinc-800/50 ${getStatusColor(m)}`}>
+            <li
+              key={m?._id || m?.id || i}
+              className={`text-xs text-slate-700 dark:text-zinc-300 pl-3 py-2 rounded-lg border-l-2 border-violet-400 bg-slate-50 dark:bg-zinc-800/50 ${getStatusColor(m)}`}
+            >
               {m?.title || m?.label || m?.text || "Critical move"}
             </li>
           ))}
@@ -467,7 +565,7 @@ function PriorityStack({ moves }) {
             No critical moves yet. Tasks you create will surface here by priority.
           </p>
           <p className="text-xs text-slate-400 dark:text-zinc-500">
-            Switch to Stack or Flow to add your first task.
+            Switch to Tasks or Board to add your first task.
           </p>
         </div>
       )}
@@ -522,10 +620,110 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PULSE VIEW - Main Overview Dashboard
+// OVERVIEW HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function PulseView({
+function getProjectOwnerLabel(project) {
+  const owner = project?.owner || project?.ownerId || null;
+
+  if (!owner) return "Owner not set";
+  if (typeof owner === "string") return owner;
+
+  const fullName = [owner.firstName, owner.lastName].filter(Boolean).join(" ").trim();
+  return fullName || owner.username || owner.email || "Owner assigned";
+}
+
+function getPrimaryMoveLabel(criticalMoves, objectives) {
+  const topMove = Array.isArray(criticalMoves) ? criticalMoves[0] : null;
+  if (topMove) {
+    return topMove.title || topMove.label || topMove.text || "Review top priority";
+  }
+
+  const topObjective = Array.isArray(objectives) ? objectives[0] : null;
+  if (topObjective) {
+    return topObjective.title || topObjective.name || topObjective.label || "Review active goal";
+  }
+
+  return "No priority surfaced yet";
+}
+
+function getBlockedTasksCount(tasks = []) {
+  if (!Array.isArray(tasks)) return 0;
+
+  return tasks.reduce((count, task) => {
+    const statusValue = String(task?.status || task?.state || task?.lane || "").toLowerCase();
+    const hasBlockedStatus = statusValue.includes("block");
+    const hasBlockedFlag = Boolean(
+      task?.isBlocked ||
+      task?.blocked ||
+      task?.hasBlocker ||
+      task?.blockedBy ||
+      (Array.isArray(task?.blockers) && task.blockers.length > 0)
+    );
+
+    return count + (hasBlockedStatus || hasBlockedFlag ? 1 : 0);
+  }, 0);
+}
+
+function OverviewSignalCard({
+  icon: Icon,
+  label,
+  value,
+  caption,
+  tone = "neutral",
+}) {
+  const toneClasses = {
+    neutral: {
+      shell: "bg-white dark:bg-[#111113] border-slate-200 dark:border-white/[0.06]",
+      icon: "bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300",
+      value: "text-slate-900 dark:text-zinc-100",
+    },
+    violet: {
+      shell: "bg-white dark:bg-[#111113] border-violet-200 dark:border-violet-500/20",
+      icon: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
+      value: "text-slate-900 dark:text-zinc-100",
+    },
+    amber: {
+      shell: "bg-white dark:bg-[#111113] border-amber-200 dark:border-amber-500/20",
+      icon: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      value: "text-slate-900 dark:text-zinc-100",
+    },
+    teal: {
+      shell: "bg-white dark:bg-[#111113] border-teal-200 dark:border-teal-500/20",
+      icon: "bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400",
+      value: "text-slate-900 dark:text-zinc-100",
+    },
+  };
+
+  const styles = toneClasses[tone] || toneClasses.neutral;
+
+  return (
+    <section className={`rounded-2xl border p-5 shadow-sm dark:shadow-none ${styles.shell}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] uppercase tracking-wider font-medium text-slate-500 dark:text-zinc-400">
+            {label}
+          </p>
+          <p className={`mt-2 text-lg font-semibold leading-tight ${styles.value}`}>
+            {value}
+          </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
+            {caption}
+          </p>
+        </div>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${styles.icon}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OVERVIEW VIEW - Main default dashboard
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function OverviewView({
   project,
   metrics,
   criticalMoves,
@@ -535,37 +733,85 @@ function PulseView({
   onObjectiveClick,
   onSprintAction,
   tasks = [],
+  activeUsers = 0,
 }) {
+  const nextMoveLabel = getPrimaryMoveLabel(criticalMoves, objectives);
+  const blockedTasksCount = getBlockedTasksCount(tasks);
+  const ownerLabel = getProjectOwnerLabel(project);
+  const memberCount = Array.isArray(project?.members) ? project.members.length : 0;
+  const activeGoalCount = Array.isArray(objectives) ? objectives.length : 0;
+
   return (
     <div className="p-10 max-w-[1600px] mx-auto">
+      {/* Top signal row */}
+      <div className="grid grid-cols-12 gap-6 mb-8">
+        <div className="col-span-12 lg:col-span-5">
+          <OverviewSignalCard
+            icon={Target}
+            label="What’s next"
+            value={nextMoveLabel}
+            caption={
+              activeGoalCount > 0
+                ? `${activeGoalCount} active goal${activeGoalCount === 1 ? "" : "s"} shaping priorities`
+                : "Surface the next action before opening deeper views"
+            }
+            tone="violet"
+          />
+        </div>
+
+        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <OverviewSignalCard
+            icon={AlertTriangle}
+            label="What’s blocked"
+            value={blockedTasksCount === 0 ? "No blockers" : `${blockedTasksCount} blocker${blockedTasksCount === 1 ? "" : "s"}`}
+            caption={
+              blockedTasksCount === 0
+                ? "Nothing critical is blocked right now"
+                : "Resolve blockers fast to protect momentum"
+            }
+            tone={blockedTasksCount > 0 ? "amber" : "neutral"}
+          />
+        </div>
+
+        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+          <OverviewSignalCard
+            icon={Users}
+            label="Who owns it"
+            value={ownerLabel}
+            caption={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${activeUsers} online now`}
+            tone="teal"
+          />
+        </div>
+      </div>
+
       <div className="mb-8">
         <PulseWidget tasks={tasks} />
       </div>
 
       <div className="grid grid-cols-12 gap-8 mb-8">
-        <div className="col-span-4">
+        <div className="col-span-12 lg:col-span-4">
           <MomentumCard
             momentum={metrics?.momentum || 0}
             weeklyShips={metrics?.weeklyShips || 0}
             trend={metrics?.momentumTrend}
           />
         </div>
-        <div className="col-span-8">
+        <div className="col-span-12 lg:col-span-8">
           <PriorityStack moves={criticalMoves} />
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-8 mb-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
         <SprintCard sprint={sprint} onAction={onSprintAction} />
         <ForesightCard metrics={metrics} />
         <LiveActivityCard activities={activity} />
       </div>
 
       <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-5">
+        <div className="col-span-12 lg:col-span-5">
           <TeamCapacityCard metrics={metrics} />
         </div>
-        <div className="col-span-7">
+        <div className="col-span-12 lg:col-span-7">
           <ActiveGoalsCard objectives={objectives} onObjectiveClick={onObjectiveClick} />
         </div>
       </div>
@@ -608,7 +854,7 @@ export default function ProjectHome() {
     return <LoadingState />;
   }
 
-  const [activeView, setActiveView] = useState("announcements");
+  const [activeView, setActiveView] = useState("overview");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
   const [isMembersPanelOpen, setIsMembersPanelOpen] = useState(false);
 
@@ -706,7 +952,11 @@ export default function ProjectHome() {
         triggerPulse();
         toast({ title: "🚀 Update Shipped!", variant: "success" });
       } catch (e) {
-        toast({ title: "Ship Failed", description: e?.message || "Unknown error", variant: "error" });
+        toast({
+          title: "Ship Failed",
+          description: e?.message || "Unknown error",
+          variant: "error",
+        });
         throw e;
       }
     },
@@ -772,7 +1022,14 @@ export default function ProjectHome() {
 
   if (loading) return <LoadingState />;
 
-  if (error) return <ErrorState error={error?.message || String(error)} onRetry={refresh} />;
+  if (error) {
+    return (
+      <ErrorState
+        error={error?.message || String(error)}
+        onRetry={refresh}
+      />
+    );
+  }
 
   if (!project) {
     return (
@@ -786,16 +1043,9 @@ export default function ProjectHome() {
   const renderViewContent = () => {
     try {
       switch (activeView) {
-        case "announcements":
+        case "overview":
           return (
-            <div className={pageWrap}>
-              <AnnouncementsView projectId={id} announcements={announcements || []} />
-            </div>
-          );
-
-        case "pulse":
-          return (
-            <PulseView
+            <OverviewView
               project={project}
               metrics={metrics}
               criticalMoves={criticalMoves}
@@ -805,20 +1055,28 @@ export default function ProjectHome() {
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
               tasks={liveTasks}
+              activeUsers={projectStats?.online || 0}
             />
           );
 
-        case "stack":
+        case "tasks":
           return (
             <div className={pageWrap}>
-              <StackPanel projectId={id} limit={10} milestoneIdFilter={selectedMilestoneId} />
+              <StackPanel
+                projectId={id}
+                limit={10}
+                milestoneIdFilter={selectedMilestoneId}
+              />
             </div>
           );
 
-        case "flow":
+        case "board":
           return (
             <div className={pageWrap}>
-              <FlowBoard projectId={id} milestoneIdFilter={selectedMilestoneId} />
+              <FlowBoard
+                projectId={id}
+                milestoneIdFilter={selectedMilestoneId}
+              />
             </div>
           );
 
@@ -837,8 +1095,48 @@ export default function ProjectHome() {
             />
           );
 
-        case "rhythm":
-          return <RhythmView projectId={id} events={events || []} onAddEvent={handleAddEvent} onEventClick={handleEventClick} />;
+        case "schedule":
+          return (
+            <RhythmView
+              projectId={id}
+              events={events || []}
+              onAddEvent={handleAddEvent}
+              onEventClick={handleEventClick}
+            />
+          );
+
+        case "discussion":
+          return (
+            <ThreadsView
+              projectId={id}
+              project={project}
+              threads={threads || []}
+              onOpenFullChat={() =>
+                navigate("/messages", { state: { projectId: id } })
+              }
+            />
+          );
+
+        case "files":
+          return (
+            <VaultView
+              projectId={id}
+              files={files || []}
+              onUpload={handleUpload}
+              onFileClick={handleFileClick}
+              onNewFolder={handleNewFolder}
+            />
+          );
+
+        case "announcements":
+          return (
+            <div className={pageWrap}>
+              <AnnouncementsView
+                projectId={id}
+                announcements={announcements || []}
+              />
+            </div>
+          );
 
         case "insights":
           return (
@@ -848,28 +1146,25 @@ export default function ProjectHome() {
           );
 
         case "suggestions":
-          return <SuggestionsPanel projectId={id} project={project} />;
-
-        case "threads":
           return (
-            <ThreadsView
-              projectId={id}
-              threads={threads || []}
-              onOpenFullChat={() => navigate("/messages", { state: { projectId: id } })}
-            />
+            <SuggestionsPanel projectId={id} project={project} />
           );
 
-        case "vault":
-          return <VaultView projectId={id} files={files || []} onUpload={handleUpload} onFileClick={handleFileClick} onNewFolder={handleNewFolder} />;
-
         default:
-          return <div className="p-10 text-center text-slate-500">View not found</div>;
+          return (
+            <div className="p-10 text-center text-slate-500">
+              View not found
+            </div>
+          );
       }
     } catch (e) {
       console.error("[ProjectHome] renderViewContent crash:", e);
       return (
         <ErrorState
-          error={e?.message || "A view crashed during render. Check console stack trace for file + line."}
+          error={
+            e?.message ||
+            "A view crashed during render. Check console stack trace for file + line."
+          }
           onRetry={refresh}
         />
       );
@@ -918,10 +1213,10 @@ export default function ProjectHome() {
           MEMBERS POPUP
       ═══════════════════════════════════════════════════════════════════ */}
       {isMembersPanelOpen && (
-        <MembersPanel 
-          projectId={id} 
+        <MembersPanel
+          projectId={id}
           project={project}
-          onClose={() => setIsMembersPanelOpen(false)} 
+          onClose={() => setIsMembersPanelOpen(false)}
         />
       )}
     </div>
