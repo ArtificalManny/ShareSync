@@ -11,6 +11,11 @@
 //   what’s next / what’s blocked / who owns it
 // - Discussion remains a subview, not the whole project experience
 //
+// OVERVIEW DATA FIX:
+// - member count now uses the normalized count returned by useProjectOverview
+// - presence now receives projectId/currentUserId for safer online fallback
+// - criticalMoves/metrics can benefit from hook-side fallbacks without changing backend
+//
 // NOTE:
 // - No backend changes
 // - No child component rewrites
@@ -240,7 +245,6 @@ function ProjectHeader({
 
   return (
     <header className="px-10 py-6 border-b border-slate-200/60 bg-slate-50 dark:bg-[#0f172a] dark:border-white/10">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
         <span
           onClick={onBackToProjects}
@@ -256,7 +260,6 @@ function ProjectHeader({
         </span>
       </nav>
 
-      {/* Main header */}
       <div className="flex items-start justify-between gap-8">
         <div className="flex items-start gap-5 flex-1 min-w-0">
           <div
@@ -536,6 +539,7 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
 
 function PriorityStack({ moves }) {
   const items = Array.isArray(moves) ? moves : [];
+
   return (
     <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
       <header className="flex items-center justify-between mb-4">
@@ -575,6 +579,7 @@ function PriorityStack({ moves }) {
 
 function ActiveGoalsCard({ objectives, onObjectiveClick }) {
   const items = Array.isArray(objectives) ? objectives : [];
+
   return (
     <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
       <header className="flex items-center justify-between mb-4">
@@ -734,16 +739,16 @@ function OverviewView({
   onSprintAction,
   tasks = [],
   activeUsers = 0,
+  memberCount = 0,
 }) {
   const nextMoveLabel = getPrimaryMoveLabel(criticalMoves, objectives);
   const blockedTasksCount = getBlockedTasksCount(tasks);
   const ownerLabel = getProjectOwnerLabel(project);
-  const memberCount = Array.isArray(project?.members) ? project.members.length : 0;
+  const safeMemberCount = typeof memberCount === "number" ? memberCount : 0;
   const activeGoalCount = Array.isArray(objectives) ? objectives.length : 0;
 
   return (
     <div className="p-10 max-w-[1600px] mx-auto">
-      {/* Top signal row */}
       <div className="grid grid-cols-12 gap-6 mb-8">
         <div className="col-span-12 lg:col-span-5">
           <OverviewSignalCard
@@ -778,7 +783,7 @@ function OverviewView({
             icon={Users}
             label="Who owns it"
             value={ownerLabel}
-            caption={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${activeUsers} online now`}
+            caption={`${safeMemberCount} member${safeMemberCount === 1 ? "" : "s"} · ${activeUsers} online now`}
             tone="teal"
           />
         </div>
@@ -860,14 +865,18 @@ export default function ProjectHome() {
 
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
-  const { projectStats } = usePresence({ autoDetectIdle: true });
+  const currentUserId = user?.id || user?._id || user?.userId || "";
+  const { projectStats } = usePresence({
+    projectId: id,
+    currentUserId,
+    autoDetectIdle: true,
+  });
   const { triggerPulse } = useGlobalPulse();
 
   const { joinProjectRoom, leaveProjectRoom, subscribe } = useSocketContext();
 
   const [liveTasks, setLiveTasks] = useState([]);
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
-
   const [showAddMilestone, setShowAddMilestone] = useState(false);
 
   const {
@@ -890,6 +899,7 @@ export default function ProjectHome() {
     events,
     threads,
     files,
+    overviewMemberCount,
   } = useProjectOverview(id);
 
   useEffect(() => {
@@ -1056,6 +1066,7 @@ export default function ProjectHome() {
               onSprintAction={handleSprintAction}
               tasks={liveTasks}
               activeUsers={projectStats?.online || 0}
+              memberCount={overviewMemberCount}
             />
           );
 
@@ -1209,9 +1220,6 @@ export default function ProjectHome() {
         />
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MEMBERS POPUP
-      ═══════════════════════════════════════════════════════════════════ */}
       {isMembersPanelOpen && (
         <MembersPanel
           projectId={id}

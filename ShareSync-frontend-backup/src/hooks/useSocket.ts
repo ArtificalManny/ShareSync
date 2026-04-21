@@ -9,6 +9,7 @@ type SocketState = {
 
 type UseSocketOptions = {
   userId?: string | null;
+  token?: string | null;
   onEvents?: Record<string, (data: any) => void>;
   enabled?: boolean;
 };
@@ -33,11 +34,83 @@ function getTokenAny() {
   }
 }
 
+function resolveToken(explicitToken?: string | null) {
+  return explicitToken || getTokenAny();
+}
+
+function emitJoinForRoom(
+  socket: Socket,
+  room: string,
+  userId?: string | null,
+  isInvisible: boolean = false
+) {
+  if (!room) return;
+
+  if (room.startsWith("project:")) {
+    const projectId = room.split(":")[1];
+    if (!projectId) return;
+
+    socket.emit("joinProject", {
+      projectId,
+      userId,
+      isInvisible,
+    });
+    return;
+  }
+
+  if (room.startsWith("user:")) {
+    const targetUserId = room.split(":")[1];
+    if (!targetUserId) return;
+
+    socket.emit("joinUser", {
+      userId: targetUserId,
+    });
+    return;
+  }
+
+  socket.emit("room:join", { room });
+  socket.emit("joinRoom", room);
+  socket.emit("join", room);
+}
+
+function emitLeaveForRoom(
+  socket: Socket,
+  room: string,
+  userId?: string | null
+) {
+  if (!room) return;
+
+  if (room.startsWith("project:")) {
+    const projectId = room.split(":")[1];
+    if (!projectId) return;
+
+    socket.emit("leaveProject", {
+      projectId,
+      userId,
+    });
+    return;
+  }
+
+  if (room.startsWith("user:")) {
+    const targetUserId = room.split(":")[1];
+    if (!targetUserId) return;
+
+    socket.emit("leaveUser", {
+      userId: targetUserId,
+    });
+    return;
+  }
+
+  socket.emit("room:leave", { room });
+  socket.emit("leaveRoom", room);
+  socket.emit("leave", room);
+}
+
 export default function useSocket(
   initialRooms: string[] = [],
   options: UseSocketOptions = {}
 ) {
-  const { userId = null, onEvents = {}, enabled = true } = options;
+  const { userId = null, token = null, onEvents = {}, enabled = true } = options;
 
   const socketRef = useRef<Socket | null>(null);
   const roomsRef = useRef<string[]>(initialRooms);
@@ -49,7 +122,6 @@ export default function useSocket(
     error: null,
   });
 
-  // Keep refs updated WITHOUT forcing the main socket effect to restart.
   useEffect(() => {
     roomsRef.current = initialRooms || [];
   }, [initialRooms]);
@@ -58,7 +130,6 @@ export default function useSocket(
     onEventsRef.current = onEvents || {};
   }, [onEvents]);
 
-  // Create socket ONCE
   useEffect(() => {
     const baseUrl = getSocketBaseUrl();
 
@@ -69,7 +140,7 @@ export default function useSocket(
         transports: ["websocket", "polling"],
         path: "/socket.io",
         auth: {
-          token: getTokenAny(),
+          token: resolveToken(token),
           userId,
         },
       });
@@ -80,21 +151,26 @@ export default function useSocket(
     const onConnect = () => {
       setState({ isConnected: true, isConnecting: false, error: null });
 
-      // Join any rooms we already know about
       for (const room of roomsRef.current || []) {
-        socket.emit("room:join", { room });
-        socket.emit("joinRoom", room);
-        socket.emit("join", room);
+        emitJoinForRoom(socket, room, userId, false);
       }
     };
 
     const onDisconnect = () => {
-      setState((prev) => ({ ...prev, isConnected: false, isConnecting: false }));
+      setState((prev) => ({
+        ...prev,
+        isConnected: false,
+        isConnecting: false,
+      }));
     };
 
     const onConnectError = (err: any) => {
       const error = err instanceof Error ? err : new Error(String(err));
-      setState({ isConnected: false, isConnecting: false, error });
+      setState({
+        isConnected: false,
+        isConnecting: false,
+        error,
+      });
     };
 
     socket.on("connect", onConnect);
@@ -106,16 +182,14 @@ export default function useSocket(
       socket.off("disconnect", onDisconnect);
       socket.off("connect_error", onConnectError);
     };
-    // IMPORTANT: do NOT depend on onEvents/initialRooms objects here.
-    // We manage them via refs above to avoid infinite render loops.
-  }, [userId]);
+  }, [userId, token]);
 
-  // Attach/detach dynamic event listeners (safe + isolated)
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
 
     const handlers = onEventsRef.current || {};
+
     Object.entries(handlers).forEach(([event, handler]) => {
       socket.on(event, handler);
     });
@@ -127,7 +201,6 @@ export default function useSocket(
     };
   }, [onEvents]);
 
-  // Connect/disconnect logic (stable)
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
@@ -136,20 +209,30 @@ export default function useSocket(
     const shouldConnect = Boolean(enabled && (userId || hasRoomsToJoin));
 
     socket.auth = {
-      token: getTokenAny(),
+      token: resolveToken(token),
       userId,
     };
 
     if (shouldConnect) {
       if (!socket.connected) {
-        setState((prev) => ({ ...prev, isConnecting: true, error: null }));
+        setState((prev) => ({
+          ...prev,
+          isConnecting: true,
+          error: null,
+        }));
         socket.connect();
       }
     } else {
-      if (socket.connected) socket.disconnect();
-      setState((prev) => ({ ...prev, isConnected: false, isConnecting: false }));
+      if (socket.connected) {
+        socket.disconnect();
+      }
+      setState((prev) => ({
+        ...prev,
+        isConnected: false,
+        isConnecting: false,
+      }));
     }
-  }, [enabled, userId, initialRooms]);
+  }, [enabled, userId, token, initialRooms]);
 
   const emit = useCallback((event: string, payload?: any) => {
     const socket = socketRef.current;
@@ -167,33 +250,35 @@ export default function useSocket(
       }
 
       if (socket.connected) {
-        socket.emit("room:join", { room });
-        socket.emit("joinRoom", room);
-        socket.emit("join", room);
+        emitJoinForRoom(socket, room, userId, false);
       } else if (enabled) {
         try {
-          socket.auth = { token: getTokenAny(), userId };
+          socket.auth = {
+            token: resolveToken(token),
+            userId,
+          };
           socket.connect();
         } catch {
           // no-op
         }
       }
     },
-    [enabled, userId]
+    [enabled, token, userId]
   );
 
-  const leaveRoom = useCallback((room: string) => {
-    const socket = socketRef.current;
-    if (!socket || !room) return;
+  const leaveRoom = useCallback(
+    (room: string) => {
+      const socket = socketRef.current;
+      if (!socket || !room) return;
 
-    roomsRef.current = roomsRef.current.filter((r) => r !== room);
+      roomsRef.current = roomsRef.current.filter((r) => r !== room);
 
-    if (socket.connected) {
-      socket.emit("room:leave", { room });
-      socket.emit("leaveRoom", room);
-      socket.emit("leave", room);
-    }
-  }, []);
+      if (socket.connected) {
+        emitLeaveForRoom(socket, room, userId);
+      }
+    },
+    [userId]
+  );
 
   return useMemo(
     () => ({

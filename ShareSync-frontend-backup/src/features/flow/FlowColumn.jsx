@@ -1,8 +1,14 @@
 // src/features/flow/FlowColumn.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// Column container for Flow board.
+// Column container for Board view.
 // Handles drop events -> calls moveTaskOptimistic from hook.
 // ✅ Item 3: Added inline task creation per column
+//
+// SURGICAL BOARD LANE PASS:
+// - Keep existing drag/drop and add-task behavior intact
+// - Make each lane easier to understand at a glance
+// - Improve empty-lane guidance in plain English
+// - Preserve existing component contract
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
@@ -19,54 +25,68 @@ function safeParseDragPayload(e) {
   }
 }
 
-function prettyStatus(status) {
+function laneMeta(status) {
   switch (status) {
     case "backlog":
-      return "Backlog";
+      return {
+        title: "Backlog",
+        titleClass: "text-slate-500",
+        dotClass: "bg-slate-300 dark:bg-slate-600",
+        description: "Not started yet",
+        emptyTitle: "Nothing in backlog",
+        emptyBody: "Store ideas and unscheduled work here until it is ready to move.",
+        addLabel: "Add to backlog",
+      };
     case "todo":
-      return "Todo";
+      return {
+        title: "To Do",
+        titleClass: "text-cyan-600 dark:text-cyan-400",
+        dotClass: "bg-cyan-400",
+        description: "Ready to start",
+        emptyTitle: "No tasks ready",
+        emptyBody: "Add the next task someone should pick up from this board.",
+        addLabel: "Add task",
+      };
     case "in_progress":
-      return "In Progress";
+      return {
+        title: "In Progress",
+        titleClass: "text-violet-600 dark:text-violet-400",
+        dotClass: "bg-violet-500",
+        description: "Work happening now",
+        emptyTitle: "No active work",
+        emptyBody: "Move tasks here when someone starts working on them.",
+        addLabel: "Add active task",
+      };
     case "review":
-      return "Review";
+      return {
+        title: "Review",
+        titleClass: "text-amber-600 dark:text-amber-400",
+        dotClass: "bg-amber-400",
+        description: "Needs review",
+        emptyTitle: "Nothing waiting for review",
+        emptyBody: "Send finished work here when it needs approval or feedback.",
+        addLabel: "Add review task",
+      };
     case "done":
-      return "Done";
+      return {
+        title: "Done",
+        titleClass: "text-emerald-600 dark:text-emerald-400",
+        dotClass: "bg-emerald-500",
+        description: "Completed work",
+        emptyTitle: "Nothing completed yet",
+        emptyBody: "Completed work will collect here as the project moves forward.",
+        addLabel: "Add completed task",
+      };
     default:
-      return status;
-  }
-}
-
-function statusColor(status) {
-  switch (status) {
-    case "backlog":
-      return "text-slate-400";
-    case "todo":
-      return "text-cyan-500";
-    case "in_progress":
-      return "text-violet-500";
-    case "review":
-      return "text-amber-500";
-    case "done":
-      return "text-emerald-500";
-    default:
-      return "text-slate-500";
-  }
-}
-
-function statusDot(status) {
-  switch (status) {
-    case "backlog":
-      return "bg-slate-300 dark:bg-slate-600";
-    case "todo":
-      return "bg-cyan-400";
-    case "in_progress":
-      return "bg-violet-500";
-    case "review":
-      return "bg-amber-400";
-    case "done":
-      return "bg-emerald-500";
-    default:
-      return "bg-slate-400";
+      return {
+        title: status || "Column",
+        titleClass: "text-slate-600 dark:text-zinc-300",
+        dotClass: "bg-slate-400",
+        description: "Workflow stage",
+        emptyTitle: "No tasks here yet",
+        emptyBody: "Add a task or move one into this stage.",
+        addLabel: "Add task",
+      };
   }
 }
 
@@ -83,10 +103,9 @@ export default function FlowColumn({
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
 
-  const title = useMemo(() => prettyStatus(status), [status]);
+  const meta = useMemo(() => laneMeta(status), [status]);
   const count = tasks?.length || 0;
 
-  // Auto-focus input when adding
   useEffect(() => {
     if (isAdding && inputRef.current) {
       inputRef.current.focus();
@@ -149,26 +168,32 @@ export default function FlowColumn({
           console.warn("[FlowColumn] move failed:", err?.message || err);
         }
       }}
-      aria-label={`${title} column`}
+      aria-label={`${meta.title} lane`}
     >
       {/* Column header */}
-      <header className="flex items-center justify-between gap-2 px-1 pb-3">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${statusDot(status)}`} />
-          <div className={`text-sm font-semibold ${statusColor(status)}`}>
-            {title}
+      <header className="flex items-start justify-between gap-2 px-1 pb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${meta.dotClass}`} />
+            <div className={`text-sm font-semibold ${meta.titleClass}`}>
+              {meta.title}
+            </div>
+            <span className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md">
+              {count}
+            </span>
           </div>
-          <span className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md">
-            {count}
-          </span>
+          <div className="mt-1 text-[11px] text-slate-400 dark:text-zinc-500">
+            {meta.description}
+          </div>
         </div>
 
         {onAddTask && (
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500 hover:text-violet-500 transition-colors"
-            title={`Add task to ${title}`}
+            disabled={isDisabled}
+            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500 hover:text-violet-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={meta.addLabel}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -193,7 +218,10 @@ export default function FlowColumn({
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => { setNewTitle(""); setIsAdding(false); }}
+                onClick={() => {
+                  setNewTitle("");
+                  setIsAdding(false);
+                }}
                 className="px-3 py-1.5 text-xs text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors"
               >
                 Cancel
@@ -211,8 +239,12 @@ export default function FlowColumn({
         )}
 
         {/* Task cards */}
-        {tasks.map((t) => {
-          const key = t?.id || t?._id || `${status}-${Math.random()}`;
+        {tasks.map((t, index) => {
+          const key =
+            t?.id ||
+            t?._id ||
+            `${status}-${t?.title || "task"}-${index}`;
+
           return <FlowTaskCard key={key} task={t} />;
         })}
 
@@ -220,13 +252,16 @@ export default function FlowColumn({
         {count === 0 && !isAdding && (
           <button
             type="button"
-            onClick={() => onAddTask ? setIsAdding(true) : null}
+            onClick={() => (onAddTask && !isDisabled ? setIsAdding(true) : null)}
             className="w-full mt-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-500/30 p-4 text-center transition-colors group"
           >
-            <Plus className="w-5 h-5 mx-auto mb-1 text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 transition-colors" />
-            <span className="text-xs text-slate-400 dark:text-zinc-500 group-hover:text-violet-500 transition-colors">
-              Add task
-            </span>
+            <Plus className="w-5 h-5 mx-auto mb-2 text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 transition-colors" />
+            <div className="text-xs font-semibold text-slate-600 dark:text-zinc-300 group-hover:text-violet-500 transition-colors">
+              {meta.emptyTitle}
+            </div>
+            <div className="mt-1 text-[11px] text-slate-400 dark:text-zinc-500">
+              {meta.emptyBody}
+            </div>
           </button>
         )}
       </div>
