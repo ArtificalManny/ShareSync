@@ -1,46 +1,52 @@
 /**
  * usePresence.js
- * ⭐ FIX: Switched deduplication from `userId` to `sessionId` to support same-user multi-tab testing!
+ * PRESENCE FIX:
+ * - Use normal ES imports instead of silent require() fallbacks
+ * - Join the project room when projectId is present
+ * - Publish project-aware presence updates
+ * - Keep self-fallback behavior if connected but no room payload has landed yet
+ * - Preserve existing helper hooks and API shape
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-
-let useCursorContext = () => ({ cursors: [], isConnected: false, sendHeartbeat: () => {} });
-let useSocketContext = () => null;
-
-try {
-  const cursorModule = require('../context/CursorContext');
-  if (cursorModule?.useCursorContext) useCursorContext = cursorModule.useCursorContext;
-} catch (e) {}
-
-try {
-  const socketModule = require('../context/SocketContext');
-  if (socketModule?.useSocketContext) useSocketContext = socketModule.useSocketContext;
-} catch (e) {}
+import { useCursorContext } from '../context/CursorContext';
+import { useSocketContext } from '../context/SocketContext';
 
 export const PresenceStatus = {
-  ONLINE: 'online', IDLE: 'idle', AWAY: 'away', BUSY: 'busy', FOCUS: 'focus', OFFLINE: 'offline',
+  ONLINE: 'online',
+  IDLE: 'idle',
+  AWAY: 'away',
+  BUSY: 'busy',
+  FOCUS: 'focus',
+  OFFLINE: 'offline',
 };
 
 export const PresenceMode = {
-  GHOST: 'ghost', TEAM: 'team', FOCUS: 'focus',
+  GHOST: 'ghost',
+  TEAM: 'team',
+  FOCUS: 'focus',
 };
+
+function getPresenceKey(userLike) {
+  return userLike?.sessionId || userLike?.userId || userLike?.id || userLike;
+}
 
 export function usePresence(options = {}) {
   const {
     projectId,
+    currentUserId = '',
     idleTimeout = 5 * 60 * 1000,
     heartbeatInterval = 30 * 1000,
     autoDetectIdle = true,
     autoSendHeartbeat = true,
   } = options;
 
-  const cursorContext = useCursorContext?.() || {};
-  const socketContext = useSocketContext?.() || {};
+  const cursorContext = useCursorContext() || {};
+  const socketContext = useSocketContext() || {};
 
-  const { 
-    cursors = [], 
-    isConnected: cursorConnected = false, 
+  const {
+    cursors = [],
+    isConnected: cursorConnected = false,
     sendHeartbeat: cursorHeartbeat = () => {},
   } = cursorContext;
 
@@ -48,6 +54,8 @@ export function usePresence(options = {}) {
     isConnected: socketConnected = false,
     updatePresence: socketUpdatePresence,
     subscribe,
+    joinProjectRoom,
+    leaveProjectRoom,
   } = socketContext;
 
   const isConnected = cursorConnected || socketConnected;
@@ -61,31 +69,60 @@ export function usePresence(options = {}) {
   const lastActivity = useRef(Date.now());
 
   useEffect(() => {
+    if (!projectId || !joinProjectRoom) return;
+
+    console.debug('[usePresence] joining project room', {
+      projectId,
+      isInvisible: mode === PresenceMode.GHOST,
+    });
+
+    joinProjectRoom(projectId, { isInvisible: mode === PresenceMode.GHOST });
+
+    return () => {
+      console.debug('[usePresence] leaving project room', { projectId });
+      leaveProjectRoom?.(projectId);
+    };
+  }, [projectId, joinProjectRoom, leaveProjectRoom, mode]);
+
+  useEffect(() => {
     if (!subscribe) return;
 
     const handleListUpdate = (data) => {
-      console.log("🔥 [WebSockets] RECEIVED room:users payload!", data);
-      const users = Array.isArray(data) ? data : (data?.users || []);
-      if (users.length > 0) {
-          setOnlineUsers(users.map(u => ({ ...u, status: u.status || PresenceStatus.ONLINE })));
-      }
+      console.debug('[usePresence] room:users', data);
+      const users = Array.isArray(data) ? data : data?.users || [];
+      setOnlineUsers(
+        users.map((u) => ({
+          ...u,
+          status: u.status || PresenceStatus.ONLINE,
+        }))
+      );
     };
 
     const handleUserJoin = (user) => {
-      console.log("🔥 [WebSockets] RECEIVED userJoined!", user);
+      console.debug('[usePresence] userJoined', user);
       if (!user) return;
-      setOnlineUsers(prev => {
-        // ⭐ DEDUPE BY SESSION ID NOW
-        const uniqueId = user.sessionId || user.userId || user.id;
-        if (prev.some(u => (u.sessionId || u.userId || u.id) === uniqueId)) return prev;
-        return [...prev, { ...user, status: user.status || PresenceStatus.ONLINE }];
+
+      setOnlineUsers((prev) => {
+        const uniqueId = getPresenceKey(user);
+        if (!uniqueId) return prev;
+        if (prev.some((u) => getPresenceKey(u) === uniqueId)) return prev;
+
+        return [
+          ...prev,
+          {
+            ...user,
+            status: user.status || PresenceStatus.ONLINE,
+          },
+        ];
       });
     };
 
     const handleUserLeave = (data) => {
-      console.log("🔥 [WebSockets] RECEIVED userLeft!", data);
-      const uniqueId = data?.sessionId || data?.userId || data?.id || data;
-      setOnlineUsers(prev => prev.filter(u => (u.sessionId || u.userId || u.id) !== uniqueId));
+      console.debug('[usePresence] userLeft', data);
+      const uniqueId = getPresenceKey(data);
+      setOnlineUsers((prev) =>
+        prev.filter((u) => getPresenceKey(u) !== uniqueId)
+      );
     };
 
     const unsub1 = subscribe('room:users', handleListUpdate);
@@ -99,19 +136,41 @@ export function usePresence(options = {}) {
     };
   }, [subscribe]);
 
+  const sendPresenceUpdate = useCallback(
+    (newStatus, overrideInvisible) => {
+      if (socketUpdatePresence && projectId) {
+        const payload = {
+          projectId,
+          status: newStatus,
+          isInvisible:
+            typeof overrideInvisible === 'boolean'
+              ? overrideInvisible
+              : mode === PresenceMode.GHOST,
+        };
 
-  const sendPresenceUpdate = useCallback((newStatus) => {
-    if (socketUpdatePresence) socketUpdatePresence(newStatus);
-    if (cursorHeartbeat) cursorHeartbeat();
-  }, [socketUpdatePresence, cursorHeartbeat]);
+        console.debug('[usePresence] presence:update', payload);
+        socketUpdatePresence(payload);
+      }
+
+      if (cursorHeartbeat) {
+        cursorHeartbeat();
+      }
+    },
+    [socketUpdatePresence, cursorHeartbeat, projectId, mode]
+  );
 
   const resetIdleTimer = useCallback(() => {
     lastActivity.current = Date.now();
+
     if (status === PresenceStatus.IDLE || status === PresenceStatus.AWAY) {
       setStatus(PresenceStatus.ONLINE);
       sendPresenceUpdate(PresenceStatus.ONLINE);
     }
-    if (idleTimer.current) clearTimeout(idleTimer.current);
+
+    if (idleTimer.current) {
+      clearTimeout(idleTimer.current);
+    }
+
     if (autoDetectIdle) {
       idleTimer.current = setTimeout(() => {
         setStatus(PresenceStatus.IDLE);
@@ -122,40 +181,97 @@ export function usePresence(options = {}) {
 
   useEffect(() => {
     if (!autoDetectIdle) return;
+
     const handleActivity = () => resetIdleTimer();
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));
+
+    events.forEach((event) =>
+      window.addEventListener(event, handleActivity, { passive: true })
+    );
+
     resetIdleTimer();
+
     return () => {
-      events.forEach(event => window.removeEventListener(event, handleActivity));
-      if (idleTimer.current) clearTimeout(idleTimer.current);
+      events.forEach((event) =>
+        window.removeEventListener(event, handleActivity)
+      );
+      if (idleTimer.current) {
+        clearTimeout(idleTimer.current);
+      }
     };
   }, [autoDetectIdle, resetIdleTimer]);
 
   useEffect(() => {
     if (!autoSendHeartbeat || !isConnected) return;
-    sendPresenceUpdate(status);
-    heartbeatTimer.current = setInterval(() => {
-      if (status !== PresenceStatus.OFFLINE) sendPresenceUpdate(status);
-    }, heartbeatInterval);
-    return () => {
-      if (heartbeatTimer.current) clearInterval(heartbeatTimer.current);
-    };
-  }, [autoSendHeartbeat, isConnected, heartbeatInterval, status, sendPresenceUpdate]);
 
-  const enterGhostMode = useCallback(() => setMode(PresenceMode.GHOST), []);
-  const enterTeamMode = useCallback(() => setMode(PresenceMode.TEAM), []);
-  const enterFocusMode = useCallback((duration) => {
-    setMode(PresenceMode.FOCUS);
-    setStatus(PresenceStatus.FOCUS);
-    sendPresenceUpdate(PresenceStatus.FOCUS);
-    if (duration) setTimeout(() => exitFocusMode(), duration);
-  }, [sendPresenceUpdate]);
+    sendPresenceUpdate(status);
+
+    heartbeatTimer.current = setInterval(() => {
+      if (status !== PresenceStatus.OFFLINE) {
+        sendPresenceUpdate(status);
+      }
+    }, heartbeatInterval);
+
+    return () => {
+      if (heartbeatTimer.current) {
+        clearInterval(heartbeatTimer.current);
+      }
+    };
+  }, [
+    autoSendHeartbeat,
+    isConnected,
+    heartbeatInterval,
+    status,
+    sendPresenceUpdate,
+  ]);
+
+  const resolveUsers = useCallback(() => {
+    const liveUsers = onlineUsers.length > 0 ? onlineUsers : cursors || [];
+    if (liveUsers.length > 0) return liveUsers;
+
+    if (isConnected && currentUserId) {
+      return [
+        {
+          userId: String(currentUserId),
+          id: String(currentUserId),
+          sessionId: `self-${projectId || 'global'}`,
+          status,
+          mode,
+          isSelfFallback: true,
+        },
+      ];
+    }
+
+    return [];
+  }, [onlineUsers, cursors, isConnected, currentUserId, projectId, status, mode]);
+
+  const enterGhostMode = useCallback(() => {
+    setMode(PresenceMode.GHOST);
+    sendPresenceUpdate(status, true);
+  }, [sendPresenceUpdate, status]);
+
+  const enterTeamMode = useCallback(() => {
+    setMode(PresenceMode.TEAM);
+    sendPresenceUpdate(status, false);
+  }, [sendPresenceUpdate, status]);
+
+  const enterFocusMode = useCallback(
+    (duration) => {
+      setMode(PresenceMode.FOCUS);
+      setStatus(PresenceStatus.FOCUS);
+      sendPresenceUpdate(PresenceStatus.FOCUS, false);
+
+      if (duration) {
+        setTimeout(() => exitFocusMode(), duration);
+      }
+    },
+    [sendPresenceUpdate]
+  );
 
   const exitFocusMode = useCallback(() => {
     setMode(PresenceMode.TEAM);
     setStatus(PresenceStatus.ONLINE);
-    sendPresenceUpdate(PresenceStatus.ONLINE);
+    sendPresenceUpdate(PresenceStatus.ONLINE, false);
   }, [sendPresenceUpdate]);
 
   const setAway = useCallback(() => {
@@ -174,79 +290,129 @@ export function usePresence(options = {}) {
   }, [sendPresenceUpdate]);
 
   const getProjectStats = useCallback(() => {
-    const users = onlineUsers.length > 0 ? onlineUsers : (cursors || []);
-    if (!users || users.length === 0) return { total: 0, online: 0, idle: 0, focus: 0, away: 0, busy: 0 };
+    const users = resolveUsers();
+
+    if (!users || users.length === 0) {
+      return { total: 0, online: 0, idle: 0, focus: 0, away: 0, busy: 0 };
+    }
+
     return {
       total: users.length,
-      online: users.filter(c => c.status === PresenceStatus.ONLINE || !c.status).length,
-      idle: users.filter(c => c.status === PresenceStatus.IDLE).length,
-      focus: users.filter(c => c.status === PresenceStatus.FOCUS).length,
-      away: users.filter(c => c.status === PresenceStatus.AWAY).length,
-      busy: users.filter(c => c.status === PresenceStatus.BUSY).length,
+      online: users.filter(
+        (c) => c.status === PresenceStatus.ONLINE || !c.status
+      ).length,
+      idle: users.filter((c) => c.status === PresenceStatus.IDLE).length,
+      focus: users.filter((c) => c.status === PresenceStatus.FOCUS).length,
+      away: users.filter((c) => c.status === PresenceStatus.AWAY).length,
+      busy: users.filter((c) => c.status === PresenceStatus.BUSY).length,
     };
-  }, [cursors, onlineUsers]);
+  }, [resolveUsers]);
 
-  const getUsersByStatus = useCallback((targetStatus) => {
-    const users = onlineUsers.length > 0 ? onlineUsers : cursors;
-    return users.filter(c => (c.status || PresenceStatus.ONLINE) === targetStatus);
-  }, [cursors, onlineUsers]);
+  const getUsersByStatus = useCallback(
+    (targetStatus) => {
+      return resolveUsers().filter(
+        (c) => (c.status || PresenceStatus.ONLINE) === targetStatus
+      );
+    },
+    [resolveUsers]
+  );
 
-  const getUsersByMode = useCallback((targetMode) => {
-    const users = onlineUsers.length > 0 ? onlineUsers : cursors;
-    return users.filter(c => c.mode === targetMode);
-  }, [cursors, onlineUsers]);
+  const getUsersByMode = useCallback(
+    (targetMode) => {
+      return resolveUsers().filter((c) => c.mode === targetMode);
+    },
+    [resolveUsers]
+  );
 
-  const isUserActive = useCallback((userId) => {
-    const users = onlineUsers.length > 0 ? onlineUsers : cursors;
-    const user = users.find(c => (c.userId || c.id) === userId);
-    if (!user) return false;
-    const s = user.status || PresenceStatus.ONLINE;
-    return s === PresenceStatus.ONLINE || s === PresenceStatus.FOCUS || s === PresenceStatus.BUSY;
-  }, [cursors, onlineUsers]);
+  const isUserActive = useCallback(
+    (userId) => {
+      const user = resolveUsers().find((c) => (c.userId || c.id) === userId);
+      if (!user) return false;
 
-  const getTimeSinceActivity = useCallback(() => Date.now() - lastActivity.current, []);
+      const resolvedStatus = user.status || PresenceStatus.ONLINE;
+      return (
+        resolvedStatus === PresenceStatus.ONLINE ||
+        resolvedStatus === PresenceStatus.FOCUS ||
+        resolvedStatus === PresenceStatus.BUSY
+      );
+    },
+    [resolveUsers]
+  );
+
+  const getTimeSinceActivity = useCallback(
+    () => Date.now() - lastActivity.current,
+    []
+  );
 
   return {
-    status, mode,
+    status,
+    mode,
     isOnline: status === PresenceStatus.ONLINE,
     isIdle: status === PresenceStatus.IDLE,
     isFocus: status === PresenceStatus.FOCUS,
     isAway: status === PresenceStatus.AWAY,
     isBusy: status === PresenceStatus.BUSY,
-    isConnected, setOnline, setAway, setBusy,
-    enterGhostMode, enterTeamMode, enterFocusMode, exitFocusMode,
-    resetIdleTimer, lastActivity: lastActivity.current, timeSinceActivity: getTimeSinceActivity(),
-    projectStats: getProjectStats(), getUsersByStatus, getUsersByMode, isUserActive,
-    onlineUsers: onlineUsers.length > 0 ? onlineUsers : cursors,
+    isConnected,
+    setOnline,
+    setAway,
+    setBusy,
+    enterGhostMode,
+    enterTeamMode,
+    enterFocusMode,
+    exitFocusMode,
+    resetIdleTimer,
+    lastActivity: lastActivity.current,
+    timeSinceActivity: getTimeSinceActivity(),
+    projectStats: getProjectStats(),
+    getUsersByStatus,
+    getUsersByMode,
+    isUserActive,
+    onlineUsers: resolveUsers(),
   };
 }
 
 export function useTeamPresence() {
-  let cursors = [];
-  try {
-    const ctx = useCursorContext?.();
-    cursors = ctx?.cursors || [];
-  } catch (e) {}
+  const { cursors = [] } = useCursorContext() || {};
 
-  const [teamActivity, setTeamActivity] = useState({ isActive: false, activeCount: 0, message: '' });
+  const [teamActivity, setTeamActivity] = useState({
+    isActive: false,
+    activeCount: 0,
+    message: '',
+  });
 
   useEffect(() => {
     if (!cursors || cursors.length === 0) {
-      setTeamActivity({ isActive: false, activeCount: 0, message: 'Waiting for team...' });
+      setTeamActivity({
+        isActive: false,
+        activeCount: 0,
+        message: 'Waiting for team...',
+      });
       return;
     }
-    const activeUsers = cursors.filter(c => {
-      const s = c.status || PresenceStatus.ONLINE;
-      return s === PresenceStatus.ONLINE || s === PresenceStatus.FOCUS || s === PresenceStatus.BUSY;
+
+    const activeUsers = cursors.filter((c) => {
+      const resolvedStatus = c.status || PresenceStatus.ONLINE;
+      return (
+        resolvedStatus === PresenceStatus.ONLINE ||
+        resolvedStatus === PresenceStatus.FOCUS ||
+        resolvedStatus === PresenceStatus.BUSY
+      );
     });
+
     const count = activeUsers.length;
     let message = '';
+
     if (count === 0) message = 'Team is quiet';
     else if (count === 1) message = '1 person working';
     else if (count <= 3) message = `${count} people working`;
     else if (count <= 7) message = `Team is active! (${count} online)`;
     else message = `🔥 Team is on FIRE! (${count} online)`;
-    setTeamActivity({ isActive: count > 0, activeCount: count, message });
+
+    setTeamActivity({
+      isActive: count > 0,
+      activeCount: count,
+      message,
+    });
   }, [cursors]);
 
   return teamActivity;
@@ -260,6 +426,7 @@ export function useFocusTimer(duration = 25 * 60 * 1000) {
   const start = useCallback(() => {
     setIsActive(true);
     setTimeRemaining(duration);
+
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1000) {
@@ -283,33 +450,47 @@ export function useFocusTimer(duration = 25 * 60 * 1000) {
     if (timerRef.current) clearInterval(timerRef.current);
   }, [duration]);
 
-  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   const minutes = Math.floor(timeRemaining / 60000);
   const seconds = Math.floor((timeRemaining % 60000) / 1000);
   const formatted = `${minutes}:${String(seconds).padStart(2, '0')}`;
 
-  return { timeRemaining, formatted, isActive, progress: ((duration - timeRemaining) / duration) * 100, start, pause, reset };
+  return {
+    timeRemaining,
+    formatted,
+    isActive,
+    progress: ((duration - timeRemaining) / duration) * 100,
+    start,
+    pause,
+    reset,
+  };
 }
 
 export function useLonelinessDetection() {
-  let cursors = [];
-  try {
-    const ctx = useCursorContext?.();
-    cursors = ctx?.cursors || [];
-  } catch (e) {}
+  const { cursors = [] } = useCursorContext() || {};
 
   const [isAlone, setIsAlone] = useState(false);
   const [justJoined, setJustJoined] = useState(null);
 
   useEffect(() => {
-    const activeUsers = (cursors || []).filter(c => {
-      const s = c.status || PresenceStatus.ONLINE;
-      return s === PresenceStatus.ONLINE || s === PresenceStatus.FOCUS;
+    const activeUsers = (cursors || []).filter((c) => {
+      const resolvedStatus = c.status || PresenceStatus.ONLINE;
+      return (
+        resolvedStatus === PresenceStatus.ONLINE ||
+        resolvedStatus === PresenceStatus.FOCUS
+      );
     });
+
     const wasAlone = isAlone;
     const nowAlone = activeUsers.length === 0;
+
     setIsAlone(nowAlone);
+
     if (wasAlone && !nowAlone && activeUsers.length === 1) {
       const newUser = activeUsers[0];
       setJustJoined(newUser);
@@ -318,14 +499,24 @@ export function useLonelinessDetection() {
   }, [cursors, isAlone]);
 
   const userCount = cursors?.length || 0;
+
   return {
-    isAlone, justJoined,
-    message: isAlone ? "You're working solo right now" : justJoined ? `${justJoined.userName || 'Someone'} just joined!` : `${userCount} ${userCount === 1 ? 'person' : 'people'} here`,
+    isAlone,
+    justJoined,
+    message: isAlone
+      ? "You're working solo right now"
+      : justJoined
+        ? `${justJoined.userName || 'Someone'} just joined!`
+        : `${userCount} ${userCount === 1 ? 'person' : 'people'} here`,
   };
 }
 
 export function useSimplePresence() {
-  const { status, isConnected, setOnline, setAway, setBusy } = usePresence({ autoDetectIdle: true, autoSendHeartbeat: true });
+  const { status, isConnected, setOnline, setAway, setBusy } = usePresence({
+    autoDetectIdle: true,
+    autoSendHeartbeat: true,
+  });
+
   return { status, isConnected, setOnline, setAway, setBusy };
 }
 
