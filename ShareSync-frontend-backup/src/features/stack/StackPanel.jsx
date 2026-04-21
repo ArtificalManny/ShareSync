@@ -1,11 +1,16 @@
 // src/features/stack/StackPanel.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// StackPanel - "Top tasks to do next" (Priority Stack)
+// StackPanel - Tasks view for ProjectHome
 // - Fetches via useStackTasks (GET /tasks/stack)
 // - Quick actions: Start, Move to review, Complete
 // - ✅ Inline task creation with optimistic insert
 // - Optional realtime updates via socket taskUpdated
 // - Safe defaults + minimal assumptions
+//
+// SURGICAL TASKS COPY PASS:
+// - Keep existing logic intact
+// - Align user-facing copy with the new "Tasks" tab language
+// - Make the panel feel more like a decisive work queue, less like legacy "stack" wording
 //
 // ✅ SAFE ADD:
 // - milestoneIdFilter prop (frontend-only filter). Does NOT affect backend.
@@ -123,7 +128,7 @@ export default function StackPanel({
   const [actionError, setActionError] = useState(null);
   const [actionBusyId, setActionBusyId] = useState(null);
 
-  // ✅ NEW: inline task creation state
+  // ✅ Inline task creation state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
@@ -217,9 +222,8 @@ export default function StackPanel({
     [optimisticUpdate, refresh]
   );
 
-  // ─── NEW: inline task creation handler ────────────────────────────────────
+  // ─── Inline task creation handler ─────────────────────────────────────────
 
-  // Focus the input when the add form opens
   useEffect(() => {
     if (showAddForm && addInputRef.current) {
       addInputRef.current.focus();
@@ -247,7 +251,6 @@ export default function StackPanel({
       setAddingTask(true);
       setActionError(null);
 
-      // Optimistic insert with temp ID
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const optimisticTask = {
         _id: tempId,
@@ -267,7 +270,6 @@ export default function StackPanel({
           priority: newPriority,
         });
 
-        // Replace temp task with real task from server
         setTasks((prev) =>
           sortLikeBackend(
             (Array.isArray(prev) ? prev : []).map((t) =>
@@ -277,13 +279,11 @@ export default function StackPanel({
         );
       } catch (e) {
         setActionError(e);
-        // Roll back optimistic insert
         setTasks((prev) =>
           (Array.isArray(prev) ? prev : []).filter((t) => getTaskId(t) !== tempId)
         );
       } finally {
         setAddingTask(false);
-        // Re-focus input for rapid sequential adds
         if (addInputRef.current) {
           addInputRef.current.focus();
         }
@@ -326,14 +326,13 @@ export default function StackPanel({
             </div>
             <div className="text-xs text-slate-500 dark:text-white/50">
               {projectId
-                ? `${visibleCount} in stack${hasFilter ? " (filtered)" : ""}`
+                ? `${visibleCount} task${visibleCount === 1 ? "" : "s"} ready${hasFilter ? " (filtered)" : ""}`
                 : "Select a project"}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* ✅ NEW: Add Task toggle */}
           {projectId && !showAddForm ? (
             <button
               type="button"
@@ -355,7 +354,7 @@ export default function StackPanel({
               bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15
               text-slate-600 dark:text-white/70
               disabled:opacity-50 transition-colors"
-            title="Refresh stack"
+            title="Refresh tasks"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -394,7 +393,6 @@ export default function StackPanel({
             </button>
           </div>
 
-          {/* Priority pills */}
           <div className="flex items-center gap-1.5 mt-2.5">
             <span className="text-[11px] font-medium text-slate-500 dark:text-white/40 mr-1">
               Priority:
@@ -415,7 +413,6 @@ export default function StackPanel({
 
             <div className="flex-1" />
 
-            {/* Submit button */}
             <button
               type="button"
               onClick={handleAddTask}
@@ -436,11 +433,11 @@ export default function StackPanel({
         </div>
       ) : null}
 
-      {/* ── Error banners (unchanged logic) ────────────────────────────── */}
+      {/* ── Error banners ─────────────────────────────────────────────── */}
       {error ? (
         <div className="mx-4 mt-3 text-xs rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3">
           <div className="font-semibold text-red-700 dark:text-red-200">
-            Couldn't load stack
+            Couldn't load tasks
           </div>
           <div className="text-red-600/80 dark:text-red-200/70 mt-1">
             {String(error?.message || error)}
@@ -459,17 +456,17 @@ export default function StackPanel({
         </div>
       ) : null}
 
-      {/* ── Task list ──────────────────────────────────────────────────── */}
+      {/* ── Task list ─────────────────────────────────────────────────── */}
       <div className="p-4 pt-3 space-y-1.5 min-h-[120px]">
         {loading && filteredTasks.length === 0 ? (
           <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/40 p-3">
             <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            Loading stack…
+            Loading tasks…
           </div>
         ) : null}
 
         {!loading && filteredTasks.length === 0 ? (
-          <div 
+          <div
             onClick={!showAddForm ? handleOpenAddForm : undefined}
             className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.10] rounded-2xl bg-slate-50/50 dark:bg-[#111113]/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23]/80 transition-all duration-300 group cursor-pointer"
           >
@@ -479,24 +476,24 @@ export default function StackPanel({
                 <Layers className="w-8 h-8 text-violet-600 dark:text-violet-400" />
               </div>
             </div>
-            
+
             <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              {hasFilter ? "No tasks in this milestone" : "Your queue is clear."}
+              {hasFilter ? "No tasks in this milestone" : "No tasks ready right now."}
             </h3>
-            
-            <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-[250px] mx-auto text-center mb-6">
+
+            <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-[280px] mx-auto text-center mb-6">
               {hasFilter
                 ? "Try another milestone, or assign tasks to this milestone."
-                : "Great work happens in sequence. Add a task to your stack to build momentum."}
+                : "Add the next task your team should act on so this queue becomes your clear next-step view."}
             </p>
-            
+
             {!hasFilter && projectId && !showAddForm ? (
               <button
                 type="button"
                 className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                Add a Task to the Stack
+                Add Your First Task
               </button>
             ) : null}
           </div>
