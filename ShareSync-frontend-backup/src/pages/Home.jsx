@@ -2,9 +2,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARESYNC HOME PAGE v4.0 - "The Gallery Walk" Light Theme
 // ═══════════════════════════════════════════════════════════════════════════════
-// 
+//
 // THEME: "The Light Gallery" - Mission Control
-// 
+//
 // COLOR MAP:
 // - Page Background: #F8FAFC → #EEF2FF gradient (via CSS)
 // - Section Cards: #FFFFFF with violet-tinted shadows
@@ -20,7 +20,7 @@
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Zap, Clock, TrendingUp, Flame, Rocket, X, Wifi, WifiOff } from "lucide-react";
 import "./Home.css";
 
@@ -29,7 +29,6 @@ import TeamBalancePanel from "../components/home/TeamBalancePanel";
 import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
-import WeekInMotion from "../components/home/WeekInMotion";
 import IntelligencePanel from "../components/home/IntelligencePanel";
 
 import { useAnalytics } from "../contexts/AnalyticsContext";
@@ -40,7 +39,6 @@ import AllShipped from "../components/empty-states/AllShipped";
 import TeamPulse from "../components/social/TeamPulse";
 import LiveActivityFeed from "../components/social/LiveActivityFeed";
 import StreakComparison from "../components/social/StreakComparison";
-import { StreakProtectionModal } from "../components/ceremony/StreakProtection";
 import MomentumContagion from "../components/social/MomentumContagion";
 import PulseCheckPrompt from "../components/pulse/PulseCheckPrompt";
 
@@ -53,10 +51,14 @@ import FirstMission from "../components/onboarding/FirstMission";
 import { useOnboardingContext } from "../context/OnboardingContext";
 
 import { useAuth } from "../context/AuthContext";
-import MissionClock from "../components/home/MissionClock";
 import { useHomeRealtime } from "../hooks/useHomeRealtime";
 import { getProjectId } from "../utils/projectHelpers";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import StreakProtectionModal from "../components/streak/StreakProtectionModal";
+import {
+  getStreakProtectionStatus,
+  useStreakFreeze as triggerStreakFreeze,
+} from "../api/user";
 
 /* ───────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet-tinted shadows
@@ -68,7 +70,7 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
 
   return (
     <div
-     className={`
+      className={`
         card-surface
         relative p-5 rounded-xl
         bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
@@ -80,9 +82,9 @@ const StatCard = ({ label, value, color = "text-violet-600 dark:text-violet-400"
         ${isFireMode ? "border-orange-200 dark:border-orange-500/30 hover:border-orange-300" : ""}
       `}
       style={{
-        boxShadow: isHovered 
-          ? '0 8px 32px rgba(139, 92, 246, 0.12)' 
-          : '0 4px 24px rgba(139, 92, 246, 0.06)'
+        boxShadow: isHovered
+          ? "0 8px 32px rgba(139, 92, 246, 0.12)"
+          : "0 4px 24px rgba(139, 92, 246, 0.06)",
       }}
       data-momentum={glowLevel}
       onMouseEnter={() => {
@@ -157,8 +159,8 @@ const SectionHeader = ({
         {rightSlot}
 
         {action && (
-          <button 
-            onClick={handleAction} 
+          <button
+            onClick={handleAction}
             className="text-xs text-slate-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
           >
             {action}
@@ -176,11 +178,25 @@ const MomentumStatusBanner = () => {
   const { glowLevel, glowState, message, isFireMode } = useMomentumContext();
   if (glowLevel < 3) return null;
 
-  // Light theme badge colors per Part 4 color map
   const config = {
-    3: { bg: "bg-violet-50 dark:bg-violet-500/10", border: "border-violet-200 dark:border-violet-500/20", icon: TrendingUp, color: "text-violet-700 dark:text-violet-400" },
-    4: { bg: "bg-blue-50 dark:bg-blue-500/10", border: "border-blue-200 dark:border-blue-500/20", icon: Rocket, color: "text-blue-700 dark:text-blue-400" },
-    5: { bg: "bg-orange-50 dark:bg-orange-500/10", border: "border-orange-200 dark:border-orange-500/20", icon: Flame, color: "text-orange-700 dark:text-orange-400" },
+    3: {
+      bg: "bg-violet-50 dark:bg-violet-500/10",
+      border: "border-violet-200 dark:border-violet-500/20",
+      icon: TrendingUp,
+      color: "text-violet-700 dark:text-violet-400",
+    },
+    4: {
+      bg: "bg-blue-50 dark:bg-blue-500/10",
+      border: "border-blue-200 dark:border-blue-500/20",
+      icon: Rocket,
+      color: "text-blue-700 dark:text-blue-400",
+    },
+    5: {
+      bg: "bg-orange-50 dark:bg-orange-500/10",
+      border: "border-orange-200 dark:border-orange-500/20",
+      icon: Flame,
+      color: "text-orange-700 dark:text-orange-400",
+    },
   };
 
   const currentConfig = config[glowLevel] || config[3];
@@ -209,11 +225,17 @@ const MomentumStatusBanner = () => {
   );
 };
 
+const getReadableErrorMessage = (error, fallback = "Unable to update streak protection right now.") => {
+  const message = error?.response?.data?.message ?? error?.message ?? fallback;
+  return Array.isArray(message) ? message.join(", ") : message;
+};
+
 /* ───────────────────────────────────────────────────────────────────────────
    MAIN HOME PAGE
 ─────────────────────────────────────────────────────────────────────────── */
 export default function Home() {
   useDocumentTitle("Home");
+
   const { user: authUser } = useAuth();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelContent, setPanelContent] = useState("balance");
@@ -221,6 +243,13 @@ export default function Home() {
   const [isBalanced, setIsBalanced] = useState(false);
 
   const [showEntranceHighlight, setShowEntranceHighlight] = useState(false);
+
+  const [streakProtection, setStreakProtection] = useState(null);
+  const [isStreakProtectionOpen, setIsStreakProtectionOpen] = useState(false);
+  const [isStreakProtectionLoading, setIsStreakProtectionLoading] = useState(false);
+  const [isUsingStreakFreeze, setIsUsingStreakFreeze] = useState(false);
+  const [streakProtectionError, setStreakProtectionError] = useState("");
+  const [hasAutoOpenedStreakProtection, setHasAutoOpenedStreakProtection] = useState(false);
 
   const { glowLevel, isFireMode, recordActivity } = useMomentumContext();
   const { recordTaskCompletion } = useMomentumActivity();
@@ -230,38 +259,93 @@ export default function Home() {
   const { playAchievementUnlock } = useAchievementUnlockSound();
   const { playClick } = useUISounds();
 
-  // ✅ Priority 1: Onboarding context (safe — won't crash if provider missing)
   let onboardingCtx = { isCompleted: true, shouldShowOnboarding: false };
-  try { onboardingCtx = useOnboardingContext?.() || onboardingCtx; } catch (e) {}
+  try {
+    onboardingCtx = useOnboardingContext?.() || onboardingCtx;
+  } catch (e) {}
 
-  // ✅ Derive showFirstMission from onboarding context
   const showFirstMission = onboardingCtx.shouldShowOnboarding && !onboardingCtx.isCompleted;
 
-  // Focus engine (safe)
-  // Focus engine (safe)
   let focusEngine = { hasUrgentMoves: false };
   try {
     focusEngine = useFocusEngine() || { hasUrgentMoves: false };
   } catch (e) {}
 
-  // REALTIME HOME DATA (safe + polling + instant local events)
-const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
+  const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
 
- const {
+  const {
     loadingMissions,
     missions = [],
-    priorityTasks = [],
     activities = [],
     summary = { ships: 0, streakDays: 0, focus: 0, efficiency: 0 },
     teamPulse = { activeCount: 0, shippingNow: 0, inFocus: 0, actors: [] },
-    streakComparison = { userStreakDays: 0, teamAvgDays: 0, rankText: '--' },
-    intelligence = { peakWindowStart: null, peakWindowEnd: null, productivity: 0, coWorkingMultiplier: 1, isCoWorking: false },
+    streakComparison = { userStreakDays: 0, teamAvgDays: 0, rankText: "--" },
+    intelligence = {
+      peakWindowStart: null,
+      peakWindowEnd: null,
+      productivity: 0,
+      coWorkingMultiplier: 1,
+      isCoWorking: false,
+    },
     shippedStats = { tasksCompleted: 0, xpEarned: 0, bonusXP: 0 },
     refreshAll,
     isConnected,
   } = useHomeRealtime();
 
-  // Entrance highlight
+  const loadStreakProtection = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setIsStreakProtectionLoading(true);
+    }
+
+    try {
+      const nextStatus = await getStreakProtectionStatus();
+      setStreakProtection(nextStatus);
+      return nextStatus;
+    } catch (error) {
+      console.error("[Home] Failed to load streak protection status:", error);
+      setStreakProtectionError(
+        getReadableErrorMessage(error, "Unable to load streak protection status right now.")
+      );
+      return null;
+    } finally {
+      if (!silent) {
+        setIsStreakProtectionLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const authUserId = authUser?._id || authUser?.userId || authUser?.id;
+    if (!authUserId) return;
+
+    let isActive = true;
+
+    (async () => {
+      const nextStatus = await loadStreakProtection();
+      if (!isActive || !nextStatus) return;
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authUser?._id, authUser?.userId, authUser?.id, loadStreakProtection]);
+
+  useEffect(() => {
+    if (!streakProtection) return;
+    if (hasAutoOpenedStreakProtection) return;
+
+    const shouldAutoOpen =
+      Boolean(streakProtection?.supported) &&
+      Boolean(streakProtection?.isAtRisk) &&
+      Boolean(streakProtection?.allowFreeze) &&
+      Number(streakProtection?.freezeCount || 0) > 0;
+
+    if (shouldAutoOpen) {
+      setIsStreakProtectionOpen(true);
+      setHasAutoOpenedStreakProtection(true);
+    }
+  }, [streakProtection, hasAutoOpenedStreakProtection]);
+
   useEntranceHighlight?.(() => {
     setShowEntranceHighlight(true);
     setTimeout(() => setShowEntranceHighlight(false), 600);
@@ -282,6 +366,53 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
     setIsPanelOpen(false);
   }, [playClick]);
 
+  const handleOpenStreakProtection = useCallback(() => {
+    playClick();
+    setStreakProtectionError("");
+    setIsStreakProtectionOpen(true);
+  }, [playClick]);
+
+  const handleCloseStreakProtection = useCallback(() => {
+    playClick();
+    setStreakProtectionError("");
+    setIsStreakProtectionOpen(false);
+  }, [playClick]);
+
+  const handleRefreshStreakProtection = useCallback(async () => {
+    playClick();
+    setStreakProtectionError("");
+    await loadStreakProtection({ silent: false });
+  }, [playClick, loadStreakProtection]);
+
+  const handleUseStreakFreeze = useCallback(async () => {
+    setIsUsingStreakFreeze(true);
+    setStreakProtectionError("");
+
+    try {
+      const nextStatus = await triggerStreakFreeze();
+      setStreakProtection(nextStatus);
+      setIsStreakProtectionOpen(false);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("streak-freeze-used", {
+            detail: nextStatus,
+          })
+        );
+      }
+
+      await loadStreakProtection({ silent: true });
+      refreshAll?.();
+    } catch (error) {
+      console.error("[Home] Failed to use streak freeze:", error);
+      setStreakProtectionError(
+        getReadableErrorMessage(error, "Unable to use a streak freeze right now.")
+      );
+    } finally {
+      setIsUsingStreakFreeze(false);
+    }
+  }, [loadStreakProtection, refreshAll]);
+
   const handleFocusMoveClick = useCallback((move) => {
     playClick();
     console.log("Focus move clicked:", move);
@@ -295,12 +426,12 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
   const handleShipped = useCallback(
     (projectId) => {
       const shippedMission = missions.find((m) => getProjectId(m) === projectId);
-      
+
       if (!shippedMission) {
-        console.warn('[Home] Could not find shipped mission:', projectId);
+        console.warn("[Home] Could not find shipped mission:", projectId);
         return;
       }
-      
+
       const isLastMission = missions.length <= 1;
 
       recordActivity("PROJECT_SHIP", { projectId, projectName: shippedMission?.title });
@@ -317,15 +448,16 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
 
       playShipSound(shipData);
 
-      // ✅ Priority 4.2: Fire persona-aware celebration (non-blocking)
-      import('../utils/fireCelebration').then(({ fireCelebration }) => {
-        fireCelebration('shipCeremony', {
-          xp: totalXP,
-          taskTitle: shippedMission?.title,
-          projectName: shippedMission?.title,
-          teamName: 'Team',
-        });
-      }).catch(() => {});
+      import("../utils/fireCelebration")
+        .then(({ fireCelebration }) => {
+          fireCelebration("shipCeremony", {
+            xp: totalXP,
+            taskTitle: shippedMission?.title,
+            projectName: shippedMission?.title,
+            teamName: "Team",
+          });
+        })
+        .catch(() => {});
 
       setTimeout(() => playXP(totalXP), 400);
 
@@ -348,16 +480,28 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
     [missions, recordActivity, glowLevel, isFireMode, playShipSound, playXP, playAchievementUnlock, refreshAll]
   );
 
-  // Section card classes with violet-tinted shadows
   const sectionCardClasses = useMemo(() => {
-    const base = "p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 momentum-responsive-card momentum-card";
-    const shadow = "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
+    const base =
+      "p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 momentum-responsive-card momentum-card";
+    const shadow =
+      "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
     if (isFireMode) return `${base} ${shadow} border-orange-200 dark:border-orange-500/30`;
     if (glowLevel >= 4) return `${base} ${shadow} border-violet-200 dark:border-violet-500/30`;
     return `${base} ${shadow}`;
   }, [glowLevel, isFireMode]);
 
-  // Live/Offline pill - Light theme
+  const canUseAvailableFreeze = Boolean(
+    streakProtection?.supported &&
+      streakProtection?.isAtRisk &&
+      streakProtection?.allowFreeze &&
+      Number(streakProtection?.freezeCount || 0) > 0
+  );
+
+  const shouldShowStreakProtectionEntry = Boolean(
+    streakProtection?.supported &&
+      (streakProtection?.isAtRisk || Number(streakProtection?.freezeCount || 0) > 0)
+  );
+
   const LivePill = useMemo(() => {
     const live = Boolean(isConnected);
 
@@ -367,9 +511,10 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
           flex items-center gap-1.5
           px-2 py-1 rounded-full
           border text-[10px] font-medium
-          ${live 
-            ? "bg-teal-50 dark:bg-teal-500/10 border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400" 
-            : "bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400"
+          ${
+            live
+              ? "bg-teal-50 dark:bg-teal-500/10 border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400"
+              : "bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400"
           }
         `}
         title={live ? "Connected to live updates" : "Offline (showing last known data)"}
@@ -381,13 +526,7 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
   }, [isConnected]);
 
   return (
-    <div 
-      className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto" 
-      data-momentum={glowLevel}
-    >
-      {/* ═══════════════════════════════════════════════════════════════════
-          HEADER
-      ═══════════════════════════════════════════════════════════════════ */}
+    <div className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto" data-momentum={glowLevel}>
       <header className="mb-10 flex justify-between items-end">
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -406,9 +545,9 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
           <h1 className="text-4xl font-semibold text-slate-800 dark:text-zinc-100">
             {(() => {
               const hour = new Date().getHours();
-              if (hour < 12) return 'Good morning';
-              if (hour < 18) return 'Good afternoon';
-              return 'Good evening';
+              if (hour < 12) return "Good morning";
+              if (hour < 18) return "Good afternoon";
+              return "Good evening";
             })()},{" "}
             <span className={`${isFireMode ? "text-orange-500" : "text-violet-600 dark:text-zinc-500"} transition-colors duration-500`}>
               {authUser?.firstName || "Builder"}
@@ -416,54 +555,24 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
           </h1>
           <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Mission Control</p>
         </div>
-        <div className="hidden md:flex items-center gap-6">
-          <MissionClock />
-        </div>
       </header>
-              
-        {/* ═══════════════════════════════════════════════════════════════════
-          DAILY PULSE CHECK PROMPT (Priority 3.4)
-      ═══════════════════════════════════════════════════════════════════ */}
+
       <PulseCheckPrompt
         suggestedTask={missions?.[0]?.title || null}
         className="mb-6"
       />
-      {/* ═══════════════════════════════════════════════════════════════════
-          TEAM PULSE BANNER
-      ═══════════════════════════════════════════════════════════════════ */}
-      {/* REMOVED: Item 5 — duplicate teammate section. MomentumContagion below handles this. */}
-      {/* <TeamPulse
-        variant="banner"
-        showAvatars={true}
-        showSummary={true}
-        showTicker={true}
-        className="mb-6"
-        pulseData={{
-          activeCount: teamPulse.activeCount,
-          shippingNow: teamPulse.shippingNow,
-          inFocus: teamPulse.inFocus,
-          actors: teamPulse.actors,
-        }}
-      /> */}
 
       <MomentumStatusBanner />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MOMENTUM CONTAGION — Live team shipping feed (Priority 3.2)
-      ═══════════════════════════════════════════════════════════════════ */}
       <MomentumContagion
         activities={activities}
         maxVisible={3}
-        maxItems={5}
-        showCTA={false}
+        showCTA={true}
         onPickMove={() => console.log("Pick move from contagion")}
         variant="compact"
         className="mb-6"
       />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          YOUR MOVES TODAY
-      ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-8">
         <YourMovesToday
           variant="default"
@@ -476,23 +585,18 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
         />
       </div>
 
-      {/* ✅ Priority 1: First Mission prompt for new users */}
       {showFirstMission && (
         <div className="mb-8">
           <FirstMission
             onMissionCreated={(task) => {
-              console.log('[Home] First mission created:', task);
+              console.log("[Home] First mission created:", task);
               refreshAll?.();
             }}
           />
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MAIN GRID
-      ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Missions */}
         <div className="col-span-12 xl:col-span-8">
           <div
             className={`
@@ -514,52 +618,6 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
             <div className="space-y-3">
               {loadingMissions ? (
                 <MissionCardSkeleton count={3} />
-              ) : priorityTasks.length > 0 ? (
-                priorityTasks.map((task, index) => {
-                  const taskId = task._id || task.id;
-                  return (
-                    <div
-                      key={taskId}
-                      className={`
-                        flex items-center gap-3 p-4 rounded-xl
-                        bg-white/60 dark:bg-white/[0.04]
-                        border border-gray-200/60 dark:border-white/[0.06]
-                        hover:border-violet-300 dark:hover:border-violet-500/30
-                        transition-all duration-200 group cursor-pointer
-                        ${showEntranceHighlight && index === 0 ? "ring-2 ring-violet-200 dark:ring-violet-500/30" : ""}
-                      `}
-                      style={{ animationDelay: showEntranceHighlight ? `${index * 100}ms` : "0ms" }}
-                    >
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          try {
-                            const client = (await import("../api/client")).default;
-                            await client.patch(`/tasks/${taskId}/complete`);
-                            window.dispatchEvent(new CustomEvent("task.completed"));
-                            refreshAll?.();
-                          } catch (err) {
-                            console.error("Complete failed:", err);
-                          }
-                        }}
-                        className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-violet-500 hover:bg-violet-500 transition-colors flex-shrink-0 flex items-center justify-center group/check"
-                        title="Complete task"
-                      >
-                        <svg className="w-3 h-3 text-white opacity-0 group-hover/check:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          {task.priority === "high" || task.priority === "urgent" ? "🔥 " : ""}{task.priority || "medium"} priority
-                          {task.dueDate ? ` · Due ${new Date(task.dueDate).toLocaleDateString()}` : ""}
-                        </p>
-                      </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 font-medium flex-shrink-0">
-                        {task.status === "in_progress" ? "In Progress" : "To Do"}
-                      </span>
-                    </div>
-                  );
-                })
               ) : missions.length > 0 ? (
                 missions.map((mission, index) => (
                   <div
@@ -600,15 +658,8 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
               </div>
             )}
           </div>
-
-          {/* Your Week in Motion — personal velocity narrative */}
-          <WeekInMotion
-            className="mt-6"
-            onShipNow={() => refreshAll?.()}
-          />
         </div>
 
-        {/* Right sidebar */}
         <div className="col-span-12 xl:col-span-4 space-y-6">
           <IntelligencePanel
             isBalanced={false}
@@ -642,20 +693,17 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
           />
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            VELOCITY METRICS
-        ═══════════════════════════════════════════════════════════════════ */}
         <div className="col-span-12">
           <div className={sectionCardClasses} data-momentum={glowLevel}>
-            <SectionHeader 
-              icon={TrendingUp} 
-              iconColor="text-violet-600 dark:text-violet-400" 
-              title="Velocity Metrics" 
-              rightSlot={LivePill} 
+            <SectionHeader
+              icon={TrendingUp}
+              iconColor="text-violet-600 dark:text-violet-400"
+              title="Velocity Metrics"
+              rightSlot={LivePill}
             />
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             <StatCard
+              <StatCard
                 label="Ships"
                 value={summary?.ships || 0}
                 color={isFireMode ? "text-orange-500" : "text-violet-600 dark:text-violet-400"}
@@ -680,13 +728,47 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
                 description="Change vs previous period."
               />
             </div>
+
+            {streakProtection?.supported && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-900/60 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-zinc-300">
+                  {canUseAvailableFreeze ? "🛡️" : "❄️"} Streak Protection
+                </span>
+
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                  {canUseAvailableFreeze
+                    ? `${streakProtection.freezeCount} freeze${Number(streakProtection.freezeCount) === 1 ? "" : "s"} ready`
+                    : streakProtection?.isAtRisk
+                      ? "Streak is at risk, but no freeze is currently available."
+                      : "Streak protection is standing by."}
+                </span>
+
+                {shouldShowStreakProtectionEntry && (
+                  <button
+                    type="button"
+                    onClick={handleOpenStreakProtection}
+                    className="text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                  >
+                    Review
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SLIDE-OUT PANEL - Light theme
-      ═══════════════════════════════════════════════════════════════════ */}
+      <StreakProtectionModal
+        open={isStreakProtectionOpen}
+        onClose={handleCloseStreakProtection}
+        protection={streakProtection}
+        onUseFreeze={handleUseStreakFreeze}
+        onRefresh={handleRefreshStreakProtection}
+        isLoading={isStreakProtectionLoading}
+        isSubmitting={isUsingStreakFreeze}
+        error={streakProtectionError}
+      />
+
       <div
         className={`
           fixed inset-0 bg-slate-900/20 dark:bg-black/50 backdrop-blur-sm z-[60]
@@ -710,8 +792,8 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
           <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">
             {panelContent === "balance" ? "Team Balance" : "Mission Telemetry"}
           </h3>
-          <button 
-            onClick={handleClosePanel} 
+          <button
+            onClick={handleClosePanel}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5 text-slate-500 dark:text-zinc-400" />
@@ -725,7 +807,6 @@ const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
         )}
       </div>
 
-      {/* Animations */}
       <style>{`
         @keyframes pulse-once {
           0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.3); }
