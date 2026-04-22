@@ -3,6 +3,12 @@
 // TASK API (Flow / Kanban / Stack / Pulse)
 // Uses central client.js to guarantee correct baseURL, /api/v1 prefix, and tokens.
 // Maps Stack Panel directly to the highly reliable /tasks/priorities endpoint.
+//
+// ASSIGNMENT SAFETY PASS:
+// - Preserves assigneeId as canonical assignment field
+// - Supports richer createTask payloads without breaking older callers
+// - Keeps backwards compatibility with older assignedToId callers by mapping
+//   assignedToId -> assigneeId
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
@@ -12,9 +18,10 @@ import client from './client';
  */
 export async function fetchKanbanBoard({ projectId, sprintId } = {}) {
   if (!projectId) throw new Error("projectId is required");
+
   const qs = new URLSearchParams({ projectId });
   if (sprintId) qs.set("sprintId", sprintId);
-  
+
   const response = await client.get(`/tasks/board?${qs.toString()}`);
   return response.data?.data || response.data;
 }
@@ -24,6 +31,7 @@ export async function fetchKanbanBoard({ projectId, sprintId } = {}) {
  */
 export async function moveTask(taskId, { status, order, sprintId } = {}) {
   if (!taskId) throw new Error("taskId is required");
+
   const body = {};
   if (status !== undefined) body.status = status;
   if (order !== undefined) body.order = order;
@@ -36,27 +44,60 @@ export async function moveTask(taskId, { status, order, sprintId } = {}) {
 /**
  * POST /projects/:projectId/tasks - Create a new task
  * Supports two call signatures for backwards compatibility:
- *   createTask(projectId, { title, status, priority, description })
- *   createTask({ projectId, title, status, priority, description })
+ *   createTask(projectId, { title, status, priority, description, assigneeId, ... })
+ *   createTask({ projectId, title, status, priority, description, assigneeId, ... })
  */
 export async function createTask(projectIdOrOpts, maybeData) {
-  let projectId, title, status, priority, description;
+  let input = {};
 
   if (typeof projectIdOrOpts === "string") {
-    // Two-arg form: createTask(projectId, { title, ... })
-    projectId = projectIdOrOpts;
-    ({ title, status = "backlog", priority, description } = maybeData || {});
+    input = {
+      ...(maybeData || {}),
+      projectId: projectIdOrOpts,
+    };
   } else {
-    // Single-object form: createTask({ projectId, title, ... })
-    ({ projectId, title, status = "backlog", priority, description } = projectIdOrOpts || {});
+    input = { ...(projectIdOrOpts || {}) };
   }
 
-  if (!projectId) throw new Error("projectId is required");
-  if (!title) throw new Error("title is required");
+  const {
+    projectId,
+    title,
+    status = "backlog",
+    priority,
+    description,
+    assigneeId,
+    assignedToId,
+    dueDate,
+    tags,
+    effort,
+    estimatedTime,
+    milestoneId,
+  } = input;
 
-  const body = { title, status };
+  if (!projectId) throw new Error("projectId is required");
+  if (!title || !String(title).trim()) throw new Error("title is required");
+
+  const body = {
+    title: String(title).trim(),
+    status,
+  };
+
   if (priority) body.priority = priority;
   if (description) body.description = description;
+
+  // Canonical assignment field
+  if (assigneeId) {
+    body.assigneeId = assigneeId;
+  } else if (assignedToId) {
+    // Backwards-compatibility for older callers
+    body.assigneeId = assignedToId;
+  }
+
+  if (dueDate) body.dueDate = dueDate;
+  if (Array.isArray(tags) && tags.length > 0) body.tags = tags;
+  if (effort !== undefined) body.effort = effort;
+  if (estimatedTime !== undefined) body.estimatedTime = estimatedTime;
+  if (milestoneId) body.milestoneId = milestoneId;
 
   const response = await client.post(`/projects/${projectId}/tasks`, body);
   return response.data?.data || response.data;
@@ -68,12 +109,12 @@ export async function createTask(projectIdOrOpts, maybeData) {
  */
 export async function fetchStackTasks({ projectId, limit = 10, assigneeId } = {}) {
   if (!projectId) throw new Error("projectId is required");
+
   const qs = new URLSearchParams();
   qs.set("projectId", projectId);
   if (limit) qs.set("limit", String(limit));
-  
-  // Notice we use /tasks/priorities instead of /tasks/stack 
-  // because getPriorityTasks is fully built and tested in your TasksController.
+  if (assigneeId) qs.set("assigneeId", String(assigneeId));
+
   const response = await client.get(`/tasks/priorities?${qs.toString()}`);
   return response.data?.data || response.data;
 }
@@ -84,6 +125,7 @@ export async function fetchStackTasks({ projectId, limit = 10, assigneeId } = {}
  */
 export async function completeTask(taskId) {
   if (!taskId) throw new Error("taskId is required");
+
   try {
     const response = await client.patch(`/tasks/${taskId}/complete`, {});
     return response.data?.data || response.data;
@@ -101,8 +143,8 @@ export async function completeTask(taskId) {
  */
 export async function fetchPulseMetrics({ projectId } = {}) {
   if (!projectId) throw new Error("projectId is required");
+
   const qs = new URLSearchParams({ projectId });
-  
   const response = await client.get(`/tasks/pulse?${qs.toString()}`);
   return response.data?.data || response.data;
 }

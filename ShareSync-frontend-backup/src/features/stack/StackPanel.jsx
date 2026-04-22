@@ -16,15 +16,21 @@
 // - milestoneIdFilter prop (frontend-only filter). Does NOT affect backend.
 // - Inline task creation via createTask API (proven endpoint).
 // - Proper light/dark mode using ShareSync design tokens.
+//
+// ASSIGNMENT PASS:
+// - Preserves optional assigneeId in inline add flow
+// - Uses a real member picker when teamMembers are provided
+// - Falls back to raw ID input only when no member list is available
+// - Preserves milestoneId when a milestone filter is active
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import StackTaskRow from "./StackTaskRow";
 import { useStackTasks } from "./useStackTasks";
 import { completeTask, moveTask, createTask } from "../../api/taskApi";
-import { Layers, RefreshCw, Plus, X } from "lucide-react";
+import { Layers, RefreshCw, Plus, X, User, ChevronDown } from "lucide-react";
 
-// ─── Helpers (unchanged) ────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getTaskId(task) {
   return task?.id || task?._id || "";
@@ -41,9 +47,47 @@ function isInStack(task) {
 
 function normalizeId(v) {
   if (!v) return "";
-  if (typeof v === "string") return v;
+  if (typeof v === "string") return v.trim();
   if (typeof v === "number") return String(v);
-  return v?.toString?.() || "";
+  if (v?._id) return String(v._id).trim();
+  if (v?.id) return String(v.id).trim();
+  return v?.toString?.()?.trim?.() || "";
+}
+
+function getMemberName(member) {
+  const user = member?.userId || member?.user || member;
+  return (
+    user?.name ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    user?.username ||
+    user?.email ||
+    member?.name ||
+    member?.email ||
+    "Team member"
+  );
+}
+
+function normalizeMemberOptions(list) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  const normalized = [];
+
+  for (const member of list) {
+    const user = member?.userId || member?.user || member;
+    const id = normalizeId(user?._id || user?.id || member?.id || member?._id);
+    if (!id || seen.has(id)) continue;
+
+    seen.add(id);
+    normalized.push({
+      id,
+      name: getMemberName(member),
+      email: user?.email || member?.email || "",
+      role: member?.role || user?.role || "",
+    });
+  }
+
+  return normalized;
 }
 
 function sortLikeBackend(list) {
@@ -110,11 +154,10 @@ const PRIORITY_OPTIONS = [
 export default function StackPanel({
   projectId,
   assigneeId,
+  teamMembers = [],
   limit = 10,
   socket = null,
   title = "Top tasks to do next",
-
-  // ✅ SAFE: frontend-only filter
   milestoneIdFilter = null,
 } = {}) {
   const { tasks, loading, error, refresh, setTasks } = useStackTasks({
@@ -128,22 +171,25 @@ export default function StackPanel({
   const [actionError, setActionError] = useState(null);
   const [actionBusyId, setActionBusyId] = useState(null);
 
-  // ✅ Inline task creation state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
+  const [newAssigneeId, setNewAssigneeId] = useState("");
   const [addingTask, setAddingTask] = useState(false);
   const addInputRef = useRef(null);
 
   const safeTasks = useMemo(() => (Array.isArray(tasks) ? tasks : []), [tasks]);
+  const memberOptions = useMemo(() => normalizeMemberOptions(teamMembers), [teamMembers]);
 
-  // ✅ Apply milestone filter locally (only if filter is set)
+  const normalizedPanelAssigneeId = useMemo(() => normalizeId(assigneeId), [assigneeId]);
+  const normalizedMilestoneId = useMemo(() => normalizeId(milestoneIdFilter), [milestoneIdFilter]);
+
   const filteredTasks = useMemo(() => {
-    const mid = normalizeId(milestoneIdFilter);
+    const mid = normalizedMilestoneId;
     if (!mid) return safeTasks;
 
     return safeTasks.filter((t) => normalizeId(t?.milestoneId) === mid);
-  }, [safeTasks, milestoneIdFilter]);
+  }, [safeTasks, normalizedMilestoneId]);
 
   const optimisticUpdate = useCallback(
     (updater) => {
@@ -151,8 +197,6 @@ export default function StackPanel({
     },
     [setTasks]
   );
-
-  // ─── Existing action handlers (unchanged) ─────────────────────────────────
 
   const handleStart = useCallback(
     async (task) => {
@@ -222,8 +266,6 @@ export default function StackPanel({
     [optimisticUpdate, refresh]
   );
 
-  // ─── Inline task creation handler ─────────────────────────────────────────
-
   useEffect(() => {
     if (showAddForm && addInputRef.current) {
       addInputRef.current.focus();
@@ -234,13 +276,15 @@ export default function StackPanel({
     setShowAddForm(true);
     setNewTitle("");
     setNewPriority("medium");
+    setNewAssigneeId(normalizedPanelAssigneeId || "");
     setActionError(null);
-  }, []);
+  }, [normalizedPanelAssigneeId]);
 
   const handleCloseAddForm = useCallback(() => {
     setShowAddForm(false);
     setNewTitle("");
     setNewPriority("medium");
+    setNewAssigneeId("");
   }, []);
 
   const handleAddTask = useCallback(
@@ -251,6 +295,9 @@ export default function StackPanel({
       setAddingTask(true);
       setActionError(null);
 
+      const effectiveAssigneeId = normalizeId(newAssigneeId) || normalizedPanelAssigneeId || "";
+      const effectiveMilestoneId = normalizedMilestoneId || "";
+
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const optimisticTask = {
         _id: tempId,
@@ -258,6 +305,8 @@ export default function StackPanel({
         status: "todo",
         priority: newPriority,
         projectId,
+        ...(effectiveAssigneeId ? { assigneeId: effectiveAssigneeId } : {}),
+        ...(effectiveMilestoneId ? { milestoneId: effectiveMilestoneId } : {}),
       };
 
       optimisticUpdate((prev) => [optimisticTask, ...prev]);
@@ -268,6 +317,8 @@ export default function StackPanel({
           title: trimmed,
           status: "todo",
           priority: newPriority,
+          ...(effectiveAssigneeId ? { assigneeId: effectiveAssigneeId } : {}),
+          ...(effectiveMilestoneId ? { milestoneId: effectiveMilestoneId } : {}),
         });
 
         setTasks((prev) =>
@@ -289,7 +340,17 @@ export default function StackPanel({
         }
       }
     },
-    [newTitle, newPriority, projectId, addingTask, optimisticUpdate, setTasks]
+    [
+      newTitle,
+      newPriority,
+      newAssigneeId,
+      projectId,
+      addingTask,
+      normalizedPanelAssigneeId,
+      normalizedMilestoneId,
+      optimisticUpdate,
+      setTasks,
+    ]
   );
 
   const handleAddKeyDown = useCallback(
@@ -305,16 +366,11 @@ export default function StackPanel({
     [handleAddTask, handleCloseAddForm]
   );
 
-  // ─── Computed values ──────────────────────────────────────────────────────
-
   const visibleCount = filteredTasks.filter(isInStack).length;
-  const hasFilter = !!normalizeId(milestoneIdFilter);
-
-  // ─── Render ───────────────────────────────────────────────────────────────
+  const hasFilter = !!normalizedMilestoneId;
 
   return (
     <div className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm overflow-hidden">
-      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 p-4 pb-0">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center">
@@ -362,7 +418,6 @@ export default function StackPanel({
         </div>
       </div>
 
-      {/* ── Inline Add Form ────────────────────────────────────────────── */}
       {showAddForm ? (
         <div className="mx-4 mt-3 p-3 rounded-xl border border-violet-200 dark:border-violet-500/20 bg-violet-50/50 dark:bg-violet-500/5">
           <div className="flex items-center gap-2">
@@ -393,31 +448,77 @@ export default function StackPanel({
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 mt-2.5">
-            <span className="text-[11px] font-medium text-slate-500 dark:text-white/40 mr-1">
-              Priority:
-            </span>
-            {PRIORITY_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setNewPriority(opt.value)}
-                disabled={addingTask}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-all
-                  ${newPriority === opt.value ? opt.active : opt.idle}
-                  disabled:opacity-50`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="mt-2.5 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-2.5 items-center">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-white/40 mr-1">
+                Priority:
+              </span>
+              {PRIORITY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setNewPriority(opt.value)}
+                  disabled={addingTask}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-all
+                    ${newPriority === opt.value ? opt.active : opt.idle}
+                    disabled:opacity-50`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
 
-            <div className="flex-1" />
+            <div className="relative min-w-0">
+              {memberOptions.length > 0 ? (
+                <>
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35 pointer-events-none" />
+                  <select
+                    value={newAssigneeId}
+                    onChange={(e) => setNewAssigneeId(e.target.value)}
+                    disabled={addingTask}
+                    className="w-full pl-9 pr-9 py-2 rounded-lg text-xs appearance-none
+                      bg-white dark:bg-white/10
+                      border border-slate-200 dark:border-white/10
+                      text-slate-900 dark:text-white
+                      focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400
+                      disabled:opacity-50 transition-shadow"
+                  >
+                    <option value="">Unassigned</option>
+                    {memberOptions.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}{member.role ? ` · ${member.role}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35 pointer-events-none" />
+                </>
+              ) : (
+                <>
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35" />
+                  <input
+                    type="text"
+                    value={newAssigneeId}
+                    onChange={(e) => setNewAssigneeId(e.target.value)}
+                    onKeyDown={handleAddKeyDown}
+                    placeholder="Optional assignee ID"
+                    disabled={addingTask}
+                    className="w-full text-xs px-9 py-2 rounded-lg
+                      bg-white dark:bg-white/10
+                      border border-slate-200 dark:border-white/10
+                      text-slate-900 dark:text-white
+                      placeholder-slate-400 dark:placeholder-white/40
+                      focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400
+                      disabled:opacity-50 transition-shadow"
+                  />
+                </>
+              )}
+            </div>
 
             <button
               type="button"
               onClick={handleAddTask}
               disabled={addingTask || !newTitle.trim()}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg
                 bg-violet-600 hover:bg-violet-700 text-white
                 disabled:opacity-40 disabled:hover:bg-violet-600
                 transition-colors shadow-sm"
@@ -433,7 +534,6 @@ export default function StackPanel({
         </div>
       ) : null}
 
-      {/* ── Error banners ─────────────────────────────────────────────── */}
       {error ? (
         <div className="mx-4 mt-3 text-xs rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3">
           <div className="font-semibold text-red-700 dark:text-red-200">
@@ -456,7 +556,6 @@ export default function StackPanel({
         </div>
       ) : null}
 
-      {/* ── Task list ─────────────────────────────────────────────────── */}
       <div className="p-4 pt-3 space-y-1.5 min-h-[120px]">
         {loading && filteredTasks.length === 0 ? (
           <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/40 p-3">

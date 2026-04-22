@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { X, PlusCircle, Save, Calendar as CalendarIcon, BadgeCheck } from "lucide-react";
+import {
+  X,
+  PlusCircle,
+  Save,
+  Calendar as CalendarIcon,
+  BadgeCheck,
+  ChevronDown,
+} from "lucide-react";
 import { createTask as apiCreateTask, patchTask as apiPatchTask } from "../../api/tasks";
 import { getIcsUrl } from "../../api/calendar";
 import { toast } from "../ui/toast";
@@ -15,10 +22,62 @@ import "../../styles/chips.css";
 
 // Backend status values with friendly labels
 const STATUS_OPTIONS = [
-  { value: "todo",        label: "Not Started" },
+  { value: "todo", label: "Not Started" },
   { value: "in_progress", label: "In Progress" },
-  { value: "done",        label: "Completed"   },
+  { value: "done", label: "Completed" },
 ];
+
+function normalizeId(v) {
+  if (!v) return "";
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number") return String(v);
+  if (v?._id) return String(v._id).trim();
+  if (v?.id) return String(v.id).trim();
+  return v?.toString?.()?.trim?.() || "";
+}
+
+function normalizeMemberOptions(list) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  const normalized = [];
+
+  for (const member of list) {
+    const user = member?.userId || member?.user || member;
+    const id = normalizeId(user?._id || user?.id || member?.id || member?._id);
+    if (!id || seen.has(id)) continue;
+
+    seen.add(id);
+
+    const name =
+      user?.name ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+      user?.username ||
+      user?.email ||
+      member?.name ||
+      member?.email ||
+      "Team member";
+
+    normalized.push({
+      id,
+      name,
+      email: user?.email || member?.email || "",
+      role: member?.role || user?.role || "",
+    });
+  }
+
+  return normalized;
+}
+
+function getExistingAssigneeId(task) {
+  return (
+    normalizeId(task?.assigneeId) ||
+    normalizeId(task?.assignee?._id) ||
+    normalizeId(task?.assignee?.id) ||
+    normalizeId(task?.assignee) ||
+    ""
+  );
+}
 
 export default function TaskSheet({
   open,
@@ -27,34 +86,41 @@ export default function TaskSheet({
   canEdit = true,
   onCreate,
   onUpdate,
-  defaultStatus = "todo",   // align with backend
+  defaultStatus = "todo",
   initialTitle = "",
   initialLabels,
   afterCreate,
   afterUpdate,
   existingTask = null,
+  teamMembers = [],
 }) {
   const isEdit = !!existingTask;
   const taskId = existingTask?._id || existingTask?.id || null;
 
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState(existingTask?.status || defaultStatus);
-  const [assigneeId, setAssigneeId] = useState(existingTask?.assigneeId || "");
+  const [assigneeId, setAssigneeId] = useState(getExistingAssigneeId(existingTask));
   const [dueDate, setDueDate] = useState(
     existingTask?.dueDate ? toDateInput(existingTask.dueDate) : ""
   );
   const [labels, setLabels] = useState(
     Array.isArray(existingTask?.labels)
       ? existingTask.labels.join(", ")
-      : Array.isArray(initialLabels) ? initialLabels.join(", ") : ""
+      : Array.isArray(initialLabels)
+        ? initialLabels.join(", ")
+        : ""
   );
   const [notes, setNotes] = useState(existingTask?.notes || "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Read-only computed/returned fields
   const scheduleState = existingTask?.scheduleState || null;
-  const completedAtStr = useMemo(() => toDateInput(existingTask?.completedAt), [existingTask?.completedAt]);
+  const completedAtStr = useMemo(
+    () => toDateInput(existingTask?.completedAt),
+    [existingTask?.completedAt]
+  );
+
+  const memberOptions = useMemo(() => normalizeMemberOptions(teamMembers), [teamMembers]);
 
   const containerRef = useRef(null);
   const firstFieldRef = useRef(null);
@@ -65,7 +131,6 @@ export default function TaskSheet({
     [initialLabels]
   );
 
-  // Reset when opened or when switching mode/task; focus; restore focus
   useEffect(() => {
     if (!open) {
       setTimeout(() => prevFocusRef.current?.focus?.(), 0);
@@ -77,7 +142,7 @@ export default function TaskSheet({
     if (isEdit) {
       setTitle(existingTask?.title || "");
       setStatus(existingTask?.status || defaultStatus);
-      setAssigneeId(existingTask?.assigneeId || "");
+      setAssigneeId(getExistingAssigneeId(existingTask));
       setDueDate(existingTask?.dueDate ? toDateInput(existingTask?.dueDate) : "");
       setLabels(Array.isArray(existingTask?.labels) ? existingTask.labels.join(", ") : "");
       setNotes(existingTask?.notes || "");
@@ -94,7 +159,6 @@ export default function TaskSheet({
     setTimeout(() => firstFieldRef.current?.focus(), 10);
   }, [open, isEdit, existingTask, initialTitle, defaultStatus, initialLabelsKey]);
 
-  // Esc / Cmd+Enter
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -109,22 +173,25 @@ export default function TaskSheet({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, onClose, handleSubmit]);
 
-  // Focus trap (Tab only)
   useEffect(() => {
     if (!open) return;
     const el = containerRef.current;
     if (!el) return;
+
     const selectors =
       'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
     const handleKeyDown = (e) => {
       if (e.key !== "Tab") return;
+
       const focusables = Array.from(el.querySelectorAll(selectors)).filter(
         (n) => !n.hasAttribute("disabled")
       );
+
       if (focusables.length === 0) return;
+
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       const active = document.activeElement;
@@ -141,6 +208,7 @@ export default function TaskSheet({
         }
       }
     };
+
     el.addEventListener("keydown", handleKeyDown);
     return () => el.removeEventListener("keydown", handleKeyDown);
   }, [open]);
@@ -168,6 +236,7 @@ export default function TaskSheet({
   const handleSubmit = useCallback(async () => {
     if (submitting) return;
     if (!canEdit) return;
+
     setError("");
 
     if (!title.trim()) {
@@ -183,35 +252,55 @@ export default function TaskSheet({
 
       if (isEdit && taskId) {
         let updated = null;
+
         if (typeof onUpdate === "function") {
           updated = (await onUpdate(taskId, payload)) ?? null;
         } else {
           updated = await apiPatchTask(projectId, taskId, payload);
-          // Telemetry only when we call the API directly (avoid double from parent)
-          try { track("task_updated", { projectId, taskId: updated?.id || taskId }); } catch {}
+          try {
+            track("task_updated", { projectId, taskId: updated?.id || taskId });
+          } catch {}
         }
+
         toast({ title: "Task updated", variant: "success" });
-        // If dueDate added/changed, treat as schedule created/updated
+
         try {
           if (payload.dueDate) {
-            trackScheduleCreated({ projectId, taskId: updated?.id || taskId, dueDate: payload.dueDate, mode: "edit" });
+            trackScheduleCreated({
+              projectId,
+              taskId: updated?.id || taskId,
+              dueDate: payload.dueDate,
+              mode: "edit",
+            });
           }
         } catch {}
+
         afterUpdate?.(updated ?? { _id: taskId, ...payload });
       } else {
         let created = null;
+
         if (typeof onCreate === "function") {
           created = (await onCreate(payload)) ?? null;
         } else {
           created = await apiCreateTask(projectId, payload);
-          try { track("task_created", { projectId, taskId: created?.id || created?._id }); } catch {}
-        }
-        toast({ title: "Task created", variant: "success" });
-        if (payload.dueDate) {
           try {
-            trackScheduleCreated({ projectId, taskId: created?.id || created?._id, dueDate: payload.dueDate, mode: "create" });
+            track("task_created", { projectId, taskId: created?.id || created?._id });
           } catch {}
         }
+
+        toast({ title: "Task created", variant: "success" });
+
+        if (payload.dueDate) {
+          try {
+            trackScheduleCreated({
+              projectId,
+              taskId: created?.id || created?._id,
+              dueDate: payload.dueDate,
+              mode: "create",
+            });
+          } catch {}
+        }
+
         afterCreate?.(created ?? payload);
       }
 
@@ -239,6 +328,7 @@ export default function TaskSheet({
     dueDate,
     labels,
     notes,
+    onClose,
   ]);
 
   if (!open) return null;
@@ -247,14 +337,12 @@ export default function TaskSheet({
 
   return (
     <>
-      {/* Overlay */}
       <div
         className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet */}
       <aside
         ref={containerRef}
         className="fixed right-0 top-0 bottom-0 z-50 w-[min(520px,100%)] bg-white dark:bg-slate-900 border-l border-slate-200/70 dark:border-slate-800 shadow-2xl flex flex-col"
@@ -263,7 +351,6 @@ export default function TaskSheet({
         aria-labelledby="task-sheet-title"
         aria-describedby="task-sheet-desc"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-800">
           <div className="inline-flex items-center gap-2">
             {isEdit ? (
@@ -288,17 +375,16 @@ export default function TaskSheet({
           {isEdit ? "Edit the selected task." : "Create a new task."} Press Escape to close. Use Tab to move between fields.
         </p>
 
-        {/* Body */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
-        {error ? (
-  <div
-    className="rounded-lg border border-rose-200/70 bg-rose-50 text-rose-800 text-sm px-3 py-2"
-    role="alert"
-    aria-live="assertive"
-  >
-    {error}
-  </div>
-) : null}
+          {error ? (
+            <div
+              className="rounded-lg border border-rose-200/70 bg-rose-50 text-rose-800 text-sm px-3 py-2"
+              role="alert"
+              aria-live="assertive"
+            >
+              {error}
+            </div>
+          ) : null}
 
           {!canEdit && (
             <div className="rounded-lg border border-amber-200/70 bg-amber-50 text-amber-900 text-sm px-3 py-2">
@@ -306,7 +392,6 @@ export default function TaskSheet({
             </div>
           )}
 
-          {/* ICS quick link (project-level) */}
           {CALENDAR_ACCOUNTABILITY && icsUrl ? (
             <div className="rounded-lg border border-slate-200/70 dark:border-slate-700 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
               <span className="inline-flex items-center gap-2">
@@ -377,7 +462,6 @@ export default function TaskSheet({
             </div>
           </div>
 
-          {/* Read-only schedule detail (edit mode) */}
           {isEdit && (scheduleState || completedAtStr) ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -398,21 +482,43 @@ export default function TaskSheet({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-1 sm/grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="task-assignee" className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
-                Assignee ID (optional)
+                Assignee
               </label>
-              <input
-                id="task-assignee"
-                type="text"
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                onKeyDown={stopBubble}
-                placeholder="user id"
-                disabled={!canEdit || submitting}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
-              />
+
+              {memberOptions.length > 0 ? (
+                <div className="relative">
+                  <select
+                    id="task-assignee"
+                    value={assigneeId}
+                    onChange={(e) => setAssigneeId(e.target.value)}
+                    onKeyDown={stopBubble}
+                    disabled={!canEdit || submitting}
+                    className="w-full appearance-none rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 pl-3 pr-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                  >
+                    <option value="">Unassigned</option>
+                    {memberOptions.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}{member.role ? ` · ${member.role}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              ) : (
+                <input
+                  id="task-assignee"
+                  type="text"
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  onKeyDown={stopBubble}
+                  placeholder="user id"
+                  disabled={!canEdit || submitting}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                />
+              )}
             </div>
 
             <div>
@@ -449,7 +555,6 @@ export default function TaskSheet({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-4 py-3 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-end gap-2">
           <button
             className="rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"

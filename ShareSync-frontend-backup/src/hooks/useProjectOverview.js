@@ -10,7 +10,16 @@
 // - Preserves existing return fields for compatibility
 // - Adds `refreshSilently()` for realtime/concurrent-user updates
 //
-// NO BACKEND CHANGES IN THIS PASS
+// TEAM CAPACITY FIX PASS:
+// - Fixes task-to-member matching so team load uses real assignee fields
+// - Adds support for assigneeId / assignedTo / assignedUserId in addition to
+//   assignee / assigneeUser / owner / ownerId / user
+// - Keeps backend untouched for safety
+//
+// FORESIGHT PASS:
+// - Derives a real project-local foresight object from trusted overview signals
+// - Keeps backend untouched for safety
+// - Preserves existing fallback behavior when data is sparse
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -24,6 +33,50 @@ function clamp(value, min, max) {
 function safeNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function extractId(value) {
+  if (!value) return "";
+
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (value?._id) return String(value._id);
+  if (value?.id) return String(value.id);
+
+  if (value?.userId) {
+    if (typeof value.userId === "string" || typeof value.userId === "number") {
+      return String(value.userId);
+    }
+    if (value.userId?._id) return String(value.userId._id);
+    if (value.userId?.id) return String(value.userId.id);
+  }
+
+  if (typeof value?.toString === "function") {
+    const str = value.toString();
+    if (str && str !== "[object Object]") {
+      return String(str);
+    }
+  }
+
+  return "";
+}
+
+function getTaskAssigneeId(task) {
+  return (
+    extractId(task?.assigneeId) ||
+    extractId(task?.assignee?.userId) ||
+    extractId(task?.assignee) ||
+    extractId(task?.assigneeUser) ||
+    extractId(task?.assignedTo) ||
+    extractId(task?.assignedUserId) ||
+    extractId(task?.ownerId) ||
+    extractId(task?.owner) ||
+    extractId(task?.userId) ||
+    extractId(task?.user) ||
+    ""
+  );
 }
 
 function getTaskStatus(task) {
@@ -365,6 +418,9 @@ function getTaskOwner(task) {
   const assignee =
     task?.assignee ||
     task?.assigneeUser ||
+    task?.assigneeId ||
+    task?.assignedTo ||
+    task?.assignedUserId ||
     task?.owner ||
     task?.ownerId ||
     task?.user ||
@@ -372,17 +428,20 @@ function getTaskOwner(task) {
 
   if (!assignee) return null;
 
-  if (typeof assignee === "string") {
+  if (typeof assignee === "string" || typeof assignee === "number") {
     return {
-      ownerId: assignee,
-      ownerName: assignee,
+      ownerId: String(assignee),
+      ownerName: String(assignee),
     };
   }
 
   const fullName = [assignee?.firstName, assignee?.lastName].filter(Boolean).join(" ").trim();
 
   return {
-    ownerId: String(assignee?._id || assignee?.id || ""),
+    ownerId:
+      extractId(assignee) ||
+      extractId(assignee?.userId) ||
+      "",
     ownerName:
       assignee?.name ||
       fullName ||
@@ -462,17 +521,11 @@ function deriveTeamCapacity(members = [], tasks = [], backendTeamCapacity) {
   }
 
   return members.map((member) => {
-    const assignedTasks = tasks.filter((task) => {
-      const assignee =
-        task?.assignee ||
-        task?.assigneeUser ||
-        task?.owner ||
-        task?.ownerId ||
-        task?.user ||
-        null;
+    const memberId = String(member?.id || "");
 
-      const assigneeId = String(assignee?._id || assignee?.id || assignee || "");
-      return assigneeId && assigneeId === String(member.id);
+    const assignedTasks = tasks.filter((task) => {
+      const assigneeId = getTaskAssigneeId(task);
+      return Boolean(assigneeId && memberId && assigneeId === memberId);
     });
 
     const openAssigned = assignedTasks.filter((task) => !isTaskDone(task));
@@ -491,7 +544,17 @@ function deriveTeamCapacity(members = [], tasks = [], backendTeamCapacity) {
   });
 }
 
-function buildForesight(data, activityCount) {
+function countOverdueOpenTasks(tasks = []) {
+  const now = Date.now();
+
+  return tasks.filter((task) => {
+    if (isTaskDone(task)) return false;
+    const dueTime = getDueTime(task);
+    return Number.isFinite(dueTime) && dueTime !== Number.POSITIVE_INFINITY && dueTime < now;
+  }).length;
+}
+
+function buildForesight(data, activityCount, tasks = [], criticalMoves = [], metrics = {}) {
   if (data?.foresight && typeof data.foresight === "object") {
     return {
       enabled: Boolean(data.foresight.enabled),
@@ -504,16 +567,126 @@ function buildForesight(data, activityCount) {
     };
   }
 
-  if (activityCount >= 7) {
+  const blockedCount = safeNumber(
+    data?.blocked,
+    safeNumber(metrics?.blocked, 0)
+  );
+  const inProgressCount = safeNumber(
+    data?.inProgress,
+    safeNumber(metrics?.inProgress, 0)
+  );
+  const readyCount = safeNumber(
+    data?.ready,
+    safeNumber(metrics?.ready, 0)
+  );
+  const weeklyShips = safeNumber(
+    data?.metrics?.weeklyShips,
+    safeNumber(metrics?.weeklyShips, 0)
+  );
+  const completionForecast = safeNumber(
+    data?.metrics?.completionRate,
+    safeNumber(metrics?.completionForecast, 0)
+  );
+  const overdueCount = countOverdueOpenTasks(tasks);
+  const nextMove = Array.isArray(criticalMoves) && criticalMoves.length > 0 ? criticalMoves[0] : null;
+
+  const risks = [];
+
+  if (blockedCount >= 3) {
+    risks.push({
+      level: blockedCount >= 5 ? "high" : "medium",
+      title: `${blockedCount} blockers are suppressing flow`,
+      recommendation: "Clear blockers before adding new work.",
+    });
+  }
+
+  if (overdueCount > 0) {
+    risks.push({
+      level: overdueCount >= 3 ? "high" : "medium",
+      title: `${overdueCount} open task${overdueCount === 1 ? "" : "s"} overdue`,
+      recommendation: "Resolve overdue work or reset due dates to restore trust in the board.",
+    });
+  }
+
+  if (inProgressCount === 0 && readyCount > 0) {
+    risks.push({
+      level: "medium",
+      title: "Work is queued but nothing is actively moving",
+      recommendation: "Start the top priority task to restore momentum.",
+    });
+  }
+
+  if (weeklyShips === 0 && tasks.length > 0) {
+    risks.push({
+      level: "medium",
+      title: "No ships recorded this week",
+      recommendation: "Land one meaningful task to restart visible progress.",
+    });
+  }
+
+  let summary = "Prediction signals are forming from recent activity.";
+  let recommendation = nextMove?.title
+    ? `Start with "${nextMove.title}" to move the project forward.`
+    : "Keep shipping — patterns emerge fast.";
+  let confidence = 0.42;
+  let enabled = false;
+
+  const signalScore =
+    Number(activityCount >= 3) +
+    Number(tasks.length >= 3) +
+    Number(blockedCount > 0) +
+    Number(weeklyShips > 0) +
+    Number(completionForecast > 0);
+
+  if (signalScore >= 2) {
+    enabled = true;
+    confidence = clamp(0.45 + signalScore * 0.08, 0.45, 0.86);
+
+    if (blockedCount >= 3) {
+      summary = `Timeline risk is rising because ${blockedCount} blockers are constraining execution.`;
+      recommendation =
+        nextMove?.title
+          ? `Unblock "${nextMove.title}" or remove the main blocker before starting new scope.`
+          : "Resolve blockers before opening more fronts.";
+    } else if (overdueCount > 0) {
+      summary = `Delivery trust is softening because ${overdueCount} task${overdueCount === 1 ? "" : "s"} are overdue.`;
+      recommendation =
+        "Triage overdue work first so the roadmap reflects reality.";
+    } else if (inProgressCount === 0 && readyCount > 0) {
+      summary = "The project has ready work, but active execution is stalled.";
+      recommendation =
+        nextMove?.title
+          ? `Move "${nextMove.title}" into execution today.`
+          : "Pull one ready task into motion now.";
+    } else if (weeklyShips > 0) {
+      summary = "Momentum is healthy enough to forecast the next likely pressure point.";
+      recommendation =
+        nextMove?.title
+          ? `Keep pressure on "${nextMove.title}" as the next leverage move.`
+          : "Protect current flow and avoid new blockers.";
+    }
+  }
+
+  if (!enabled && activityCount < 3 && tasks.length < 3) {
     return {
-      enabled: true,
-      message: "Prediction signals are forming from recent activity.",
+      enabled: false,
+      confidence: 0,
+      summary: "",
+      message: "AI predictions unlock after stronger project signals appear.",
+      nextAction: "",
+      risks: [],
+      recommendation: "",
     };
   }
 
   return {
-    enabled: false,
-    message: "AI predictions unlock after 7 days of activity.",
+    enabled,
+    confidence,
+    summary,
+    message: summary,
+    nextAction: nextMove?.title || "",
+    risks,
+    recommendation,
   };
 }
 
@@ -902,7 +1075,13 @@ export function useProjectOverview(projectId, options = {}) {
             endDate: null,
           };
 
-    const foresight = buildForesight(data, Array.isArray(activity) ? activity.length : 0);
+    const foresight = buildForesight(
+      data,
+      Array.isArray(activity) ? activity.length : 0,
+      tasks,
+      criticalMoves,
+      metrics
+    );
 
     return {
       project: {

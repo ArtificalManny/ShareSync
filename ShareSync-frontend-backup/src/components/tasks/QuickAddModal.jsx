@@ -4,9 +4,13 @@
 // Triggered by N keyboard shortcut (via useQuickAdd hook)
 // Title, description, project selector, priority, due date, tags
 // Fully keyboard-navigable: Tab between fields, Enter to submit, Esc to close
+//
+// ASSIGNMENT PASS:
+// - Keeps existing assignee select
+// - Normalizes teamMembers so nested member shapes work safely
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   X, Plus, Calendar, Flag, FolderOpen, Tag,
   ChevronDown, AlertCircle, Loader2,
@@ -28,6 +32,48 @@ const STATUSES = [
   { value: 'review', label: 'Review' },
 ];
 
+function normalizeId(v) {
+  if (!v) return '';
+  if (typeof v === 'string') return v.trim();
+  if (typeof v === 'number') return String(v);
+  if (v?._id) return String(v._id).trim();
+  if (v?.id) return String(v.id).trim();
+  return v?.toString?.()?.trim?.() || '';
+}
+
+function normalizeMemberOptions(list) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  const normalized = [];
+
+  for (const member of list) {
+    const user = member?.userId || member?.user || member;
+    const id = normalizeId(user?._id || user?.id || member?.id || member?._id);
+    if (!id || seen.has(id)) continue;
+
+    seen.add(id);
+
+    const name =
+      user?.name ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() ||
+      user?.username ||
+      user?.email ||
+      member?.name ||
+      member?.email ||
+      'Team member';
+
+    normalized.push({
+      id,
+      name,
+      email: user?.email || member?.email || '',
+      role: member?.role || user?.role || '',
+    });
+  }
+
+  return normalized;
+}
+
 export default function QuickAddModal({
   isOpen = false,
   onClose,
@@ -48,10 +94,11 @@ export default function QuickAddModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const memberOptions = useMemo(() => normalizeMemberOptions(teamMembers), [teamMembers]);
+
   const titleRef = useRef(null);
   const modalRef = useRef(null);
 
-  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setTitle('');
@@ -65,12 +112,10 @@ export default function QuickAddModal({
       setAssigneeId('');
       setError('');
       setSubmitting(false);
-      // Focus title field after animation
       setTimeout(() => titleRef.current?.focus(), 100);
     }
   }, [isOpen, defaultProjectId]);
 
-  // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
@@ -83,7 +128,6 @@ export default function QuickAddModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Add tag on Enter or comma
   const handleTagKeyDown = useCallback((e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -139,7 +183,6 @@ export default function QuickAddModal({
     }
   }, [title, description, projectId, defaultProjectId, priority, status, dueDate, tags, assigneeId, onSubmit, onClose]);
 
-  // Submit on Cmd/Ctrl + Enter from anywhere in the form
   const handleFormKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -153,13 +196,11 @@ export default function QuickAddModal({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm z-[80] animate-in fade-in duration-150"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="fixed inset-0 z-[81] flex items-start justify-center pt-[10vh] px-4">
         <div
           ref={modalRef}
@@ -173,7 +214,6 @@ export default function QuickAddModal({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={handleFormKeyDown}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center">
@@ -190,9 +230,7 @@ export default function QuickAddModal({
             </button>
           </div>
 
-          {/* Body */}
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {/* Error */}
             {error && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
                 <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -200,7 +238,6 @@ export default function QuickAddModal({
               </div>
             )}
 
-            {/* Title */}
             <div>
               <input
                 ref={titleRef}
@@ -218,7 +255,6 @@ export default function QuickAddModal({
               />
             </div>
 
-            {/* Description */}
             <div>
               <textarea
                 value={description}
@@ -238,9 +274,7 @@ export default function QuickAddModal({
               />
             </div>
 
-            {/* Project + Status row */}
             <div className="grid grid-cols-2 gap-3">
-              {/* Project selector */}
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5 block">
                   Project
@@ -273,7 +307,6 @@ export default function QuickAddModal({
                 </div>
               </div>
 
-              {/* Status selector */}
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5 block">
                   Status
@@ -300,9 +333,7 @@ export default function QuickAddModal({
               </div>
             </div>
 
-            {/* Priority + Due Date row */}
             <div className="grid grid-cols-2 gap-3">
-              {/* Priority */}
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5 block">
                   Priority
@@ -329,7 +360,6 @@ export default function QuickAddModal({
                 </div>
               </div>
 
-              {/* Due date */}
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5 block">
                   Due Date
@@ -353,8 +383,7 @@ export default function QuickAddModal({
               </div>
             </div>
 
-            {/* Assignee */}
-            {teamMembers.length > 0 && (
+            {memberOptions.length > 0 && (
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5 block">
                   Assignee
@@ -373,21 +402,17 @@ export default function QuickAddModal({
                     "
                   >
                     <option value="">Unassigned</option>
-                    {teamMembers.map((member) => {
-                      const id = member.id || member._id;
-                      return (
-                        <option key={id} value={id}>
-                          {member.name || member.email}
-                        </option>
-                      );
-                    })}
+                    {memberOptions.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}{member.role ? ` · ${member.role}` : ""}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                 </div>
               </div>
             )}
 
-            {/* Tags */}
             <div>
               <label className="text-[11px] font-medium text-slate-500 dark:text-zinc-500 uppercase tracking-wider mb-1.5 block">
                 Tags
@@ -437,7 +462,6 @@ export default function QuickAddModal({
             </div>
           </form>
 
-          {/* Footer */}
           <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 dark:border-white/5">
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
