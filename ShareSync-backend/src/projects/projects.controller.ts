@@ -33,7 +33,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ProjectsService, ProjectQueryOptions } from './projects.service';
+import { ProjectsService, ProjectQueryOptions, CompleteProjectPayload, ReopenProjectPayload } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import {
   UpdateProjectDto,
@@ -208,6 +208,26 @@ export class ProjectsController {
     };
   }
 
+
+  @Get(':id/closure-readiness')
+  @ApiOperation({ summary: 'Evaluate whether a project is ready to close' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Closure readiness evaluated' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
+  async getClosureReadiness(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const readiness = await this.projectsService.evaluateProjectClosure(id, userId);
+
+    return {
+      success: true,
+      data: readiness,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a project by ID' })
   @ApiParam({ name: 'id', description: 'Project ID' })
@@ -353,6 +373,49 @@ export class ProjectsController {
     return {
       success: true,
       data: { isStarred: updated.isStarred },
+    };
+  }
+
+
+  @Post(':id/complete')
+  @ApiOperation({ summary: 'Complete a project through the closeout flow' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Project completed successfully' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Project not ready to close' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
+  async completeProject(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() payload: CompleteProjectPayload,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.completeProject(id, userId, payload);
+
+    return {
+      success: true,
+      data: project,
+    };
+  }
+
+  @Post(':id/reopen')
+  @ApiOperation({ summary: 'Reopen a completed project' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Project reopened successfully' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid reopen request' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
+  async reopenProject(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() payload: ReopenProjectPayload,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const project = await this.projectsService.reopenProject(id, userId, payload);
+
+    return {
+      success: true,
+      data: project,
     };
   }
 

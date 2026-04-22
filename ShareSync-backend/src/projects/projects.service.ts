@@ -10,7 +10,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Project, ProjectDocument, ProjectStatus, ProjectVisibility, MemberRole, ProjectMember } from './schemas/project.schema';
+import { Project, ProjectDocument, ProjectStatus, ProjectVisibility, MemberRole, ProjectMember, ProjectOutcomeStatus, ProjectClosureDecision } from './schemas/project.schema';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
@@ -46,6 +46,40 @@ export interface PulseData {
   objectives: any[];
   sprint: any;
   activity: any[];
+}
+
+
+export interface ProjectClosureReadinessResult {
+  isReadyToClose: boolean;
+  readinessScore: number;
+  blockingReasons: string[];
+  warnings: string[];
+  openTaskCount: number;
+  openCriticalTaskCount: number;
+  blockedTaskCount: number;
+  activeGoalCount: number;
+  completedGoalCount: number;
+  hasActiveSprint: boolean;
+}
+
+export interface CompleteProjectPayload {
+  closureSummary: string;
+  outcomeStatus?: ProjectOutcomeStatus;
+  leftoverDecision?: ProjectClosureDecision;
+  followUpProjectId?: string | null;
+  forceComplete?: boolean;
+  closureChecklist?: {
+    primaryGoalConfirmed?: boolean;
+    openWorkResolved?: boolean;
+    blockersReviewed?: boolean;
+    handoffPrepared?: boolean;
+    summaryWritten?: boolean;
+    stakeholderSignoff?: boolean;
+  };
+}
+
+export interface ReopenProjectPayload {
+  reason: string;
 }
 
 @Injectable()
@@ -504,6 +538,160 @@ export class ProjectsService {
     }
 
     return { success: true };
+  }
+
+
+  async evaluateProjectClosure(
+    projectId: string,
+    userId: string,
+  ): Promise<ProjectClosureReadinessResult> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    const tasks = await this.taskModel
+      .find({ projectId: new Types.ObjectId(projectId) })
+      .lean()
+      .exec();
+
+    const normalizedGoals = this.buildGoalSnapshots(project, tasks);
+    const closureReadiness = this.buildClosureReadiness(project, tasks, normalizedGoals);
+
+    (project as any).closureReadiness = {
+      ...(project as any).closureReadiness,
+      ...closureReadiness,
+      lastEvaluatedAt: new Date(),
+    };
+
+    await project.save();
+
+    return closureReadiness;
+  }
+
+  async completeProject(
+    projectId: string,
+    userId: string,
+    payload: CompleteProjectPayload,
+  ): Promise<ProjectDocument> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    if (!this.canEdit(project, userId)) {
+      throw new ForbiddenException('You do not have permission to complete this project');
+    }
+
+    const tasks = await this.taskModel
+      .find({ projectId: new Types.ObjectId(projectId) })
+      .lean()
+      .exec();
+
+    const normalizedGoals = this.buildGoalSnapshots(project, tasks);
+    const closureReadiness = this.buildClosureReadiness(project, tasks, normalizedGoals);
+
+    if (!closureReadiness.isReadyToClose && !payload?.forceComplete) {
+      throw new BadRequestException({
+        message: 'Project is not ready to close',
+        closureReadiness,
+      });
+    }
+
+    const now = new Date();
+    const openTasks = tasks.filter((task) => !this.isTaskDone(task));
+    const blockedTasks = openTasks.filter((task) => this.isTaskBlocked(task));
+    const completedGoals = normalizedGoals.filter((goal) => goal?.status === 'completed');
+
+    const derivedOutcome =
+      payload?.outcomeStatus ||
+      (openTasks.length === 0 && normalizedGoals.length > 0 && completedGoals.length === normalizedGoals.length
+        ? ProjectOutcomeStatus.ACHIEVED
+        : openTasks.length === 0
+          ? ProjectOutcomeStatus.ACHIEVED
+          : ProjectOutcomeStatus.PARTIALLY_ACHIEVED);
+
+    const closureChecklist = {
+      ...((project as any).closureChecklist || {}),
+      ...(payload?.closureChecklist || {}),
+      summaryWritten: Boolean(payload?.closureSummary || (project as any).closureSummary),
+    };
+
+    project.status = ProjectStatus.COMPLETED;
+    project.completedAt = now;
+    (project as any).completedBy = new Types.ObjectId(userId);
+    (project as any).closureSummary = payload?.closureSummary || (project as any).closureSummary || '';
+    (project as any).outcomeStatus = derivedOutcome;
+    (project as any).closureChecklist = closureChecklist;
+    (project as any).closureReadiness = {
+      ...closureReadiness,
+      isReadyToClose: true,
+      readinessScore: 100,
+      blockingReasons: [],
+      lastEvaluatedAt: now,
+    };
+    (project as any).completionSnapshot = {
+      summary: (project as any).closureSummary || '',
+      outcomeStatus: derivedOutcome,
+      completedTaskCount: tasks.filter((task) => this.isTaskDone(task)).length,
+      openTaskCount: openTasks.length,
+      blockedTaskCount: blockedTasks.length,
+      goalsAchievedCount: completedGoals.length,
+      goalsTotalCount: normalizedGoals.length,
+      deferredTaskIds: [],
+      canceledTaskIds: [],
+      leftoverDecision: payload?.leftoverDecision,
+      followUpProjectId: payload?.followUpProjectId
+        ? new Types.ObjectId(payload.followUpProjectId)
+        : undefined,
+      completedBy: new Types.ObjectId(userId),
+      completedAt: now,
+    };
+    (project as any).reopenedAt = undefined;
+    (project as any).reopenedBy = undefined;
+    (project as any).reopenReason = undefined;
+    project.isArchived = false;
+
+    const updated = await project.save();
+
+    this.eventEmitter.emit('project.completed', {
+      projectId: updated._id,
+      userId,
+      outcomeStatus: derivedOutcome,
+    });
+
+    return updated;
+  }
+
+  async reopenProject(
+    projectId: string,
+    userId: string,
+    payload: ReopenProjectPayload,
+  ): Promise<ProjectDocument> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+
+    if (!this.canEdit(project, userId)) {
+      throw new ForbiddenException('You do not have permission to reopen this project');
+    }
+
+    const now = new Date();
+
+    project.status = ProjectStatus.ACTIVE;
+    project.isArchived = false;
+    project.completedAt = undefined;
+    (project as any).completedBy = undefined;
+    (project as any).reopenedAt = now;
+    (project as any).reopenedBy = new Types.ObjectId(userId);
+    (project as any).reopenReason = payload?.reason?.trim() || 'Project reopened';
+    (project as any).closureReadiness = {
+      ...((project as any).closureReadiness || {}),
+      isReadyToClose: false,
+      lastEvaluatedAt: now,
+    };
+
+    const updated = await project.save();
+
+    this.eventEmitter.emit('project.reopened', {
+      projectId: updated._id,
+      userId,
+      reason: (project as any).reopenReason,
+    });
+
+    return updated;
   }
 
   async archive(projectId: string, userId: string): Promise<ProjectDocument> {
@@ -1091,6 +1279,92 @@ export class ProjectsService {
       });
   }
 
+
+  private buildClosureReadiness(
+    project: any,
+    tasks: any[],
+    goals: any[],
+  ): ProjectClosureReadinessResult {
+    const openTasks = Array.isArray(tasks)
+      ? tasks.filter((task) => !this.isTaskDone(task))
+      : [];
+
+    const openCriticalTasks = openTasks.filter(
+      (task) => this.priorityRank(task?.priority) >= 3,
+    );
+
+    const blockedTasks = openTasks.filter((task) => this.isTaskBlocked(task));
+
+    const activeGoals = Array.isArray(goals)
+      ? goals.filter((goal) => goal?.status !== 'completed')
+      : [];
+
+    const completedGoals = Array.isArray(goals)
+      ? goals.filter((goal) => goal?.status === 'completed')
+      : [];
+
+    const hasActiveSprint = Boolean((project as any)?.metrics?.activeSprintId);
+    const checklist = (project as any)?.closureChecklist || {};
+
+    const blockingReasons: string[] = [];
+    const warnings: string[] = [];
+
+    if (openCriticalTasks.length > 0) {
+      blockingReasons.push(
+        `${openCriticalTasks.length} high-priority task${openCriticalTasks.length === 1 ? '' : 's'} still open`,
+      );
+    }
+
+    if (blockedTasks.length > 0) {
+      blockingReasons.push(
+        `${blockedTasks.length} blocker${blockedTasks.length === 1 ? '' : 's'} unresolved`,
+      );
+    }
+
+    if (hasActiveSprint) {
+      blockingReasons.push('Active sprint still running');
+    }
+
+    if (activeGoals.length > 0) {
+      blockingReasons.push(
+        `${activeGoals.length} active goal${activeGoals.length === 1 ? '' : 's'} still in progress`,
+      );
+    }
+
+    if (!checklist.primaryGoalConfirmed) {
+      warnings.push('Primary outcome not yet confirmed');
+    }
+
+    if (!checklist.summaryWritten) {
+      warnings.push('Closure summary not yet written');
+    }
+
+    if (!checklist.stakeholderSignoff) {
+      warnings.push('Stakeholder signoff not yet recorded');
+    }
+
+    let readinessScore = 100;
+    readinessScore -= Math.min(40, openCriticalTasks.length * 20);
+    readinessScore -= Math.min(25, blockedTasks.length * 10);
+    readinessScore -= hasActiveSprint ? 15 : 0;
+    readinessScore -= Math.min(15, activeGoals.length * 5);
+    readinessScore -= Math.min(15, warnings.length * 5);
+    readinessScore = Math.max(0, Math.min(100, readinessScore));
+
+    return {
+      isReadyToClose: blockingReasons.length === 0,
+      readinessScore,
+      blockingReasons,
+      warnings,
+      openTaskCount: openTasks.length,
+      openCriticalTaskCount: openCriticalTasks.length,
+      blockedTaskCount: blockedTasks.length,
+      activeGoalCount: activeGoals.length,
+      completedGoalCount: completedGoals.length,
+      hasActiveSprint,
+    };
+  }
+
   async getOverviewData(projectId: string, userId: string): Promise<any> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
@@ -1167,6 +1441,7 @@ export class ProjectsService {
 
     const normalizedGoals = this.buildGoalSnapshots(project, tasks);
     const activeGoals = normalizedGoals.filter((goal) => goal.status !== 'completed');
+    const closureReadiness = this.buildClosureReadiness(project, tasks, normalizedGoals);
 
     return {
       project,
@@ -1206,6 +1481,7 @@ export class ProjectsService {
       completedTasks,
       criticalMoves,
       activeGoals,
+      closureReadiness,
       goals: normalizedGoals,
       objectives: normalizedGoals,
       sprint: null,
