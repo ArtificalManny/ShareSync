@@ -1,28 +1,19 @@
 // src/pages/ProjectHome.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROJECT HOME: Mission Control with Clear Default Overview
-// SURGICAL OVERVIEW PASS
+// PROJECT HOME: Mission Control with Unified Overview Snapshot
+// OVERVIEW SYSTEM PASS
 //
 // WHAT CHANGED:
-// - "Overview" is now the dominant default view
-// - Top-level nav uses clearer language:
-//   Tasks, Board, Schedule, Discussion, Files
-// - Overview now answers:
-//   what’s next / what’s blocked / who owns it
-// - Discussion remains a subview, not the whole project experience
+// - Overview cards now read from one normalized `overview` object
+// - Replaces mixed local derivations with a single hook-owned snapshot
+// - Adds silent realtime refresh scheduling for concurrent users
+// - Keeps existing views, layout, and architecture intact
+// - Keeps current project presence behavior intact
 //
-// OVERVIEW DATA FIX:
-// - member count now uses the normalized count returned by useProjectOverview
-// - presence now receives projectId/currentUserId for safer online fallback
-// - criticalMoves/metrics can benefit from hook-side fallbacks without changing backend
-//
-// NOTE:
-// - No backend changes
-// - No child component rewrites
-// - Existing architecture preserved
+// NO BACKEND CHANGES IN THIS PASS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "../components/ui/toast";
@@ -90,9 +81,6 @@ import * as SuggestionsPanelModule from "../components/suggestions/SuggestionsPa
 import { useSocketContext } from "../context/SocketContext";
 import { applyTaskUpdated } from "../utils/taskRealtime";
 import { getStatusColor } from "../utils/statusColor";
-
-// Pulse
-import PulseWidget from "../components/pulse/PulseWidget";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW COMPONENTS
@@ -424,7 +412,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               />
               <span>{view.label}</span>
 
-              {view.badge && (
+              {view.badge ? (
                 <span
                   className={`
                     px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors
@@ -437,7 +425,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
                 >
                   {view.badge}
                 </span>
-              )}
+              ) : null}
 
               {isActive && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-500 rounded-t-sm" />
@@ -624,51 +612,85 @@ function ActiveGoalsCard({ objectives, onObjectiveClick }) {
   );
 }
 
+function OverviewPulseCard({ pulse }) {
+  const today = Number.isFinite(Number(pulse?.todayCompleted)) ? Number(pulse.todayCompleted) : 0;
+  const inMotion = Number.isFinite(Number(pulse?.inMotion)) ? Number(pulse.inMotion) : 0;
+  const blocked = Number.isFinite(Number(pulse?.blocked)) ? Number(pulse.blocked) : 0;
+  const ready = Number.isFinite(Number(pulse?.ready)) ? Number(pulse.ready) : 0;
+
+  const items = [
+    {
+      label: "Today",
+      value: today,
+      icon: Flame,
+      tone: "text-amber-500",
+    },
+    {
+      label: "In motion",
+      value: inMotion,
+      icon: Zap,
+      tone: "text-violet-500",
+    },
+    {
+      label: "Blocked",
+      value: blocked,
+      icon: AlertTriangle,
+      tone: blocked > 0 ? "text-amber-500" : "text-slate-400",
+    },
+    {
+      label: "Ready",
+      value: ready,
+      icon: Play,
+      tone: "text-emerald-500",
+    },
+  ];
+
+  return (
+    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
+      <header className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
+            <Activity className="w-4 h-4 text-violet-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Pulse</h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              Unified snapshot of execution signals
+            </p>
+          </div>
+        </div>
+        <span className="text-xs text-slate-400 dark:text-zinc-500">Live</span>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        {items.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <div
+              key={item.label}
+              className="rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-zinc-900/50 px-4 py-3"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Icon className={`w-4 h-4 ${item.tone}`} />
+                <span className="text-xs text-slate-500 dark:text-zinc-400">
+                  {item.label}
+                </span>
+              </div>
+              <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
+                {item.value}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // OVERVIEW HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-function getProjectOwnerLabel(project) {
-  const owner = project?.owner || project?.ownerId || null;
-
-  if (!owner) return "Owner not set";
-  if (typeof owner === "string") return owner;
-
-  const fullName = [owner.firstName, owner.lastName].filter(Boolean).join(" ").trim();
-  return fullName || owner.username || owner.email || "Owner assigned";
-}
-
-function getPrimaryMoveLabel(criticalMoves, objectives) {
-  const topMove = Array.isArray(criticalMoves) ? criticalMoves[0] : null;
-  if (topMove) {
-    return topMove.title || topMove.label || topMove.text || "Review top priority";
-  }
-
-  const topObjective = Array.isArray(objectives) ? objectives[0] : null;
-  if (topObjective) {
-    return topObjective.title || topObjective.name || topObjective.label || "Review active goal";
-  }
-
-  return "No priority surfaced yet";
-}
-
-function getBlockedTasksCount(tasks = []) {
-  if (!Array.isArray(tasks)) return 0;
-
-  return tasks.reduce((count, task) => {
-    const statusValue = String(task?.status || task?.state || task?.lane || "").toLowerCase();
-    const hasBlockedStatus = statusValue.includes("block");
-    const hasBlockedFlag = Boolean(
-      task?.isBlocked ||
-      task?.blocked ||
-      task?.hasBlocker ||
-      task?.blockedBy ||
-      (Array.isArray(task?.blockers) && task.blockers.length > 0)
-    );
-
-    return count + (hasBlockedStatus || hasBlockedFlag ? 1 : 0);
-  }, 0);
-}
 
 function OverviewSignalCard({
   icon: Icon,
@@ -730,22 +752,54 @@ function OverviewSignalCard({
 
 function OverviewView({
   project,
+  overview,
   metrics,
-  criticalMoves,
-  objectives,
   sprint,
-  activity,
   onObjectiveClick,
   onSprintAction,
-  tasks = [],
-  activeUsers = 0,
-  memberCount = 0,
 }) {
-  const nextMoveLabel = getPrimaryMoveLabel(criticalMoves, objectives);
-  const blockedTasksCount = getBlockedTasksCount(tasks);
-  const ownerLabel = getProjectOwnerLabel(project);
-  const safeMemberCount = typeof memberCount === "number" ? memberCount : 0;
-  const activeGoalCount = Array.isArray(objectives) ? objectives.length : 0;
+  const summary = overview?.summary || {};
+  const pulse = overview?.pulse || {};
+  const momentum = overview?.momentum || {};
+  const priorityStack = Array.isArray(overview?.priorityStack) ? overview.priorityStack : [];
+  const liveActivity = Array.isArray(overview?.liveActivity) ? overview.liveActivity : [];
+  const activeGoals = Array.isArray(overview?.activeGoals) ? overview.activeGoals : [];
+  const teamCapacity = Array.isArray(overview?.teamCapacity) ? overview.teamCapacity : [];
+
+  const nextActionTitle =
+    summary?.nextAction?.title ||
+    "No priority surfaced yet";
+
+  const blockedCount =
+    Number.isFinite(Number(summary?.blockedCount))
+      ? Number(summary.blockedCount)
+      : 0;
+
+  const ownerName =
+    summary?.ownerSummary?.primaryOwnerName ||
+    "Owner not set";
+
+  const memberCount =
+    Number.isFinite(Number(summary?.ownerSummary?.memberCount))
+      ? Number(summary.ownerSummary.memberCount)
+      : 0;
+
+  const onlineCount =
+    Number.isFinite(Number(summary?.ownerSummary?.onlineCount))
+      ? Number(summary.ownerSummary.onlineCount)
+      : 0;
+
+  const activeGoalCount = activeGoals.length;
+
+  const foresightMetrics = {
+    ...metrics,
+    foresight: overview?.foresight || metrics?.foresight,
+  };
+
+  const teamMetrics = {
+    ...metrics,
+    teamCapacity,
+  };
 
   return (
     <div className="p-10 max-w-[1600px] mx-auto">
@@ -754,7 +808,7 @@ function OverviewView({
           <OverviewSignalCard
             icon={Target}
             label="What’s next"
-            value={nextMoveLabel}
+            value={nextActionTitle}
             caption={
               activeGoalCount > 0
                 ? `${activeGoalCount} active goal${activeGoalCount === 1 ? "" : "s"} shaping priorities`
@@ -768,13 +822,13 @@ function OverviewView({
           <OverviewSignalCard
             icon={AlertTriangle}
             label="What’s blocked"
-            value={blockedTasksCount === 0 ? "No blockers" : `${blockedTasksCount} blocker${blockedTasksCount === 1 ? "" : "s"}`}
+            value={blockedCount === 0 ? "No blockers" : `${blockedCount} blocker${blockedCount === 1 ? "" : "s"}`}
             caption={
-              blockedTasksCount === 0
+              blockedCount === 0
                 ? "Nothing critical is blocked right now"
                 : "Resolve blockers fast to protect momentum"
             }
-            tone={blockedTasksCount > 0 ? "amber" : "neutral"}
+            tone={blockedCount > 0 ? "amber" : "neutral"}
           />
         </div>
 
@@ -782,42 +836,42 @@ function OverviewView({
           <OverviewSignalCard
             icon={Users}
             label="Who owns it"
-            value={ownerLabel}
-            caption={`${safeMemberCount} member${safeMemberCount === 1 ? "" : "s"} · ${activeUsers} online now`}
+            value={ownerName}
+            caption={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${onlineCount} online now`}
             tone="teal"
           />
         </div>
       </div>
 
       <div className="mb-8">
-        <PulseWidget tasks={tasks} />
+        <OverviewPulseCard pulse={pulse} />
       </div>
 
       <div className="grid grid-cols-12 gap-8 mb-8">
         <div className="col-span-12 lg:col-span-4">
           <MomentumCard
-            momentum={metrics?.momentum || 0}
-            weeklyShips={metrics?.weeklyShips || 0}
-            trend={metrics?.momentumTrend}
+            momentum={momentum?.score || 0}
+            weeklyShips={momentum?.weeklyShips || 0}
+            trend={momentum?.trend}
           />
         </div>
         <div className="col-span-12 lg:col-span-8">
-          <PriorityStack moves={criticalMoves} />
+          <PriorityStack moves={priorityStack} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-        <SprintCard sprint={sprint} onAction={onSprintAction} />
-        <ForesightCard metrics={metrics} />
-        <LiveActivityCard activities={activity} />
+        <SprintCard sprint={overview?.sprint || sprint} onAction={onSprintAction} />
+        <ForesightCard metrics={foresightMetrics} />
+        <LiveActivityCard activities={liveActivity} />
       </div>
 
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-5">
-          <TeamCapacityCard metrics={metrics} />
+          <TeamCapacityCard metrics={teamMetrics} />
         </div>
         <div className="col-span-12 lg:col-span-7">
-          <ActiveGoalsCard objectives={objectives} onObjectiveClick={onObjectiveClick} />
+          <ActiveGoalsCard objectives={activeGoals} onObjectiveClick={onObjectiveClick} />
         </div>
       </div>
     </div>
@@ -866,14 +920,17 @@ export default function ProjectHome() {
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
   const currentUserId = user?.id || user?._id || user?.userId || "";
+
   const { projectStats } = usePresence({
     projectId: id,
     currentUserId,
     autoDetectIdle: true,
   });
-  const { triggerPulse } = useGlobalPulse();
 
+  const { triggerPulse } = useGlobalPulse();
   const { joinProjectRoom, leaveProjectRoom, subscribe } = useSocketContext();
+
+  const refreshOverviewTimerRef = useRef(null);
 
   const [liveTasks, setLiveTasks] = useState([]);
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
@@ -881,6 +938,7 @@ export default function ProjectHome() {
 
   const {
     project,
+    overview,
     metrics,
     criticalMoves,
     objectives,
@@ -891,6 +949,7 @@ export default function ProjectHome() {
     loading,
     error,
     refresh,
+    refreshSilently,
     shipUpdate,
     isHealthy,
     hasWarnings,
@@ -924,29 +983,81 @@ export default function ProjectHome() {
     setLiveTasks(baseTasks);
   }, [baseTasks]);
 
+  const scheduleOverviewRefresh = useCallback(() => {
+    if (refreshOverviewTimerRef.current) {
+      window.clearTimeout(refreshOverviewTimerRef.current);
+    }
+
+    refreshOverviewTimerRef.current = window.setTimeout(() => {
+      refreshSilently?.();
+    }, 250);
+  }, [refreshSilently]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshOverviewTimerRef.current) {
+        window.clearTimeout(refreshOverviewTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!id) return;
 
     console.log("[ProjectHome.jsx] joining room (APP):", id);
     joinProjectRoom(id);
 
-    const handler = (payload) => {
+    const matchesProject = (payload) => {
       const payloadProjectId = payload?.projectId?.toString?.() || payload?.projectId;
-      if (payloadProjectId && payloadProjectId !== id) return;
+      if (!payloadProjectId) return true;
+      return String(payloadProjectId) === String(id);
+    };
+
+    const handleTaskPatch = (payload) => {
+      if (!matchesProject(payload)) return;
 
       setLiveTasks((prev) => applyTaskUpdated(prev, payload));
       setPulseRefreshKey((k) => k + 1);
+      scheduleOverviewRefresh();
     };
 
-    const unsubA = subscribe("taskUpdated", handler);
-    const unsubB = subscribe("task:update", handler);
+    const handleOverviewRefreshSignal = (payload) => {
+      if (!matchesProject(payload)) return;
+      scheduleOverviewRefresh();
+    };
+
+    const eventMap = [
+      ["taskUpdated", handleTaskPatch],
+      ["task:update", handleTaskPatch],
+      ["taskCreated", handleOverviewRefreshSignal],
+      ["task:created", handleOverviewRefreshSignal],
+      ["taskDeleted", handleOverviewRefreshSignal],
+      ["task:deleted", handleOverviewRefreshSignal],
+      ["activityCreated", handleOverviewRefreshSignal],
+      ["activity:created", handleOverviewRefreshSignal],
+      ["goalCreated", handleOverviewRefreshSignal],
+      ["goal:created", handleOverviewRefreshSignal],
+      ["goalUpdated", handleOverviewRefreshSignal],
+      ["goal:updated", handleOverviewRefreshSignal],
+      ["sprintUpdated", handleOverviewRefreshSignal],
+      ["sprint:updated", handleOverviewRefreshSignal],
+      ["memberJoinedProject", handleOverviewRefreshSignal],
+      ["memberLeftProject", handleOverviewRefreshSignal],
+      ["project:overviewUpdated", handleOverviewRefreshSignal],
+      ["project:metricsUpdated", handleOverviewRefreshSignal],
+    ];
+
+    const unsubs = eventMap.map(([eventName, handler]) => subscribe(eventName, handler));
 
     return () => {
-      unsubA?.();
-      unsubB?.();
+      unsubs.forEach((unsub) => unsub?.());
       leaveProjectRoom(id);
+
+      if (refreshOverviewTimerRef.current) {
+        window.clearTimeout(refreshOverviewTimerRef.current);
+      }
     };
-  }, [id, joinProjectRoom, leaveProjectRoom, subscribe]);
+  }, [id, joinProjectRoom, leaveProjectRoom, subscribe, scheduleOverviewRefresh]);
 
   useEffect(() => {
     if (!id) return;
@@ -960,6 +1071,7 @@ export default function ProjectHome() {
         await shipUpdate({ description });
         flashShip();
         triggerPulse();
+        await refreshSilently?.();
         toast({ title: "🚀 Update Shipped!", variant: "success" });
       } catch (e) {
         toast({
@@ -970,7 +1082,7 @@ export default function ProjectHome() {
         throw e;
       }
     },
-    [shipUpdate, flashShip, triggerPulse]
+    [shipUpdate, flashShip, triggerPulse, refreshSilently]
   );
 
   const handleSettings = useCallback(() => {
@@ -983,7 +1095,9 @@ export default function ProjectHome() {
 
   const handleObjectiveClick = useCallback(
     (objective) => {
-      navigate(`/projects/${id}/objectives/${objective.id}`);
+      const objectiveId = objective?.id || objective?._id;
+      if (!objectiveId) return;
+      navigate(`/projects/${id}/objectives/${objectiveId}`);
     },
     [navigate, id]
   );
@@ -1030,6 +1144,37 @@ export default function ProjectHome() {
     console.log("Create folder");
   }, []);
 
+  const projectViews = useMemo(() => {
+    const discussionCount = Array.isArray(threads) ? threads.length : 0;
+
+    return PROJECT_VIEWS.map((view) => {
+      if (view.id === "discussion") {
+        return {
+          ...view,
+          badge: discussionCount > 0 ? discussionCount : undefined,
+        };
+      }
+      return view;
+    });
+  }, [threads]);
+
+  const overviewOnlineCount = Number.isFinite(Number(overview?.summary?.ownerSummary?.onlineCount))
+    ? Number(overview.summary.ownerSummary.onlineCount)
+    : 0;
+
+  const headerActiveUsers = Math.max(
+    Number.isFinite(Number(projectStats?.online)) ? Number(projectStats.online) : 0,
+    overviewOnlineCount
+  );
+
+  const headerMetrics = {
+    ...metrics,
+    momentum:
+      Number.isFinite(Number(overview?.momentum?.score))
+        ? Number(overview.momentum.score)
+        : metrics?.momentum || 0,
+  };
+
   if (loading) return <LoadingState />;
 
   if (error) {
@@ -1057,16 +1202,11 @@ export default function ProjectHome() {
           return (
             <OverviewView
               project={project}
+              overview={overview}
               metrics={metrics}
-              criticalMoves={criticalMoves}
-              objectives={objectives}
               sprint={sprint}
-              activity={activity}
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
-              tasks={liveTasks}
-              activeUsers={projectStats?.online || 0}
-              memberCount={overviewMemberCount}
             />
           );
 
@@ -1196,15 +1336,19 @@ export default function ProjectHome() {
 
       <ProjectHeader
         project={project}
-        metrics={metrics}
-        activeUsers={projectStats?.online || 0}
+        metrics={headerMetrics}
+        activeUsers={headerActiveUsers}
         onShipUpdate={handleShipUpdate}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
         onMembersClick={() => setIsMembersPanelOpen(true)}
       />
 
-      <ViewNavigation activeView={activeView} onViewChange={setActiveView} />
+      <ViewNavigation
+        activeView={activeView}
+        onViewChange={setActiveView}
+        views={projectViews}
+      />
 
       <main key={pulseRefreshKey}>{renderViewContent()}</main>
 

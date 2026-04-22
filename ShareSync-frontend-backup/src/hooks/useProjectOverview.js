@@ -2,15 +2,15 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Hook: Main Data Hook for ProjectHome
 //
-// FIXES IN THIS PASS:
-// - Use /projects/:id/overview (or /projects/:id fallback) as the PRIMARY
-//   overview source instead of /projects/:id/pulse
-// - Keep /pulse as supplemental live heartbeat data only
-// - Merge richer raw project data so Overview can derive:
-//   * critical moves
-//   * member count
-//   * momentum / weekly ships
-//   * blockers / task counts
+// OVERVIEW SYSTEM PASS:
+// - Builds one normalized `overview` snapshot for ProjectHome
+// - Keeps /projects/:id/overview as the primary source when available
+// - Keeps /projects/:id as the richer fallback envelope
+// - Keeps /pulse as supplemental heartbeat data only
+// - Preserves existing return fields for compatibility
+// - Adds `refreshSilently()` for realtime/concurrent-user updates
+//
+// NO BACKEND CHANGES IN THIS PASS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -21,78 +21,40 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function normalizeProjectMembers(project) {
-  if (!project) return [];
-
-  const owner = project.owner || project.ownerId;
-  const ownerId = owner?._id || owner?.id || owner || null;
-  const members = Array.isArray(project.members) ? project.members : [];
-
-  const normalized = [];
-
-  if (
-    owner &&
-    typeof owner === "object" &&
-    (owner.name || owner.firstName || owner.lastName || owner.username || owner.email)
-  ) {
-    normalized.push({
-      id: String(owner._id || owner.id),
-      role: "owner",
-      name:
-        owner.name ||
-        `${owner.firstName || ""} ${owner.lastName || ""}`.trim() ||
-        owner.username ||
-        owner.email ||
-        "Project Owner",
-    });
-  } else if (ownerId) {
-    normalized.push({
-      id: String(ownerId),
-      role: "owner",
-      name: "Project Owner",
-    });
-  }
-
-  members.forEach((member) => {
-    const user = member?.user || member?.userId || member;
-    const uid = String(user?._id || user?.id || user || "");
-
-    if (!uid) return;
-    if (ownerId && uid === String(ownerId)) return;
-
-    normalized.push({
-      id: uid,
-      role: member?.role || "member",
-      name:
-        user?.name ||
-        `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
-        user?.username ||
-        user?.email ||
-        "Member",
-    });
-  });
-
-  const seen = new Set();
-  return normalized.filter((member) => {
-    if (!member?.id) return false;
-    if (seen.has(member.id)) return false;
-    seen.add(member.id);
-    return true;
-  });
-}
-
-function priorityRank(priority) {
-  const value = String(priority || "").toLowerCase();
-
-  if (value === "critical") return 4;
-  if (value === "high") return 3;
-  if (value === "medium") return 2;
-  if (value === "low") return 1;
-  return 0;
+function safeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function getTaskStatus(task) {
   return String(task?.status || task?.state || task?.lane || "").toLowerCase();
+}
+
+function isTaskDone(task) {
+  const status = getTaskStatus(task);
+  return status === "done" || status === "completed" || status === "archived";
+}
+
+function isTaskInMotion(task) {
+  const status = getTaskStatus(task);
+  return (
+    status === "in_progress" ||
+    status === "doing" ||
+    status === "active" ||
+    status === "review"
+  );
+}
+
+function isTaskReady(task) {
+  const status = getTaskStatus(task);
+  return (
+    status === "todo" ||
+    status === "to_do" ||
+    status === "backlog" ||
+    status === "planned" ||
+    status === "ready" ||
+    status === "queued"
+  );
 }
 
 function isTaskBlocked(task) {
@@ -114,6 +76,140 @@ function getDueTime(task) {
   return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
 }
 
+function isSameCalendarDay(dateLikeA, dateLikeB = new Date()) {
+  if (!dateLikeA) return false;
+
+  const a = new Date(dateLikeA);
+  const b = new Date(dateLikeB);
+
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return false;
+
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function countTodayCompleted(tasks = []) {
+  return tasks.reduce((count, task) => {
+    if (!isTaskDone(task)) return count;
+
+    const completedAt =
+      task?.completedAt ||
+      task?.doneAt ||
+      task?.updatedAt ||
+      task?.finishedAt ||
+      null;
+
+    return count + (isSameCalendarDay(completedAt) ? 1 : 0);
+  }, 0);
+}
+
+function countCompletedThisWeek(tasks = []) {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  return tasks.reduce((count, task) => {
+    if (!isTaskDone(task)) return count;
+
+    const completedAt =
+      task?.completedAt ||
+      task?.doneAt ||
+      task?.updatedAt ||
+      task?.finishedAt ||
+      null;
+
+    if (!completedAt) return count;
+
+    const completedDate = new Date(completedAt);
+    if (Number.isNaN(completedDate.getTime())) return count;
+
+    return count + (completedDate >= sevenDaysAgo ? 1 : 0);
+  }, 0);
+}
+
+function normalizePerson(personLike, fallbackRole = "member") {
+  if (!personLike) return null;
+
+  const user = personLike?.user || personLike?.userId || personLike;
+  const id = String(user?._id || user?.id || user || "");
+
+  if (!id) return null;
+
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+
+  return {
+    id,
+    role: personLike?.role || fallbackRole,
+    name:
+      user?.name ||
+      fullName ||
+      user?.username ||
+      user?.email ||
+      "Member",
+    email: user?.email || personLike?.email || "",
+    avatarUrl:
+      user?.avatarUrl ||
+      user?.profilePicture ||
+      user?.avatar ||
+      user?.photoUrl ||
+      "",
+  };
+}
+
+function normalizeProjectMembers(project) {
+  if (!project) return [];
+
+  const owner = project.owner || project.ownerId || null;
+  const members = Array.isArray(project.members) ? project.members : [];
+
+  const normalized = [];
+  const ownerUser = normalizePerson(owner, "owner");
+
+  if (ownerUser) {
+    normalized.push(ownerUser);
+  } else if (owner) {
+    const ownerId = String(owner?._id || owner?.id || owner || "");
+    if (ownerId) {
+      normalized.push({
+        id: ownerId,
+        role: "owner",
+        name: "Project Owner",
+        email: "",
+        avatarUrl: "",
+      });
+    }
+  }
+
+  members.forEach((member) => {
+    const normalizedMember = normalizePerson(member, member?.role || "member");
+    if (!normalizedMember) return;
+
+    if (ownerUser && normalizedMember.id === ownerUser.id) return;
+
+    normalized.push(normalizedMember);
+  });
+
+  const seen = new Set();
+  return normalized.filter((member) => {
+    if (!member?.id) return false;
+    if (seen.has(member.id)) return false;
+    seen.add(member.id);
+    return true;
+  });
+}
+
+function priorityRank(priority) {
+  const value = String(priority || "").toLowerCase();
+
+  if (value === "critical") return 4;
+  if (value === "high") return 3;
+  if (value === "medium") return 2;
+  if (value === "low") return 1;
+  return 0;
+}
+
 function deriveCriticalMoves(tasks = [], backendCriticalMoves = []) {
   if (Array.isArray(backendCriticalMoves) && backendCriticalMoves.length > 0) {
     return backendCriticalMoves;
@@ -123,10 +219,7 @@ function deriveCriticalMoves(tasks = [], backendCriticalMoves = []) {
     return [];
   }
 
-  const actionable = tasks.filter((task) => {
-    const status = getTaskStatus(task);
-    return status !== "done" && status !== "completed" && status !== "archived";
-  });
+  const actionable = tasks.filter((task) => !isTaskDone(task));
 
   return [...actionable]
     .sort((a, b) => {
@@ -136,11 +229,8 @@ function deriveCriticalMoves(tasks = [], backendCriticalMoves = []) {
       const priorityDelta = priorityRank(b?.priority) - priorityRank(a?.priority);
       if (priorityDelta !== 0) return priorityDelta;
 
-      const aStatus = getTaskStatus(a);
-      const bStatus = getTaskStatus(b);
-
-      const aInProgress = aStatus === "in_progress" ? 1 : 0;
-      const bInProgress = bStatus === "in_progress" ? 1 : 0;
+      const aInProgress = Number(isTaskInMotion(a));
+      const bInProgress = Number(isTaskInMotion(b));
       if (bInProgress !== aInProgress) return bInProgress - aInProgress;
 
       const dueDelta = getDueTime(a) - getDueTime(b);
@@ -155,11 +245,6 @@ function deriveCriticalMoves(tasks = [], backendCriticalMoves = []) {
       ...task,
       title: task?.title || task?.name || task?.label || "Priority task",
     }));
-}
-
-function countByStatuses(tasks = [], statuses = []) {
-  const wanted = new Set(statuses.map((s) => String(s).toLowerCase()));
-  return tasks.filter((task) => wanted.has(getTaskStatus(task))).length;
 }
 
 function firstNonEmptyArray(...candidates) {
@@ -259,6 +344,179 @@ function normalizeProjectEnvelope(overviewPayload, rawProjectPayload) {
   };
 }
 
+function getOwnerDisplayName(project) {
+  const owner = project?.owner || project?.ownerId || null;
+
+  if (!owner) return "Owner not set";
+  if (typeof owner === "string") return owner;
+
+  const fullName = [owner?.firstName, owner?.lastName].filter(Boolean).join(" ").trim();
+
+  return (
+    owner?.name ||
+    fullName ||
+    owner?.username ||
+    owner?.email ||
+    "Project Owner"
+  );
+}
+
+function getTaskOwner(task) {
+  const assignee =
+    task?.assignee ||
+    task?.assigneeUser ||
+    task?.owner ||
+    task?.ownerId ||
+    task?.user ||
+    null;
+
+  if (!assignee) return null;
+
+  if (typeof assignee === "string") {
+    return {
+      ownerId: assignee,
+      ownerName: assignee,
+    };
+  }
+
+  const fullName = [assignee?.firstName, assignee?.lastName].filter(Boolean).join(" ").trim();
+
+  return {
+    ownerId: String(assignee?._id || assignee?.id || ""),
+    ownerName:
+      assignee?.name ||
+      fullName ||
+      assignee?.username ||
+      assignee?.email ||
+      "Assigned owner",
+  };
+}
+
+function buildNextAction(backendNextAction, criticalMoves = [], tasks = []) {
+  if (backendNextAction?.title || backendNextAction?.label || backendNextAction?.text) {
+    return {
+      ...backendNextAction,
+      id: backendNextAction?.id || backendNextAction?._id || "",
+      title:
+        backendNextAction?.title ||
+        backendNextAction?.label ||
+        backendNextAction?.text ||
+        "Priority task",
+      ownerId: backendNextAction?.ownerId || backendNextAction?.assigneeId || "",
+      ownerName:
+        backendNextAction?.ownerName ||
+        backendNextAction?.assigneeName ||
+        "Owner not set",
+    };
+  }
+
+  const topMove = Array.isArray(criticalMoves) && criticalMoves.length > 0 ? criticalMoves[0] : null;
+  if (topMove) {
+    const owner = getTaskOwner(topMove);
+    return {
+      ...topMove,
+      id: topMove?._id || topMove?.id || "",
+      title: topMove?.title || topMove?.label || topMove?.text || "Priority task",
+      ownerId: owner?.ownerId || "",
+      ownerName: owner?.ownerName || "Owner not set",
+    };
+  }
+
+  const firstActionable = Array.isArray(tasks)
+    ? tasks.find((task) => !isTaskDone(task))
+    : null;
+
+  if (firstActionable) {
+    const owner = getTaskOwner(firstActionable);
+    return {
+      ...firstActionable,
+      id: firstActionable?._id || firstActionable?.id || "",
+      title:
+        firstActionable?.title ||
+        firstActionable?.name ||
+        firstActionable?.label ||
+        "Priority task",
+      ownerId: owner?.ownerId || "",
+      ownerName: owner?.ownerName || "Owner not set",
+    };
+  }
+
+  return null;
+}
+
+function getMomentumLabel(score) {
+  if (score >= 80) return "On Fire";
+  if (score >= 60) return "Flowing";
+  if (score >= 30) return "Building";
+  if (score > 0) return "Warming Up";
+  return "Planning";
+}
+
+function deriveTeamCapacity(members = [], tasks = [], backendTeamCapacity) {
+  if (Array.isArray(backendTeamCapacity) && backendTeamCapacity.length > 0) {
+    return backendTeamCapacity;
+  }
+
+  if (!Array.isArray(members) || members.length === 0) {
+    return [];
+  }
+
+  return members.map((member) => {
+    const assignedTasks = tasks.filter((task) => {
+      const assignee =
+        task?.assignee ||
+        task?.assigneeUser ||
+        task?.owner ||
+        task?.ownerId ||
+        task?.user ||
+        null;
+
+      const assigneeId = String(assignee?._id || assignee?.id || assignee || "");
+      return assigneeId && assigneeId === String(member.id);
+    });
+
+    const openAssigned = assignedTasks.filter((task) => !isTaskDone(task));
+    const blockedAssigned = assignedTasks.filter((task) => isTaskBlocked(task));
+
+    const load = clamp(openAssigned.length * 20 + blockedAssigned.length * 10, 0, 100);
+
+    return {
+      userId: member.id,
+      name: member.name,
+      capacity: 100,
+      load,
+      assignedCount: openAssigned.length,
+      blockedCount: blockedAssigned.length,
+    };
+  });
+}
+
+function buildForesight(data, activityCount) {
+  if (data?.foresight && typeof data.foresight === "object") {
+    return {
+      enabled: Boolean(data.foresight.enabled),
+      message:
+        data.foresight.message ||
+        (Boolean(data.foresight.enabled)
+          ? "Prediction signals available."
+          : "AI predictions are warming up."),
+      ...data.foresight,
+    };
+  }
+
+  if (activityCount >= 7) {
+    return {
+      enabled: true,
+      message: "Prediction signals are forming from recent activity.",
+    };
+  }
+
+  return {
+    enabled: false,
+    message: "AI predictions unlock after 7 days of activity.",
+  };
+}
+
 export function useProjectOverview(projectId, options = {}) {
   const {
     autoRefresh = true,
@@ -270,6 +528,7 @@ export function useProjectOverview(projectId, options = {}) {
   const [pulse, setPulse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const pulseIntervalRef = useRef(null);
 
   const fetchOverview = useCallback(async () => {
@@ -286,7 +545,7 @@ export function useProjectOverview(projectId, options = {}) {
         const status = overviewErr?.response?.status;
         if (status !== 404) {
           console.warn(
-            "[useProjectOverview] /overview fetch issue, will continue with /projects/:id:",
+            "[useProjectOverview] /overview fetch issue, continuing with /projects/:id fallback:",
             overviewErr?.message || overviewErr
           );
         }
@@ -347,6 +606,13 @@ export function useProjectOverview(projectId, options = {}) {
     ]);
   }, [fetchOverview, fetchPulse, includePulse]);
 
+  const refreshSilently = useCallback(async () => {
+    await Promise.all([
+      fetchOverview(),
+      includePulse ? fetchPulse() : Promise.resolve(),
+    ]);
+  }, [fetchOverview, fetchPulse, includePulse]);
+
   const project = useMemo(() => data?.project || null, [data]);
 
   const activity = useMemo(() => {
@@ -363,45 +629,116 @@ export function useProjectOverview(projectId, options = {}) {
   const events = useMemo(() => data?.events || [], [data]);
   const threads = useMemo(() => data?.threads || [], [data]);
   const files = useMemo(() => data?.files || [], [data]);
+  const objectives = useMemo(() => data?.objectives || [], [data]);
+
+  const overviewMembers = useMemo(() => normalizeProjectMembers(project), [project]);
+  const overviewMemberCount = overviewMembers.length;
+
+  const derivedCompletedToday = useMemo(() => countTodayCompleted(tasks), [tasks]);
+  const derivedCompletedThisWeek = useMemo(() => countCompletedThisWeek(tasks), [tasks]);
+  const derivedInProgress = useMemo(() => tasks.filter((task) => isTaskInMotion(task)).length, [tasks]);
+  const derivedBlocked = useMemo(() => tasks.filter((task) => isTaskBlocked(task)).length, [tasks]);
+  const derivedCompletedTasks = useMemo(() => tasks.filter((task) => isTaskDone(task)).length, [tasks]);
+  const derivedReady = useMemo(() => tasks.filter((task) => isTaskReady(task) && !isTaskDone(task) && !isTaskBlocked(task)).length, [tasks]);
 
   const pulseData = useMemo(() => {
     const top = data || {};
     const live = pulse || {};
+    const topPulse = top?.pulse || {};
 
-    const pickNumber = (key) => {
-      if (typeof top?.[key] === "number") return top[key];
-      if (typeof live?.[key] === "number") return live[key];
+    const pickNumber = (...values) => {
+      for (const value of values) {
+        if (typeof value === "number" && Number.isFinite(value)) {
+          return value;
+        }
+      }
       return undefined;
     };
 
     return {
-      completedToday: pickNumber("completedToday"),
-      completedThisWeek: pickNumber("completedThisWeek"),
-      inProgress: pickNumber("inProgress"),
-      blocked: pickNumber("blocked"),
-      totalTasks: pickNumber("totalTasks"),
-      completedTasks: pickNumber("completedTasks"),
+      completedToday: pickNumber(
+        topPulse?.todayCompleted,
+        top?.completedToday,
+        live?.completedToday,
+        derivedCompletedToday
+      ),
+      completedThisWeek: pickNumber(
+        topPulse?.completedThisWeek,
+        top?.completedThisWeek,
+        live?.completedThisWeek,
+        derivedCompletedThisWeek
+      ),
+      inProgress: pickNumber(
+        topPulse?.inProgress,
+        topPulse?.inMotion,
+        top?.inProgress,
+        live?.inProgress,
+        derivedInProgress
+      ),
+      blocked: pickNumber(
+        topPulse?.blocked,
+        top?.blocked,
+        live?.blocked,
+        derivedBlocked
+      ),
+      ready: pickNumber(
+        topPulse?.ready,
+        top?.ready,
+        live?.ready,
+        derivedReady
+      ),
+      totalTasks: pickNumber(
+        topPulse?.totalTasks,
+        top?.totalTasks,
+        live?.totalTasks,
+        tasks.length
+      ),
+      completedTasks: pickNumber(
+        topPulse?.completedTasks,
+        top?.completedTasks,
+        live?.completedTasks,
+        derivedCompletedTasks
+      ),
+      activeUsers: pickNumber(
+        topPulse?.activeUsers,
+        top?.activeUsers,
+        live?.activeUsers,
+        data?.summary?.ownerSummary?.onlineCount,
+        0
+      ),
+      lastShipAt:
+        topPulse?.lastShipAt ||
+        top?.lastShipAt ||
+        live?.lastShipAt ||
+        null,
     };
-  }, [data, pulse]);
-
-  const overviewMembers = useMemo(() => normalizeProjectMembers(project), [project]);
-  const overviewMemberCount = overviewMembers.length;
+  }, [
+    data,
+    pulse,
+    derivedCompletedToday,
+    derivedCompletedThisWeek,
+    derivedInProgress,
+    derivedBlocked,
+    derivedReady,
+    tasks.length,
+    derivedCompletedTasks,
+  ]);
 
   const criticalMoves = useMemo(() => {
     return deriveCriticalMoves(tasks, data?.criticalMoves || []);
   }, [tasks, data]);
 
-  const objectives = useMemo(() => data?.objectives || [], [data]);
-
   const metrics = useMemo(() => {
     const existingMomentum =
       typeof data?.metrics?.momentum === "number"
         ? data.metrics.momentum
-        : typeof data?.momentum?.percentage === "number"
-          ? data.momentum.percentage
-          : typeof data?.momentum === "number"
-            ? data.momentum
-            : null;
+        : typeof data?.momentum?.score === "number"
+          ? data.momentum.score
+          : typeof data?.momentum?.percentage === "number"
+            ? data.momentum.percentage
+            : typeof data?.momentum === "number"
+              ? data.momentum
+              : null;
 
     const completedThisWeek =
       typeof pulseData?.completedThisWeek === "number"
@@ -411,17 +748,22 @@ export function useProjectOverview(projectId, options = {}) {
     const inProgressCount =
       typeof pulseData?.inProgress === "number"
         ? pulseData.inProgress
-        : countByStatuses(tasks, ["in_progress", "doing", "active", "review"]);
+        : derivedInProgress;
 
     const completedCount =
       typeof pulseData?.completedTasks === "number"
         ? pulseData.completedTasks
-        : countByStatuses(tasks, ["done", "completed"]);
+        : derivedCompletedTasks;
 
     const blockedCount =
       typeof pulseData?.blocked === "number"
         ? pulseData.blocked
-        : tasks.filter(isTaskBlocked).length;
+        : derivedBlocked;
+
+    const readyCount =
+      typeof pulseData?.ready === "number"
+        ? pulseData.ready
+        : derivedReady;
 
     const totalTasksCount =
       typeof pulseData?.totalTasks === "number"
@@ -431,9 +773,11 @@ export function useProjectOverview(projectId, options = {}) {
     const weeklyShips =
       typeof data?.metrics?.weeklyShips === "number"
         ? data.metrics.weeklyShips
-        : typeof data?.heartbeat?.shipsPerWeek === "number"
-          ? data.heartbeat.shipsPerWeek
-          : completedThisWeek;
+        : typeof data?.momentum?.weeklyShips === "number"
+          ? data.momentum.weeklyShips
+          : typeof data?.heartbeat?.shipsPerWeek === "number"
+            ? data.heartbeat.shipsPerWeek
+            : completedThisWeek;
 
     const completionForecast =
       typeof data?.metrics?.completionForecast === "number"
@@ -460,6 +804,7 @@ export function useProjectOverview(projectId, options = {}) {
       derivedMomentum += Math.round((completedCount / Math.max(totalTasksCount, 1)) * 35);
       derivedMomentum += Math.min(25, weeklyShips * 5);
       derivedMomentum += Math.min(20, inProgressCount * 5);
+      derivedMomentum += Math.min(10, readyCount * 2);
       derivedMomentum -= Math.min(15, blockedCount * 5);
 
       if (derivedMomentum <= 0) {
@@ -477,18 +822,143 @@ export function useProjectOverview(projectId, options = {}) {
 
     return {
       momentum,
+      momentumLabel:
+        data?.momentum?.label ||
+        data?.metrics?.momentumLabel ||
+        getMomentumLabel(momentum),
       weeklyShips,
       momentumTrend,
       completionForecast,
       risks: data?.metrics?.risks || data?.risks || [],
       suggestions: data?.metrics?.suggestions || data?.suggestions || [],
-      teamCapacity: data?.metrics?.teamCapacity || data?.teamCapacity || [],
+      teamCapacity:
+        data?.metrics?.teamCapacity ||
+        data?.teamCapacity ||
+        [],
       inProgress: inProgressCount,
       blocked: blockedCount,
+      ready: readyCount,
       totalTasks: totalTasksCount,
       completedTasks: completedCount,
     };
-  }, [activity, data, pulseData, tasks]);
+  }, [
+    activity,
+    data,
+    pulseData,
+    derivedInProgress,
+    derivedCompletedTasks,
+    derivedBlocked,
+    derivedReady,
+    tasks.length,
+  ]);
+
+  const overview = useMemo(() => {
+    const backendSummary = data?.summary || {};
+    const onlineCount = safeNumber(
+      backendSummary?.ownerSummary?.onlineCount,
+      safeNumber(pulseData?.activeUsers, 0)
+    );
+
+    const ownerSummary = {
+      ...backendSummary?.ownerSummary,
+      primaryOwnerId:
+        backendSummary?.ownerSummary?.primaryOwnerId ||
+        String(project?.owner?._id || project?.owner?.id || project?.ownerId || ""),
+      primaryOwnerName:
+        backendSummary?.ownerSummary?.primaryOwnerName ||
+        getOwnerDisplayName(project),
+      memberCount:
+        safeNumber(backendSummary?.ownerSummary?.memberCount, overviewMemberCount),
+      onlineCount,
+    };
+
+    const nextAction = buildNextAction(
+      backendSummary?.nextAction,
+      criticalMoves,
+      tasks
+    );
+
+    const blockedCount = safeNumber(
+      backendSummary?.blockedCount,
+      metrics?.blocked || 0
+    );
+
+    const teamCapacity =
+      Array.isArray(data?.teamCapacity?.members)
+        ? data.teamCapacity.members
+        : Array.isArray(data?.teamCapacity)
+          ? data.teamCapacity
+          : Array.isArray(data?.metrics?.teamCapacity)
+            ? data.metrics.teamCapacity
+            : deriveTeamCapacity(overviewMembers, tasks, null);
+
+    const sprintSnapshot =
+      data?.sprint && typeof data.sprint === "object"
+        ? data.sprint
+        : {
+            active: false,
+            goal: null,
+            startDate: null,
+            endDate: null,
+          };
+
+    const foresight = buildForesight(data, Array.isArray(activity) ? activity.length : 0);
+
+    return {
+      project: {
+        id: String(project?._id || project?.id || projectId || ""),
+        name: project?.name || project?.title || "Untitled Project",
+        status:
+          project?.status ||
+          (project?.isAtRisk ? "at-risk" : "live"),
+      },
+      summary: {
+        nextAction,
+        blockedCount,
+        ownerSummary,
+      },
+      pulse: {
+        todayCompleted: safeNumber(pulseData?.completedToday, 0),
+        inMotion: safeNumber(pulseData?.inProgress, 0),
+        blocked: safeNumber(metrics?.blocked, 0),
+        ready: safeNumber(metrics?.ready, 0),
+      },
+      momentum: {
+        score: safeNumber(metrics?.momentum, 0),
+        label:
+          metrics?.momentumLabel ||
+          getMomentumLabel(safeNumber(metrics?.momentum, 0)),
+        weeklyShips: safeNumber(metrics?.weeklyShips, 0),
+        trend:
+          typeof metrics?.momentumTrend === "number"
+            ? metrics.momentumTrend
+            : 0,
+      },
+      priorityStack: Array.isArray(criticalMoves) ? criticalMoves : [],
+      sprint: sprintSnapshot,
+      foresight,
+      liveActivity: Array.isArray(activity) ? activity : [],
+      teamCapacity,
+      activeGoals: Array.isArray(objectives) ? objectives : [],
+      updatedAt:
+        data?.updatedAt ||
+        data?.project?.updatedAt ||
+        pulseData?.lastShipAt ||
+        null,
+    };
+  }, [
+    activity,
+    criticalMoves,
+    data,
+    metrics,
+    objectives,
+    overviewMemberCount,
+    overviewMembers,
+    project,
+    projectId,
+    pulseData,
+    tasks,
+  ]);
 
   const isHealthy = Boolean(data?.isHealthy ?? true);
   const hasWarnings = Boolean(data?.hasWarnings ?? false);
@@ -503,12 +973,15 @@ export function useProjectOverview(projectId, options = {}) {
     loading,
     error,
     refresh,
+    refreshSilently,
+
+    overview,
 
     project,
     metrics,
     criticalMoves,
     objectives,
-    sprint: data?.sprint,
+    sprint: overview?.sprint || data?.sprint || null,
     announcements: data?.announcements || [],
     pinnedAnnouncement: data?.pinnedAnnouncement || null,
     activity,
@@ -528,8 +1001,8 @@ export function useProjectOverview(projectId, options = {}) {
     hasWarnings,
 
     isLive: pulse?.liveActivity,
-    activeUsers: pulse?.activeUsers,
-    lastShipAt: pulse?.lastShipAt,
+    activeUsers: pulseData?.activeUsers,
+    lastShipAt: pulseData?.lastShipAt,
   };
 }
 
