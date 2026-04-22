@@ -3,6 +3,7 @@
 // PROJECTS SERVICE: Business Logic for Project Management
 // Phase K: Added real-time event emission to recordShipUpdate for global analytics sync
 // Overview data pass: real overview derivation for ProjectHome
+// Active Goals pass: expose project goals/objectives into overview snapshot
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger, Optional } from '@nestjs/common';
@@ -15,6 +16,11 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+
+function safeNumber(value: any, fallback = 0): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
 
 export interface ProjectQueryOptions {
   status?: ProjectStatus;
@@ -774,6 +780,317 @@ export class ProjectsService {
       }));
   }
 
+  private extractAnyId(value: any): string {
+    if (!value) return '';
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value);
+    }
+
+    if (value?._id) return String(value._id);
+    if (value?.id) return String(value.id);
+    if (value?.userId) {
+      if (typeof value.userId === 'string' || typeof value.userId === 'number') {
+        return String(value.userId);
+      }
+      if (value.userId?._id) return String(value.userId._id);
+      if (value.userId?.id) return String(value.userId.id);
+    }
+
+    if (typeof value?.toString === 'function') {
+      const str = value.toString();
+      if (str && str !== '[object Object]') return String(str);
+    }
+
+    return '';
+  }
+
+  private normalizeGoalPercent(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+
+    const num = Number(value);
+    if (!Number.isFinite(num)) return null;
+
+    if (num > 0 && num <= 1) {
+      return Math.max(0, Math.min(100, Math.round(num * 100)));
+    }
+
+    return Math.max(0, Math.min(100, Math.round(num)));
+  }
+
+  private goalTaskRefIds(goal: any): string[] {
+    const buckets = [
+      ...(Array.isArray(goal?.taskIds) ? goal.taskIds : []),
+      ...(Array.isArray(goal?.linkedTaskIds) ? goal.linkedTaskIds : []),
+      ...(Array.isArray(goal?.tasks) ? goal.tasks : []),
+      ...(Array.isArray(goal?.linkedTasks) ? goal.linkedTasks : []),
+      ...(Array.isArray(goal?.taskRefs) ? goal.taskRefs : []),
+    ];
+
+    const ids = buckets
+      .map((item: any) => {
+        if (!item) return '';
+        if (typeof item === 'string' || typeof item === 'number') return String(item);
+        return (
+          this.extractAnyId(item) ||
+          this.extractAnyId(item?.taskId) ||
+          this.extractAnyId(item?.task) ||
+          ''
+        );
+      })
+      .filter(Boolean);
+
+    return [...new Set(ids)];
+  }
+
+  private buildGoalOwner(goal: any): { ownerId: string; ownerName: string } {
+    const ownerLike =
+      goal?.owner ||
+      goal?.ownerId ||
+      goal?.assignee ||
+      goal?.assigneeId ||
+      goal?.lead ||
+      goal?.leadId ||
+      goal?.user ||
+      goal?.userId ||
+      null;
+
+    if (!ownerLike) {
+      return {
+        ownerId: '',
+        ownerName:
+          goal?.ownerName ||
+          goal?.assigneeName ||
+          goal?.leadName ||
+          'Owner not set',
+      };
+    }
+
+    if (typeof ownerLike === 'string' || typeof ownerLike === 'number') {
+      return {
+        ownerId: String(ownerLike),
+        ownerName:
+          goal?.ownerName ||
+          goal?.assigneeName ||
+          goal?.leadName ||
+          'Assigned owner',
+      };
+    }
+
+    const fullName = [ownerLike?.firstName, ownerLike?.lastName].filter(Boolean).join(' ').trim();
+
+    return {
+      ownerId:
+        this.extractAnyId(ownerLike) ||
+        this.extractAnyId(ownerLike?.userId) ||
+        '',
+      ownerName:
+        goal?.ownerName ||
+        goal?.assigneeName ||
+        goal?.leadName ||
+        ownerLike?.name ||
+        fullName ||
+        ownerLike?.username ||
+        ownerLike?.email ||
+        'Assigned owner',
+    };
+  }
+
+  private normalizeGoalStatus(
+    rawStatus: any,
+    blocked: boolean,
+    progress: number,
+    completedTaskCount: number,
+    linkedTaskCount: number,
+    dueDate: any,
+  ): string {
+    const value = String(rawStatus || '').toLowerCase();
+    const dueTime =
+      dueDate && !Number.isNaN(new Date(dueDate).getTime())
+        ? new Date(dueDate).getTime()
+        : Number.POSITIVE_INFINITY;
+
+    if (blocked || value === 'blocked') return 'blocked';
+
+    if (
+      value === 'completed' ||
+      value === 'complete' ||
+      value === 'done' ||
+      progress >= 100 ||
+      (linkedTaskCount > 0 && completedTaskCount >= linkedTaskCount)
+    ) {
+      return 'completed';
+    }
+
+    if (
+      value === 'at_risk' ||
+      value === 'at-risk' ||
+      value === 'risk' ||
+      (Number.isFinite(dueTime) && dueTime < Date.now() && progress < 100)
+    ) {
+      return 'at_risk';
+    }
+
+    if (
+      value === 'in_progress' ||
+      value === 'in-progress' ||
+      value === 'active' ||
+      value === 'doing' ||
+      value === 'executing' ||
+      progress > 0 ||
+      completedTaskCount > 0
+    ) {
+      return 'in_progress';
+    }
+
+    return 'planned';
+  }
+
+  private buildGoalSnapshots(project: any, tasks: any[]): any[] {
+    const rawGoals = Array.isArray((project as any)?.goals) ? (project as any).goals : [];
+    if (rawGoals.length === 0) return [];
+
+    const normalized = rawGoals
+      .map((goal: any, index: number) => {
+        if (!goal) return null;
+
+        if (typeof goal === 'string') {
+          return {
+            id: `goal-${index}`,
+            title: goal,
+            ownerId: '',
+            ownerName: 'Owner not set',
+            status: 'planned',
+            progress: 0,
+            dueDate: null,
+            blocked: false,
+            linkedTaskCount: 0,
+            completedTaskCount: 0,
+            summary: '',
+          };
+        }
+
+        if (typeof goal !== 'object') return null;
+
+        const refIds = this.goalTaskRefIds(goal);
+        const linkedTasks = refIds.length > 0
+          ? tasks.filter((task) => refIds.includes(this.extractAnyId(task?._id || task?.id)))
+          : [];
+
+        const linkedTaskCount =
+          safeNumber(goal?.linkedTaskCount, NaN) ||
+          safeNumber(goal?.taskCount, NaN) ||
+          safeNumber(goal?.tasksCount, NaN) ||
+          safeNumber(goal?.linkedItemsCount, linkedTasks.length);
+
+        const completedTaskCount =
+          safeNumber(goal?.completedTaskCount, NaN) ||
+          safeNumber(goal?.completedTasks, NaN) ||
+          safeNumber(goal?.doneTaskCount, NaN) ||
+          linkedTasks.filter((task) => this.isTaskDone(task)).length;
+
+        const blockedTaskCount =
+          safeNumber(goal?.blockedTaskCount, NaN) ||
+          linkedTasks.filter((task) => this.isTaskBlocked(task)).length;
+
+        const blocked = Boolean(
+          goal?.blocked ||
+          goal?.isBlocked ||
+          goal?.hasBlocker ||
+          goal?.blockedCount > 0 ||
+          blockedTaskCount > 0 ||
+          String(goal?.status || goal?.state || '').toLowerCase() === 'blocked'
+        );
+
+        const explicitProgress =
+          this.normalizeGoalPercent(goal?.progress) ??
+          this.normalizeGoalPercent(goal?.percentComplete) ??
+          this.normalizeGoalPercent(goal?.completionPercentage) ??
+          this.normalizeGoalPercent(goal?.completionRate);
+
+        const progress =
+          explicitProgress ??
+          (linkedTaskCount > 0
+            ? Math.max(0, Math.min(100, Math.round((completedTaskCount / linkedTaskCount) * 100)))
+            : String(goal?.status || goal?.state || '').toLowerCase() === 'completed'
+              ? 100
+              : 0);
+
+        const dueDate =
+          goal?.dueDate ||
+          goal?.targetDate ||
+          goal?.deadline ||
+          goal?.endDate ||
+          null;
+
+        const owner = this.buildGoalOwner(goal);
+        const status = this.normalizeGoalStatus(
+          goal?.status || goal?.state || goal?.phase,
+          blocked,
+          progress,
+          completedTaskCount,
+          linkedTaskCount,
+          dueDate,
+        );
+
+        return {
+          id: this.extractAnyId(goal) || `goal-${index}`,
+          title:
+            goal?.title ||
+            goal?.name ||
+            goal?.label ||
+            goal?.objective ||
+            `Goal ${index + 1}`,
+          ownerId: owner.ownerId,
+          ownerName: owner.ownerName,
+          status,
+          progress,
+          dueDate,
+          blocked,
+          linkedTaskCount,
+          completedTaskCount,
+          summary:
+            goal?.summary ||
+            goal?.description ||
+            goal?.subtitle ||
+            goal?.notes ||
+            '',
+        };
+      })
+      .filter(Boolean);
+
+    const seen = new Set<string>();
+
+    return normalized
+      .filter((goal: any) => {
+        if (!goal?.id) return false;
+        if (seen.has(goal.id)) return false;
+        seen.add(goal.id);
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const statusRank: Record<string, number> = {
+          blocked: 4,
+          at_risk: 3,
+          in_progress: 2,
+          planned: 1,
+          completed: 0,
+        };
+
+        const aRank = statusRank[a?.status] ?? 0;
+        const bRank = statusRank[b?.status] ?? 0;
+        if (bRank !== aRank) return bRank - aRank;
+
+        if ((b?.progress || 0) !== (a?.progress || 0)) {
+          return (b?.progress || 0) - (a?.progress || 0);
+        }
+
+        const aDue = a?.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b?.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        return aDue - bDue;
+      });
+  }
+
   async getOverviewData(projectId: string, userId: string): Promise<any> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
@@ -842,10 +1159,14 @@ export class ProjectsService {
     }
 
     const storedMetrics = (project as any).metrics || {};
-    const weeklyShips = completedThisWeek > 0 ? completedThisWeek : storedMetrics.weeklyShips || 0;
+    const weeklyShips =
+      completedThisWeek > 0 ? completedThisWeek : storedMetrics.weeklyShips || 0;
 
     const criticalMoves = this.buildCriticalMoves(tasks);
     const activity = this.buildRecentActivity(tasks);
+
+    const normalizedGoals = this.buildGoalSnapshots(project, tasks);
+    const activeGoals = normalizedGoals.filter((goal) => goal.status !== 'completed');
 
     return {
       project,
@@ -884,7 +1205,9 @@ export class ProjectsService {
       totalTasks,
       completedTasks,
       criticalMoves,
-      objectives: [],
+      activeGoals,
+      goals: normalizedGoals,
+      objectives: normalizedGoals,
       sprint: null,
       activity,
     };
@@ -903,7 +1226,7 @@ export class ProjectsService {
         completionRate: overview.metrics?.completionRate || 0,
       },
       criticalMoves: overview.criticalMoves || [],
-      objectives: overview.objectives || [],
+      objectives: overview.objectives || overview.goals || overview.activeGoals || [],
       sprint: overview.sprint || null,
       activity: overview.activity || [],
       completedToday: overview.completedToday || 0,
