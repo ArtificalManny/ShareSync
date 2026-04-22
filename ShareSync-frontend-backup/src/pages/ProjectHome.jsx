@@ -23,6 +23,7 @@ import {
   ForesightCard,
   LiveActivityCard,
   TeamCapacityCard,
+  ActiveGoalsCard,
 } from "../components/project/pulse/card";
 
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
@@ -48,7 +49,6 @@ import {
   Zap,
   Target,
   TrendingUp,
-  CheckCircle2,
   AlertTriangle,
   Play,
   Flame,
@@ -565,53 +565,6 @@ function PriorityStack({ moves }) {
   );
 }
 
-function ActiveGoalsCard({ objectives, onObjectiveClick }) {
-  const items = Array.isArray(objectives) ? objectives : [];
-
-  return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
-      <header className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center">
-            <CheckCircle2 className="w-4 h-4 text-teal-500" />
-          </div>
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Active Goals</h3>
-        </div>
-        <span className="text-xs text-slate-400 dark:text-zinc-500">Focus</span>
-      </header>
-
-      {items.length > 0 ? (
-        <ul className="space-y-2">
-          {items.slice(0, 5).map((g, i) => (
-            <li key={g?._id || g?.id || i}>
-              <button
-                type="button"
-                onClick={() => onObjectiveClick?.(g)}
-                className="text-left w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-teal-400 flex-shrink-0" />
-                {g?.title || g?.name || g?.label || "Objective"}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="text-center py-4">
-          <div className="w-10 h-10 rounded-full bg-teal-50 dark:bg-teal-500/10 mx-auto mb-3 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5 text-teal-400" />
-          </div>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-1">
-            No active goals yet
-          </p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500">
-            Goals focus your team on what matters most this sprint.
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function OverviewPulseCard({ pulse }) {
   const today = Number.isFinite(Number(pulse?.todayCompleted)) ? Number(pulse.todayCompleted) : 0;
   const inMotion = Number.isFinite(Number(pulse?.inMotion)) ? Number(pulse.inMotion) : 0;
@@ -755,6 +708,7 @@ function OverviewView({
   overview,
   metrics,
   sprint,
+  loading,
   onObjectiveClick,
   onSprintAction,
 }) {
@@ -871,7 +825,11 @@ function OverviewView({
           <TeamCapacityCard metrics={teamMetrics} />
         </div>
         <div className="col-span-12 lg:col-span-7">
-          <ActiveGoalsCard objectives={activeGoals} onObjectiveClick={onObjectiveClick} />
+          <ActiveGoalsCard
+            goals={activeGoals}
+            loading={loading}
+            onGoalClick={onObjectiveClick}
+          />
         </div>
       </div>
     </div>
@@ -1205,6 +1163,7 @@ export default function ProjectHome() {
               overview={overview}
               metrics={metrics}
               sprint={sprint}
+              loading={loading}
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
             />

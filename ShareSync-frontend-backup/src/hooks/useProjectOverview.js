@@ -20,6 +20,11 @@
 // - Derives a real project-local foresight object from trusted overview signals
 // - Keeps backend untouched for safety
 // - Preserves existing fallback behavior when data is sparse
+//
+// ACTIVE GOALS PASS:
+// - Normalizes goals/objectives into one reliable Overview contract
+// - Supports activeGoals / goals / objectives from overview or project payloads
+// - Produces card-ready fields: owner, status, progress, linked task counts
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -380,9 +385,20 @@ function normalizeProjectEnvelope(overviewPayload, rawProjectPayload) {
       overviewPayload?.files,
       rawProject?.files
     ),
+    activeGoals: firstArray(
+      overviewPayload?.activeGoals,
+      rawProject?.activeGoals,
+      overviewProject?.activeGoals
+    ),
+    goals: firstArray(
+      overviewPayload?.goals,
+      rawProject?.goals,
+      overviewProject?.goals
+    ),
     objectives: firstArray(
       overviewPayload?.objectives,
-      rawProject?.objectives
+      rawProject?.objectives,
+      overviewProject?.objectives
     ),
     announcements: firstArray(
       overviewPayload?.announcements,
@@ -552,6 +568,265 @@ function countOverdueOpenTasks(tasks = []) {
     const dueTime = getDueTime(task);
     return Number.isFinite(dueTime) && dueTime !== Number.POSITIVE_INFINITY && dueTime < now;
   }).length;
+}
+
+function normalizePercent(value) {
+  if (value === null || value === undefined || value === "") return null;
+
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+
+  if (num > 0 && num <= 1) {
+    return clamp(Math.round(num * 100), 0, 100);
+  }
+
+  return clamp(Math.round(num), 0, 100);
+}
+
+function normalizeGoalOwner(goal) {
+  const ownerLike =
+    goal?.owner ||
+    goal?.ownerId ||
+    goal?.assignee ||
+    goal?.assigneeId ||
+    goal?.lead ||
+    goal?.leadId ||
+    goal?.user ||
+    goal?.userId ||
+    null;
+
+  if (!ownerLike) {
+    return {
+      ownerId: "",
+      ownerName:
+        goal?.ownerName ||
+        goal?.assigneeName ||
+        goal?.leadName ||
+        "Owner not set",
+    };
+  }
+
+  if (typeof ownerLike === "string" || typeof ownerLike === "number") {
+    return {
+      ownerId: String(ownerLike),
+      ownerName:
+        goal?.ownerName ||
+        goal?.assigneeName ||
+        goal?.leadName ||
+        "Assigned owner",
+    };
+  }
+
+  const fullName = [ownerLike?.firstName, ownerLike?.lastName].filter(Boolean).join(" ").trim();
+
+  return {
+    ownerId:
+      extractId(ownerLike) ||
+      extractId(ownerLike?.userId) ||
+      "",
+    ownerName:
+      goal?.ownerName ||
+      goal?.assigneeName ||
+      goal?.leadName ||
+      ownerLike?.name ||
+      fullName ||
+      ownerLike?.username ||
+      ownerLike?.email ||
+      "Assigned owner",
+  };
+}
+
+function normalizeGoalStatus(rawStatus, blocked, progress, completedTaskCount, linkedTaskCount, dueDate) {
+  const value = String(rawStatus || "").toLowerCase();
+  const dueTime =
+    dueDate && !Number.isNaN(new Date(dueDate).getTime())
+      ? new Date(dueDate).getTime()
+      : Number.POSITIVE_INFINITY;
+
+  if (blocked || value === "blocked") return "blocked";
+  if (
+    value === "completed" ||
+    value === "complete" ||
+    value === "done" ||
+    progress >= 100 ||
+    (linkedTaskCount > 0 && completedTaskCount >= linkedTaskCount)
+  ) {
+    return "completed";
+  }
+
+  if (
+    value === "at_risk" ||
+    value === "at-risk" ||
+    value === "risk" ||
+    (Number.isFinite(dueTime) && dueTime < Date.now() && progress < 100)
+  ) {
+    return "at_risk";
+  }
+
+  if (
+    value === "in_progress" ||
+    value === "in-progress" ||
+    value === "active" ||
+    value === "doing" ||
+    value === "executing" ||
+    progress > 0 ||
+    completedTaskCount > 0
+  ) {
+    return "in_progress";
+  }
+
+  return "planned";
+}
+
+function normalizeGoalCandidate(goal, index) {
+  if (!goal) return null;
+
+  if (typeof goal === "string") {
+    return {
+      id: `goal-${index}`,
+      title: goal,
+      ownerId: "",
+      ownerName: "Owner not set",
+      status: "planned",
+      progress: 0,
+      dueDate: null,
+      blocked: false,
+      linkedTaskCount: 0,
+      completedTaskCount: 0,
+      summary: "",
+      raw: goal,
+    };
+  }
+
+  if (typeof goal !== "object") return null;
+
+  const linkedTasks = firstArray(
+    goal?.linkedTasks,
+    goal?.tasks,
+    goal?.taskRefs,
+    goal?.taskItems
+  );
+
+  const linkedTaskCount =
+    safeNumber(goal?.linkedTaskCount, NaN) ||
+    safeNumber(goal?.taskCount, NaN) ||
+    safeNumber(goal?.tasksCount, NaN) ||
+    safeNumber(goal?.linkedItemsCount, linkedTasks.length);
+
+  const completedTaskCount =
+    safeNumber(goal?.completedTaskCount, NaN) ||
+    safeNumber(goal?.completedTasks, NaN) ||
+    safeNumber(goal?.doneTaskCount, NaN) ||
+    linkedTasks.filter((task) => typeof task === "object" && isTaskDone(task)).length;
+
+  const blockedTaskCount =
+    safeNumber(goal?.blockedTaskCount, NaN) ||
+    linkedTasks.filter((task) => typeof task === "object" && isTaskBlocked(task)).length;
+
+  const blocked = Boolean(
+    goal?.blocked ||
+      goal?.isBlocked ||
+      goal?.hasBlocker ||
+      goal?.blockedCount > 0 ||
+      blockedTaskCount > 0 ||
+      String(goal?.status || goal?.state || "").toLowerCase() === "blocked"
+  );
+
+  const explicitProgress =
+    normalizePercent(goal?.progress) ??
+    normalizePercent(goal?.percentComplete) ??
+    normalizePercent(goal?.completionPercentage) ??
+    normalizePercent(goal?.completionRate);
+
+  const progress =
+    explicitProgress ??
+    (linkedTaskCount > 0
+      ? clamp(Math.round((completedTaskCount / linkedTaskCount) * 100), 0, 100)
+      : String(goal?.status || goal?.state || "").toLowerCase() === "completed"
+        ? 100
+        : 0);
+
+  const dueDate =
+    goal?.dueDate ||
+    goal?.targetDate ||
+    goal?.deadline ||
+    goal?.endDate ||
+    null;
+
+  const owner = normalizeGoalOwner(goal);
+
+  const status = normalizeGoalStatus(
+    goal?.status || goal?.state || goal?.phase,
+    blocked,
+    progress,
+    completedTaskCount,
+    linkedTaskCount,
+    dueDate
+  );
+
+  return {
+    id: extractId(goal) || `goal-${index}`,
+    title:
+      goal?.title ||
+      goal?.name ||
+      goal?.label ||
+      goal?.objective ||
+      `Goal ${index + 1}`,
+    ownerId: owner.ownerId,
+    ownerName: owner.ownerName,
+    status,
+    progress,
+    dueDate,
+    blocked,
+    linkedTaskCount,
+    completedTaskCount,
+    summary:
+      goal?.summary ||
+      goal?.description ||
+      goal?.subtitle ||
+      goal?.notes ||
+      "",
+    raw: goal,
+  };
+}
+
+function normalizeActiveGoals(candidates = []) {
+  if (!Array.isArray(candidates)) return [];
+
+  const normalized = candidates
+    .map((goal, index) => normalizeGoalCandidate(goal, index))
+    .filter(Boolean);
+
+  const seen = new Set();
+
+  return normalized
+    .filter((goal) => {
+      if (!goal?.id) return false;
+      if (seen.has(goal.id)) return false;
+      seen.add(goal.id);
+      return true;
+    })
+    .sort((a, b) => {
+      const statusRank = {
+        blocked: 4,
+        at_risk: 3,
+        in_progress: 2,
+        planned: 1,
+        completed: 0,
+      };
+
+      const aRank = statusRank[a?.status] ?? 0;
+      const bRank = statusRank[b?.status] ?? 0;
+      if (bRank !== aRank) return bRank - aRank;
+
+      if ((b?.progress || 0) !== (a?.progress || 0)) {
+        return (b?.progress || 0) - (a?.progress || 0);
+      }
+
+      const aDue = a?.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      const bDue = b?.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      return aDue - bDue;
+    });
 }
 
 function buildForesight(data, activityCount, tasks = [], criticalMoves = [], metrics = {}) {
@@ -802,7 +1077,25 @@ export function useProjectOverview(projectId, options = {}) {
   const events = useMemo(() => data?.events || [], [data]);
   const threads = useMemo(() => data?.threads || [], [data]);
   const files = useMemo(() => data?.files || [], [data]);
-  const objectives = useMemo(() => data?.objectives || [], [data]);
+
+  const objectives = useMemo(() => {
+    return Array.isArray(data?.objectives) ? data.objectives : [];
+  }, [data]);
+
+  const rawGoalCandidates = useMemo(() => {
+    return firstArray(
+      data?.activeGoals,
+      data?.goals,
+      data?.objectives,
+      data?.project?.activeGoals,
+      data?.project?.goals,
+      data?.project?.objectives
+    );
+  }, [data]);
+
+  const activeGoals = useMemo(() => {
+    return normalizeActiveGoals(rawGoalCandidates);
+  }, [rawGoalCandidates]);
 
   const overviewMembers = useMemo(() => normalizeProjectMembers(project), [project]);
   const overviewMemberCount = overviewMembers.length;
@@ -1118,7 +1411,7 @@ export function useProjectOverview(projectId, options = {}) {
       foresight,
       liveActivity: Array.isArray(activity) ? activity : [],
       teamCapacity,
-      activeGoals: Array.isArray(objectives) ? objectives : [],
+      activeGoals,
       updatedAt:
         data?.updatedAt ||
         data?.project?.updatedAt ||
@@ -1127,10 +1420,10 @@ export function useProjectOverview(projectId, options = {}) {
     };
   }, [
     activity,
+    activeGoals,
     criticalMoves,
     data,
     metrics,
-    objectives,
     overviewMemberCount,
     overviewMembers,
     project,
@@ -1160,6 +1453,7 @@ export function useProjectOverview(projectId, options = {}) {
     metrics,
     criticalMoves,
     objectives,
+    activeGoals,
     sprint: overview?.sprint || data?.sprint || null,
     announcements: data?.announcements || [],
     pinnedAnnouncement: data?.pinnedAnnouncement || null,
