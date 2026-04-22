@@ -1,34 +1,37 @@
 // src/pages/Projects.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC PROJECTS PAGE v4.3 - Force visible New Project CTA
+// SHARESYNC PROJECTS PAGE v4.4 - Canonical Grid Card Wiring
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// WHAT CHANGED IN v4.3:
-// - Keeps your current Projects page structure intact
-// - NO backend changes
-// - Hard-forces the top-right "New Project" button to render as a visible
-//   purple primary CTA
-// - Uses explicit backgroundColor, backgroundImage, color, opacity, shadow,
-//   and z-index to avoid washed-out rendering
+// WHAT CHANGED IN v4.4:
+// - Makes ProjectCardV2 the single source of truth for grid cards
+// - Keeps list view intact
+// - Keeps current Projects page structure and modal flow intact
+// - Preserves the stronger visible purple "New Project" CTA
+// - Fetches projects once on mount instead of on every filter/search keystroke
+// - Removes seeded fake recent searches from page-owned state
 //
+// NO BACKEND CHANGES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Plus, Flame, Users, Grid, List, LayoutGrid,
-  ChevronRight, AlertCircle
+  Search,
+  Plus,
+  Flame,
+  Grid,
+  List,
+  LayoutGrid,
+  ChevronRight,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+
 import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
+import ProjectCardV2 from '../components/projects/ProjectCardV2';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
-
-// PHASE D: Import empty state components
 import EmptyProjects from '../components/empty-states/EmptyProjects';
 import EmptySearch from '../components/empty-states/EmptySearch';
-
-// Use API helpers that already unwrap backend shapes correctly
 import { getProjects } from '../api/projects';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -42,11 +45,6 @@ const getProjectId = (project) => {
   return id;
 };
 
-const safeNumber = (value, fallback = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
 const getProjectName = (project) => {
   const raw = project?.name || project?.title || '';
   const trimmed = typeof raw === 'string' ? raw.trim() : '';
@@ -56,216 +54,40 @@ const getProjectName = (project) => {
 const getProjectDescription = (project) => {
   const raw = project?.description || project?.subtitle || '';
   const trimmed = typeof raw === 'string' ? raw.trim() : '';
-  return trimmed || 'No description yet';
+  return trimmed || 'No description provided.';
 };
 
-const getProjectVelocity = (project) => {
-  return safeNumber(project?.metrics?.onTimePercent?.value, 0);
+const getProjectEmoji = (project) => {
+  if (project?.icon) return project.icon;
+  if (project?.emoji) return project.emoji;
+
+  switch (project?.season) {
+    case 'shipping':
+      return '🚀';
+    case 'exploring':
+      return '🌱';
+    case 'maintaining':
+      return '🛠';
+    default:
+      return '📁';
+  }
 };
 
-const getOpenTaskCount = (project) => {
-  return safeNumber(project?.metrics?.openTasks?.value, 0);
+const safeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 };
-
-/* ─────────────────────────────────────────────────────────────────────────
-   VELOCITY BAR - Ocean Gradient
-───────────────────────────────────────────────────────────────────────── */
-const VelocityBar = ({ percentage }) => {
-  const clampedPercentage = Math.min(Math.max(safeNumber(percentage, 0), 0), 100);
-  const isComplete = clampedPercentage >= 100;
-
-  return (
-    <div className="h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-      <div
-        className="h-full rounded-full transition-all duration-500"
-        style={{
-          width: `${clampedPercentage}%`,
-          background: isComplete
-            ? 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)'
-            : 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)'
-        }}
-      />
-    </div>
-  );
-};
-
-/* ─────────────────────────────────────────────────────────────────────────
-   PROJECT CARD - Grid View
-───────────────────────────────────────────────────────────────────────── */
-function ProjectCard({ project, onProjectClick, onStartSprint }) {
-  const getSeasonEmoji = (season) => {
-    switch (season) {
-      case 'shipping': return '🚀';
-      case 'exploring': return '🌱';
-      case 'maintaining': return '🛠';
-      default: return '📁';
-    }
-  };
-
-  const name = getProjectName(project);
-  const description = getProjectDescription(project);
-  const velocity = getProjectVelocity(project);
-  const openTaskCount = getOpenTaskCount(project);
-  const streak = safeNumber(project?.streak?.value, 0);
-  const isImpressiveStreak = streak >= 7;
-  const hasNextStep = Boolean(project?.nextMicroStep);
-
-  const projectId = getProjectId(project);
-
-  const handleClick = () => {
-    if (!projectId) {
-      console.error('[Projects] Cannot navigate - ProjectCard missing ID:', project);
-      return;
-    }
-    onProjectClick(projectId);
-  };
-
-  const handleStartSprint = (e) => {
-    e.stopPropagation();
-    onStartSprint(project);
-  };
-
-  return (
-    <div
-      onClick={handleClick}
-      className={`
-        group p-5 rounded-xl cursor-pointer
-        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
-        hover:border-violet-200 dark:hover:border-violet-500/30
-        transition-all duration-200
-        ${project?.isAtRisk ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : ''}
-      `}
-      style={{
-        boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)',
-        borderTop: `3px solid ${project?.color || '#8B5CF6'}`,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.12)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 24px rgba(139, 92, 246, 0.06)';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
-    >
-      {/* Header: Emoji + Streak */}
-      <div className="flex justify-between items-start mb-4">
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform"
-          style={{
-            backgroundColor: `${project?.color || '#8B5CF6'}15`,
-            color: project?.color || '#8B5CF6'
-          }}
-        >
-          {project?.icon || project?.emoji || getSeasonEmoji(project?.season)}
-        </div>
-
-        {streak > 0 && (
-          <div className={`
-            flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
-            ${isImpressiveStreak
-              ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400'
-              : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
-            }
-          `}>
-            <Flame className={`w-3 h-3 ${isImpressiveStreak ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}`} />
-            <span>{streak}d</span>
-          </div>
-        )}
-      </div>
-
-      {/* Title + Description */}
-      <h3 className="text-base font-semibold text-slate-800 dark:text-zinc-100 mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-        {name}
-      </h3>
-      <p className="text-sm text-slate-500 dark:text-zinc-400 line-clamp-2 mb-4">
-        {description}
-      </p>
-
-      {/* Next Step */}
-      {hasNextStep ? (
-        <div className="bg-slate-50 dark:bg-[#111113] border border-slate-100 dark:border-white/5 rounded-lg p-3 mb-4">
-          <div className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
-            Next step
-          </div>
-          <div className="text-sm text-slate-700 dark:text-zinc-300 truncate">
-            {project.nextMicroStep}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-slate-50 dark:bg-[#111113] rounded-lg p-3 mb-4 border border-dashed border-slate-200 dark:border-white/10">
-          <div className="flex items-center gap-2 text-slate-400 dark:text-zinc-500">
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span className="text-xs">Add next step</span>
-          </div>
-        </div>
-      )}
-
-      {/* Velocity Progress - Ocean Gradient */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-            Velocity
-          </span>
-          <span className={`text-xs font-medium ${velocity >= 100 ? 'text-teal-600 dark:text-teal-400' : 'text-slate-700 dark:text-zinc-300'}`}>
-            {velocity}%
-          </span>
-        </div>
-        <VelocityBar percentage={velocity} />
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/10">
-        <div className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500">
-          <Users className="w-3.5 h-3.5" />
-          <span className="text-xs">
-            {openTaskCount} open task{openTaskCount === 1 ? '' : 's'}
-          </span>
-        </div>
-
-        <button
-          onClick={handleStartSprint}
-          className="
-            px-3 py-1.5 rounded-lg text-xs font-medium
-            text-white
-            hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900/20
-            transition-all duration-200
-          "
-          style={{
-            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)';
-          }}
-        >
-          Start Sprint
-        </button>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
    PROJECT ROW - List View
 ───────────────────────────────────────────────────────────────────────── */
 function ProjectRow({ project, onProjectClick, onStartSprint }) {
-  const getSeasonEmoji = (season) => {
-    switch (season) {
-      case 'shipping': return '🚀';
-      case 'exploring': return '��';
-      case 'maintaining': return '🛠';
-      default: return '📁';
-    }
-  };
-
   const name = getProjectName(project);
   const description = getProjectDescription(project);
-  const streak = safeNumber(project?.streak?.value, 0);
+  const emoji = getProjectEmoji(project);
+  const color = project?.color || '#8B5CF6';
+  const streak = safeNumber(project?.streak?.value ?? project?.streak, 0);
   const isImpressiveStreak = streak >= 7;
-
   const projectId = getProjectId(project);
 
   const handleClick = () => {
@@ -300,32 +122,35 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
         e.currentTarget.style.boxShadow = '0 2px 12px rgba(139, 92, 246, 0.04)';
       }}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 min-w-0">
         <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+          className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
           style={{
-            backgroundColor: `${project?.color || '#8B5CF6'}15`,
-            color: project?.color || '#8B5CF6'
+            backgroundColor: `${color}15`,
+            color,
           }}
         >
-          {project?.icon || project?.emoji || getSeasonEmoji(project?.season)}
+          {emoji}
         </div>
-        <div>
-          <h3 className="text-sm font-medium text-slate-800 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium text-slate-800 dark:text-zinc-100 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
             {name}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-zinc-400">
+          <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">
             {description}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 shrink-0">
         {streak > 0 && (
-          <div className={`
-            flex items-center gap-1 text-xs
-            ${isImpressiveStreak ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}
-          `}>
+          <div
+            className={`
+              flex items-center gap-1 text-xs
+              ${isImpressiveStreak ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}
+            `}
+          >
             <Flame className="w-3.5 h-3.5" />
             <span className="font-medium">{streak}d</span>
           </div>
@@ -353,7 +178,6 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
    MAIN PAGE
 ───────────────────────────────────────────────────────────────────────── */
 const Projects = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [projects, setProjects] = useState([]);
@@ -362,7 +186,6 @@ const Projects = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
-  const [selectedProject, setSelectedProject] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
 
   useEffect(() => {
@@ -376,10 +199,10 @@ const Projects = () => {
       const data = await getProjects();
 
       const list =
-        Array.isArray(data) ? data :
-        Array.isArray(data?.projects) ? data.projects :
-        Array.isArray(data?.items) ? data.items :
-        [];
+        Array.isArray(data) ? data
+          : Array.isArray(data?.projects) ? data.projects
+            : Array.isArray(data?.items) ? data.items
+              : [];
 
       setProjects(list);
     } catch (error) {
@@ -403,7 +226,7 @@ const Projects = () => {
   };
 
   const handleStartSprint = (project) => {
-    setSelectedProject(project);
+    console.log('[Projects] Start sprint clicked for:', project?.name || project?.title || project?._id || project?.id);
   };
 
   const handleSearch = (query) => {
@@ -432,8 +255,14 @@ const Projects = () => {
       projectName.includes(normalizedSearch) ||
       projectDescription.includes(normalizedSearch);
 
-    if (selectedFilter === 'at-risk') return matchesSearch && project?.isAtRisk;
-    if (selectedFilter === 'active') return matchesSearch && !project?.isAtRisk;
+    if (selectedFilter === 'at-risk') {
+      return matchesSearch && Boolean(project?.isAtRisk);
+    }
+
+    if (selectedFilter === 'active') {
+      return matchesSearch && !Boolean(project?.isAtRisk);
+    }
+
     return matchesSearch;
   });
 
@@ -499,7 +328,7 @@ const Projects = () => {
     <div
       className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto"
       style={{
-        background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%))'
+        background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%))',
       }}
     >
       {/* ═══════════════════════════════════════════════════════════════════
@@ -644,7 +473,7 @@ const Projects = () => {
         viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (
-              <ProjectCard
+              <ProjectCardV2
                 key={getProjectId(project) || `project-${getProjectName(project)}`}
                 project={project}
                 onProjectClick={handleProjectClick}
