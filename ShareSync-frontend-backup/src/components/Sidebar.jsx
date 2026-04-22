@@ -1,14 +1,21 @@
 // src/components/Sidebar.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHARESYNC SIDEBAR v6.5 - Cross-browser auto-hide with mousemove fallback
+// SHARESYNC SIDEBAR v6.6 - Cross-browser auto-hide with surgical clarity pass
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// FIX in v6.5:
+// FIX in v6.6:
 // - Keeps the current visual/sidebar structure intact
-// - Forces auto-hide ON for now so browser-local stale storage cannot interfere
-// - Uses BOTH mousemove and pointermove for cross-browser compatibility
-// - Keeps direct coordinate-based open/close logic
+// - Keeps auto-hide behavior exactly as-is
+// - Keeps local storage behavior exactly as-is
+// - Tightens product-owned sidebar labels for clarity:
+//   Mission Control -> Home
+//   Project Deck -> Projects
+//   The Arena -> Discover
+//   Identity -> Profile
+//   System -> Settings
+// - Fixes Fire Mode label rendering
 //
+// NO BACKEND CHANGES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, {
@@ -62,7 +69,13 @@ function buildDisplayName(u) {
 }
 
 function getUserFromLocalStorage() {
-  const candidates = ["ss.user", "sharesync.user", "user", "auth.user", "currentUser"];
+  const candidates = [
+    "ss.user",
+    "sharesync.user",
+    "user",
+    "auth.user",
+    "currentUser",
+  ];
 
   for (const k of candidates) {
     try {
@@ -105,7 +118,7 @@ function PersonalTelemetryHUD({ user, glowLevel, isFireMode, collapsed }) {
       : "bg-slate-300 dark:bg-zinc-600";
 
   const statusText = isFireMode
-    ? "Fire Mode ��"
+    ? "Fire Mode 🔥"
     : glowLevel >= 3
       ? "Deep Flow"
       : glowLevel > 0
@@ -262,7 +275,11 @@ function CatalystButton({ collapsed }) {
         title="Focus Next Mission"
       >
         <Zap className="w-4 h-4 text-violet-500 group-hover:scale-110 transition-transform" />
-        {!collapsed && <span className="text-xs font-bold tracking-wide">Focus Next Mission</span>}
+        {!collapsed && (
+          <span className="text-xs font-bold tracking-wide">
+            Focus Next Mission
+          </span>
+        )}
       </button>
     </div>
   );
@@ -431,16 +448,16 @@ export default function Sidebar({ user }) {
         </div>
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
-          <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
-          <SidebarItem to="/projects" label="Project Deck" icon={Terminal} collapsed={collapsed} />
-          <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
+          <SidebarItem to="/home" label="Home" icon={LayoutGrid} collapsed={collapsed} />
+          <SidebarItem to="/projects" label="Projects" icon={Terminal} collapsed={collapsed} />
+          <SidebarItem to="/discover" label="Discover" icon={Trophy} collapsed={collapsed} />
 
           <div className="py-4">
             <div className="h-px bg-slate-100" />
           </div>
 
-          <SidebarItem to="/profile" label="Identity" icon={UserIcon} collapsed={collapsed} />
-          <SidebarItem to="/settings" label="System" icon={Settings} collapsed={collapsed} />
+          <SidebarItem to="/profile" label="Profile" icon={UserIcon} collapsed={collapsed} />
+          <SidebarItem to="/settings" label="Settings" icon={Settings} collapsed={collapsed} />
         </nav>
 
         <div className="mt-auto flex flex-col">
