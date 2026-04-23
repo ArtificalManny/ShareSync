@@ -1020,30 +1020,16 @@ function buildFinishLine(
     data?.completionSnapshot ||
     project?.completionSnapshot ||
     null;
-
-  // Current lifecycle state
-  const currentCompletedAt =
+  const completedAt =
     data?.completedAt ||
     project?.completedAt ||
-    null;
-  const currentCompletedBy =
-    data?.completedBy ||
-    project?.completedBy ||
-    null;
-
-  // Historical snapshot state
-  const snapshotCompletedAt =
     completionSnapshot?.completedAt ||
     null;
-  const snapshotCompletedBy =
+  const completedBy =
+    data?.completedBy ||
+    project?.completedBy ||
     completionSnapshot?.completedBy ||
     null;
-
-  // IMPORTANT:
-  // Finish Line should reflect whether the project is currently completed,
-  // not merely whether a historical completion snapshot exists.
-  const completedAt = currentCompletedAt;
-  const completedBy = currentCompletedBy;
 
   const openTasks = Array.isArray(tasks)
     ? tasks.filter((task) => !isTaskDone(task))
@@ -1113,7 +1099,7 @@ function buildFinishLine(
 
   const isCompleted =
     String(project?.status || "").toLowerCase() === "completed" ||
-    Boolean(currentCompletedAt);
+    Boolean(completedAt);
 
   const isReadyToClose =
     typeof backend?.isReadyToClose === "boolean"
@@ -1189,8 +1175,6 @@ function buildFinishLine(
     completionSnapshot,
     completedAt,
     completedBy,
-    snapshotCompletedAt,
-    snapshotCompletedBy,
     headline,
     subheadline,
     primaryActionLabel,

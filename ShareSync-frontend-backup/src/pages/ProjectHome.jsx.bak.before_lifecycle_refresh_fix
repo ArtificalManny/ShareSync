@@ -1353,18 +1353,6 @@ export default function ProjectHome() {
     }, 250);
   }, [refreshSilently]);
 
-  const forceLifecycleRefresh = useCallback(async () => {
-    if (refreshOverviewTimerRef.current) {
-      window.clearTimeout(refreshOverviewTimerRef.current);
-      refreshOverviewTimerRef.current = null;
-    }
-
-    await refresh?.();
-    await refreshSilently?.();
-
-    setPulseRefreshKey((k) => k + 1);
-  }, [refresh, refreshSilently]);
-
   useEffect(() => {
     return () => {
       if (refreshOverviewTimerRef.current) {
@@ -1499,7 +1487,7 @@ export default function ProjectHome() {
         setIsCompletingProject(true);
         await completeProject(id, payload);
         setShowCompleteProjectModal(false);
-        await forceLifecycleRefresh();
+        await refreshSilently?.();
 
         toast({
           title: "Project completed",
@@ -1517,7 +1505,7 @@ export default function ProjectHome() {
         setIsCompletingProject(false);
       }
     },
-    [id, forceLifecycleRefresh]
+    [id, refreshSilently]
   );
 
   const handleReopenProject = useCallback(
@@ -1530,7 +1518,7 @@ export default function ProjectHome() {
       try {
         setIsReopeningProject(true);
         await reopenProject(id, { reason: "Reopened from ProjectHome finish line" });
-        await forceLifecycleRefresh();
+        await refreshSilently?.();
 
         toast({
           title: "Project reopened",
@@ -1547,7 +1535,7 @@ export default function ProjectHome() {
         setIsReopeningProject(false);
       }
     },
-    [id, isReopeningProject, forceLifecycleRefresh]
+    [id, isReopeningProject, refreshSilently]
   );
 
   const handleFinishLineAction = useCallback(() => {
