@@ -278,32 +278,6 @@ function getLifecycleMeta(status) {
   };
 }
 
-
-function formatDateTime(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function readNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function humanizeEnum(value) {
-  if (!value) return "";
-  return String(value)
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (m) => m.toUpperCase());
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HEADER
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -316,8 +290,6 @@ function ProjectHeader({
   onSettings,
   onBackToProjects,
   onMembersClick,
-  onLifecycleAction,
-  isLifecycleBusy = false,
 }) {
   const [isStarred, setIsStarred] = useState(false);
   const momentum = metrics?.momentum || 0;
@@ -331,32 +303,6 @@ function ProjectHeader({
 
   const state = getMomentumState();
   const lifecycle = getLifecycleMeta(project?.status);
-  const lifecycleState = String(project?.status || "").toLowerCase();
-  const isCompleted = lifecycleState === "completed";
-  const isReadyToClose = lifecycleState === "ready_to_close";
-
-  const PrimaryActionIcon = isCompleted
-    ? RotateCcw
-    : isReadyToClose
-      ? Flag
-      : Rocket;
-
-  const primaryActionLabel = isCompleted
-    ? (isLifecycleBusy ? "Reopening…" : "Reopen Project")
-    : isReadyToClose
-      ? (isLifecycleBusy ? "Opening…" : "Complete Project")
-      : "Ship Update";
-
-  const handlePrimaryAction = () => {
-    if (isLifecycleBusy) return;
-
-    if (isCompleted || isReadyToClose) {
-      onLifecycleAction?.();
-      return;
-    }
-
-    onShipUpdate?.("Shipped an update");
-  };
 
   return (
     <header className="px-10 py-6 border-b border-slate-200/60 bg-slate-50 dark:bg-[#0f172a] dark:border-white/10">
@@ -445,25 +391,20 @@ function ProjectHeader({
 
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
-            onClick={handlePrimaryAction}
-            disabled={isLifecycleBusy}
-            className={`
+            onClick={() => onShipUpdate?.("Shipped an update")}
+            className="
               flex items-center gap-2.5 px-5 py-2.5 rounded-xl
+              bg-gradient-to-r from-violet-500 to-fuchsia-500
               text-white font-medium text-sm
+              hover:from-violet-600 hover:to-fuchsia-600
               transition-all duration-200
+              shadow-md shadow-violet-500/20
+              hover:shadow-lg hover:shadow-violet-500/30
               hover:-translate-y-0.5 active:translate-y-0
-              disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0
-              ${
-                isCompleted
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30"
-                  : isReadyToClose
-                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30"
-                    : "bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 shadow-md shadow-violet-500/20 hover:shadow-lg hover:shadow-violet-500/30"
-              }
-            `}
+            "
           >
-            <PrimaryActionIcon className="w-4 h-4" />
-            <span>{primaryActionLabel}</span>
+            <Rocket className="w-4 h-4" />
+            <span>Ship Update</span>
           </button>
 
           <button
@@ -843,242 +784,6 @@ function OverviewSignalCard({
   );
 }
 
-
-function CompletedSnapshotPanel({
-  finishLine,
-  onReopenProject,
-  isReopeningProject = false,
-}) {
-  const snapshot = finishLine?.completionSnapshot || {};
-  const closureSummary =
-    finishLine?.closureSummary ||
-    snapshot?.summary ||
-    "";
-  const completedAt = formatDateTime(
-    finishLine?.completedAt || snapshot?.completedAt
-  );
-  const outcomeStatus = humanizeEnum(
-    finishLine?.outcomeStatus || snapshot?.outcomeStatus
-  );
-  const leftoverDecision = humanizeEnum(snapshot?.leftoverDecision);
-
-  const completedTaskCount = readNumber(snapshot?.completedTaskCount, 0);
-  const openTaskCount = readNumber(snapshot?.openTaskCount, 0);
-  const blockedTaskCount = readNumber(snapshot?.blockedTaskCount, 0);
-  const goalsAchievedCount = readNumber(snapshot?.goalsAchievedCount, 0);
-  const goalsTotalCount = readNumber(snapshot?.goalsTotalCount, 0);
-  const deferredCount = Array.isArray(snapshot?.deferredTaskIds)
-    ? snapshot.deferredTaskIds.length
-    : 0;
-  const canceledCount = Array.isArray(snapshot?.canceledTaskIds)
-    ? snapshot.canceledTaskIds.length
-    : 0;
-
-  return (
-    <section className="rounded-[28px] border border-emerald-200 dark:border-emerald-500/20 bg-white dark:bg-[#111113] shadow-sm dark:shadow-none overflow-hidden">
-      <div className="px-5 md:px-6 py-5 border-b border-emerald-100 dark:border-emerald-500/10 bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-500/10 dark:via-emerald-500/[0.03] dark:to-teal-500/[0.06]">
-        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Closeout Snapshot
-              </span>
-
-              {completedAt ? (
-                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium bg-white/80 text-slate-600 border border-slate-200 dark:bg-white/[0.05] dark:text-zinc-300 dark:border-white/[0.08]">
-                  <Clock className="w-3.5 h-3.5" />
-                  {completedAt}
-                </span>
-              ) : null}
-            </div>
-
-            <h3 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-zinc-100">
-              This project has crossed the finish line.
-            </h3>
-
-            <p className="mt-2 text-sm md:text-[15px] leading-relaxed text-slate-600 dark:text-zinc-300 max-w-3xl">
-              Treat this as the historical record of what was delivered, what was deferred,
-              and how the mission ended.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onReopenProject}
-            disabled={isReopeningProject}
-            className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isReopeningProject ? "Reopening…" : "Reopen Project"}</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="p-5 md:p-6">
-        <div className="grid grid-cols-2 xl:grid-cols-6 gap-3 mb-5">
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-1">Outcome</div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
-              {outcomeStatus || "Completed"}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-1">Done</div>
-            <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
-              {completedTaskCount}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-1">Open at close</div>
-            <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
-              {openTaskCount}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-1">Blocked</div>
-            <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
-              {blockedTaskCount}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-1">Goals</div>
-            <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
-              {goalsAchievedCount}/{goalsTotalCount}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-1">Leftovers</div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
-              {leftoverDecision || "Recorded"}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-4">
-          <div className="rounded-[24px] border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-emerald-500" />
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                Closure summary
-              </h4>
-            </div>
-
-            <p className="text-sm leading-relaxed text-slate-700 dark:text-zinc-200">
-              {closureSummary || "No written closure summary was recorded for this closeout."}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-[24px] border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Archive className="w-4 h-4 text-violet-500" />
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                  Leftover handling
-                </h4>
-              </div>
-
-              <div className="space-y-2 text-sm text-slate-700 dark:text-zinc-200">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500 dark:text-zinc-400">Decision</span>
-                  <span className="font-medium">{leftoverDecision || "Not recorded"}</span>
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500 dark:text-zinc-400">Deferred tasks</span>
-                  <span className="font-medium">{deferredCount}</span>
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500 dark:text-zinc-400">Canceled tasks</span>
-                  <span className="font-medium">{canceledCount}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[24px] border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/80 dark:bg-emerald-500/8 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                  Historical mode
-                </h4>
-              </div>
-
-              <p className="text-sm leading-relaxed text-emerald-800 dark:text-emerald-200">
-                This project is now being presented as a completed mission. Reopen it only if the work truly needs to resume.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HistoricalModeBanner({
-  project,
-  onReopenProject,
-  isReopeningProject = false,
-}) {
-  const completedAt = formatDateTime(project?.completedAt);
-  const outcomeStatus = humanizeEnum(project?.outcomeStatus);
-
-  return (
-    <section className="mx-10 mt-6 rounded-[24px] border border-emerald-200 dark:border-emerald-500/20 bg-white dark:bg-[#111113] shadow-sm dark:shadow-none overflow-hidden">
-      <div className="px-5 md:px-6 py-5 bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-500/10 dark:via-emerald-500/[0.03] dark:to-teal-500/[0.06]">
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
-                <Archive className="w-3.5 h-3.5" />
-                Historical Mode
-              </span>
-
-              {completedAt ? (
-                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium bg-white/80 text-slate-600 border border-slate-200 dark:bg-white/[0.05] dark:text-zinc-300 dark:border-white/[0.08]">
-                  <Clock className="w-3.5 h-3.5" />
-                  Completed {completedAt}
-                </span>
-              ) : null}
-
-              {outcomeStatus ? (
-                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium bg-white/80 text-slate-600 border border-slate-200 dark:bg-white/[0.05] dark:text-zinc-300 dark:border-white/[0.08]">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {outcomeStatus}
-                </span>
-              ) : null}
-            </div>
-
-            <h3 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-zinc-100">
-              You are viewing a completed project.
-            </h3>
-
-            <p className="mt-2 text-sm md:text-[15px] leading-relaxed text-slate-600 dark:text-zinc-300 max-w-3xl">
-              This workspace is now functioning as a historical record of what was built,
-              what was deferred, and how the mission ended. Reopen it only if the work truly needs to resume.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onReopenProject}
-            disabled={isReopeningProject}
-            className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isReopeningProject ? "Reopening…" : "Reopen Project"}</span>
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function OverviewView({
   project,
   overview,
@@ -1088,8 +793,6 @@ function OverviewView({
   onObjectiveClick,
   onSprintAction,
   onFinishLineAction,
-  onReopenProject,
-  isReopeningProject,
 }) {
   const summary = overview?.summary || {};
   const pulse = overview?.pulse || {};
@@ -1183,16 +886,6 @@ function OverviewView({
           onPrimaryAction={onFinishLineAction}
         />
       </div>
-
-      {finishLine?.isCompleted ? (
-        <div className="mb-8">
-          <CompletedSnapshotPanel
-            finishLine={finishLine}
-            onReopenProject={onReopenProject}
-            isReopeningProject={isReopeningProject}
-          />
-        </div>
-      ) : null}
 
       <div className="mb-8">
         <OverviewPulseCard pulse={pulse} />
@@ -1627,10 +1320,6 @@ export default function ProjectHome() {
         : metrics?.momentum || 0,
   };
 
-  const projectLifecycleState = String(project?.status || "").toLowerCase();
-  const isHistoricalProject = projectLifecycleState === "completed";
-  const showHistoricalBanner = isHistoricalProject && activeView !== "overview";
-
   if (loading) return <LoadingState />;
 
   if (error) {
@@ -1665,8 +1354,6 @@ export default function ProjectHome() {
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
               onFinishLineAction={handleFinishLineAction}
-              onReopenProject={handleReopenProject}
-              isReopeningProject={isReopeningProject}
             />
           );
 
@@ -1802,8 +1489,6 @@ export default function ProjectHome() {
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
         onMembersClick={() => setIsMembersPanelOpen(true)}
-        onLifecycleAction={handleFinishLineAction}
-        isLifecycleBusy={isCompletingProject || isReopeningProject}
       />
 
       <ViewNavigation
@@ -1811,18 +1496,6 @@ export default function ProjectHome() {
         onViewChange={setActiveView}
         views={projectViews}
       />
-
-      {showHistoricalBanner ? (
-        <HistoricalModeBanner
-          project={{
-            ...project,
-            completedAt: finishLine?.completedAt || project?.completedAt,
-            outcomeStatus: finishLine?.outcomeStatus || project?.outcomeStatus,
-          }}
-          onReopenProject={handleReopenProject}
-          isReopeningProject={isReopeningProject}
-        />
-      ) : null}
 
       <main key={pulseRefreshKey}>{renderViewContent()}</main>
 

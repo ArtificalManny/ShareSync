@@ -40,10 +40,6 @@ function formatLabel(value) {
     .replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-function pluralize(count, singular, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
 function getStepState(currentStep, stepIndex) {
   if (stepIndex < currentStep) return "done";
   if (stepIndex === currentStep) return "active";
@@ -381,109 +377,6 @@ export default function CompleteProjectModal({
   const isCompleted = Boolean(finishLine?.isCompleted);
 
   const isSummaryValid = closureSummary.trim().length >= 20;
-  const scoreGap = Math.max(0, 100 - readinessScore);
-
-  const scoreNarrative = useMemo(() => {
-    if (isCompleted) {
-      return "This project is already historical. The closeout flow is now a record of how it ended.";
-    }
-
-    if (readinessScore >= 100) {
-      return "Nothing is currently withholding a perfect closeout score.";
-    }
-
-    if (isReadyToClose && warnings.length > 0) {
-      return `${scoreGap} points are still withheld by closeout proof signals, not execution risk.`;
-    }
-
-    if (blockers.length > 0) {
-      return `${scoreGap} points are being held back by unfinished execution risk and closure friction.`;
-    }
-
-    if (warnings.length > 0) {
-      return `${scoreGap} points are being held back by unresolved closeout signals.`;
-    }
-
-    return `${scoreGap} points still separate this project from a perfect finish-line score.`;
-  }, [isCompleted, readinessScore, isReadyToClose, warnings.length, blockers.length, scoreGap]);
-
-  const decisionPreview = useMemo(() => {
-    const base = {
-      title: "No leftover decision selected yet",
-      description: "Choose how OpenShare should handle unfinished work before the project is closed.",
-      tone: "slate",
-    };
-
-    if (!leftoverDecision) return base;
-
-    if (leftoverDecision === "backlog") {
-      return {
-        title: `Send ${pluralize(openTaskCount, "open task")} back to backlog`,
-        description:
-          openTaskCount > 0
-            ? "This preserves unfinished work without letting it block the historical definition of done."
-            : "There is no open work right now, so this decision acts as a safety default.",
-        tone: "violet",
-      };
-    }
-
-    if (leftoverDecision === "defer") {
-      return {
-        title: `Defer ${pluralize(openTaskCount, "open task")} into a later phase`,
-        description:
-          "This tells the team the work still matters, but it no longer belongs in the finish criteria of this project.",
-        tone: "amber",
-      };
-    }
-
-    if (leftoverDecision === "cancel") {
-      return {
-        title: `Mark ${pluralize(openTaskCount, "open task")} as intentionally dropped`,
-        description:
-          "This creates a hard historical line: the project is complete, and the unfinished work is no longer part of the mission.",
-        tone: "rose",
-      };
-    }
-
-    if (leftoverDecision === "follow_up") {
-      return {
-        title: `Push ${pluralize(openTaskCount, "open task")} into a follow-up mission`,
-        description:
-          followUpProjectId.trim().length > 0
-            ? `The follow-up project will become the new container for the unfinished work (${followUpProjectId.trim()}).`
-            : "Provide a follow-up project ID to preserve continuity without contaminating this closeout.",
-        tone: "teal",
-      };
-    }
-
-    return base;
-  }, [leftoverDecision, openTaskCount, followUpProjectId]);
-
-  const summaryPrompts = useMemo(() => {
-    const prompts = [
-      "What did this project actually deliver?",
-      "What remains unfinished, deferred, or intentionally dropped?",
-      "Why is it still valid to call this project complete now?",
-    ];
-
-    if (outcomeStatus === "partially_achieved") {
-      prompts.push("What value was delivered even though the full ambition was not reached?");
-    }
-
-    if (outcomeStatus === "canceled") {
-      prompts.push("Why was closing the project the right decision?");
-    }
-
-    if (leftoverDecision === "follow_up") {
-      prompts.push("What work is being handed into the follow-up project?");
-    }
-
-    if (blockedTaskCount > 0 || criticalOpenCount > 0) {
-      prompts.push("How were the remaining risks acknowledged or contained at closeout?");
-    }
-
-    return prompts;
-  }, [outcomeStatus, leftoverDecision, blockedTaskCount, criticalOpenCount]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -541,79 +434,6 @@ export default function CompleteProjectModal({
     closureChecklist.primaryGoalConfirmed &&
     closureChecklist.blockersReviewed &&
     closureChecklist.stakeholderSignoff;
-
-  const unmetRequirements = useMemo(() => {
-    const items = [];
-
-    if (!canMoveFromReadiness) {
-      items.push({
-        key: "readiness",
-        label: forceComplete
-          ? "Resolve remaining readiness blockers or keep force close enabled."
-          : "Resolve remaining readiness blockers or explicitly choose force close.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!closureChecklist.primaryGoalConfirmed) {
-      items.push({
-        key: "primaryGoalConfirmed",
-        label: "Confirm the primary goal has been honestly evaluated.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!closureChecklist.blockersReviewed) {
-      items.push({
-        key: "blockersReviewed",
-        label: "Confirm blockers were reviewed and consciously resolved or accepted.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!closureChecklist.stakeholderSignoff) {
-      items.push({
-        key: "stakeholderSignoff",
-        label: "Record stakeholder signoff before closing the project.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!canMoveFromOutcome) {
-      items.push({
-        key: "outcome",
-        label: "Select the final outcome for this project.",
-        stepIndex: 1,
-      });
-    }
-
-    if (!canMoveFromLeftovers) {
-      items.push({
-        key: "leftovers",
-        label: "Provide a valid follow-up project ID for the leftover plan.",
-        stepIndex: 2,
-      });
-    }
-
-    if (!isSummaryValid) {
-      items.push({
-        key: "summary",
-        label: "Write a stronger closure summary (minimum 20 characters).",
-        stepIndex: 3,
-      });
-    }
-
-    return items;
-  }, [
-    canMoveFromReadiness,
-    canMoveFromOutcome,
-    canMoveFromLeftovers,
-    isSummaryValid,
-    closureChecklist.primaryGoalConfirmed,
-    closureChecklist.blockersReviewed,
-    closureChecklist.stakeholderSignoff,
-    forceComplete,
-  ]);
 
   const nextDisabled =
     (step === 0 && !canMoveFromReadiness) ||
@@ -962,51 +782,6 @@ export default function CompleteProjectModal({
                       </p>
                     </div>
                   ) : null}
-
-                  <div className="mt-5 rounded-[26px] border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Layers3 className="w-4 h-4 text-violet-500" />
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                        Decision impact preview
-                      </h4>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] px-4 py-4 mb-4">
-                      <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100 mb-1">
-                        {decisionPreview.title}
-                      </div>
-                      <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-300">
-                        {decisionPreview.description}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <MetricTile
-                        icon={Layers3}
-                        label="Open tasks"
-                        value={openTaskCount}
-                        tone="neutral"
-                      />
-                      <MetricTile
-                        icon={AlertTriangle}
-                        label="Critical open"
-                        value={criticalOpenCount}
-                        tone={criticalOpenCount > 0 ? "amber" : "neutral"}
-                      />
-                      <MetricTile
-                        icon={Sparkles}
-                        label="Blockers"
-                        value={blockedTaskCount}
-                        tone={blockedTaskCount > 0 ? "rose" : "neutral"}
-                      />
-                      <MetricTile
-                        icon={Target}
-                        label="Active goals"
-                        value={activeGoalCount}
-                        tone={activeGoalCount > 0 ? "amber" : "neutral"}
-                      />
-                    </div>
-                  </div>
                 </div>
               ) : null}
 
@@ -1022,26 +797,6 @@ export default function CompleteProjectModal({
 
                   <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-5">
                     <div className="rounded-[26px] border border-slate-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] p-5">
-                      <div className="mb-4 rounded-[22px] border border-violet-200 dark:border-violet-500/20 bg-violet-50/80 dark:bg-violet-500/8 p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="w-4 h-4 text-violet-600 dark:text-violet-300" />
-                          <div className="text-xs font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">
-                            A strong closeout summary covers
-                          </div>
-                        </div>
-
-                        <ul className="space-y-2">
-                          {summaryPrompts.map((prompt) => (
-                            <li
-                              key={prompt}
-                              className="text-sm leading-relaxed text-slate-700 dark:text-zinc-200"
-                            >
-                              • {prompt}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
                       <label className="block">
                         <div className="text-sm font-medium text-slate-900 dark:text-zinc-100 mb-2">
                           Closure summary
@@ -1105,37 +860,6 @@ export default function CompleteProjectModal({
                         </div>
                       </div>
 
-                      {!canSubmit ? (
-                        <div className="rounded-[26px] border border-amber-200 dark:border-amber-500/20 bg-amber-50/80 dark:bg-amber-500/8 p-5">
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-300" />
-                            <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                              Still required before completion
-                            </div>
-                          </div>
-
-                          <div className="space-y-2.5">
-                            {unmetRequirements.map((item) => (
-                              <button
-                                key={item.key}
-                                type="button"
-                                onClick={() => setStep(item.stepIndex)}
-                                className="w-full text-left rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-white/80 dark:bg-white/[0.03] px-4 py-3 hover:bg-white transition-colors"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <span className="text-sm leading-relaxed text-slate-700 dark:text-zinc-200">
-                                    {item.label}
-                                  </span>
-                                  <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 whitespace-nowrap">
-                                    Step {item.stepIndex + 1}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
                       <div className="rounded-[26px] border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/80 dark:bg-emerald-500/8 p-5">
                         <div className="flex items-center gap-2 mb-3">
                           <Rocket className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
@@ -1192,28 +916,20 @@ export default function CompleteProjectModal({
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <div className="flex flex-col items-end gap-2">
-                      {!canSubmit && !isCompleted ? (
-                        <div className="text-xs text-slate-500 dark:text-zinc-400 text-right max-w-[280px]">
-                          Review the missing closeout requirements above before the finish line can be declared.
-                        </div>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={!canSubmit || isSubmitting || isCompleted}
-                        className={cn(
-                          "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium transition-all",
-                          !canSubmit || isSubmitting || isCompleted
-                            ? "bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-white/[0.08] dark:text-zinc-500"
-                            : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
-                        )}
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        {isSubmitting ? "Completing…" : "Complete Project"}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={!canSubmit || isSubmitting || isCompleted}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium transition-all",
+                        !canSubmit || isSubmitting || isCompleted
+                          ? "bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-white/[0.08] dark:text-zinc-500"
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
+                      )}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {isSubmitting ? "Completing…" : "Complete Project"}
+                    </button>
                   )}
                 </div>
               </div>

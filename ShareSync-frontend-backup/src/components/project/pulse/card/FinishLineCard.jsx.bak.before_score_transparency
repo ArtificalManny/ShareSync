@@ -44,10 +44,6 @@ function formatDate(value) {
   });
 }
 
-function pluralize(count, singular, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
 function getTone(state) {
   switch (state) {
     case "completed":
@@ -202,92 +198,6 @@ export default function FinishLineCard({
     }
     return "Finish-line signals are warming up";
   }, [isCompleted, isReadyToClose, blockingReasons.length, warnings.length]);
-
-  const scoreGap = Math.max(0, 100 - progressRing);
-  const openTaskCount = safeNumber(data?.openTaskCount, 0);
-  const openCriticalTaskCount = safeNumber(data?.openCriticalTaskCount, 0);
-  const blockedTaskCount = safeNumber(data?.blockedTaskCount, 0);
-  const activeGoalCount = safeNumber(data?.activeGoalCount, 0);
-  const completedGoalCount = safeNumber(data?.completedGoalCount, 0);
-
-  const scoreSignals = useMemo(() => {
-    const items = [];
-
-    if (openCriticalTaskCount > 0) {
-      items.push({
-        label: pluralize(openCriticalTaskCount, "critical open"),
-        tone: "amber",
-      });
-    }
-
-    if (blockedTaskCount > 0) {
-      items.push({
-        label: pluralize(blockedTaskCount, "blocker"),
-        tone: "rose",
-      });
-    }
-
-    if (activeGoalCount > 0 && !isCompleted) {
-      items.push({
-        label: pluralize(activeGoalCount, "active goal"),
-        tone: "violet",
-      });
-    }
-
-    if (Boolean(data?.hasActiveSprint) && !isCompleted) {
-      items.push({
-        label: "active sprint",
-        tone: "amber",
-      });
-    }
-
-    if (warnings.length > 0) {
-      items.push({
-        label: pluralize(warnings.length, "warning"),
-        tone: "slate",
-      });
-    }
-
-    return items;
-  }, [
-    openCriticalTaskCount,
-    blockedTaskCount,
-    activeGoalCount,
-    warnings.length,
-    data?.hasActiveSprint,
-    isCompleted,
-  ]);
-
-  const scoreNarrative = useMemo(() => {
-    if (isCompleted) {
-      return "This score is now historical. The project has already been closed out.";
-    }
-
-    if (progressRing >= 100) {
-      return "The finish line is fully clear. Nothing is currently withholding a perfect readiness score.";
-    }
-
-    if (isReadyToClose && warnings.length > 0) {
-      return `${scoreGap} points are still withheld by closeout proof signals, not execution risk.`;
-    }
-
-    if (blockingReasons.length > 0) {
-      return `${scoreGap} points are being held back by unfinished execution risk and closure friction.`;
-    }
-
-    if (warnings.length > 0) {
-      return `${scoreGap} points are being held back by unresolved closeout signals.`;
-    }
-
-    return `${scoreGap} points remain before the finish line reaches a perfect score.`;
-  }, [
-    isCompleted,
-    isReadyToClose,
-    progressRing,
-    scoreGap,
-    warnings.length,
-    blockingReasons.length,
-  ]);
 
   return (
     <section
@@ -451,38 +361,6 @@ export default function FinishLineCard({
             style={{ width: `${progressRing}%` }}
           />
         </div>
-
-        <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
-            {scoreNarrative}
-          </p>
-
-          {scoreSignals.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {scoreSignals.map((signal) => (
-                <span
-                  key={signal.label}
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold border",
-                    signal.tone === "rose"
-                      ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20"
-                      : signal.tone === "amber"
-                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20"
-                        : signal.tone === "violet"
-                          ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/20"
-                          : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-white/[0.04] dark:text-zinc-300 dark:border-white/[0.08]"
-                  )}
-                >
-                  {signal.label}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
-              No active drag on the score
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="p-5 md:p-6">
@@ -490,31 +368,31 @@ export default function FinishLineCard({
           <MiniMetric
             icon={Layers3}
             label="Open tasks"
-            value={openTaskCount}
+            value={safeNumber(data?.openTaskCount, 0)}
             tone="text-slate-500"
           />
           <MiniMetric
             icon={AlertTriangle}
             label="Critical open"
-            value={openCriticalTaskCount}
+            value={safeNumber(data?.openCriticalTaskCount, 0)}
             tone="text-amber-500"
           />
           <MiniMetric
             icon={Sparkles}
             label="Blockers"
-            value={blockedTaskCount}
+            value={safeNumber(data?.blockedTaskCount, 0)}
             tone="text-rose-500"
           />
           <MiniMetric
             icon={Target}
             label="Active goals"
-            value={activeGoalCount}
+            value={safeNumber(data?.activeGoalCount, 0)}
             tone="text-violet-500"
           />
           <MiniMetric
             icon={CheckCircle2}
             label="Goals done"
-            value={completedGoalCount}
+            value={safeNumber(data?.completedGoalCount, 0)}
             tone="text-emerald-500"
           />
         </div>

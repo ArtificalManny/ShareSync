@@ -542,79 +542,6 @@ export default function CompleteProjectModal({
     closureChecklist.blockersReviewed &&
     closureChecklist.stakeholderSignoff;
 
-  const unmetRequirements = useMemo(() => {
-    const items = [];
-
-    if (!canMoveFromReadiness) {
-      items.push({
-        key: "readiness",
-        label: forceComplete
-          ? "Resolve remaining readiness blockers or keep force close enabled."
-          : "Resolve remaining readiness blockers or explicitly choose force close.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!closureChecklist.primaryGoalConfirmed) {
-      items.push({
-        key: "primaryGoalConfirmed",
-        label: "Confirm the primary goal has been honestly evaluated.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!closureChecklist.blockersReviewed) {
-      items.push({
-        key: "blockersReviewed",
-        label: "Confirm blockers were reviewed and consciously resolved or accepted.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!closureChecklist.stakeholderSignoff) {
-      items.push({
-        key: "stakeholderSignoff",
-        label: "Record stakeholder signoff before closing the project.",
-        stepIndex: 0,
-      });
-    }
-
-    if (!canMoveFromOutcome) {
-      items.push({
-        key: "outcome",
-        label: "Select the final outcome for this project.",
-        stepIndex: 1,
-      });
-    }
-
-    if (!canMoveFromLeftovers) {
-      items.push({
-        key: "leftovers",
-        label: "Provide a valid follow-up project ID for the leftover plan.",
-        stepIndex: 2,
-      });
-    }
-
-    if (!isSummaryValid) {
-      items.push({
-        key: "summary",
-        label: "Write a stronger closure summary (minimum 20 characters).",
-        stepIndex: 3,
-      });
-    }
-
-    return items;
-  }, [
-    canMoveFromReadiness,
-    canMoveFromOutcome,
-    canMoveFromLeftovers,
-    isSummaryValid,
-    closureChecklist.primaryGoalConfirmed,
-    closureChecklist.blockersReviewed,
-    closureChecklist.stakeholderSignoff,
-    forceComplete,
-  ]);
-
   const nextDisabled =
     (step === 0 && !canMoveFromReadiness) ||
     (step === 1 && !canMoveFromOutcome) ||
@@ -1105,37 +1032,6 @@ export default function CompleteProjectModal({
                         </div>
                       </div>
 
-                      {!canSubmit ? (
-                        <div className="rounded-[26px] border border-amber-200 dark:border-amber-500/20 bg-amber-50/80 dark:bg-amber-500/8 p-5">
-                          <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-300" />
-                            <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                              Still required before completion
-                            </div>
-                          </div>
-
-                          <div className="space-y-2.5">
-                            {unmetRequirements.map((item) => (
-                              <button
-                                key={item.key}
-                                type="button"
-                                onClick={() => setStep(item.stepIndex)}
-                                className="w-full text-left rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-white/80 dark:bg-white/[0.03] px-4 py-3 hover:bg-white transition-colors"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <span className="text-sm leading-relaxed text-slate-700 dark:text-zinc-200">
-                                    {item.label}
-                                  </span>
-                                  <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 whitespace-nowrap">
-                                    Step {item.stepIndex + 1}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
                       <div className="rounded-[26px] border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/80 dark:bg-emerald-500/8 p-5">
                         <div className="flex items-center gap-2 mb-3">
                           <Rocket className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
@@ -1192,28 +1088,20 @@ export default function CompleteProjectModal({
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <div className="flex flex-col items-end gap-2">
-                      {!canSubmit && !isCompleted ? (
-                        <div className="text-xs text-slate-500 dark:text-zinc-400 text-right max-w-[280px]">
-                          Review the missing closeout requirements above before the finish line can be declared.
-                        </div>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={!canSubmit || isSubmitting || isCompleted}
-                        className={cn(
-                          "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium transition-all",
-                          !canSubmit || isSubmitting || isCompleted
-                            ? "bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-white/[0.08] dark:text-zinc-500"
-                            : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
-                        )}
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        {isSubmitting ? "Completing…" : "Complete Project"}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={!canSubmit || isSubmitting || isCompleted}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium transition-all",
+                        !canSubmit || isSubmitting || isCompleted
+                          ? "bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-white/[0.08] dark:text-zinc-500"
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
+                      )}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {isSubmitting ? "Completing…" : "Complete Project"}
+                    </button>
                   )}
                 </div>
               </div>
