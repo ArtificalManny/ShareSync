@@ -40,8 +40,8 @@ import {
   UpdateProjectPreferencesDto,
 } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
-import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 import { ProjectStatus } from './schemas/project.schema';
+import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 
 // ✅ Phase 3: follows
 import { ProjectFollowService } from '../follows/project-follow.service';
@@ -438,12 +438,11 @@ export class ProjectsController {
   @Patch(':id/restore')
   @ApiOperation({ summary: 'Restore an archived project' })
   @ApiParam({ name: 'id', description: 'Project ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Project restored successfully' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Project not found' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied' })
   async restore(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
-    const project = await this.projectsService.restoreArchivedProject(id, userId);
+    const project = await this.projectsService.update(id, userId, {
+      status: ProjectStatus.ACTIVE,
+    });
     return {
       success: true,
       data: project,

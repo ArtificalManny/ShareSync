@@ -697,7 +697,6 @@ export class ProjectsService {
     (project as any).reopenedBy = undefined;
     (project as any).reopenReason = undefined;
     project.isArchived = false;
-    project.archivedAt = undefined;
 
     const updated = await project.save();
 
@@ -728,7 +727,6 @@ export class ProjectsService {
 
     project.status = ProjectStatus.ACTIVE;
     project.isArchived = false;
-    project.archivedAt = undefined;
     project.completedAt = undefined;
     (project as any).completedBy = undefined;
     (project as any).reopenedAt = now;
@@ -751,68 +749,8 @@ export class ProjectsService {
     return updated;
   }
 
-  private resolveStatusAfterArchiveRestore(project: ProjectDocument): ProjectStatus {
-    if (project.completedAt) {
-      return ProjectStatus.COMPLETED;
-    }
-
-    if (project.status === ProjectStatus.READY_TO_CLOSE) {
-      return ProjectStatus.READY_TO_CLOSE;
-    }
-
-    return ProjectStatus.ACTIVE;
-  }
-
   async archive(projectId: string, userId: string): Promise<ProjectDocument> {
-    const project = await this.findByIdWithAccess(projectId, userId);
-
-    if (!this.canEdit(project, userId)) {
-      throw new ForbiddenException('You do not have permission to archive this project');
-    }
-
-    const now = new Date();
-    const previousStatus = project.status;
-
-    project.status = ProjectStatus.ARCHIVED;
-    project.isArchived = true;
-    project.archivedAt = now;
-
-    const updated = await project.save();
-
-    this.eventEmitter.emit('project.archived', {
-      projectId: updated._id,
-      userId,
-      previousStatus,
-      archivedAt: now,
-    });
-
-    return updated;
-  }
-
-  async restoreArchivedProject(projectId: string, userId: string): Promise<ProjectDocument> {
-    const project = await this.findByIdWithAccess(projectId, userId);
-
-    if (!this.canEdit(project, userId)) {
-      throw new ForbiddenException('You do not have permission to restore this project');
-    }
-
-    const now = new Date();
-    const restoredStatus = this.resolveStatusAfterArchiveRestore(project);
-
-    project.status = restoredStatus;
-    project.isArchived = false;
-    project.archivedAt = undefined;
-
-    const updated = await project.save();
-
-    this.eventEmitter.emit('project.restored', {
-      projectId: updated._id,
-      userId,
-      restoredStatus,
-      restoredAt: now,
-    });
-
-    return updated;
+    return this.update(projectId, userId, { status: ProjectStatus.ARCHIVED });
   }
 
   async delete(projectId: string, userId: string): Promise<void> {

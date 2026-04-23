@@ -14,7 +14,7 @@ import { Project, ProjectDocument, ProjectStatus, ProjectVisibility, MemberRole,
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
-import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
+import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 
 function safeNumber(value: any, fallback = 0): number {
@@ -597,58 +597,6 @@ export class ProjectsService {
     const blockedTasks = openTasks.filter((task) => this.isTaskBlocked(task));
     const completedGoals = normalizedGoals.filter((goal) => goal?.status === 'completed');
 
-    const leftoverDecision = String(payload?.leftoverDecision || 'backlog') as ProjectClosureDecision;
-    const isCancelDecision = leftoverDecision === 'cancel';
-    const isDeferDecision = leftoverDecision === 'defer';
-    const isFollowUpDecision = leftoverDecision === 'follow_up';
-
-    if (isFollowUpDecision && !payload?.followUpProjectId) {
-      throw new BadRequestException('followUpProjectId is required when leftoverDecision is follow_up');
-    }
-
-    const openTaskIds = openTasks
-      .map((task) => this.extractAnyId(task?._id || task?.id || task))
-      .filter(Boolean);
-
-    const openTaskObjectIds = openTaskIds.map((taskId) => new Types.ObjectId(taskId));
-
-    const deferredTaskIds = !isCancelDecision ? [...openTaskIds] : [];
-    const canceledTaskIds = isCancelDecision ? [...openTaskIds] : [];
-
-    if (openTaskObjectIds.length > 0) {
-      const decisionTags = ['closeout:leftover'];
-
-      if (isCancelDecision) {
-        decisionTags.push('closeout:canceled');
-      } else if (isDeferDecision) {
-        decisionTags.push('closeout:deferred');
-      } else if (isFollowUpDecision) {
-        decisionTags.push('closeout:follow_up');
-      } else {
-        decisionTags.push('closeout:backlog');
-      }
-
-      if (isFollowUpDecision && payload?.followUpProjectId) {
-        decisionTags.push(`closeout:follow_up:${payload.followUpProjectId}`);
-      }
-
-      await this.taskModel.updateMany(
-        { _id: { $in: openTaskObjectIds } },
-        {
-          $set: {
-            status: TaskStatus.BACKLOG,
-            updatedAt: now,
-          },
-          $unset: {
-            sprintId: 1,
-          },
-          $addToSet: {
-            tags: { $each: decisionTags },
-          },
-        },
-      ).exec();
-    }
-
     const derivedOutcome =
       payload?.outcomeStatus ||
       (openTasks.length === 0 && normalizedGoals.length > 0 && completedGoals.length === normalizedGoals.length
@@ -684,9 +632,9 @@ export class ProjectsService {
       blockedTaskCount: blockedTasks.length,
       goalsAchievedCount: completedGoals.length,
       goalsTotalCount: normalizedGoals.length,
-      deferredTaskIds,
-      canceledTaskIds,
-      leftoverDecision,
+      deferredTaskIds: [],
+      canceledTaskIds: [],
+      leftoverDecision: payload?.leftoverDecision,
       followUpProjectId: payload?.followUpProjectId
         ? new Types.ObjectId(payload.followUpProjectId)
         : undefined,
@@ -697,7 +645,6 @@ export class ProjectsService {
     (project as any).reopenedBy = undefined;
     (project as any).reopenReason = undefined;
     project.isArchived = false;
-    project.archivedAt = undefined;
 
     const updated = await project.save();
 
@@ -705,9 +652,6 @@ export class ProjectsService {
       projectId: updated._id,
       userId,
       outcomeStatus: derivedOutcome,
-      leftoverDecision,
-      deferredTaskCount: deferredTaskIds.length,
-      canceledTaskCount: canceledTaskIds.length,
     });
 
     return updated;
@@ -728,7 +672,6 @@ export class ProjectsService {
 
     project.status = ProjectStatus.ACTIVE;
     project.isArchived = false;
-    project.archivedAt = undefined;
     project.completedAt = undefined;
     (project as any).completedBy = undefined;
     (project as any).reopenedAt = now;
@@ -751,68 +694,8 @@ export class ProjectsService {
     return updated;
   }
 
-  private resolveStatusAfterArchiveRestore(project: ProjectDocument): ProjectStatus {
-    if (project.completedAt) {
-      return ProjectStatus.COMPLETED;
-    }
-
-    if (project.status === ProjectStatus.READY_TO_CLOSE) {
-      return ProjectStatus.READY_TO_CLOSE;
-    }
-
-    return ProjectStatus.ACTIVE;
-  }
-
   async archive(projectId: string, userId: string): Promise<ProjectDocument> {
-    const project = await this.findByIdWithAccess(projectId, userId);
-
-    if (!this.canEdit(project, userId)) {
-      throw new ForbiddenException('You do not have permission to archive this project');
-    }
-
-    const now = new Date();
-    const previousStatus = project.status;
-
-    project.status = ProjectStatus.ARCHIVED;
-    project.isArchived = true;
-    project.archivedAt = now;
-
-    const updated = await project.save();
-
-    this.eventEmitter.emit('project.archived', {
-      projectId: updated._id,
-      userId,
-      previousStatus,
-      archivedAt: now,
-    });
-
-    return updated;
-  }
-
-  async restoreArchivedProject(projectId: string, userId: string): Promise<ProjectDocument> {
-    const project = await this.findByIdWithAccess(projectId, userId);
-
-    if (!this.canEdit(project, userId)) {
-      throw new ForbiddenException('You do not have permission to restore this project');
-    }
-
-    const now = new Date();
-    const restoredStatus = this.resolveStatusAfterArchiveRestore(project);
-
-    project.status = restoredStatus;
-    project.isArchived = false;
-    project.archivedAt = undefined;
-
-    const updated = await project.save();
-
-    this.eventEmitter.emit('project.restored', {
-      projectId: updated._id,
-      userId,
-      restoredStatus,
-      restoredAt: now,
-    });
-
-    return updated;
+    return this.update(projectId, userId, { status: ProjectStatus.ARCHIVED });
   }
 
   async delete(projectId: string, userId: string): Promise<void> {

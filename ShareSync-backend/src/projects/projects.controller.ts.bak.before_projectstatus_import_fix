@@ -41,7 +41,6 @@ import {
 } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
-import { ProjectStatus } from './schemas/project.schema';
 
 // ✅ Phase 3: follows
 import { ProjectFollowService } from '../follows/project-follow.service';
