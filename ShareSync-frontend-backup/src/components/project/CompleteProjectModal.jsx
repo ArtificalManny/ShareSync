@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flag,
+  Gauge,
   ArrowRight,
   ArrowLeft,
   Sparkles,
