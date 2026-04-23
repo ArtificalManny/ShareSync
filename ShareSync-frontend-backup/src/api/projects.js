@@ -1,6 +1,7 @@
-// src/api/projects.js - Hardened create + consistent unwrapping + better errors
+// src/api/projects.js - Hardened create + consistent unwrapping + lifecycle support
 // ⭐ FIX: Added ID normalization to ensure all projects have valid id/_id fields
 // ⭐ FIX: Now safely includes the `members` array in the payload!
+// ⭐ LIFECYCLE: Added closure readiness / complete / reopen project APIs
 import api from './client';
 
 // ============================================
@@ -40,10 +41,13 @@ function unwrap(response) {
 }
 
 function normalizeError(err, fallback = "Request failed") {
+  const responseMessage = err?.response?.data?.message;
+  const responseError = err?.response?.data?.error;
+
   const msg =
     err?.normalizedMessage ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
+    (Array.isArray(responseMessage) ? responseMessage.join(", ") : responseMessage) ||
+    responseError ||
     err?.message ||
     fallback;
 
@@ -57,6 +61,7 @@ function normalizeError(err, fallback = "Request failed") {
   enriched.url = url;
   enriched.method = method;
   enriched.raw = err;
+  enriched.details = err?.response?.data || null;
   return enriched;
 }
 
@@ -67,23 +72,23 @@ function normalizeError(err, fallback = "Request failed") {
  */
 function normalizeProjectId(project) {
   if (!project || typeof project !== 'object') return null;
-  
+
   // Extract ID from various possible fields
   const id = project._id || project.id || project.projectId;
-  
+
   // Validate ID
   if (!id || id === 'undefined' || id === 'null') {
     console.warn('[projects.js] Project missing valid ID:', project);
     return null;
   }
-  
+
   // Convert ObjectId to string if needed
   const idString = typeof id === 'object' && id.toString ? id.toString() : String(id);
-  
+
   // Ensure both name/title exist for UI compatibility
   const name = project.name || project.title;
   const title = project.title || project.name;
-  
+
   return {
     ...project,
     id: idString,
@@ -103,6 +108,51 @@ function normalizeProjectsArray(projects) {
   return projects.map(normalizeProjectId).filter(Boolean);
 }
 
+function uniqueStrings(list = []) {
+  return [...new Set(
+    (Array.isArray(list) ? list : [])
+      .filter((item) => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  )];
+}
+
+function safeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeClosureReadiness(readiness) {
+  if (!readiness || typeof readiness !== 'object') {
+    return {
+      isReadyToClose: false,
+      readinessScore: 0,
+      blockingReasons: [],
+      warnings: [],
+      openTaskCount: 0,
+      openCriticalTaskCount: 0,
+      blockedTaskCount: 0,
+      activeGoalCount: 0,
+      completedGoalCount: 0,
+      hasActiveSprint: false,
+    };
+  }
+
+  return {
+    ...readiness,
+    isReadyToClose: Boolean(readiness.isReadyToClose),
+    readinessScore: safeNumber(readiness.readinessScore, 0),
+    blockingReasons: uniqueStrings(readiness.blockingReasons),
+    warnings: uniqueStrings(readiness.warnings),
+    openTaskCount: safeNumber(readiness.openTaskCount, 0),
+    openCriticalTaskCount: safeNumber(readiness.openCriticalTaskCount, 0),
+    blockedTaskCount: safeNumber(readiness.blockedTaskCount, 0),
+    activeGoalCount: safeNumber(readiness.activeGoalCount, 0),
+    completedGoalCount: safeNumber(readiness.completedGoalCount, 0),
+    hasActiveSprint: Boolean(readiness.hasActiveSprint),
+  };
+}
+
 // ============================================
 // PROJECTS
 // ============================================
@@ -111,7 +161,6 @@ export const getProjects = async () => {
   try {
     const response = await api.get('/projects');
     const data = unwrap(response);
-    // ⭐ FIX: Normalize all projects to ensure IDs exist
     return normalizeProjectsArray(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load projects");
@@ -122,7 +171,6 @@ export const getProjectsQuick = async () => {
   try {
     const response = await api.get('/projects/quick');
     const data = unwrap(response);
-    // ⭐ FIX: Normalize all projects to ensure IDs exist
     return normalizeProjectsArray(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load projects (quick)");
@@ -133,7 +181,6 @@ export const getProject = async (projectId) => {
   try {
     const response = await api.get(`/projects/${projectId}`);
     const data = unwrap(response);
-    // ⭐ FIX: Normalize single project
     return normalizeProjectId(data);
   } catch (err) {
     throw normalizeError(err, "Failed to load project");
@@ -181,7 +228,7 @@ function normalizeCreateProjectPayload(projectData = {}) {
     emoji,
     icon,
     color,
-    members, // Now properly sending invites to the backend!
+    members,
   };
 }
 
@@ -222,9 +269,7 @@ export const createProject = async (projectData) => {
 
     const response = await api.post('/projects', payload);
 
-    // unwrap tolerant of {data}, {project}, etc.
     const created = unwrap(response);
-
     return normalizeCreatedProject(created);
   } catch (err) {
     throw normalizeError(err, "Failed to create project");
@@ -235,7 +280,6 @@ export const updateProject = async (projectId, updates) => {
   try {
     const response = await api.put(`/projects/${projectId}`, updates);
     const data = unwrap(response);
-    // ⭐ FIX: Normalize updated project
     return normalizeProjectId(data);
   } catch (err) {
     throw normalizeError(err, "Failed to update project");
@@ -248,6 +292,79 @@ export const deleteProject = async (projectId) => {
     return unwrap(response);
   } catch (err) {
     throw normalizeError(err, "Failed to delete project");
+  }
+};
+
+// ============================================
+// PROJECT LIFECYCLE / COMPLETION ENGINE
+// ============================================
+
+function normalizeCompleteProjectPayload(payload = {}) {
+  return {
+    closureSummary: (payload.closureSummary ?? '').toString().trim(),
+    outcomeStatus: payload.outcomeStatus || undefined,
+    leftoverDecision: payload.leftoverDecision || undefined,
+    followUpProjectId:
+      payload.followUpProjectId && String(payload.followUpProjectId).trim()
+        ? String(payload.followUpProjectId).trim()
+        : undefined,
+    forceComplete: Boolean(payload.forceComplete),
+    closureChecklist:
+      payload.closureChecklist && typeof payload.closureChecklist === 'object'
+        ? {
+            primaryGoalConfirmed: Boolean(payload.closureChecklist.primaryGoalConfirmed),
+            openWorkResolved: Boolean(payload.closureChecklist.openWorkResolved),
+            blockersReviewed: Boolean(payload.closureChecklist.blockersReviewed),
+            handoffPrepared: Boolean(payload.closureChecklist.handoffPrepared),
+            summaryWritten: Boolean(payload.closureChecklist.summaryWritten),
+            stakeholderSignoff: Boolean(payload.closureChecklist.stakeholderSignoff),
+          }
+        : undefined,
+  };
+}
+
+function normalizeReopenProjectPayload(payload = {}) {
+  return {
+    reason: (payload.reason ?? '').toString().trim() || 'Project reopened',
+  };
+}
+
+export const getProjectClosureReadiness = async (projectId) => {
+  try {
+    const response = await api.get(`/projects/${projectId}/closure-readiness`);
+    const data = unwrap(response);
+    return normalizeClosureReadiness(data);
+  } catch (err) {
+    throw normalizeError(err, "Failed to evaluate project closure readiness");
+  }
+};
+
+export const completeProject = async (projectId, payload = {}) => {
+  try {
+    const body = normalizeCompleteProjectPayload(payload);
+
+    if (!body.closureSummary || body.closureSummary.length < 10) {
+      const err = new Error("Closure summary is required before completing a project.");
+      err.normalizedMessage = "Closure summary is required before completing a project.";
+      throw err;
+    }
+
+    const response = await api.post(`/projects/${projectId}/complete`, body);
+    const data = unwrap(response);
+    return normalizeProjectId(data);
+  } catch (err) {
+    throw normalizeError(err, "Failed to complete project");
+  }
+};
+
+export const reopenProject = async (projectId, payload = {}) => {
+  try {
+    const body = normalizeReopenProjectPayload(payload);
+    const response = await api.post(`/projects/${projectId}/reopen`, body);
+    const data = unwrap(response);
+    return normalizeProjectId(data);
+  } catch (err) {
+    throw normalizeError(err, "Failed to reopen project");
   }
 };
 
@@ -337,4 +454,8 @@ export const deleteShip = async (projectId, shipId) => {
 // EXPORTS FOR HELPERS (for use in other files)
 // ============================================
 
-export { normalizeProjectId, normalizeProjectsArray };
+export {
+  normalizeProjectId,
+  normalizeProjectsArray,
+  normalizeClosureReadiness,
+};

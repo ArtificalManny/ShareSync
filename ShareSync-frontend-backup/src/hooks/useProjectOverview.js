@@ -25,6 +25,11 @@
 // - Normalizes goals/objectives into one reliable Overview contract
 // - Supports activeGoals / goals / objectives from overview or project payloads
 // - Produces card-ready fields: owner, status, progress, linked task counts
+//
+// FINISH LINE PASS:
+// - Normalizes backend closure readiness into a card-ready finish line contract
+// - Falls back to derived readiness if backend data is missing
+// - Preserves one unified `overview` snapshot for ProjectHome
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -323,6 +328,15 @@ function firstArray(...candidates) {
   return [];
 }
 
+function uniqueStrings(list = []) {
+  return [...new Set(
+    (Array.isArray(list) ? list : [])
+      .filter((item) => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  )];
+}
+
 function normalizeProjectEnvelope(overviewPayload, rawProjectPayload) {
   const rawProject =
     rawProjectPayload?.project ||
@@ -400,6 +414,26 @@ function normalizeProjectEnvelope(overviewPayload, rawProjectPayload) {
       rawProject?.objectives,
       overviewProject?.objectives
     ),
+    closureReadiness:
+      overviewPayload?.closureReadiness ||
+      rawProject?.closureReadiness ||
+      overviewProject?.closureReadiness ||
+      null,
+    closureSummary:
+      overviewPayload?.closureSummary ||
+      rawProject?.closureSummary ||
+      overviewProject?.closureSummary ||
+      "",
+    outcomeStatus:
+      overviewPayload?.outcomeStatus ||
+      rawProject?.outcomeStatus ||
+      overviewProject?.outcomeStatus ||
+      null,
+    completionSnapshot:
+      overviewPayload?.completionSnapshot ||
+      rawProject?.completionSnapshot ||
+      overviewProject?.completionSnapshot ||
+      null,
     announcements: firstArray(
       overviewPayload?.announcements,
       rawProject?.announcements
@@ -965,6 +999,190 @@ function buildForesight(data, activityCount, tasks = [], criticalMoves = [], met
   };
 }
 
+function buildFinishLine(
+  data,
+  project,
+  tasks = [],
+  activeGoals = [],
+  criticalMoves = [],
+  sprintSnapshot = null
+) {
+  const backend = data?.closureReadiness || project?.closureReadiness || null;
+  const closureSummary =
+    data?.closureSummary ||
+    project?.closureSummary ||
+    "";
+  const outcomeStatus =
+    data?.outcomeStatus ||
+    project?.outcomeStatus ||
+    null;
+  const completionSnapshot =
+    data?.completionSnapshot ||
+    project?.completionSnapshot ||
+    null;
+  const completedAt =
+    data?.completedAt ||
+    project?.completedAt ||
+    completionSnapshot?.completedAt ||
+    null;
+  const completedBy =
+    data?.completedBy ||
+    project?.completedBy ||
+    completionSnapshot?.completedBy ||
+    null;
+
+  const openTasks = Array.isArray(tasks)
+    ? tasks.filter((task) => !isTaskDone(task))
+    : [];
+
+  const openCriticalTasks = openTasks.filter(
+    (task) => priorityRank(task?.priority) >= 3
+  );
+
+  const blockedTasks = openTasks.filter((task) => isTaskBlocked(task));
+
+  const derivedActiveGoalCount = Array.isArray(activeGoals)
+    ? activeGoals.filter((goal) => goal?.status !== "completed").length
+    : 0;
+
+  const derivedCompletedGoalCount = Array.isArray(activeGoals)
+    ? activeGoals.filter((goal) => goal?.status === "completed").length
+    : 0;
+
+  const hasActiveSprint =
+    typeof backend?.hasActiveSprint === "boolean"
+      ? backend.hasActiveSprint
+      : Boolean(
+          sprintSnapshot?.active ||
+          sprintSnapshot?.goal ||
+          sprintSnapshot?.startDate ||
+          sprintSnapshot?.endDate
+        );
+
+  const blockingReasons = uniqueStrings(
+    Array.isArray(backend?.blockingReasons) && backend.blockingReasons.length > 0
+      ? backend.blockingReasons
+      : [
+          openCriticalTasks.length > 0
+            ? `${openCriticalTasks.length} high-priority task${openCriticalTasks.length === 1 ? "" : "s"} still open`
+            : "",
+          blockedTasks.length > 0
+            ? `${blockedTasks.length} blocker${blockedTasks.length === 1 ? "" : "s"} unresolved`
+            : "",
+          hasActiveSprint ? "Active sprint still running" : "",
+          derivedActiveGoalCount > 0
+            ? `${derivedActiveGoalCount} active goal${derivedActiveGoalCount === 1 ? "" : "s"} still in progress`
+            : "",
+        ]
+  );
+
+  const warnings = uniqueStrings(
+    Array.isArray(backend?.warnings) && backend.warnings.length > 0
+      ? backend.warnings
+      : [
+          !closureSummary ? "Closure summary not yet written" : "",
+          !outcomeStatus ? "Final outcome not yet confirmed" : "",
+        ]
+  );
+
+  let readinessScore = safeNumber(backend?.readinessScore, NaN);
+
+  if (!Number.isFinite(readinessScore)) {
+    readinessScore = 100;
+    readinessScore -= Math.min(40, openCriticalTasks.length * 20);
+    readinessScore -= Math.min(25, blockedTasks.length * 10);
+    readinessScore -= hasActiveSprint ? 15 : 0;
+    readinessScore -= Math.min(15, derivedActiveGoalCount * 5);
+    readinessScore -= Math.min(10, warnings.length * 5);
+    readinessScore = clamp(readinessScore, 0, 100);
+  }
+
+  const isCompleted =
+    String(project?.status || "").toLowerCase() === "completed" ||
+    Boolean(completedAt);
+
+  const isReadyToClose =
+    typeof backend?.isReadyToClose === "boolean"
+      ? backend.isReadyToClose
+      : blockingReasons.length === 0 && !isCompleted;
+
+  const nextMove = Array.isArray(criticalMoves) && criticalMoves.length > 0
+    ? criticalMoves[0]
+    : null;
+
+  let state = "not_ready";
+  let headline = "Not ready to close";
+  let subheadline =
+    blockingReasons[0] || "Core closure checks still need attention.";
+  let primaryActionLabel = "View Finish Readiness";
+  let recommendedAction =
+    nextMove?.title
+      ? `Start by moving "${nextMove.title}" toward done.`
+      : "Reduce critical open work before attempting closeout.";
+
+  if (isCompleted) {
+    state = "completed";
+    headline = "Project completed";
+    subheadline =
+      outcomeStatus
+        ? `Outcome: ${String(outcomeStatus).replace(/_/g, " ")}`
+        : "This project has been closed out.";
+    primaryActionLabel = "Reopen Project";
+    recommendedAction =
+      completionSnapshot?.summary ||
+      closureSummary ||
+      "Review the closeout snapshot, or reopen only if new work needs to restart.";
+  } else if (isReadyToClose) {
+    state = "ready";
+    headline = "Ready to close";
+    subheadline = "All core closure checks passed.";
+    primaryActionLabel = "Complete Project";
+    recommendedAction = closureSummary
+      ? "Review leftovers, confirm the outcome, and complete the closeout."
+      : "Write the final summary, confirm the outcome, and complete the closeout.";
+  } else if (readinessScore >= 70) {
+    state = "almost_ready";
+    headline = "Almost ready to close";
+    subheadline =
+      blockingReasons[0] || "A few items still prevent completion.";
+    primaryActionLabel = "View Finish Readiness";
+    recommendedAction =
+      nextMove?.title
+        ? `Finish "${nextMove.title}" first, then review remaining closure blockers.`
+        : "Resolve the last remaining blockers before closeout.";
+  }
+
+  return {
+    state,
+    isCompleted,
+    isReadyToClose,
+    readinessScore,
+    blockingReasons,
+    warnings,
+    openTaskCount:
+      safeNumber(backend?.openTaskCount, openTasks.length),
+    openCriticalTaskCount:
+      safeNumber(backend?.openCriticalTaskCount, openCriticalTasks.length),
+    blockedTaskCount:
+      safeNumber(backend?.blockedTaskCount, blockedTasks.length),
+    activeGoalCount:
+      safeNumber(backend?.activeGoalCount, derivedActiveGoalCount),
+    completedGoalCount:
+      safeNumber(backend?.completedGoalCount, derivedCompletedGoalCount),
+    hasActiveSprint,
+    closureSummary,
+    outcomeStatus,
+    completionSnapshot,
+    completedAt,
+    completedBy,
+    headline,
+    subheadline,
+    primaryActionLabel,
+    recommendedAction,
+    nextMoveTitle: nextMove?.title || "",
+  };
+}
+
 export function useProjectOverview(projectId, options = {}) {
   const {
     autoRefresh = true,
@@ -1376,6 +1594,15 @@ export function useProjectOverview(projectId, options = {}) {
       metrics
     );
 
+    const finishLine = buildFinishLine(
+      data,
+      project,
+      tasks,
+      activeGoals,
+      criticalMoves,
+      sprintSnapshot
+    );
+
     return {
       project: {
         id: String(project?._id || project?.id || projectId || ""),
@@ -1383,6 +1610,22 @@ export function useProjectOverview(projectId, options = {}) {
         status:
           project?.status ||
           (project?.isAtRisk ? "at-risk" : "live"),
+        completedAt:
+          data?.completedAt ||
+          project?.completedAt ||
+          null,
+        completedBy:
+          data?.completedBy ||
+          project?.completedBy ||
+          null,
+        closureSummary:
+          data?.closureSummary ||
+          project?.closureSummary ||
+          "",
+        outcomeStatus:
+          data?.outcomeStatus ||
+          project?.outcomeStatus ||
+          null,
       },
       summary: {
         nextAction,
@@ -1409,6 +1652,8 @@ export function useProjectOverview(projectId, options = {}) {
       priorityStack: Array.isArray(criticalMoves) ? criticalMoves : [],
       sprint: sprintSnapshot,
       foresight,
+      finishLine,
+      closureReadiness: finishLine,
       liveActivity: Array.isArray(activity) ? activity : [],
       teamCapacity,
       activeGoals,
@@ -1454,6 +1699,20 @@ export function useProjectOverview(projectId, options = {}) {
     criticalMoves,
     objectives,
     activeGoals,
+    finishLine: overview?.finishLine || null,
+    closureReadiness: overview?.closureReadiness || null,
+    completionSnapshot:
+      data?.completionSnapshot ||
+      data?.project?.completionSnapshot ||
+      null,
+    closureSummary:
+      data?.closureSummary ||
+      data?.project?.closureSummary ||
+      "",
+    outcomeStatus:
+      data?.outcomeStatus ||
+      data?.project?.outcomeStatus ||
+      null,
     sprint: overview?.sprint || data?.sprint || null,
     announcements: data?.announcements || [],
     pinnedAnnouncement: data?.pinnedAnnouncement || null,
