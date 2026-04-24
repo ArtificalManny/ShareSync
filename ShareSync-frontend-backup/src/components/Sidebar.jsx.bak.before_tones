@@ -448,16 +448,16 @@ export default function Sidebar({ user }) {
         </div>
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
-          <SidebarItem to="/home" label="Home" icon={LayoutGrid} tone="violet" collapsed={collapsed} />
-          <SidebarItem to="/projects" label="Projects" icon={Terminal} tone="sky" collapsed={collapsed} />
-          <SidebarItem to="/discover" label="Discover" icon={Trophy} tone="amber" collapsed={collapsed} />
+          <SidebarItem to="/home" label="Home" icon={LayoutGrid} collapsed={collapsed} />
+          <SidebarItem to="/projects" label="Projects" icon={Terminal} collapsed={collapsed} />
+          <SidebarItem to="/discover" label="Discover" icon={Trophy} collapsed={collapsed} />
 
           <div className="py-4">
             <div className="h-px bg-slate-100" />
           </div>
 
-          <SidebarItem to="/profile" label="Profile" icon={UserIcon} tone="emerald" collapsed={collapsed} />
-          <SidebarItem to="/settings" label="Settings" icon={Settings} tone="slate" collapsed={collapsed} />
+          <SidebarItem to="/profile" label="Profile" icon={UserIcon} collapsed={collapsed} />
+          <SidebarItem to="/settings" label="Settings" icon={Settings} collapsed={collapsed} />
         </nav>
 
         <div className="mt-auto flex flex-col">
