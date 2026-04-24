@@ -9,7 +9,7 @@ export const createFolder = async (projectId, name, isPrivate) => {
   const response = await client.post('/vault/folders', {
     projectId,
     name,
-    accessLevel: isPrivate ? 'private' : 'public',
+    accessLevel: isPrivate ? 'private' : 'public'
   });
   return response.data?.data;
 };
@@ -28,30 +28,4 @@ export const uploadVaultFile = async (projectId, folderId, file) => {
   return response.data?.data;
 };
 
-export const renameVaultFile = async (fileId, originalName) => {
-  const response = await client.patch(`/vault/files/${fileId}`, {
-    originalName,
-  });
-  return response.data?.data;
-};
-
-export const moveVaultFile = async (fileId, folderId) => {
-  const response = await client.patch(`/vault/files/${fileId}/move`, {
-    folderId: folderId || null,
-  });
-  return response.data?.data;
-};
-
-export const deleteVaultFile = async (fileId) => {
-  const response = await client.delete(`/vault/files/${fileId}`);
-  return response.data;
-};
-
-export default {
-  getProjectVault,
-  createFolder,
-  uploadVaultFile,
-  renameVaultFile,
-  moveVaultFile,
-  deleteVaultFile,
-};
+export default { getProjectVault, createFolder, uploadVaultFile };

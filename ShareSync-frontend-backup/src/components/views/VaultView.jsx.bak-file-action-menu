@@ -4,7 +4,7 @@ import {
   File, FileText, Image, Film, Music, Archive, Code,
   Link2, Download, Star, Eye, ChevronRight, ChevronDown, Folder
 } from 'lucide-react';
-import { getProjectVault, createFolder, uploadVaultFile, renameVaultFile, moveVaultFile, deleteVaultFile } from '../../api/vault';
+import { getProjectVault, createFolder, uploadVaultFile } from '../../api/vault';
 import CreateFolderModal from '../vault/CreateFolderModal';
 import UploadModal from '../vault/UploadModal';
 import UpgradeStorageModal from '../vault/UpgradeStorageModal';
@@ -114,17 +114,8 @@ function formatVaultDate(value) {
   return date.toLocaleDateString();
 }
 
-function FileCard({
-  file,
-  folders = [],
-  onRenameFile,
-  onMoveFile,
-  onDeleteFile,
-}) {
+function FileCard({ file }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const fileId = file?._id || file?.id;
   const fileName = file?.originalName || file?.name || 'Untitled file';
   const fileType = getFileType(fileName);
   const style = FILE_ICONS[fileType] || FILE_ICONS.default;
@@ -134,8 +125,6 @@ function FileCard({
   const fileUrl = getVaultFileUrl(file);
   const isLegacyStorageUrl = /^https?:\/\/storage\.sharesync\.app\//i.test(rawFileUrl);
 
-  const currentFolderId = file?.folderId?._id || file?.folderId || '';
-
   const canPreviewImage =
     fileType === 'image' &&
     Boolean(fileUrl) &&
@@ -144,138 +133,8 @@ function FileCard({
 
   const createdDate = formatVaultDate(file?.createdAt);
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
-
-  const handleRenameClick = (event) => {
-    event.stopPropagation();
-    closeMenu();
-
-    const nextName = window.prompt('Rename file', fileName);
-
-    if (!nextName) return;
-
-    const cleanedName = nextName.trim();
-
-    if (!cleanedName || cleanedName === fileName) return;
-
-    onRenameFile?.(file, cleanedName);
-  };
-
-  const handleMoveChange = (event) => {
-    event.stopPropagation();
-
-    const nextFolderId = event.target.value || null;
-
-    if ((nextFolderId || '') === String(currentFolderId || '')) {
-      return;
-    }
-
-    closeMenu();
-    onMoveFile?.(file, nextFolderId);
-  };
-
-  const handleDeleteClick = (event) => {
-    event.stopPropagation();
-    closeMenu();
-
-    const confirmed = window.confirm(
-      `Delete "${fileName}" from this project? This cannot be undone.`
-    );
-
-    if (!confirmed) return;
-
-    onDeleteFile?.(file);
-  };
-
   return (
-    <div className="group relative p-4 rounded-xl bg-surface-1 border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-2 transition-all cursor-pointer">
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          setIsMenuOpen((value) => !value);
-        }}
-        className="
-          absolute top-2.5 right-2.5 z-20
-          w-8 h-8 rounded-lg
-          bg-black/35 hover:bg-black/55 text-white
-          opacity-0 group-hover:opacity-100 focus:opacity-100
-          flex items-center justify-center
-          transition-all
-        "
-        title="File actions"
-        aria-label={`Actions for ${fileName}`}
-      >
-        <MoreHorizontal className="w-4 h-4" />
-      </button>
-
-      {isMenuOpen ? (
-        <div
-          className="
-            absolute top-11 right-2.5 z-30 w-48
-            rounded-xl border border-slate-200 dark:border-white/[0.08]
-            bg-white dark:bg-[#141418]
-            shadow-xl shadow-slate-900/10 dark:shadow-black/30
-            overflow-hidden
-          "
-          onClick={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            onClick={handleRenameClick}
-            className="
-              w-full px-3 py-2.5 text-left text-sm
-              text-slate-700 dark:text-zinc-200
-              hover:bg-slate-50 dark:hover:bg-white/[0.06]
-              transition-colors
-            "
-          >
-            Rename
-          </button>
-
-          <div className="px-3 py-2.5 border-t border-slate-100 dark:border-white/[0.06]">
-            <label className="block text-[11px] uppercase tracking-wide font-semibold text-slate-500 dark:text-zinc-500 mb-1.5">
-              Move to
-            </label>
-
-            <select
-              value={currentFolderId || ''}
-              onChange={handleMoveChange}
-              className="
-                w-full rounded-lg border border-slate-200 dark:border-white/[0.08]
-                bg-white dark:bg-[#101014]
-                px-2 py-2 text-xs
-                text-slate-800 dark:text-zinc-100
-                outline-none focus:ring-2 focus:ring-violet-500/30
-              "
-            >
-              <option value="">Project Root</option>
-              {folders.map((folder) => (
-                <option key={folder?._id || folder?.id} value={folder?._id || folder?.id}>
-                  {folder?.name || 'Untitled folder'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            className="
-              w-full px-3 py-2.5 text-left text-sm
-              text-red-600 dark:text-red-400
-              hover:bg-red-50 dark:hover:bg-red-500/10
-              border-t border-slate-100 dark:border-white/[0.06]
-              transition-colors
-            "
-          >
-            Delete
-          </button>
-        </div>
-      ) : null}
-
+    <div className="group p-4 rounded-xl bg-surface-1 border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-2 transition-all cursor-pointer">
       <div
         className={`
           w-full aspect-square rounded-lg flex items-center justify-center mb-3
@@ -358,7 +217,7 @@ function FileCard({
 }
 
 
-function FolderSection({ folder, files, folders, viewMode, isExpanded, onToggle, onRenameFile, onMoveFile, onDeleteFile }) {
+function FolderSection({ folder, files, viewMode, isExpanded, onToggle }) {
   return (
     <div className="mb-6">
       <button onClick={onToggle} className="flex items-center gap-3 px-2 py-2 w-full hover:bg-surface-1 rounded-lg transition-colors">
@@ -375,16 +234,7 @@ function FolderSection({ folder, files, folders, viewMode, isExpanded, onToggle,
       
       {isExpanded && files.length > 0 && (
         <div className="mt-3 ml-7 grid grid-cols-4 gap-4">
-          {files.map(file => (
-            <FileCard
-              key={file._id}
-              file={file}
-              folders={folders}
-              onRenameFile={onRenameFile}
-              onMoveFile={onMoveFile}
-              onDeleteFile={onDeleteFile}
-            />
-          ))}
+          {files.map(file => <FileCard key={file._id} file={file} />)}
         </div>
       )}
       {isExpanded && files.length === 0 && (
@@ -444,69 +294,6 @@ export default function VaultView({ projectId }) {
       } else {
         toast?.({ title: "Upload failed", description: err.message, variant: "error" });
       }
-    }
-  };
-
-  const handleRenameFile = async (file, originalName) => {
-    const fileId = file?._id || file?.id;
-
-    if (!fileId) {
-      toast?.({ title: "Rename failed", description: "File ID is missing.", variant: "error" });
-      return;
-    }
-
-    try {
-      await renameVaultFile(fileId, originalName);
-      toast?.({ title: "File renamed", variant: "success" });
-      await loadVault();
-    } catch (err) {
-      toast?.({
-        title: "Rename failed",
-        description: err?.response?.data?.message || err?.message || "Unable to rename file.",
-        variant: "error",
-      });
-    }
-  };
-
-  const handleMoveFile = async (file, folderId) => {
-    const fileId = file?._id || file?.id;
-
-    if (!fileId) {
-      toast?.({ title: "Move failed", description: "File ID is missing.", variant: "error" });
-      return;
-    }
-
-    try {
-      await moveVaultFile(fileId, folderId || null);
-      toast?.({ title: folderId ? "File moved" : "File moved to Project Root", variant: "success" });
-      await loadVault();
-    } catch (err) {
-      toast?.({
-        title: "Move failed",
-        description: err?.response?.data?.message || err?.message || "Unable to move file.",
-        variant: "error",
-      });
-    }
-  };
-
-  const handleDeleteFile = async (file) => {
-    const fileId = file?._id || file?.id;
-
-    if (!fileId) {
-      toast?.({ title: "Delete failed", description: "File ID is missing.", variant: "error" });
-      return;
-    }
-
-    try {
-      await deleteVaultFile(fileId);
-      toast?.({ title: "File deleted", variant: "success" });
-      await loadVault();
-    } catch (err) {
-      toast?.({
-        title: "Delete failed",
-        description: err?.response?.data?.message || err?.message || "Unable to delete file.",
-        variant: "error",
-      });
     }
   };
 
@@ -609,16 +396,7 @@ export default function VaultView({ projectId }) {
               Project Root
             </h3>
             <div className="grid grid-cols-4 gap-4">
-              {rootFiles.map(file => (
-                <FileCard
-                  key={file._id}
-                  file={file}
-                  folders={data.folders}
-                  onRenameFile={handleRenameFile}
-                  onMoveFile={handleMoveFile}
-                  onDeleteFile={handleDeleteFile}
-                />
-              ))}
+              {rootFiles.map(file => <FileCard key={file._id} file={file} />)}
             </div>
           </div>
         )}
@@ -627,12 +405,8 @@ export default function VaultView({ projectId }) {
           <FolderSection
             key={folder._id}
             folder={folder}
-            folders={data.folders}
             files={filteredFiles.filter(f => f.folderId === folder._id)}
             isExpanded={expandedFolders.includes(folder._id)}
-            onRenameFile={handleRenameFile}
-            onMoveFile={handleMoveFile}
-            onDeleteFile={handleDeleteFile}
             onToggle={() =>
               setExpandedFolders(prev =>
                 prev.includes(folder._id)
