@@ -53,20 +53,13 @@ function getApiOrigin() {
     import.meta?.env?.VITE_BACKEND_URL ||
     '';
 
-  if (rawBase) {
-    return String(rawBase)
-      .replace(/\/api\/?$/, '')
-      .replace(/\/$/, '');
-  }
+  if (!rawBase) return '';
 
-  // Safe local-dev fallback:
-  // Vite is running on localhost:54693, but uploaded files are served by Nest.
-  if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
-    return 'http://localhost:5050';
-  }
-
-  return '';
+  return String(rawBase)
+    .replace(/\/api\/?$/, '')
+    .replace(/\/$/, '');
 }
+
 
 function resolveVaultUrl(rawUrl) {
   if (!rawUrl) return '';
@@ -76,7 +69,6 @@ function resolveVaultUrl(rawUrl) {
 
   const apiOrigin = getApiOrigin();
 
-  // Legacy broken records. These were generated before the backend URL fix.
   if (/^https?:\/\/storage\.sharesync\.app\//i.test(value)) {
     return value;
   }
@@ -96,6 +88,7 @@ function resolveVaultUrl(rawUrl) {
   return value;
 }
 
+
 function getVaultFileUrl(file) {
   return resolveVaultUrl(
     file?.fileUrl ||
@@ -107,6 +100,7 @@ function getVaultFileUrl(file) {
   );
 }
 
+
 function formatVaultDate(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -114,23 +108,21 @@ function formatVaultDate(value) {
   return date.toLocaleDateString();
 }
 
+
 function FileCard({ file }) {
   const [imageFailed, setImageFailed] = useState(false);
   const fileName = file?.originalName || file?.name || 'Untitled file';
   const fileType = getFileType(fileName);
   const style = FILE_ICONS[fileType] || FILE_ICONS.default;
   const Icon = style.icon;
-
   const rawFileUrl = String(file?.fileUrl || '');
   const fileUrl = getVaultFileUrl(file);
   const isLegacyStorageUrl = /^https?:\/\/storage\.sharesync\.app\//i.test(rawFileUrl);
-
   const canPreviewImage =
     fileType === 'image' &&
     Boolean(fileUrl) &&
     !isLegacyStorageUrl &&
     !imageFailed;
-
   const createdDate = formatVaultDate(file?.createdAt);
 
   return (
@@ -194,6 +186,7 @@ function FileCard({ file }) {
         </div>
       </div>
 
+      {/* LIGHT MODE CONTRAST FIX: filename + file meta */}
       <div>
         <h4
           className="font-medium text-slate-900 dark:text-text-primary text-sm truncate mb-1"

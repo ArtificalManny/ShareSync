@@ -62,7 +62,7 @@ function getApiOrigin() {
   // Safe local-dev fallback:
   // Vite is running on localhost:54693, but uploaded files are served by Nest.
   if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
-    return 'http://localhost:5050';
+    return 'http://localhost:3000';
   }
 
   return '';
