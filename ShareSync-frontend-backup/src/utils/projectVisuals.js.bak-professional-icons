@@ -1,0 +1,319 @@
+const DEFAULT_PROJECT_ICONS = new Set([
+  "📁",
+  "📂",
+  "🗂",
+  "🗂️",
+  "folder",
+  "Folder",
+]);
+
+const TONES = {
+  violet: {
+    foreground: "#7c3aed",
+    bgFrom: "rgba(124, 58, 237, 0.14)",
+    bgTo: "rgba(168, 85, 247, 0.08)",
+    border: "rgba(124, 58, 237, 0.18)",
+    shadow: "0 12px 28px rgba(124, 58, 237, 0.10)",
+  },
+  hospitality: {
+    foreground: "#db2777",
+    bgFrom: "rgba(244, 114, 182, 0.16)",
+    bgTo: "rgba(251, 191, 36, 0.10)",
+    border: "rgba(219, 39, 119, 0.18)",
+    shadow: "0 12px 28px rgba(219, 39, 119, 0.10)",
+  },
+  construction: {
+    foreground: "#d97706",
+    bgFrom: "rgba(245, 158, 11, 0.16)",
+    bgTo: "rgba(251, 191, 36, 0.10)",
+    border: "rgba(217, 119, 6, 0.20)",
+    shadow: "0 12px 28px rgba(217, 119, 6, 0.10)",
+  },
+  education: {
+    foreground: "#2563eb",
+    bgFrom: "rgba(59, 130, 246, 0.14)",
+    bgTo: "rgba(14, 165, 233, 0.08)",
+    border: "rgba(37, 99, 235, 0.18)",
+    shadow: "0 12px 28px rgba(37, 99, 235, 0.10)",
+  },
+  software: {
+    foreground: "#06b6d4",
+    bgFrom: "rgba(6, 182, 212, 0.14)",
+    bgTo: "rgba(124, 58, 237, 0.08)",
+    border: "rgba(6, 182, 212, 0.18)",
+    shadow: "0 12px 28px rgba(6, 182, 212, 0.10)",
+  },
+  business: {
+    foreground: "#475569",
+    bgFrom: "rgba(100, 116, 139, 0.14)",
+    bgTo: "rgba(148, 163, 184, 0.08)",
+    border: "rgba(100, 116, 139, 0.18)",
+    shadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+  },
+  marketing: {
+    foreground: "#ea580c",
+    bgFrom: "rgba(249, 115, 22, 0.14)",
+    bgTo: "rgba(236, 72, 153, 0.08)",
+    border: "rgba(234, 88, 12, 0.18)",
+    shadow: "0 12px 28px rgba(234, 88, 12, 0.10)",
+  },
+  finance: {
+    foreground: "#059669",
+    bgFrom: "rgba(16, 185, 129, 0.14)",
+    bgTo: "rgba(45, 212, 191, 0.08)",
+    border: "rgba(5, 150, 105, 0.18)",
+    shadow: "0 12px 28px rgba(5, 150, 105, 0.10)",
+  },
+};
+
+const PROJECT_VISUAL_RULES = [
+  {
+    tone: "hospitality",
+    glyph: "🍸",
+    label: "Hospitality project",
+    keywords: [
+      "bar",
+      "snicker",
+      "snickers",
+      "restaurant",
+      "cafe",
+      "coffee",
+      "food",
+      "drink",
+      "kitchen",
+      "menu",
+      "venue",
+      "hospitality",
+      "lounge",
+    ],
+  },
+  {
+    tone: "construction",
+    glyph: "🏗️",
+    label: "Construction project",
+    keywords: [
+      "construction",
+      "site",
+      "layout",
+      "blueprint",
+      "build",
+      "building",
+      "contractor",
+      "nccer",
+      "floorplan",
+      "floor plan",
+      "renovation",
+      "development",
+    ],
+  },
+  {
+    tone: "education",
+    glyph: "📚",
+    label: "Education project",
+    keywords: [
+      "school",
+      "class",
+      "course",
+      "homework",
+      "assignment",
+      "study",
+      "chemistry",
+      "precalculus",
+      "math",
+      "essay",
+      "student",
+    ],
+  },
+  {
+    tone: "software",
+    glyph: "💻",
+    label: "Software project",
+    keywords: [
+      "app",
+      "website",
+      "software",
+      "frontend",
+      "backend",
+      "code",
+      "coding",
+      "react",
+      "api",
+      "platform",
+      "open",
+      "share",
+    ],
+  },
+  {
+    tone: "marketing",
+    glyph: "📣",
+    label: "Marketing project",
+    keywords: [
+      "marketing",
+      "campaign",
+      "launch",
+      "brand",
+      "content",
+      "social",
+      "ads",
+      "growth",
+      "go-to-market",
+      "gtm",
+    ],
+  },
+  {
+    tone: "finance",
+    glyph: "💼",
+    label: "Finance project",
+    keywords: [
+      "budget",
+      "finance",
+      "cashflow",
+      "cash flow",
+      "invest",
+      "investment",
+      "pricing",
+      "revenue",
+      "subscription",
+      "money",
+    ],
+  },
+];
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[’]/g, "'")
+    .trim();
+}
+
+function getProjectName(project = {}) {
+  return (
+    project?.name ||
+    project?.title ||
+    project?.projectName ||
+    "Project"
+  );
+}
+
+function getProjectText(project = {}) {
+  return normalizeText([
+    project?.name,
+    project?.title,
+    project?.projectName,
+    project?.category,
+    project?.type,
+    project?.kind,
+    project?.description,
+  ].filter(Boolean).join(" "));
+}
+
+function getProjectImage(project = {}) {
+  return (
+    project?.imageUrl ||
+    project?.avatarUrl ||
+    project?.iconUrl ||
+    project?.coverUrl ||
+    project?.logoUrl ||
+    ""
+  );
+}
+
+function getExplicitIcon(project = {}) {
+  const value = (
+    project?.icon ||
+    project?.emoji ||
+    project?.glyph ||
+    project?.coverGlyph ||
+    ""
+  );
+
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (DEFAULT_PROJECT_ICONS.has(trimmed)) return "";
+
+  return trimmed;
+}
+
+function getProjectInitials(name) {
+  const cleaned = String(name || "Project")
+    .replace(/['’]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .trim();
+
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0] || "P"}${parts[1][0] || ""}`.toUpperCase();
+  }
+
+  const single = parts[0] || "Project";
+  return single.slice(0, 2).toUpperCase();
+}
+
+function findRule(project = {}) {
+  const text = getProjectText(project);
+
+  return PROJECT_VISUAL_RULES.find((rule) =>
+    rule.keywords.some((keyword) => text.includes(keyword))
+  );
+}
+
+function isHexColor(value) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(value || "").trim());
+}
+
+function hexToRgb(hex) {
+  if (!isHexColor(hex)) return null;
+
+  const raw = hex.replace("#", "");
+
+  return {
+    r: parseInt(raw.slice(0, 2), 16),
+    g: parseInt(raw.slice(2, 4), 16),
+    b: parseInt(raw.slice(4, 6), 16),
+  };
+}
+
+function rgbaFromHex(hex, alpha) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+}
+
+function makeToneFromColor(color, fallbackTone) {
+  if (!isHexColor(color)) return fallbackTone;
+
+  return {
+    ...fallbackTone,
+    foreground: color,
+    bgFrom: rgbaFromHex(color, 0.15) || fallbackTone.bgFrom,
+    bgTo: rgbaFromHex(color, 0.07) || fallbackTone.bgTo,
+    border: rgbaFromHex(color, 0.20) || fallbackTone.border,
+    shadow: `0 12px 28px ${rgbaFromHex(color, 0.10) || "rgba(124, 58, 237, 0.10)"}`,
+  };
+}
+
+export function getProjectVisuals(project = {}) {
+  const name = getProjectName(project);
+  const imageUrl = getProjectImage(project);
+  const explicitIcon = getExplicitIcon(project);
+  const matchedRule = findRule(project);
+  const baseTone = TONES[matchedRule?.tone] || TONES.violet;
+  const tone = makeToneFromColor(project?.color, baseTone);
+
+  const glyph = explicitIcon || matchedRule?.glyph || "";
+
+  return {
+    name,
+    imageUrl,
+    glyph,
+    initials: getProjectInitials(name),
+    label: matchedRule?.label || `${name} project`,
+    foreground: tone.foreground,
+    border: tone.border,
+    shadow: tone.shadow,
+    background: `linear-gradient(135deg, ${tone.bgFrom}, ${tone.bgTo})`,
+  };
+}
