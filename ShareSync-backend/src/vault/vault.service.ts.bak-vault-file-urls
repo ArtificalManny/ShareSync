@@ -55,19 +55,14 @@ export class VaultService {
 
     // 2. Mock Cloud Upload (In a real app, you'd push file.buffer to AWS S3 here)
     // For now, we simulate the S3 URL generation
-    // IMPORTANT:
-    // Multer already saved the uploaded file to /uploads using file.filename.
-    // Do not store a fake external storage domain here. The frontend can resolve
-    // this relative URL against the backend origin for preview/download.
-    const storedFilename = file.filename || file.originalname;
-    const fileUrl = `/uploads/${storedFilename}`;
+    const mockFileUrl = `https://storage.sharesync.app/${projectId}/${Date.now()}-${file.originalname}`;
 
     // 3. Save Metadata
     const newFile = new this.fileModel({
       projectId: new Types.ObjectId(projectId),
       folderId: folderId ? new Types.ObjectId(folderId) : null,
       originalName: file.originalname,
-      fileUrl,
+      fileUrl: mockFileUrl,
       sizeInBytes: file.size,
       mimeType: file.mimetype,
       uploadedBy: new Types.ObjectId(userId),
