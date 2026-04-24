@@ -608,6 +608,7 @@ export default function Home() {
             )}
           </div>
 
+          <WeekInMotion className="mt-6" />
 
           <WeekInMotion className="mt-6" onShipNow={() => refreshAll?.()} />
         </div>

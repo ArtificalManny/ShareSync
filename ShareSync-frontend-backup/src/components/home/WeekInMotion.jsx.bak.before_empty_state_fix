@@ -136,37 +136,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
     );
   }
 
-  if (!data || !data.days?.length) {
-    return (
-      <div className={`p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-500/30 shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)] transition-all duration-300 ${className}`}>
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-            <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Your Week in Motion</h3>
-          </div>
-          <MomentumIndicator momentum="idle" label="Warming up" />
-        </div>
-
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#18181b] p-5">
-          <p className="text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
-            Your weekly rhythm will appear here once you start shipping activity this week.
-          </p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2">
-            Complete or ship a task to begin building your motion pattern.
-          </p>
-
-          {onShipNow && (
-            <button
-              onClick={onShipNow}
-              className="mt-4 inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20 hover:bg-violet-100 dark:hover:bg-violet-500/20 hover:border-violet-300 dark:hover:border-violet-500/30 transition-all duration-200 active:scale-95"
-            >
-              Ship something
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
+  if (!data || !data.days?.length) return null;
 
   return (
     <div className={`p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-500/30 shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)] transition-all duration-300 ${className}`}>
