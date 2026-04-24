@@ -47,6 +47,7 @@ import AchievementToast, { useAchievementToasts } from "./social/AchievementToas
 import { NavbarSoundToggle } from "./ui/SoundToggle";
 import { useTeamActivitySound } from "../sounds/NotificationSounds";
 
+import ProjectsCreate from "../pages/ProjectsCreate";
 import SubscriptionButton from "./subscription/SubscriptionButton";
 
 import FocusBlockTimer from "./focus/FocusBlockTimer";
@@ -378,7 +379,6 @@ export default function Navbar({
   onLogout,
   onOpenQuickNotes = () => {},
   quickNotesCount = 0,
-  onOpenCreateProject = () => {},
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -386,6 +386,7 @@ export default function Navbar({
   const chat = typeof useChat === "function" ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
 
+  const [showCreateProject, setShowCreateProject] = useState(false);
 
   const { glowLevel, isFireMode } = useMomentumContext();
   const focusBlock = useFocusBlock();
@@ -443,6 +444,13 @@ export default function Navbar({
     }
   };
 
+  const handleProjectCreated = (project) => {
+    const id = project?._id || project?.id || project?.projectId;
+    if (id) {
+      navigate(`/projects/${id}`);
+    }
+    setShowCreateProject(false);
+  };
 
   const navbarGlowStyle = useMemo(() => {
     if (isFireMode) {
@@ -546,7 +554,7 @@ export default function Navbar({
             </div>
 
             <button
-              onClick={onOpenCreateProject}
+              onClick={() => setShowCreateProject(true)}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold transition-all duration-200 mr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 border-none bg-gradient-to-br ${
                 isFireMode
                   ? "!bg-[#f97316] hover:!bg-[#ea580c] !text-white !shadow-lg !shadow-orange-500/30 animate-pulse"
@@ -605,6 +613,12 @@ export default function Navbar({
         </div>
       </header>
 
+      {showCreateProject && (
+        <ProjectsCreate
+          onClose={() => setShowCreateProject(false)}
+          onProjectCreated={handleProjectCreated}
+        />
+      )}
 
       <ShipNotification
         notifications={shipNotifications}

@@ -135,7 +135,6 @@ const Roadmap = lazy(() => import("./pages/Roadmap"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Home = lazy(() => import("./pages/Home"));
 const Projects = lazy(() => import("./pages/Projects"));
-const ProjectsCreate = lazy(() => import("./pages/ProjectsCreate"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProjectHome = lazy(() => import("./pages/ProjectHome"));
@@ -497,7 +496,6 @@ function AppRoutes() {
   const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [quickNotesOpen, setQuickNotesOpen] = useState(false);
   const { notes = [] } = useNotes();
 
@@ -509,17 +507,6 @@ function AppRoutes() {
     "/onboarding",
   ].includes(location.pathname);
   const showAppChrome = authUser && !isAuthPage;
-
-  useEffect(() => {
-    const handleOpenCreateProject = () => {
-      setShowCreateProjectModal(true);
-    };
-
-    window.addEventListener("ss:open-create-project", handleOpenCreateProject);
-    return () => {
-      window.removeEventListener("ss:open-create-project", handleOpenCreateProject);
-    };
-  }, []);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -549,7 +536,6 @@ function AppRoutes() {
             onLogout={logout}
             onOpenQuickNotes={() => setQuickNotesOpen(true)}
             quickNotesCount={notes.length}
-            onOpenCreateProject={() => setShowCreateProjectModal(true)}
           />
 
           <Suspense fallback={null}>
@@ -813,12 +799,6 @@ function AppRoutes() {
           <LeaderboardDock />
           <ShipFlash />
           <InstallPrompt />
-        </Suspense>
-      )}
-
-      {authUser && showCreateProjectModal && (
-        <Suspense fallback={null}>
-          <ProjectsCreate onClose={() => setShowCreateProjectModal(false)} />
         </Suspense>
       )}
 

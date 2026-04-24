@@ -64,22 +64,3 @@
   background-color: #ffffff !important;
   caret-color: #8b5cf6 !important;
 }
-
-
-/* ── Explicit overrides for dialog wrapper layers ─────────────────────────── */
-
-[role="dialog"] > .pc-create-backdrop {
-  background-color: rgba(15, 23, 42, 0.08) !important;
-  background: rgba(15, 23, 42, 0.08) !important;
-  -webkit-backdrop-filter: blur(2px) !important;
-  backdrop-filter: blur(2px) !important;
-}
-
-[role="dialog"] > .pc-create-viewport {
-  background-color: transparent !important;
-  background: transparent !important;
-}
-
-[role="dialog"] > .pc-create-viewport > .pc-create-modal {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-}

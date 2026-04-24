@@ -26,6 +26,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import ProjectsCreate from './ProjectsCreate';
 import QuietProjectsBanner from '../components/projects/QuietProjectsBanner';
 import ProjectCardV2 from '../components/projects/ProjectCardV2';
 import { SkeletonProjectCard } from '../components/ui/Skeletons';
@@ -181,6 +182,7 @@ const Projects = () => {
 
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
@@ -211,6 +213,9 @@ const Projects = () => {
     }
   };
 
+  const handleProjectCreated = (newProject) => {
+    setProjects((prev) => [newProject, ...prev]);
+  };
 
   const handleProjectClick = (projectId) => {
     if (!projectId) {
@@ -222,10 +227,6 @@ const Projects = () => {
 
   const handleStartSprint = (project) => {
     console.log('[Projects] Start sprint clicked for:', project?.name || project?.title || project?._id || project?.id);
-  };
-
-  const openCreateProjectModal = () => {
-    window.dispatchEvent(new Event("ss:open-create-project"));
   };
 
   const handleSearch = (query) => {
@@ -242,7 +243,7 @@ const Projects = () => {
   };
 
   const handleCreateProjectFromSearch = () => {
-    openCreateProjectModal();
+    setShowCreateModal(true);
   };
 
   const filteredProjects = projects.filter((project) => {
@@ -285,10 +286,10 @@ const Projects = () => {
     if (projects.length === 0) {
       return (
         <EmptyProjects
-          onCreateProject={() => openCreateProjectModal()}
+          onCreateProject={() => setShowCreateModal(true)}
           onSelectTemplate={(template) => {
             console.log('Selected template:', template);
-            openCreateProjectModal();
+            setShowCreateModal(true);
           }}
           showTemplates={true}
           variant="animated"
@@ -368,7 +369,7 @@ const Projects = () => {
           {/* New Project Button */}
           <button
             type="button"
-            onClick={() => openCreateProjectModal()}
+            onClick={() => setShowCreateModal(true)}
             className="
               relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-xl shrink-0 whitespace-nowrap
               text-sm font-semibold
@@ -496,6 +497,12 @@ const Projects = () => {
         renderEmptyState()
       )}
 
+      {showCreateModal && (
+        <ProjectsCreate
+          onClose={() => setShowCreateModal(false)}
+          onProjectCreated={handleProjectCreated}
+        />
+      )}
     </div>
   );
 };

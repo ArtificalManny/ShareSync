@@ -14,11 +14,11 @@ import {
   ListChecks,
   Eye,
   MessageSquare,
-  Crown,
+  Crown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
-import { sendInvite } from "../api/invites";
+import { sendInvite } from "../api/invites"; // ⭐ ADDED: Explicitly import our invite API
 import { getCurrentSubscription } from "../api/subscriptions";
 import { toast } from "../components/ui/toast";
 import SmartStart from "../components/projects/SmartStart";
@@ -26,6 +26,7 @@ import "./ProjectsCreate.css";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
 function isValidEmail(email) {
+  // Lightweight check (good UX). Backend should still validate.
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim().toLowerCase());
 }
 
@@ -51,25 +52,27 @@ function savePhase0Prefs(prefs) {
 }
 
 /**
- * Light modal field override.
- * Keeps fields aligned with the site palette while still beating global input overrides.
+ * ✅ DARK INPUT REF — applies dark theme directly on each form element.
+ * Uses el.style.setProperty(..., 'important') which CANNOT be overridden
+ * by any CSS rule, including !important rules in index.css.
+ * Applied as ref={darkRef} on every input, select, and textarea.
  */
-function modalFieldRef(el) {
+function darkRef(el) {
   if (!el) return;
-  el.style.setProperty("background-color", "#ffffff", "important");
-  el.style.setProperty("background", "#ffffff", "important");
-  el.style.setProperty("color", "#0f172a", "important");
-  el.style.setProperty("border", "1px solid rgba(203, 213, 225, 0.95)", "important");
-  el.style.setProperty("box-shadow", "0 1px 2px rgba(15, 23, 42, 0.03)", "important");
-  el.style.setProperty("caret-color", "#8b5cf6", "important");
-  el.style.setProperty("border-radius", "0.9rem", "important");
+  el.style.setProperty('background-color', '#0f172a', 'important');
+  el.style.setProperty('background', '#0f172a', 'important');
+  el.style.setProperty('color', '#ffffff', 'important');
+  el.style.setProperty('border', '1px solid rgba(139, 92, 246, 0.3)', 'important');
+  el.style.setProperty('box-shadow', 'none', 'important');
+  el.style.setProperty('caret-color', '#c084fc', 'important');
+  el.style.setProperty('border-radius', '0.75rem', 'important');
 }
 
 export default function ProjectsCreate({ onClose, onProjectCreated }) {
   useDocumentTitle("New Project");
   const navigate = useNavigate();
 
-  const formId = "create-project-form";
+  const formId = "create-project-form"; // ✅ used to bind footer button to form
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -77,8 +80,9 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const [status, setStatus] = useState("In Progress");
   const [privacy, setPrivacy] = useState("Private");
 
+  // ✅ Phase 0 (UI-only) settings
   const [isListed, setIsListed] = useState(false);
-  const [spectatorMode, setSpectatorMode] = useState("view");
+  const [spectatorMode, setSpectatorMode] = useState("view"); // "view" | "suggest"
 
   const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState("Member");
@@ -88,6 +92,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const [smartStartMode, setSmartStartMode] = useState(false);
   const [subData, setSubData] = useState(null);
 
+  // Inline validation
   const [fieldErrors, setFieldErrors] = useState({
     title: "",
     description: "",
@@ -95,6 +100,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     form: "",
   });
 
+  // ✅ Fetch limits on mount
   useEffect(() => {
     getCurrentSubscription()
       .then((data) => setSubData(data))
@@ -106,6 +112,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const isUnlimited = projectsLimit === -1;
   const isAtLimit = !isUnlimited && projectsUsed >= projectsLimit;
 
+  // ✅ Load Phase 0 defaults once (UI-only)
   useEffect(() => {
     const prefs = loadPhase0Prefs();
     if (!prefs) return;
@@ -127,6 +134,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
   const addMember = () => {
     const email = memberEmail.trim();
+
+    // Clear previous error
     clearFieldError("memberEmail");
 
     if (!email) return;
@@ -157,6 +166,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     if (!title.trim()) next.title = "Project title is required.";
     if (!description.trim()) next.description = "Description is required.";
 
+    // If user typed an email but didn't click Add, nudge them (optional)
     if (memberEmail.trim() && !isValidEmail(memberEmail.trim())) {
       next.memberEmail = "That email doesn't look valid (or click Add to include it).";
     }
@@ -170,6 +180,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     e.stopPropagation();
     if (submitting || isAtLimit) return;
 
+    // Reset form-level error
     setFieldErrors((prev) => ({ ...prev, form: "" }));
 
     if (!validate()) {
@@ -187,6 +198,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
       const trimmedTitle = title.trim();
       const trimmedDescription = description.trim();
 
+      // ✅ Phase 0: persist UI intent only
       savePhase0Prefs({
         privacy,
         isListed,
@@ -202,6 +214,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         status,
         privacy,
         isPublic: privacy === "Public",
+        // Members might be stripped by the backend DTO whitelist, so we handle them explicitly below!
         members,
       };
 
@@ -210,17 +223,17 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
       const id = project?._id || project?.id || project?.projectId;
       if (!id) throw new Error("Backend did not return an _id");
 
+      // ⭐ THE HANDSHAKE FIX: Explicitly send the invites using our dedicated API to bypass DTO strippers!
       if (members.length > 0) {
         try {
-          await Promise.all(
-            members.map((m) => {
-              let mappedRole = "member";
-              if (m.role === "Manager") mappedRole = "admin";
-              if (m.role === "Viewer") mappedRole = "viewer";
-
-              return sendInvite(id, { email: m.email, role: mappedRole });
-            })
-          );
+          await Promise.all(members.map(m => {
+            // Map frontend UI roles to backend InviteRole enum
+            let mappedRole = "member";
+            if (m.role === "Manager") mappedRole = "admin";
+            if (m.role === "Viewer") mappedRole = "viewer";
+            
+            return sendInvite(id, { email: m.email, role: mappedRole });
+          }));
         } catch (inviteErr) {
           console.warn("Failed to send some invites during project creation:", inviteErr);
         }
@@ -232,7 +245,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         variant: "success",
       });
 
+      // Let Projects.jsx update instantly (optimistic prepend)
       onProjectCreated?.(project);
+
+      // ✅ Navigate first, then close modal
       navigate(`/projects/${id}`);
       onClose?.();
     } catch (err) {
@@ -255,6 +271,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     }
   }
 
+  // Prevent Enter key from submitting unless explicitly on textarea or submit button
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && e.target.tagName !== "TEXTAREA" && e.target.type !== "submit") {
       e.preventDefault();
@@ -264,80 +281,77 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const isPublic = privacy === "Public";
 
   return (
-    <Dialog open={true} onClose={submitting ? () => {} : onClose} className="fixed inset-0 z-50">
-      <div className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px]" aria-hidden="true" />
+    <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px]" aria-hidden="true" />
 
-      <div className="pc-create-viewport fixed inset-0 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
-        <Dialog.Panel className="pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/96 backdrop-blur-sm shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200/80 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50/70 rounded-t-[28px]">
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="pc-create-modal relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-purple-500/30 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl shadow-purple-500/20">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-t-2xl">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-[0_10px_28px_rgba(139,92,246,0.24)]">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <Dialog.Title className="text-xl font-semibold text-slate-900">
-                  Create New Project
-                </Dialog.Title>
-                <p className="text-sm text-slate-500">Start building your next big thing</p>
+                <Dialog.Title className="text-lg font-bold text-white">Create New Project</Dialog.Title>
+                <p className="text-xs text-slate-400">Start building your next big thing</p>
               </div>
             </div>
-
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 hover:bg-slate-100 transition-colors group"
+              className="rounded-full p-2 hover:bg-slate-700/50 transition-colors group"
               aria-label="Close create project dialog"
               disabled={submitting}
             >
-              <X className="w-5 h-5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+              <X className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
             </button>
           </div>
 
+          {/* Scrollable Content */}
           <form
             id={formId}
             onSubmit={handleSubmit}
             onKeyDown={handleKeyDown}
-            className="flex-1 overflow-y-auto px-6 py-6 bg-transparent"
+            className="flex-1 overflow-y-auto px-6 py-6"
           >
             <div className="space-y-6">
+              {/* Form-level error (inline) */}
               {fieldErrors.form ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-red-300 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-red-700">Couldn't create project</p>
-                      <p className="text-xs text-red-600 mt-1">{fieldErrors.form}</p>
+                      <p className="text-sm font-medium text-red-200">Couldn't create project</p>
+                      <p className="text-xs text-red-200/80 mt-1">{fieldErrors.form}</p>
                     </div>
                   </div>
                 </div>
               ) : null}
 
+              {/* ── Mode Toggle: Manual vs Smart Start ── */}
               <section className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-violet-500" />
-                    <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-[0.16em]">
-                      {smartStartMode ? "Smart Start" : "Project Basics"}
+                    <Target className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+                      {smartStartMode ? 'Smart Start' : 'Project Basics'}
                     </h3>
                   </div>
-
                   <button
                     type="button"
-                    onClick={() => setSmartStartMode((prev) => !prev)}
+                    onClick={() => setSmartStartMode(prev => !prev)}
                     disabled={submitting || isAtLimit}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       smartStartMode
-                        ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        : "bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100"
+                        ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                        : 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-purple-300 hover:border-purple-400'
                     }`}
                   >
                     {smartStartMode ? (
                       <>← Manual mode</>
                     ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Smart Start
-                      </>
+                      <><Sparkles className="w-3.5 h-3.5" /> Smart Start</>
                     )}
                   </button>
                 </div>
@@ -347,139 +361,139 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     persona={null}
                     onCancel={() => setSmartStartMode(false)}
                     onAccept={(results) => {
+                      // Populate form with AI results
+                      if (results.tasks?.[0]?.title && !title.trim()) {
+                        // Don't override if user already typed a title
+                      }
                       if (results.timeline) {
-                        setDescription((prev) => {
-                          const aiSummary = `Timeline: ${results.timeline}\n\nAI-generated tasks (${results.tasks.length}):\n${results.tasks
-                            .map((t, i) => `${i + 1}. ${t.title}`)
-                            .join("\n")}`;
+                        setDescription(prev => {
+                          const aiSummary = `Timeline: ${results.timeline}\n\nAI-generated tasks (${results.tasks.length}):\n${results.tasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n')}`;
                           return prev.trim() ? prev : aiSummary;
                         });
                       }
-
                       setSmartStartMode(false);
                       toast({
-                        title: "Smart Start applied!",
+                        title: 'Smart Start applied!',
                         description: `${results.tasks.length} tasks ready. Review and create your project.`,
-                        variant: "success",
+                        variant: 'success',
                       });
                     }}
                   />
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Project Title <span className="text-fuchsia-500">*</span>
-                        </label>
-                        <input
-                          ref={modalFieldRef}
-                          type="text"
-                          value={title}
-                          onChange={(e) => {
-                            setTitle(e.target.value);
-                            clearFieldError("title");
-                          }}
-                          placeholder="e.g., OpenShare Mobile App"
-                          className={`w-full rounded-2xl border px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-                            fieldErrors.title
-                              ? "border-red-300 focus:ring-red-200"
-                              : "border-slate-200 focus:ring-violet-200"
-                          }`}
-                          aria-required="true"
-                          autoFocus
-                          disabled={submitting || isAtLimit}
-                        />
-                        {fieldErrors.title ? (
-                          <p className="mt-1 text-xs text-red-500">{fieldErrors.title}</p>
-                        ) : null}
-                      </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                        <input
-                          ref={modalFieldRef}
-                          type="text"
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          placeholder="e.g., SaaS, Personal, School"
-                          className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent transition-all"
-                          disabled={submitting || isAtLimit}
-                        />
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
+                      Project Title <span className="text-fuchsia-400">*</span>
+                    </label>
+                    <input
+                      ref={darkRef}
+                      type="text"
+                      value={title}
+                      onChange={(e) => {
+                        setTitle(e.target.value);
+                        clearFieldError("title");
+                      }}
+                      placeholder="e.g., OpenShare Mobile App"
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-500
+                        focus:outline-none focus:ring-2 focus:border-transparent transition-all
+                        ${fieldErrors.title ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
+                      `}
+                      aria-required="true"
+                      autoFocus
+                      disabled={submitting || isAtLimit}
+                    />
+                    {fieldErrors.title ? (
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.title}</p>
+                    ) : null}
+                  </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Initial Status</label>
-                        <select
-                          ref={modalFieldRef}
-                          value={status}
-                          onChange={(e) => setStatus(e.target.value)}
-                          className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent transition-all"
-                          disabled={submitting || isAtLimit}
-                        >
-                          <option>Not Started</option>
-                          <option>In Progress</option>
-                          <option>Completed</option>
-                        </select>
-                      </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">Category</label>
+                    <input
+                      ref={darkRef}
+                      type="text"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder="e.g., SaaS, Personal, School"
+                      className="w-full rounded-xl border border-purple-500/30 px-4 py-3 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      disabled={submitting || isAtLimit}
+                    />
+                  </div>
 
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Description <span className="text-fuchsia-500">*</span>
-                        </label>
-                        <textarea
-                          ref={modalFieldRef}
-                          value={description}
-                          onChange={(e) => {
-                            setDescription(e.target.value);
-                            clearFieldError("description");
-                          }}
-                          placeholder="What are you building? What problem does it solve? What's your goal?"
-                          rows={4}
-                          className={`w-full rounded-2xl border px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none ${
-                            fieldErrors.description
-                              ? "border-red-300 focus:ring-red-200"
-                              : "border-slate-200 focus:ring-violet-200"
-                          }`}
-                          disabled={submitting || isAtLimit}
-                        />
-                        {fieldErrors.description ? (
-                          <p className="mt-1 text-xs text-red-500">{fieldErrors.description}</p>
-                        ) : (
-                          <p className="text-xs text-slate-500 mt-1">
-                            💡 Tip: A clear description helps your team understand the vision
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-200 mb-2">Initial Status</label>
+                    <select
+                      ref={darkRef}
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="w-full rounded-xl border border-purple-500/30 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      disabled={submitting || isAtLimit}
+                    >
+                      <option>Not Started</option>
+                      <option>In Progress</option>
+                      <option>Completed</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
+                      Description <span className="text-fuchsia-400">*</span>
+                    </label>
+                    <textarea
+                      ref={darkRef}
+                      value={description}
+                      onChange={(e) => {
+                        setDescription(e.target.value);
+                        clearFieldError("description");
+                      }}
+                      placeholder="What are you building? What problem does it solve? What's your goal?"
+                      rows={4}
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-500
+                        focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none
+                        ${fieldErrors.description ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
+                      `}
+                      disabled={submitting || isAtLimit}
+                    />
+                    {fieldErrors.description ? (
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.description}</p>
+                    ) : (
+                      <p className="text-xs text-slate-400 mt-1">
+                        💡 Tip: A clear description helps your team understand the vision
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                </>
                 )}
               </section>
 
+              {/* Privacy Settings */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-violet-500" />
-                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-[0.16em]">
-                    Privacy
-                  </h3>
+                  <Shield className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Privacy</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setPrivacy("Private")}
-                    className={`rounded-2xl border px-5 py-4 text-left transition-all ${
+                    className={`rounded-xl border px-5 py-4 text-left transition-all ${
                       privacy === "Private"
-                        ? "ring-2 ring-violet-300 border-violet-300 bg-violet-50 shadow-[0_10px_28px_rgba(139,92,246,0.12)]"
-                        : "border-slate-200 bg-white hover:bg-slate-50 hover:border-violet-200"
+                        ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                        : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Private"}
                     disabled={submitting || isAtLimit}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <Shield className="w-5 h-5 text-violet-500" />
-                      <span className="text-base font-semibold text-slate-800">Private</span>
+                      <Shield className="w-5 h-5 text-purple-400" />
+                      <span className="text-base font-semibold text-white">Private</span>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       Only invited members can view and collaborate
                     </p>
                   </button>
@@ -487,60 +501,57 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   <button
                     type="button"
                     onClick={() => setPrivacy("Public")}
-                    className={`rounded-2xl border px-5 py-4 text-left transition-all ${
+                    className={`rounded-xl border px-5 py-4 text-left transition-all ${
                       privacy === "Public"
-                        ? "ring-2 ring-violet-300 border-violet-300 bg-violet-50 shadow-[0_10px_28px_rgba(139,92,246,0.12)]"
-                        : "border-slate-200 bg-white hover:bg-slate-50 hover:border-violet-200"
+                        ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                        : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/50"
                     }`}
                     aria-pressed={privacy === "Public"}
                     disabled={submitting || isAtLimit}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <Globe className="w-5 h-5 text-sky-500" />
-                      <span className="text-base font-semibold text-slate-800">Public</span>
+                      <Globe className="w-5 h-5 text-blue-400" />
+                      <span className="text-base font-semibold text-white">Public</span>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       Anyone can view read-only status and progress
                     </p>
                   </button>
                 </div>
 
+                {/* ✅ Phase 0 controls (UI only) */}
                 {isPublic ? (
-                  <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
+                  <div className="mt-4 rounded-2xl border border-purple-500/20 bg-slate-900/40 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <ListChecks className="w-4 h-4 text-violet-500" />
-                      <p className="text-sm font-semibold text-slate-800">Public Visibility</p>
+                      <ListChecks className="w-4 h-4 text-purple-300" />
+                      <p className="text-sm font-semibold text-white">Public Visibility</p>
                       <span className="text-xs text-slate-500">(Phase 0: UI-only)</span>
                     </div>
 
+                    {/* Listed toggle */}
                     <button
                       type="button"
                       onClick={() => setIsListed((v) => !v)}
-                      className={`w-full flex items-center justify-between rounded-2xl border px-4 py-3 transition-all ${
+                      className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
                         isListed
-                          ? "border-emerald-300 bg-emerald-50"
-                          : "border-slate-200 bg-white hover:bg-slate-50 hover:border-violet-200"
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                       }`}
                       disabled={submitting || isAtLimit}
                       aria-pressed={isListed}
                     >
                       <div className="flex items-center gap-3">
-                        <ListChecks
-                          className={`w-4 h-4 ${isListed ? "text-emerald-500" : "text-slate-500"}`}
-                        />
+                        <ListChecks className={`w-4 h-4 ${isListed ? "text-emerald-300" : "text-slate-300"}`} />
                         <div className="text-left">
-                          <p className="text-sm font-medium text-slate-800">
-                            Listed in Discover & Search
-                          </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-sm font-medium text-white">Listed in Discover & Search</p>
+                          <p className="text-xs text-slate-400">
                             If off: project is public, but only visible by direct link (unlisted)
                           </p>
                         </div>
                       </div>
-
                       <div
                         className={`h-5 w-9 rounded-full p-0.5 transition-all ${
-                          isListed ? "bg-emerald-500/70" : "bg-slate-300"
+                          isListed ? "bg-emerald-500/60" : "bg-slate-700"
                         }`}
                       >
                         <div
@@ -551,23 +562,24 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       </div>
                     </button>
 
+                    {/* Spectator mode */}
                     <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setSpectatorMode("view")}
-                        className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
                           spectatorMode === "view"
-                            ? "ring-2 ring-violet-300 border-violet-300 bg-violet-50"
-                            : "border-slate-200 bg-white hover:bg-slate-50 hover:border-violet-200"
+                            ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
+                            : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                         }`}
                         disabled={submitting || isAtLimit}
                         aria-pressed={spectatorMode === "view"}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <Eye className="w-4 h-4 text-sky-500" />
-                          <p className="text-sm font-semibold text-slate-800">View-only</p>
+                          <Eye className="w-4 h-4 text-blue-300" />
+                          <p className="text-sm font-semibold text-white">View-only</p>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-400">
                           Spectators can watch updates but can't post suggestions
                         </p>
                       </button>
@@ -575,30 +587,31 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       <button
                         type="button"
                         onClick={() => setSpectatorMode("suggest")}
-                        className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
                           spectatorMode === "suggest"
-                            ? "ring-2 ring-violet-300 border-violet-300 bg-violet-50"
-                            : "border-slate-200 bg-white hover:bg-slate-50 hover:border-violet-200"
+                            ? "ring-2 ring-purple-500 border-purple-400 bg-purple-500/10"
+                            : "border-slate-700 bg-slate-800/30 hover:bg-slate-800/50 hover:border-purple-500/40"
                         }`}
                         disabled={submitting || isAtLimit}
                         aria-pressed={spectatorMode === "suggest"}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <MessageSquare className="w-4 h-4 text-violet-500" />
-                          <p className="text-sm font-semibold text-slate-800">Allow suggestions</p>
+                          <MessageSquare className="w-4 h-4 text-purple-300" />
+                          <p className="text-sm font-semibold text-white">Allow suggestions</p>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-400">
                           Spectators can post ideas (subject to moderation later)
                         </p>
                       </button>
                     </div>
 
+                    {/* Copy: approval hint */}
                     {isListed ? (
-                      <p className="mt-3 text-xs text-slate-500">
+                      <p className="mt-3 text-xs text-slate-400">
                         💡 Listed projects may require approval before appearing in Discover.
                       </p>
                     ) : (
-                      <p className="mt-3 text-xs text-slate-500">
+                      <p className="mt-3 text-xs text-slate-400">
                         🔗 Unlisted public projects can still be shared via direct link.
                       </p>
                     )}
@@ -606,19 +619,18 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 ) : null}
               </section>
 
+              {/* Team Members */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <UsersIcon className="w-5 h-5 text-violet-500" />
-                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-[0.16em]">
-                    Team Members
-                  </h3>
+                  <UsersIcon className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Team Members</h3>
                   <span className="text-xs text-slate-500">(Optional)</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px] gap-3">
                   <div className="md:col-span-1">
                     <input
-                      ref={modalFieldRef}
+                      ref={darkRef}
                       type="email"
                       value={memberEmail}
                       onChange={(e) => {
@@ -626,23 +638,22 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                         clearFieldError("memberEmail");
                       }}
                       placeholder="teammate@email.com"
-                      className={`w-full rounded-2xl border px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-                        fieldErrors.memberEmail
-                          ? "border-red-300 focus:ring-red-200"
-                          : "border-slate-200 focus:ring-violet-200"
-                      }`}
+                      className={`w-full rounded-xl border px-4 py-3 placeholder-slate-500
+                        focus:outline-none focus:ring-2 focus:border-transparent transition-all
+                        ${fieldErrors.memberEmail ? "border-red-500/60 focus:ring-red-500" : "border-purple-500/30 focus:ring-purple-500"}
+                      `}
                       disabled={submitting || isAtLimit}
                     />
                     {fieldErrors.memberEmail ? (
-                      <p className="mt-1 text-xs text-red-500">{fieldErrors.memberEmail}</p>
+                      <p className="mt-1 text-xs text-red-300">{fieldErrors.memberEmail}</p>
                     ) : null}
                   </div>
 
                   <select
-                    ref={modalFieldRef}
+                    ref={darkRef}
                     value={memberRole}
                     onChange={(e) => setMemberRole(e.target.value)}
-                    className="rounded-2xl border border-slate-200 px-3 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-transparent transition-all"
+                    className="rounded-xl border border-purple-500/30 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     disabled={submitting || isAtLimit}
                   >
                     <option>Member</option>
@@ -653,7 +664,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   <button
                     type="button"
                     onClick={addMember}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 hover:bg-violet-100 px-3 py-3 text-sm font-medium text-violet-700 transition-all"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-600/20 hover:bg-purple-600/30 px-3 py-3 text-sm font-medium text-white transition-all"
                     aria-label="Add member"
                     disabled={submitting || isAtLimit}
                   >
@@ -667,22 +678,21 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     {members.map((m) => (
                       <div
                         key={m.email}
-                        className="flex items-center justify-between px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200"
+                        className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-purple-500/20"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
                             {m.email[0].toUpperCase()}
                           </div>
                           <div>
-                            <span className="text-sm text-slate-800 font-medium">{m.email}</span>
-                            <span className="text-xs text-slate-500 ml-2">({m.role})</span>
+                            <span className="text-sm text-white font-medium">{m.email}</span>
+                            <span className="text-xs text-slate-400 ml-2">({m.role})</span>
                           </div>
                         </div>
-
                         <button
                           type="button"
                           onClick={() => removeMember(m.email)}
-                          className="text-red-500 hover:text-red-600 text-sm font-medium transition-colors"
+                          className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                           aria-label={`Remove ${m.email}`}
                           disabled={submitting || isAtLimit}
                         >
@@ -693,38 +703,33 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   </div>
                 )}
 
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   💡 Tip: You can invite more members after creating the project
                 </p>
               </section>
             </div>
           </form>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-t border-slate-200/80 bg-slate-50/88 backdrop-blur-md rounded-b-[28px]">
-            <div className="text-xs text-slate-500">
+          {/* Footer - Fixed (outside form) */}
+          <div className="flex items-center justify-between gap-3 px-6 py-5 border-t border-purple-500/20 bg-slate-900/50 backdrop-blur-sm rounded-b-2xl">
+            <div className="text-xs text-slate-400">
               {subData && !isUnlimited ? (
-                <span
-                  className={isAtLimit ? "text-amber-600 font-medium flex items-center gap-1.5" : "flex items-center gap-1.5"}
-                >
-                  {isAtLimit ? (
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                  ) : (
-                    <Zap className="w-3.5 h-3.5 text-violet-500" />
-                  )}
+                <span className={isAtLimit ? "text-amber-400 font-medium flex items-center gap-1.5" : "flex items-center gap-1.5"}>
+                  {isAtLimit ? <AlertTriangle className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5 text-purple-400" />}
                   You have used {projectsUsed} of {projectsLimit} free projects.
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-violet-500" />
+                  <Zap className="w-3.5 h-3.5 text-purple-400" />
                   Press ESC to cancel
                 </span>
               )}
             </div>
-
-            <div className="flex w-full sm:w-auto flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+            
+            <div className="flex gap-3">
               <button
                 type="button"
-                className="rounded-2xl border border-slate-200 bg-white/95 hover:bg-slate-50 px-5 py-3 text-sm font-medium text-slate-700 transition-all w-full sm:w-auto min-w-[132px]"
+                className="rounded-xl border border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 px-5 py-2.5 text-sm font-medium text-white transition-all"
                 onClick={onClose}
                 disabled={submitting}
               >
@@ -738,7 +743,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     onClose();
                     navigate("/settings");
                   }}
-                  className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_28px_rgba(245,158,11,0.28)] transition-all hover:scale-[1.02]"
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:scale-105"
                 >
                   <Crown className="w-4 h-4 inline mr-2" />
                   Upgrade to Team
@@ -747,8 +752,8 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 <button
                   type="submit"
                   form={formId}
-                  className={`rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 hover:from-violet-500 hover:via-purple-500 hover:to-fuchsia-500 px-6 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(139,92,246,0.32)] transition-all w-full sm:w-auto min-w-[190px] inline-flex items-center justify-center ${
-                    submitting ? "opacity-70 cursor-wait" : "hover:scale-[1.02]"
+                  className={`rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/30 transition-all ${
+                    submitting ? "opacity-70 cursor-wait" : "hover:scale-105"
                   }`}
                   disabled={!canSubmit}
                 >
