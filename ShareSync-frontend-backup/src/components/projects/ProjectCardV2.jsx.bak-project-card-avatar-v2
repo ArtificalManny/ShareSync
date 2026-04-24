@@ -31,7 +31,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLivingCard } from '../../hooks/useLivingCard';
-import ProjectAvatar from '../project/ProjectAvatar';
 
 const DEFAULT_COLOR = '#8B5CF6';
 
@@ -184,6 +183,7 @@ export default function ProjectCardV2({
   const projectId = project?._id || project?.id;
   const name = project?.name || project?.title || 'Untitled Project';
   const color = project?.color || DEFAULT_COLOR;
+  const emoji = project?.icon || project?.emoji || '📁';
   const description = project?.description || project?.subtitle || 'No description provided.';
 
   const totalTasks = safeNumber(
@@ -498,11 +498,15 @@ export default function ProjectCardV2({
         {/* Top row: identity + state */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-start gap-3 min-w-0">
-            <ProjectAvatar
-              project={project}
-              size="md"
-              className="transition-transform duration-200 group-hover:scale-105"
-            />
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 transition-transform duration-200 group-hover:scale-105"
+              style={{
+                backgroundColor: `${color}14`,
+                color,
+              }}
+            >
+              {emoji}
+            </div>
 
             <div className="min-w-0 pt-0.5">
               <div className="flex items-center gap-2 min-w-0">
