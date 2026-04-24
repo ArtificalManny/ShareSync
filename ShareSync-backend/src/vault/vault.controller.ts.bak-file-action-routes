@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards,
+  Controller, Get, Post, Body, Param, Req, UseGuards,
   UseInterceptors, UploadedFile, BadRequestException
 } from '@nestjs/common';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
@@ -131,85 +131,4 @@ export class VaultController {
     const uploadedFile = await this.vaultService.uploadFile(projectId, userId, file, folderId);
     return { success: true, data: uploadedFile };
   }
-  @Patch('files/:fileId')
-  @UseInterceptors(TextModerationInterceptor)
-  async renameFile(
-    @Req() req: any,
-    @Param('fileId') fileId: string,
-    @Body('originalName') originalName?: string,
-    @Body('name') name?: string,
-  ) {
-    const userId = req.user?.sub || req.user?.userId;
-
-    if (!userId) {
-      throw new BadRequestException('User ID is required');
-    }
-
-    if (!fileId) {
-      throw new BadRequestException('File ID is required');
-    }
-
-    const nextName = originalName || name;
-
-    if (!nextName) {
-      throw new BadRequestException('File name is required');
-    }
-
-    const file = await this.vaultService.renameFile(fileId, userId, nextName);
-
-    return {
-      success: true,
-      data: file,
-      message: 'File renamed',
-    };
-  }
-
-  @Patch('files/:fileId/move')
-  async moveFile(
-    @Req() req: any,
-    @Param('fileId') fileId: string,
-    @Body('folderId') folderId?: string | null,
-  ) {
-    const userId = req.user?.sub || req.user?.userId;
-
-    if (!userId) {
-      throw new BadRequestException('User ID is required');
-    }
-
-    if (!fileId) {
-      throw new BadRequestException('File ID is required');
-    }
-
-    const file = await this.vaultService.moveFile(fileId, userId, folderId || null);
-
-    return {
-      success: true,
-      data: file,
-      message: 'File moved',
-    };
-  }
-
-  @Delete('files/:fileId')
-  async deleteFile(
-    @Req() req: any,
-    @Param('fileId') fileId: string,
-  ) {
-    const userId = req.user?.sub || req.user?.userId;
-
-    if (!userId) {
-      throw new BadRequestException('User ID is required');
-    }
-
-    if (!fileId) {
-      throw new BadRequestException('File ID is required');
-    }
-
-    await this.vaultService.deleteFile(fileId, userId);
-
-    return {
-      success: true,
-      message: 'File deleted',
-    };
-  }
-
 }
