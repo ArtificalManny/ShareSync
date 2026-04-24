@@ -34,6 +34,7 @@ import {
 import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 import CompleteProjectModal from "../components/project/CompleteProjectModal";
+import ProjectAvatar from "../components/project/ProjectAvatar";
 
 // Icons
 import {
@@ -377,15 +378,11 @@ function ProjectHeader({
 
       <div className="flex items-start justify-between gap-8">
         <div className="flex items-start gap-5 flex-1 min-w-0">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0"
-            style={{
-              backgroundColor: (project?.color || "#8b5cf6") + "15",
-              color: project?.color || "#8b5cf6",
-            }}
-          >
-            {project?.icon || "📁"}
-          </div>
+          <ProjectAvatar
+            project={project}
+            size="lg"
+            className="flex-shrink-0"
+          />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2 flex-wrap">
