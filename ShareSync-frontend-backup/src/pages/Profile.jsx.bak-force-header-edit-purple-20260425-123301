@@ -1208,16 +1208,16 @@ export default function Profile() {
           {user?.bio && (
             <p className="mt-6 text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">{user.bio}</p>
           )}
+          
           {/* Edit button - Purple primary action */}
           {isOwnProfile && (
             <button 
-              type="button"
               onClick={handleEditProfile}
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white border border-violet-300 shadow-xl shadow-violet-500/35 ring-2 ring-violet-200/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-violet-500/45 focus:outline-none focus:ring-4 focus:ring-violet-300"
-              style={{ backgroundColor: '#7C3AED', color: '#FFFFFF' }}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 ring-1 ring-violet-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-violet-300"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 52%, #6D28D9 100%)' }}
             >
-              <Edit3 className="w-4 h-4 text-white" />
-              <span className="text-white">Edit Profile</span>
+              <Edit3 className="w-4 h-4" />
+              Edit Profile
             </button>
           )}
         </div>
