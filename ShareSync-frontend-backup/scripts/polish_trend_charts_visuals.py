@@ -1,4 +1,10 @@
-// src/components/growth/TrendCharts.jsx
+from pathlib import Path
+import sys
+
+ROOT = Path.cwd()
+TREND_CHARTS = ROOT / "src/components/growth/TrendCharts.jsx"
+
+TREND_CHARTS_CODE = """// src/components/growth/TrendCharts.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE K: Historical Trend Charts
 // Premium visual polish for Profile growth analytics
@@ -445,3 +451,49 @@ export default function TrendCharts({
     </div>
   );
 }
+"""
+
+def fail(message):
+    print(f"\\n[polish_trend_charts_visuals] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[polish_trend_charts_visuals] starting")
+
+    if not TREND_CHARTS.exists():
+        fail(f"Could not find {TREND_CHARTS}")
+
+    original = TREND_CHARTS.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export default function TrendCharts",
+        "function MiniChart",
+        "function MetricCard",
+        "METRIC_CONFIG",
+        "normalizeTrendData",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Expected marker not found before patch: {marker}. No changes were written.")
+
+    if "Premium visual polish" in original and "Live analytics" in original:
+        print("[polish_trend_charts_visuals] TrendCharts already appears visually polished")
+        return
+
+    backup = TREND_CHARTS.with_suffix(TREND_CHARTS.suffix + ".bak-visual-polish")
+    if not backup.exists():
+        backup.write_text(original, encoding="utf-8")
+        print(f"[polish_trend_charts_visuals] backup created: {backup}")
+
+    TREND_CHARTS.write_text(TREND_CHARTS_CODE, encoding="utf-8")
+    print(f"[polish_trend_charts_visuals] patched: {TREND_CHARTS}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"Premium visual polish|Live analytics|GrowthBadge|EmptyChartState|showGrid|Trend Comparison|Current\" src/components/growth/TrendCharts.jsx")
+    print("  git diff -- src/components/growth/TrendCharts.jsx")
+
+if __name__ == "__main__":
+    main()
