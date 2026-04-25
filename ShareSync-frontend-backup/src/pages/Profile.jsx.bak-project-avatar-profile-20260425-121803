@@ -60,7 +60,6 @@ import { resolveDisplayName } from "../utils/resolveDisplayName";
 // Analytics Components
 import CollaborationStyleCard from "../components/Profile/CollaborationStyleCard";
 import WorkPersonality from "../components/analytics/WorkPersonality";
-import ProjectAvatar from "../components/project/ProjectAvatar";
 import RoleClassificationCard from "../components/Profile/RoleClassificationCard";
 
 // Growth Components (Phase K)
@@ -1260,11 +1259,7 @@ export default function Profile() {
                 className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-violet-500/30 transition-all group"
                 style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
               >
-                <ProjectAvatar
-                  project={p}
-                  size="sm"
-                  className="shrink-0 transition-transform duration-200 group-hover:scale-105"
-                />
+                <span className="text-2xl shrink-0">{p.emoji || p.icon || '📁'}</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-violet-600 transition-colors">
                     {p.name || p.title || 'Untitled'}
