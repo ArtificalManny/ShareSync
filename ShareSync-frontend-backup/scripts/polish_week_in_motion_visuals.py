@@ -1,4 +1,13 @@
-// src/components/home/WeekInMotion.jsx
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path.cwd()
+TARGET = ROOT / "src/components/home/WeekInMotion.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+NEW_FILE = """// src/components/home/WeekInMotion.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
   TrendingUp,
@@ -378,3 +387,74 @@ export default function WeekInMotion({ className = "", onShipNow }) {
     </div>
   );
 }
+"""
+
+
+def fail(message):
+    print(f"\\n[polish_week_in_motion_visuals] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    print("[polish_week_in_motion_visuals] starting")
+
+    if not TARGET.exists():
+        fail(f"Target file not found: {TARGET}")
+
+    source = TARGET.read_text(encoding="utf-8")
+    original = source
+
+    required_before = [
+        "WeekInMotion",
+        "fetchWeeklyRhythm",
+        'client.get("/users/me/weekly-rhythm")',
+        "task.completed",
+        "local-ship",
+        "setInterval(refetch, 60000)",
+    ]
+
+    for marker in required_before:
+        if marker not in source:
+            fail(f"Missing expected marker before patch: {marker}. No changes were written.")
+
+    if "Weekly shipping rhythm" in source and "StatChip" in source and "cooling" in source:
+        print("[polish_week_in_motion_visuals] WeekInMotion already appears visually polished.")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-polish-week-in-motion-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[polish_week_in_motion_visuals] backup created: {backup}")
+
+    TARGET.write_text(NEW_FILE, encoding="utf-8")
+    print(f"[polish_week_in_motion_visuals] patched: {TARGET}")
+
+    updated = TARGET.read_text(encoding="utf-8")
+
+    required_after = [
+        "WeekInMotion",
+        "fetchWeeklyRhythm",
+        'client.get("/users/me/weekly-rhythm")',
+        "task.completed",
+        "local-ship",
+        "setInterval(refetch, 60000)",
+        "function StatChip",
+        "Weekly shipping rhythm",
+        "cooling",
+        "rounded-2xl border border-slate-200 bg-white",
+    ]
+
+    for marker in required_after:
+        if marker not in updated:
+            fail(f"Safety check failed after patch. Missing marker: {marker}")
+
+    print("")
+    print("[polish_week_in_motion_visuals] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print('  rg -n "Weekly shipping rhythm|StatChip|cooling|RhythmBar|MomentumIndicator|users/me/weekly-rhythm|task.completed|local-ship" src/components/home/WeekInMotion.jsx -C 5')
+    print("  git diff -- src/components/home/WeekInMotion.jsx")
+
+
+if __name__ == "__main__":
+    main()
