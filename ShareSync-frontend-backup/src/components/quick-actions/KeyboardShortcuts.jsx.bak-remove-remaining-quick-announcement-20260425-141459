@@ -10,7 +10,8 @@ const KeyboardShortcuts = () => {
 
   const shortcuts = [
     { keys: ['⌘/Ctrl', 'K'], action: 'Quick Ship', description: 'Log a win instantly' },
-{ keys: ['⌘/Ctrl', 'Enter'], action: 'Submit', description: 'When in Quick Ship modal' },
+    { keys: ['⌘/Ctrl', 'Shift', 'A'], action: 'Quick Announcement', description: 'Post team update' },
+    { keys: ['⌘/Ctrl', 'Enter'], action: 'Submit', description: 'When in Quick Ship modal' },
     { keys: ['Esc'], action: 'Close', description: 'Close any modal' },
   ];
 

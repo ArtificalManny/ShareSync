@@ -291,7 +291,8 @@ const QuickActionsManager = ({ projectId }) => {
       <QuickShipFAB projectId={projectId} />
       
       {/* Quick Announce FAB - Only show if project is selected */}
-</>
+      {projectId && <QuickAnnounceFAB projectId={projectId} />}
+    </>
   );
 };
 
