@@ -70,40 +70,6 @@ import { useSettings } from "../context/SettingsContext";
 const calculateReliability = (completed, total) =>
   !total || total === 0 ? 0 : Math.round((completed / total) * 100);
 
-
-const clampProfileScore = (value) => {
-  const next = Number(value || 0);
-
-  if (!Number.isFinite(next)) return 0;
-
-  return Math.max(0, Math.min(100, Math.round(next)));
-};
-
-const getOperationalTrustScore = (skillProfile, fallbackReliability) => {
-  const backendReliability = skillProfile?.skills?.reliability;
-
-  if (backendReliability !== undefined && backendReliability !== null) {
-    return clampProfileScore(backendReliability);
-  }
-
-  return clampProfileScore(fallbackReliability);
-};
-
-const getOperationalTrustLabel = (score) => {
-  if (score >= 85) return "Excellent";
-  if (score >= 70) return "Strong";
-  if (score >= 40) return "Good";
-  if (score > 0) return "Building";
-  return "Warming Up";
-};
-
-const getOperationalTrustDescription = (score) => {
-  if (score >= 85) return "Dependable execution signal";
-  if (score >= 70) return "Strong follow-through pattern";
-  if (score >= 40) return "Reliability profile developing";
-  if (score > 0) return "Early trust signal detected";
-  return "Complete work to build trust data";
-};
 function xpForLevel(level) {
   if (level <= 1) return 0;
   let sum = 0;
@@ -812,12 +778,6 @@ export default function Profile() {
   // Growth hook will silently return empty objects if it doesn't have permission to view private tasks
   const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
   
-  const operationalTrust = getOperationalTrustScore(skillProfile, reliability);
-  const operationalTrustLabel = getOperationalTrustLabel(operationalTrust);
-  const operationalTrustDescription = getOperationalTrustDescription(operationalTrust);
-  const operationalTrustSource = skillProfile?.skills?.reliability !== undefined && skillProfile?.skills?.reliability !== null
-    ? "Live analytics"
-    : "Profile fallback";
   const name = useMemo(() => resolveUserName(user), [user]);
 
   // Phase 7: Handle edit profile
@@ -1058,33 +1018,17 @@ export default function Profile() {
             className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
             style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
           >
-            <div className="flex items-start justify-between gap-3 mb-6">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Operational Trust</h3>
-              </div>
-
-              <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
-                {operationalTrustSource}
-              </span>
+            <div className="flex items-center gap-2 mb-6">
+              <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Operational Trust</h3>
             </div>
             <div className="flex items-end gap-2 mb-4">
-              <span className="text-4xl font-semibold text-slate-800 dark:text-white">{operationalTrust}%</span>
+              <span className="text-4xl font-semibold text-slate-800 dark:text-white">{reliability}%</span>
               <span className="text-xs text-teal-600 dark:text-teal-400 font-medium mb-1">
-                {operationalTrustLabel}
+                {reliability >= 70 ? "Excellent" : reliability >= 40 ? "Good" : "Building"}
               </span>
             </div>
-            <p className="mb-4 text-xs leading-5 text-slate-500 dark:text-zinc-500">
-              {operationalTrustDescription}
-            </p>
-
-            <SkillBar value={operationalTrust} />
-
-            {growthLoading && (
-              <p className="mt-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500">
-                Refreshing trust signal...
-              </p>
-            )}
+            <SkillBar value={reliability} />
           </div>
           {/* ✅ Priority 1: Profile Strength */}
           {isOwnProfile && <ProfileStrength onEditClick={handleEditProfile} />}
