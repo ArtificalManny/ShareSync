@@ -455,176 +455,80 @@ export class GrowthService {
 
   async getGrowthTrends(userId: string, metric = 'all', weeks = 12) {
     const uid = new Types.ObjectId(userId);
-    const safeWeeks = Math.min(Math.max(Number(weeks) || 12, 1), 52);
     const now = new Date();
-    const startDate = new Date(now.getTime() - safeWeeks * 7 * 86400000);
+    const startDate = new Date(now.getTime() - weeks * 7 * 86400000);
 
     try {
       const tasks = await this.taskModel.find({
-        $or: [
-          { completedBy: uid },
-          { userId: uid },
-          { createdBy: uid },
-          { assigneeId: uid },
-        ],
+        $or: [{ completedBy: uid }, { userId: uid }, { createdBy: uid }],
         completedAt: { $gte: startDate },
         status: { $in: ['done', 'completed', 'Done', 'Completed'] },
-      })
-        .select('completedAt priority comments createdBy userId completedBy assigneeId')
-        .lean();
+      }).select('completedAt priority comments createdBy').lean();
 
+      // Group by week
       const weeklyData: any[] = [];
-
-      for (let w = 0; w < safeWeeks; w++) {
-        const weekStart = new Date(now.getTime() - (safeWeeks - w) * 7 * 86400000);
+      for (let w = 0; w < weeks; w++) {
+        const weekStart = new Date(now.getTime() - (weeks - w) * 7 * 86400000);
         const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
 
-        const weekTasks = tasks.filter((task) => {
-          const completedAt = task?.completedAt ? new Date(task.completedAt).getTime() : 0;
-          return completedAt >= weekStart.getTime() && completedAt < weekEnd.getTime();
+        const weekTasks = tasks.filter(t => {
+          const d = new Date(t.completedAt).getTime();
+          return d >= weekStart.getTime() && d < weekEnd.getTime();
         });
 
-        const rawCount = weekTasks.length;
+        // Velocity: raw completion count (normalized later)
+        const velocity = weekTasks.length;
 
-        // Velocity: completed work volume, normalized so roughly 7 completions/week = 100.
-        const velocity = this.clampScore(rawCount * 15);
+        // Quality: percentage of high-priority completions
+        const highPri = weekTasks.filter(t => ['high', 'critical', 'urgent'].includes(t.priority)).length;
+        const quality = weekTasks.length > 0 ? Math.round((highPri / weekTasks.length) * 100) : 0;
 
-        // Quality: priority-impact completion score.
-        // This makes completed work count while still rewarding higher-priority completions.
-        const priorityWeights: Record<string, number> = {
-          critical: 1,
-          urgent: 1,
-          high: 0.85,
-          medium: 0.65,
-          normal: 0.55,
-          low: 0.45,
-        };
-
-        const quality = rawCount > 0
-          ? this.clampScore(
-              Math.round(
-                (weekTasks.reduce((sum, task) => {
-                  const priority = String(task?.priority || 'normal').toLowerCase();
-                  return sum + (priorityWeights[priority] ?? 0.55);
-                }, 0) / rawCount) * 100,
-              ),
-            )
-          : 0;
-
-        // Collaboration: completed work with comments or multi-party ownership signals.
-        const collaborativeTasks = weekTasks.filter((task) => {
-          const hasComments = Array.isArray(task?.comments) && task.comments.length > 0;
-          const createdByOther = Boolean(task?.createdBy) && String(task.createdBy) !== String(uid);
-          const assignedToUser = Boolean(task?.assigneeId) && String(task.assigneeId) === String(uid);
-          const completedByUser = Boolean(task?.completedBy) && String(task.completedBy) === String(uid);
-
-          return hasComments || (createdByOther && assignedToUser) || (createdByOther && completedByUser);
-        }).length;
-
-        const collaboration = rawCount > 0
-          ? this.clampScore(Math.round((collaborativeTasks / rawCount) * 100))
-          : 0;
-
-        // Overall: weighted composite used by the Profile trend comparison chart.
-        const overall = this.calculateOverallScore(velocity, quality, collaboration);
+        // Collaboration: tasks with comments
+        const withComments = weekTasks.filter(t => t.comments?.length > 0).length;
+        const collaboration = weekTasks.length > 0 ? Math.round((withComments / weekTasks.length) * 100) : 0;
 
         weeklyData.push({
           week: w + 1,
-          label: `Week ${w + 1}`,
-          date: weekStart.toISOString().slice(0, 10),
           weekStart: weekStart.toISOString().slice(0, 10),
-          weekEnd: weekEnd.toISOString().slice(0, 10),
-          velocity,
+          velocity: Math.min(100, velocity * 15), // Normalize: ~7/week = 100
           quality,
           collaboration,
-          overall,
-          rawCount,
+          rawCount: velocity,
         });
       }
 
-      const recentHalf = weeklyData.slice(-Math.ceil(safeWeeks / 2));
-      const olderHalf = weeklyData.slice(0, Math.floor(safeWeeks / 2));
+      // Compute summary growth percentages
+      const recentHalf = weeklyData.slice(-Math.ceil(weeks / 2));
+      const olderHalf = weeklyData.slice(0, Math.floor(weeks / 2));
+
+      const avg = (arr: any[], key: string) =>
+        arr.length > 0 ? arr.reduce((s, w) => s + (w[key] || 0), 0) / arr.length : 0;
 
       const calcGrowth = (key: string) => {
-        const recent = this.averageMetric(recentHalf, key);
-        const older = this.averageMetric(olderHalf, key);
-
-        if (older === 0) {
-          return recent > 0 ? 100 : 0;
-        }
-
+        const recent = avg(recentHalf, key);
+        const older = avg(olderHalf, key);
+        if (older === 0) return recent > 0 ? 100 : 0;
         return Math.round(((recent - older) / older) * 100);
       };
 
-      const response = {
+      return {
         data: weeklyData,
         summary: {
           velocityGrowth: calcGrowth('velocity'),
           qualityGrowth: calcGrowth('quality'),
           collaborationGrowth: calcGrowth('collaboration'),
-          overallGrowth: calcGrowth('overall'),
         },
-        meta: {
-          metric,
-          weeks: safeWeeks,
-          startDate: startDate.toISOString(),
-          endDate: now.toISOString(),
-          generatedAt: new Date().toISOString(),
-        },
+        meta: { weeks, startDate: startDate.toISOString(), endDate: now.toISOString() },
       };
-
-      if (metric && metric !== 'all') {
-        return {
-          ...response,
-          data: weeklyData.map((point) => ({
-            ...point,
-            value: point[metric] ?? 0,
-          })),
-        };
-      }
-
-      return response;
     } catch (err) {
-      this.logger.error(`[Growth] getGrowthTrends failed for ${userId}: ${err?.message || err}`);
-
-      return {
-        data: [],
-        summary: {
-          velocityGrowth: 0,
-          qualityGrowth: 0,
-          collaborationGrowth: 0,
-          overallGrowth: 0,
-        },
-        meta: {
-          metric,
-          weeks: safeWeeks,
-          startDate: startDate.toISOString(),
-          endDate: now.toISOString(),
-          generatedAt: new Date().toISOString(),
-        },
-      };
+      this.logger.error(`[Growth] getGrowthTrends failed for ${userId}:`, err?.message);
+      return { data: [], summary: { velocityGrowth: 0, qualityGrowth: 0, collaborationGrowth: 0 }, meta: { weeks } };
     }
   }
 
-  private clampScore(value: number): number {
-    if (!Number.isFinite(value)) return 0;
-    return Math.max(0, Math.min(100, Math.round(value)));
-  }
-
-  private calculateOverallScore(velocity: number, quality: number, collaboration: number): number {
-    return this.clampScore((velocity * 0.4) + (quality * 0.3) + (collaboration * 0.3));
-  }
-
-  private averageMetric(rows: any[], key: string): number {
-    if (!rows.length) return 0;
-
-    const total = rows.reduce((sum, row) => {
-      const value = Number(row?.[key] || 0);
-      return sum + (Number.isFinite(value) ? value : 0);
-    }, 0);
-
-    return total / rows.length;
-  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   private determineArchetype(skills: Record<string, number>): string {
     const { velocity, execution, quality, consistency, collaboration, initiative } = skills;
