@@ -81,48 +81,17 @@ const normalizeSkillScore = (value) => {
 };
 
 const buildSkillProfileSnapshot = (skillProfile) => {
-  const toPoint = (key, label, value) => ({
-    key,
-    label,
-    name: label,
-    value: normalizeSkillScore(value),
-    score: normalizeSkillScore(value),
-  });
-
-  if (Array.isArray(skillProfile?.radar) && skillProfile.radar.length > 0) {
-    return {
-      skills: skillProfile.radar.map((point) =>
-        toPoint(
-          point.key || point.label || point.name,
-          point.label || point.name || point.key,
-          point.value ?? point.score
-        )
-      ),
-      strengths: Array.isArray(skillProfile.strengths) ? skillProfile.strengths : [],
-      growthAreas: Array.isArray(skillProfile.growthAreas) ? skillProfile.growthAreas : [],
-      archetype: skillProfile.archetype || null,
-    };
-  }
-
   if (!skillProfile?.skills || typeof skillProfile.skills !== "object") {
     return null;
   }
 
-  const rawSkills = skillProfile.skills;
-
-  const radarSkills = [
-    toPoint("velocity", "Velocity", rawSkills.velocity),
-    toPoint("quality", "Quality", rawSkills.quality),
-    toPoint("technical", "Technical", rawSkills.technical ?? rawSkills.execution),
-    toPoint("communication", "Communication", rawSkills.communication ?? rawSkills.initiative),
-    toPoint("collaboration", "Collaboration", rawSkills.collaboration),
-    toPoint("leadership", "Leadership", rawSkills.leadership ?? rawSkills.consistency),
-    toPoint("strategy", "Strategy", rawSkills.strategy ?? rawSkills.quality),
-    toPoint("reliability", "Reliability", rawSkills.reliability),
-  ].filter((point) => point.key && point.label);
+  const normalizedSkills = Object.entries(skillProfile.skills).reduce((acc, [key, value]) => {
+    acc[key] = normalizeSkillScore(value);
+    return acc;
+  }, {});
 
   return {
-    skills: radarSkills,
+    skills: normalizedSkills,
     strengths: Array.isArray(skillProfile.strengths) ? skillProfile.strengths : [],
     growthAreas: Array.isArray(skillProfile.growthAreas) ? skillProfile.growthAreas : [],
     archetype: skillProfile.archetype || null,

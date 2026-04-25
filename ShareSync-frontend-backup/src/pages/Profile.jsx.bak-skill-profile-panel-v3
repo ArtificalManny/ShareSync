@@ -71,63 +71,6 @@ const calculateReliability = (completed, total) =>
   !total || total === 0 ? 0 : Math.round((completed / total) * 100);
 
 
-
-const normalizeSkillScore = (value) => {
-  const next = Number(value || 0);
-
-  if (!Number.isFinite(next)) return 0;
-
-  return Math.max(0, Math.min(100, Math.round(next)));
-};
-
-const buildSkillProfileSnapshot = (skillProfile) => {
-  const toPoint = (key, label, value) => ({
-    key,
-    label,
-    name: label,
-    value: normalizeSkillScore(value),
-    score: normalizeSkillScore(value),
-  });
-
-  if (Array.isArray(skillProfile?.radar) && skillProfile.radar.length > 0) {
-    return {
-      skills: skillProfile.radar.map((point) =>
-        toPoint(
-          point.key || point.label || point.name,
-          point.label || point.name || point.key,
-          point.value ?? point.score
-        )
-      ),
-      strengths: Array.isArray(skillProfile.strengths) ? skillProfile.strengths : [],
-      growthAreas: Array.isArray(skillProfile.growthAreas) ? skillProfile.growthAreas : [],
-      archetype: skillProfile.archetype || null,
-    };
-  }
-
-  if (!skillProfile?.skills || typeof skillProfile.skills !== "object") {
-    return null;
-  }
-
-  const rawSkills = skillProfile.skills;
-
-  const radarSkills = [
-    toPoint("velocity", "Velocity", rawSkills.velocity),
-    toPoint("quality", "Quality", rawSkills.quality),
-    toPoint("technical", "Technical", rawSkills.technical ?? rawSkills.execution),
-    toPoint("communication", "Communication", rawSkills.communication ?? rawSkills.initiative),
-    toPoint("collaboration", "Collaboration", rawSkills.collaboration),
-    toPoint("leadership", "Leadership", rawSkills.leadership ?? rawSkills.consistency),
-    toPoint("strategy", "Strategy", rawSkills.strategy ?? rawSkills.quality),
-    toPoint("reliability", "Reliability", rawSkills.reliability),
-  ].filter((point) => point.key && point.label);
-
-  return {
-    skills: radarSkills,
-    strengths: Array.isArray(skillProfile.strengths) ? skillProfile.strengths : [],
-    growthAreas: Array.isArray(skillProfile.growthAreas) ? skillProfile.growthAreas : [],
-    archetype: skillProfile.archetype || null,
-  };
-};
 const clampProfileScore = (value) => {
   const next = Number(value || 0);
 
@@ -869,11 +812,6 @@ export default function Profile() {
   // Growth hook will silently return empty objects if it doesn't have permission to view private tasks
   const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
   
-  const skillProfileSnapshot = useMemo(
-    () => buildSkillProfileSnapshot(skillProfile),
-    [skillProfile]
-  );
-  const skillProfileSource = skillProfileSnapshot ? "Live analytics" : "Warming up";
   const operationalTrust = getOperationalTrustScore(skillProfile, reliability);
   const operationalTrustLabel = getOperationalTrustLabel(operationalTrust);
   const operationalTrustDescription = getOperationalTrustDescription(operationalTrust);
@@ -1157,82 +1095,71 @@ export default function Profile() {
         {/* Middle Column */}
         <div className="col-span-12 lg:col-span-5 space-y-6">
           {/* Skill Profile - with radar chart */}
-          {isOwnProfile && (skillProfileSnapshot || growthLoading) && (
-            <div
+          {skillProfile?.skills && (
+            <div 
               className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
               style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
             >
-              <div className="flex items-start justify-between gap-3 mb-6">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <Brain className="w-4 h-4 text-violet-500" />
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Skill Profile</h3>
-                    <p className="mt-1 text-[11px] leading-4 text-slate-400 dark:text-zinc-500">
-                      Backend-calculated capability signals from your recent project activity.
-                    </p>
+                  <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Skill Profile</h3>
+                </div>
+                {skillProfile.strengths?.length > 0 && (
+                  <div className="flex gap-1">
+                    {skillProfile.strengths.map((s) => (
+                      <span 
+                        key={s} 
+                        className="px-2 py-0.5 rounded text-[10px] bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20 capitalize"
+                      >
+                        {s}
+                      </span>
+                    ))}
                   </div>
-                </div>
-
-                <div className="flex flex-wrap justify-end gap-1.5">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.14em] bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-500/20">
-                    {growthLoading ? "Refreshing" : skillProfileSource}
-                  </span>
-
-                  {skillProfileSnapshot?.strengths?.slice(0, 2).map((s) => (
-                    <span
-                      key={s}
-                      className="px-2 py-0.5 rounded text-[10px] bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20 capitalize"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+                )}
               </div>
-
-              {skillProfileSnapshot?.skills ? (
-                <>
-                  <div className="flex justify-center">
-                    <SkillRadarChart
-                      skills={skillProfileSnapshot.skills}
-                      size={280}
-                      showLabels={true}
-                      showValues={true}
-                      showTrends={true}
-                    />
+              <div className="flex justify-center">
+                <SkillRadarChart 
+                  skills={(() => {
+                    const raw = skillProfile.skills;
+                    if (Array.isArray(raw)) return raw;
+                    // Map backend fields to radar chart expected names
+                    const fieldMap = {
+                      velocity: 'execution',
+                      execution: 'technical',
+                      quality: 'strategy',
+                      consistency: 'communication',
+                      collaboration: 'collaboration',
+                      initiative: 'leadership',
+                    };
+                    return Object.entries(raw).map(([key, val]) => ({
+                      name: fieldMap[key] || key,
+                      score: typeof val === 'number' ? val : (val?.score ?? val?.value ?? 0),
+                    }));
+                  })()} 
+                  size={280} 
+                  showLabels={true} 
+                  showValues={true} 
+                  showTrends={true} 
+                />
+              </div>
+              {skillProfile.growthAreas?.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mb-2">Focus areas for growth:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {skillProfile.growthAreas.map((area) => (
+                      <span 
+                        key={area} 
+                        className="px-2 py-1 rounded-lg text-xs bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20 capitalize"
+                      >
+                        {area}
+                      </span>
+                    ))}
                   </div>
-
-                  {skillProfileSnapshot.growthAreas?.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/5">
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 mb-2">Focus areas for growth:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {skillProfileSnapshot.growthAreas.map((area) => (
-                          <span
-                            key={area}
-                            className="px-2 py-1 rounded-lg text-xs bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20 capitalize"
-                          >
-                            {area}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center dark:border-white/[0.14] dark:bg-white/[0.04]">
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-300">
-                    <Brain className="h-5 w-5" />
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
-                    Skill profile is warming up.
-                  </p>
-                  <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500 dark:text-zinc-400">
-                    Complete tasks, ship updates, and collaborate to generate radar-ready skill signals.
-                  </p>
                 </div>
               )}
             </div>
           )}
-
 
           {/* Behavioral Analysis */}
           <div
