@@ -688,12 +688,10 @@ export default function VaultView({ projectId }) {
         onUpload={handleUploadFile}
         folders={data.folders}
       />
-      {isUpgradeModalOpen ? (
-        <PricingModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      ) : null}
+      <PricingModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </div>
   );
 }

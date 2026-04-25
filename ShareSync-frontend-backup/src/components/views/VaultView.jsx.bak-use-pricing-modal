@@ -7,7 +7,7 @@ import {
 import { getProjectVault, createFolder, uploadVaultFile, renameVaultFile, moveVaultFile, deleteVaultFile } from '../../api/vault';
 import CreateFolderModal from '../vault/CreateFolderModal';
 import UploadModal from '../vault/UploadModal';
-import PricingModal from '../subscription/PricingModal';
+import UpgradeStorageModal from '../vault/UpgradeStorageModal';
 import { toast } from '../ui/toast'; // Assuming you have a toast component
 
 const FILE_ICONS = {
@@ -688,12 +688,10 @@ export default function VaultView({ projectId }) {
         onUpload={handleUploadFile}
         folders={data.folders}
       />
-      {isUpgradeModalOpen ? (
-        <PricingModal
-          isOpen={isUpgradeModalOpen}
-          onClose={() => setIsUpgradeModalOpen(false)}
-        />
-      ) : null}
+      <UpgradeStorageModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </div>
   );
 }

@@ -1,4 +1,10 @@
-import React, { useState, useRef } from 'react';
+from pathlib import Path
+import sys
+
+ROOT = Path.cwd()
+UPLOAD_MODAL = ROOT / "src/components/vault/UploadModal.jsx"
+
+UPLOAD_MODAL_CODE = """import React, { useState, useRef } from 'react';
 import { X, UploadCloud, File, AlertCircle } from 'lucide-react';
 
 export default function UploadModal({ isOpen, onClose, onUpload, folders = [] }) {
@@ -237,3 +243,49 @@ export default function UploadModal({ isOpen, onClose, onUpload, folders = [] })
     </div>
   );
 }
+"""
+
+def fail(message):
+    print(f"\\n[polish_upload_modal_palette] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[polish_upload_modal_palette] starting")
+
+    if not UPLOAD_MODAL.exists():
+        fail(f"Could not find {UPLOAD_MODAL}")
+
+    original = UPLOAD_MODAL.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export default function UploadModal",
+        "onUpload",
+        "folders = []",
+        "handleSubmit",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Expected marker not found before patch: {marker}. No changes were written.")
+
+    if "bg-gradient-to-r from-violet-600 to-indigo-600" in original and "Add assets to this project vault." in original:
+        print("[polish_upload_modal_palette] UploadModal already appears palette-polished")
+        return
+
+    backup = UPLOAD_MODAL.with_suffix(UPLOAD_MODAL.suffix + ".bak-palette-polish")
+
+    if not backup.exists():
+        backup.write_text(original, encoding="utf-8")
+        print(f"[polish_upload_modal_palette] backup created: {backup}")
+
+    UPLOAD_MODAL.write_text(UPLOAD_MODAL_CODE, encoding="utf-8")
+    print(f"[polish_upload_modal_palette] patched: {UPLOAD_MODAL}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  git diff -- src/components/vault/UploadModal.jsx")
+    print("  rg -n \"Upload File|Add assets|from-violet-600|Destination Folder|Click to upload\" src/components/vault/UploadModal.jsx")
+
+if __name__ == "__main__":
+    main()
