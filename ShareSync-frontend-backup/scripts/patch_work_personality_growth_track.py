@@ -1,4 +1,10 @@
-// src/components/analytics/WorkPersonality.jsx
+from pathlib import Path
+import sys
+
+ROOT = Path.cwd()
+WORK_PERSONALITY = ROOT / "src/components/analytics/WorkPersonality.jsx"
+
+WORK_PERSONALITY_CODE = """// src/components/analytics/WorkPersonality.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // Work Personality
 // Powered by Growth Track skill profile data from /analytics/growth/:userId/skills
@@ -426,3 +432,49 @@ function getIdentityStatement(collab, role, reliabilityScore) {
 
   return `${statements[collab.type] || 'a valuable contributor'} ${roleStatements[role.type] || ''}${reliabilityTail}.`;
 }
+"""
+
+def fail(message):
+    print(f"\\n[patch_work_personality_growth_track] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[patch_work_personality_growth_track] starting")
+
+    if not WORK_PERSONALITY.exists():
+        fail(f"Could not find {WORK_PERSONALITY}")
+
+    original = WORK_PERSONALITY.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export default function WorkPersonality",
+        "getCollaborationStyle",
+        "getPrimaryRole",
+        "getHotZone",
+        "getReliabilityMessage",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Expected marker not found before patch: {marker}. No changes were written.")
+
+    if "getSkillProfile" in original and "Powered by Growth Track skill profile data" in original:
+        print("[patch_work_personality_growth_track] WorkPersonality already appears Growth Track powered")
+        return
+
+    backup = WORK_PERSONALITY.with_suffix(WORK_PERSONALITY.suffix + ".bak-growth-track")
+    if not backup.exists():
+        backup.write_text(original, encoding="utf-8")
+        print(f"[patch_work_personality_growth_track] backup created: {backup}")
+
+    WORK_PERSONALITY.write_text(WORK_PERSONALITY_CODE, encoding="utf-8")
+    print(f"[patch_work_personality_growth_track] patched: {WORK_PERSONALITY}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"getSkillProfile|Powered by Growth Track|Your Work Personality|Independent Shipper|Reliability Score|Building data\" src/components/analytics/WorkPersonality.jsx")
+    print("  git diff -- src/components/analytics/WorkPersonality.jsx")
+
+if __name__ == "__main__":
+    main()
