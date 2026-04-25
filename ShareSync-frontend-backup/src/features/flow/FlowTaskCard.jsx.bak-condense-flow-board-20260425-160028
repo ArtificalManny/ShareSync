@@ -179,9 +179,9 @@ export default function FlowTaskCard({ task }) {
         e.dataTransfer.effectAllowed = "move";
       }}
       className="
-        group rounded-[1rem] border border-slate-200/70 dark:border-slate-800
+        group rounded-xl border border-slate-200/70 dark:border-slate-800
         bg-white/90 dark:bg-slate-900/70
-        p-2.5 shadow-sm hover:shadow-md
+        p-3 shadow-sm hover:shadow-md
         transition cursor-grab active:cursor-grabbing
       "
       role="article"
@@ -193,10 +193,10 @@ export default function FlowTaskCard({ task }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
             <div className="mt-0.5 text-slate-300 dark:text-slate-600 group-hover:text-violet-400 transition-colors">
-              <GripVertical className="w-3.5 h-3.5" />
+              <GripVertical className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 break-words leading-snug">
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 break-words leading-snug">
                 {task?.title || "Untitled task"}
               </div>
 
@@ -222,7 +222,7 @@ export default function FlowTaskCard({ task }) {
 
       {/* Signal chips */}
       {(blocked || dueMeta) && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {blocked ? (
             <span
               className="
@@ -248,16 +248,16 @@ export default function FlowTaskCard({ task }) {
       )}
 
       {/* Footer */}
-      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+      <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
         <div className="min-w-0 flex items-center gap-2">
           <div
             className="
-              w-5 h-5 rounded-full
+              w-6 h-6 rounded-full
               bg-teal-50 dark:bg-teal-500/10
               border border-teal-200 dark:border-teal-500/20
               text-teal-700 dark:text-teal-300
               flex items-center justify-center
-              font-semibold text-[9px] flex-shrink-0
+              font-semibold text-[10px] flex-shrink-0
             "
             aria-hidden="true"
           >
