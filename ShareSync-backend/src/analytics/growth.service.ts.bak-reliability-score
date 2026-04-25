@@ -36,12 +36,7 @@ export class GrowthService {
       // All tasks touched by this user
       const allTasks = await this.taskModel.find({
         $or: [{ completedBy: uid }, { createdBy: uid }, { userId: uid }, { assigneeId: uid }],
-      }).select('status priority completedAt createdAt dueDate comments tags createdBy userId completedBy assigneeId').lean();
-
-      const user: any = await this.userModel
-        .findById(uid)
-        .select('streakDays currentStreak')
-        .lean();
+      }).select('status priority completedAt createdAt comments tags').lean();
 
       const recentTasks = allTasks.filter(
         t => t.completedAt && new Date(t.completedAt) >= thirtyDaysAgo,
@@ -79,17 +74,6 @@ export class GrowthService {
       ).size;
       const consistency = Math.min(100, Math.round((activeDays / 14) * 100));
 
-      // Reliability: dependable follow-through based on completion rate, consistency, streak, and due-date performance.
-      const streak = Number(user?.streakDays || user?.currentStreak || 0);
-      const reliability = this.calculateReliabilityScore({
-        totalTasks,
-        completedTasks,
-        execution,
-        consistency,
-        streak,
-        allTasks,
-      });
-
       // Collaboration: tasks with comments or multiple assignees
       const withComments = allTasks.filter(t => t.comments?.length > 0).length;
       const collaboration = totalTasks > 0 ? Math.min(100, Math.round((withComments / totalTasks) * 150)) : 20;
@@ -98,7 +82,7 @@ export class GrowthService {
       const created = allTasks.filter(t => String(t.createdBy) === userId).length;
       const initiative = totalTasks > 0 ? Math.min(100, Math.round((created / totalTasks) * 100)) : 30;
 
-      const skills = { velocity, execution, quality, consistency, reliability, collaboration, initiative };
+      const skills = { velocity, execution, quality, consistency, collaboration, initiative };
 
       // Identify strengths and growth areas
       const entries = Object.entries(skills).sort(([, a], [, b]) => b - a);
@@ -808,70 +792,12 @@ export class GrowthService {
     return total / rows.length;
   }
 
-  private calculateReliabilityScore(input: {
-    totalTasks: number;
-    completedTasks: number;
-    execution: number;
-    consistency: number;
-    streak: number;
-    allTasks: any[];
-  }): number {
-    const { totalTasks, completedTasks, execution, consistency, streak, allTasks } = input;
-
-    if (totalTasks <= 0) {
-      return 0;
-    }
-
-    const completedWithDates = allTasks.filter((task) =>
-      task?.completedAt && ['done', 'completed', 'Done', 'Completed'].includes(task?.status),
-    );
-
-    const tasksWithDueDates = completedWithDates.filter((task) => task?.dueDate);
-
-    const onTimeScore = tasksWithDueDates.length > 0
-      ? this.clampScore(
-          Math.round(
-            (tasksWithDueDates.filter((task) => {
-              const completedAt = new Date(task.completedAt).getTime();
-              const dueDate = new Date(task.dueDate).getTime();
-
-              if (!Number.isFinite(completedAt) || !Number.isFinite(dueDate)) {
-                return false;
-              }
-
-              return completedAt <= dueDate;
-            }).length / tasksWithDueDates.length) * 100,
-          ),
-        )
-      : null;
-
-    const volumeSignal = this.clampScore(completedTasks * 8);
-    const streakSignal = this.clampScore(streak * 8);
-
-    if (onTimeScore !== null) {
-      return this.clampScore(
-        (execution * 0.35) +
-        (consistency * 0.25) +
-        (onTimeScore * 0.25) +
-        (streakSignal * 0.15),
-      );
-    }
-
-    return this.clampScore(
-      (execution * 0.4) +
-      (consistency * 0.25) +
-      (volumeSignal * 0.2) +
-      (streakSignal * 0.15),
-    );
-  }
-
   private determineArchetype(skills: Record<string, number>): string {
-    const { velocity, execution, quality, consistency, reliability = 0, collaboration, initiative } = skills;
+    const { velocity, execution, quality, consistency, collaboration, initiative } = skills;
 
     if (velocity >= 70 && execution >= 70) return 'The Shipper';
     if (quality >= 70 && consistency >= 70) return 'The Craftsman';
     if (collaboration >= 60 && initiative >= 60) return 'The Catalyst';
-    if (reliability >= 75 && consistency >= 60) return 'The Operator';
     if (consistency >= 70 && velocity >= 50) return 'The Machine';
     if (initiative >= 70) return 'The Pioneer';
     if (quality >= 60 && execution >= 60) return 'The Strategist';
@@ -881,7 +807,7 @@ export class GrowthService {
 
   private emptySkillProfile() {
     return {
-      skills: { velocity: 0, execution: 0, quality: 0, consistency: 0, reliability: 0, collaboration: 0, initiative: 0 },
+      skills: { velocity: 0, execution: 0, quality: 0, consistency: 0, collaboration: 0, initiative: 0 },
       strengths: [],
       growthAreas: [],
       overallGrowth: 0,
