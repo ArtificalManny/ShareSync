@@ -11,14 +11,6 @@ import { GrowthService } from './growth.service';
 import { Types } from 'mongoose';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
-const ALLOWED_TREND_METRICS = new Set([
-  'all',
-  'velocity',
-  'quality',
-  'collaboration',
-  'overall',
-]);
-
 @ApiTags('Growth Analytics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -51,19 +43,14 @@ export class GrowthController {
   }
 
   @Get(':userId/trends')
-  @ApiOperation({ summary: 'Get trend lines for velocity, quality, collaboration, and overall growth' })
+  @ApiOperation({ summary: 'Get 12-week trend lines for velocity, quality, collaboration' })
   async getTrends(
     @Param('userId') userId: string,
     @Query('metric') metric = 'all',
     @Query('weeks') weeks = '12',
   ) {
     this.validateUserId(userId);
-
-    const safeMetric = this.validateTrendMetric(metric);
-    const safeWeeks = this.parseWeeks(weeks);
-
-    const data = await this.growthService.getGrowthTrends(userId, safeMetric, safeWeeks);
-
+    const data = await this.growthService.getGrowthTrends(userId, metric, parseInt(weeks, 10) || 12);
     return { success: true, data };
   }
 
@@ -71,27 +58,5 @@ export class GrowthController {
     if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid userId');
     }
-  }
-
-  private validateTrendMetric(metric: string): string {
-    const safeMetric = String(metric || 'all').toLowerCase();
-
-    if (!ALLOWED_TREND_METRICS.has(safeMetric)) {
-      throw new BadRequestException(
-        'Invalid metric. Use one of: all, velocity, quality, collaboration, overall'
-      );
-    }
-
-    return safeMetric;
-  }
-
-  private parseWeeks(weeks: string): number {
-    const parsed = Number.parseInt(String(weeks || '12'), 10);
-
-    if (!Number.isFinite(parsed)) {
-      return 12;
-    }
-
-    return Math.min(Math.max(parsed, 1), 52);
   }
 }
