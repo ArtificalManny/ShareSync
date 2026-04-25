@@ -1,4 +1,10 @@
-// src/hooks/useGrowthTrack.js
+from pathlib import Path
+import sys
+
+ROOT = Path.cwd()
+HOOK = ROOT / "src/hooks/useGrowthTrack.js"
+
+HOOK_CODE = """// src/hooks/useGrowthTrack.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE K: Identity & Growth Track - Hooks
 // Realtime-ready profile analytics fetch layer
@@ -427,3 +433,49 @@ export default {
   useGrowthSuggestions,
   useGrowthTrends,
 };
+"""
+
+def fail(message):
+    print(f"\\n[patch_use_growth_track_realtime] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[patch_use_growth_track_realtime] starting")
+
+    if not HOOK.exists():
+        fail(f"Could not find {HOOK}")
+
+    original = HOOK.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export function useGrowthTrack",
+        "getSkillProfile",
+        "getEvolutionMoments",
+        "getGrowthSuggestions",
+        "getGrowthTrends",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Expected marker not found before patch: {marker}. No changes were written.")
+
+    if "profile.metrics.updated" in original and "normalizeTrends" in original:
+        print("[patch_use_growth_track_realtime] useGrowthTrack already appears realtime-ready")
+        return
+
+    backup = HOOK.with_suffix(HOOK.suffix + ".bak-realtime-growth-track")
+    if not backup.exists():
+        backup.write_text(original, encoding="utf-8")
+        print(f"[patch_use_growth_track_realtime] backup created: {backup}")
+
+    HOOK.write_text(HOOK_CODE, encoding="utf-8")
+    print(f"[patch_use_growth_track_realtime] patched: {HOOK}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"normalizeTrends|profile.metrics.updated|growth-track:refresh|useGrowthTrack|getGrowthTrends\" src/hooks/useGrowthTrack.js")
+    print("  git diff -- src/hooks/useGrowthTrack.js")
+
+if __name__ == "__main__":
+    main()

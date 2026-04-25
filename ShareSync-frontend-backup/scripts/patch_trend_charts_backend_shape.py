@@ -1,4 +1,10 @@
-// src/components/growth/TrendCharts.jsx
+from pathlib import Path
+import sys
+
+ROOT = Path.cwd()
+TREND_CHARTS = ROOT / "src/components/growth/TrendCharts.jsx"
+
+TREND_CHARTS_CODE = """// src/components/growth/TrendCharts.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE K: Historical Trend Charts
 // Backend-aligned shape: velocity, quality, collaboration, overall, summary, meta
@@ -266,3 +272,48 @@ export default function TrendCharts({
     </div>
   );
 }
+"""
+
+def fail(message):
+    print(f"\\n[patch_trend_charts_backend_shape] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[patch_trend_charts_backend_shape] starting")
+
+    if not TREND_CHARTS.exists():
+        fail(f"Could not find {TREND_CHARTS}")
+
+    original = TREND_CHARTS.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export default function TrendCharts",
+        "function MiniChart",
+        "function MetricCard",
+        "METRIC_CONFIG",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Expected marker not found before patch: {marker}. No changes were written.")
+
+    if "normalizeTrendPoint" in original and "trends?.meta?.weeks" in original:
+        print("[patch_trend_charts_backend_shape] TrendCharts already appears backend-shape aligned")
+        return
+
+    backup = TREND_CHARTS.with_suffix(TREND_CHARTS.suffix + ".bak-backend-shape")
+    if not backup.exists():
+        backup.write_text(original, encoding="utf-8")
+        print(f"[patch_trend_charts_backend_shape] backup created: {backup}")
+
+    TREND_CHARTS.write_text(TREND_CHARTS_CODE, encoding="utf-8")
+    print(f"[patch_trend_charts_backend_shape] patched: {TREND_CHARTS}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"normalizeTrendPoint|trends\\?\\.meta\\?\\.weeks|weekLabel|overall|METRICS|No data yet\" src/components/growth/TrendCharts.jsx")
+    print("  git diff -- src/components/growth/TrendCharts.jsx")
+
+if __name__ == "__main__":
+    main()
