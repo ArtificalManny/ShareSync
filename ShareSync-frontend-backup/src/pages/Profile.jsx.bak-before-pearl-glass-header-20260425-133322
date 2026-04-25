@@ -1177,72 +1177,124 @@ export default function Profile() {
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
       <section className="relative mb-16 px-4">
-        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center overflow-hidden rounded-[2rem] border border-white/90 bg-white/90 px-6 py-7 text-center shadow-[0_18px_50px_rgba(139,92,246,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-black/20 sm:px-10 sm:py-9">
-          {/* Soft atmospheric background */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.96),rgba(255,255,255,0.88)_30%,rgba(255,255,255,0.74)_50%,rgba(245,243,255,0.22)_72%,rgba(236,254,255,0.16)_100%)]" />
+        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center overflow-hidden rounded-[2rem] border border-white/80 bg-white/75 px-6 py-10 shadow-xl shadow-violet-100/35 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/20 sm:px-10 sm:py-12">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(139,92,246,0.10),transparent_34%),radial-gradient(circle_at_25%_24%,rgba(14,165,233,0.07),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.58),rgba(245,243,255,0.34),rgba(236,254,255,0.28))]" />
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-300/12 blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-violet-400/12 blur-3xl" />
+          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/45 to-transparent" />
 
-          {/* Cyan glow */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-cyan-300/8 blur-3xl" />
-
-          {/* Violet glow */}
-          <div className="pointer-events-none absolute -left-16 bottom-0 h-60 w-60 rounded-full bg-violet-300/8 blur-3xl" />
-
-          {/* Top sheen */}
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/95 to-transparent" />
-
-          {/* Inner content */}
           <div className="relative z-10 flex w-full flex-col items-center">
             <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
+        
+        <div className="text-center mt-8">
+          <h1 className="text-4xl font-semibold text-slate-800 dark:text-white mb-3">
+            {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
+          </h1>
+          
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-sm text-slate-500 dark:text-zinc-400">
+              ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
+            </span>
             
-            <div className="mt-8 text-center">
-              <h1 className="mb-3 text-4xl font-semibold text-slate-800 dark:text-white">
-                {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
-              </h1>
-              
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <span className="text-sm text-slate-500 dark:text-zinc-400">
-                  ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
-                </span>
-                
-                {/* Core Verified Badge - Teal (#2DD4BF) */}
-                <span
-                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow-sm shadow-teal-500/20"
-                  style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Core Verified
-                </span>
-                
-                {skillProfile?.archetype?.current && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-400">
-                    <Star className="h-3.5 w-3.5" />
-                    {skillProfile.archetype.current}
-                  </span>
-                )}
-              </div>
-              
-              {user?.bio && (
-                <p className="mx-auto mt-6 max-w-lg leading-relaxed text-slate-600 dark:text-zinc-300">
-                  {user.bio}
-                </p>
-              )}
-              
-              {/* Edit button - Purple primary action */}
-              {isOwnProfile && (
-                <button 
-                  type="button"
-                  onClick={handleEditProfile}
-                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-500/35 ring-2 ring-violet-200/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-violet-500/45 focus:outline-none focus:ring-4 focus:ring-violet-300"
-                  style={{ backgroundColor: '#7C3AED', color: '#FFFFFF' }}
-                >
-                  <Edit3 className="h-4 w-4 text-white" />
-                  <span className="text-white">Edit Profile</span>
-                </button>
-              )}
-            </div>
+            {/* Core Verified Badge - Teal (#2DD4BF) */}
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white shadow-sm shadow-teal-500/20"
+              style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Core Verified
+            </span>
+            
+            {skillProfile?.archetype?.current && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 text-xs font-medium border border-violet-200 dark:border-violet-500/20">
+                <Star className="w-3.5 h-3.5" />
+                {skillProfile.archetype.current}
+              </span>
+            )}
+          </div>
+          
+          {user?.bio && (
+            <p className="mt-6 text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">{user.bio}</p>
+          )}
+          {/* Edit button - Purple primary action */}
+          {isOwnProfile && (
+            <button 
+              type="button"
+              onClick={handleEditProfile}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white border border-violet-300 shadow-xl shadow-violet-500/35 ring-2 ring-violet-200/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-violet-500/45 focus:outline-none focus:ring-4 focus:ring-violet-300"
+              style={{ backgroundColor: '#7C3AED', color: '#FFFFFF' }}
+            >
+              <Edit3 className="w-4 h-4 text-white" />
+              <span className="text-white">Edit Profile</span>
+            </button>
+          )}
+          </div>
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          STATS BAR — Compact social proof
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-center gap-6 mb-12 text-sm text-slate-500 dark:text-zinc-400">
+        <span className="flex items-center gap-1.5">
+          <CheckCircle2 className="w-4 h-4 text-violet-500" />
+          <strong className="text-slate-800 dark:text-white">{user?.totalShips || 0}</strong> ships
+        </span>
+        <span className="text-slate-300 dark:text-zinc-600">·</span>
+        <span className="flex items-center gap-1.5">
+          <Folder className="w-4 h-4 text-blue-500" />
+          <strong className="text-slate-800 dark:text-white">{userProjects.length}</strong> projects
+        </span>
+        <span className="text-slate-300 dark:text-zinc-600">·</span>
+        <span className="flex items-center gap-1.5">
+          <Flame className="w-4 h-4 text-amber-500" />
+          {streakVisible && <><strong className="text-slate-800 dark:text-white">{user?.currentStreak || 0}d</strong> streak</>}
+        </span>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROJECT PORTFOLIO — What they're building
+      ═══════════════════════════════════════════════════════════════════ */}
+      {userProjects.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <Folder className="w-4 h-4 text-violet-500" />
+            <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Projects</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {userProjects.map(p => (
+              <a
+                key={p._id || p.id}
+                href={'/projects/' + (p._id || p.id)}
+                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-violet-500/30 transition-all group"
+                style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
+              >
+                <ProjectAvatar
+                  project={p}
+                  size="sm"
+                  className="shrink-0 transition-transform duration-200 group-hover:scale-105"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-violet-600 transition-colors">
+                    {p.name || p.title || 'Untitled'}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{p.description || 'No description'}</p>
+                </div>
+                {(p.streakDays > 0) && (
+                  <span className="text-[10px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0">
+                    🔥{p.streakDays}d
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {isOwnProfile && (
+        <RecentShipsPanel ships={recentShips} loading={growthLoading} />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
