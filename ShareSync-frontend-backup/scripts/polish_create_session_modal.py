@@ -1,4 +1,13 @@
-import React, { useState, useEffect } from 'react';
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path.cwd()
+MODAL = ROOT / "src/calendar/CreateSessionModal.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+NEW_FILE = """import React, { useState, useEffect } from 'react';
 import { X, Clock, AlignLeft, Calendar as CalIcon, Zap, Users, Coffee } from 'lucide-react';
 
 export default function CreateSessionModal({ isOpen, onClose, onSave, initialData, projectId }) {
@@ -99,20 +108,20 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
     },
   ];
 
-  const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white/95 px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15";
+  const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 pt-10 pb-6 backdrop-blur-md sm:px-5 sm:pt-12 sm:pb-8">
-      <div className="relative flex h-auto max-h-[calc(100dvh-7rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/92 shadow-[0_22px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 dark:border-white/[0.08] dark:bg-[#101827]/95 dark:shadow-black/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md">
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-white/80 bg-white/92 shadow-[0_30px_90px_rgba(15,23,42,0.22)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 dark:border-white/[0.08] dark:bg-[#101827]/95 dark:shadow-black/40">
         {/* Pearl/glass atmosphere */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.92),rgba(255,255,255,0.68)_32%,rgba(139,92,246,0.08)_70%,rgba(34,211,238,0.04)_100%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),rgba(15,23,42,0.08)_38%,rgba(15,23,42,0)_100%)]" />
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl dark:bg-cyan-400/10" />
         <div className="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-violet-300/12 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/95 to-transparent" />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        <div className="relative z-10">
           {/* Header */}
-          <div className="shrink-0 flex items-start justify-between gap-3 border-b border-slate-200/70 px-5 py-3 dark:border-white/[0.06]">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-200/70 px-6 py-5 dark:border-white/[0.06] sm:px-7">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600 shadow-sm shadow-violet-100 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300">
                 <Clock className="h-5 w-5" />
@@ -125,7 +134,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
                   Schedule Session
                 </h2>
-                <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500 dark:text-white/45">
+                <p className="mt-1 text-sm text-slate-500 dark:text-white/45">
                   Block focused work, meetings, or recovery time into the project rhythm.
                 </p>
               </div>
@@ -141,7 +150,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 overscroll-contain">
+          <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6 sm:px-7">
             {/* Title Input */}
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
@@ -152,7 +161,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 autoFocus
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white/95 px-4 py-2.5 text-base font-semibold tracking-tight text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15"
+                className="w-full rounded-2xl border border-slate-200 bg-white/95 px-4 py-4 text-2xl font-semibold tracking-tight text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15"
                 placeholder="Add title..."
               />
             </div>
@@ -173,13 +182,13 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                       key={option.id}
                       type="button"
                       onClick={() => setType(option.id)}
-                      className={`flex items-center gap-3 rounded-2xl border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 ${
+                      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 ${
                         isActive
                           ? option.activeClass
                           : 'border-slate-200 bg-white/75 text-slate-600 hover:border-violet-200 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.045] dark:text-white/55 dark:hover:bg-white/[0.075]'
                       }`}
                     >
-                      <div className={`flex h-7.5 w-7.5 items-center justify-center rounded-xl ${isActive ? 'bg-white/80 dark:bg-white/[0.08]' : 'bg-slate-50 dark:bg-white/[0.04]'}`}>
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isActive ? 'bg-white/80 dark:bg-white/[0.08]' : 'bg-slate-50 dark:bg-white/[0.04]'}`}>
                         <Icon className={`h-4 w-4 ${isActive ? option.iconClass : 'text-slate-400 dark:text-white/35'}`} />
                       </div>
 
@@ -265,14 +274,14 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                   rows="3"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`${inputClassName} min-h-[64px] resize-none leading-relaxed`}
+                  className={`${inputClassName} min-h-[104px] resize-none leading-relaxed`}
                   placeholder="Add description or meeting links..."
                 />
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="sticky bottom-0 -mx-5 flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200/70 bg-white/95 px-5 pt-3 pb-2 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 pt-5 dark:border-white/[0.06] sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
@@ -286,7 +295,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/35 focus:outline-none focus:ring-4 focus:ring-violet-200 dark:border-violet-400/30 dark:focus:ring-violet-500/20"
               >
                 <Zap className="h-4 w-4" />
-                Add Session
+                Save to Rhythm
               </button>
             </div>
           </form>
@@ -295,3 +304,69 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
     </div>
   );
 }
+"""
+
+def fail(message):
+    print(f"\\n[polish_create_session_modal] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[polish_create_session_modal] starting")
+
+    if not MODAL.exists():
+        fail(f"Could not find {MODAL}")
+
+    source = MODAL.read_text(encoding="utf-8")
+    original = source
+
+    required_before = [
+        "CreateSessionModal",
+        "handleSubmit",
+        "onSave({",
+        "Save to Rhythm",
+        "Focus Time",
+        "Meeting",
+        "Break",
+        "projectId: projectId",
+    ]
+
+    for marker in required_before:
+        if marker not in source:
+            fail(f"Missing expected marker before patch: {marker}. No changes were written.")
+
+    if "Rhythm Planner" in source and "rounded-[2rem]" in source and "bg-white/92" in source:
+        print("[polish_create_session_modal] modal already appears polished")
+        return
+
+    backup = MODAL.with_name(f"{MODAL.name}.bak-polish-create-session-modal-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[polish_create_session_modal] backup created: {backup}")
+
+    MODAL.write_text(NEW_FILE, encoding="utf-8")
+    print(f"[polish_create_session_modal] patched: {MODAL}")
+
+    required_after = [
+        "Rhythm Planner",
+        "rounded-[2rem]",
+        "bg-white/92",
+        "shadow-[0_30px_90px_rgba(15,23,42,0.22)]",
+        "Session type",
+        "Time window",
+        "projectId: projectId",
+        "onSave({",
+        "Save to Rhythm",
+    ]
+
+    updated = MODAL.read_text(encoding="utf-8")
+    for marker in required_after:
+        if marker not in updated:
+            fail(f"Safety check failed after patch. Missing marker: {marker}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print('  rg -n "Rhythm Planner|rounded-\\[2rem\\]|bg-white/92|Session type|Time window|Save to Rhythm|projectId: projectId" src/calendar/CreateSessionModal.jsx -C 6')
+    print("  git diff -- src/calendar/CreateSessionModal.jsx")
+
+if __name__ == "__main__":
+    main()
