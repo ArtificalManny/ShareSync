@@ -98,38 +98,12 @@ export class GrowthService {
       const created = allTasks.filter(t => String(t.createdBy) === userId).length;
       const initiative = totalTasks > 0 ? Math.min(100, Math.round((created / totalTasks) * 100)) : 30;
 
-      const technical = this.clampScore((quality * 0.55) + (execution * 0.25) + (velocity * 0.20));
-      const communication = this.clampScore((collaboration * 0.60) + (initiative * 0.25) + (consistency * 0.15));
-      const leadership = this.clampScore((initiative * 0.45) + (reliability * 0.30) + (collaboration * 0.25));
-      const strategy = this.clampScore((quality * 0.45) + (initiative * 0.25) + (execution * 0.20) + (reliability * 0.10));
+      const skills = { velocity, execution, quality, consistency, reliability, collaboration, initiative };
 
-      const skills = {
-        velocity,
-        execution,
-        quality,
-        consistency,
-        reliability,
-        collaboration,
-        initiative,
-        technical,
-        communication,
-        leadership,
-        strategy,
-      };
-
-      const radar = this.buildSkillRadar(skills);
-      const skillDimensions = radar.reduce((acc, point) => {
-        acc[point.key] = point.value;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Identify strengths and growth areas from display-ready radar dimensions.
-      const entries = radar
-        .map((point) => [point.label, point.value] as [string, number])
-        .sort(([, a], [, b]) => b - a);
-
-      const strengths = entries.slice(0, 2).map(([label]) => label);
-      const growthAreas = entries.slice(-2).map(([label]) => label);
+      // Identify strengths and growth areas
+      const entries = Object.entries(skills).sort(([, a], [, b]) => b - a);
+      const strengths = entries.slice(0, 2).map(([k]) => k);
+      const growthAreas = entries.slice(-2).map(([k]) => k);
 
       // Overall growth: compare last 2 weeks vs prior 2 weeks
       const priorTwoWeeks = allTasks.filter(t => {
@@ -147,8 +121,6 @@ export class GrowthService {
 
       return {
         skills,
-        radar,
-        skillDimensions,
         strengths,
         growthAreas,
         overallGrowth,
@@ -891,24 +863,6 @@ export class GrowthService {
       (volumeSignal * 0.2) +
       (streakSignal * 0.15),
     );
-  }
-
-  private buildSkillRadar(skills: Record<string, number>) {
-    const dimensions = [
-      { key: 'velocity', label: 'Velocity', value: skills.velocity },
-      { key: 'quality', label: 'Quality', value: skills.quality },
-      { key: 'technical', label: 'Technical', value: skills.technical },
-      { key: 'communication', label: 'Communication', value: skills.communication },
-      { key: 'collaboration', label: 'Collaboration', value: skills.collaboration },
-      { key: 'leadership', label: 'Leadership', value: skills.leadership },
-      { key: 'strategy', label: 'Strategy', value: skills.strategy },
-      { key: 'reliability', label: 'Reliability', value: skills.reliability },
-    ];
-
-    return dimensions.map((dimension) => ({
-      ...dimension,
-      value: this.clampScore(Number(dimension.value || 0)),
-    }));
   }
 
   private determineArchetype(skills: Record<string, number>): string {
