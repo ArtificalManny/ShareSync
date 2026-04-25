@@ -142,15 +142,6 @@ export class GrowthService {
         ? Math.round(((recentTwoWeeks - priorTwoWeeks) / priorTwoWeeks) * 100)
         : recentTwoWeeks > 0 ? 100 : 0;
 
-      const impactMetrics = {
-        deployments: completedTasks,
-        ships: completedTasks,
-        momentumDays: streak,
-        activeDaysLast14: activeDays,
-        growthPercent: overallGrowth,
-        growthLabel: 'recent growth',
-      };
-
       // Archetype
       const archetype = this.determineArchetype(skills);
 
@@ -161,7 +152,6 @@ export class GrowthService {
         strengths,
         growthAreas,
         overallGrowth,
-        impactMetrics,
         archetype: { current: archetype },
         totalTasks,
         completedTasks,
@@ -941,14 +931,6 @@ export class GrowthService {
       strengths: [],
       growthAreas: [],
       overallGrowth: 0,
-      impactMetrics: {
-        deployments: 0,
-        ships: 0,
-        momentumDays: 0,
-        activeDaysLast14: 0,
-        growthPercent: 0,
-        growthLabel: 'recent growth',
-      },
       archetype: { current: 'The Explorer' },
       totalTasks: 0,
       completedTasks: 0,
