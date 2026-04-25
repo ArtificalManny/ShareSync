@@ -1,5 +1,14 @@
-import React, { useMemo, useState } from "react";
-import { X, Calendar, Flag, Loader2, AlertCircle, AlignLeft, Clock, Target, CheckCircle2, AlertTriangle } from "lucide-react";
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path.cwd()
+TARGET = ROOT / "src/components/roadmap/AddMilestoneModal.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+NEW_FILE = """import React, { useMemo, useState } from "react";
+import { X, Calendar, Flag, Loader2, AlertCircle } from "lucide-react";
 import { createMilestone } from "../../api/milestones";
 
 function todayISO() {
@@ -17,38 +26,9 @@ function normalizeErrMessage(msg) {
   return "";
 }
 
-const STATUS_OPTIONS = [
-  {
-    value: "planned",
-    label: "Planned",
-    icon: Clock,
-    className: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-200",
-  },
-  {
-    value: "in_progress",
-    label: "In Progress",
-    icon: Target,
-    className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/25 dark:bg-blue-500/10 dark:text-blue-200",
-  },
-  {
-    value: "completed",
-    label: "Completed",
-    icon: CheckCircle2,
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-200",
-  },
-  {
-    value: "at_risk",
-    label: "At Risk",
-    icon: AlertTriangle,
-    className: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/25 dark:bg-rose-500/10 dark:text-rose-200",
-  },
-];
-
 export default function AddMilestoneModal({ projectId, onClose }) {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [targetDate, setTargetDate] = useState("");
-  const [status, setStatus] = useState("planned");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -64,17 +44,15 @@ export default function AddMilestoneModal({ projectId, onClose }) {
     setErr("");
 
     try {
-      // ✅ Only send fields that exist in the milestone create/update contract
+      // ✅ Only send fields that exist in CreateMilestoneDto
       // - title (required)
       // - projectId (added by createMilestone helper)
-      // - description (optional)
       // - targetDate (optional, must be IsDateString => YYYY-MM-DD is safest)
       // - status (optional enum)
       await createMilestone(projectId, {
         title: title.trim(),
-        description: description.trim() || undefined,
         targetDate: targetDate || undefined,
-        status,
+        status: "planned",
       });
 
       window.dispatchEvent(new CustomEvent("milestones:refresh"));
@@ -101,15 +79,15 @@ export default function AddMilestoneModal({ projectId, onClose }) {
       />
 
       {/* Modal */}
-      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-white/[0.08] dark:bg-[#101827]">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-white/[0.08] dark:bg-[#101827]">
         {/* Soft surface atmosphere */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.95),rgba(255,255,255,0.78)_35%,rgba(139,92,246,0.045)_100%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.12),rgba(15,23,42,0)_58%)]" />
         <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-violet-300/10 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-cyan-300/10 blur-3xl dark:bg-cyan-500/10" />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        <div className="relative z-10">
           {/* Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-white/[0.06]">
+          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-white/[0.06]">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/20">
                 <Flag className="h-4 w-4" />
@@ -135,7 +113,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
+          <form onSubmit={handleSubmit} className="space-y-5 px-6 py-6">
             {/* Title */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
@@ -148,22 +126,6 @@ export default function AddMilestoneModal({ projectId, onClose }) {
                 placeholder="e.g. MVP Demo, Beta Launch, Sprint 1 Finish"
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/35 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15"
                 autoFocus
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
-                <AlignLeft className="h-4 w-4 text-slate-400 dark:text-white/35" />
-                Description
-              </label>
-
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe this milestone..."
-                rows={3}
-                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-relaxed text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/35 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15"
               />
             </div>
 
@@ -186,36 +148,6 @@ export default function AddMilestoneModal({ projectId, onClose }) {
               />
             </div>
 
-            {/* Status */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
-                Status
-              </label>
-
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {STATUS_OPTIONS.map((option) => {
-                  const Icon = option.icon;
-                  const isActive = status === option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setStatus(option.value)}
-                      className={`flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${
-                        isActive
-                          ? option.className
-                          : "border-slate-200 bg-white text-slate-500 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white/45 dark:hover:bg-white/[0.07] dark:hover:text-white"
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {err && (
               <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -224,7 +156,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             )}
 
             {/* Actions */}
-            <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-3 border-t border-slate-200 bg-white/95 px-6 pt-5 pb-1 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-5 dark:border-white/[0.06]">
               <button
                 type="button"
                 onClick={() => onClose?.()}
@@ -252,3 +184,72 @@ export default function AddMilestoneModal({ projectId, onClose }) {
     </div>
   );
 }
+"""
+
+
+def fail(message):
+    print(f"\\n[polish_add_milestone_modal] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    print("[polish_add_milestone_modal] starting")
+
+    if not TARGET.exists():
+        fail(f"Could not find {TARGET}")
+
+    source = TARGET.read_text(encoding="utf-8")
+    original = source
+
+    required_before = [
+        "AddMilestoneModal",
+        "createMilestone",
+        "title.trim()",
+        "targetDate",
+        'status: "planned"',
+        "milestones:refresh",
+        "Create Milestone",
+    ]
+
+    for marker in required_before:
+        if marker not in source:
+            fail(f"Missing expected marker before patch: {marker}. No changes were written.")
+
+    if "shadow-[0_24px_80px_rgba(15,23,42,0.24)]" in source and "text-slate-950" in source:
+        print("[polish_add_milestone_modal] modal already appears polished")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-polish-add-milestone-modal-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[polish_add_milestone_modal] backup created: {backup}")
+
+    TARGET.write_text(NEW_FILE, encoding="utf-8")
+    print(f"[polish_add_milestone_modal] patched: {TARGET}")
+
+    updated = TARGET.read_text(encoding="utf-8")
+
+    required_after = [
+        "AddMilestoneModal",
+        "createMilestone",
+        "targetDate",
+        'status: "planned"',
+        "milestones:refresh",
+        "text-slate-950",
+        "bg-violet-600",
+        "Create Milestone",
+        "Cancel",
+    ]
+
+    for marker in required_after:
+        if marker not in updated:
+            fail(f"Safety check failed after patch. Missing marker: {marker}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print('  rg -n "Create Milestone|text-slate-950|bg-violet-600|targetDate|status: \\"planned\\"|milestones:refresh|shadow-\\[0_24px_80px" src/components/roadmap/AddMilestoneModal.jsx -C 5')
+    print("  git diff -- src/components/roadmap/AddMilestoneModal.jsx")
+
+
+if __name__ == "__main__":
+    main()

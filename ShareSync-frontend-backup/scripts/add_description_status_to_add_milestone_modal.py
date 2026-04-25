@@ -1,4 +1,13 @@
-import React, { useMemo, useState } from "react";
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path.cwd()
+TARGET = ROOT / "src/components/roadmap/AddMilestoneModal.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+NEW_FILE = """import React, { useMemo, useState } from "react";
 import { X, Calendar, Flag, Loader2, AlertCircle, AlignLeft, Clock, Target, CheckCircle2, AlertTriangle } from "lucide-react";
 import { createMilestone } from "../../api/milestones";
 
@@ -252,3 +261,73 @@ export default function AddMilestoneModal({ projectId, onClose }) {
     </div>
   );
 }
+"""
+
+
+def fail(message):
+    print(f"\\n[add_description_status_to_add_milestone_modal] ERROR: {message}\\n", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    print("[add_description_status_to_add_milestone_modal] starting")
+
+    if not TARGET.exists():
+        fail(f"Could not find {TARGET}")
+
+    source = TARGET.read_text(encoding="utf-8")
+    original = source
+
+    required_before = [
+        "AddMilestoneModal",
+        "createMilestone",
+        "title.trim()",
+        "targetDate",
+        "Create Milestone",
+        "milestones:refresh",
+    ]
+
+    for marker in required_before:
+        if marker not in source:
+            fail(f"Missing expected marker before patch: {marker}. No changes were written.")
+
+    if "const [description, setDescription]" in source and "STATUS_OPTIONS" in source:
+        print("[add_description_status_to_add_milestone_modal] description/status already appear to be implemented")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-add-description-status-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[add_description_status_to_add_milestone_modal] backup created: {backup}")
+
+    TARGET.write_text(NEW_FILE, encoding="utf-8")
+    print(f"[add_description_status_to_add_milestone_modal] patched: {TARGET}")
+
+    updated = TARGET.read_text(encoding="utf-8")
+
+    required_after = [
+        "const [description, setDescription]",
+        "const [status, setStatus]",
+        "STATUS_OPTIONS",
+        "Description",
+        "Status",
+        "description: description.trim() || undefined",
+        "status,",
+        "targetDate: targetDate || undefined",
+        "milestones:refresh",
+        "Create Milestone",
+        "Cancel",
+    ]
+
+    for marker in required_after:
+        if marker not in updated:
+            fail(f"Safety check failed after patch. Missing marker: {marker}")
+
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print('  rg -n "description|STATUS_OPTIONS|Status|Description|status,|Create Milestone|Cancel|milestones:refresh" src/components/roadmap/AddMilestoneModal.jsx -C 5')
+    print("  git diff -- src/components/roadmap/AddMilestoneModal.jsx")
+
+
+if __name__ == "__main__":
+    main()
