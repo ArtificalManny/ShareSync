@@ -72,33 +72,6 @@ const calculateReliability = (completed, total) =>
 
 
 
-
-const getImpactMetricsSnapshot = (skillProfile, user) => {
-  const impact = skillProfile?.impactMetrics || {};
-
-  return {
-    deployments: Number(
-      impact.deployments ??
-      impact.ships ??
-      skillProfile?.completedTasks ??
-      user?.totalShips ??
-      user?.completedTasks ??
-      0
-    ),
-    momentumDays: Number(
-      impact.momentumDays ??
-      user?.currentStreak ??
-      user?.streakDays ??
-      0
-    ),
-    growthPercent: Number(
-      impact.growthPercent ??
-      skillProfile?.overallGrowth ??
-      0
-    ),
-    source: skillProfile?.impactMetrics ? "Live analytics" : "Profile fallback",
-  };
-};
 const normalizeSkillScore = (value) => {
   const next = Number(value || 0);
 
@@ -896,10 +869,6 @@ export default function Profile() {
   // Growth hook will silently return empty objects if it doesn't have permission to view private tasks
   const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
   
-  const impactMetrics = useMemo(
-    () => getImpactMetricsSnapshot(skillProfile, user),
-    [skillProfile, user]
-  );
   const skillProfileSnapshot = useMemo(
     () => buildSkillProfileSnapshot(skillProfile),
     [skillProfile]
@@ -1126,30 +1095,24 @@ export default function Profile() {
             className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
             style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
           >
-            <div className="flex items-start justify-between gap-3 mb-6">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Impact Metrics</h3>
-              </div>
-
-              <span className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
-                {growthLoading ? "Refreshing" : impactMetrics.source}
-              </span>
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <h3 className="text-sm font-medium text-slate-600 dark:text-zinc-300">Impact Metrics</h3>
             </div>
-
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <StatCard value={impactMetrics.deployments || 0} label="Deployments" color="text-slate-800 dark:text-white" />
-              <StatCard value={`${impactMetrics.momentumDays || 0}d`} label="Momentum" gradient />
+              <StatCard value={user?.totalShips || 0} label="Deployments" color="text-slate-800 dark:text-white" />
+              <StatCard value={`${user?.currentStreak || 0}d`} label="Momentum" gradient />
             </div>
-
-            <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
-                  {impactMetrics.growthPercent >= 0 ? "+" : ""}{impactMetrics.growthPercent || 0}% recent growth
-                </span>
+            {skillProfile?.overallGrowth && (
+              <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
+                    +{skillProfile.overallGrowth}% growth this quarter
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Operational Trust - with Ocean gradient bar */}
