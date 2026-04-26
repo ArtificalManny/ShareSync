@@ -1087,7 +1087,6 @@ function OverviewView({
   onFinishLineAction,
   onReopenProject,
   isReopeningProject,
-  projectOnlineCount = 0,
 }) {
   const summary = overview?.summary || {};
   const pulse = overview?.pulse || {};
@@ -1117,11 +1116,9 @@ function OverviewView({
       : 0;
 
   const onlineCount =
-    Number.isFinite(Number(projectOnlineCount))
-      ? Number(projectOnlineCount)
-      : Number.isFinite(Number(summary?.ownerSummary?.onlineCount))
-        ? Number(summary.ownerSummary.onlineCount)
-        : 0;
+    Number.isFinite(Number(summary?.ownerSummary?.onlineCount))
+      ? Number(summary.ownerSummary.onlineCount)
+      : 0;
 
   const activeGoalCount = activeGoals.length;
 
@@ -1626,7 +1623,7 @@ export default function ProjectHome() {
     ? Number(overview.summary.ownerSummary.onlineCount)
     : 0;
 
-  const projectOnlineCount = Math.max(
+  const headerActiveUsers = Math.max(
     Number.isFinite(Number(projectStats?.online)) ? Number(projectStats.online) : 0,
     overviewOnlineCount
   );
@@ -1679,7 +1676,6 @@ export default function ProjectHome() {
               onFinishLineAction={handleFinishLineAction}
               onReopenProject={handleReopenProject}
               isReopeningProject={isReopeningProject}
-              projectOnlineCount={projectOnlineCount}
             />
           );
 
@@ -1810,7 +1806,7 @@ export default function ProjectHome() {
       <ProjectHeader
         project={project}
         metrics={headerMetrics}
-        activeUsers={projectOnlineCount}
+        activeUsers={headerActiveUsers}
         onShipUpdate={handleShipUpdate}
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
