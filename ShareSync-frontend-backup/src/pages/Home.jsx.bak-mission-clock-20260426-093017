@@ -37,7 +37,6 @@ import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
 import IntelligencePanel from "../components/home/IntelligencePanel";
 import WeekInMotion from "../components/home/WeekInMotion";
-import MissionClock from "../components/home/MissionClock";
 
 import { useAnalytics } from "../contexts/AnalyticsContext";
 import { EntranceHighlight, useEntranceHighlight } from "../components/onboarding/AppEntrance";
@@ -497,7 +496,9 @@ export default function Home() {
               {authUser?.firstName || "Builder"}
             </span>
           </h1>
-          <MissionClock />
+          <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">
+            Mission Control
+          </p>
         </div>
       </header>
 
