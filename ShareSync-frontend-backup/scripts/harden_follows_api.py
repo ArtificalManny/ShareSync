@@ -1,4 +1,19 @@
-// src/api/follows.js
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup")
+TARGET = ROOT / "src/api/follows.js"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def fail(message: str):
+    print(f"\n[harden_follows_api] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+NEW_CONTENT = """// src/api/follows.js
 // ═══════════════════════════════════════════════════════════════════════════════
 // FOLLOWS API - Instagram-style project following
 //
@@ -203,3 +218,67 @@ export async function updateFollowPreferences(projectId, preferences = {}) {
     throw primaryErr;
   }
 }
+"""
+
+
+def main():
+    print("[harden_follows_api] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    original = TARGET.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export async function followProject(projectId)",
+        "export async function unfollowProject(projectId)",
+        "export async function getFollowedProjects()",
+        "export async function getFollowStatus(projectId)",
+        "export async function getBulkFollowStatus(projectIds)",
+        "export async function updateFollowPreferences(projectId, preferences)",
+        "import client from './client';",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Missing expected marker before rewrite: {marker}")
+
+    required_after = [
+        "function requireProjectId(projectId, caller = 'follows API')",
+        "function encodeProjectId(projectId, caller)",
+        "function unwrapResponse(res)",
+        "function normalizeFollowMutationResult(raw, fallbackFollowing)",
+        "client.post(`/follows/${id}`)",
+        "client.delete(`/follows/${id}`)",
+        "client.get(`/follows/check/${id}`)",
+        "client.get(`/follows/status?ids=${ids}`)",
+        "client.patch(`/projects/${id}/follow`, preferences)",
+        "client.patch(`/projects/${id}/preferences`, preferences)",
+    ]
+
+    for marker in required_after:
+      if marker not in NEW_CONTENT:
+          fail(f"Internal safety check failed. Missing marker in new content: {marker}")
+
+    if original == NEW_CONTENT:
+        print("[harden_follows_api] no changes needed")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-harden-follows-api-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[harden_follows_api] backup created: {backup}")
+
+    TARGET.write_text(NEW_CONTENT, encoding="utf-8")
+    print(f"[harden_follows_api] patched: {TARGET}")
+
+    print("")
+    print("[harden_follows_api] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"requireProjectId|encodeProjectId|unwrapResponse|normalizeFollowMutationResult|followProject|unfollowProject|getBulkFollowStatus|updateFollowPreferences|/projects/\\\\$\\\\{id\\\\}/follow|/projects/\\\\$\\\\{id\\\\}/preferences\" src/api/follows.js -C 8")
+    print("  git diff -- src/api/follows.js")
+
+
+if __name__ == "__main__":
+    main()
