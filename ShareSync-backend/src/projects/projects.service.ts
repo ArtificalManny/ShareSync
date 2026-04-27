@@ -117,12 +117,7 @@ export class ProjectsService {
 
   async findByUser(userId: string): Promise<ProjectDocument[]> {
     const result = await this.findUserProjects(userId);
-    // Enrich with computed task aggregates so the Projects list cards
-    // (ProjectCardV2) can display real momentum/risk/progress instead of
-    // generic placeholder labels. Returns plain objects, not hydrated
-    // Mongoose documents — typed any[] internally, but the return type
-    // declaration is preserved for backwards compatibility with callers.
-    return (await this.enrichProjectsWithCardData(result.projects)) as any;
+    return result.projects;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -466,7 +461,9 @@ export class ProjectsService {
       this.projectModel.countDocuments(query),
     ]);
 
-    return { projects, total };
+    const enrichedProjects = await this.enrichProjectsWithCardData(projects);
+
+    return { projects: enrichedProjects as any, total };
   }
 
   async findStarred(userId: string): Promise<ProjectDocument[]> {
