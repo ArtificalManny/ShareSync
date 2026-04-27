@@ -1,12 +1,74 @@
 // /src/api/discovery.js
 import client from "./client";
 
+function normalizeBoolean(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const lowered = value.trim().toLowerCase();
+    if (lowered === "true" || lowered === "yes" || lowered === "1") return true;
+    if (lowered === "false" || lowered === "no" || lowered === "0") return false;
+  }
+  return Boolean(value);
+}
+
+function unwrapArrayResponse(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+}
+
+function unwrapFeedResponse(payload) {
+  const data = payload?.items
+    ? payload
+    : payload?.data?.items
+      ? payload.data
+      : payload?.data || payload || {};
+
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    nextCursor: data?.nextCursor || data?.cursor || null,
+  };
+}
+
+function isPublicDiscoverableProject(item) {
+  if (!item || typeof item !== "object") return false;
+
+  const settings = item.settings || {};
+  const visibility = String(item.visibility || item.privacy || "").trim().toLowerCase();
+
+  const isPublic =
+    item.isPublic === true ||
+    settings.isPublic === true ||
+    item.public === true ||
+    visibility === "public" ||
+    visibility === "listed";
+
+  const isListed =
+    item.isListed === true ||
+    item.discoverable === true ||
+    settings.isListed === true ||
+    settings.discoverable === true ||
+    normalizeBoolean(item.isListed) ||
+    normalizeBoolean(item.discoverable);
+
+  return isPublic && isListed;
+}
+
+function getProjectId(item) {
+  return String(item?._id || item?.id || item?.projectId || "").trim();
+}
+
 export async function getDiscoveryFeed(params = {}) {
   try {
     const { signal, ...rest } = params || {};
     const res = await client.get("/discovery", { params: rest, signal });
-    return Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.items) ? res.data.items : [];
-  } catch {
+    const items = unwrapArrayResponse(res?.data);
+    return items.filter(isPublicDiscoverableProject);
+  } catch (err) {
+    console.error("[discovery] getDiscoveryFeed failed:", err);
     return [];
   }
 }
@@ -20,24 +82,26 @@ export async function getAlgorithmicFeed({ cursor, limit = 10 } = {}) {
 
     const res = await client.get(`/discovery/feed?${qs.toString()}`);
     
-    const payload = res?.data?.items ? res.data : res?.data?.data;
-    const rawItems = payload?.items || [];
-    const nextCursor = payload?.nextCursor || null;
+    const payload = unwrapFeedResponse(res?.data);
+    const rawItems = payload.items.filter(isPublicDiscoverableProject);
+    const nextCursor = payload.nextCursor;
 
     const activities = rawItems.map((p) => {
-      const hash = p.id.charCodeAt(0) % 4;
+      const id = getProjectId(p);
+      const hash = (id.charCodeAt(0) || 0) % 4;
       const actions = ['shipped an update for', 'hit a milestone in', 'posted a task on', 'made progress on'];
       const icons = ['Rocket', 'TrendingUp', 'CheckCircle', 'Sparkles'];
       const colors = ['purple', 'emerald', 'blue', 'orange'];
       
       return {
-        id: `feed-item-${p.id}`,
+        id: `feed-item-${id}`,
+        projectId: id,
         type: 'ship',
         user: p.ownerInfo?.username || p.ownerInfo?.firstName || p.teamName || 'A creator',
         action: actions[hash],
         content: p.lastShip || p.description || 'working hard on the vision',
-        project: p.projectName,
-        timestamp: p.lastActivity || 'recently',
+        project: p.projectName || p.name || p.title || 'Untitled Project',
+        timestamp: p.lastActivity || p.lastActivityAt || 'recently',
         icon: icons[hash],
         color: colors[hash],
         rawScore: p.algorithmicScore
@@ -111,7 +175,26 @@ function normalizeProjectItem(item) {
   const currentProject = s(item?.currentProject || item?.projectName);
 
   return {
-    project: { id, projectName, teamName, emoji, streak, members, lastShip, totalShips, completionRate, lastActivity, lastActivityDays, tags: Array.isArray(item?.tags) ? item.tags : [], moderationStatus: item?.moderationStatus },
+    project: {
+      id,
+      projectName,
+      teamName,
+      emoji,
+      streak,
+      members,
+      lastShip,
+      totalShips,
+      completionRate,
+      lastActivity,
+      lastActivityDays,
+      tags: Array.isArray(item?.tags) ? item.tags : [],
+      moderationStatus: item?.moderationStatus,
+      isPublic: item?.isPublic ?? item?.settings?.isPublic ?? item?.public,
+      isListed: item?.isListed ?? item?.settings?.isListed,
+      discoverable: item?.discoverable ?? item?.settings?.discoverable,
+      visibility: item?.visibility,
+      settings: item?.settings,
+    },
     person: personName ? { id, name: personName, avatar: s(item?.avatar, "👤"), workStyle: workStyle || "Deep Focus", similarity: similarity || 80, peakTime: peakTime || "Varies", currentProject: currentProject || "Project", streak: streak || 0, reason: s(item?.reason, "Similar momentum patterns"), moderationStatus: item?.moderationStatus } : null,
   };
 }

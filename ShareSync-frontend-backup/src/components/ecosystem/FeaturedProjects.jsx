@@ -15,10 +15,12 @@ import { useFollow } from '../../hooks/useFollow';
 import { getBulkFollowStatus } from '../../api/follows';
 import ProjectAvatar from '../project/ProjectAvatar';
 
+const SHOW_DEMO_FEATURED = import.meta.env.VITE_SHOW_DISCOVER_DEMOS === 'true';
+
 const FALLBACK_FEATURED = [
-  { id: 'demo-1', name: 'ShareSync Platform', description: 'The project management tool that builds momentum', emoji: '🚀', memberCount: 12, shipCount: 34, tags: ['saas', 'productivity'], streak: 45, completionRate: 72 },
-  { id: 'demo-2', name: 'Design System v2', description: 'Component library with dark mode and animations', emoji: '🎨', memberCount: 5, shipCount: 18, tags: ['design', 'ui'], streak: 12, completionRate: 58 },
-  { id: 'demo-3', name: 'AI Study Buddy', description: 'Flashcards that adapt to your learning pace', emoji: '🧠', memberCount: 3, shipCount: 8, tags: ['ai', 'education'], streak: 7, completionRate: 35 },
+  { id: 'demo-1', name: 'ShareSync Platform', description: 'The project management tool that builds momentum', emoji: '🚀', memberCount: 12, shipCount: 34, tags: ['saas', 'productivity'], streak: 45, completionRate: 72, isPublic: true, isListed: true, discoverable: true },
+  { id: 'demo-2', name: 'Design System v2', description: 'Component library with dark mode and animations', emoji: '🎨', memberCount: 5, shipCount: 18, tags: ['design', 'ui'], streak: 12, completionRate: 58, isPublic: true, isListed: true, discoverable: true },
+  { id: 'demo-3', name: 'AI Study Buddy', description: 'Flashcards that adapt to your learning pace', emoji: '🧠', memberCount: 3, shipCount: 8, tags: ['ai', 'education'], streak: 7, completionRate: 35, isPublic: true, isListed: true, discoverable: true },
 ];
 
 function MomentumBadge({ streak }) {
@@ -130,6 +132,39 @@ function getMomentumMeta(project, progress) {
 
 function pluralize(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const lowered = value.trim().toLowerCase();
+    if (lowered === 'true' || lowered === 'yes' || lowered === '1') return true;
+    if (lowered === 'false' || lowered === 'no' || lowered === '0') return false;
+  }
+  return Boolean(value);
+}
+
+function isPublicDiscoverableProject(project) {
+  if (!project || typeof project !== 'object') return false;
+
+  const visibility = String(project.visibility || project.privacy || '').trim().toLowerCase();
+  const settings = project.settings || {};
+
+  const isPublic =
+    project.isPublic === true ||
+    settings.isPublic === true ||
+    visibility === 'public' ||
+    visibility === 'listed';
+
+  const isListed =
+    project.isListed === true ||
+    project.discoverable === true ||
+    settings.isListed === true ||
+    settings.discoverable === true ||
+    normalizeBoolean(project.isListed) ||
+    normalizeBoolean(project.discoverable);
+
+  return isPublic && isListed;
 }
 
 function ProjectCard({ project, initialFollowing }) {
@@ -280,6 +315,29 @@ function ProjectCard({ project, initialFollowing }) {
   );
 }
 
+
+function FeaturedProjectsEmptyState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-white/[0.08] bg-slate-50/70 dark:bg-white/[0.03] px-5 py-8 text-center">
+      <div className="w-12 h-12 mx-auto rounded-2xl bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 flex items-center justify-center mb-4">
+        <TrendingUp className="w-5 h-5 text-violet-500" />
+      </div>
+
+      <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+        No public listed projects yet
+      </h4>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+        Projects appear here only when they are public and turned on for Discover/Search.
+      </p>
+
+      <p className="mt-3 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+        Create a project → choose Public → enable Listed in Discover & Search.
+      </p>
+    </div>
+  );
+}
+
 export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -292,8 +350,15 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
       try {
         const { data } = await client.get('/discovery/trending', { params: { limit: maxVisible } });
         const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        const visibleItems = items.filter(isPublicDiscoverableProject);
+        const sourceItems = visibleItems.length > 0
+          ? visibleItems
+          : SHOW_DEMO_FEATURED
+            ? FALLBACK_FEATURED
+            : [];
+
         if (!cancelled) {
-          const mapped = items.length > 0 ? items.slice(0, maxVisible).map(p => {
+          const mapped = sourceItems.slice(0, maxVisible).map(p => {
             const metrics = p.metrics || {};
             const taskCount = safeNumber(p.taskCount ?? metrics.totalTasks, 0);
             const completedTasks = safeNumber(p.completedTasks ?? metrics.completedTasks, 0);
@@ -322,7 +387,7 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
               completionRate: clampPercent(computedProgress),
               momentumState: p.momentumState || p.state || '',
             };
-          }) : FALLBACK_FEATURED;
+          });
 
           setProjects(mapped);
 
@@ -342,8 +407,9 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
             }
           }
         }
-      } catch {
-        if (!cancelled) setProjects(FALLBACK_FEATURED);
+      } catch (err) {
+        console.error('[FeaturedProjects] Failed to load public discoverable projects:', err);
+        if (!cancelled) setProjects(SHOW_DEMO_FEATURED ? FALLBACK_FEATURED : []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -373,8 +439,6 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
       </div>
     );
   }
-
-  if (projects.length === 0) return null;
 
   return (
     <div className="space-y-4">
@@ -414,16 +478,20 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
 
       {/* Project cards — each card manages its own follow state via useFollow hook */}
       <div className="space-y-3">
-        {sorted.map((project) => {
-          const pid = project._id || project.id;
-          return (
-            <ProjectCard
-              key={pid}
-              project={project}
-              initialFollowing={!!followStatuses[pid]}
-            />
-          );
-        })}
+        {sorted.length > 0 ? (
+          sorted.map((project) => {
+            const pid = project._id || project.id;
+            return (
+              <ProjectCard
+                key={pid}
+                project={project}
+                initialFollowing={!!followStatuses[pid]}
+              />
+            );
+          })
+        ) : (
+          <FeaturedProjectsEmptyState />
+        )}
       </div>
     </div>
   );
