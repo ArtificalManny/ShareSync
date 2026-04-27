@@ -1870,110 +1870,23 @@ export class ProjectsService {
       .exec();
   }
 
-  private normalizeAccessUserId(value: any): string {
-    return String(value || '').trim();
-  }
-
-  private getProjectOwnerId(project: ProjectDocument): string {
-    return this.normalizeAccessUserId(
-      project?.ownerId ||
-        (project as any)?.owner ||
-        (project as any)?.createdBy ||
-        (project as any)?.createdById,
-    );
-  }
-
-  private getProjectMemberUserId(member: any): string {
-    return this.normalizeAccessUserId(
-      member?.userId ||
-        member?.user ||
-        member?._id ||
-        member?.id ||
-        member,
-    );
-  }
-
-  private isProjectArchivedForAccess(project: ProjectDocument): boolean {
-    const status = String(project?.status || '').trim().toLowerCase();
-
-    return (
-      (project as any)?.isArchived === true ||
-      status === String(ProjectStatus.ARCHIVED).toLowerCase() ||
-      status === 'archived' ||
-      status === 'deleted'
-    );
-  }
-
-  private isPublicProjectForAccess(project: ProjectDocument): boolean {
-    if (!project || this.isProjectArchivedForAccess(project)) {
-      return false;
-    }
-
-    const visibility = String(project?.visibility || '').trim().toLowerCase();
-    const settings = (project as any)?.settings || {};
-
-    return (
-      visibility === String(ProjectVisibility.PUBLIC).toLowerCase() ||
-      visibility === String(ProjectVisibility.LISTED).toLowerCase() ||
-      visibility === 'public' ||
-      visibility === 'listed' ||
-      (project as any)?.isPublic === true ||
-      (project as any)?.public === true ||
-      settings?.isPublic === true
-    );
-  }
-
-  private isProjectOwner(project: ProjectDocument, userId: string): boolean {
-    const normalizedUserId = this.normalizeAccessUserId(userId);
-    if (!normalizedUserId) return false;
-
-    return this.getProjectOwnerId(project) === normalizedUserId;
-  }
-
-  private isProjectMember(project: ProjectDocument, userId: string): boolean {
-    const normalizedUserId = this.normalizeAccessUserId(userId);
-    if (!normalizedUserId) return false;
-
-    const members = Array.isArray(project?.members) ? project.members : [];
-
-    return members.some((member: any) => (
-      this.getProjectMemberUserId(member) === normalizedUserId
-    ));
-  }
-
   private hasAccess(project: ProjectDocument, userId: string): boolean {
-    // Owner/member access remains full project access.
-    if (this.isProjectOwner(project, userId)) return true;
-    if (this.isProjectMember(project, userId)) return true;
-
-    // Public projects are readable by non-members so ProjectHome can render
-    // spectator/read-only mode. Mutating methods still call canEdit(),
-    // canManageMembers(), or owner checks after this, so this does not grant
-    // write permissions.
-    return this.isPublicProjectForAccess(project);
+    const ownerId = (project.ownerId || (project as any).owner)?.toString();
+    if (ownerId === userId) return true;
+    return project.members.some((m) => m.userId.toString() === userId);
   }
 
   private canEdit(project: ProjectDocument, userId: string): boolean {
-    if (this.isProjectOwner(project, userId)) return true;
-
-    const normalizedUserId = this.normalizeAccessUserId(userId);
-    const members = Array.isArray(project?.members) ? project.members : [];
-    const member = members.find((m: any) => (
-      this.getProjectMemberUserId(m) === normalizedUserId
-    ));
-
+    const ownerId = (project.ownerId || (project as any).owner)?.toString();
+    if (ownerId === userId) return true;
+    const member = project.members.find((m) => m.userId.toString() === userId);
     return member?.role === MemberRole.ADMIN;
   }
 
   private canManageMembers(project: ProjectDocument, userId: string): boolean {
-    if (this.isProjectOwner(project, userId)) return true;
-
-    const normalizedUserId = this.normalizeAccessUserId(userId);
-    const members = Array.isArray(project?.members) ? project.members : [];
-    const member = members.find((m: any) => (
-      this.getProjectMemberUserId(m) === normalizedUserId
-    ));
-
+    const ownerId = (project.ownerId || (project as any).owner)?.toString();
+    if (ownerId === userId) return true;
+    const member = project.members.find((m) => m.userId.toString() === userId);
     return member?.role === MemberRole.ADMIN;
   }
 }
