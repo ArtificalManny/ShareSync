@@ -1,10 +1,45 @@
-// src/pages/Discover.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// ALGORITHMIC FEED - PHASE 3: LIVE WIRING (With Empty State Fallback)
-// ═══════════════════════════════════════════════════════════════════════════════
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup")
+TARGET = ROOT / "src/pages/Discover.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def fail(message: str):
+    print(f"\n[polish_discover_page_layout] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    print("[polish_discover_page_layout] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    source = TARGET.read_text(encoding="utf-8")
+    original = source
+
+    required_before = [
+        "import { Sparkles, Loader2, Globe } from 'lucide-react';",
+        "export default function Discover() {",
+        "const isMobile = useIsMobile();",
+        "const { user } = useAuth();",
+        "<TeamStories />",
+        "<FeaturedProjects maxVisible={6} />",
+        "<ActivityFeed activities={formatActivityItems(feed.filter(item => {",
+        "className=\"max-w-2xl mx-auto px-4 sm:px-6 py-8\"",
+    ]
+
+    for marker in required_before:
+        if marker not in source:
+            fail(f"Missing expected marker before patch: {marker}")
+
+    # 1) Upgrade lucide imports used by the new Discover composition.
+    old_icon_import = "import { Sparkles, Loader2, Globe } from 'lucide-react';"
+    new_icon_import = """import {
   Activity,
   Globe,
   Loader2,
@@ -14,21 +49,18 @@ import {
   Trophy,
   Users,
   Zap,
-} from 'lucide-react';
-import { useIsMobile } from '../hooks/useMobile';
+} from 'lucide-react';"""
 
-import { getAlgorithmicFeed } from '../api/discovery';
-import TeamStories from '../components/ecosystem/TeamStories';
-import ActivityFeed from '../components/ecosystem/ActivityFeed';
-import Achievements from '../components/ecosystem/Achievements';
-import ProjectsOverview from '../components/ecosystem/ProjectsOverview';
-import BurnoutAlert from '../components/ecosystem/BurnoutAlert';
-import FeaturedProjects from '../components/ecosystem/FeaturedProjects';
-import { formatActivityItems } from '../utils/formatActivityText';
-import { useAuth } from '../context/AuthContext';
-import useDocumentTitle from "../hooks/useDocumentTitle";
+    if new_icon_import not in source:
+        source = source.replace(old_icon_import, new_icon_import, 1)
+        print("[polish_discover_page_layout] upgraded lucide imports")
+    else:
+        print("[polish_discover_page_layout] lucide imports already upgraded")
 
+    # 2) Insert lightweight page helper components before Discover().
+    helper_marker = "function NetworkStatCard({ icon: Icon, label, value, tone = 'violet' }) {"
 
+    helpers = """
 function NetworkStatCard({ icon: Icon, label, value, tone = 'violet' }) {
   const toneClasses = {
     violet: 'bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/20',
@@ -93,103 +125,21 @@ function NetworkPulsePanel({ liveSignals, totalShips, streakDays }) {
   );
 }
 
-export default function Discover() {
-  useDocumentTitle("Discover");
-  const isMobile = useIsMobile();
-  const { user } = useAuth();
-  
-  const [feed, setFeed] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
-  
-  const loaderRef = useRef(null);
-  const cursorRef = useRef(null);
-  const hasMoreRef = useRef(true);
-  const fetchingRef = useRef(false);
+"""
 
-  const fetchNextPage = useCallback(async () => {
-    if (fetchingRef.current || !hasMoreRef.current) return;
-    fetchingRef.current = true;
-    setLoading(true);
+    if helper_marker not in source:
+        insertion_point = 'export default function Discover() {'
+        if insertion_point not in source:
+            fail("Could not find Discover component insertion point.")
+        source = source.replace(insertion_point, helpers + insertion_point, 1)
+        print("[polish_discover_page_layout] inserted Discover layout helper components")
+    else:
+        print("[polish_discover_page_layout] helper components already present")
 
-    try {
-      const { items, nextCursor } = await getAlgorithmicFeed({ 
-        cursor: cursorRef.current, 
-        limit: 10 
-      });
-      
-      cursorRef.current = nextCursor;
-      hasMoreRef.current = !!nextCursor;
+    # 3) Insert derived display values before return.
+    derived_marker = "const publicFeedItems = feed.filter((item) => {"
 
-      setFeed(prev => {
-        const newFeed = [...prev];
-        const currentLength = prev.filter(i => i.type !== 'interstitial').length;
-        
-        // Only inject interstitials if there are actual items returned
-        if (items && items.length > 0) {
-          items.forEach((item, idx) => {
-            const absoluteIndex = currentLength + idx + 1;
-            
-            // 🎰 VARIABLE REWARD SLOTS
-            if (absoluteIndex === 7) {
-              // Pass the true stats down to the Achievements component
-              newFeed.push({ 
-                id: `interstitial-7`, 
-                type: 'interstitial', 
-                component: <Achievements 
-                  currentLevel={user?.level || 1} 
-                  currentXp={user?.xp || 0} 
-                  currentStreak={user?.streakDays || user?.currentStreak || 0}
-                  totalShips={user?.totalShips || 0}
-                /> 
-              });
-            } else if (absoluteIndex === 15) {
-              newFeed.push({ id: `interstitial-15`, type: 'interstitial', component: <ProjectsOverview /> });
-            } else if (absoluteIndex === 22) {
-              newFeed.push({ id: `interstitial-22`, type: 'interstitial', component: <BurnoutAlert demoMode={true} /> });
-            }
-            
-            newFeed.push(item);
-          });
-        }
-        
-        return newFeed;
-      });
-
-    } catch (e) {
-      console.error(e);
-    } finally {
-      fetchingRef.current = false;
-      setLoading(false);
-      setInitialLoadDone(true);
-    }
-  }, [user]); // Added user dependency to ensure accurate stats
-
-  // Initial load
-  useEffect(() => {
-    fetchNextPage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
-
-  // Infinite Scroll Trigger
-  const handleObserver = useCallback((entries) => {
-    const target = entries[0];
-    if (target.isIntersecting && !fetchingRef.current && hasMoreRef.current) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage]);
-
-  useEffect(() => {
-    const option = { root: null, rootMargin: "20px", threshold: 0 };
-    const observer = new IntersectionObserver(handleObserver, option);
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    
-    return () => {
-      if (loaderRef.current) observer.unobserve(loaderRef.current);
-    };
-  }, [handleObserver]);
-
-  const publicFeedItems = feed.filter((item) => {
+    derived_values = """  const publicFeedItems = feed.filter((item) => {
     const name = item.user?.displayName || item.user?.username || item.user || '';
     return name !== 'demo' && name !== 'Demo User';
   });
@@ -200,8 +150,30 @@ export default function Discover() {
   const streakDays = user?.streakDays || user?.currentStreak || 0;
   const currentLevel = user?.level || 1;
   const currentXp = user?.xp || 0;
+"""
 
-  return (
+    return_marker = "  return ("
+    if derived_marker not in source:
+        if return_marker not in source:
+            fail("Could not find return insertion point.")
+        source = source.replace(return_marker, derived_values + "\n" + return_marker, 1)
+        print("[polish_discover_page_layout] inserted derived Discover display values")
+    else:
+        print("[polish_discover_page_layout] derived values already present")
+
+    # 4) Replace only the JSX return layout. Preserve all data loading logic above.
+    start = source.find('  return (\n    <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] pb-24 transition-colors">')
+    if start == -1:
+        fail("Could not find current Discover return block start.")
+
+    end_marker = "\n  );\n}"
+    end = source.rfind(end_marker)
+    if end == -1 or end <= start:
+        fail("Could not find Discover return block end.")
+
+    old_return = source[start:end + len(end_marker)]
+
+    new_return = """  return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 dark:bg-[#09090B] pb-24 transition-colors">
       {/* Ambient network glows — quiet, not loud */}
       <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-violet-200/40 blur-3xl dark:bg-violet-900/20" />
@@ -407,4 +379,45 @@ export default function Discover() {
       </div>
     </div>
   );
-}
+}"""
+
+    source = source[:start] + new_return + source[end + len(end_marker):]
+
+    required_after = [
+        "max-w-7xl",
+        "NetworkStatCard",
+        "NetworkPulsePanel",
+        "publicFeedItems",
+        "Latest Public Signals",
+        "Discovery Mode",
+        "<FeaturedProjects maxVisible={6} />",
+        "<TeamStories />",
+        "<ActivityFeed activities={publicActivities} />",
+    ]
+
+    for marker in required_after:
+        if marker not in source:
+            fail(f"Safety check failed after patch. Missing marker: {marker}")
+
+    if source == original:
+        print("[polish_discover_page_layout] no changes needed")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-discover-layout-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[polish_discover_page_layout] backup created: {backup}")
+
+    TARGET.write_text(source, encoding="utf-8")
+    print(f"[polish_discover_page_layout] patched: {TARGET}")
+
+    print("")
+    print("[polish_discover_page_layout] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"NetworkStatCard|NetworkPulsePanel|max-w-7xl|Shipping Now|Latest Public Signals|Discovery Mode|publicFeedItems\" src/pages/Discover.jsx -C 6")
+    print("  git diff -- src/pages/Discover.jsx")
+
+
+if __name__ == "__main__":
+    main()

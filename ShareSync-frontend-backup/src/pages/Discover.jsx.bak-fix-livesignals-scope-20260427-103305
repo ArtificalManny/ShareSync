@@ -37,6 +37,18 @@ function NetworkStatCard({ icon: Icon, label, value, tone = 'violet' }) {
     blue: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20',
   };
 
+  const publicFeedItems = feed.filter((item) => {
+    const name = item.user?.displayName || item.user?.username || item.user || '';
+    return name !== 'demo' && name !== 'Demo User';
+  });
+
+  const publicActivities = formatActivityItems(publicFeedItems);
+  const liveSignals = publicFeedItems.length;
+  const totalShips = user?.totalShips || user?.ships || 0;
+  const streakDays = user?.streakDays || user?.currentStreak || 0;
+  const currentLevel = user?.level || 1;
+  const currentXp = user?.xp || 0;
+
   return (
     <div className={`rounded-2xl border px-4 py-3 ${toneClasses[tone] || toneClasses.violet}`}>
       <div className="flex items-center gap-3">
@@ -188,18 +200,6 @@ export default function Discover() {
       if (loaderRef.current) observer.unobserve(loaderRef.current);
     };
   }, [handleObserver]);
-
-  const publicFeedItems = feed.filter((item) => {
-    const name = item.user?.displayName || item.user?.username || item.user || '';
-    return name !== 'demo' && name !== 'Demo User';
-  });
-
-  const publicActivities = formatActivityItems(publicFeedItems);
-  const liveSignals = publicFeedItems.length;
-  const totalShips = user?.totalShips || user?.ships || 0;
-  const streakDays = user?.streakDays || user?.currentStreak || 0;
-  const currentLevel = user?.level || 1;
-  const currentXp = user?.xp || 0;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 dark:bg-[#09090B] pb-24 transition-colors">

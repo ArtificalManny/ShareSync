@@ -13,7 +13,6 @@ import {
 import client from '../../api/client';
 import { useFollow } from '../../hooks/useFollow';
 import { getBulkFollowStatus } from '../../api/follows';
-import ProjectAvatar from '../project/ProjectAvatar';
 
 const FALLBACK_FEATURED = [
   { id: 'demo-1', name: 'ShareSync Platform', description: 'The project management tool that builds momentum', emoji: '🚀', memberCount: 12, shipCount: 34, tags: ['saas', 'productivity'], streak: 45, completionRate: 72 },
@@ -37,115 +36,22 @@ function MomentumBadge({ streak }) {
   );
 }
 
-function ProgressBar({ value = 0, tone = 'violet' }) {
+function ProgressBar({ value = 0 }) {
   const clamped = Math.max(0, Math.min(100, value));
-  const gradients = {
-    violet: 'from-violet-500 to-fuchsia-500',
-    emerald: 'from-emerald-500 to-teal-400',
-    amber: 'from-amber-500 to-orange-400',
-    slate: 'from-slate-400 to-slate-500',
-  };
-
   return (
     <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${gradients[tone] || gradients.violet} transition-all duration-500`}
+        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
         style={{ width: clamped + '%' }}
       />
     </div>
   );
 }
 
-function safeNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function clampPercent(value) {
-  return Math.max(0, Math.min(100, Math.round(safeNumber(value, 0))));
-}
-
-function getFeaturedProgress(project) {
-  const metrics = project?.metrics || {};
-  const direct =
-    project?.computedProgress ??
-    project?.progress ??
-    project?.completionRate ??
-    metrics?.computedProgress ??
-    metrics?.progress ??
-    null;
-
-  if (direct !== null && direct !== undefined) {
-    return clampPercent(direct);
-  }
-
-  const completed = safeNumber(project?.completedTasks ?? metrics?.completedTasks, 0);
-  const total = safeNumber(project?.taskCount ?? metrics?.totalTasks, 0);
-
-  if (total <= 0) return 0;
-  return clampPercent((completed / total) * 100);
-}
-
-function getMomentumMeta(project, progress) {
-  const raw = String(project?.momentumState || project?.momentum || '').trim().toLowerCase();
-
-  if (raw.includes('complete') || progress >= 100) {
-    return {
-      label: 'Completed',
-      tone: 'emerald',
-      chip: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20',
-    };
-  }
-
-  if (raw.includes('block') || raw.includes('stalled')) {
-    return {
-      label: 'Blocked',
-      tone: 'amber',
-      chip: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/20',
-    };
-  }
-
-  if (raw.includes('strong') || progress >= 80) {
-    return {
-      label: 'Strong',
-      tone: 'emerald',
-      chip: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20',
-    };
-  }
-
-  if (raw.includes('building') || progress > 0) {
-    return {
-      label: 'Building',
-      tone: 'violet',
-      chip: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-500/20',
-    };
-  }
-
-  return {
-    label: 'Planning',
-    tone: 'slate',
-    chip: 'bg-slate-50 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/[0.08]',
-  };
-}
-
-function pluralize(count, singular, plural) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
 function ProjectCard({ project, initialFollowing }) {
   const navigate = useNavigate();
   const pid = project._id || project.id;
   const isDemo = pid?.startsWith('demo-');
-  const progress = getFeaturedProgress(project);
-  const momentumMeta = getMomentumMeta(project, progress);
-  const taskCount = safeNumber(project.taskCount ?? project.metrics?.totalTasks, 0);
-  const completedTasks = safeNumber(project.completedTasks ?? project.metrics?.completedTasks, 0);
-  const openTaskCount = safeNumber(
-    project.openTaskCount,
-    Math.max(taskCount - completedTasks, 0)
-  );
-  const projectName = project.name || project.title || project.projectName || 'Untitled Project';
-  const description = project.description || project.subtitle || project.category || '';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // FOLLOW HOOK — replaces old local useState with real API calls
@@ -173,66 +79,48 @@ function ProjectCard({ project, initialFollowing }) {
       }
     >
       <div className="flex items-start gap-4">
-        {/* Shared project identity avatar — matches Projects.jsx / ProjectCardV2 */}
-        <ProjectAvatar
-          project={project}
-          size="md"
-          className="transition-transform duration-200 group-hover:scale-105"
-        />
+        {/* Emoji avatar */}
+        <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 flex items-center justify-center text-2xl shrink-0">
+          {project.emoji || '📦'}
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h4 className="text-base font-semibold text-slate-800 dark:text-white truncate">
-              {projectName}
+              {project.name || project.title}
             </h4>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${momentumMeta.chip}`}>
-              <Zap className="w-3 h-3" />
-              {momentumMeta.label}
-            </span>
             <MomentumBadge streak={project.streak || project.streakDays} />
           </div>
 
-          {description && (
+          {project.description && (
             <p className="text-sm text-slate-500 dark:text-zinc-400 line-clamp-1 mb-3">
-              {description}
+              {project.description}
             </p>
           )}
 
           {/* Progress */}
-          {progress > 0 && (
+          {(project.completionRate > 0) && (
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-medium text-slate-400 dark:text-white/30">Progress</span>
-                <span className="text-[10px] font-bold text-slate-600 dark:text-white/50">{progress}%</span>
+                <span className="text-[10px] font-bold text-slate-600 dark:text-white/50">{project.completionRate}%</span>
               </div>
-              <ProgressBar value={progress} tone={momentumMeta.tone} />
+              <ProgressBar value={project.completionRate} />
             </div>
           )}
 
           {/* Stats row */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 dark:text-zinc-500">
+          <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-zinc-500">
             {project.memberCount > 0 && (
               <span className="flex items-center gap-1">
                 <Users className="w-3 h-3" />
                 {project.memberCount}
               </span>
             )}
-            {taskCount > 0 && (
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                {completedTasks}/{taskCount} tasks
-              </span>
-            )}
-            {openTaskCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                {pluralize(openTaskCount, 'open task', 'open tasks')}
-              </span>
-            )}
             {project.shipCount > 0 && (
               <span className="flex items-center gap-1">
-                <Star className="w-3 h-3" />
+                <TrendingUp className="w-3 h-3" />
                 {project.shipCount} ships
               </span>
             )}
@@ -293,36 +181,17 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
         const { data } = await client.get('/discovery/trending', { params: { limit: maxVisible } });
         const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
         if (!cancelled) {
-          const mapped = items.length > 0 ? items.slice(0, maxVisible).map(p => {
-            const metrics = p.metrics || {};
-            const taskCount = safeNumber(p.taskCount ?? metrics.totalTasks, 0);
-            const completedTasks = safeNumber(p.completedTasks ?? metrics.completedTasks, 0);
-            const computedProgress =
-              p.computedProgress ??
-              p.progress ??
-              p.completionRate ??
-              (taskCount > 0 ? Math.round((completedTasks / taskCount) * 100) : 0);
-
-            return {
-              ...p,
-              id: p._id || p.id,
-              name: p.name || p.projectName || p.title,
-              title: p.title || p.name || p.projectName,
-              memberCount: metrics.memberCount || p.memberCount || 0,
-              shipCount: metrics.totalShips || p.shipCount || p.totalShips || 0,
-              streak: p.streakDays || p.streak || 0,
-              taskCount,
-              completedTasks,
-              openTaskCount: safeNumber(
-                p.openTaskCount,
-                Math.max(taskCount - completedTasks, 0)
-              ),
-              computedProgress: clampPercent(computedProgress),
-              progress: clampPercent(p.progress ?? computedProgress),
-              completionRate: clampPercent(computedProgress),
-              momentumState: p.momentumState || p.state || '',
-            };
-          }) : FALLBACK_FEATURED;
+          const mapped = items.length > 0 ? items.slice(0, maxVisible).map(p => ({
+            ...p,
+            id: p._id || p.id,
+            name: p.name || p.projectName,
+            memberCount: p.metrics?.memberCount || p.memberCount || 0,
+            shipCount: p.metrics?.totalShips || p.shipCount || 0,
+            streak: p.streakDays || p.streak || 0,
+            completionRate: p.metrics?.completedTasks && p.metrics?.totalTasks
+              ? Math.round((p.metrics.completedTasks / p.metrics.totalTasks) * 100)
+              : (p.completionRate || 0),
+          })) : FALLBACK_FEATURED;
 
           setProjects(mapped);
 
