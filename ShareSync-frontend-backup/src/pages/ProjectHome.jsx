@@ -67,6 +67,9 @@ import {
   CheckCircle2,
   Flag,
   RotateCcw,
+  Bell,
+  BellOff,
+  Loader2,
 } from "lucide-react";
 
 // Hooks
@@ -107,6 +110,8 @@ import AnnouncementsView from "../components/views/AnnouncementsView";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import MembersPanel from "../components/members/MembersPanel";
 import { completeProject, reopenProject } from "../api/projects";
+import { getFollowStatus } from "../api/follows";
+import useFollow from "../hooks/useFollow";
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -461,6 +466,154 @@ function humanizeEnum(value) {
     .replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
+function normalizeId(value) {
+  if (!value) return "";
+  if (typeof value === "object") {
+    return String(value?._id || value?.id || value?.userId || value?.toString?.() || "").trim();
+  }
+  return String(value).trim();
+}
+
+function getCurrentUserIds(user) {
+  return new Set(
+    [
+      user?._id,
+      user?.id,
+      user?.userId,
+      user?.sub,
+    ]
+      .map(normalizeId)
+      .filter(Boolean)
+  );
+}
+
+function getProjectOwnerIds(project) {
+  return [
+    project?.ownerId,
+    project?.owner,
+    project?.createdBy,
+    project?.createdById,
+  ]
+    .map(normalizeId)
+    .filter(Boolean);
+}
+
+function getProjectMemberIds(project) {
+  const members = Array.isArray(project?.members) ? project.members : [];
+
+  return members
+    .map((member) =>
+      normalizeId(
+        member?.userId ||
+          member?.user ||
+          member?._id ||
+          member?.id ||
+          member
+      )
+    )
+    .filter(Boolean);
+}
+
+function isProjectPubliclyViewable(project) {
+  const visibility = String(project?.visibility || project?.privacy || "").toLowerCase();
+  const settings = project?.settings || {};
+
+  return (
+    visibility === "public" ||
+    visibility === "listed" ||
+    project?.isPublic === true ||
+    project?.public === true ||
+    settings?.isPublic === true
+  );
+}
+
+function getProjectPublicAccessMode(project) {
+  const settings = project?.settings || {};
+  const raw = String(
+    project?.publicAccessMode ||
+      project?.spectatorMode ||
+      settings?.publicAccessMode ||
+      settings?.spectatorMode ||
+      ""
+  ).toLowerCase();
+
+  if (raw === "suggest" || raw === "suggestions") return "suggestions";
+  if (raw === "view" || raw === "view_only") return "view_only";
+  return isProjectPubliclyViewable(project) ? "view_only" : "none";
+}
+
+function getProjectViewerAccess(project, user) {
+  const currentUserIds = getCurrentUserIds(user);
+  const isLoggedIn = currentUserIds.size > 0;
+  const isPublic = isProjectPubliclyViewable(project);
+
+  const ownerIds = getProjectOwnerIds(project);
+  const memberIds = getProjectMemberIds(project);
+
+  const isOwner = ownerIds.some((id) => currentUserIds.has(id));
+  const isMember = isOwner || memberIds.some((id) => currentUserIds.has(id));
+  const publicAccessMode = getProjectPublicAccessMode(project);
+  const suggestionsEnabled =
+    publicAccessMode === "suggestions" ||
+    project?.suggestionsEnabled === true ||
+    project?.settings?.suggestionsEnabled === true;
+
+  const isSpectator = Boolean(project && isPublic && !isMember);
+  const showFollowButton = Boolean(project && isLoggedIn && isSpectator);
+
+  return {
+    isLoggedIn,
+    isPublic,
+    isOwner,
+    isMember,
+    isSpectator,
+    isReadOnlySpectator: isSpectator && publicAccessMode !== "suggestions",
+    canSuggest: isSpectator && suggestionsEnabled,
+    canUseMemberActions: !isSpectator,
+    showFollowButton,
+    publicAccessMode,
+    suggestionsEnabled,
+  };
+}
+
+
+function SpectatorAccessBanner({ viewerAccess, following, followersCount }) {
+  if (!viewerAccess?.isSpectator) return null;
+
+  return (
+    <section className="mx-10 mt-6 rounded-[24px] border border-violet-200 dark:border-violet-500/20 bg-white dark:bg-[#111113] shadow-sm dark:shadow-none overflow-hidden">
+      <div className="px-5 md:px-6 py-4 bg-gradient-to-br from-violet-50 via-white to-cyan-50 dark:from-violet-500/10 dark:via-violet-500/[0.03] dark:to-cyan-500/[0.06]">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/20">
+                <Eye className="w-3.5 h-3.5" />
+                Public Spectator Mode
+              </span>
+
+              {following ? (
+                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
+                  <Bell className="w-3.5 h-3.5" />
+                  Following
+                </span>
+              ) : null}
+            </div>
+
+            <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-300">
+              You are viewing this public project as a spectator. Members can edit and ship work;
+              spectators can follow updates{viewerAccess.canSuggest ? " and submit suggestions when enabled." : "."}
+            </p>
+          </div>
+
+          <div className="text-xs text-slate-500 dark:text-zinc-400 shrink-0">
+            {Number(followersCount || 0)} follower{Number(followersCount || 0) === 1 ? "" : "s"}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROJECT HEADER
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -475,6 +628,11 @@ function ProjectHeader({
   onMembersClick,
   onLifecycleAction,
   isLifecycleBusy = false,
+  viewerAccess,
+  following = false,
+  followLoading = false,
+  followersCount = 0,
+  onFollowToggle,
 }) {
   const [isStarred, setIsStarred] = useState(false);
   const momentum = metrics?.momentum || 0;
@@ -487,6 +645,8 @@ function ProjectHeader({
   };
 
   const state = getMomentumState();
+  const canUseMemberActions = viewerAccess?.canUseMemberActions !== false;
+  const showFollowButton = viewerAccess?.showFollowButton === true;
   const lifecycle = getLifecycleMeta(project?.status);
   const lifecycleState = String(project?.status || "").toLowerCase();
   const isCompleted = lifecycleState === "completed";
@@ -505,6 +665,7 @@ function ProjectHeader({
       : "Ship Update";
 
   const handlePrimaryAction = () => {
+    if (!canUseMemberActions) return;
     if (isLifecycleBusy) return;
 
     if (isCompleted || isReadyToClose) {
@@ -597,9 +758,10 @@ function ProjectHeader({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          <button
-            onClick={handlePrimaryAction}
-            disabled={isLifecycleBusy}
+          {canUseMemberActions ? (
+            <button
+              onClick={handlePrimaryAction}
+              disabled={isLifecycleBusy}
             className={`
               flex items-center gap-2.5 px-5 py-2.5 rounded-xl
               text-white font-medium text-sm
@@ -617,7 +779,8 @@ function ProjectHeader({
           >
             <PrimaryActionIcon className="w-4 h-4" />
             <span>{primaryActionLabel}</span>
-          </button>
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -634,6 +797,34 @@ function ProjectHeader({
             <span>Members</span>
           </button>
 
+          {showFollowButton ? (
+            <button
+              type="button"
+              onClick={onFollowToggle}
+              disabled={followLoading}
+              className={`
+                flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-sm
+                text-sm font-medium transition-all duration-200
+                disabled:opacity-60 disabled:cursor-not-allowed
+                ${
+                  following
+                    ? "bg-slate-100 dark:bg-white/[0.06] border-slate-200 dark:border-white/10 text-slate-600 dark:text-zinc-300 hover:bg-slate-200/70 dark:hover:bg-white/[0.08]"
+                    : "bg-violet-600 border-violet-600 text-white hover:bg-violet-700"
+                }
+              `}
+              title={`${Number(followersCount || 0)} follower${Number(followersCount || 0) === 1 ? "" : "s"}`}
+            >
+              {followLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : following ? (
+                <BellOff className="w-4 h-4" />
+              ) : (
+                <Bell className="w-4 h-4" />
+              )}
+              <span>{following ? "Following" : "Follow"}</span>
+            </button>
+          ) : null}
+
           <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
 
           <button
@@ -643,13 +834,15 @@ function ProjectHeader({
             <Share2 className="w-4 h-4" />
           </button>
 
-          <button
-            type="button"
-            onClick={onSettings}
-            className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          {canUseMemberActions ? (
+            <button
+              type="button"
+              onClick={onSettings}
+              className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          ) : null}
         </div>
       </div>
     </header>
@@ -1681,6 +1874,7 @@ export default function ProjectHome() {
   const [isCompletingProject, setIsCompletingProject] = useState(false);
   const [isReopeningProject, setIsReopeningProject] = useState(false);
   const [isStartingSprint, setIsStartingSprint] = useState(false);
+  const [spectatorInitialFollowing, setSpectatorInitialFollowing] = useState(false);
 
   const {
     project,
@@ -1708,6 +1902,59 @@ export default function ProjectHome() {
     files,
     overviewMemberCount,
   } = useProjectOverview(id);
+
+  const viewerAccess = useMemo(
+    () => getProjectViewerAccess(project, user),
+    [project, user]
+  );
+
+  const {
+    following: spectatorFollowing,
+    loading: isSpectatorFollowLoading,
+    followersCount: spectatorFollowersCount,
+    error: spectatorFollowError,
+    toggle: toggleSpectatorFollow,
+  } = useFollow(
+    id,
+    spectatorInitialFollowing,
+    readNumber(project?.followersCount, 0)
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSpectatorFollowStatus() {
+      if (!id || !viewerAccess.showFollowButton) {
+        setSpectatorInitialFollowing(false);
+        return;
+      }
+
+      const following = await getFollowStatus(id);
+      if (!cancelled) {
+        setSpectatorInitialFollowing(Boolean(following));
+      }
+    }
+
+    loadSpectatorFollowStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, viewerAccess.showFollowButton]);
+
+  useEffect(() => {
+    if (!spectatorFollowError) return;
+
+    toast({
+      title: "Follow action failed",
+      description: spectatorFollowError?.message || "Unable to update follow status.",
+      variant: "error",
+    });
+  }, [spectatorFollowError]);
+
+  const handleSpectatorFollowToggle = useCallback(async () => {
+    await toggleSpectatorFollow();
+  }, [toggleSpectatorFollow]);
 
   useEffect(() => {
     console.log("[ProjectHome] render-state", {
@@ -2252,6 +2499,17 @@ export default function ProjectHome() {
         onMembersClick={() => setIsMembersPanelOpen(true)}
         onLifecycleAction={handleFinishLineAction}
         isLifecycleBusy={isCompletingProject || isReopeningProject}
+        viewerAccess={viewerAccess}
+        following={spectatorFollowing}
+        followLoading={isSpectatorFollowLoading}
+        followersCount={spectatorFollowersCount}
+        onFollowToggle={handleSpectatorFollowToggle}
+      />
+
+      <SpectatorAccessBanner
+        viewerAccess={viewerAccess}
+        following={spectatorFollowing}
+        followersCount={spectatorFollowersCount}
       />
 
       <ViewNavigation
