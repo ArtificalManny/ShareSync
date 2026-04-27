@@ -186,6 +186,9 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
     try {
       const trimmedTitle = title.trim();
       const trimmedDescription = description.trim();
+      const isProjectPublic = privacy === "Public";
+      const normalizedSpectatorMode =
+        spectatorMode === "suggest" ? "suggestions" : "view_only";
 
       savePhase0Prefs({
         privacy,
@@ -200,8 +203,25 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         description: trimmedDescription,
         category: category.trim() || undefined,
         status,
+
+        // Privacy / publishing contract
+        // Keep legacy frontend fields while also sending backend-friendly fields.
         privacy,
-        isPublic: privacy === "Public",
+        visibility: isProjectPublic ? "public" : "private",
+        isPublic: isProjectPublic,
+
+        // Discover/Search listing contract
+        // Listed only matters for public projects. Private projects must never leak into Discover.
+        isListed: isProjectPublic ? Boolean(isListed) : false,
+        discoverable: isProjectPublic ? Boolean(isListed) : false,
+
+        // Spectator/public access contract
+        // view_only: public viewers can watch only
+        // suggestions: public viewers can submit moderated suggestions later
+        spectatorMode: isProjectPublic ? normalizedSpectatorMode : "none",
+        publicAccessMode: isProjectPublic ? normalizedSpectatorMode : "none",
+        suggestionsEnabled: isProjectPublic && normalizedSpectatorMode === "suggestions",
+
         members,
       };
 
@@ -510,7 +530,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     <div className="flex items-center gap-2 mb-3">
                       <ListChecks className="w-4 h-4 text-violet-500" />
                       <p className="text-sm font-semibold text-slate-800">Public Visibility</p>
-                      <span className="text-xs text-slate-500">(Phase 0: UI-only)</span>
+                      <span className="text-xs text-slate-500">(Saved with project)</span>
                     </div>
 
                     <button

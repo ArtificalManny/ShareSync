@@ -197,16 +197,42 @@ function normalizeCreateProjectPayload(projectData = {}) {
   const category = (projectData.category ?? '').trim();
 
   const privacyRaw = (projectData.privacy ?? '').toString().trim().toLowerCase();
+  const visibilityRaw = (projectData.visibility ?? '').toString().trim().toLowerCase();
   const isPublicRaw = projectData.isPublic;
 
-  const visibility =
+  const isProjectPublic =
     typeof isPublicRaw === 'boolean'
-      ? (isPublicRaw ? 'public' : 'private')
-      : privacyRaw === 'public'
-        ? 'public'
-        : privacyRaw === 'private'
-          ? 'private'
-          : undefined;
+      ? isPublicRaw
+      : visibilityRaw === 'public' ||
+        visibilityRaw === 'listed' ||
+        privacyRaw === 'public' ||
+        privacyRaw === 'listed';
+
+  const visibility = isProjectPublic ? 'public' : 'private';
+  const isListed = isProjectPublic
+    ? Boolean(projectData.isListed ?? projectData.discoverable ?? projectData.settings?.isListed)
+    : false;
+
+  const rawSpectatorMode = (
+    projectData.publicAccessMode ??
+    projectData.spectatorMode ??
+    projectData.settings?.publicAccessMode ??
+    ''
+  )
+    .toString()
+    .trim()
+    .toLowerCase();
+
+  const publicAccessMode =
+    !isProjectPublic
+      ? 'none'
+      : rawSpectatorMode === 'suggest' || rawSpectatorMode === 'suggestions'
+        ? 'suggestions'
+        : 'view_only';
+
+  const suggestionsEnabled =
+    isProjectPublic &&
+    (publicAccessMode === 'suggestions' || projectData.suggestionsEnabled === true);
 
   const tags = category ? [category] : undefined;
 
@@ -222,8 +248,34 @@ function normalizeCreateProjectPayload(projectData = {}) {
 
   return {
     name: title,
+    title,
     description: description || undefined,
+    category: category || undefined,
+
+    // Privacy / publishing contract
     visibility,
+    privacy: isProjectPublic ? 'Public' : 'Private',
+    isPublic: isProjectPublic,
+
+    // Discover/Search listing contract
+    isListed,
+    discoverable: isListed,
+
+    // Spectator/public access contract
+    spectatorMode: publicAccessMode,
+    publicAccessMode,
+    suggestionsEnabled,
+
+    // Backend settings mirror
+    settings: {
+      ...(projectData.settings || {}),
+      isPublic: isProjectPublic,
+      isListed,
+      publicAccessMode,
+      spectatorMode: publicAccessMode,
+      suggestionsEnabled,
+    },
+
     tags,
     emoji,
     icon,
