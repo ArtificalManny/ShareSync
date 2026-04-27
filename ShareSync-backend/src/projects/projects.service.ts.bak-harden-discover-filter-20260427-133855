@@ -1832,36 +1832,19 @@ export class ProjectsService {
 
     return { project, taskCount: 0 };
   }
-  private getPublicDiscoverableProjectFilter() {
-    return {
-      $and: [
-        {
-          $or: [
-            { visibility: ProjectVisibility.PUBLIC },
-            { visibility: ProjectVisibility.LISTED },
-            { isPublic: true },
-            { 'settings.isPublic': true },
-          ],
-        },
-        {
-          $or: [
-            { isListed: true },
-            { discoverable: true },
-            { 'settings.isListed': true },
-            { 'settings.discoverable': true },
-          ],
-        },
-        { status: { $ne: ProjectStatus.ARCHIVED } },
-        { isArchived: { $ne: true } },
-      ],
-    };
-  }
-
-
 
   async getFeaturedProjects(limit: number = 6): Promise<ProjectDocument[]> {
     return this.projectModel
-      .find(this.getPublicDiscoverableProjectFilter())
+      .find({
+        visibility: ProjectVisibility.PUBLIC,
+        status: { $ne: ProjectStatus.ARCHIVED },
+        $or: [
+          { 'settings.isListed': true },
+          { 'settings.discoverable': true },
+          { isListed: true },
+          { discoverable: true },
+        ],
+      })
       .sort({
         'metrics.totalShips': -1,
         'metrics.lastActivityAt': -1,

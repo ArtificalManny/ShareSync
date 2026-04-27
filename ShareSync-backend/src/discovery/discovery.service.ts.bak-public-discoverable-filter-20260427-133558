@@ -8,33 +8,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 export class DiscoveryService {
   private readonly logger = new Logger(DiscoveryService.name);
 
-  private getPublicDiscoverableProjectFilter() {
-    return {
-      $and: [
-        {
-          $or: [
-            { visibility: 'public' },
-            { visibility: 'listed' },
-            { isPublic: true },
-            { public: true },
-            { 'settings.isPublic': true },
-          ],
-        },
-        {
-          $or: [
-            { isListed: true },
-            { discoverable: true },
-            { listed: true },
-            { 'settings.isListed': true },
-            { 'settings.discoverable': true },
-          ],
-        },
-        { status: { $ne: 'archived' } },
-        { isArchived: { $ne: true } },
-      ],
-    };
-  }
-
   constructor(
     @InjectModel('Project') private readonly ProjectModel: Model<any>,
     @InjectModel('Suggestion') private readonly SuggestionModel: Model<any>,
@@ -52,9 +25,11 @@ export class DiscoveryService {
 
     try {
       // 1. Fetch eligible public projects
-      const projects = await this.ProjectModel.find(
-        this.getPublicDiscoverableProjectFilter(),
-      ).select('metrics followersCount createdAt updatedAt').lean();
+      const projects = await this.ProjectModel.find({
+        $or: [{ visibility: 'public' }, { visibility: 'listed' }, { isPublic: true }, { 'settings.isListed': true }],
+        status: { $ne: 'archived' },
+        isArchived: { $ne: true },
+      }).select('metrics followersCount createdAt updatedAt').lean();
 
       const bulkOps = [];
 
@@ -124,7 +99,18 @@ export class DiscoveryService {
   // ITEM 8: READ ENGINE WITH w4 DIVERSITY BONUS
   // ═══════════════════════════════════════════════════════════════════════════
   async getPersonalizedFeed(userId: string, cursor?: string, limit = 10) {
-    const filter: any = this.getPublicDiscoverableProjectFilter();
+    const filter: any = {
+      $and: [
+        {
+          $or: [
+            { visibility: 'public' }, { visibility: 'listed' },
+            { isPublic: true }, { 'settings.isPublic': true }, { 'settings.isListed': true },
+          ],
+        },
+        { status: { $ne: 'archived' } },
+        { isArchived: { $ne: true } },
+      ],
+    };
 
     // Pull candidates sorted by the CRON's pre-computed base score
     const candidates = await this.ProjectModel.find(filter)
@@ -190,7 +176,26 @@ export class DiscoveryService {
     const sort = (query.sort ?? 'trending').toString(); // Default to algorithmic
     const category = (query.category ?? '').toString().trim();
 
-    const filter: any = this.getPublicDiscoverableProjectFilter();
+    const filter: any = {
+      $and: [
+        {
+          $or: [
+            { visibility: 'public' }, { visibility: 'listed' },
+            { isPublic: true }, { public: true },
+            { 'settings.isPublic': true }, { 'settings.isListed': true },
+          ],
+        },
+        {
+          $or: [
+            { isListed: { $ne: false } }, { listed: { $ne: false } },
+            { 'settings.isListed': { $ne: false } },
+          ],
+        },
+        {
+          $or: [ { status: { $ne: 'archived' } }, { isArchived: { $ne: true } } ],
+        },
+      ],
+    };
 
     if (category) filter.$and.push({ category: { $regex: category, $options: 'i' } });
     if (q) filter.$and.push({
@@ -236,9 +241,10 @@ export class DiscoveryService {
   }
 
   async getTrendingProjects(limit = 10) {
-    const docs = await this.ProjectModel.find(
-      this.getPublicDiscoverableProjectFilter(),
-    ).sort({ trendingScore: -1, 'metrics.weeklyShips': -1, 'metrics.memberCount': -1, updatedAt: -1 }).limit(limit).populate('ownerId', 'firstName lastName username avatarUrl').lean();
+    const docs = await this.ProjectModel.find({
+      $or: [{ visibility: 'public' }, { visibility: 'listed' }, { isPublic: true }, { 'settings.isListed': true }],
+      status: { $ne: 'archived' }, isArchived: { $ne: true },
+    }).sort({ trendingScore: -1, 'metrics.weeklyShips': -1, 'metrics.memberCount': -1, updatedAt: -1 }).limit(limit).populate('ownerId', 'firstName lastName username avatarUrl').lean();
     return { success: true, data: (docs || []).map((p: any) => this.mapProjectToFeedItem(p)) };
   }
 
@@ -254,7 +260,10 @@ export class DiscoveryService {
   }
 
   async getDiscoverySections() {
-    const publicFilter = this.getPublicDiscoverableProjectFilter();
+    const publicFilter = {
+      $or: [{ visibility: 'public' }, { visibility: 'listed' }, { isPublic: true }, { 'settings.isListed': true }],
+      status: { $ne: 'archived' }, isArchived: { $ne: true },
+    };
 
     const hotStreaksPromise = this.ProjectModel.find({ ...publicFilter, streakDays: { $gte: 10 } })
       .sort({ streakDays: -1, 'metrics.weeklyShips': -1 }).limit(6).populate('ownerId', 'firstName lastName username avatarUrl').lean();
@@ -297,12 +306,6 @@ export class DiscoveryService {
       user: displayName,
       displayName,
       ownerName: displayName,
-      isPublic: p.isPublic ?? p.public ?? p.settings?.isPublic ?? false,
-      isListed: p.isListed ?? p.listed ?? p.settings?.isListed ?? false,
-      discoverable: p.discoverable ?? p.settings?.discoverable ?? false,
-      visibility: p.visibility,
-      settings: p.settings,
-      followersCount: Number(p.followersCount ?? 0),
       isFollowing: false, moderationStatus: 'approved',
       trendingScore: p.trendingScore // Expose to frontend
     };
