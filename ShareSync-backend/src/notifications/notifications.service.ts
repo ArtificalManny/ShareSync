@@ -63,6 +63,14 @@ export class NotificationsService {
     @InjectModel(ProjectFollow.name)
     private readonly projectFollowModel?: Model<ProjectFollowDocument>,
 
+    // ✅ Phase 5: simple Follow fallback.
+    // The active frontend Follow button currently writes to the simple
+    // Follow collection through /api/follows/:projectId. Keep ProjectFollow
+    // support, but also read from Follow so current followers receive updates.
+    @Optional()
+    @InjectModel('Follow')
+    private readonly followModel?: Model<any>,
+
     // ✅ Phase 12: Email + SMS fan-out channels
     @Optional() private readonly emailService?: EmailService,
     @Optional() private readonly smsService?: SmsService,
@@ -143,23 +151,70 @@ export class NotificationsService {
   // PHASE 3: FOLLOWER NOTIFICATION HELPERS
   // ─────────────────────────────────────────────────────────────────────────────
 
+  private normalizeFollowerUserIds(values: Array<string | null | undefined>): string[] {
+    return Array.from(
+      new Set(
+        (values || [])
+          .map((value) => String(value || '').trim())
+          .filter((value) => value && value !== 'undefined' && value !== 'null'),
+      ),
+    );
+  }
+
   private async getInAppFollowerUserIds(projectId: string): Promise<string[]> {
-    // ✅ Safe boot: if follows model isn't registered, follower notifications are disabled
-    if (!this.projectFollowModel) return [];
+    if (!Types.ObjectId.isValid(projectId)) {
+      this.logger.warn(`Follower notification skipped: invalid projectId ${projectId}`);
+      return [];
+    }
 
     const pid = new Types.ObjectId(projectId);
+    const followerIds: string[] = [];
 
-    const follows = await this.projectFollowModel
-      .find({
-        projectId: pid,
-        'channelPrefs.inApp': true,
-      })
-      .select(['userId'])
-      .lean();
+    // Newer spectator-follow system with notification preferences.
+    if (this.projectFollowModel) {
+      try {
+        const projectFollows = await this.projectFollowModel
+          .find({
+            projectId: pid,
+            'channelPrefs.inApp': true,
+          })
+          .select(['userId'])
+          .lean();
 
-    return (follows || [])
-      .map((f: any) => f?.userId?.toString?.())
-      .filter(Boolean);
+        followerIds.push(
+          ...(projectFollows || [])
+            .map((follow: any) => follow?.userId?.toString?.())
+            .filter(Boolean),
+        );
+      } catch (err: any) {
+        this.logger.warn(
+          `ProjectFollow follower lookup failed for project ${projectId}: ${err?.message}`,
+        );
+      }
+    }
+
+    // Current/simple follow system used by /api/follows/:projectId.
+    // No per-channel prefs here, so a simple Follow means in-app updates are enabled.
+    if (this.followModel) {
+      try {
+        const simpleFollows = await this.followModel
+          .find({ projectId: pid })
+          .select(['userId'])
+          .lean();
+
+        followerIds.push(
+          ...(simpleFollows || [])
+            .map((follow: any) => follow?.userId?.toString?.())
+            .filter(Boolean),
+        );
+      } catch (err: any) {
+        this.logger.warn(
+          `Simple Follow lookup failed for project ${projectId}: ${err?.message}`,
+        );
+      }
+    }
+
+    return this.normalizeFollowerUserIds(followerIds);
   }
 
   async notifyFollowersShipUpdate(args: {
