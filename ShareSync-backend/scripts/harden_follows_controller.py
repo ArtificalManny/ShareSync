@@ -1,4 +1,19 @@
-// src/follows/follows.controller.ts
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-backend")
+TARGET = ROOT / "src/follows/follows.controller.ts"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def fail(message: str):
+    print(f"\n[harden_follows_controller] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+NEW_CONTENT = """// src/follows/follows.controller.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // FOLLOWS CONTROLLER - REST API for Instagram-style project following
 //
@@ -162,3 +177,70 @@ export class FollowsController {
     return { success: true, following };
   }
 }
+"""
+
+
+def main():
+    print("[harden_follows_controller] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    original = TARGET.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export class FollowsController",
+        "@Post(':projectId')",
+        "@Delete(':projectId')",
+        "@Get()",
+        "@Get('status')",
+        "@Get('check/:projectId')",
+        "this.followsService.follow(userId, projectId)",
+        "this.followsService.unfollow(userId, projectId)",
+        "this.followsService.getFollowedProjects(userId)",
+        "this.followsService.getFollowStatusBulk(",
+        "this.followsService.isFollowing(userId, projectId)",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Missing expected marker before rewrite: {marker}")
+
+    required_after = [
+        "BadRequestException",
+        "private getRequestUserId(req: any): string",
+        "private normalizeProjectId(projectId: string): string",
+        "private parseProjectIds(ids: string): string[]",
+        "const normalizedProjectId = this.normalizeProjectId(projectId);",
+        "return this.followsService.follow(userId, normalizedProjectId);",
+        "return this.followsService.unfollow(userId, normalizedProjectId);",
+        "const projectIds = this.parseProjectIds(ids);",
+        "this.followsService.isFollowing(",
+    ]
+
+    for marker in required_after:
+        if marker not in NEW_CONTENT:
+            fail(f"Internal safety check failed. Missing marker in new content: {marker}")
+
+    if original == NEW_CONTENT:
+        print("[harden_follows_controller] no changes needed")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-harden-follows-controller-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[harden_follows_controller] backup created: {backup}")
+
+    TARGET.write_text(NEW_CONTENT, encoding="utf-8")
+    print(f"[harden_follows_controller] patched: {TARGET}")
+
+    print("")
+    print("[harden_follows_controller] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"BadRequestException|getRequestUserId|normalizeProjectId|parseProjectIds|follow\\(|unfollow\\(|getBulkStatus|getStatus|followsService\" src/follows/follows.controller.ts -C 8")
+    print("  git diff -- src/follows/follows.controller.ts")
+
+
+if __name__ == "__main__":
+    main()

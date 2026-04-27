@@ -5,7 +5,7 @@
 // POST   /api/follows/:projectId         → Follow a project
 // DELETE /api/follows/:projectId         → Unfollow a project
 // GET    /api/follows                    → List all followed projects (full data)
-// GET    /api/follows/check/:projectId   → Check if following one project
+// GET    /api/follows/status/:projectId  → Check if following one project
 // GET    /api/follows/status?ids=a,b,c   → Bulk check follow status
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -18,17 +18,10 @@ import {
   Req,
   UseGuards,
   Query,
-  BadRequestException,
 } from '@nestjs/common';
 import { FollowsService } from './follows.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Follows')
 @Controller('follows')
@@ -37,43 +30,6 @@ import {
 export class FollowsController {
   constructor(private readonly followsService: FollowsService) {}
 
-  private getRequestUserId(req: any): string {
-    const userId =
-      req.user?.sub ||
-      req.user?.userId ||
-      req.user?.id ||
-      req.user?._id;
-
-    const normalized = String(userId || '').trim();
-
-    if (!normalized || normalized === 'undefined' || normalized === 'null') {
-      throw new BadRequestException('Missing authenticated user id');
-    }
-
-    return normalized;
-  }
-
-  private normalizeProjectId(projectId: string): string {
-    const normalized = String(projectId || '').trim();
-
-    if (!normalized || normalized === 'undefined' || normalized === 'null') {
-      throw new BadRequestException('Missing valid projectId');
-    }
-
-    return normalized;
-  }
-
-  private parseProjectIds(ids: string): string[] {
-    return Array.from(
-      new Set(
-        String(ids || '')
-          .split(',')
-          .map((id) => id.trim())
-          .filter((id) => id && id !== 'undefined' && id !== 'null'),
-      ),
-    );
-  }
-
   // ─────────────────────────────────────────────────────────────────────────────
   // FOLLOW a project
   // ─────────────────────────────────────────────────────────────────────────────
@@ -81,10 +37,12 @@ export class FollowsController {
   @ApiOperation({ summary: 'Follow a project' })
   @ApiParam({ name: 'projectId', type: String })
   async follow(@Req() req: any, @Param('projectId') projectId: string) {
-    const userId = this.getRequestUserId(req);
-    const normalizedProjectId = this.normalizeProjectId(projectId);
-
-    return this.followsService.follow(userId, normalizedProjectId);
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+    return this.followsService.follow(userId, projectId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -94,10 +52,12 @@ export class FollowsController {
   @ApiOperation({ summary: 'Unfollow a project' })
   @ApiParam({ name: 'projectId', type: String })
   async unfollow(@Req() req: any, @Param('projectId') projectId: string) {
-    const userId = this.getRequestUserId(req);
-    const normalizedProjectId = this.normalizeProjectId(projectId);
-
-    return this.followsService.unfollow(userId, normalizedProjectId);
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+    return this.followsService.unfollow(userId, projectId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -106,9 +66,12 @@ export class FollowsController {
   @Get()
   @ApiOperation({ summary: 'Get all followed projects with full data' })
   async getFollowed(@Req() req: any) {
-    const userId = this.getRequestUserId(req);
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
     const projects = await this.followsService.getFollowedProjects(userId);
-
     return { success: true, data: projects };
   }
 
@@ -118,31 +81,25 @@ export class FollowsController {
   // ─────────────────────────────────────────────────────────────────────────────
   @Get('status')
   @ApiOperation({ summary: 'Bulk check follow status for multiple projects' })
-  @ApiQuery({
-    name: 'ids',
-    required: true,
-    type: String,
-    description: 'Comma-separated project IDs',
-  })
+  @ApiQuery({ name: 'ids', required: true, type: String, description: 'Comma-separated project IDs' })
   async getBulkStatus(@Req() req: any, @Query('ids') ids: string) {
-    const userId = this.getRequestUserId(req);
-    const projectIds = this.parseProjectIds(ids);
-
-    if (projectIds.length === 0) {
-      return { success: true, statuses: {} };
-    }
-
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+    const projectIds = (ids || '').split(',').filter(Boolean);
+    if (projectIds.length === 0) return { success: true, statuses: {} };
     const statuses = await this.followsService.getFollowStatusBulk(
       userId,
       projectIds,
     );
-
     return { success: true, statuses };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // SINGLE STATUS CHECK
-  // GET /api/follows/check/:projectId
+  // GET /api/follows/status/:projectId
   // NOTE: This route MUST be registered AFTER /status to avoid conflicts
   // ─────────────────────────────────────────────────────────────────────────────
   @Get('check/:projectId')
@@ -152,13 +109,12 @@ export class FollowsController {
     @Req() req: any,
     @Param('projectId') projectId: string,
   ) {
-    const userId = this.getRequestUserId(req);
-    const normalizedProjectId = this.normalizeProjectId(projectId);
-    const following = await this.followsService.isFollowing(
-      userId,
-      normalizedProjectId,
-    );
-
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+    const following = await this.followsService.isFollowing(userId, projectId);
     return { success: true, following };
   }
 }

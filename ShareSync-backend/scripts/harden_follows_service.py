@@ -1,4 +1,19 @@
-// src/follows/follows.service.ts
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-backend")
+TARGET = ROOT / "src/follows/follows.service.ts"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def fail(message: str):
+    print(f"\n[harden_follows_service] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+NEW_CONTENT = """// src/follows/follows.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // FOLLOWS SERVICE - Instagram-style project following
 // Handles follow/unfollow, status checks, and project retrieval.
@@ -326,3 +341,74 @@ export class FollowsService {
     });
   }
 }
+"""
+
+
+def main():
+    print("[harden_follows_service] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    original = TARGET.read_text(encoding="utf-8")
+
+    required_markers = [
+        "export class FollowsService",
+        "async follow(userId: string, projectId: string)",
+        "async unfollow(userId: string, projectId: string)",
+        "async isFollowing(userId: string, projectId: string): Promise<boolean>",
+        "async getFollowStatusBulk(",
+        "async getFollowedProjectIds(userId: string): Promise<string[]>",
+        "async getFollowedProjects(userId: string)",
+        "async getFollowersCount(projectId: string): Promise<number>",
+        "@InjectModel('Follow')",
+        "@InjectModel('Project')",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Missing expected marker before rewrite: {marker}")
+
+    required_after = [
+        "BadRequestException",
+        "ForbiddenException",
+        "NotFoundException",
+        "private toObjectId(value: string, label: string): Types.ObjectId",
+        "private isProjectPublic(project: any): boolean",
+        "private isOwnerOrMember(project: any, userId: string): boolean",
+        "private async findFollowableProject(projectId: string, userId: string)",
+        "private async syncProjectFollowersCount(projectId: string): Promise<number>",
+        "Project members do not need to follow their own project",
+        "Only public projects can be followed",
+        "$set: { followersCount }",
+        "success: true",
+        "following: true",
+        "following: false",
+    ]
+
+    for marker in required_after:
+        if marker not in NEW_CONTENT:
+            fail(f"Internal safety check failed. Missing marker in new content: {marker}")
+
+    if original == NEW_CONTENT:
+        print("[harden_follows_service] no changes needed")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-harden-follows-service-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[harden_follows_service] backup created: {backup}")
+
+    TARGET.write_text(NEW_CONTENT, encoding="utf-8")
+    print(f"[harden_follows_service] patched: {TARGET}")
+
+    print("")
+    print("[harden_follows_service] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"BadRequestException|ForbiddenException|NotFoundException|toObjectId|isProjectPublic|isOwnerOrMember|findFollowableProject|syncProjectFollowersCount|follow\\(|unfollow\\(|getFollowStatusBulk|getFollowedProjects|getFollowersCount\" src/follows/follows.service.ts -C 8")
+    print("  git diff -- src/follows/follows.service.ts")
+
+
+if __name__ == "__main__":
+    main()
