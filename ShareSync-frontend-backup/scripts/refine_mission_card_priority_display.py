@@ -1,4 +1,13 @@
-// src/components/home/MissionCard.jsx
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup")
+TARGET = ROOT / "src/components/home/MissionCard.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+NEW_FILE = r'''// src/components/home/MissionCard.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM v3.1 - Recommended Today Compatibility Pass
 // - Keeps existing Ship Ceremony behavior intact.
@@ -290,3 +299,68 @@ export default function MissionCard({ project, onClick, onShipped }) {
     </ShippableCard>
   );
 }
+'''
+
+
+def fail(message: str):
+    print(f"\n[refine_mission_card_priority_display] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    print("[refine_mission_card_priority_display] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    source = TARGET.read_text(encoding="utf-8")
+
+    required_before = [
+        "export default function MissionCard",
+        "tryShipProject",
+        "ShipButton",
+        "ShippableCard",
+    ]
+
+    for marker in required_before:
+        if marker not in source:
+            fail(f"Missing expected marker before patch: {marker}")
+
+    backup_path = TARGET.with_name(f"{TARGET.name}.bak-priority-display-{STAMP}")
+    backup_path.write_text(source, encoding="utf-8")
+    print(f"[refine_mission_card_priority_display] backup created: {backup_path}")
+
+    TARGET.write_text(NEW_FILE, encoding="utf-8")
+    written = TARGET.read_text(encoding="utf-8")
+
+    required_after = [
+        "function getDisplayTitle(project)",
+        "function getDisplaySubtitle(project)",
+        "function getDisplayReason(project)",
+        "function getProgressValue(project)",
+        "function getPriorityLabel(project)",
+        "function isRecommendedTaskMission(project)",
+        "recommendedTask",
+        "project?.displayTitle",
+        "project?.recommendationReason",
+        "tryShipProject",
+        "ShipButton",
+        "ShippableCard",
+    ]
+
+    for marker in required_after:
+        if marker not in written:
+            fail(f"Safety check failed after patch. Missing marker: {marker}")
+
+    print(f"[refine_mission_card_priority_display] patched: {TARGET}")
+    print("")
+    print("[refine_mission_card_priority_display] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"getDisplayTitle|getDisplaySubtitle|getDisplayReason|getProgressValue|getPriorityLabel|isRecommendedTaskMission|recommendedTask|displayTitle|recommendationReason|tryShipProject|ShipButton\" src/components/home/MissionCard.jsx -C 6")
+    print("  git diff -- src/components/home/MissionCard.jsx")
+
+
+if __name__ == "__main__":
+    main()

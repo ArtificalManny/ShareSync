@@ -575,17 +575,7 @@ export default function Home() {
                   >
                     <MissionCard
                       project={mission}
-                      onClick={() => {
-                          const projectId =
-                            getProjectId(mission) ||
-                            mission?.projectId ||
-                            mission?._id ||
-                            mission?.id;
-
-                          if (projectId) {
-                            window.location.href = `/projects/${projectId}`;
-                          }
-                        }}
+                      onClick={() => handleOpenPanel("telemetry", mission)}
                       onShipped={handleShipped}
                     />
                   </div>

@@ -245,97 +245,51 @@ function toPriorityMissions(priorityTasks, projects) {
 
   if (safeTasks.length === 0) return [];
 
-  const normalizeId = (value) => {
-    if (!value) return "";
+  const projectMissionMap = new Map();
 
-    if (typeof value === "string" || typeof value === "number") {
-      return String(value);
+  for (const project of toMissions(safeProjects)) {
+    const possibleIds = [
+      project?._id,
+      project?.id,
+      project?.projectId,
+      project?.raw?._id,
+      project?.raw?.id,
+      project?.raw?.projectId,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value));
+
+    for (const id of possibleIds) {
+      projectMissionMap.set(id, project);
+    }
+  }
+
+  const getProjectIdFromTask = (task) => {
+    const rawProject =
+      task?.projectId ||
+      task?.project ||
+      task?.projectRef ||
+      task?.project_id ||
+      task?.raw?.projectId ||
+      task?.raw?.project;
+
+    if (!rawProject) return "";
+
+    if (typeof rawProject === "string" || typeof rawProject === "number") {
+      return String(rawProject);
     }
 
     return String(
-      value?._id ||
-        value?.id ||
-        value?.projectId ||
-        value?.$oid ||
-        value?.value ||
-        value?.toString?.() ||
+      rawProject?._id ||
+        rawProject?.id ||
+        rawProject?.projectId ||
+        rawProject?.value ||
         ""
     );
   };
 
-  const getProjectIdFromTask = (task) => {
-    return normalizeId(
-      task?.projectId ||
-        task?.project ||
-        task?.projectRef ||
-        task?.project_id ||
-        task?.raw?.projectId ||
-        task?.raw?.project
-    );
-  };
-
-  const getProjectTitle = (project) => {
-    return (
-      project?.title ||
-      project?.name ||
-      project?.projectName ||
-      project?.projectTitle ||
-      project?.raw?.title ||
-      project?.raw?.name ||
-      project?.raw?.projectName ||
-      project?.raw?.projectTitle ||
-      ""
-    );
-  };
-
-  const rawProjectLookup = new Map();
-
-  for (const project of safeProjects) {
-    const ids = [
-      normalizeId(project),
-      normalizeId(project?._id),
-      normalizeId(project?.id),
-      normalizeId(project?.projectId),
-      normalizeId(project?.raw),
-      normalizeId(project?.raw?._id),
-      normalizeId(project?.raw?.id),
-      normalizeId(project?.raw?.projectId),
-    ].filter(Boolean);
-
-    for (const id of ids) {
-      rawProjectLookup.set(id, project);
-    }
-  }
-
-  const missionLookup = new Map();
-
-  for (const mission of toMissions(safeProjects)) {
-    const ids = [
-      normalizeId(mission),
-      normalizeId(mission?._id),
-      normalizeId(mission?.id),
-      normalizeId(mission?.projectId),
-      normalizeId(mission?.raw),
-      normalizeId(mission?.raw?._id),
-      normalizeId(mission?.raw?.id),
-      normalizeId(mission?.raw?.projectId),
-    ].filter(Boolean);
-
-    for (const id of ids) {
-      missionLookup.set(id, mission);
-    }
-  }
-
   const getProjectNameFromTask = (task, baseMission, projectId) => {
-    const rawTaskProject =
-      task?.project ||
-      task?.projectId ||
-      task?.projectRef ||
-      task?.raw?.project ||
-      task?.raw?.projectId ||
-      {};
-
-    const rawProject = rawProjectLookup.get(projectId);
+    const rawProject = task?.projectId || task?.project || task?.raw?.project || {};
 
     return (
       task?.projectName ||
@@ -344,10 +298,12 @@ function toPriorityMissions(priorityTasks, projects) {
       task?.project?.title ||
       task?.projectId?.name ||
       task?.projectId?.title ||
-      rawTaskProject?.name ||
-      rawTaskProject?.title ||
-      getProjectTitle(rawProject) ||
-      getProjectTitle(baseMission) ||
+      rawProject?.name ||
+      rawProject?.title ||
+      baseMission?.name ||
+      baseMission?.title ||
+      baseMission?.raw?.name ||
+      baseMission?.raw?.title ||
       (projectId ? `Project ${projectId.slice(-4)}` : "Project")
     );
   };
@@ -426,13 +382,8 @@ function toPriorityMissions(priorityTasks, projects) {
     const projectId = getProjectIdFromTask(task);
     if (!projectId || seenProjectIds.has(projectId)) continue;
 
-    const rawProject = rawProjectLookup.get(projectId);
-
     const baseMission =
-      missionLookup.get(projectId) ||
-      (rawProject
-        ? toMissions([rawProject])?.[0]
-        : null) ||
+      projectMissionMap.get(projectId) ||
       {
         id: projectId,
         _id: projectId,
@@ -468,20 +419,21 @@ function toPriorityMissions(priorityTasks, projects) {
     priorityMissions.push({
       ...baseMission,
 
+      // Keep the real project identity so existing project shipping/navigation remains safe.
       id: baseMission.id || baseMission._id || projectId,
       _id: baseMission._id || baseMission.id || projectId,
       projectId,
 
+      // Make the card read task-first instead of generic "Project".
       title: taskTitle,
       name: taskTitle,
       displayTitle: taskTitle,
       subtitle: projectName,
       projectName,
-      projectTitle: projectName,
-      category: projectName,
       description: `${reason} · ${projectName}`,
       status: task?.status || baseMission.status || "active",
 
+      // Feed every common progress field MissionCard might use.
       progress: task?.progress ?? task?.completion ?? score,
       completion: task?.completion ?? task?.progress ?? score,
       completionPercent: task?.completionPercent ?? task?.progress ?? score,
@@ -520,11 +472,9 @@ function toPriorityMissions(priorityTasks, projects) {
 
       raw: {
         ...(baseMission.raw || {}),
-        project: rawProject || baseMission.raw?.project || null,
-        projectName,
-        projectTitle: projectName,
         recommendedTask: task,
         recommendationReason: reason,
+        projectName,
       },
     });
 

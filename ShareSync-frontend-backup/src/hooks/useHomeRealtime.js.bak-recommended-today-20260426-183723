@@ -245,286 +245,72 @@ function toPriorityMissions(priorityTasks, projects) {
 
   if (safeTasks.length === 0) return [];
 
-  const normalizeId = (value) => {
-    if (!value) return "";
+  const projectMissionMap = new Map();
 
-    if (typeof value === "string" || typeof value === "number") {
-      return String(value);
-    }
-
-    return String(
-      value?._id ||
-        value?.id ||
-        value?.projectId ||
-        value?.$oid ||
-        value?.value ||
-        value?.toString?.() ||
-        ""
-    );
-  };
-
-  const getProjectIdFromTask = (task) => {
-    return normalizeId(
-      task?.projectId ||
-        task?.project ||
-        task?.projectRef ||
-        task?.project_id ||
-        task?.raw?.projectId ||
-        task?.raw?.project
-    );
-  };
-
-  const getProjectTitle = (project) => {
-    return (
-      project?.title ||
-      project?.name ||
-      project?.projectName ||
-      project?.projectTitle ||
-      project?.raw?.title ||
-      project?.raw?.name ||
-      project?.raw?.projectName ||
-      project?.raw?.projectTitle ||
-      ""
-    );
-  };
-
-  const rawProjectLookup = new Map();
-
-  for (const project of safeProjects) {
-    const ids = [
-      normalizeId(project),
-      normalizeId(project?._id),
-      normalizeId(project?.id),
-      normalizeId(project?.projectId),
-      normalizeId(project?.raw),
-      normalizeId(project?.raw?._id),
-      normalizeId(project?.raw?.id),
-      normalizeId(project?.raw?.projectId),
-    ].filter(Boolean);
-
-    for (const id of ids) {
-      rawProjectLookup.set(id, project);
+  for (const project of toMissions(safeProjects)) {
+    const projectId = String(project?._id || project?.id || project?.projectId || "");
+    if (projectId) {
+      projectMissionMap.set(projectId, project);
     }
   }
-
-  const missionLookup = new Map();
-
-  for (const mission of toMissions(safeProjects)) {
-    const ids = [
-      normalizeId(mission),
-      normalizeId(mission?._id),
-      normalizeId(mission?.id),
-      normalizeId(mission?.projectId),
-      normalizeId(mission?.raw),
-      normalizeId(mission?.raw?._id),
-      normalizeId(mission?.raw?.id),
-      normalizeId(mission?.raw?.projectId),
-    ].filter(Boolean);
-
-    for (const id of ids) {
-      missionLookup.set(id, mission);
-    }
-  }
-
-  const getProjectNameFromTask = (task, baseMission, projectId) => {
-    const rawTaskProject =
-      task?.project ||
-      task?.projectId ||
-      task?.projectRef ||
-      task?.raw?.project ||
-      task?.raw?.projectId ||
-      {};
-
-    const rawProject = rawProjectLookup.get(projectId);
-
-    return (
-      task?.projectName ||
-      task?.projectTitle ||
-      task?.project?.name ||
-      task?.project?.title ||
-      task?.projectId?.name ||
-      task?.projectId?.title ||
-      rawTaskProject?.name ||
-      rawTaskProject?.title ||
-      getProjectTitle(rawProject) ||
-      getProjectTitle(baseMission) ||
-      (projectId ? `Project ${projectId.slice(-4)}` : "Project")
-    );
-  };
-
-  const normalizePriority = (priority) => {
-    const p = String(priority || "medium").toLowerCase();
-    if (p === "critical" || p === "crit") return "critical";
-    if (p === "high") return "high";
-    if (p === "low") return "low";
-    return "medium";
-  };
-
-  const getPriorityScore = (priority) => {
-    switch (normalizePriority(priority)) {
-      case "critical":
-        return 95;
-      case "high":
-        return 82;
-      case "medium":
-        return 62;
-      case "low":
-        return 42;
-      default:
-        return 50;
-    }
-  };
-
-  const getDueLabel = (dueDate) => {
-    if (!dueDate) return "";
-
-    const date = new Date(dueDate);
-    if (Number.isNaN(date.getTime())) return "";
-
-    const today = new Date();
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const startOfDue = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const days = Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86400000);
-
-    if (days < 0) return "Overdue";
-    if (days === 0) return "Due today";
-    if (days === 1) return "Due tomorrow";
-    if (days <= 7) return `Due in ${days} days`;
-
-    return date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const getRecommendationReason = (task) => {
-    const priority = normalizePriority(task?.priority);
-    const blocked =
-      Boolean(task?.isBlocking) ||
-      Boolean(task?.blocked) ||
-      Boolean(task?.isBlocked) ||
-      (Array.isArray(task?.blockedBy) && task.blockedBy.length > 0);
-
-    const dueLabel = getDueLabel(task?.dueDate);
-
-    if (blocked && (priority === "critical" || priority === "high")) {
-      return `${priority === "critical" ? "Critical" : "High-priority"} blocker`;
-    }
-
-    if (blocked) return "Blocked task";
-    if (dueLabel) return dueLabel;
-    if (priority === "critical") return "Critical priority";
-    if (priority === "high") return "High priority";
-
-    return "Recommended next move";
-  };
 
   const seenProjectIds = new Set();
   const priorityMissions = [];
 
   for (const task of safeTasks) {
-    const projectId = getProjectIdFromTask(task);
+    const rawProjectId =
+      task?.projectId?._id ||
+      task?.projectId?.id ||
+      task?.projectId ||
+      task?.project?._id ||
+      task?.project?.id ||
+      "";
+
+    const projectId = String(rawProjectId || "");
     if (!projectId || seenProjectIds.has(projectId)) continue;
 
-    const rawProject = rawProjectLookup.get(projectId);
+    const projectName =
+      task?.projectName ||
+      task?.project?.name ||
+      task?.project?.title ||
+      "Project";
 
     const baseMission =
-      missionLookup.get(projectId) ||
-      (rawProject
-        ? toMissions([rawProject])?.[0]
-        : null) ||
+      projectMissionMap.get(projectId) ||
       {
         id: projectId,
         _id: projectId,
         projectId,
-        title: `Project ${projectId.slice(-4)}`,
-        name: `Project ${projectId.slice(-4)}`,
+        title: projectName,
+        name: projectName,
         status: "active",
         metrics: {},
         raw: {},
       };
 
-    const taskId = String(task?._id || task?.id || "");
-    const taskTitle = task?.title || task?.name || "Untitled task";
-    const projectName = getProjectNameFromTask(task, baseMission, projectId);
-    const priority = normalizePriority(task?.priority);
-    const reason = getRecommendationReason(task);
-    const score = getPriorityScore(priority);
-    const blocked =
-      Boolean(task?.isBlocking) ||
-      Boolean(task?.blocked) ||
-      Boolean(task?.isBlocked) ||
-      (Array.isArray(task?.blockedBy) && task.blockedBy.length > 0);
-
-    const momentum =
-      priority === "critical"
-        ? 10
-        : priority === "high"
-          ? 8
-          : priority === "medium"
-            ? 5
-            : 3;
-
     priorityMissions.push({
       ...baseMission,
-
       id: baseMission.id || baseMission._id || projectId,
       _id: baseMission._id || baseMission.id || projectId,
       projectId,
-
-      title: taskTitle,
-      name: taskTitle,
-      displayTitle: taskTitle,
-      subtitle: projectName,
-      projectName,
-      projectTitle: projectName,
-      category: projectName,
-      description: `${reason} · ${projectName}`,
-      status: task?.status || baseMission.status || "active",
-
-      progress: task?.progress ?? task?.completion ?? score,
-      completion: task?.completion ?? task?.progress ?? score,
-      completionPercent: task?.completionPercent ?? task?.progress ?? score,
-      percentComplete: task?.percentComplete ?? task?.progress ?? score,
-      health: task?.health ?? score,
-
-      metrics: {
-        ...(baseMission.metrics || {}),
-        progress: task?.progress ?? score,
-        completion: task?.completion ?? score,
-        completionPercent: task?.completionPercent ?? score,
-        health: task?.health ?? score,
-        momentum,
-        priorityScore: score,
-      },
-
       recommendedTask: {
-        id: taskId,
-        _id: taskId,
-        title: taskTitle,
-        name: taskTitle,
+        id: task?._id || task?.id || "",
+        title: task?.title || "Untitled task",
         status: task?.status || "",
-        priority,
+        priority: task?.priority || "medium",
         dueDate: task?.dueDate || null,
-        isBlocking: blocked,
+        isBlocking: Boolean(task?.isBlocking || task?.blockedBy?.length),
         blockedBy: Array.isArray(task?.blockedBy) ? task.blockedBy : [],
-        reason,
-        projectId,
-        projectName,
       },
-
       recommendationSource: "priority-task",
-      recommendationReason: reason,
-      actionLabel: "Open",
-      ctaLabel: "Open",
-
+      recommendationReason: task?.isBlocking
+        ? "Blocking task"
+        : task?.dueDate
+          ? "Time-sensitive task"
+          : "Highest-ranked task",
       raw: {
         ...(baseMission.raw || {}),
-        project: rawProject || baseMission.raw?.project || null,
-        projectName,
-        projectTitle: projectName,
         recommendedTask: task,
-        recommendationReason: reason,
       },
     });
 
