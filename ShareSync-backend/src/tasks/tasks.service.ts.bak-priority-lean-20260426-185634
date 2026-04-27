@@ -368,7 +368,7 @@ export class TasksService {
     userId: string,
     assigneeId?: string,
     limit: number = 10,
-  ): Promise<any[]> {
+  ): Promise<TaskDocument[]> {
     await this.projectsService.findByIdWithAccess(projectId, userId);
 
     const query: any = {
@@ -434,7 +434,6 @@ export class TasksService {
         path: 'projectId',
         select: 'title name',
       })
-      .lean()
       .exec();
 
     this.logger.log(`Found ${tasks.length} priority tasks`);

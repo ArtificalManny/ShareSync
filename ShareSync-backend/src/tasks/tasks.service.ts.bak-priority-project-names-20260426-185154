@@ -368,7 +368,7 @@ export class TasksService {
     userId: string,
     assigneeId?: string,
     limit: number = 10,
-  ): Promise<any[]> {
+  ): Promise<TaskDocument[]> {
     await this.projectsService.findByIdWithAccess(projectId, userId);
 
     const query: any = {
@@ -430,29 +430,10 @@ export class TasksService {
         createdAt: -1,
       })
       .limit(limit)
-      .populate({
-        path: 'projectId',
-        select: 'title name',
-      })
-      .lean()
       .exec();
 
     this.logger.log(`Found ${tasks.length} priority tasks`);
-    return tasks.map((task: any) => ({
-      ...task,
-      projectName:
-        task?.projectId?.title ||
-        task?.projectId?.name ||
-        task?.projectName ||
-        task?.projectTitle ||
-        '',
-      projectTitle:
-        task?.projectId?.title ||
-        task?.projectId?.name ||
-        task?.projectTitle ||
-        task?.projectName ||
-        '',
-    }));
+    return tasks;
   }
 
   async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
