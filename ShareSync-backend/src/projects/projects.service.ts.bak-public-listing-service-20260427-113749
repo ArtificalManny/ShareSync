@@ -10,8 +10,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Project, ProjectDocument, ProjectStatus, ProjectVisibility,
-  ProjectPublicAccessMode, MemberRole, ProjectMember, ProjectOutcomeStatus, ProjectClosureDecision } from './schemas/project.schema';
+import { Project, ProjectDocument, ProjectStatus, ProjectVisibility, MemberRole, ProjectMember, ProjectOutcomeStatus, ProjectClosureDecision } from './schemas/project.schema';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
@@ -305,66 +304,8 @@ export class ProjectsService {
       createdAt: project.createdAt,
     };
   }
-  private normalizeProjectPublicConfig(dto: any) {
-    const rawVisibility = String(dto?.visibility || '').trim().toLowerCase();
-    const rawPrivacy = String(dto?.privacy || '').trim().toLowerCase();
-
-    const isPublic =
-      dto?.isPublic === true ||
-      rawVisibility === ProjectVisibility.PUBLIC ||
-      rawVisibility === 'public' ||
-      rawVisibility === 'listed' ||
-      rawPrivacy === 'public' ||
-      rawPrivacy === 'listed';
-
-    const isListed = isPublic
-      ? Boolean(
-          dto?.isListed ??
-            dto?.discoverable ??
-            dto?.settings?.isListed ??
-            dto?.settings?.discoverable ??
-            false,
-        )
-      : false;
-
-    const rawAccessMode = String(
-      dto?.publicAccessMode ??
-        dto?.spectatorMode ??
-        dto?.settings?.publicAccessMode ??
-        dto?.settings?.spectatorMode ??
-        '',
-    )
-      .trim()
-      .toLowerCase();
-
-    const publicAccessMode = !isPublic
-      ? ProjectPublicAccessMode.NONE
-      : rawAccessMode === 'suggest' || rawAccessMode === 'suggestions'
-        ? ProjectPublicAccessMode.SUGGESTIONS
-        : ProjectPublicAccessMode.VIEW_ONLY;
-
-    const suggestionsEnabled =
-      isPublic &&
-      (publicAccessMode === ProjectPublicAccessMode.SUGGESTIONS ||
-        dto?.suggestionsEnabled === true ||
-        dto?.settings?.suggestionsEnabled === true);
-
-    return {
-      visibility: isPublic ? ProjectVisibility.PUBLIC : ProjectVisibility.PRIVATE,
-      isPublic,
-      isListed,
-      discoverable: isListed,
-      publicAccessMode,
-      spectatorMode: publicAccessMode,
-      suggestionsEnabled,
-    };
-  }
-
-
 
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
-    const publicConfig = this.normalizeProjectPublicConfig(dto as any);
-
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
 
     const emoji = (dto.emoji || dto.icon || '📁').trim();
@@ -397,22 +338,14 @@ export class ProjectsService {
       emoji,
       icon: dto.icon || emoji,
       color: dto.color || '#7C3AED',
-      visibility: publicConfig.visibility,
+      visibility,
       tags: dto.tags || [],
       category: dto.category || null,
       status: dto.status ? this.normalizeStatus(dto.status) : ProjectStatus.ACTIVE,
       ownerId: new Types.ObjectId(userId),
-      settings: {
-        ...(settings || {}),
-        isPublic: publicConfig.isPublic,
-        isListed: publicConfig.isListed,
-        discoverable: publicConfig.discoverable,
-        publicAccessMode: publicConfig.publicAccessMode,
-        spectatorMode: publicConfig.spectatorMode,
-        suggestionsEnabled: publicConfig.suggestionsEnabled,
-      },
       members: [],
       goals: dto.goals || [],
+      settings,
       metrics: {
         momentum: 0,
         velocity: 0,
@@ -447,7 +380,7 @@ export class ProjectsService {
       projectId: saved._id,
       userId,
       projectName: saved.name,
-      visibility: publicConfig.visibility,
+      visibility: saved.visibility,
       isPublic,
     });
 
@@ -1838,12 +1771,6 @@ export class ProjectsService {
       .find({
         visibility: ProjectVisibility.PUBLIC,
         status: { $ne: ProjectStatus.ARCHIVED },
-        $or: [
-          { 'settings.isListed': true },
-          { 'settings.discoverable': true },
-          { isListed: true },
-          { discoverable: true },
-        ],
       })
       .sort({
         'metrics.totalShips': -1,

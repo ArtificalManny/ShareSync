@@ -29,12 +29,6 @@ export enum ProjectVisibility {
   TEAM = 'team',
 }
 
-export enum ProjectPublicAccessMode {
-  NONE = 'none',
-  VIEW_ONLY = 'view_only',
-  SUGGESTIONS = 'suggestions',
-}
-
 export enum MemberRole {
   OWNER = 'owner',
   ADMIN = 'admin',
@@ -212,26 +206,6 @@ export class ProjectSettings {
 
   @Prop({ type: Boolean, default: false })
   isListed?: boolean;
-
-  @Prop({ type: Boolean, default: false })
-  discoverable?: boolean;
-
-  @Prop({
-    type: String,
-    enum: ProjectPublicAccessMode,
-    default: ProjectPublicAccessMode.NONE,
-  })
-  publicAccessMode?: ProjectPublicAccessMode;
-
-  @Prop({
-    type: String,
-    enum: ProjectPublicAccessMode,
-    default: ProjectPublicAccessMode.NONE,
-  })
-  spectatorMode?: ProjectPublicAccessMode;
-
-  @Prop({ type: Boolean, default: false })
-  suggestionsEnabled?: boolean;
 }
 
 export const ProjectSettingsSchema = SchemaFactory.createForClass(ProjectSettings);
@@ -558,7 +532,6 @@ ProjectSchema.index({ name: 'text', description: 'text', tags: 'text' });
 ProjectSchema.index({ ownerId: 1, status: 1 });
 ProjectSchema.index({ 'members.userId': 1 });
 ProjectSchema.index({ visibility: 1, 'settings.isListed': 1 });
-ProjectSchema.index({ visibility: 1, 'settings.discoverable': 1, status: 1 });
 ProjectSchema.index({ status: 1, updatedAt: -1 });
 ProjectSchema.index({ trendingScore: -1, updatedAt: -1 });
 ProjectSchema.index({ streakDays: -1 });

@@ -89,34 +89,6 @@ export class CreateProjectSettingsDto {
   @IsBoolean()
   @IsOptional()
   isListed?: boolean;
-
-  @ApiPropertyOptional({ description: 'Alias for isListed; whether project appears in Discover/search' })
-  @IsBoolean()
-  @IsOptional()
-  discoverable?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Public spectator access mode',
-    enum: ['none', 'view_only', 'suggestions'],
-    default: 'none',
-  })
-  @IsString()
-  @IsOptional()
-  publicAccessMode?: 'none' | 'view_only' | 'suggestions';
-
-  @ApiPropertyOptional({
-    description: 'Legacy alias for publicAccessMode',
-    enum: ['none', 'view_only', 'suggestions', 'view', 'suggest'],
-    default: 'none',
-  })
-  @IsString()
-  @IsOptional()
-  spectatorMode?: 'none' | 'view_only' | 'suggestions' | 'view' | 'suggest';
-
-  @ApiPropertyOptional({ description: 'Whether public spectators can submit suggestions' })
-  @IsBoolean()
-  @IsOptional()
-  suggestionsEnabled?: boolean;
 }
 
 export class CreateProjectGoalDto {
@@ -288,48 +260,6 @@ export class CreateProjectDto {
   @IsBoolean()
   @IsOptional()
   isPublic?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Whether project appears in Discover/search',
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  isListed?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Alias for isListed; whether project appears in Discover/search',
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  discoverable?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Public spectator access mode',
-    enum: ['none', 'view_only', 'suggestions'],
-    default: 'none',
-  })
-  @IsString()
-  @IsOptional()
-  publicAccessMode?: 'none' | 'view_only' | 'suggestions';
-
-  @ApiPropertyOptional({
-    description: 'Legacy alias for publicAccessMode from frontend',
-    enum: ['none', 'view_only', 'suggestions', 'view', 'suggest'],
-    default: 'none',
-  })
-  @IsString()
-  @IsOptional()
-  spectatorMode?: 'none' | 'view_only' | 'suggestions' | 'view' | 'suggest';
-
-  @ApiPropertyOptional({
-    description: 'Whether public spectators can submit suggestions',
-    default: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  suggestionsEnabled?: boolean;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // OPTIONAL FIELDS - ORGANIZATION

@@ -363,7 +363,7 @@ export class ProjectsService {
 
 
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDocument> {
-    const publicConfig = this.normalizeProjectPublicConfig(dto as any);
+    const publicConfig = this.normalizeProjectPublicConfig(userId as any);
 
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
 
@@ -397,13 +397,13 @@ export class ProjectsService {
       emoji,
       icon: dto.icon || emoji,
       color: dto.color || '#7C3AED',
-      visibility: publicConfig.visibility,
+      visibility,
       tags: dto.tags || [],
       category: dto.category || null,
       status: dto.status ? this.normalizeStatus(dto.status) : ProjectStatus.ACTIVE,
       ownerId: new Types.ObjectId(userId),
       settings: {
-        ...(settings || {}),
+        ...((userId as any).settings || {}),
         isPublic: publicConfig.isPublic,
         isListed: publicConfig.isListed,
         discoverable: publicConfig.discoverable,
@@ -413,6 +413,7 @@ export class ProjectsService {
       },
       members: [],
       goals: dto.goals || [],
+      settings,
       metrics: {
         momentum: 0,
         velocity: 0,
