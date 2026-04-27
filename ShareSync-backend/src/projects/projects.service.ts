@@ -117,7 +117,134 @@ export class ProjectsService {
 
   async findByUser(userId: string): Promise<ProjectDocument[]> {
     const result = await this.findUserProjects(userId);
-    return result.projects;
+    // Enrich with computed task aggregates so the Projects list cards
+    // (ProjectCardV2) can display real momentum/risk/progress instead of
+    // generic placeholder labels. Returns plain objects, not hydrated
+    // Mongoose documents — typed any[] internally, but the return type
+    // declaration is preserved for backwards compatibility with callers.
+    return (await this.enrichProjectsWithCardData(result.projects)) as any;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PROJECT CARD ENRICHMENT
+  // Computes per-project task aggregates (open/completed/blocked/progress)
+  // for the Projects list page (ProjectCardV2). One Mongo aggregation across
+  // all project IDs in the list — does not N+1.
+  // Returns plain enriched objects (NOT Mongoose documents) so adding ad-hoc
+  // fields is safe. Callers that needed real ProjectDocuments must keep using
+  // findUserProjects directly.
+  // ═══════════════════════════════════════════════════════════════════════════
+  private async enrichProjectsWithCardData(
+    projects: ProjectDocument[],
+  ): Promise<any[]> {
+    if (!Array.isArray(projects) || projects.length === 0) {
+      return projects as any[];
+    }
+
+    const projectIds = projects
+      .map((p) => p?._id)
+      .filter((id) => id != null);
+
+    if (projectIds.length === 0) {
+      return projects.map((p) => (p?.toObject ? p.toObject() : p));
+    }
+
+    // Aggregate all task counts for these projects in a single query.
+    // Status values matched here come from TaskStatus + common legacy values.
+    let taskCounts: any[] = [];
+    try {
+      taskCounts = await this.taskModel.aggregate([
+        { $match: { projectId: { $in: projectIds } } },
+        {
+          $group: {
+            _id: '$projectId',
+            total: { $sum: 1 },
+            completed: {
+              $sum: {
+                $cond: [
+                  { $in: ['$status', ['done', 'completed', 'DONE', 'COMPLETED']] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            blocked: {
+              $sum: {
+                $cond: [
+                  { $in: ['$status', ['blocked', 'BLOCKED']] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            lastUpdate: { $max: '$updatedAt' },
+          },
+        },
+      ]);
+    } catch (err) {
+      // If aggregation fails for any reason, log and fall back to plain projects.
+      // We never want this enrichment step to break the project list endpoint.
+      this.logger?.warn?.(
+        `enrichProjectsWithCardData: aggregation failed (${(err as Error)?.message}); returning unenriched projects`,
+      );
+      return projects.map((p) => (p?.toObject ? p.toObject() : p));
+    }
+
+    const countsByProjectId = new Map<string, any>();
+    for (const row of taskCounts) {
+      countsByProjectId.set(String(row._id), row);
+    }
+
+    return projects.map((p) => {
+      const plain: any = p?.toObject ? p.toObject() : { ...(p as any) };
+      const counts = countsByProjectId.get(String(plain?._id)) || {};
+
+      const total = safeNumber(counts.total, 0);
+      const completed = safeNumber(counts.completed, 0);
+      const blockerCount = safeNumber(counts.blocked, 0);
+      const openTaskCount = Math.max(total - completed, 0);
+      const computedProgress =
+        total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      let momentumState: string;
+      if (blockerCount > 0) {
+        momentumState = 'Blocked';
+      } else if (computedProgress >= 100 && total > 0) {
+        momentumState = 'Complete';
+      } else if (openTaskCount > 0 && completed > 0) {
+        momentumState = 'Building';
+      } else if (openTaskCount > 0) {
+        momentumState = 'Ready';
+      } else {
+        momentumState = 'Planning';
+      }
+
+      // Card-friendly fields. We DO NOT overwrite anything that's already
+      // set on the project — we only fill in when the field is missing.
+      // The frontend ProjectCardV2 already reads each of these names.
+      plain.taskCount = plain.taskCount ?? total;
+      plain.completedTasks = plain.completedTasks ?? completed;
+      plain.openTaskCount = plain.openTaskCount ?? openTaskCount;
+      plain.blockerCount = plain.blockerCount ?? blockerCount;
+      plain.computedProgress = plain.computedProgress ?? computedProgress;
+      plain.momentumState = plain.momentumState ?? momentumState;
+
+      // Only fill progress if it's missing or zero AND we have computed data.
+      const existingProgress = safeNumber(plain.progress, 0);
+      if (existingProgress === 0 && total > 0) {
+        plain.progress = computedProgress;
+      }
+
+      // Activity timestamp: prefer existing lastActivityAt, otherwise the
+      // most recent task update we just aggregated, otherwise updatedAt.
+      plain.lastActivityAt =
+        plain.lastActivityAt ||
+        counts.lastUpdate ||
+        plain.updatedAt ||
+        null;
+
+      return plain;
+    });
   }
 
   async enablePublic(projectId: string, userId: string): Promise<{ publicToken: string }> {
