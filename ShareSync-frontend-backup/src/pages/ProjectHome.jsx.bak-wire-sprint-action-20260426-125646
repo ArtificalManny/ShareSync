@@ -298,162 +298,6 @@ function readNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function getStoredAuthToken() {
-  if (typeof window === "undefined") return "";
-
-  const tokenKeys = [
-    "authToken",
-    "accessToken",
-    "token",
-    "jwt",
-    "openShareToken",
-    "shareSyncToken",
-  ];
-
-  for (const key of tokenKeys) {
-    const value = window.localStorage.getItem(key);
-    if (value && String(value).trim()) {
-      return String(value).trim();
-    }
-  }
-
-  try {
-    const authRaw = window.localStorage.getItem("auth");
-    if (authRaw) {
-      const parsed = JSON.parse(authRaw);
-      return (
-        parsed?.accessToken ||
-        parsed?.authToken ||
-        parsed?.token ||
-        parsed?.jwt ||
-        ""
-      );
-    }
-  } catch {
-    // Ignore malformed localStorage auth payloads.
-  }
-
-  try {
-    const userRaw = window.localStorage.getItem("user");
-    if (userRaw) {
-      const parsed = JSON.parse(userRaw);
-      return (
-        parsed?.accessToken ||
-        parsed?.authToken ||
-        parsed?.token ||
-        parsed?.jwt ||
-        ""
-      );
-    }
-  } catch {
-    // Ignore malformed localStorage user payloads.
-  }
-
-  return "";
-}
-
-function buildJsonHeaders() {
-  const token = getStoredAuthToken();
-
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-async function readApiJson(response) {
-  const text = await response.text();
-
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { message: text };
-  }
-}
-
-function addDays(date, days) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function toIsoDateOnly(date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function buildDefaultSprintPayload(projectId, projectName) {
-  const now = new Date();
-  const end = addDays(now, 14);
-  const goal = `Build momentum on ${projectName || "this project"}`;
-
-  return {
-    projectId,
-    name: "Sprint 1",
-    title: "Sprint 1",
-    goal,
-    goals: [
-      {
-        title: goal,
-        description: "Default kickoff goal created from the Project Overview sprint card.",
-        status: "active",
-      },
-    ],
-    startDate: toIsoDateOnly(now),
-    endDate: toIsoDateOnly(end),
-    status: "active",
-  };
-}
-
-async function createProjectSprint(projectId, payload) {
-  const response = await fetch("/api/sprints", {
-    method: "POST",
-    headers: buildJsonHeaders(),
-    body: JSON.stringify({
-      ...payload,
-      projectId,
-    }),
-  });
-
-  const data = await readApiJson(response);
-
-  if (!response.ok) {
-    const message =
-      data?.normalizedMessage ||
-      data?.message ||
-      data?.error ||
-      `Sprint request failed with status ${response.status}`;
-
-    const error = new Error(message);
-    error.status = response.status;
-    error.payload = data;
-    throw error;
-  }
-
-  return data;
-}
-
-function humanSprintError(error) {
-  if (error?.status === 401) {
-    return "You may need to sign in again before starting a sprint.";
-  }
-
-  if (error?.status === 403) {
-    return "You do not appear to have permission to start a sprint for this project.";
-  }
-
-  if (error?.status === 404) {
-    return "The sprint backend route is not available yet: POST /api/sprints.";
-  }
-
-  if (error?.status === 409) {
-    return "This project already has an active sprint. Refreshing the overview should show it.";
-  }
-
-  return error?.message || "Unknown sprint error.";
-}
-
 function humanizeEnum(value) {
   if (!value) return "";
   return String(value)
@@ -1469,7 +1313,6 @@ function OverviewView({
   onFinishLineAction,
   onReopenProject,
   isReopeningProject,
-  isStartingSprint = false,
   projectOnlineCount = 0,
 }) {
   const summary = overview?.summary || {};
@@ -1595,11 +1438,7 @@ function OverviewView({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-        <SprintCard
-          sprint={overview?.sprint || sprint}
-          onAction={onSprintAction}
-          isStarting={isStartingSprint}
-        />
+        <SprintCard sprint={overview?.sprint || sprint} onAction={onSprintAction} />
         <ForesightCard metrics={foresightMetrics} />
         <ProjectLiveActivityCard activities={liveActivity} />
       </div>
@@ -1680,7 +1519,6 @@ export default function ProjectHome() {
   const [showCompleteProjectModal, setShowCompleteProjectModal] = useState(false);
   const [isCompletingProject, setIsCompletingProject] = useState(false);
   const [isReopeningProject, setIsReopeningProject] = useState(false);
-  const [isStartingSprint, setIsStartingSprint] = useState(false);
 
   const {
     project,
@@ -1867,62 +1705,16 @@ export default function ProjectHome() {
   );
 
   const handleSprintAction = useCallback(
-    async (action) => {
-      if (!id) return;
-
+    (action) => {
       if (action === "start") {
-        if (isStartingSprint) return;
-
-        try {
-          setIsStartingSprint(true);
-
-          const payload = buildDefaultSprintPayload(id, project?.name);
-          await createProjectSprint(id, payload);
-
-          await refresh?.();
-          await refreshSilently?.();
-
-          setPulseRefreshKey((k) => k + 1);
-
-          toast({
-            title: "Sprint started",
-            description: "Your 2-week execution cycle is now active.",
-            variant: "success",
-          });
-        } catch (e) {
-          const description = humanSprintError(e);
-
-          toast({
-            title: "Sprint could not start",
-            description,
-            variant: "error",
-          });
-
-          console.warn("[ProjectHome] start sprint failed:", e);
-        } finally {
-          setIsStartingSprint(false);
-        }
-
-        return;
-      }
-
-      if (action === "continue") {
+        console.log("Start sprint");
+      } else if (action === "continue") {
         navigate(`/projects/${id}/sprint`);
-        return;
-      }
-
-      if (action === "review") {
-        navigate(`/projects/${id}/sprint`);
+      } else if (action === "review") {
+        console.log("Review sprint");
       }
     },
-    [
-      id,
-      isStartingSprint,
-      navigate,
-      project?.name,
-      refresh,
-      refreshSilently,
-    ]
+    [navigate, id]
   );
 
   const handleCompleteProjectSubmit = useCallback(
@@ -2113,7 +1905,6 @@ export default function ProjectHome() {
               onFinishLineAction={handleFinishLineAction}
               onReopenProject={handleReopenProject}
               isReopeningProject={isReopeningProject}
-              isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
             />
           );

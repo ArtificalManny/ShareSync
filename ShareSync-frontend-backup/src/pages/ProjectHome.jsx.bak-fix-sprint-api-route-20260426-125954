@@ -383,23 +383,13 @@ function toIsoDateOnly(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildDefaultSprintPayload(projectId, projectName) {
+function buildDefaultSprintPayload(projectName) {
   const now = new Date();
   const end = addDays(now, 14);
-  const goal = `Build momentum on ${projectName || "this project"}`;
 
   return {
-    projectId,
-    name: "Sprint 1",
     title: "Sprint 1",
-    goal,
-    goals: [
-      {
-        title: goal,
-        description: "Default kickoff goal created from the Project Overview sprint card.",
-        status: "active",
-      },
-    ],
+    goal: `Build momentum on ${projectName || "this project"}`,
     startDate: toIsoDateOnly(now),
     endDate: toIsoDateOnly(end),
     status: "active",
@@ -407,13 +397,12 @@ function buildDefaultSprintPayload(projectId, projectName) {
 }
 
 async function createProjectSprint(projectId, payload) {
-  const response = await fetch("/api/sprints", {
+  const encodedProjectId = encodeURIComponent(projectId);
+
+  const response = await fetch(`/api/projects/${encodedProjectId}/sprints`, {
     method: "POST",
     headers: buildJsonHeaders(),
-    body: JSON.stringify({
-      ...payload,
-      projectId,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await readApiJson(response);
@@ -444,7 +433,7 @@ function humanSprintError(error) {
   }
 
   if (error?.status === 404) {
-    return "The sprint backend route is not available yet: POST /api/sprints.";
+    return "The sprint backend route is not available yet: POST /api/projects/:projectId/sprints.";
   }
 
   if (error?.status === 409) {
@@ -1876,7 +1865,7 @@ export default function ProjectHome() {
         try {
           setIsStartingSprint(true);
 
-          const payload = buildDefaultSprintPayload(id, project?.name);
+          const payload = buildDefaultSprintPayload(project?.name);
           await createProjectSprint(id, payload);
 
           await refresh?.();
