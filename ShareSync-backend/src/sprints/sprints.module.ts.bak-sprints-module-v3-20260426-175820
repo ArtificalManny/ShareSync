@@ -2,6 +2,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SPRINTS MODULE
 // Registers the Sprint model, controller, and service.
+//
+// Safe first-pass purpose:
+// - Keep sprint backend isolated.
+// - Do not import ProjectsModule until SprintsService actually injects it.
+// - Do not initialize scheduling here.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Module } from '@nestjs/common';

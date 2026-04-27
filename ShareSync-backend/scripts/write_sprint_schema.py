@@ -1,4 +1,13 @@
-// src/sprints/schemas/sprint.schema.ts
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-backend")
+TARGET = ROOT / "src/sprints/schemas/sprint.schema.ts"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+SPRINT_SCHEMA = r'''// src/sprints/schemas/sprint.schema.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // SPRINT SCHEMA
 // Backend source of truth for project execution cycles.
@@ -409,3 +418,52 @@ SprintSchema.statics.getProjectVelocity = async function (
 
   return Math.round(totalVelocity / sprints.length);
 };
+'''
+
+def fail(message: str):
+    print(f"\n[write_sprint_schema] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[write_sprint_schema] starting")
+
+    if not ROOT.exists():
+        fail(f"Backend root does not exist: {ROOT}")
+
+    TARGET.parent.mkdir(parents=True, exist_ok=True)
+
+    if TARGET.exists():
+        backup_path = TARGET.with_name(f"{TARGET.name}.bak-sprint-schema-{STAMP}")
+        backup_path.write_text(TARGET.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"[write_sprint_schema] backup created: {backup_path}")
+
+    TARGET.write_text(SPRINT_SCHEMA, encoding="utf-8")
+    print(f"[write_sprint_schema] wrote: {TARGET}")
+
+    required = [
+        "export enum SprintStatus",
+        "export class SprintGoal",
+        "export class SprintMetrics",
+        "export type SprintDocument",
+        "export interface SprintModel",
+        "export const SprintSchema = SchemaFactory.createForClass(Sprint)",
+        "SprintSchema.statics.findActiveSprint",
+        "SprintSchema.statics.getNextSprintNumber",
+        "SprintSchema.statics.getProjectVelocity",
+    ]
+
+    written = TARGET.read_text(encoding="utf-8")
+    for marker in required:
+        if marker not in written:
+            fail(f"Safety check failed. Missing marker: {marker}")
+
+    print("")
+    print("[write_sprint_schema] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"SprintStatus|SprintModel|SprintSchema|findActiveSprint|getNextSprintNumber|getProjectVelocity\" src/sprints/schemas/sprint.schema.ts -C 4")
+    print("  git diff -- src/sprints/schemas/sprint.schema.ts")
+
+if __name__ == "__main__":
+    main()

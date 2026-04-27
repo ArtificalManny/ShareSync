@@ -1,4 +1,13 @@
-// src/sprints/sprints.service.ts
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-backend")
+TARGET = ROOT / "src/sprints/sprints.service.ts"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+SERVICE_FILE = r'''// src/sprints/sprints.service.ts
 // ═══════════════════════════════════════════════════════════════════════════════
 // SPRINTS SERVICE
 // Backend business logic for project execution cycles.
@@ -374,3 +383,64 @@ export class SprintsService {
     return (lastSprint?.sprintNumber || 0) + 1;
   }
 }
+'''
+
+def fail(message: str):
+    print(f"\n[write_sprints_service] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+def main():
+    print("[write_sprints_service] starting")
+
+    if not ROOT.exists():
+        fail(f"Backend root does not exist: {ROOT}")
+
+    schema_path = ROOT / "src/sprints/schemas/sprint.schema.ts"
+    dto_path = ROOT / "src/sprints/dto/create-sprint.dto.ts"
+
+    if not schema_path.exists():
+        fail("Missing src/sprints/schemas/sprint.schema.ts. Create the schema first.")
+
+    if not dto_path.exists():
+        fail("Missing src/sprints/dto/create-sprint.dto.ts. Create the DTO first.")
+
+    TARGET.parent.mkdir(parents=True, exist_ok=True)
+
+    if TARGET.exists():
+        backup_path = TARGET.with_name(f"{TARGET.name}.bak-sprints-service-{STAMP}")
+        backup_path.write_text(TARGET.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"[write_sprints_service] backup created: {backup_path}")
+
+    TARGET.write_text(SERVICE_FILE, encoding="utf-8")
+    print(f"[write_sprints_service] wrote: {TARGET}")
+
+    written = TARGET.read_text(encoding="utf-8")
+
+    required = [
+        "export class SprintsService",
+        "@InjectModel(Sprint.name)",
+        "async create(dto: CreateSprintDto, userId: string)",
+        "async findCurrentForProject(projectId: string)",
+        "async findActiveForProject(projectId: string)",
+        "async findAllForProject(projectId: string)",
+        "async findById(sprintId: string)",
+        "async update(sprintId: string, dto: UpdateSprintDto)",
+        "async complete(sprintId: string)",
+        "async cancel(sprintId: string)",
+        "getNextSprintNumberFallback",
+    ]
+
+    for marker in required:
+        if marker not in written:
+            fail(f"Safety check failed. Missing marker: {marker}")
+
+    print("")
+    print("[write_sprints_service] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"SprintsService|@InjectModel|findCurrentForProject|findActiveForProject|create\\(|complete\\(|cancel\\(\" src/sprints/sprints.service.ts -C 4")
+    print("  git diff -- src/sprints/sprints.service.ts")
+
+if __name__ == "__main__":
+    main()
