@@ -105,7 +105,7 @@ async function searchUsers(query, limit = 10) {
         type: 'person',
         title: name,
         description: desc,
-        url: `/users/${u.username || u._id || u.id}`,
+        url: `/profile/${encodeURIComponent(u.username || u._id || u.id)}`,
         raw: u,
       };
     });
@@ -183,16 +183,6 @@ export async function searchAll(payloadOrQuery) {
 
   // Run all in parallel — resilient to individual failures
   const settled = await Promise.allSettled(fetchers);
-
-  console.log("[search-debug] searchAll requestedTypes:", requestedTypes);
-  console.log("[search-debug] searchAll fetchers count:", fetchers.length);
-  settled.forEach((result, idx) => {
-    if (result.status === 'fulfilled') {
-      console.log(`[search-debug] fetcher #${idx} fulfilled, length:`, Array.isArray(result.value) ? result.value.length : 'NOT AN ARRAY', 'value:', result.value);
-    } else {
-      console.log(`[search-debug] fetcher #${idx} rejected:`, result.reason);
-    }
-  });
 
   // Merge results
   const allResults = [];

@@ -13,6 +13,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  useParams,
 } from "react-router-dom";
 
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
@@ -493,6 +494,13 @@ function AuthenticatedApp({ children, userData }) {
   );
 }
 
+function UserProfileAlias() {
+  const { username } = useParams();
+  const safeUsername = encodeURIComponent(username || "");
+
+  return <Navigate to={`/profile/${safeUsername}`} replace />;
+}
+
 function AppRoutes() {
   const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
@@ -693,6 +701,7 @@ function AppRoutes() {
                 }
               />
               <Route path="/profile/:username" element={<PublicProfile />} />
+              <Route path="/users/:username" element={<UserProfileAlias />} />
               <Route
                 path="/me"
                 element={

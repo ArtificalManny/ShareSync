@@ -191,8 +191,8 @@ export default function SearchPage() {
       if (pid) navigate(`/projects/${pid}?task=${data._id || data.id}`);
       else navigate(`/projects`);
     } else if (type === "user") {
-      const uid = data._id || data.id;
-      navigate(uid ? `/user/${uid}` : `/profile`);
+      const profileKey = data.username || data.handle || data.slug || data._id || data.id;
+      navigate(profileKey ? `/profile/${encodeURIComponent(String(profileKey))}` : `/profile`);
     } else if (type === "post") {
       const pid = data.projectId || data.project?.id || data.project?._id;
       if (pid) navigate(`/projects/${pid}`);
