@@ -98,7 +98,7 @@ export class EmailService {
         to,
         subject: notification?.title || 'ShareSync Update',
         html: emailHtml,
-        text: notification?.message || notification?.body || '',
+        text: notification?.message || '',
       });
     } catch (error) {
       console.error('Failed to send Email:', error);
@@ -178,32 +178,13 @@ export class EmailService {
     return verified && optIn && channelOk;
   }
 
-  private buildFrontendUrl(rawUrl?: string): string {
-    const url = String(rawUrl || '').trim();
-    if (!url) return '';
-
-    if (/^https?:\/\//i.test(url)) {
-      return url;
-    }
-
-    const frontendBase = String(process.env.FRONTEND_URL || '').replace(/\/+$/, '');
-
-    if (!frontendBase) {
-      return url;
-    }
-
-    return url.startsWith('/')
-      ? `${frontendBase}${url}`
-      : `${frontendBase}/${url}`;
-  }
-
   private buildEmailTemplate(notification: any): string {
     const emoji = this.getEmojiForType(notification?.type);
 
     const title = this.escapeHtml(notification?.title || 'ShareSync Update');
-    const msg = this.escapeHtml(notification?.message || notification?.body || '');
+    const msg = this.escapeHtml(notification?.message || '');
 
-    const actionUrl = this.buildFrontendUrl(notification?.actionData?.url);
+    const actionUrl = notification?.actionData?.url ? String(notification.actionData.url) : '';
     const button = actionUrl
       ? `<a href="${this.escapeAttr(actionUrl)}" class="button">View in ShareSync</a>`
       : '';
@@ -257,8 +238,6 @@ export class EmailService {
       project_invite: '👋',
       comment_added: '💬',
       follow_created: '⭐',
-      project_ship_update: '🚀',
-      project_milestone_reached: '🏁',
     };
     return emojiMap[type] || '🔔';
   }

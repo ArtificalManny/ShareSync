@@ -240,8 +240,6 @@ export class NotificationsService {
         projectId: args.projectId,
         projectName: args.projectName,
         shipTitle: args.shipTitle,
-        emailFanoutEligible: true,
-        followerNotification: true,
       },
       actions: [{ label: 'View Project', url: `/projects/${args.projectId}` }],
       groupKey: `follow-ship-${userId}-${args.projectId}-${new Date().toDateString()}`,
@@ -274,8 +272,6 @@ export class NotificationsService {
         projectId: args.projectId,
         projectName: args.projectName,
         milestoneName: args.milestoneName,
-        emailFanoutEligible: true,
-        followerNotification: true,
       },
       actions: [{ label: 'View Project', url: `/projects/${args.projectId}` }],
       groupKey: `follow-mile-${userId}-${args.projectId}-${new Date().toDateString()}`,
@@ -471,15 +467,8 @@ export class NotificationsService {
     const priority = notification.priority;
 
     // ── EMAIL ──────────────────────────────────────────────────────────────
-    // Send email only when EmailService + user preferences allow it.
-    // Follower public-loop notifications are explicitly marked through
-    // data.emailFanoutEligible so this path is intentional and auditable.
-    const isFollowerEmailEligible =
-      notification.type === NotificationType.PROJECT_SHIP_UPDATE ||
-      notification.type === NotificationType.PROJECT_MILESTONE_REACHED ||
-      (notification as any)?.data?.emailFanoutEligible === true;
-
-    if (this.emailService && (isFollowerEmailEligible || notification.priority === NotificationPriority.HIGH || notification.priority === NotificationPriority.URGENT)) {
+    // Send email for all notification types IF user has email enabled
+    if (this.emailService) {
       try {
         await this.emailService.sendNotification(user, {
           type: notifType,
