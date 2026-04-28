@@ -1,0 +1,499 @@
+// src/pages/Search.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 1: Discover + Search — One source of truth for public listings
+//
+// ✅ Phase 2: Now uses real search across all existing backend endpoints
+// ✅ Phase 3: Added Facebook/LinkedIn style rich User searching
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import {
+  Search as SearchIcon,
+  X,
+  FolderKanban,
+  CheckSquare,
+  MessageSquare,
+  Users,
+  FileText,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
+
+import EmptySearch from "../components/empty-states/EmptySearch";
+import { useMomentumContext } from "../contexts/MomentumContext";
+
+// API endpoints
+import { searchAll } from "../api/search";
+import { searchGlobalUsers } from "../api/users"; // ⭐ NEW API helper added
+import useDocumentTitle from "../hooks/useDocumentTitle";
+
+// ──────────────────────────────────────────────────────────────
+// Phase 2 Moderation Gate (frontend-safe)
+// ──────────────────────────────────────────────────────────────
+const MODERATION_GATE_V1 = String(import.meta?.env?.VITE_MODERATION_GATE_V1 || "false") === "true";
+
+function isModerationApproved(item) {
+  if (!MODERATION_GATE_V1) return true;
+  const s = String(item?.moderationStatus || item?.raw?.moderationStatus || "approved").toLowerCase();
+  return s === "approved";
+}
+
+// Helper to pull photos safely
+function getPhoto(u) {
+  return u?.profilePicture || u?.avatarUrl || u?.avatar || null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SEARCH RESULT TYPES
+───────────────────────────────────────────────────────────────────────── */
+const RESULT_TYPES = {
+  project: { icon: FolderKanban, color: "text-brand-400", bg: "bg-brand-500/10", label: "Project" },
+  task: { icon: CheckSquare, color: "text-cyan-400", bg: "bg-cyan-500/10", label: "Task" },
+  message: { icon: MessageSquare, color: "text-success-400", bg: "bg-success-500/10", label: "Message" },
+  person: { icon: Users, color: "text-warning-400", bg: "bg-warning-500/10", label: "Person" },
+  user: { icon: Users, color: "text-warning-400", bg: "bg-warning-500/10", label: "Person" },
+  document: { icon: FileText, color: "text-energy-400", bg: "bg-energy-500/10", label: "Document" },
+  post: { icon: MessageSquare, color: "text-success-400", bg: "bg-success-500/10", label: "Post" },
+  file: { icon: FileText, color: "text-energy-400", bg: "bg-energy-500/10", label: "File" },
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SEARCH RESULT ITEM
+───────────────────────────────────────────────────────────────────────── */
+const SearchResultItem = ({ result, onClick, isSelected }) => {
+  // ⭐ FIX: Special Facebook-style row for Users
+  if (result.type === 'person' || result.type === 'user') {
+    const user = result.raw || result;
+    const photo = getPhoto(user);
+    const fullName = result.title || 'Unknown User';
+    const initials = fullName !== 'Unknown User' ? fullName.charAt(0).toUpperCase() : 'U';
+
+    return (
+      <button
+        onClick={() => onClick(result)}
+        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-200 ${
+          isSelected ? "bg-brand-500/10 border border-brand-500/20" : "hover:bg-surface-2 border border-transparent"
+        }`}
+      >
+        <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 flex items-center justify-center font-bold overflow-hidden flex-shrink-0">
+          {photo ? (
+            <img src={photo} alt={fullName} className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
+        </div>
+
+        <div className="flex-1 text-left min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-text-primary truncate">{fullName}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning-500/10 text-warning-400">
+              Person
+            </span>
+          </div>
+          {user?.username && (
+            <p className="text-xs text-text-tertiary truncate">@{user.username}</p>
+          )}
+        </div>
+
+        <ArrowRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+    );
+  }
+
+  // Standard Row for Projects, Tasks, etc.
+  const typeConfig = RESULT_TYPES[result.type] || RESULT_TYPES.document;
+  const Icon = typeConfig.icon;
+
+  return (
+    <button
+      onClick={() => onClick(result)}
+      className={`
+        group w-full flex items-center gap-4 p-4 rounded-xl
+        transition-all duration-200
+        ${isSelected ? "bg-brand-500/10 border border-brand-500/20" : "hover:bg-surface-2 border border-transparent"}
+      `}
+    >
+      <div className={`w-10 h-10 rounded-lg ${typeConfig.bg} flex items-center justify-center`}>
+        <Icon className={`w-5 h-5 ${typeConfig.color}`} />
+      </div>
+
+      <div className="flex-1 text-left min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-text-primary truncate">{result.title}</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded ${typeConfig.bg} ${typeConfig.color}`}>
+            {typeConfig.label}
+          </span>
+        </div>
+        <p className="text-xs text-text-tertiary truncate">{result.description}</p>
+      </div>
+
+      <ArrowRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+    </button>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SEARCH FILTERS
+───────────────────────────────────────────────────────────────────────── */
+const SearchFilters = ({ activeFilter, onFilterChange, resultCounts }) => {
+  const filters = [
+    { key: "all", label: "All" },
+    { key: "project", label: "Projects", icon: FolderKanban },
+    { key: "task", label: "Tasks", icon: CheckSquare },
+    { key: "person", label: "People", icon: Users },
+    { key: "file", label: "Files", icon: FileText },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {filters.map((filter) => {
+        const count =
+          filter.key === "all"
+            ? Object.values(resultCounts).reduce((a, b) => a + b, 0)
+            : resultCounts[filter.key] || 0;
+
+        return (
+          <button
+            key={filter.key}
+            onClick={() => onFilterChange(filter.key)}
+            className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              transition-all duration-200
+              ${
+                activeFilter === filter.key
+                  ? "bg-brand-500/10 text-brand-400 border border-brand-500/20"
+                  : "text-text-tertiary hover:text-text-secondary hover:bg-surface-2 border border-transparent"
+              }
+            `}
+          >
+            {filter.icon && <filter.icon className="w-3.5 h-3.5" />}
+            <span>{filter.label}</span>
+            {count > 0 && (
+              <span
+                className={`
+                text-[10px] px-1.5 py-0.5 rounded-full
+                ${activeFilter === filter.key ? "bg-brand-500/20" : "bg-surface-2"}
+              `}
+              >
+                {count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TRENDING / POPULAR ITEMS (for empty state)
+───────────────────────────────────────────────────────────────────────── */
+const TRENDING_ITEMS = [
+  { name: "ShareSync", icon: FolderKanban },
+  { name: "Tasks", icon: CheckSquare },
+  { name: "Team", icon: Users },
+  { name: "Docs", icon: FileText },
+];
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MAIN SEARCH PAGE
+───────────────────────────────────────────────────────────────────────── */
+export default function Search() {
+  useDocumentTitle("Search");
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const inputRef = useRef(null);
+
+  const initialQ = searchParams.get("q") || "";
+
+  // Search state
+  const [query, setQuery] = useState(initialQ);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Recent searches (persisted)
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("recentSearches") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  let momentumContext = { glowLevel: 2, isFireMode: false };
+  try {
+    momentumContext = useMomentumContext();
+  } catch {}
+  const { isFireMode } = momentumContext;
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const urlQ = searchParams.get("q") || "";
+    setQuery((prev) => (prev === urlQ ? prev : urlQ));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const q = String(query || "");
+    if (q) setSearchParams({ q });
+    else setSearchParams({});
+  }, [query, setSearchParams]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PERFORM SEARCH — Parallelized execution
+  // ═══════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    let alive = true;
+
+    const performSearch = async () => {
+      const q = String(query || "").trim();
+      if (!q || q.length < 2) {
+        if (!alive) return;
+        setResults([]);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        // ⭐ FIX: Run unified search & global user search in parallel!
+        const [unifiedRes, usersRes] = await Promise.allSettled([
+          searchAll({
+            q,
+            types: ['project', 'task'], // Exclude 'person' here so we don't get duplicates
+            limit: 25,
+          }),
+          searchGlobalUsers(q) // Our new LinkedIn-style user search
+        ]);
+
+        if (!alive) return;
+
+        let combined = [];
+
+        // 1. Process users first (puts them at the top of the feed)
+        if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
+          const userMapped = usersRes.value.map(u => ({
+            id: u._id || u.id,
+            type: 'person',
+            title: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || 'User',
+            description: `@${u.username || 'user'}`,
+            url: `/profile/${u._id || u.id}`, // Route straight to profile!
+            raw: u
+          }));
+          combined = [...combined, ...userMapped];
+        }
+
+        // 2. Process unified results (projects, tasks)
+        if (unifiedRes.status === 'fulfilled' && Array.isArray(unifiedRes.value)) {
+          let otherResults = unifiedRes.value;
+          if (MODERATION_GATE_V1) {
+            otherResults = otherResults.filter(isModerationApproved);
+          }
+          combined = [...combined, ...otherResults];
+        }
+
+        setResults(combined);
+        setSelectedIndex(0);
+      } catch (error) {
+        if (!alive) return;
+        console.error("Search error:", error);
+        setResults([]);
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    };
+
+    const debounce = setTimeout(performSearch, 300);
+    return () => {
+      alive = false;
+      clearTimeout(debounce);
+    };
+  }, [query]);
+
+  const filteredResults = useMemo(() => {
+    if (activeFilter === "all") return results;
+    if (activeFilter === "person") {
+      return results.filter((r) => r.type === "person" || r.type === "user");
+    }
+    return results.filter((r) => r.type === activeFilter);
+  }, [results, activeFilter]);
+
+  const resultCounts = useMemo(() => {
+    return results.reduce((acc, r) => {
+      const type = r.type === 'user' ? 'person' : r.type;
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+  }, [results]);
+
+  const handleResultClick = (result) => {
+    const q = String(query || "").trim();
+    if (q && !recentSearches.includes(q)) {
+      const updated = [q, ...recentSearches.slice(0, 4)];
+      setRecentSearches(updated);
+      localStorage.setItem("recentSearches", JSON.stringify(updated));
+    }
+    navigate(result.url);
+  };
+
+  const handleSearchFromEmpty = (searchTerm) => {
+    setQuery(searchTerm);
+    inputRef.current?.focus();
+  };
+
+  const handleClearRecent = () => {
+    setRecentSearches([]);
+    localStorage.removeItem("recentSearches");
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, filteredResults.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" && filteredResults[selectedIndex]) {
+        e.preventDefault();
+        handleResultClick(filteredResults[selectedIndex]);
+      } else if (e.key === "Escape") {
+        inputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [filteredResults, selectedIndex]);
+
+  return (
+    <div className="min-h-screen p-6 lg:p-10 max-w-[900px] mx-auto">
+      {/* HEADER */}
+      <header className="mb-8">
+        <h1 className="text-3xl font-semibold text-text-primary mb-6">Search OpenShare</h1>
+
+        <div className="relative">
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-tertiary" />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Search projects, tasks, people..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className={`
+              w-full pl-12 pr-12 py-4 rounded-xl
+              bg-surface-1 border border-white/[0.06]
+              text-lg text-text-primary
+              placeholder:text-text-tertiary
+              focus:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20
+              transition-all duration-200
+              ${isFireMode ? "border-energy-500/20" : ""}
+            `}
+          />
+
+          {loading && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 animate-spin" />}
+
+          {query && !loading && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-surface-2 transition-colors"
+            >
+              <X className="w-4 h-4 text-text-tertiary" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center justify-center gap-4 mt-3 text-xs text-text-tertiary">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono">↑</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono">↓</kbd>
+            to navigate
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono">Enter</kbd>
+            to select
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-2 font-mono">Esc</kbd>
+            to close
+          </span>
+        </div>
+
+        {MODERATION_GATE_V1 && (
+          <div className="mt-3 text-xs text-text-tertiary text-center">
+            Moderation gate enabled: showing approved listings only.
+          </div>
+        )}
+      </header>
+
+      {/* RESULTS */}
+      {query && query.length >= 2 ? (
+        <>
+          {results.length > 0 && (
+            <div className="mb-6">
+              <SearchFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} resultCounts={resultCounts} />
+            </div>
+          )}
+
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-surface-1 animate-pulse">
+                  <div className="w-10 h-10 rounded-lg bg-surface-2" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-surface-2 rounded w-1/3" />
+                    <div className="h-3 bg-surface-2 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredResults.length > 0 ? (
+            <div className="space-y-2">
+              {filteredResults.map((result, index) => (
+                <SearchResultItem
+                  key={`${result.type}:${result.id}`}
+                  result={result}
+                  onClick={handleResultClick}
+                  isSelected={index === selectedIndex}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptySearch
+              query={query}
+              suggestions={["ShareSync", "Tasks", "Team"].filter((s) => s.toLowerCase().startsWith(query.toLowerCase().charAt(0)))}
+              recentSearches={recentSearches}
+              trendingItems={TRENDING_ITEMS}
+              onSearch={handleSearchFromEmpty}
+              onCreateProject={(q) => navigate(`/projects/new?name=${encodeURIComponent(q)}`)}
+              onCreateTask={(q) => navigate(`/tasks/new?title=${encodeURIComponent(q)}`)}
+              onClearRecent={handleClearRecent}
+              showCreate={true}
+              showRecent={true}
+              showTrending={false}
+              variant="illustrated"
+            />
+          )}
+        </>
+      ) : (
+        <EmptySearch
+          query=""
+          recentSearches={recentSearches}
+          trendingItems={TRENDING_ITEMS}
+          onSearch={handleSearchFromEmpty}
+          onClearRecent={handleClearRecent}
+          showCreate={false}
+          showRecent={true}
+          showTrending={true}
+          variant="illustrated"
+        />
+      )}
+    </div>
+  );
+}

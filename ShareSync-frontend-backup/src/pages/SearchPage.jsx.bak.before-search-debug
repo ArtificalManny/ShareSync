@@ -133,10 +133,7 @@ export default function SearchPage() {
         }
         
         if (!alive) return;
-        console.log("[search-debug] payload:", payload);
-        console.log("[search-debug] raw data from searchAll:", data);
         const coerced = coerceResults(data);
-        console.log("[search-debug] coerced:", coerced);
         setResults(coerced);
 
         // live region announce
