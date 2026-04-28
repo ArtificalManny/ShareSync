@@ -1,4 +1,19 @@
-import client from "./client";
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup")
+TARGET = ROOT / "src/api/users.js"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def fail(message: str):
+    print(f"\n[harden_users_search_api] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+NEW_CONTENT = '''import client from "./client";
 
 function unwrapArray(payload) {
   if (Array.isArray(payload)) return payload;
@@ -117,3 +132,69 @@ export async function verifyPhoneCode(phoneNumber, code) {
   const res = await client.post("/notifications/channels/sms/verify", { phoneNumber, code });
   return res.data;
 }
+'''
+
+
+def main():
+    print("[harden_users_search_api] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    original = TARGET.read_text(encoding="utf-8")
+
+    required_markers = [
+        'import client from "./client";',
+        "export async function fetchMe()",
+        "export async function fetchActivitySummary()",
+        "export async function fetchPublicProfile(username)",
+        "export async function fetchUserActivity(userId, limit = 80)",
+        "export async function searchGlobalUsers(query)",
+        'client.get(`/users/search?q=${encodeURIComponent(query)}`)',
+        "export async function sendPhoneVerificationCode(phoneNumber)",
+        "export async function verifyPhoneCode(phoneNumber, code)",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Missing expected marker before rewrite: {marker}")
+
+    required_after = [
+        "function unwrapArray(payload)",
+        "function normalizeUser(user)",
+        "export async function searchGlobalUsers(query, limit = 20)",
+        'const res = await client.get("/users/search", {',
+        "params: { q, limit },",
+        "unwrapArray(res?.data)",
+        ".map(normalizeUser)",
+        'console.error("[users] searchGlobalUsers failed:", err);',
+        "export async function sendPhoneVerificationCode(phoneNumber)",
+        "export async function verifyPhoneCode(phoneNumber, code)",
+    ]
+
+    for marker in required_after:
+        if marker not in NEW_CONTENT:
+            fail(f"Internal safety check failed. Missing marker in new content: {marker}")
+
+    if original == NEW_CONTENT:
+        print("[harden_users_search_api] no changes needed")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-harden-user-search-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[harden_users_search_api] backup created: {backup}")
+
+    TARGET.write_text(NEW_CONTENT, encoding="utf-8")
+    print(f"[harden_users_search_api] patched: {TARGET}")
+
+    print("")
+    print("[harden_users_search_api] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"unwrapArray|normalizeUser|searchGlobalUsers|/users/search|displayName|avatarUrl\" src/api/users.js -C 8")
+    print("  git diff -- src/api/users.js")
+
+
+if __name__ == "__main__":
+    main()

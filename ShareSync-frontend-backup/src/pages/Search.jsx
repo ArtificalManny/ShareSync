@@ -44,6 +44,117 @@ function getPhoto(u) {
   return u?.profilePicture || u?.avatarUrl || u?.avatar || null;
 }
 
+function unwrapSearchArray(payload) {
+  if (Array.isArray(payload)) return payload;
+
+  const data = payload?.data ?? payload?.results ?? payload?.items ?? payload;
+
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.users)) return data.users;
+  if (Array.isArray(data?.projects)) return data.projects;
+
+  return [];
+}
+
+function normalizeSearchTypes(typesParam) {
+  const raw = String(typesParam || "")
+    .split(",")
+    .map((type) => type.trim().toLowerCase())
+    .filter(Boolean);
+
+  const allowed = new Set(["project", "task", "user", "person", "post", "file", "document", "message"]);
+
+  const normalized = raw
+    .filter((type) => allowed.has(type))
+    .map((type) => (type === "user" ? "person" : type));
+
+  return normalized.length > 0
+    ? Array.from(new Set(normalized))
+    : ["project", "task", "person", "post", "file"];
+}
+
+function getUserDisplayName(user) {
+  return (
+    user?.displayName ||
+    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+    user?.name ||
+    user?.username ||
+    "User"
+  );
+}
+
+function getUserProfileUrl(user) {
+  const username = String(user?.username || "").trim();
+  const id = String(user?._id || user?.id || user?.userId || "").trim();
+
+  return username ? `/profile/${encodeURIComponent(username)}` : `/profile/${encodeURIComponent(id)}`;
+}
+
+function mapUserToSearchResult(user) {
+  const id = String(user?._id || user?.id || user?.userId || user?.username || "").trim();
+  const title = getUserDisplayName(user);
+
+  if (!id) return null;
+
+  return {
+    id,
+    type: "person",
+    title,
+    description: user?.username ? `@${user.username}` : "OpenShare profile",
+    url: getUserProfileUrl(user),
+    raw: user,
+  };
+}
+
+function normalizeUnifiedResult(item) {
+  if (!item || typeof item !== "object") return null;
+
+  const rawType = String(item.type || item.kind || item.resultType || "").toLowerCase();
+  const type = rawType === "user" ? "person" : rawType || "document";
+  const id = String(item.id || item._id || item.projectId || item.taskId || item.fileId || item.postId || "").trim();
+
+  if (!id && !item.url) return null;
+
+  return {
+    ...item,
+    id: id || item.url,
+    type,
+    title: item.title || item.name || item.projectName || item.taskTitle || item.filename || "Untitled",
+    description:
+      item.description ||
+      item.subtitle ||
+      item.summary ||
+      item.projectName ||
+      item.status ||
+      "",
+    url:
+      item.url ||
+      item.href ||
+      (type === "project" ? `/projects/${id}` : null) ||
+      (type === "task" ? `/tasks/${id}` : null) ||
+      (type === "file" ? `/files/${id}` : null) ||
+      "/search",
+    raw: item.raw || item,
+  };
+}
+
+function dedupeSearchResults(results) {
+  const seen = new Set();
+
+  return results.filter((result) => {
+    if (!result) return false;
+
+    const key = `${result.type}:${result.id || result.url || result.title}`;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    SEARCH RESULT TYPES
 ───────────────────────────────────────────────────────────────────────── */
@@ -91,9 +202,9 @@ const SearchResultItem = ({ result, onClick, isSelected }) => {
               Person
             </span>
           </div>
-          {user?.username && (
-            <p className="text-xs text-text-tertiary truncate">@{user.username}</p>
-          )}
+          <p className="text-xs text-text-tertiary truncate">
+            {user?.username ? `@${user.username}` : result.description || "OpenShare profile"}
+          </p>
         </div>
 
         <ArrowRight className="w-4 h-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -206,6 +317,10 @@ export default function Search() {
   const inputRef = useRef(null);
 
   const initialQ = searchParams.get("q") || "";
+  const activeTypes = useMemo(
+    () => normalizeSearchTypes(searchParams.get("types")),
+    [searchParams]
+  );
 
   // Search state
   const [query, setQuery] = useState(initialQ);
@@ -261,43 +376,49 @@ export default function Search() {
       setLoading(true);
 
       try {
-        // ⭐ FIX: Run unified search & global user search in parallel!
+        const wantsPeople = activeTypes.includes("person");
+        const unifiedTypes = activeTypes
+          .filter((type) => type !== "person")
+          .map((type) => (type === "document" ? "file" : type));
+
+        // Run unified search and global user search in parallel.
+        // Users are searched separately so same-name people remain distinct rows.
         const [unifiedRes, usersRes] = await Promise.allSettled([
-          searchAll({
-            q,
-            types: ['project', 'task'], // Exclude 'person' here so we don't get duplicates
-            limit: 25,
-          }),
-          searchGlobalUsers(q) // Our new LinkedIn-style user search
+          unifiedTypes.length > 0
+            ? searchAll({
+                q,
+                types: unifiedTypes,
+                limit: 30,
+              })
+            : Promise.resolve([]),
+          wantsPeople ? searchGlobalUsers(q) : Promise.resolve([]),
         ]);
 
         if (!alive) return;
 
         let combined = [];
 
-        // 1. Process users first (puts them at the top of the feed)
-        if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
-          const userMapped = usersRes.value.map(u => ({
-            id: u._id || u.id,
-            type: 'person',
-            title: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || 'User',
-            description: `@${u.username || 'user'}`,
-            url: `/profile/${u._id || u.id}`, // Route straight to profile!
-            raw: u
-          }));
+        // 1. Process users first so people appear at the top.
+        if (usersRes.status === "fulfilled") {
+          const users = unwrapSearchArray(usersRes.value);
+          const userMapped = users.map(mapUserToSearchResult).filter(Boolean);
           combined = [...combined, ...userMapped];
         }
 
-        // 2. Process unified results (projects, tasks)
-        if (unifiedRes.status === 'fulfilled' && Array.isArray(unifiedRes.value)) {
-          let otherResults = unifiedRes.value;
+        // 2. Process unified results: projects, tasks, posts, files.
+        if (unifiedRes.status === "fulfilled") {
+          let otherResults = unwrapSearchArray(unifiedRes.value)
+            .map(normalizeUnifiedResult)
+            .filter(Boolean);
+
           if (MODERATION_GATE_V1) {
             otherResults = otherResults.filter(isModerationApproved);
           }
+
           combined = [...combined, ...otherResults];
         }
 
-        setResults(combined);
+        setResults(dedupeSearchResults(combined));
         setSelectedIndex(0);
       } catch (error) {
         if (!alive) return;
@@ -314,7 +435,7 @@ export default function Search() {
       alive = false;
       clearTimeout(debounce);
     };
-  }, [query]);
+  }, [query, activeTypes]);
 
   const filteredResults = useMemo(() => {
     if (activeFilter === "all") return results;
