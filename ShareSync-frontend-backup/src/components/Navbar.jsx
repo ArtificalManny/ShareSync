@@ -32,9 +32,6 @@ import { toast } from "./ui/toast";
 import client from "../api/client";
 import UserAvatar from "./ui/UserAvatar";
 
-import NextMicroStep from "./navbar/NextMicroStep";
-import FocusModeToggle from "./navbar/FocusModeToggle";
-import SeasonBadge from "./navbar/SeasonBadge";
 import TeamPresence from "./navbar/TeamPresence.jsx";
 import QuickCapture from "./navbar/QuickCapture.jsx";
 
@@ -371,6 +368,7 @@ const IconButton = ({
   </button>
 );
 
+
 export default function Navbar({
   user,
   isDarkMode,
@@ -444,6 +442,7 @@ export default function Navbar({
   };
 
 
+
   const navbarGlowStyle = useMemo(() => {
     if (isFireMode) {
       return {
@@ -502,7 +501,7 @@ export default function Navbar({
             </form>
           </div>
 
-          <div className="flex-1 flex items-center justify-center px-4">
+          <div className="flex-1 flex items-center justify-start px-4">
             {focusBlock.isActive && (
               <FocusBlockTimer
                 isActive={focusBlock.isActive}
@@ -518,10 +517,6 @@ export default function Navbar({
             )}
 
             <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 transition-colors duration-200">
-              <SeasonBadge />
-              <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
-              <NextMicroStep />
-              <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
               <TeamPresence />
               <div className="w-px h-4 bg-slate-200 dark:bg-white/10 transition-colors duration-200" />
 
@@ -557,10 +552,7 @@ export default function Navbar({
               <span className="text-sm hidden sm:inline">New</span>
             </button>
 
-            <div className="hidden sm:block"><FocusModeToggle /></div>
-            <div className="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block transition-colors duration-200" />
-
-            <div className="hidden md:block"><NavbarSoundToggle /></div>
+                        <div className="hidden md:block"><NavbarSoundToggle /></div>
             <BackgroundColorPicker />
 
             <div className="hidden md:block"><SubscriptionButton /></div>
