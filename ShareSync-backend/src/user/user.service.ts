@@ -380,142 +380,280 @@ export class UserService {
   }
 
   async searchUsers(query: string, limit = 10): Promise<any[]> {
-    if (!query || query.length < 2) return [];
-    const regex = new RegExp(query, 'i');
-    const users = await this.userModel.find({ $or: [ { username: regex }, { firstName: regex }, { lastName: regex }, { email: regex } ], publicProfile: { $ne: false } }).select('_id username firstName lastName profilePicture bio').limit(limit).exec();
-    return users as any;
+    const q = String(query || '').trim();
+
+    if (!q || q.length < 2) {
+      return [];
+    }
+
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+    const escapeRegex = (value: string) =>
+      value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const tokens = q
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 2)
+      .slice(0, 5);
+
+    const phraseRegex = new RegExp(escapeRegex(q), 'i');
+    const tokenRegexes = tokens.map((token) => new RegExp(escapeRegex(token), 'i'));
+
+    const candidateClauses: any[] = [
+      { username: phraseRegex },
+      { firstName: phraseRegex },
+      { lastName: phraseRegex },
+      { displayName: phraseRegex },
+      { name: phraseRegex },
+      { email: phraseRegex },
+    ];
+
+    for (const tokenRegex of tokenRegexes) {
+      candidateClauses.push(
+        { username: tokenRegex },
+        { firstName: tokenRegex },
+        { lastName: tokenRegex },
+        { displayName: tokenRegex },
+        { name: tokenRegex },
+        { email: tokenRegex },
+      );
+    }
+
+    const candidates = await this.userModel
+      .find({
+        publicProfile: { $ne: false },
+        $or: candidateClauses,
+      })
+      .select(
+        '_id username firstName lastName displayName name email profilePicture avatarUrl avatar bio publicProfile createdAt',
+      )
+      .limit(Math.max(safeLimit * 4, 50))
+      .lean()
+      .exec();
+
+    const phraseNeedle = q.toLowerCase();
+    const tokenNeedles = tokens.map((token) => token.toLowerCase());
+
+    const normalized = (candidates || []).map((user: any) => {
+      const firstName = user.firstName || '';
+      const lastName = user.lastName || '';
+      const displayName =
+        user.displayName ||
+        user.name ||
+        `${firstName} ${lastName}`.trim() ||
+        user.username ||
+        'User';
+
+      const searchableText = [
+        displayName,
+        firstName,
+        lastName,
+        `${firstName} ${lastName}`.trim(),
+        user.username,
+        user.email,
+        user.bio,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return {
+        _id: user._id?.toString?.() || user._id,
+        id: user._id?.toString?.() || user._id,
+        username: user.username || '',
+        firstName,
+        lastName,
+        displayName,
+        name: displayName,
+        profilePicture: user.profilePicture || null,
+        avatarUrl: user.avatarUrl || user.profilePicture || user.avatar || null,
+        avatar: user.avatar || null,
+        bio: user.bio || '',
+        publicProfile: user.publicProfile ?? true,
+        createdAt: user.createdAt,
+        __searchableText: searchableText,
+      };
+    });
+
+    let filtered = normalized.filter((user: any) => {
+      if (user.__searchableText.includes(phraseNeedle)) return true;
+      return tokenNeedles.every((token) => user.__searchableText.includes(token));
+    });
+
+    // Fallback: if the full phrase produces no results, search by the first token.
+    // This protects names like "Manny Rivas" where "Manny" works but the phrase does not.
+    if (filtered.length === 0 && tokenNeedles.length > 1) {
+      const firstTokenRegex = new RegExp(escapeRegex(tokens[0]), 'i');
+
+      const fallbackCandidates = await this.userModel
+        .find({
+          publicProfile: { $ne: false },
+          $or: [
+            { username: firstTokenRegex },
+            { firstName: firstTokenRegex },
+            { lastName: firstTokenRegex },
+            { displayName: firstTokenRegex },
+            { name: firstTokenRegex },
+            { email: firstTokenRegex },
+          ],
+        })
+        .select(
+          '_id username firstName lastName displayName name email profilePicture avatarUrl avatar bio publicProfile createdAt',
+        )
+        .limit(Math.max(safeLimit * 4, 50))
+        .lean()
+        .exec();
+
+      filtered = (fallbackCandidates || [])
+        .map((user: any) => {
+          const firstName = user.firstName || '';
+          const lastName = user.lastName || '';
+          const displayName =
+            user.displayName ||
+            user.name ||
+            `${firstName} ${lastName}`.trim() ||
+            user.username ||
+            'User';
+
+          const searchableText = [
+            displayName,
+            firstName,
+            lastName,
+            `${firstName} ${lastName}`.trim(),
+            user.username,
+            user.email,
+            user.bio,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+          return {
+            _id: user._id?.toString?.() || user._id,
+            id: user._id?.toString?.() || user._id,
+            username: user.username || '',
+            firstName,
+            lastName,
+            displayName,
+            name: displayName,
+            profilePicture: user.profilePicture || null,
+            avatarUrl: user.avatarUrl || user.profilePicture || user.avatar || null,
+            avatar: user.avatar || null,
+            bio: user.bio || '',
+            publicProfile: user.publicProfile ?? true,
+            createdAt: user.createdAt,
+            __searchableText: searchableText,
+          };
+        })
+        .filter((user: any) =>
+          tokenNeedles.every((token) => user.__searchableText.includes(token)),
+        );
+    }
+
+    return filtered
+      .sort((a: any, b: any) => {
+        const aName = String(a.displayName || a.name || '').toLowerCase();
+        const bName = String(b.displayName || b.name || '').toLowerCase();
+
+        const aExact = aName === phraseNeedle ? 1 : 0;
+        const bExact = bName === phraseNeedle ? 1 : 0;
+
+        if (aExact !== bExact) return bExact - aExact;
+        return aName.localeCompare(bName);
+      })
+      .slice(0, safeLimit)
+      .map(({ __searchableText, ...user }: any) => user);
   }
 
   async getStreakProtectionStatus(userId: string): Promise<any> {
     const user = await this.userModel
       .findById(userId)
-      .select('preferences')
+      .select('preferences streakDays lastLogin')
       .lean()
       .exec();
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
 
-    if (!this.streakService) {
-      return {
-        supported: false,
-        streakState: 'unavailable',
-        isAtRisk: false,
-        allowFreeze: false,
-        canUseFreeze: false,
-        freezeCount: 0,
-        streakDays: 0,
-        lastActivityDate: null,
-        nextMilestone: 0,
-        daysUntilMilestone: 0,
-        message:
-          'Streak protection service is not configured yet. Import/export StreakService in the module wiring before enabling this endpoint.',
-        riskWindowText: '',
-        source: 'backend',
-      };
-    }
+    const preferences = (user as any).preferences || {};
+    const focus = preferences.focus || {};
+    const momentum = preferences.momentum || {};
 
-    const allowFreezeSetting =
-      (user as any)?.preferences?.momentum?.allowFreeze ?? true;
-
-    const streak = await this.streakService.getStreakStatus(userId);
-    const freezeCount = streak.freezesAvailable || 0;
-    const isAtRisk = Boolean(streak.isAtRisk);
-    const streakDays = streak.currentStreak || 0;
-    const canUseFreeze = Boolean(
-      allowFreezeSetting && isAtRisk && freezeCount > 0,
+    const emergencyBreaksLeft = Number(
+      focus.emergencyBreaksLeft ??
+        momentum.freezeCount ??
+        momentum.freezesLeft ??
+        1,
     );
 
-    const streakState = isAtRisk
-      ? 'at_risk'
-      : streak.isActive
-        ? 'active'
-        : 'safe';
-
-    let message = 'Your streak is currently safe.';
-    if (!allowFreezeSetting) {
-      message =
-        'Streak protection is turned off in your momentum settings.';
-    } else if (isAtRisk && freezeCount > 0) {
-      message =
-        'Your streak is at risk. You can use a freeze to protect it.';
-    } else if (isAtRisk) {
-      message =
-        'Your streak is at risk, but you do not have any freezes available.';
-    } else if (!streak.isActive) {
-      message = 'You do not have an active streak yet.';
-    }
-
-    let riskWindowText = '';
-    if (streak.lastActivityDate) {
-      riskWindowText = `Last activity recorded: ${new Date(
-        streak.lastActivityDate,
-      ).toISOString()}`;
-    }
+    const allowFreeze = Boolean(momentum.allowFreeze ?? true);
+    const canUseFreeze = allowFreeze && emergencyBreaksLeft > 0;
 
     return {
-      supported: true,
-      streakState,
-      isAtRisk,
-      allowFreeze: canUseFreeze,
+      success: true,
+      allowFreeze,
       canUseFreeze,
-      allowFreezeSetting,
-      freezeCount,
-      streakDays,
-      lastActivityDate: streak.lastActivityDate || null,
-      streakStartDate: streak.streakStartDate || null,
-      nextMilestone: streak.nextMilestone,
-      daysUntilMilestone: streak.daysUntilMilestone,
-      message,
-      riskWindowText,
-      source: 'backend',
+      freezeCount: Math.max(0, emergencyBreaksLeft),
+      emergencyBreaksLeft: Math.max(0, emergencyBreaksLeft),
+      streakDays: (user as any).streakDays ?? 0,
+      lastLogin: (user as any).lastLogin ?? null,
     };
   }
 
   async useStreakFreeze(userId: string): Promise<any> {
-    const user = await this.userModel
-      .findById(userId)
-      .select('preferences')
-      .lean()
-      .exec();
+    const user = await this.userModel.findById(userId).exec();
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('User not found');
+
+    const currentPreferences = (user as any).preferences || {};
+    const currentFocus = currentPreferences.focus || {};
+    const currentMomentum = currentPreferences.momentum || {};
+
+    const currentCount = Number(
+      currentFocus.emergencyBreaksLeft ??
+        currentMomentum.freezeCount ??
+        currentMomentum.freezesLeft ??
+        1,
+    );
+
+    if (currentCount <= 0) {
+      return {
+        success: false,
+        used: false,
+        allowFreeze: Boolean(currentMomentum.allowFreeze ?? true),
+        canUseFreeze: false,
+        freezeCount: 0,
+        emergencyBreaksLeft: 0,
+        message: 'No streak freezes available.',
+      };
     }
 
-    if (!this.streakService) {
-      throw new BadRequestException(
-        'Streak protection service is not configured yet.',
-      );
-    }
+    const nextCount = Math.max(0, currentCount - 1);
 
-    const allowFreezeSetting =
-      (user as any)?.preferences?.momentum?.allowFreeze ?? true;
+    (user as any).preferences = {
+      ...currentPreferences,
+      focus: {
+        ...currentFocus,
+        emergencyBreaksLeft: nextCount,
+      },
+      momentum: {
+        ...currentMomentum,
+        allowFreeze: currentMomentum.allowFreeze ?? true,
+        freezeCount: nextCount,
+        lastFreezeUsedAt: new Date(),
+      },
+    };
 
-    if (!allowFreezeSetting) {
-      throw new BadRequestException(
-        'Streak protection is disabled in your momentum settings.',
-      );
-    }
-
-    const result = await this.streakService.useStreakFreeze(userId);
-
-    if (!result.success) {
-      throw new BadRequestException(
-        result.message || 'Unable to use streak freeze.',
-      );
-    }
-
-    const refreshed = await this.getStreakProtectionStatus(userId);
+    user.markModified('preferences');
+    await user.save();
 
     return {
-      ...refreshed,
       success: true,
-      message:
-        result.message ||
-        'Streak freeze activated! Your streak is protected for now.',
-      freezeCount: result.freezesRemaining ?? refreshed.freezeCount ?? 0,
+      used: true,
+      allowFreeze: true,
+      canUseFreeze: nextCount > 0,
+      freezeCount: nextCount,
+      emergencyBreaksLeft: nextCount,
+      message: 'Streak freeze used.',
     };
   }
 
