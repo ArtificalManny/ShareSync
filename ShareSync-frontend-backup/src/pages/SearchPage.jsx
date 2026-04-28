@@ -19,6 +19,7 @@ import SearchFilters from "../components/search/SearchFilters";
 // Tokens
 import { parseSearchTokens, normalizeTypes } from "../utils/searchTokens";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { useAuth } from "../context/AuthContext";
 
 const TYPE_META = {
   project: { icon: Folder, label: "Projects" },
@@ -63,8 +64,17 @@ function coerceResults(data) {
   return result;
 }
 
+function normalizeComparable(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeId(value) {
+  return String(value || "").trim();
+}
+
 export default function SearchPage() {
   useDocumentTitle("Search");
+  const { user: authUser } = useAuth();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -133,10 +143,7 @@ export default function SearchPage() {
         }
         
         if (!alive) return;
-        console.log("[search-debug] payload:", payload);
-        console.log("[search-debug] raw data from searchAll:", data);
         const coerced = coerceResults(data);
-        console.log("[search-debug] coerced:", coerced);
         setResults(coerced);
 
         // live region announce
@@ -192,7 +199,26 @@ export default function SearchPage() {
       else navigate(`/projects`);
     } else if (type === "user") {
       const profileKey = data.username || data.handle || data.slug || data._id || data.id;
-      navigate(profileKey ? `/profile/${encodeURIComponent(String(profileKey))}` : `/profile`);
+
+      const resultUsername = normalizeComparable(data.username || data.handle || data.slug);
+      const resultId = normalizeId(data._id || data.id || data.userId);
+
+      const authUsername = normalizeComparable(
+        authUser?.username || authUser?.handle || authUser?.slug
+      );
+      const authId = normalizeId(authUser?._id || authUser?.id || authUser?.userId);
+
+      const isCurrentUser =
+        Boolean(resultUsername && authUsername && resultUsername === authUsername) ||
+        Boolean(resultId && authId && resultId === authId);
+
+      navigate(
+        isCurrentUser
+          ? "/profile"
+          : profileKey
+            ? `/profile/${encodeURIComponent(String(profileKey))}`
+            : "/profile"
+      );
     } else if (type === "post") {
       const pid = data.projectId || data.project?.id || data.project?._id;
       if (pid) navigate(`/projects/${pid}`);

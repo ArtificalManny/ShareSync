@@ -1,4 +1,19 @@
-import React from "react";
+#!/usr/bin/env python3
+from pathlib import Path
+from datetime import datetime
+import sys
+
+ROOT = Path("/Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup")
+TARGET = ROOT / "src/components/search/cards/UserResultCard.jsx"
+STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def fail(message: str):
+    print(f"\n[fix_user_result_card_current_user_route] ERROR: {message}\n", file=sys.stderr)
+    sys.exit(1)
+
+
+NEW_CONTENT = '''import React from "react";
 import { Link } from "react-router-dom";
 import { Flame, Award, ShieldCheck } from "lucide-react";
 import { formatProfilePicture } from "../../../utils/imageUtils";
@@ -92,3 +107,76 @@ export default function UserResultCard({ user = {} }) {
     </Link>
   );
 }
+'''
+
+
+def main():
+    print("[fix_user_result_card_current_user_route] starting")
+
+    if not TARGET.exists():
+        fail(f"Missing file: {TARGET}")
+
+    original = TARGET.read_text(encoding="utf-8")
+
+    required_markers = [
+        'import React from "react";',
+        'import { Link } from "react-router-dom";',
+        'import { formatProfilePicture } from "../../../utils/imageUtils";',
+        "export default function UserResultCard({ user = {} })",
+        "const profileKey = user.username || user.handle || user.slug || user._id || user.id;",
+        "const href = profileKey",
+        "to={href}",
+    ]
+
+    for marker in required_markers:
+        if marker not in original:
+            fail(f"Missing expected marker before rewrite: {marker}")
+
+    required_after = [
+        'import { useAuth } from "../../../context/AuthContext";',
+        "function normalizeComparable(value)",
+        "function normalizeId(value)",
+        "const { user: authUser } = useAuth();",
+        "const isCurrentUser =",
+        'const href = isCurrentUser',
+        '? "/profile"',
+        "`/profile/${encodeURIComponent(String(profileKey))}`",
+        '[user.firstName, user.lastName].filter(Boolean).join(" ").trim()',
+        "to={href}",
+    ]
+
+    for marker in required_after:
+        if marker not in NEW_CONTENT:
+            fail(f"Internal safety check failed. Missing marker in new content: {marker}")
+
+    forbidden_after = [
+        "`/user/${",
+        "`/users/${",
+    ]
+
+    for marker in forbidden_after:
+        if marker in NEW_CONTENT:
+            fail(f"Internal safety check failed. Forbidden marker in new content: {marker}")
+
+    if original == NEW_CONTENT:
+        print("[fix_user_result_card_current_user_route] no changes needed")
+        return
+
+    backup = TARGET.with_name(f"{TARGET.name}.bak-current-user-route-{STAMP}")
+    backup.write_text(original, encoding="utf-8")
+    print(f"[fix_user_result_card_current_user_route] backup created: {backup}")
+
+    TARGET.write_text(NEW_CONTENT, encoding="utf-8")
+    print(f"[fix_user_result_card_current_user_route] patched: {TARGET}")
+
+    print("")
+    print("[fix_user_result_card_current_user_route] done")
+    print("")
+    print("Next checks:")
+    print("  npm run build")
+    print("  rg -n \"useAuth|isCurrentUser|profileKey|normalizeComparable|normalizeId|/profile/|/user/|/users/\" src/components/search/cards/UserResultCard.jsx -C 8")
+    print("  git diff -- src/components/search/cards/UserResultCard.jsx")
+
+
+if __name__ == "__main__":
+    main()

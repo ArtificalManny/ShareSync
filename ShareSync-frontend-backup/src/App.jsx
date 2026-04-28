@@ -158,7 +158,7 @@ const PWASettings = lazy(() => import("./components/pwa/PWASettings"));
 const Community = lazy(() => import("./pages/Community"));
 
 // ⭐ WEEK 9 DAY 3-4: PUBLIC PROFILE PAGE
-const PublicProfile = lazy(() => import("./pages/profile/PublicProfile"));
+const PublicProfile = lazy(() => import("./pages/public/PublicProfile.jsx"));
 
 // ⭐ WEEK 9 DAY 5-6: HALL OF FAME PAGE
 const HallOfFame = lazy(() => import("./pages/HallOfFame"));

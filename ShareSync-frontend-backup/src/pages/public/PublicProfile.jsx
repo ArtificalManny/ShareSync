@@ -87,8 +87,8 @@ export default function PublicProfile() {
 
       try {
         const userEndpoints = [
-          `/api/users/public/${encodeURIComponent(username)}`,
-          `/api/users/username/${encodeURIComponent(username)}`,
+          `/users/public/${encodeURIComponent(username)}`,
+          `/users/username/${encodeURIComponent(username)}`,
         ];
 
         let userData = null;
@@ -140,8 +140,8 @@ export default function PublicProfile() {
         const userId = userData._id || userData.id;
         if (userId) {
           const projectEndpoints = [
-            `/api/projects?owner=${encodeURIComponent(userId)}&visibility=public`,
-            `/api/projects?ownerId=${encodeURIComponent(userId)}&public=true`,
+            `/projects?owner=${encodeURIComponent(userId)}&visibility=public`,
+            `/projects?ownerId=${encodeURIComponent(userId)}&public=true`,
           ];
 
           for (const url of projectEndpoints) {
