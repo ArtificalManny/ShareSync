@@ -77,6 +77,12 @@ export class ProjectMember {
   @Prop({ type: String, enum: MemberRole, default: MemberRole.MEMBER })
   role: MemberRole;
 
+  // Human-facing project role label shown in the UI.
+  // This is NOT a permission role. Permissions still come from `role`.
+  // Examples: "Manager", "Boss", "Developer", "Frontend Lead".
+  @Prop({ type: String, trim: true, maxlength: 40, default: '' })
+  displayRole?: string;
+
   @Prop({ type: Date, default: Date.now })
   joinedAt: Date;
 

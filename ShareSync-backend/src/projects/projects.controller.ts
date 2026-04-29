@@ -500,7 +500,7 @@ export class ProjectsController {
   }
 
   @Patch(':id/members/:userId/role')
-  @ApiOperation({ summary: 'Update member role' })
+  @ApiOperation({ summary: 'Update member permission role' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   @ApiParam({ name: 'userId', description: 'User ID to update' })
   async updateMemberRole(
@@ -516,6 +516,31 @@ export class ProjectsController {
       userId,
       memberUserId,
       dto,
+    );
+
+    return {
+      success: true,
+      data: project,
+    };
+  }
+
+  @Patch(':id/members/:userId/display-role')
+  @ApiOperation({ summary: 'Update member display role label' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiParam({ name: 'userId', description: 'User ID to update' })
+  async updateMemberDisplayRole(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Param('userId', ParseObjectIdPipe) memberUserId: string,
+    @Body('displayRole') displayRole: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    const project = await this.projectsService.updateMemberDisplayRole(
+      id,
+      userId,
+      memberUserId,
+      displayRole,
     );
 
     return {
