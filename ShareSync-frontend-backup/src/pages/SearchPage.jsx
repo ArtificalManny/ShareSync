@@ -231,7 +231,7 @@ export default function SearchPage() {
   const renderGroup = (tKey, rows) => {
     if (!types.includes(tKey) || rows.length === 0) return null;
     const { icon: Icon, label } = TYPE_META[tKey] || {};
-    const items = (() => {
+    const rawItems = (() => {
       if (tKey === "project") return rows.map(r => <ProjectResultCard key={r._id || r.id} project={r} />);
       if (tKey === "user")    return rows.map(r => <UserResultCard    key={r._id || r.id || r.username} user={r} />);
       if (tKey === "post")    return rows.map(r => <PostResultCard    key={r._id || r.id} post={r} />);
@@ -240,14 +240,40 @@ export default function SearchPage() {
       return null;
     })();
 
+    const items = React.Children.toArray(rawItems).map((child, index) => (
+      <div
+        key={child.key || `${tKey}:${index}`}
+        className="search-result-card-refined group rounded-2xl border border-violet-100/70 bg-white/90 ring-1 ring-transparent shadow-[0_1px_0_rgba(79,70,229,0.04)] transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-[0_16px_40px_rgba(79,70,229,0.10)] dark:border-violet-500/10 dark:bg-[#131318]/90 dark:shadow-none dark:hover:border-violet-500/30 dark:hover:bg-[#17171d] [&>a]:block [&>a]:px-4 [&>a]:py-3 sm:[&>a]:px-5 sm:[&>a]:py-3.5 [&>button]:block [&>button]:w-full [&>button]:px-4 [&>button]:py-3 sm:[&>button]:px-5 sm:[&>button]:py-3.5 [&>div]:px-4 [&>div]:py-3 sm:[&>div]:px-5 sm:[&>div]:py-3.5"
+      >
+        {child}
+      </div>
+    ));
+
     return (
-      <section className="mt-5" aria-label={label}>
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-          <Icon className="w-4 h-4 text-violet-500 dark:text-violet-400" />
-          {label}
-        </div>
-        <div className="space-y-2" role="list">
-          {items}
+      <section className="search-result-section-refined mt-5" aria-label={label}>
+        <div className="overflow-hidden rounded-[1.5rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/45 to-slate-50 shadow-[0_18px_55px_rgba(79,70,229,0.08)] backdrop-blur dark:border-violet-500/15 dark:from-[#101014]/95 dark:via-violet-950/15 dark:to-[#0b0b10]/95 dark:shadow-none">
+          <div className="search-group-header-refined flex items-center gap-3 border-b border-violet-100/80 bg-gradient-to-r from-violet-50/80 via-white/75 to-sky-50/60 px-4 py-3 sm:px-5 dark:border-violet-500/15 dark:from-violet-950/20 dark:via-white/[0.02] dark:to-sky-950/10">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/15">
+              <Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                {label}
+              </div>
+              <div className="text-xs text-slate-400 dark:text-zinc-500">
+                {rows.length} result{rows.length === 1 ? "" : "s"}
+              </div>
+            </div>
+
+            <span className="ml-auto inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-slate-100 px-2.5 text-[11px] font-semibold text-slate-500 dark:bg-white/[0.05] dark:text-zinc-400">
+              {rows.length}
+            </span>
+          </div>
+
+          <div className="space-y-2 p-2.5 sm:p-3" role="list">
+            {items}
+          </div>
         </div>
       </section>
     );
@@ -256,32 +282,40 @@ export default function SearchPage() {
   const totalResults = ["projects","tasks","users","posts","files"].reduce((n, k) => n + (results[k]?.length || 0), 0);
 
   return (
-    <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown} className="min-h-screen bg-slate-50 dark:bg-[#09090B]">
+    <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown} className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_34%),linear-gradient(180deg,#F8FAFC_0%,#F5F7FF_46%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.12),transparent_34%),linear-gradient(180deg,#09090B_0%,#101014_48%,#09090B_100%)]">
       <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
         
         {/* Search Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Search OpenShare</h1>
-          <p className="text-slate-500 dark:text-zinc-400">Find projects, tasks, people, and files across your workspace.</p>
+        <div className="search-heading-polished mb-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-600 shadow-sm dark:border-violet-500/15 dark:bg-white/[0.03] dark:text-violet-300">
+            <Search className="h-3.5 w-3.5" aria-hidden="true" />
+            Workspace index
+          </div>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-[1.7rem]">
+            Search OpenShare
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-zinc-400">
+            Find projects, people, tasks, posts, and files across your workspace.
+          </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] p-5 shadow-sm dark:shadow-none">
+        <div className="search-panel-polished search-hue-refined relative overflow-hidden rounded-[1.35rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/70 to-sky-50/55 p-4 shadow-[0_18px_60px_rgba(79,70,229,0.10)] backdrop-blur dark:border-violet-500/15 dark:from-[#111113] dark:via-violet-950/20 dark:to-sky-950/10 dark:shadow-none">
           {/* Search input */}
           <form onSubmit={onSubmit} role="search" aria-label="Global search">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                <Search className="w-5 h-5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:ring-violet-500/15">
+                <Search className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden="true" />
               </div>
               <input
                 value={q}
                 onChange={(e) => { setQ(e.target.value); setActiveIdx(0); }}
                 placeholder="Search @users, #projects, and more…"
-                className="flex-1 bg-transparent border-none outline-none text-lg text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600"
+                className="flex-1 border-none bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-zinc-600"
                 aria-label="Search query"
               />
               <button
                 type="submit"
-                className="rounded-xl px-6 py-2.5 text-sm font-bold bg-slate-100 dark:bg-[#1f1f23] text-slate-700 dark:text-zinc-300 hover:bg-violet-600 hover:text-white transition-all"
+                className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-bold text-slate-700 transition-all hover:bg-violet-600 hover:text-white dark:bg-[#1f1f23] dark:text-zinc-300"
                 aria-label="Run search"
               >
                 Search
@@ -301,7 +335,7 @@ export default function SearchPage() {
             </div>
           ) : null}
 
-          <div className="mt-5 pt-5 border-t border-slate-100 dark:border-[#1f1f23]">
+          <div className="mt-4 border-t border-slate-100 pt-4 dark:border-[#1f1f23]">
             {/* Filters (types / scope / sort) */}
             <SearchFilters
               types={types}
@@ -321,7 +355,7 @@ export default function SearchPage() {
         </div>
 
         {/* Results Area */}
-        <div role="listbox" aria-label="Search results" className="mt-8">
+        <div role="listbox" aria-label="Search results" className="mt-6">
           
           {loading && (
             <div className="flex items-center justify-center py-12 text-slate-500 dark:text-zinc-400 gap-3">
