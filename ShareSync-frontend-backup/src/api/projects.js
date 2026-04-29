@@ -348,6 +348,56 @@ export const deleteProject = async (projectId) => {
 };
 
 // ============================================
+// PROJECT MEMBER MANAGEMENT
+// ============================================
+
+function normalizeMemberDisplayRole(displayRole) {
+  const normalized = String(displayRole || '').replace(/\s+/g, ' ').trim();
+
+  if (!normalized) {
+    const err = new Error("Display role is required.");
+    err.normalizedMessage = "Display role is required.";
+    throw err;
+  }
+
+  if (normalized.length > 40) {
+    const err = new Error("Display role must be 40 characters or fewer.");
+    err.normalizedMessage = "Display role must be 40 characters or fewer.";
+    throw err;
+  }
+
+  return normalized;
+}
+
+export const updateProjectMemberDisplayRole = async (projectId, memberUserId, displayRole) => {
+  try {
+    const body = {
+      displayRole: normalizeMemberDisplayRole(displayRole),
+    };
+
+    const response = await api.patch(
+      `/projects/${projectId}/members/${memberUserId}/display-role`,
+      body
+    );
+
+    const data = unwrap(response);
+    return normalizeProjectId(data);
+  } catch (err) {
+    throw normalizeError(err, "Failed to update member role label");
+  }
+};
+
+export const removeProjectMember = async (projectId, memberUserId) => {
+  try {
+    const response = await api.delete(`/projects/${projectId}/members/${memberUserId}`);
+    const data = unwrap(response);
+    return normalizeProjectId(data);
+  } catch (err) {
+    throw normalizeError(err, "Failed to remove project member");
+  }
+};
+
+// ============================================
 // PROJECT LIFECYCLE / COMPLETION ENGINE
 // ============================================
 

@@ -3,28 +3,36 @@
 // MEMBERS PANEL — Real project data, sorted role hierarchy, invite wiring
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Users, UserPlus } from 'lucide-react';
 import MembersList from './MembersList';
 import InviteMember from './InviteMember';
 import { useAuth } from '../../context/AuthContext';
 import { sendInvite } from '../../api/invites';
+import { removeProjectMember, updateProjectMemberDisplayRole } from '../../api/projects';
 import { toast } from '../ui/toast';
 
-const MembersPanel = ({ projectId, project, onClose }) => {
+const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
   const { user } = useAuth();
   const [showInvite, setShowInvite] = useState(false);
+  const [projectSnapshot, setProjectSnapshot] = useState(project || null);
 
   const currentUserId = user?.id || user?._id || user?.userId || '';
+
+  useEffect(() => {
+    setProjectSnapshot(project || null);
+  }, [project]);
+
+  const activeProject = projectSnapshot || project;
 
   // ─── Extract real members from project data ──────────────────────────
 
   const { sortedMembers, isOwner, isModerator } = useMemo(() => {
-    if (!project) return { sortedMembers: [], isOwner: false, isModerator: false };
+    if (!activeProject) return { sortedMembers: [], isOwner: false, isModerator: false };
 
-    const owner = project.owner || project.ownerId;
+    const owner = activeProject.owner || activeProject.ownerId;
     const ownerId = owner?._id || owner?.id || owner;
-    const members = project.members || [];
+    const members = activeProject.members || [];
 
     // Build normalized member list
     const memberList = [];
@@ -41,6 +49,8 @@ const MembersPanel = ({ projectId, project, onClose }) => {
         bio: owner.bio || owner.headline || '',
         email: owner.email || '',
         role: 'owner',
+        permissionRole: 'owner',
+        displayRole: 'Owner',
       });
     } else if (ownerId) {
       memberList.push({
@@ -53,6 +63,8 @@ const MembersPanel = ({ projectId, project, onClose }) => {
         bio: '',
         email: '',
         role: 'owner',
+        permissionRole: 'owner',
+        displayRole: 'Owner',
       });
     }
 
@@ -74,6 +86,8 @@ const MembersPanel = ({ projectId, project, onClose }) => {
         bio: u?.bio || u?.headline || '',
         email: u?.email || '',
         role: m.role || 'member',
+        permissionRole: m.role || 'member',
+        displayRole: m.displayRole || '',
       });
     });
 
@@ -92,7 +106,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
       isOwner: isOwnerFlag,
       isModerator: isModeratorFlag,
     };
-  }, [project, currentUserId]);
+  }, [activeProject, currentUserId]);
 
   // ─── Invite handler ──────────────────────────────────────────────────
 
@@ -108,6 +122,47 @@ const MembersPanel = ({ projectId, project, onClose }) => {
       const msg = err?.response?.data?.message || err?.message || 'Failed to send invitation';
       toast({ title: msg, variant: 'error' });
       throw err; // Re-throw so InviteMember knows it failed
+    }
+  };
+
+  const commitProjectUpdate = (updatedProject) => {
+    if (updatedProject) {
+      setProjectSnapshot(updatedProject);
+      onProjectUpdated?.(updatedProject);
+    }
+  };
+
+  const handleUpdateMemberDisplayRole = async (memberId, displayRole) => {
+    try {
+      const updatedProject = await updateProjectMemberDisplayRole(projectId, memberId, displayRole);
+      commitProjectUpdate(updatedProject);
+      toast({
+        title: 'Role label updated',
+        description: `Member role changed to ${displayRole}`,
+        variant: 'success',
+      });
+      return updatedProject;
+    } catch (err) {
+      const msg = err?.normalizedMessage || err?.response?.data?.message || err?.message || 'Failed to update role label';
+      toast({ title: msg, variant: 'error' });
+      throw err;
+    }
+  };
+
+  const handleRemoveMember = async (memberId, memberName = 'member') => {
+    try {
+      const updatedProject = await removeProjectMember(projectId, memberId);
+      commitProjectUpdate(updatedProject);
+      toast({
+        title: 'Member removed',
+        description: `${memberName} was removed from the project`,
+        variant: 'success',
+      });
+      return updatedProject;
+    } catch (err) {
+      const msg = err?.normalizedMessage || err?.response?.data?.message || err?.message || 'Failed to remove member';
+      toast({ title: msg, variant: 'error' });
+      throw err;
     }
   };
 
@@ -163,6 +218,8 @@ const MembersPanel = ({ projectId, project, onClose }) => {
             members={sortedMembers}
             currentUserId={currentUserId}
             isModerator={isModerator}
+            onUpdateMemberDisplayRole={handleUpdateMemberDisplayRole}
+            onRemoveMember={handleRemoveMember}
           />
         </div>
 
@@ -170,7 +227,7 @@ const MembersPanel = ({ projectId, project, onClose }) => {
         {showInvite && (
           <InviteMember
             projectId={projectId}
-            projectName={project?.name || project?.title || 'Project'}
+            projectName={activeProject?.name || activeProject?.title || 'Project'}
             onInvite={handleInvite}
             onClose={() => setShowInvite(false)}
           />
