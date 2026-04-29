@@ -9,7 +9,7 @@ import MembersList from './MembersList';
 import InviteMember from './InviteMember';
 import { useAuth } from '../../context/AuthContext';
 import { sendInvite } from '../../api/invites';
-import { removeProjectMember, updateProjectMemberDisplayRole } from '../../api/projects';
+import { getProject, removeProjectMember, updateProjectMemberDisplayRole } from '../../api/projects';
 import { toast } from '../ui/toast';
 
 const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
@@ -132,10 +132,23 @@ const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
     }
   };
 
+  const refreshProjectSnapshot = async (fallbackProject = null) => {
+    try {
+      const freshProject = await getProject(projectId);
+      commitProjectUpdate(freshProject || fallbackProject);
+      return freshProject || fallbackProject;
+    } catch (err) {
+      // If the refetch fails, keep the mutation response instead of leaving the UI stale.
+      // This preserves the action result while avoiding a hard failure in the modal.
+      commitProjectUpdate(fallbackProject);
+      return fallbackProject;
+    }
+  };
+
   const handleUpdateMemberDisplayRole = async (memberId, displayRole) => {
     try {
       const updatedProject = await updateProjectMemberDisplayRole(projectId, memberId, displayRole);
-      commitProjectUpdate(updatedProject);
+      await refreshProjectSnapshot(updatedProject);
       toast({
         title: 'Role label updated',
         description: `Member role changed to ${displayRole}`,
@@ -152,7 +165,7 @@ const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
   const handleRemoveMember = async (memberId, memberName = 'member') => {
     try {
       const updatedProject = await removeProjectMember(projectId, memberId);
-      commitProjectUpdate(updatedProject);
+      await refreshProjectSnapshot(updatedProject);
       toast({
         title: 'Member removed',
         description: `${memberName} was removed from the project`,
