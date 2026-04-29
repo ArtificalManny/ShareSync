@@ -3,12 +3,15 @@
 // PUBLIC PROFILE ROUTE BRIDGE
 //
 // /profile/:username is mounted through App.jsx using this file.
-// The real API-driven public profile implementation lives at:
-//   src/pages/public/PublicProfile.jsx
+// Route it through the main Profile.jsx page so public user profiles share the
+// same visual language as the signed-in user's profile cockpit.
 //
-// Keep this wrapper so existing imports/routes remain stable.
+// Profile.jsx decides:
+//   /profile           → current logged-in user, editable
+//   /profile/:username → specific public user, read-only
+//   /u/:username       → specific public user, read-only
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import PublicProfile from "../public/PublicProfile.jsx";
+import Profile from "../Profile.jsx";
 
-export default PublicProfile;
+export default Profile;

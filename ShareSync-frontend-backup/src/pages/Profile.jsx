@@ -927,14 +927,14 @@ export default function Profile() {
 
   // ⭐ FIX: Treat this as a public route if an ID is present in the URL
   const isPublicRoute = useMemo(
-    () => Boolean(routeUsername) && location.pathname.startsWith("/u/"),
-    [id, routeUsername, location.pathname]
+    () =>
+      Boolean(routeUsername) &&
+      (location.pathname.startsWith("/profile/") ||
+        location.pathname.startsWith("/u/")),
+    [routeUsername, location.pathname]
   );
 
-  const isViewingOtherUser = useMemo(
-    () => Boolean(id || routeUserId),
-    [id, routeUserId]
-  );
+  const isViewingOtherUser = Boolean(routeUsername) && isPublicRoute;
 
   const load = useCallback(async () => {
     setLoading(true);
