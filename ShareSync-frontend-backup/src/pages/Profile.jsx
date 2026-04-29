@@ -509,7 +509,9 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     null;
 
   const displayUrl =
-    previewUrl || localOverride || storedAvatar || backendAvatar || "/default-profile.png";
+    (isOwnProfile
+      ? previewUrl || localOverride || storedAvatar || backendAvatar
+      : backendAvatar) || "/default-profile.png";
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
