@@ -1276,7 +1276,7 @@ export default function Profile() {
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-12 gap-6">
         {/* Left Column */}
-        <div className="col-span-12 lg:col-span-4 space-y-6">
+        <div className={`col-span-12 ${isOwnProfile ? "lg:col-span-4" : "lg:col-span-5"} space-y-6`}>
           {/* Impact Metrics */}
           <div 
             className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
@@ -1348,7 +1348,7 @@ export default function Profile() {
         </div>
 
         {/* Middle Column */}
-        <div className="col-span-12 lg:col-span-5 space-y-6">
+        <div className={`col-span-12 ${isOwnProfile ? "lg:col-span-5" : "lg:col-span-7"} space-y-6`}>
           {/* Skill Profile - with radar chart */}
           {isOwnProfile && (skillProfileSnapshot || growthLoading) && (
             <div
@@ -1472,7 +1472,7 @@ export default function Profile() {
         </div>
 
         {/* Right Column */}
-        <div className="col-span-12 lg:col-span-3 space-y-6">
+        <div className={`col-span-12 lg:col-span-3 space-y-6 ${isOwnProfile ? "" : "hidden"}`}>
           {isOwnProfile && <GrowthSuggestions suggestions={suggestions} loading={growthLoading} />}
           
           {/* Trends */}
