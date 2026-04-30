@@ -161,8 +161,8 @@ function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = 
     <div
       className={`rounded-2xl border p-6 ${
         danger
-          ? 'bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20'
-          : 'bg-white dark:bg-[#1f1f23] border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none'
+          ? 'bg-red-50/90 dark:bg-[#1A0B0D] border-red-200/90 dark:border-red-500/25 shadow-sm dark:shadow-[0_18px_50px_rgba(127,29,29,0.18)]'
+          : 'bg-white/95 dark:bg-[#121216] border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_18px_55px_rgba(0,0,0,0.25)]'
       }`}
     >
       <div className="flex items-center gap-3 mb-6">
@@ -528,7 +528,7 @@ export default function Settings() {
   }
 
   return (
-    <main className="min-h-screen px-6 py-12 transition-colors duration-300" style={{ backgroundColor: theme === "dark" ? "#09090B" : "#f8fafc", color: theme === "dark" ? "#ffffff" : "#0f172a" }}>
+    <main className="settings-page-surface min-h-screen px-6 py-12 text-slate-900 transition-colors duration-300 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_100%)] dark:text-white">
       <div className="max-w-4xl mx-auto space-y-8">
 
         {/* Header */}
@@ -590,7 +590,7 @@ export default function Settings() {
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#121216] shadow-sm dark:shadow-[0_18px_55px_rgba(0,0,0,0.22)] hover:bg-slate-50 dark:hover:bg-white/[0.045] transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center">
@@ -757,7 +757,7 @@ export default function Settings() {
           <button
             type="button"
             onClick={() => setShowPowerUser(!showPowerUser)}
-            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#121216] shadow-sm dark:shadow-[0_18px_55px_rgba(0,0,0,0.22)] hover:bg-slate-50 dark:hover:bg-white/[0.045] transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
@@ -911,7 +911,7 @@ export default function Settings() {
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       disabled={phoneStatus === 'pending'}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B0B0F] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
                     />
                   </div>
                   {phoneStatus !== 'pending' && (
@@ -944,7 +944,7 @@ export default function Settings() {
                           value={digit}
                           onChange={(e) => handleOtpChange(i, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                          className="w-12 h-14 text-center text-2xl font-semibold rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                          className="w-12 h-14 text-center text-2xl font-semibold rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B0B0F] text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                         />
                       ))}
                     </div>
@@ -974,19 +974,20 @@ export default function Settings() {
           {/* Appearance */}
           <SectionCard
             icon={SettingsIcon}
-            iconBg="bg-slate-200 dark:bg-zinc-800"
+            iconBg="bg-slate-100 dark:bg-white/[0.06]"
             iconColor="text-slate-600 dark:text-zinc-300"
             title="Appearance"
           >
-            <div>
-              <label className="text-sm font-medium text-slate-700 dark:text-zinc-300 mb-2 block">Theme</label>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.08] dark:bg-[#0B0B0F]">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-300">Theme</label>
               <select
                 value={theme}
                 onChange={(e) => {
                   setTheme(e.target.value);
                   applyTheme(e.target.value);
                 }}
-                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 px-4 py-3 text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                style={{ colorScheme: theme === "dark" ? "dark" : "light" }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-white/[0.10] dark:bg-[#111116] dark:text-white dark:shadow-none dark:focus:border-violet-400"
               >
                 <option value="system">System</option>
                 <option value="light">Light</option>
@@ -1009,14 +1010,14 @@ export default function Settings() {
               </p>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-white dark:bg-[#1f1f23] border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium shadow-sm dark:shadow-none"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-white/90 dark:bg-[#120B0D] border border-red-200/90 dark:border-red-500/25 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium shadow-sm dark:shadow-none"
                 onClick={() => toast({ title: 'Export started', description: 'Your data will be emailed to you.' })}
               >
                 Export all my data
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors font-medium"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-red-50/90 dark:bg-red-500/10 border border-red-200/90 dark:border-red-500/25 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors font-medium"
                 onClick={() => toast({ title: 'Contact support', description: 'Email support@sharesync.io to delete your account.', variant: 'error' })}
               >
                 <Trash2 className="w-4 h-4" />

@@ -81,7 +81,7 @@ const StatCard = ({
       className={`
         card-surface
         relative p-5 rounded-xl
-        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
+        bg-white/95 dark:bg-[#121216]/95 border border-slate-200/80 dark:border-white/[0.08]
         hover:border-violet-200 dark:hover:border-violet-500/30
         shadow-sm hover:shadow-lg
         transition-all duration-200 cursor-default
@@ -119,7 +119,7 @@ const StatCard = ({
         <div
           className="
             absolute bottom-full mb-2 left-0 w-56
-            p-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 rounded-lg
+            p-3 bg-white/95 dark:bg-[#121216] border border-slate-200/80 dark:border-white/[0.08] rounded-lg
             shadow-xl z-50
             animate-in fade-in slide-in-from-bottom-2 duration-200
           "
@@ -398,9 +398,9 @@ export default function Home() {
 
   const sectionCardClasses = useMemo(() => {
     const base =
-      "p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 momentum-responsive-card momentum-card";
+      "home-section-surface p-6 rounded-xl bg-white/95 dark:bg-[#121216]/95 border border-slate-200/80 dark:border-white/[0.08] momentum-responsive-card momentum-card";
     const shadow =
-      "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)]";
+      "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)] dark:shadow-[0_18px_55px_rgba(0,0,0,0.28)] dark:hover:shadow-[0_22px_65px_rgba(0,0,0,0.34)]";
 
     if (isFireMode) return `${base} ${shadow} border-orange-200 dark:border-orange-500/30`;
     if (glowLevel >= 4) return `${base} ${shadow} border-violet-200 dark:border-violet-500/30`;
@@ -455,7 +455,7 @@ export default function Home() {
 
   return (
     <div
-      className="home-page min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto"
+      className="home-page home-dark-surface min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto text-slate-900 dark:text-zinc-100 transition-colors duration-300"
       data-momentum={glowLevel}
     >
       {/* ═══════════════════════════════════════════════════════════════════
@@ -491,7 +491,7 @@ export default function Home() {
               className={`${
                 isFireMode
                   ? "text-orange-500"
-                  : "text-violet-600 dark:text-zinc-500"
+                  : "text-violet-600 dark:text-zinc-300"
               } transition-colors duration-500`}
             >
               {authUser?.firstName || "Builder"}
@@ -670,7 +670,7 @@ export default function Home() {
           <div className="col-span-12">
             <PulseCheckPrompt
               suggestedTask={missions?.[0]?.title || null}
-              className="mb-0"
+              className="home-pulse-shell mb-0"
             />
           </div>
         )}
@@ -757,7 +757,7 @@ export default function Home() {
       <div
         className={`
           fixed top-0 right-0 h-full w-full max-w-[480px]
-          bg-white dark:bg-[#111113] border-l border-slate-200 dark:border-white/10
+          bg-white/95 dark:bg-[#111113] border-l border-slate-200/80 dark:border-white/[0.08]
           z-[70] p-8
           shadow-2xl shadow-slate-900/10 dark:shadow-black/50
           transition-transform duration-300 ease-out
@@ -784,6 +784,41 @@ export default function Home() {
       </div>
 
       <style>{`
+        /* HOME DARK SURFACE LOCAL OVERRIDES */
+        html.dark .home-page.home-dark-surface,
+        html[data-theme="dark"] .home-page.home-dark-surface,
+        .dark .home-page.home-dark-surface,
+        [data-theme="dark"] .home-page.home-dark-surface {
+          background:
+            radial-gradient(circle at top left, rgba(139, 92, 246, 0.12), transparent 34%),
+            radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08), transparent 30%),
+            linear-gradient(180deg, #09090B 0%, #0F0F14 42%, #09090B 100%) !important;
+          color: #F8FAFC;
+          box-shadow: 0 0 0 100vmax #09090B;
+          clip-path: inset(0 -100vmax);
+        }
+
+        html.dark .home-page.home-dark-surface .home-section-surface,
+        html[data-theme="dark"] .home-page.home-dark-surface .home-section-surface,
+        .dark .home-page.home-dark-surface .home-section-surface,
+        [data-theme="dark"] .home-page.home-dark-surface .home-section-surface {
+          background: rgba(18, 18, 22, 0.95) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          box-shadow:
+            0 18px 55px rgba(0, 0, 0, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+        }
+
+        html.dark .home-page.home-dark-surface .home-pulse-shell,
+        html[data-theme="dark"] .home-page.home-dark-surface .home-pulse-shell,
+        .dark .home-page.home-dark-surface .home-pulse-shell,
+        [data-theme="dark"] .home-page.home-dark-surface .home-pulse-shell {
+          background: rgba(17, 17, 22, 0.72) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          color: #E5E7EB !important;
+          box-shadow: 0 12px 38px rgba(0, 0, 0, 0.18) !important;
+        }
+
         @keyframes pulse-once {
           0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.3); }
           50% { box-shadow: 0 0 0 8px rgb(139 92 246 / 0); }

@@ -384,6 +384,77 @@ export default function Navbar({
   const chat = typeof useChat === "function" ? useChat() : null;
   const unreadTotal = chat?.unreadTotal || 0;
 
+  // NAVBAR THEME DETECTION BRIDGE
+  // App.jsx does not currently pass isDarkMode/toggleDarkMode into Navbar.
+  // Detect the real active theme from <html> so the navbar follows Settings.jsx.
+  const readDocumentDarkMode = () => {
+    if (typeof document === "undefined") return Boolean(isDarkMode);
+
+    const root = document.documentElement;
+    const dataTheme = root.getAttribute("data-theme");
+    const storedTheme =
+      window.localStorage.getItem("theme") ||
+      window.localStorage.getItem("openShareTheme") ||
+      window.localStorage.getItem("sharesync-theme");
+
+    return (
+      root.classList.contains("dark") ||
+      dataTheme === "dark" ||
+      storedTheme === "dark" ||
+      Boolean(isDarkMode)
+    );
+  };
+
+  const [detectedDarkMode, setDetectedDarkMode] = useState(readDocumentDarkMode);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const syncTheme = () => {
+      setDetectedDarkMode(readDocumentDarkMode());
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
+
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener("theme:toggled", syncTheme);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener("theme:toggled", syncTheme);
+    };
+  }, [isDarkMode]);
+
+  const effectiveIsDarkMode = detectedDarkMode || Boolean(isDarkMode);
+
+  const handleNavbarThemeToggle = () => {
+    if (typeof toggleDarkMode === "function") {
+      toggleDarkMode();
+      return;
+    }
+
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+    const nextTheme = effectiveIsDarkMode ? "light" : "dark";
+
+    root.classList.toggle("dark", nextTheme === "dark");
+    root.setAttribute("data-theme", nextTheme);
+    window.localStorage.setItem("theme", nextTheme);
+    setDetectedDarkMode(nextTheme === "dark");
+
+    try {
+      window.dispatchEvent(new CustomEvent("theme:toggled", { detail: { theme: nextTheme } }));
+    } catch {}
+  };
+
 
   const { glowLevel, isFireMode } = useMomentumContext();
   const focusBlock = useFocusBlock();
@@ -443,37 +514,56 @@ export default function Navbar({
 
 
 
+  // NAVBAR INLINE BACKGROUND FIX
+  // Do not set `background` here. Inline background styles override Tailwind's
+  // `dark:` classes. The navbar surface is controlled by className so it follows
+  // the actual app theme reliably.
   const navbarGlowStyle = useMemo(() => {
     if (isFireMode) {
       return {
         boxShadow:
-          "0 1px 0 rgba(249, 115, 22, 0.1), 0 4px 20px rgba(249, 115, 22, 0.08)",
-        borderColor: "rgba(249, 115, 22, 0.15)",
+          "0 1px 0 rgba(249, 115, 22, 0.16), 0 4px 20px rgba(249, 115, 22, 0.10)",
+        borderColor: "rgba(249, 115, 22, 0.18)",
       };
     }
 
     if (glowLevel >= 4) {
       return {
         boxShadow:
-          "0 1px 0 rgba(139, 92, 246, 0.08), 0 4px 20px rgba(139, 92, 246, 0.06)",
-        borderColor: "rgba(139, 92, 246, 0.1)",
+          "0 1px 0 rgba(139, 92, 246, 0.14), 0 4px 20px rgba(139, 92, 246, 0.10)",
+        borderColor: "rgba(139, 92, 246, 0.16)",
       };
     }
 
     if (glowLevel >= 3) {
       return {
-        boxShadow: "0 1px 0 rgba(139, 92, 246, 0.04)",
+        boxShadow: "0 1px 0 rgba(139, 92, 246, 0.08)",
       };
     }
 
     return {};
   }, [glowLevel, isFireMode]);
 
+  const navbarSurfaceStyle = useMemo(
+    () => ({
+      background: effectiveIsDarkMode
+        ? "linear-gradient(90deg, rgba(9,9,11,0.94) 0%, rgba(15,15,20,0.91) 50%, rgba(9,9,11,0.94) 100%)"
+        : "rgba(255,255,255,0.86)",
+      borderColor: effectiveIsDarkMode
+        ? "rgba(255,255,255,0.08)"
+        : "rgba(226,232,240,0.78)",
+      backdropFilter: "blur(18px)",
+      WebkitBackdropFilter: "blur(18px)",
+      ...navbarGlowStyle,
+    }),
+    [effectiveIsDarkMode, navbarGlowStyle]
+  );
+
   return (
     <>
       <header
-        className="navbar sticky top-0 z-40 h-14 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/10 px-4 lg:px-6 transition-all duration-500"
-        style={navbarGlowStyle}
+        className="navbar navbar-dark-surface-refined sticky top-0 z-40 h-14 border-b border-slate-200/70 bg-white/85 px-4 text-slate-900 backdrop-blur-xl transition-all duration-500 dark:border-white/[0.08] dark:!bg-[#09090B]/92 dark:text-zinc-100 lg:px-6"
+        style={navbarSurfaceStyle}
         data-momentum={glowLevel}
       >
         <div className="h-full max-w-[1800px] mx-auto flex items-center">
@@ -496,7 +586,7 @@ export default function Navbar({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search everything..."
-                className="bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-[#0F172A] focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 w-52 focus:w-72 transition-all duration-300"
+                className="navbar-dark-search bg-white/55 border border-slate-200/70 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-300 hover:border-slate-300 hover:bg-white/75 focus:w-72 focus:border-violet-400 focus:bg-white/90 focus:ring-2 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.035] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.06] dark:focus:border-violet-500/60 dark:focus:bg-white/[0.07] dark:focus:ring-violet-500/20 w-52"
               />
             </form>
           </div>
@@ -523,7 +613,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={onOpenQuickNotes}
-                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-white/70 hover:text-violet-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-violet-300"
+                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-white/70 hover:text-violet-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-violet-300"
                 title="Open Quick Notes"
               >
                 <StickyNote className="h-4 w-4 text-violet-500 dark:text-violet-400" />
@@ -569,10 +659,10 @@ export default function Navbar({
 
             <div className="hidden sm:block">
               <IconButton
-                onClick={toggleDarkMode}
-                title={isDarkMode ? "Light mode" : "Dark mode"}
+                onClick={handleNavbarThemeToggle}
+                title={effectiveIsDarkMode ? "Light mode" : "Dark mode"}
               >
-                {isDarkMode ? (
+                {effectiveIsDarkMode ? (
                   <Sun className="w-5 h-5" />
                 ) : (
                   <Moon className="w-5 h-5" />

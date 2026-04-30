@@ -461,3 +461,153 @@ input:-webkit-autofill:active{
   font-weight: 700;
   font-size: 13px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLOBAL DARK SHELL OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════════════
+
+   Purpose:
+   - The older "Gallery Walk" section intentionally forced several app-shell
+     surfaces toward light mode.
+   - That worked for the original light gallery aesthetic, but it creates white
+     patches when the user selects Dark mode.
+   - These overrides only activate under `.dark`, preserving light mode while
+     making the shared app shell coherent in dark mode.
+
+   Scope:
+   - App shell / page canvas
+   - Sidebar shell
+   - Top/header shell
+   - Shared CSS variables used by pages like Profile.jsx
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.dark {
+  --gallery-bg: #09090B;
+  --gallery-border: rgba(255, 255, 255, 0.08);
+  --bg-page: radial-gradient(circle at top, rgba(139, 92, 246, 0.14), transparent 32%),
+    linear-gradient(180deg, #09090B 0%, #0F0F14 48%, #09090B 100%);
+}
+
+/* Main app canvas */
+.dark .app-layout,
+.dark .main-layout {
+  background:
+    radial-gradient(circle at top, rgba(139, 92, 246, 0.12), transparent 34%),
+    linear-gradient(180deg, #09090B 0%, #0F0F14 48%, #09090B 100%);
+  color: #F8FAFC;
+}
+
+/* Sidebar: override Gallery Walk white enforcement */
+.dark #app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 28, 0.98) 100%) !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+  color: #E5E7EB;
+  box-shadow: 18px 0 55px rgba(0, 0, 0, 0.28);
+}
+
+/* Reduce the pale sidebar wash when the sidebar is expanded */
+.dark #app-sidebar::before,
+.dark #app-sidebar::after {
+  opacity: 0.18;
+}
+
+/* Top navigation / app header surfaces */
+.dark .app-layout header,
+.dark .main-layout header,
+.dark .app-layout nav,
+.dark .main-layout nav,
+.dark [role="banner"] {
+  background-color: rgba(9, 9, 11, 0.82);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #F8FAFC;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Common shell children that were previously forced by Gallery Walk */
+.dark .app-layout > div,
+.dark .main-layout > div {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Native form controls inside the app shell */
+.dark .app-layout input,
+.dark .app-layout select,
+.dark .app-layout textarea,
+.dark .main-layout input,
+.dark .main-layout select,
+.dark .main-layout textarea {
+  color-scheme: dark;
+}
+
+/* Guardrail for pages using var(--bg-page) inline */
+.dark [style*="--bg-page"],
+.dark [style*="var(--bg-page"] {
+  color: #F8FAFC;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAVBAR DARK SURFACE CSS OVERRIDE
+   ═══════════════════════════════════════════════════════════════════════════════
+
+   Purpose:
+   - Navbar.jsx is the correct component, but the older Gallery Walk CSS can keep
+     shared shell surfaces visually light.
+   - This override only activates in dark mode.
+   - It targets the navbar shell and its search field without changing light mode.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+html.dark header.navbar,
+html.dark .navbar.navbar-dark-surface-refined,
+html[data-theme="dark"] header.navbar,
+html[data-theme="dark"] .navbar.navbar-dark-surface-refined,
+.dark header.navbar,
+.dark .navbar.navbar-dark-surface-refined,
+[data-theme="dark"] header.navbar,
+[data-theme="dark"] .navbar.navbar-dark-surface-refined {
+  background: linear-gradient(
+    90deg,
+    rgba(9, 9, 11, 0.96) 0%,
+    rgba(15, 15, 20, 0.94) 50%,
+    rgba(9, 9, 11, 0.96) 100%
+  ) !important;
+  background-color: #09090B !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #F8FAFC !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 34px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+html.dark header.navbar input,
+html.dark .navbar .navbar-dark-search,
+html[data-theme="dark"] header.navbar input,
+html[data-theme="dark"] .navbar .navbar-dark-search,
+.dark header.navbar input,
+.dark .navbar .navbar-dark-search,
+[data-theme="dark"] header.navbar input,
+[data-theme="dark"] .navbar .navbar-dark-search {
+  background: rgba(255, 255, 255, 0.045) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #F8FAFC !important;
+}
+
+html.dark header.navbar input::placeholder,
+html[data-theme="dark"] header.navbar input::placeholder,
+.dark header.navbar input::placeholder,
+[data-theme="dark"] header.navbar input::placeholder {
+  color: rgba(212, 212, 216, 0.58) !important;
+}
+
+html.dark header.navbar svg,
+html[data-theme="dark"] header.navbar svg,
+.dark header.navbar svg,
+[data-theme="dark"] header.navbar svg {
+  color: inherit;
+}
+
