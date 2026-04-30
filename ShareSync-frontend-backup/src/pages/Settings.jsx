@@ -1172,17 +1172,24 @@ export default function Settings() {
           </SectionCard>
 
           {/* Save Button */}
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full text-white px-8 py-5 rounded-2xl font-bold text-xl transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500/50"
-            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
-          >
-            {saving ? 'Saving Your Future...' : 'Save Changes'}
-          </button>
+          <div className="flex justify-center pt-4">
+            <button
+              type="submit"
+              disabled={saving}
+              aria-busy={saving ? 'true' : 'false'}
+              data-settings-save-button="true"
+              className="group inline-flex rounded-full p-[1.5px] bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 shadow-[0_18px_45px_rgba(124,58,237,0.26)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_58px_rgba(124,58,237,0.38)] focus:outline-none focus:ring-4 focus:ring-violet-500/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+            >
+              <span
+                data-settings-save-button-inner="true"
+                className="inline-flex min-w-[210px] items-center justify-center rounded-full px-10 py-3.5 text-sm font-extrabold tracking-wide !text-white bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 transition-all duration-200 group-hover:from-violet-700 group-hover:via-purple-700 group-hover:to-fuchsia-700 dark:from-violet-500 dark:via-purple-500 dark:to-fuchsia-500"
+              >
+                {saving ? 'Saving Your Future...' : 'Save Changes'}
+              </span>
+            </button>
+          </div>
         </form>
-
-      </div>
+</div>
     </main>
   );
 }
