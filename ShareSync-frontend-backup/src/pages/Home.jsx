@@ -455,7 +455,7 @@ export default function Home() {
 
   return (
     <div
-      className="home-page home-dark-surface min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto text-slate-900 dark:text-zinc-100 transition-colors duration-300"
+      className="home-page home-dark-polish-v2 home-dark-surface min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto text-slate-900 dark:text-zinc-100 transition-colors duration-300"
       data-momentum={glowLevel}
     >
       {/* ═══════════════════════════════════════════════════════════════════
@@ -504,7 +504,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════════════
           PRIMARY ACTION ZONE
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="mb-8">
+      <div className="home-focus-shell mb-8">
         <YourMovesToday
           variant="default"
           maxMoves={3}
@@ -623,7 +623,7 @@ export default function Home() {
 
         {/* Right sidebar */}
         {hasRightRail && (
-          <div className="col-span-12 xl:col-span-4 space-y-6">
+          <div className="home-right-rail col-span-12 xl:col-span-4 space-y-6">
             {hasUsefulIntelligence && (
               <IntelligencePanel
                 isBalanced={false}
@@ -703,7 +703,7 @@ export default function Home() {
                 rightSlot={LivePill}
               />
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="home-stat-grid grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
                   label="Ships"
                   value={summary?.ships || 0}
@@ -817,6 +817,112 @@ export default function Home() {
           border-color: rgba(255, 255, 255, 0.08) !important;
           color: #E5E7EB !important;
           box-shadow: 0 12px 38px rgba(0, 0, 0, 0.18) !important;
+        }
+
+        /* HOME DARK MODE POLISH BRIDGE */
+        html.dark .home-page.home-dark-polish-v2,
+        html[data-theme="dark"] .home-page.home-dark-polish-v2,
+        .dark .home-page.home-dark-polish-v2,
+        [data-theme="dark"] .home-page.home-dark-polish-v2 {
+          background:
+            radial-gradient(circle at 15% 8%, rgba(124, 58, 237, 0.16), transparent 30%),
+            radial-gradient(circle at 88% 72%, rgba(34, 211, 238, 0.075), transparent 30%),
+            linear-gradient(180deg, #07090F 0%, #090B12 48%, #07090F 100%) !important;
+          color: #F5F7FB !important;
+          box-shadow: 0 0 0 100vmax #07090F;
+          clip-path: inset(0 -100vmax);
+        }
+
+        html.dark .home-page.home-dark-polish-v2 .home-section-surface,
+        html.dark .home-page.home-dark-polish-v2 .momentum-card,
+        html.dark .home-page.home-dark-polish-v2 .card-surface,
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-section-surface,
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .momentum-card,
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .card-surface,
+        .dark .home-page.home-dark-polish-v2 .home-section-surface,
+        .dark .home-page.home-dark-polish-v2 .momentum-card,
+        .dark .home-page.home-dark-polish-v2 .card-surface,
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-section-surface,
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .momentum-card,
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .card-surface {
+          background:
+            linear-gradient(180deg, rgba(17, 19, 26, 0.96), rgba(13, 15, 21, 0.96)) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          color: #F5F7FB !important;
+          box-shadow:
+            0 18px 55px rgba(0, 0, 0, 0.30),
+            inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+        }
+
+        html.dark .home-page.home-dark-polish-v2 .home-pulse-shell,
+        html.dark .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-white"],
+        html.dark .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-slate-50"],
+        html.dark .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-violet-50"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell,
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-white"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-slate-50"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-violet-50"],
+        .dark .home-page.home-dark-polish-v2 .home-pulse-shell,
+        .dark .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-white"],
+        .dark .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-slate-50"],
+        .dark .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-violet-50"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell,
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-white"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-slate-50"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-pulse-shell [class*="bg-violet-50"] {
+          background: rgba(23, 26, 34, 0.94) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          color: #E5E7EB !important;
+          box-shadow: 0 12px 38px rgba(0, 0, 0, 0.20) !important;
+        }
+
+        html.dark .home-page.home-dark-polish-v2 .home-focus-shell [class*="bg-white"],
+        html.dark .home-page.home-dark-polish-v2 .home-right-rail [class*="bg-white"],
+        html.dark .home-page.home-dark-polish-v2 .home-stat-grid [class*="bg-white"],
+        html.dark .home-page.home-dark-polish-v2 .home-focus-shell [class*="bg-slate-50"],
+        html.dark .home-page.home-dark-polish-v2 .home-right-rail [class*="bg-slate-50"],
+        html.dark .home-page.home-dark-polish-v2 .home-stat-grid [class*="bg-slate-50"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-focus-shell [class*="bg-white"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-right-rail [class*="bg-white"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 .home-stat-grid [class*="bg-white"],
+        .dark .home-page.home-dark-polish-v2 .home-focus-shell [class*="bg-white"],
+        .dark .home-page.home-dark-polish-v2 .home-right-rail [class*="bg-white"],
+        .dark .home-page.home-dark-polish-v2 .home-stat-grid [class*="bg-white"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-focus-shell [class*="bg-white"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-right-rail [class*="bg-white"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 .home-stat-grid [class*="bg-white"] {
+          background: rgba(23, 26, 34, 0.94) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          color: #F5F7FB !important;
+        }
+
+        html.dark .home-page.home-dark-polish-v2 [class*="text-slate-800"],
+        html.dark .home-page.home-dark-polish-v2 [class*="text-slate-900"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-800"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-900"],
+        .dark .home-page.home-dark-polish-v2 [class*="text-slate-800"],
+        .dark .home-page.home-dark-polish-v2 [class*="text-slate-900"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-800"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-900"] {
+          color: #F5F7FB !important;
+        }
+
+        html.dark .home-page.home-dark-polish-v2 [class*="text-slate-500"],
+        html.dark .home-page.home-dark-polish-v2 [class*="text-slate-600"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-500"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-600"],
+        .dark .home-page.home-dark-polish-v2 [class*="text-slate-500"],
+        .dark .home-page.home-dark-polish-v2 [class*="text-slate-600"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-500"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-600"] {
+          color: #A7B0C0 !important;
+        }
+
+        html.dark .home-page.home-dark-polish-v2 [class*="text-slate-400"],
+        html[data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-400"],
+        .dark .home-page.home-dark-polish-v2 [class*="text-slate-400"],
+        [data-theme="dark"] .home-page.home-dark-polish-v2 [class*="text-slate-400"] {
+          color: #7F889A !important;
         }
 
         @keyframes pulse-once {
