@@ -239,6 +239,37 @@ export default function Settings() {
 
   const mqlRef = useRef(null);
 
+  // SETTINGS THEME HYDRATION FIX
+  // Settings.jsx should display the actual user-selected theme, not a stale
+  // backend fallback. The local theme is the immediate source of truth because
+  // applyTheme() writes it as soon as the user changes the dropdown.
+  const normalizeThemeMode = (value, fallback = 'system') => {
+    return value === 'light' || value === 'dark' || value === 'system'
+      ? value
+      : fallback;
+  };
+
+  const readSavedThemePreference = () => {
+    if (typeof window === 'undefined') return null;
+    return normalizeThemeMode(window.localStorage.getItem('ss.theme'), null);
+  };
+
+  const readResolvedDocumentTheme = () => {
+    if (typeof document === 'undefined') return null;
+
+    const root = document.documentElement;
+
+    if (root.dataset.theme === 'dark' || root.classList.contains('dark')) {
+      return 'dark';
+    }
+
+    if (root.dataset.theme === 'light') {
+      return 'light';
+    }
+
+    return null;
+  };
+
   const applyTheme = (mode) => {
     const root = document.documentElement;
     const media = window.matchMedia
@@ -341,10 +372,21 @@ export default function Settings() {
 
         // Appearance
         const appearance = settings.appearance || {};
+
+        // Theme hydration priority:
+        // 1. Local immediate user choice from applyTheme()
+        // 2. Backend saved setting
+        // 3. Current DOM-resolved theme
+        // 4. System fallback
+        const storedTheme = readSavedThemePreference();
+        const backendTheme = normalizeThemeMode(appearance.theme, null);
+        const documentTheme = readResolvedDocumentTheme();
         const initialTheme =
-          appearance.theme ||
-          localStorage.getItem('ss.theme') ||
-          'dark'; // default to dark now
+          storedTheme ||
+          backendTheme ||
+          documentTheme ||
+          'system';
+
         setTheme(initialTheme);
         setUserMode(appearance.mode || 'pro');
         applyTheme(initialTheme);
@@ -983,8 +1025,9 @@ export default function Settings() {
               <select
                 value={theme}
                 onChange={(e) => {
-                  setTheme(e.target.value);
-                  applyTheme(e.target.value);
+                  const nextTheme = normalizeThemeMode(e.target.value, 'system');
+                  setTheme(nextTheme);
+                  applyTheme(nextTheme);
                 }}
                 style={{ colorScheme: theme === "dark" ? "dark" : "light" }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-white/[0.10] dark:bg-[#111116] dark:text-white dark:shadow-none dark:focus:border-violet-400"
