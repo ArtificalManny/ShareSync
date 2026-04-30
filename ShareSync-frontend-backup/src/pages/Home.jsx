@@ -703,7 +703,7 @@ export default function Home() {
                 rightSlot={LivePill}
               />
 
-              <div className="home-stat-grid grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="home-stat-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                 <StatCard
                   label="Ships"
                   value={summary?.ships || 0}
@@ -720,22 +720,10 @@ export default function Home() {
                   color="text-amber-600 dark:text-amber-500"
                   description="Current streak of active days."
                 />
-                <StatCard
-                  label="Focus"
-                  value={`${summary?.focus || 0}%`}
-                  color="text-teal-600 dark:text-teal-400"
-                  description="Focus estimate based on activity types."
-                />
-                <StatCard
-                  label="Efficiency"
-                  value={`${summary?.efficiency >= 0 ? "+" : ""}${summary?.efficiency || 0}%`}
-                  color={
-                    isFireMode
-                      ? "text-orange-500"
-                      : "text-violet-600 dark:text-violet-400"
-                  }
-                  description="Change vs previous period."
-                />
+                {/* Focus and Efficiency hidden 2026-04-30: dependent on
+                    activities pipeline that's currently 404'ing in
+                    useHomeRealtime. Restore when backend activity endpoint
+                    is wired up. See dev journal entry of 2026-04-30. */}
               </div>
             </div>
           </div>

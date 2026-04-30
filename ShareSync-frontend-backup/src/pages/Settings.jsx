@@ -311,6 +311,92 @@ export default function Settings() {
     applyResolvedTheme(mode);
   };
 
+  // SETTINGS SAVE PERSISTENCE BRIDGE
+  // Backend remains the primary source, but this local snapshot prevents
+  // Settings.jsx from showing stale values after navigation if the API response
+  // lags or returns an older settings shape.
+  const SETTINGS_LOCAL_SNAPSHOT_KEY = "ss.settings";
+
+  const unwrapSettingsPayload = (value) => {
+    const payload = value?.data ?? value;
+
+    if (!payload || typeof payload !== "object") {
+      return payload;
+    }
+
+    if (payload.settings && typeof payload.settings === "object") {
+      return payload.settings;
+    }
+
+    if (payload.data?.settings && typeof payload.data.settings === "object") {
+      return payload.data.settings;
+    }
+
+    if (payload.data && typeof payload.data === "object") {
+      return payload.data;
+    }
+
+    return payload;
+  };
+
+  const mergeSettingsForSettingsPage = (base = {}, overlay = {}) => {
+    const safeBase = base && typeof base === "object" ? base : {};
+    const safeOverlay = overlay && typeof overlay === "object" ? overlay : {};
+
+    const next = {
+      ...safeBase,
+      ...safeOverlay,
+    };
+
+    for (const key of [
+      "appearance",
+      "mentor",
+      "momentum",
+      "focus",
+      "social",
+      "legacy",
+      "notifications",
+      "security",
+    ]) {
+      next[key] = {
+        ...(safeBase[key] || {}),
+        ...(safeOverlay[key] || {}),
+      };
+    }
+
+    return next;
+  };
+
+  const readLocalSettingsSnapshot = () => {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const raw = window.localStorage.getItem(SETTINGS_LOCAL_SNAPSHOT_KEY);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw);
+      const unwrapped = unwrapSettingsPayload(parsed);
+
+      return unwrapped && typeof unwrapped === "object" ? unwrapped : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const persistSettingsSnapshot = (nextSettings) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      window.localStorage.setItem(
+        SETTINGS_LOCAL_SNAPSHOT_KEY,
+        JSON.stringify(nextSettings)
+      );
+      window.dispatchEvent(new Event("storage"));
+    } catch {
+      // Non-fatal. The backend save already succeeded.
+    }
+  };
+
   // ═══════════════════════════════════════════════════════════════════════════
   // LOAD SETTINGS FROM /api/settings
   // ═══════════════════════════════════════════════════════════════════════════
@@ -319,8 +405,14 @@ export default function Settings() {
     setLoading(true);
 
     getSettings()
-      .then((settings) => {
+      .then((loadedSettings) => {
+        let settings = unwrapSettingsPayload(loadedSettings);
         if (ignore || !settings) return;
+
+        const localSnapshot = readLocalSettingsSnapshot();
+        if (localSnapshot) {
+          settings = mergeSettingsForSettingsPage(settings, localSnapshot);
+        }
 
         // Momentum
         const momentum = settings.momentum || {};
@@ -473,7 +565,17 @@ export default function Settings() {
         },
       };
 
-      await updateSettings(payload);
+      const serverSettings = unwrapSettingsPayload(await updateSettings(payload));
+      const persistedSettings = mergeSettingsForSettingsPage(serverSettings || {}, payload);
+
+      persistSettingsSnapshot(persistedSettings);
+
+      const savedTheme = persistedSettings?.appearance?.theme || theme;
+      const savedMode = persistedSettings?.appearance?.mode || userMode;
+
+      setTheme(savedTheme);
+      setUserMode(savedMode);
+      applyTheme(savedTheme);
 
       setOk('Settings saved successfully! 🎉');
       trackMentorSettings({
