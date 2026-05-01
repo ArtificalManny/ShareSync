@@ -1,5 +1,21 @@
 import client from './client';
 
+function notifyAiUsageUpdated(detail = {}) {
+  if (typeof window === 'undefined') return;
+
+  const payload = {
+    source: 'ai',
+    resource: 'aiCalls',
+    updatedAt: Date.now(),
+    ...detail,
+  };
+
+  window.dispatchEvent(new CustomEvent('ai:usage-updated', { detail: payload }));
+  window.dispatchEvent(new CustomEvent('subscription:refresh', { detail: payload }));
+  window.dispatchEvent(new CustomEvent('subscription:changed', { detail: payload }));
+  window.dispatchEvent(new CustomEvent('subscription-usage-updated', { detail: payload }));
+}
+
 /**
  * Sends a chat prompt to the AI Coach
  * Automatically includes mentor tone from saved settings
@@ -20,6 +36,9 @@ export async function askAiChat(payload) {
     ...payload,
     mentorTone,
   });
+
+  notifyAiUsageUpdated({ endpoint: '/ai/chat' });
+
   return res.data;
 }
 
@@ -28,6 +47,9 @@ export async function askAiChat(payload) {
  */
 export async function getAiSuggestion() {
   const res = await client.get('/ai/suggestion');
+
+  notifyAiUsageUpdated({ endpoint: '/ai/suggestion' });
+
   return res.data;
 }
 
