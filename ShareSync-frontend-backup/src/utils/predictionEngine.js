@@ -20,12 +20,10 @@ export async function analyzePatternsAndPredict() {
       timePatterns,
       sequencePatterns,
       contextPatterns,
-      socialPatterns,
     ] = await Promise.all([
       analyzeTimeBasedPatterns(),
       analyzeSequenceBasedPatterns(),
       analyzeContextBasedPatterns(),
-      analyzeSocialBasedPatterns(),
     ]);
 
     // Combine all patterns and rank by confidence
@@ -33,7 +31,6 @@ export async function analyzePatternsAndPredict() {
       ...timePatterns,
       ...sequencePatterns,
       ...contextPatterns,
-      ...socialPatterns,
     ];
 
     // Sort by confidence (highest first)
@@ -248,58 +245,12 @@ async function analyzeContextBasedPatterns() {
  * Example: "When Sarah ships, you usually review"
  */
 async function analyzeSocialBasedPatterns() {
-  try {
-    const history = getActionHistory();
-    const recentTeamActivity = await getRecentTeamActivity();
-    
-    if (recentTeamActivity.length === 0) return [];
-
-    const predictions = [];
-    const lastTeamAction = recentTeamActivity[0];
-
-    // Find what user did after similar team actions
-    const socialSequences = [];
-    for (let i = 0; i < history.length - 1; i++) {
-      const current = history[i];
-      
-      // If this was triggered by team action
-      if (current.trigger === 'team-activity' && current.teamMember === lastTeamAction.member) {
-        socialSequences.push(current.type);
-      }
-    }
-
-    if (socialSequences.length >= 2) {
-      const actionCounts = {};
-      socialSequences.forEach(type => {
-        actionCounts[type] = (actionCounts[type] || 0) + 1;
-      });
-
-      const mostCommon = Object.entries(actionCounts)
-        .sort((a, b) => b[1] - a[1])[0];
-
-      if (mostCommon) {
-        const [actionType, count] = mostCommon;
-        const confidence = Math.min(95, (count / socialSequences.length) * 100);
-
-        predictions.push({
-          type: 'social-based',
-          actionType,
-          label: `Review ${lastTeamAction.member}'s work?`,
-          message: `${lastTeamAction.member} shipped → you usually review`,
-          confidence: Math.round(confidence),
-          icon: '👥',
-          color: 'text-orange-500',
-          pattern: 'teammate-trigger',
-        });
-      }
-    }
-
-    return predictions;
-  } catch (error) {
-    console.error('[analyzeSocialBasedPatterns] Error:', error);
-    return [];
-  }
+  // Social/team prediction popups are intentionally disabled.
+  // This prevents generated teammate nudges such as "Sarah shipped..."
+  // from appearing as bottom-screen prediction/toast prompts.
+  return [];
 }
+
 
 // ====================================================================
 // HELPER FUNCTIONS
