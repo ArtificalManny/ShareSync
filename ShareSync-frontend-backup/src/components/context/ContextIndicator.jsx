@@ -17,6 +17,11 @@ import { Check, Cloud, CloudOff, Loader2 } from 'lucide-react';
  * Design: MetaLab 2026 - minimal, glassmorphic, micro-interactions
  */
 
+// CONTEXT INDICATOR POPUP DISABLED
+// Keeps the component import-safe while preventing the bottom-right
+// "Syncing..." / "Synced" micro-toast from appearing.
+const CONTEXT_INDICATOR_VISUALS_ENABLED = false;
+
 const ContextIndicator = () => {
   const [status, setStatus] = useState('idle'); // idle | saving | saved | error
   const [isHovered, setIsHovered] = useState(false);
@@ -44,6 +49,10 @@ const ContextIndicator = () => {
 
   // Subscribe to custom events dispatched by useContextTracking
   useEffect(() => {
+    if (!CONTEXT_INDICATOR_VISUALS_ENABLED) {
+      return undefined;
+    }
+
     window.addEventListener('context-saving', handleContextSaving);
     window.addEventListener('context-saved', handleContextSaved);
     window.addEventListener('context-error', handleContextError);
@@ -62,6 +71,10 @@ const ContextIndicator = () => {
       return () => clearTimeout(timer);
     }
   }, [isHovered, status]);
+
+  if (!CONTEXT_INDICATOR_VISUALS_ENABLED) {
+    return null;
+  }
 
   return (
     <AnimatePresence mode="wait">
