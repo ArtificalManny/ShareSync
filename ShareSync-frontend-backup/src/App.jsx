@@ -494,6 +494,21 @@ function AuthenticatedApp({ children, userData }) {
   );
 }
 
+
+function RootRouteRedirect() {
+  const { user: authUser, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (authUser) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <Landing />;
+}
+
 function UserProfileAlias() {
   const { username } = useParams();
   const safeUsername = encodeURIComponent(username || "");
@@ -581,7 +596,7 @@ function AppRoutes() {
           >
             <ScrollToHash />
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<RootRouteRedirect />} />
 
               <Route
                 path="/login"

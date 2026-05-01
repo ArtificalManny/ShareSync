@@ -86,11 +86,11 @@ function NotificationItem({ notification, onMarkRead, onRemove, onClick }) {
     ? formatTimeAgo(notification.createdAt)
     : '';
 
-  const handleClick = () => {
+  const handleClick = (event) => {
     if (!notification.isRead) {
       onMarkRead(notification._id || notification.id);
     }
-    onClick?.(notification);
+    onClick?.(notification, event);
   };
 
   return (
@@ -206,20 +206,121 @@ export default function NotificationsDropdown({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onClose]);
 
-  const handleNotificationClick = useCallback((notification) => {
-    // Navigate based on notification data
-    const data = notification.data || {};
+  // NOTIFICATION ROUTE SAFETY BRIDGE V2
+  // Important:
+  // - "/" renders Landing.jsx in this app shell.
+  // - XP/global notifications should route to /home, not /.
+  // - Unknown notifications should close the dropdown without navigating.
+  const safeObject = useCallback((value) => {
+    if (!value) return {};
 
-    if (data.projectId && data.taskId) {
-      navigate(`/projects/${data.projectId}/tasks/${data.taskId}`);
-    } else if (data.projectId) {
-      navigate(`/projects/${data.projectId}`);
-    } else if (data.conversationId) {
-      navigate(`/messages/${data.conversationId}`);
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    return typeof value === "object" ? value : {};
+  }, []);
+
+  const resolveNotificationRoute = useCallback((notification) => {
+    const data = safeObject(notification?.data);
+    const meta = safeObject(notification?.meta);
+
+    const type = String(notification?.type || "").toLowerCase();
+    const title = String(notification?.title || "").toLowerCase();
+    const body = String(notification?.body || notification?.message || "").toLowerCase();
+
+    const projectId =
+      data.projectId ||
+      data.project ||
+      meta.projectId ||
+      meta.project ||
+      notification?.projectId;
+
+    const taskId =
+      data.taskId ||
+      data.task ||
+      meta.taskId ||
+      meta.task ||
+      notification?.taskId;
+
+    const conversationId =
+      data.conversationId ||
+      data.conversation ||
+      meta.conversationId ||
+      meta.conversation ||
+      notification?.conversationId;
+
+    const rawActionUrl =
+      data.actionUrl ||
+      data.targetUrl ||
+      data.link ||
+      data.url ||
+      meta.actionUrl ||
+      meta.targetUrl ||
+      meta.link ||
+      meta.url ||
+      notification?.actionUrl ||
+      notification?.targetUrl ||
+      notification?.link ||
+      notification?.url;
+
+    const isXpNotification =
+      type.includes("xp") ||
+      type.includes("experience") ||
+      title.includes("xp earned") ||
+      title.includes("xp") ||
+      body.includes("xp for completing");
+
+    if (projectId && taskId) {
+      return `/projects/${projectId}/tasks/${taskId}`;
+    }
+
+    if (projectId) {
+      return `/projects/${projectId}`;
+    }
+
+    if (conversationId) {
+      return `/messages/${conversationId}`;
+    }
+
+    if (isXpNotification) {
+      return "/home";
+    }
+
+    if (typeof rawActionUrl === "string") {
+      const trimmedUrl = rawActionUrl.trim();
+
+      // Never allow notification clicks to route to Landing.jsx.
+      if (trimmedUrl === "/" || trimmedUrl === "") {
+        return null;
+      }
+
+      // Only allow safe internal routes.
+      if (trimmedUrl.startsWith("/") && !trimmedUrl.startsWith("//")) {
+        return trimmedUrl;
+      }
+    }
+
+    return null;
+  }, [safeObject]);
+
+  const handleNotificationClick = useCallback((notification, event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    const route = resolveNotificationRoute(notification);
+
+    if (route) {
+      navigate(route);
     }
 
     onClose();
-  }, [navigate, onClose]);
+  }, [navigate, onClose, resolveNotificationRoute]);
 
   const handleScroll = useCallback((e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;

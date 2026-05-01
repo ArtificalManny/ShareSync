@@ -1,6 +1,100 @@
 // src/api/notifications.js
 import api from './client';
 
+// NOTIFICATION DESTINATION NORMALIZATION BRIDGE
+// Protects the UI from backend notifications that accidentally carry "/" as a target.
+// "/" renders Landing.jsx, so XP/global notifications should resolve to "/home" instead.
+function safeNotificationObject(value) {
+  if (!value) return {};
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  return typeof value === "object" ? value : {};
+}
+
+function isXpNotification(notification) {
+  const type = String(notification?.type || "").toLowerCase();
+  const title = String(notification?.title || "").toLowerCase();
+  const body = String(notification?.body || notification?.message || "").toLowerCase();
+
+  return (
+    type.includes("xp") ||
+    type.includes("experience") ||
+    title.includes("xp earned") ||
+    title.includes("xp") ||
+    body.includes("xp for completing")
+  );
+}
+
+function normalizeNotificationDestination(notification) {
+  if (!notification || typeof notification !== "object") {
+    return notification;
+  }
+
+  const next = { ...notification };
+  const data = safeNotificationObject(next.data);
+  const meta = safeNotificationObject(next.meta);
+
+  if (isXpNotification(next)) {
+    next.actionUrl = "/home";
+    next.targetUrl = "/home";
+    next.link = "/home";
+    next.url = "/home";
+    next.data = {
+      ...data,
+      actionUrl: "/home",
+      targetUrl: "/home",
+    };
+    next.meta = meta;
+    return next;
+  }
+
+  const rootTargets = [next.actionUrl, next.targetUrl, next.link, next.url];
+
+  if (rootTargets.some((value) => typeof value === "string" && value.trim() === "/")) {
+    next.actionUrl = null;
+    next.targetUrl = null;
+    next.link = null;
+    next.url = null;
+  }
+
+  return next;
+}
+
+function normalizeNotificationsPayload(payload) {
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeNotificationDestination);
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  if (Array.isArray(payload.notifications)) {
+    return {
+      ...payload,
+      notifications: payload.notifications.map(normalizeNotificationDestination),
+    };
+  }
+
+  if (Array.isArray(payload.items)) {
+    return {
+      ...payload,
+      items: payload.items.map(normalizeNotificationDestination),
+    };
+  }
+
+  return normalizeNotificationDestination(payload);
+}
+
+
 export async function fetchNotifications(options = {}) {
   try {
     const params = new URLSearchParams();
@@ -13,7 +107,7 @@ export async function fetchNotifications(options = {}) {
     const url = `/notifications${query ? `?${query}` : ''}`;
     
     const response = await api.get(url);
-    return response.data?.data || response.data;
+    return normalizeNotificationsPayload(response.data?.data || response.data);
   } catch (error) {
     console.error('[notifications] fetchNotifications error:', error);
     throw error;
