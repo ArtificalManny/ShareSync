@@ -1503,7 +1503,296 @@ export class ProjectsService {
       }));
   }
 
-  private buildRecentActivity(tasks: any[]): any[] {
+  private buildDisplayName(userLike: any, fallback = 'Someone'): string {
+    if (!userLike) return fallback;
+
+    if (typeof userLike === 'string' || typeof userLike === 'number') {
+      return fallback;
+    }
+
+    const fullName = [userLike?.firstName, userLike?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return (
+      userLike?.name ||
+      userLike?.fullName ||
+      userLike?.displayName ||
+      fullName ||
+      userLike?.username ||
+      userLike?.email ||
+      fallback
+    );
+  }
+
+  private buildAvatarUrl(userLike: any): string | null {
+    if (!userLike || typeof userLike !== 'object') return null;
+
+    return (
+      userLike?.avatarUrl ||
+      userLike?.profilePicture ||
+      userLike?.avatar ||
+      userLike?.photoUrl ||
+      userLike?.imageUrl ||
+      userLike?.profile?.avatarUrl ||
+      userLike?.profile?.photoUrl ||
+      null
+    );
+  }
+
+  private unwrapProjectMemberUser(member: any): any {
+    if (!member) return null;
+
+    if (member?.userId && typeof member.userId === 'object') return member.userId;
+    if (member?.user && typeof member.user === 'object') return member.user;
+    if (member?.member && typeof member.member === 'object') return member.member;
+
+    return member;
+  }
+
+  private findProjectMemberUserById(project: any, candidateId: any): any {
+    const id = this.extractAnyId(candidateId);
+    if (!id || !project) return null;
+
+    const ownerId = this.extractAnyId(project?.ownerId || project?.owner);
+    if (ownerId && ownerId === id) {
+      return project?.ownerId || project?.owner;
+    }
+
+    const members = Array.isArray(project?.members) ? project.members : [];
+    const matchedMember = members.find((member: any) => {
+      const memberUser = this.unwrapProjectMemberUser(member);
+      return this.extractAnyId(memberUser || member?.userId || member?.user) === id;
+    });
+
+    return matchedMember ? this.unwrapProjectMemberUser(matchedMember) : null;
+  }
+
+  private buildActivityActorSnapshot(task: any, project: any): any {
+    const candidateUserObjects = [
+      task?.updatedBy,
+      task?.completedBy,
+      task?.createdBy,
+      task?.assignedTo,
+      task?.assignee,
+      task?.user,
+      task?.owner,
+    ].filter((value) => value && typeof value === 'object');
+
+    const directUser = candidateUserObjects.find((value) => this.extractAnyId(value));
+    if (directUser) {
+      const actorId = this.extractAnyId(directUser);
+      return {
+        id: actorId,
+        _id: actorId,
+        name: this.buildDisplayName(directUser),
+        username: directUser?.username || '',
+        email: directUser?.email || '',
+        avatarUrl: this.buildAvatarUrl(directUser),
+        profilePicture: this.buildAvatarUrl(directUser),
+      };
+    }
+
+    const candidateIds = [
+      task?.updatedBy,
+      task?.updatedById,
+      task?.completedBy,
+      task?.completedById,
+      task?.createdBy,
+      task?.createdById,
+      task?.assigneeId,
+      task?.assignedToId,
+      task?.userId,
+      task?.ownerId,
+    ];
+
+    for (const candidateId of candidateIds) {
+      const matchedUser = this.findProjectMemberUserById(project, candidateId);
+      if (matchedUser) {
+        const actorId = this.extractAnyId(matchedUser);
+        return {
+          id: actorId,
+          _id: actorId,
+          name: this.buildDisplayName(matchedUser),
+          username: matchedUser?.username || '',
+          email: matchedUser?.email || '',
+          avatarUrl: this.buildAvatarUrl(matchedUser),
+          profilePicture: this.buildAvatarUrl(matchedUser),
+        };
+      }
+    }
+
+    const ownerLike = project?.ownerId || project?.owner || null;
+    const ownerId = this.extractAnyId(ownerLike);
+
+    return {
+      id: ownerId || '',
+      _id: ownerId || '',
+      name: this.buildDisplayName(ownerLike, 'Project member'),
+      username: ownerLike?.username || '',
+      email: ownerLike?.email || '',
+      avatarUrl: this.buildAvatarUrl(ownerLike),
+      profilePicture: this.buildAvatarUrl(ownerLike),
+    };
+  }
+
+
+  // PROJECT OVERVIEW LIVE ACTIVITY ACTOR BRIDGE
+  // Live Activity is derived from tasks, but the card needs a real actor object
+  // so it can display the correct user name and avatar instead of falling back
+  // to "Project member".
+  private projectOverviewNormalizeActorId(value: any): string {
+    if (!value) return '';
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value);
+    }
+
+    if (value instanceof Types.ObjectId) {
+      return value.toString();
+    }
+
+    if (value?._id) return this.projectOverviewNormalizeActorId(value._id);
+    if (value?.id) return this.projectOverviewNormalizeActorId(value.id);
+    if (value?.userId) return this.projectOverviewNormalizeActorId(value.userId);
+    if (value?.user) return this.projectOverviewNormalizeActorId(value.user);
+
+    if (typeof value?.toString === 'function') {
+      const raw = value.toString();
+      if (raw && raw !== '[object Object]') return raw;
+    }
+
+    return '';
+  }
+
+  private projectOverviewGetActorDisplayName(value: any): string {
+    if (!value || typeof value !== 'object') return '';
+
+    const fullName = [value.firstName, value.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return (
+      value.name ||
+      value.displayName ||
+      fullName ||
+      value.username ||
+      value.email ||
+      ''
+    );
+  }
+
+  private projectOverviewGetActorAvatar(value: any): string {
+    if (!value || typeof value !== 'object') return '';
+
+    return (
+      value.avatarUrl ||
+      value.profilePicture ||
+      value.profileImage ||
+      value.avatar ||
+      value.imageUrl ||
+      value.picture ||
+      value.photoURL ||
+      ''
+    );
+  }
+
+  private projectOverviewSerializeActivityActor(value: any, fallbackLabel = 'Project member'): any {
+    const id = this.projectOverviewNormalizeActorId(value);
+    const name = this.projectOverviewGetActorDisplayName(value) || fallbackLabel;
+    const avatarUrl = this.projectOverviewGetActorAvatar(value);
+
+    return {
+      _id: id || undefined,
+      id: id || undefined,
+      name,
+      displayName: name,
+      username: value?.username || undefined,
+      email: value?.email || undefined,
+      avatarUrl: avatarUrl || undefined,
+      profilePicture: avatarUrl || undefined,
+      profileImage: avatarUrl || undefined,
+      avatar: avatarUrl || undefined,
+    };
+  }
+
+  private projectOverviewBuildActorLookup(project: any): Map<string, any> {
+    const actors = new Map<string, any>();
+
+    const addActor = (candidate: any) => {
+      if (!candidate) return;
+
+      const actor = candidate?.userId || candidate?.user || candidate?.member || candidate;
+      const id = this.projectOverviewNormalizeActorId(actor);
+
+      if (!id) return;
+
+      actors.set(id, actor);
+    };
+
+    addActor(project?.ownerId);
+    addActor(project?.owner);
+    addActor((project as any)?.createdBy);
+    addActor((project as any)?.createdById);
+
+    const members = Array.isArray(project?.members) ? project.members : [];
+    for (const member of members) {
+      addActor(member);
+    }
+
+    return actors;
+  }
+
+  private projectOverviewResolveActivityActor(task: any, project: any, fallbackUserId?: string): any {
+    const actors = this.projectOverviewBuildActorLookup(project);
+
+    const candidates = [
+      task?.completedBy,
+      task?.completedById,
+      task?.lastUpdatedBy,
+      task?.updatedBy,
+      task?.updatedById,
+      task?.modifiedBy,
+      task?.modifiedById,
+      task?.actor,
+      task?.actorId,
+      task?.user,
+      task?.userId,
+      task?.assignee,
+      task?.assigneeId,
+      task?.assignedTo,
+      task?.assignedToId,
+      task?.createdBy,
+      task?.createdById,
+      fallbackUserId,
+      project?.ownerId,
+      project?.owner,
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+
+      if (typeof candidate === 'object') {
+        const directName = this.projectOverviewGetActorDisplayName(candidate);
+        const directAvatar = this.projectOverviewGetActorAvatar(candidate);
+
+        if (directName || directAvatar) {
+          return candidate;
+        }
+      }
+
+      const id = this.projectOverviewNormalizeActorId(candidate);
+      if (id && actors.has(id)) {
+        return actors.get(id);
+      }
+    }
+
+    return null;
+  }
+
+  private buildRecentActivity(tasks: any[], project?: any, fallbackUserId?: string): any[] {
     if (!Array.isArray(tasks) || tasks.length === 0) return [];
 
     return [...tasks]
@@ -1513,23 +1802,56 @@ export class ProjectsService {
         return bTime - aTime;
       })
       .slice(0, 8)
-      .map((task) => ({
-        id: task?._id?.toString?.() || task?.id,
-        type: this.isTaskDone(task)
+      .map((task) => {
+        const actor = this.projectOverviewResolveActivityActor(task, project, fallbackUserId);
+        const serializedActor = this.projectOverviewSerializeActivityActor(actor, 'Project member');
+
+        const normalizedStatus = String(task?.status || '').toLowerCase();
+        const taskIsDone = this.isTaskDone(task);
+        const taskIsInProgress =
+          normalizedStatus === 'in_progress' ||
+          normalizedStatus === 'in-progress' ||
+          normalizedStatus === 'progress' ||
+          normalizedStatus === 'doing';
+
+        const type = taskIsDone
           ? 'task_completed'
-          : this.isTaskInProgress(task)
+          : taskIsInProgress
             ? 'task_in_progress'
-            : 'task_updated',
-        action: this.isTaskDone(task)
+            : 'task_updated';
+
+        const action = taskIsDone
           ? 'completed'
-          : this.isTaskInProgress(task)
-            ? 'moved to work'
-            : 'updated',
-        target: task?.title || 'Task',
-        createdAt: task?.updatedAt || task?.createdAt || new Date().toISOString(),
-        status: task?.status || 'todo',
-      }));
+          : taskIsInProgress
+            ? 'started'
+            : 'updated';
+
+        const target = task?.title || task?.name || 'Task';
+        const timestamp = task?.updatedAt || task?.createdAt || new Date().toISOString();
+
+        return {
+          id: task?._id?.toString?.() || task?.id,
+          taskId: task?._id?.toString?.() || task?.id,
+          type,
+          action,
+          target,
+          title: target,
+          message: `${serializedActor.name} ${action} ${target}`,
+          text: `${serializedActor.name} ${action} ${target}`,
+          actor: serializedActor,
+          actorId: serializedActor.id,
+          actorName: serializedActor.name,
+          actorAvatar: serializedActor.avatarUrl,
+          avatarUrl: serializedActor.avatarUrl,
+          profilePicture: serializedActor.profilePicture,
+          profileImage: serializedActor.profileImage,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          status: task?.status || 'todo',
+        };
+      });
   }
+
 
   private extractAnyId(value: any): string {
     if (!value) return '';
@@ -2000,7 +2322,7 @@ export class ProjectsService {
       completedThisWeek > 0 ? completedThisWeek : storedMetrics.weeklyShips || 0;
 
     const criticalMoves = this.buildCriticalMoves(tasks);
-    const activity = this.buildRecentActivity(tasks);
+    const activity = this.buildRecentActivity(tasks, project, userId);
 
     const normalizedGoals = this.buildGoalSnapshots(project, tasks);
     const activeGoals = normalizedGoals.filter((goal) => goal.status !== 'completed');
