@@ -68,25 +68,128 @@ function pluralize(count, singular, plural) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+const RAW_API_BASE =
+  import.meta?.env?.VITE_API_URL ||
+  import.meta?.env?.VITE_BACKEND_URL ||
+  'http://localhost:3000';
+
+const API_ASSET_ORIGIN = String(RAW_API_BASE).replace(/\/api\/?$/, '').replace(/\/$/, '');
+
+function normalizeAvatarSrc(value) {
+  if (!value || typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+    return `${API_ASSET_ORIGIN}/${trimmed.replace(/^\/+/, '')}`;
+  }
+
+  return trimmed;
+}
+
+function unwrapMemberUser(member) {
+  if (!member || typeof member !== 'object') return member;
+
+  const nested =
+    member.user ||
+    member.userId ||
+    member.member ||
+    member.profile ||
+    null;
+
+  if (nested && typeof nested === 'object') {
+    return {
+      ...nested,
+      role: member.role ?? nested.role,
+      displayRole: member.displayRole ?? nested.displayRole,
+    };
+  }
+
+  return member;
+}
+
+function getMemberId(member) {
+  const user = unwrapMemberUser(member);
+
+  return String(
+    user?._id ||
+      user?.id ||
+      member?.userId ||
+      member?.user ||
+      member?._id ||
+      member?.id ||
+      member?.email ||
+      ''
+  );
+}
+
 function getMemberName(member) {
+  const user = unwrapMemberUser(member);
+
   return (
-    member?.name ||
-    member?.fullName ||
-    [member?.firstName, member?.lastName].filter(Boolean).join(' ').trim() ||
-    member?.username ||
-    member?.email ||
+    user?.name ||
+    user?.fullName ||
+    user?.displayName ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() ||
+    user?.username ||
+    user?.email ||
     'Member'
   );
 }
 
 function getMemberAvatar(member) {
-  return (
-    member?.avatarUrl ||
-    member?.profilePicture ||
-    member?.avatar ||
-    member?.photoUrl ||
-    null
+  const user = unwrapMemberUser(member);
+
+  return normalizeAvatarSrc(
+    user?.avatarUrl ||
+      user?.profilePicture ||
+      user?.profileImage ||
+      user?.avatar ||
+      user?.imageUrl ||
+      user?.photoUrl ||
+      member?.avatarUrl ||
+      member?.profilePicture ||
+      member?.profileImage ||
+      member?.avatar ||
+      member?.imageUrl ||
+      member?.photoUrl ||
+      null
   );
+}
+
+function buildProjectMemberStack(project) {
+  const seen = new Set();
+  const stack = [];
+
+  const addMember = (candidate) => {
+    if (!candidate) return;
+
+    const id = getMemberId(candidate);
+    const name = getMemberName(candidate);
+
+    const dedupeKey = id || name;
+    if (dedupeKey && seen.has(dedupeKey)) return;
+    if (dedupeKey) seen.add(dedupeKey);
+
+    stack.push(candidate);
+  };
+
+  addMember(project?.owner || project?.ownerId);
+
+  const rawMembers = Array.isArray(project?.members)
+    ? project.members
+    : Array.isArray(project?.team)
+      ? project.team
+      : [];
+
+  rawMembers.forEach(addMember);
+
+  return stack;
 }
 
 function getInitials(name = '') {
@@ -123,7 +226,7 @@ function MiniMemberStack({ members, fallbackCount = 0, color = DEFAULT_COLOR }) 
 
         return (
           <div
-            key={member?._id || member?.id || member?.email || `${memberName}-${idx}`}
+            key={getMemberId(member) || `${memberName}-${idx}`}
             className="w-8 h-8 rounded-full border-2 border-white overflow-hidden shadow-sm flex items-center justify-center text-[10px] font-semibold text-slate-700 bg-slate-100"
             title={memberName}
           >
@@ -207,14 +310,16 @@ export default function ProjectCardV2({
   const streak = safeNumber(project?.streak?.value ?? project?.streak, 0);
   const isImpressiveStreak = streak >= 7;
 
-  const members = useMemo(() => {
-    if (Array.isArray(project?.members)) return project.members;
-    if (Array.isArray(project?.team)) return project.team;
-    return [];
-  }, [project?.members, project?.team]);
+  const members = useMemo(() => buildProjectMemberStack(project), [project]);
 
-  const memberCount = safeNumber(
-    project?.memberCount,
+  const memberCount = Math.max(
+    safeNumber(
+      project?.memberCount ??
+        project?.membersCount ??
+        project?.metrics?.memberCount?.value ??
+        project?.metrics?.memberCount,
+      0
+    ),
     members.length
   );
 

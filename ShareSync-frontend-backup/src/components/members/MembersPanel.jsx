@@ -18,6 +18,43 @@ const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
   const [projectSnapshot, setProjectSnapshot] = useState(project || null);
 
   const currentUserId = user?.id || user?._id || user?.userId || '';
+  const rawApiBase =
+    import.meta?.env?.VITE_API_URL ||
+    import.meta?.env?.VITE_BACKEND_URL ||
+    'http://localhost:3000';
+
+  const apiAssetOrigin = String(rawApiBase).replace(/\/api\/?$/, '').replace(/\/$/, '');
+
+  const normalizeAvatarSrc = (value) => {
+    if (!value || typeof value !== 'string') return null;
+
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (/^(https?:|data:|blob:)/i.test(trimmed)) {
+      return trimmed;
+    }
+
+    if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+      return `${apiAssetOrigin}/${trimmed.replace(/^\/+/, '')}`;
+    }
+
+    return trimmed;
+  };
+
+  const getAvatarFromUserLike = (value) => {
+    if (!value || typeof value !== 'object') return null;
+
+    return normalizeAvatarSrc(
+      value.avatarUrl ||
+        value.profilePicture ||
+        value.profileImage ||
+        value.avatar ||
+        value.imageUrl ||
+        value.photoUrl ||
+        null
+    );
+  };
 
   useEffect(() => {
     setProjectSnapshot(project || null);
@@ -45,7 +82,7 @@ const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
         firstName: owner.firstName || '',
         lastName: owner.lastName || '',
         username: owner.username || '',
-        avatar: owner.avatar || owner.profilePicture || null,
+        avatar: getAvatarFromUserLike(owner),
         bio: owner.bio || owner.headline || '',
         email: owner.email || '',
         role: 'owner',
@@ -82,7 +119,7 @@ const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
         firstName: u?.firstName || '',
         lastName: u?.lastName || '',
         username: u?.username || '',
-        avatar: u?.avatar || u?.profilePicture || null,
+        avatar: getAvatarFromUserLike(u) || getAvatarFromUserLike(m),
         bio: u?.bio || u?.headline || '',
         email: u?.email || '',
         role: m.role || 'member',
