@@ -20,6 +20,236 @@ export class ActivitiesService {
     @InjectModel(Activity.name) private readonly activityModel: Model<AnyObj>,
   ) {}
 
+  // INSIGHTS ACTIVITY ACTOR RESPONSE BRIDGE
+  // The Insights ActivityFeed reads actorName/userName/user/avatarUrl fields.
+  // Activity rows are stored with userId, so this bridge serializes populated
+  // userId data into frontend-friendly actor fields without changing the DB schema.
+  private activityFeedExtractId(value: any): string {
+    if (!value) return '';
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value);
+    }
+
+    if (value?._id) return String(value._id);
+    if (value?.id) return String(value.id);
+
+    if (value?.userId) {
+      const nested = value.userId;
+
+      if (typeof nested === 'string' || typeof nested === 'number') {
+        return String(nested);
+      }
+
+      if (nested?._id) return String(nested._id);
+      if (nested?.id) return String(nested.id);
+    }
+
+    if (typeof value?.toString === 'function') {
+      const str = value.toString();
+      if (str && str !== '[object Object]') return String(str);
+    }
+
+    return '';
+  }
+
+  private activityFeedPickString(...values: any[]): string {
+    for (const value of values) {
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+
+    return '';
+  }
+
+  private activityFeedImageValue(value: any): string {
+    if (!value) return '';
+
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+
+    if (typeof value === 'object') {
+      return this.activityFeedPickString(
+        value.url,
+        value.secure_url,
+        value.src,
+        value.path,
+        value.location,
+      );
+    }
+
+    return '';
+  }
+
+  private activityFeedBuildDisplayName(userLike: any): string {
+    if (!userLike || typeof userLike !== 'object') return '';
+
+    const firstLast = [userLike.firstName, userLike.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    const emailName =
+      typeof userLike.email === 'string' && userLike.email.includes('@')
+        ? userLike.email.split('@')[0]
+        : '';
+
+    return this.activityFeedPickString(
+      userLike.displayName,
+      userLike.name,
+      userLike.fullName,
+      firstLast,
+      userLike.username,
+      emailName,
+    );
+  }
+
+  private activityFeedBuildAvatarUrl(userLike: any): string | null {
+    if (!userLike || typeof userLike !== 'object') return null;
+
+    const profile = userLike.profile || {};
+
+    const candidates = [
+      userLike.avatarUrl,
+      userLike.profilePicture,
+      userLike.profileImage,
+      userLike.avatar,
+      userLike.imageUrl,
+      userLike.photoUrl,
+      userLike.picture,
+      profile.avatarUrl,
+      profile.profilePicture,
+      profile.profileImage,
+      profile.photoUrl,
+      profile.picture,
+    ];
+
+    for (const candidate of candidates) {
+      const value = this.activityFeedImageValue(candidate);
+      if (value) return value;
+    }
+
+    return null;
+  }
+
+  private activityFeedIsGenericActorName(value: any): boolean {
+    const name = typeof value === 'string' ? value.trim().toLowerCase() : '';
+
+    if (!name) return true;
+
+    return [
+      'project member',
+      'team member',
+      'someone',
+      'unknown',
+      'unknown user',
+      'user',
+    ].includes(name);
+  }
+
+  private activityFeedResolveUserLike(item: AnyObj): any {
+    const candidates = [
+      item?.actor,
+      item?.actorUser,
+      item?.user,
+      item?.author,
+      item?.member,
+      item?.createdBy,
+      item?.updatedBy,
+      item?.performedBy,
+      item?.payload?.actor,
+      item?.payload?.user,
+      item?.metadata?.actor,
+      item?.metadata?.user,
+      item?.details?.actor,
+      item?.details?.user,
+      item?.userId,
+    ];
+
+    return candidates.find((candidate) => candidate && typeof candidate === 'object') || null;
+  }
+
+  private activityFeedSerializeActor(userLike: any): AnyObj | null {
+    if (!userLike || typeof userLike !== 'object') return null;
+
+    const id = this.activityFeedExtractId(userLike);
+    const name = this.activityFeedBuildDisplayName(userLike);
+    const avatarUrl = this.activityFeedBuildAvatarUrl(userLike);
+
+    // Avoid turning a raw ObjectId into a fake actor object.
+    if (!name && !avatarUrl) return null;
+
+    return {
+      id,
+      _id: id,
+      name,
+      displayName: name,
+      firstName: userLike.firstName || '',
+      lastName: userLike.lastName || '',
+      username: userLike.username || '',
+      email: userLike.email || '',
+      avatar: avatarUrl,
+      avatarUrl,
+      profilePicture: avatarUrl,
+      profileImage: avatarUrl,
+    };
+  }
+
+  private serializeActivityItemForClient(item: AnyObj): AnyObj {
+    const sourceUser = this.activityFeedResolveUserLike(item);
+    const actor = this.activityFeedSerializeActor(sourceUser);
+
+    const existingName = [
+      item?.actorName,
+      item?.userName,
+      item?.payload?.actorName,
+      item?.metadata?.actorName,
+      item?.details?.actorName,
+    ].find((value) => !this.activityFeedIsGenericActorName(value));
+
+    const actorName = existingName ? String(existingName).trim() : actor?.name || '';
+
+    const actorAvatar =
+      this.activityFeedImageValue(item?.actorAvatar) ||
+      this.activityFeedImageValue(item?.avatarUrl) ||
+      this.activityFeedImageValue(item?.profilePicture) ||
+      this.activityFeedImageValue(item?.profileImage) ||
+      actor?.avatarUrl ||
+      null;
+
+    const normalizedActor = actor
+      ? {
+          ...actor,
+          name: actorName || actor.name,
+          displayName: actorName || actor.displayName || actor.name,
+          avatar: actorAvatar || actor.avatar || null,
+          avatarUrl: actorAvatar || actor.avatarUrl || null,
+          profilePicture: actorAvatar || actor.profilePicture || null,
+          profileImage: actorAvatar || actor.profileImage || null,
+        }
+      : null;
+
+    return {
+      ...item,
+      actor: normalizedActor || item?.actor || null,
+      user: normalizedActor || item?.user || null,
+      actorId:
+        item?.actorId ||
+        normalizedActor?.id ||
+        this.activityFeedExtractId(item?.userId),
+      actorName: actorName || null,
+      userName: actorName || null,
+      displayName: actorName || null,
+      actorAvatar: actorAvatar || null,
+      avatar: actorAvatar || item?.avatar || null,
+      avatarUrl: actorAvatar || item?.avatarUrl || null,
+      profilePicture: actorAvatar || item?.profilePicture || null,
+      profileImage: actorAvatar || item?.profileImage || null,
+    };
+  }
+
   async record(data: {
     userId: string;
     projectId?: string;
@@ -118,7 +348,10 @@ export class ActivitiesService {
       .find(q)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
-      .populate('userId', 'firstName lastName username profilePicture')
+      .populate(
+        'userId',
+        'firstName lastName name displayName username email avatar avatarUrl profilePicture profileImage imageUrl photoUrl picture profile',
+      )
       .lean()
       .exec();
 
@@ -127,7 +360,11 @@ export class ActivitiesService {
         ? new Date(items[items.length - 1].createdAt).toISOString()
         : null;
 
-    return { items: items || [], nextCursor };
+    const normalizedItems = (items || []).map((item) =>
+      this.serializeActivityItemForClient(item),
+    );
+
+    return { items: normalizedItems, nextCursor };
   }
 
   async listProject(args: {
