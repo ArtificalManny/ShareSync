@@ -523,6 +523,8 @@ export class ProjectsService {
     const [projects, total] = await Promise.all([
       this.projectModel
         .find(query)
+        .populate('ownerId', 'name firstName lastName username email avatar avatarUrl profilePicture profileImage imageUrl photoUrl headline bio')
+        .populate('members.userId', 'name firstName lastName username email avatar avatarUrl profilePicture profileImage imageUrl photoUrl headline bio')
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
         .skip(offset)
         .limit(limit),
