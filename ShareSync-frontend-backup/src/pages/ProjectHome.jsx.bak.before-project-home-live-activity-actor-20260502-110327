@@ -1547,426 +1547,7 @@ function formatLiveActivityTime(activity) {
   });
 }
 
-// PROJECT LIVE ACTIVITY ACTOR BRIDGE
-function projectPulseNormalizeAvatarSrc(value) {
-  if (!value || typeof value !== "string") return null;
-
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("data:image/") ||
-    trimmed.startsWith("blob:") ||
-    trimmed.startsWith("/")
-  ) {
-    return trimmed;
-  }
-
-  return `/${trimmed.replace(/^\/+/, "")}`;
-}
-
-function projectPulseIsGenericActorName(value) {
-  const text = String(value || "").trim().toLowerCase();
-
-  return (
-    !text ||
-    text === "someone" ||
-    text === "team member" ||
-    text === "project member" ||
-    text === "unknown" ||
-    text === "user"
-  );
-}
-
-function projectPulseGetPersonName(value) {
-  if (!value) return "";
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-
-    if (!trimmed || /^[a-f\d]{24}$/i.test(trimmed)) {
-      return "";
-    }
-
-    return trimmed;
-  }
-
-  if (typeof value !== "object") return "";
-
-  const nested =
-    value.user ||
-    value.member ||
-    value.profile ||
-    value.account ||
-    null;
-
-  const fullName = [value.firstName, value.lastName].filter(Boolean).join(" ").trim();
-
-  return (
-    value.name ||
-    value.fullName ||
-    value.displayName ||
-    fullName ||
-    value.username ||
-    value.email ||
-    projectPulseGetPersonName(nested) ||
-    ""
-  );
-}
-
-function projectPulseGetPersonAvatar(value) {
-  if (!value || typeof value !== "object") return null;
-
-  const nested =
-    value.user ||
-    value.member ||
-    value.profile ||
-    value.account ||
-    null;
-
-  return projectPulseNormalizeAvatarSrc(
-    value.avatarUrl ||
-      value.profilePicture ||
-      value.profileImage ||
-      value.photoUrl ||
-      value.imageUrl ||
-      value.avatar ||
-      value.picture ||
-      value.image ||
-      projectPulseGetPersonAvatar(nested)
-  );
-}
-
-function projectPulseGetProjectMembers(project) {
-  const rawMembers = Array.isArray(project?.members) ? project.members : [];
-
-  return rawMembers
-    .map((member) => member?.userId || member?.user || member?.member || member)
-    .filter(Boolean);
-}
-
-function projectPulseResolveActor(activity, project) {
-  const directActor =
-    activity?.actor ||
-    activity?.actorUser ||
-    activity?.user ||
-    activity?.member ||
-    activity?.author ||
-    activity?.createdBy ||
-    activity?.updatedBy ||
-    activity?.completedBy ||
-    activity?.completedByUser ||
-    activity?.owner ||
-    activity?.assignee ||
-    activity?.raw?.actor ||
-    activity?.raw?.user ||
-    activity?.raw?.createdBy ||
-    activity?.raw?.updatedBy ||
-    activity?.raw?.completedBy ||
-    activity?.details?.actor ||
-    activity?.details?.user ||
-    activity?.metadata?.actor ||
-    activity?.metadata?.user ||
-    null;
-
-  if (directActor && typeof directActor === "object") {
-    return directActor;
-  }
-
-  const projectMembers = projectPulseGetProjectMembers(project);
-
-  if (projectMembers.length === 1) {
-    return projectMembers[0];
-  }
-
-  return (
-    project?.owner ||
-    project?.ownerId ||
-    project?.createdBy ||
-    project?.user ||
-    null
-  );
-}
-
-function projectPulseGetActorName(activity, project) {
-  const directNameCandidates = [
-    activity?.actorName,
-    activity?.userName,
-    activity?.username,
-    activity?.displayName,
-    activity?.authorName,
-    activity?.createdByName,
-    activity?.updatedByName,
-    activity?.completedByName,
-    activity?.raw?.actorName,
-    activity?.raw?.userName,
-    activity?.details?.actorName,
-    activity?.metadata?.actorName,
-  ];
-
-  const directName = directNameCandidates.find(
-    (value) => !projectPulseIsGenericActorName(value)
-  );
-
-  if (directName) return String(directName).trim();
-
-  const actor = projectPulseResolveActor(activity, project);
-  const actorName = projectPulseGetPersonName(actor);
-
-  if (!projectPulseIsGenericActorName(actorName)) {
-    return actorName;
-  }
-
-  return "Project member";
-}
-
-function projectPulseGetActorAvatar(activity, project) {
-  const activityAvatar = projectPulseNormalizeAvatarSrc(
-    activity?.avatarUrl ||
-      activity?.profilePicture ||
-      activity?.profileImage ||
-      activity?.photoUrl ||
-      activity?.imageUrl ||
-      activity?.actorAvatar ||
-      activity?.userAvatar ||
-      activity?.raw?.avatarUrl ||
-      activity?.raw?.profilePicture ||
-      activity?.details?.avatarUrl ||
-      activity?.metadata?.avatarUrl
-  );
-
-  if (activityAvatar) return activityAvatar;
-
-  return projectPulseGetPersonAvatar(projectPulseResolveActor(activity, project));
-}
-
-function projectPulseGetInitials(name) {
-  const parts = String(name || "Project member")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (parts.length === 0) return "PM";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-
-function projectPulseGetActivityText(activity) {
-  return String(
-    activity?.text ||
-      activity?.message ||
-      activity?.title ||
-      activity?.description ||
-      activity?.details?.description ||
-      activity?.metadata?.description ||
-      ""
-  ).trim();
-}
-
-function projectPulseGetActionLabel(activity) {
-  const raw = [
-    activity?.action,
-    activity?.type,
-    activity?.status,
-    projectPulseGetActivityText(activity),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (raw.includes("complete") || raw.includes("done")) return "completed";
-  if (raw.includes("ship")) return "shipped";
-  if (raw.includes("move")) return "moved";
-  if (raw.includes("create") || raw.includes("new task")) return "created";
-  if (raw.includes("start") || raw.includes("progress")) return "started";
-  if (raw.includes("block")) return "blocked";
-
-  return "updated";
-}
-
-function projectPulseCleanTargetFromText(text, actorName) {
-  let cleaned = String(text || "").trim();
-
-  if (!cleaned) return "";
-
-  const safeActor = String(actorName || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  if (safeActor) {
-    cleaned = cleaned.replace(new RegExp(`^${safeActor}\\s+`, "i"), "");
-  }
-
-  cleaned = cleaned
-    .replace(/^Someone moved\s+/i, "")
-    .replace(/^Someone\s+(moved|updated|completed|created|shipped|started|blocked)\s+/i, "")
-    .replace(/^Someone\s+/i, "")
-    .replace(/^Project member\s+/i, "")
-    .replace(/^Team member\s+/i, "")
-    .replace(/^(moved|updated|completed|created|shipped|started|blocked)\s+/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return cleaned;
-}
-
-function projectPulseGetTargetLabel(activity, actorName) {
-  const explicitTarget =
-    activity?.target ||
-    activity?.targetName ||
-    activity?.taskTitle ||
-    activity?.taskName ||
-    activity?.itemTitle ||
-    activity?.projectTitle ||
-    activity?.task?.title ||
-    activity?.project?.name ||
-    activity?.raw?.taskTitle ||
-    activity?.raw?.taskName ||
-    activity?.raw?.title ||
-    activity?.details?.taskTitle ||
-    activity?.details?.taskName ||
-    activity?.details?.title ||
-    activity?.metadata?.taskTitle ||
-    activity?.metadata?.taskName ||
-    activity?.metadata?.title ||
-    "";
-
-  if (explicitTarget) {
-    return String(explicitTarget).trim();
-  }
-
-  return projectPulseCleanTargetFromText(
-    projectPulseGetActivityText(activity),
-    actorName
-  ) || "an item";
-}
-
-function projectPulseGetStatusLabel(activity) {
-  const action = projectPulseGetActionLabel(activity);
-
-  if (action === "completed") return "Completed";
-  if (action === "shipped") return "Shipped";
-  if (action === "blocked") return "Blocked";
-  if (action === "started") return "In progress";
-  if (action === "created") return "Created";
-  if (action === "moved") return "Moved";
-
-  return "Updated";
-}
-
-function projectPulseFormatTimeAgo(value) {
-  if (!value) return "Now";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Now";
-
-  const diffMs = Date.now() - date.getTime();
-  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
-
-  if (diffMinutes < 1) return "Now";
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return "1d ago";
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function ProjectActivityActorAvatar({ activity, actorName, project }) {
-  const [failed, setFailed] = useState(false);
-  const avatar = projectPulseGetActorAvatar(activity, project);
-
-  if (avatar && !failed) {
-    return (
-      <img
-        src={avatar}
-        alt={`${actorName} avatar`}
-        onError={() => setFailed(true)}
-        className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm dark:ring-[#111113]"
-      />
-    );
-  }
-
-  return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-[11px] font-black text-violet-700 ring-2 ring-white shadow-sm dark:bg-violet-500/10 dark:text-violet-200 dark:ring-[#111113]">
-      {projectPulseGetInitials(actorName)}
-    </div>
-  );
-}
-
-function ProjectLiveActivityRow({ item, index, project }) {
-  const actorName = projectPulseGetActorName(item, project);
-  const action = projectPulseGetActionLabel(item);
-  const target = projectPulseGetTargetLabel(item, actorName);
-  const status = projectPulseGetStatusLabel(item);
-  const timestamp =
-    item?.createdAt ||
-    item?.updatedAt ||
-    item?.timestamp ||
-    item?.time ||
-    item?.date ||
-    item?.ts;
-
-  const isCompleted = status.toLowerCase() === "completed";
-
-  return (
-    <article
-      key={item?._id || item?.id || `${actorName}-${target}-${index}`}
-      className="rounded-[22px] border border-slate-200/80 bg-white/90 p-4 shadow-sm transition-all hover:border-violet-200 hover:shadow-md dark:border-white/[0.07] dark:bg-white/[0.035] dark:shadow-none dark:hover:border-violet-500/30"
-    >
-      <div className="flex items-start gap-3">
-        <ProjectActivityActorAvatar
-          activity={item}
-          actorName={actorName}
-          project={project}
-        />
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
-                isCompleted
-                  ? "border border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-                  : "border border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300"
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isCompleted ? "bg-emerald-400" : "bg-violet-400"
-                }`}
-              />
-              {status}
-            </span>
-
-            <span className="shrink-0 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
-              {projectPulseFormatTimeAgo(timestamp)}
-            </span>
-          </div>
-
-          <p className="mt-2 text-sm leading-5 text-slate-700 dark:text-zinc-200">
-            <span className="font-black text-slate-900 dark:text-white">
-              {actorName}
-            </span>{" "}
-            <span>{action}</span>{" "}
-            <span className="font-black text-slate-900 dark:text-white">
-              {target}
-            </span>
-          </p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function ProjectLiveActivityCard({ activities = [], project = null }) {
+function ProjectLiveActivityCard({ activities = [] }) {
   const items = Array.isArray(activities) ? activities.slice(0, 5) : [];
   const hasItems = items.length > 0;
 
@@ -2000,25 +1581,68 @@ function ProjectLiveActivityCard({ activities = [], project = null }) {
       <div className="relative z-10 p-4">
         {hasItems ? (
           <div className="space-y-3">
-            {items.map((item, index) => (
-              <ProjectLiveActivityRow
-                key={item?._id || item?.id || index}
-                item={item}
-                index={index}
-                project={project}
-              />
-            ))}
+            {items.map((item, index) => {
+              const meta = getLiveActivityMeta(item);
+              const Icon = meta.Icon;
+              const actor = getActivityActor(item);
+              const target = getActivityTarget(item);
+              const timeLabel = formatLiveActivityTime(item);
+              const key = item?._id || item?.id || `${actor}-${target}-${index}`;
+
+              return (
+                <article
+                  key={key}
+                  className="group relative rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-[0_16px_36px_rgba(124,58,237,0.08)] dark:border-white/[0.06] dark:bg-white/[0.03] dark:hover:border-violet-500/20"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border ${meta.iconClass}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${meta.chipClass}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
+                          {meta.label}
+                        </span>
+
+                        <span className="shrink-0 text-[11px] text-slate-400 dark:text-zinc-500">
+                          {timeLabel}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm leading-snug text-slate-700 dark:text-zinc-300">
+                        <span className="font-semibold text-slate-900 dark:text-zinc-100">
+                          {actor}
+                        </span>
+                        {target ? (
+                          <>
+                            {" "}
+                            moved{" "}
+                            <span className="font-semibold text-slate-900 dark:text-zinc-100">
+                              {target}
+                            </span>
+                          </>
+                        ) : (
+                          " updated the project"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
-          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white/60 px-6 py-8 text-center dark:border-white/[0.07] dark:bg-white/[0.03]">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-300">
-              <Activity className="h-5 w-5" />
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center dark:border-white/[0.08] dark:bg-white/[0.03]">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+              <Sparkles className="h-5 w-5" />
             </div>
             <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
-              No activity yet
+              No live activity yet
             </p>
-            <p className="mt-1 max-w-[260px] text-xs leading-5 text-slate-500 dark:text-zinc-400">
-              Ship your first update to see the feed come alive.
+            <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
+              Ship a task, complete work, or update the project to start building a visible activity trail.
             </p>
           </div>
         )}
@@ -2026,7 +1650,6 @@ function ProjectLiveActivityCard({ activities = [], project = null }) {
     </section>
   );
 }
-
 
 function OverviewView({
   project,
@@ -2171,7 +1794,7 @@ function OverviewView({
           isStarting={isStartingSprint}
         />
         <ForesightCard metrics={foresightMetrics} />
-        <ProjectLiveActivityCard activities={liveActivity} project={project} />
+        <ProjectLiveActivityCard activities={liveActivity} />
       </div>
 
       <div className="grid grid-cols-12 gap-8">

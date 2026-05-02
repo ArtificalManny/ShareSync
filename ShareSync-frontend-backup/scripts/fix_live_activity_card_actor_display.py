@@ -1,4 +1,10 @@
-import React, { useMemo, useState } from "react";
+from pathlib import Path
+from datetime import datetime
+import shutil
+
+TARGET = Path("src/components/project/pulse/card/LiveActivityCard.jsx")
+
+NEW_CONTENT = r'''import React, { useMemo, useState } from "react";
 import { Activity, CheckCircle2, Clock, Rocket } from "lucide-react";
 
 function normalizeAvatarSrc(value) {
@@ -332,3 +338,59 @@ export default function LiveActivityCard({ activities, overview, loading }) {
     </section>
   );
 }
+'''
+
+def fail(message):
+    raise SystemExit(f"[fix_live_activity_card_actor_display] ERROR: {message}")
+
+def main():
+    print("[fix_live_activity_card_actor_display] starting")
+
+    if not TARGET.exists():
+        fail(f"missing file: {TARGET}")
+
+    old_text = TARGET.read_text()
+
+    required_old_tokens = [
+        "export default function LiveActivityCard",
+        "activities",
+        "overview",
+        "loading",
+    ]
+
+    for token in required_old_tokens:
+        if token not in old_text:
+            fail(f"expected token not found in existing file: {token}")
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup = TARGET.with_suffix(TARGET.suffix + f".bak.before-live-activity-actor-display-{stamp}")
+    shutil.copy2(TARGET, backup)
+
+    TARGET.write_text(NEW_CONTENT)
+
+    new_text = TARGET.read_text()
+
+    required_new_tokens = [
+        "function getActorName",
+        "function getActorAvatar",
+        "function ActivityAvatar",
+        "function ActivityItem",
+        "profilePicture",
+        "avatarUrl",
+        "Project member",
+    ]
+
+    for token in required_new_tokens:
+        if token not in new_text:
+            fail(f"verification failed, missing token: {token}")
+
+    print(f"[fix_live_activity_card_actor_display] backup created: {backup}")
+    print("[fix_live_activity_card_actor_display] complete")
+    print()
+    print("Next checks:")
+    print("  npm run build")
+    print('  rg -n "getActorName|getActorAvatar|ActivityAvatar|ActivityItem|profilePicture|avatarUrl|Project member" src/components/project/pulse/card/LiveActivityCard.jsx -C 6')
+    print("  git diff -- src/components/project/pulse/card/LiveActivityCard.jsx")
+
+if __name__ == "__main__":
+    main()

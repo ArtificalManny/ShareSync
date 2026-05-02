@@ -800,16 +800,14 @@ export function useHomeRealtime() {
       }
 
       // ⭐ Phase 4: Merge real stats from /users/me/stats into summary
-      // Note: focus/efficiency fall back to locally-calculated values
-      // (computed in deriveSummaryFromActivities) when backend omits them.
       if (statsRes.status === "fulfilled" && statsRes.value) {
         const stats = statsRes.value;
         const merged = {
           ...(lastGoodRef.current.summary || {}),
           ships: stats.ships ?? stats.weeklyShips ?? 0,
           streakDays: stats.streakDays ?? 0,
-          focus: stats.focus ?? stats.completionRate ?? null,
-          efficiency: stats.efficiency ?? null,
+          focus: stats.focus ?? stats.completionRate ?? 0,
+          efficiency: stats.efficiency ?? 0,
         };
         lastGoodRef.current.summary = merged;
         safeSet(setSummaryRaw, merged);
@@ -889,8 +887,8 @@ export function useHomeRealtime() {
             ...(lastGoodRef.current.summary || {}),
             ships: stats.ships ?? stats.weeklyShips ?? 0,
             streakDays: stats.streakDays ?? 0,
-            focus: stats.focus ?? stats.completionRate ?? null,
-            efficiency: stats.efficiency ?? null,
+            focus: stats.focus ?? stats.completionRate ?? 0,
+            efficiency: stats.efficiency ?? 0,
           };
           lastGoodRef.current.summary = merged;
           safeSet(setSummaryRaw, merged);

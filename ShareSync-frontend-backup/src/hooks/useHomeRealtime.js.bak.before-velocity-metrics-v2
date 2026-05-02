@@ -808,8 +808,8 @@ export function useHomeRealtime() {
           ...(lastGoodRef.current.summary || {}),
           ships: stats.ships ?? stats.weeklyShips ?? 0,
           streakDays: stats.streakDays ?? 0,
-          focus: stats.focus ?? stats.completionRate ?? null,
-          efficiency: stats.efficiency ?? null,
+          focus: stats.focus ?? stats.completionRate ?? lastGoodRef.current.summary?.focus ?? 0,
+          efficiency: stats.efficiency ?? lastGoodRef.current.summary?.efficiency ?? 0,
         };
         lastGoodRef.current.summary = merged;
         safeSet(setSummaryRaw, merged);
@@ -889,8 +889,8 @@ export function useHomeRealtime() {
             ...(lastGoodRef.current.summary || {}),
             ships: stats.ships ?? stats.weeklyShips ?? 0,
             streakDays: stats.streakDays ?? 0,
-            focus: stats.focus ?? stats.completionRate ?? null,
-            efficiency: stats.efficiency ?? null,
+            focus: stats.focus ?? stats.completionRate ?? lastGoodRef.current.summary?.focus ?? 0,
+            efficiency: stats.efficiency ?? lastGoodRef.current.summary?.efficiency ?? 0,
           };
           lastGoodRef.current.summary = merged;
           safeSet(setSummaryRaw, merged);
