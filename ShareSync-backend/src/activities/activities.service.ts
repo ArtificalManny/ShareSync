@@ -237,7 +237,7 @@ export class ActivitiesService {
       user: normalizedActor || item?.user || null,
       actorId:
         item?.actorId ||
-        normalizedActor?.id ||
+        (normalizedActor as any)?.id ||
         this.activityFeedExtractId(item?.userId),
       actorName: actorName || null,
       userName: actorName || null,

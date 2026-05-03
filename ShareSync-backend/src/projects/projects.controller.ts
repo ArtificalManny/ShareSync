@@ -22,7 +22,9 @@ import {
   HttpCode,
   Logger,
   Request,
-} from '@nestjs/common';
+  UploadedFile,
+  BadRequestException,
+  } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -30,6 +32,8 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -48,10 +52,60 @@ import { ProjectFollowService } from '../follows/project-follow.service';
 import { FollowProjectDto } from '../follows/dto/follow-project.dto';
 import { UpdateFollowPrefsDto } from '../follows/dto/update-follow-prefs.dto';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLLER
 // ═══════════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECT BRANDING UPLOAD BRIDGE
+// ─────────────────────────────────────────────────────────────────────────────
+// Purpose:
+// - Let project owners/admins upload a logo/profile image or banner image.
+// - Store the file in the existing /uploads folder.
+// - Save the resulting relative URL on the Project document via ProjectsService.update.
+// - Keep permission checks centralized in ProjectsService.update.
+const PROJECT_BRANDING_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const PROJECT_BRANDING_UPLOAD_DIR = path.join(process.cwd(), 'uploads');
+
+function ensureProjectBrandingUploadDir() {
+  fs.mkdirSync(PROJECT_BRANDING_UPLOAD_DIR, { recursive: true });
+}
+
+function safeProjectBrandingExtension(originalName = '') {
+  const ext = path.extname(originalName || '').toLowerCase();
+  return ext && /^[.a-z0-9]+$/.test(ext) ? ext : '.png';
+}
+
+const projectBrandingDiskStorage = diskStorage({
+  destination: (_req, _file, cb) => {
+    ensureProjectBrandingUploadDir();
+    cb(null, PROJECT_BRANDING_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = safeProjectBrandingExtension(file.originalname);
+    const suffix = Math.random().toString(36).slice(2, 10);
+    cb(null, `project-branding-${Date.now()}-${suffix}${ext}`);
+  },
+});
+
+function projectBrandingFileFilter(
+  _req: any,
+  file: Express.Multer.File,
+  cb: (error: Error | null, acceptFile: boolean) => void,
+) {
+  if (!file?.mimetype?.startsWith('image/')) {
+    cb(new BadRequestException('Only image uploads are allowed for project branding.'), false);
+    return;
+  }
+
+  cb(null, true);
+}
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -333,6 +387,71 @@ export class ProjectsController {
     const userId = req.user?.sub || req.user?.userId;
     const status = await this.projectFollowService.getFollowStatus(id, userId);
     return { success: true, data: status };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PROJECT BRANDING IMAGE UPLOAD
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post(':id/branding-image')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: projectBrandingDiskStorage,
+      fileFilter: projectBrandingFileFilter,
+      limits: { fileSize: PROJECT_BRANDING_MAX_FILE_SIZE },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload a project logo or banner image' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        kind: {
+          type: 'string',
+          enum: ['logo', 'banner'],
+          default: 'logo',
+        },
+      },
+    },
+  })
+  async uploadBrandingImage(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('kind') kind?: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    if (!file) {
+      throw new BadRequestException('No image file provided');
+    }
+
+    const normalizedKind = String(kind || 'logo').toLowerCase() === 'banner'
+      ? 'banner'
+      : 'logo';
+
+    const url = `/uploads/${file.filename}`;
+
+    const project = await this.projectsService.update(
+      id,
+      userId,
+      normalizedKind === 'banner'
+        ? ({ bannerUrl: url } as UpdateProjectDto)
+        : ({ logoUrl: url } as UpdateProjectDto),
+    );
+
+    return {
+      success: true,
+      data: {
+        kind: normalizedKind,
+        url,
+        project,
+      },
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

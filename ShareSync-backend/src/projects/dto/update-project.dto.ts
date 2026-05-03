@@ -159,6 +159,24 @@ export class UpdateProjectDto {
   emoji?: string;
 
   @ApiPropertyOptional({
+    description: 'Project logo/profile image URL. Relative upload URLs are allowed.',
+    example: '/uploads/project-branding-1710000000000-ab12cd34.png',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  logoUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Project banner image URL. Relative upload URLs are allowed.',
+    example: '/uploads/project-branding-1710000000000-ab12cd34.png',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  bannerUrl?: string;
+
+  @ApiPropertyOptional({
     description: 'Project color (hex)',
     example: '#7C3AED',
   })

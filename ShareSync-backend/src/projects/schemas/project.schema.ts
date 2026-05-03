@@ -422,6 +422,19 @@ export class Project {
   @Prop({ type: String, default: '📁' })
   icon: string;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PROJECT BRANDING
+  // ─────────────────────────────────────────────────────────────────────────────
+  // logoUrl is the image/profile-style project logo shown in ProjectAvatar.
+  // bannerUrl is the wide visual banner shown on ProjectHome / settings.
+  // These are stored as relative upload URLs such as /uploads/project-branding-...
+  // so the frontend can resolve them against the backend asset origin.
+  @Prop({ type: String, default: '' })
+  logoUrl?: string;
+
+  @Prop({ type: String, default: '' })
+  bannerUrl?: string;
+
   @Prop({ type: String, default: '#7C3AED' })
   color: string;
 
