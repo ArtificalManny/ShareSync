@@ -35,6 +35,7 @@ import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 import CompleteProjectModal from "../components/project/CompleteProjectModal";
 import ProjectAvatar from "../components/project/ProjectAvatar";
+import ProjectCaseStudyCard from "../components/project/ProjectCaseStudyCard";
 
 // Icons
 import {
@@ -70,6 +71,7 @@ import {
   Bell,
   BellOff,
   Loader2,
+  FileText,
 } from "lucide-react";
 
 // Hooks
@@ -112,6 +114,29 @@ import MembersPanel from "../components/members/MembersPanel";
 import { completeProject, reopenProject } from "../api/projects";
 import { getFollowStatus } from "../api/follows";
 import useFollow from "../hooks/useFollow";
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECT LIFECYCLE SUBSCRIPTION REFRESH BRIDGE
+// ─────────────────────────────────────────────────────────────────────────────
+// Completing a project should release one active-project slot.
+// Reopening a completed project should consume one active-project slot again.
+// SubscriptionButton already listens for these events and reloads /subscriptions/current.
+function notifyProjectLifecycleSubscriptionRefresh(detail = {}) {
+  if (typeof window === "undefined") return;
+
+  const payload = {
+    resource: "projects",
+    source: "ProjectHome",
+    timestamp: Date.now(),
+    ...detail,
+  };
+
+  window.dispatchEvent(new CustomEvent("project:lifecycle-updated", { detail: payload }));
+  window.dispatchEvent(new CustomEvent("subscription:refresh", { detail: payload }));
+  window.dispatchEvent(new CustomEvent("subscription:changed", { detail: payload }));
+  window.dispatchEvent(new CustomEvent("subscription-usage-updated", { detail: payload }));
+}
 
 const SuggestionsPanel =
   SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
@@ -1243,6 +1268,7 @@ function CompletedSnapshotPanel({
   finishLine,
   onReopenProject,
   isReopeningProject = false,
+  onViewCaseStudy,
 }) {
   const snapshot = finishLine?.completionSnapshot || {};
   const closureSummary =
@@ -1298,15 +1324,26 @@ function CompletedSnapshotPanel({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onReopenProject}
-            disabled={isReopeningProject}
-            className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isReopeningProject ? "Reopening…" : "Reopen Project"}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onViewCaseStudy}
+              className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50 shadow-sm transition-all dark:bg-white/[0.05] dark:text-emerald-300 dark:border-emerald-500/20 dark:hover:bg-emerald-500/10"
+            >
+              <FileText className="w-4 h-4" />
+              <span>View Case Study</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onReopenProject}
+              disabled={isReopeningProject}
+              className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>{isReopeningProject ? "Reopening…" : "Reopen Project"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1419,6 +1456,7 @@ function HistoricalModeBanner({
   project,
   onReopenProject,
   isReopeningProject = false,
+  onViewCaseStudy,
 }) {
   const completedAt = formatDateTime(project?.completedAt);
   const outcomeStatus = humanizeEnum(project?.outcomeStatus);
@@ -1459,15 +1497,26 @@ function HistoricalModeBanner({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onReopenProject}
-            disabled={isReopeningProject}
-            className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isReopeningProject ? "Reopening…" : "Reopen Project"}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onViewCaseStudy}
+              className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50 shadow-sm transition-all dark:bg-white/[0.05] dark:text-emerald-300 dark:border-emerald-500/20 dark:hover:bg-emerald-500/10"
+            >
+              <FileText className="w-4 h-4" />
+              <span>View Case Study</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onReopenProject}
+              disabled={isReopeningProject}
+              className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>{isReopeningProject ? "Reopening…" : "Reopen Project"}</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -2087,6 +2136,7 @@ function OverviewView({
   onSprintAction,
   onFinishLineAction,
   onReopenProject,
+  onViewCaseStudy,
   isReopeningProject,
   isStartingSprint = false,
   projectOnlineCount = 0,
@@ -2135,6 +2185,34 @@ function OverviewView({
   const teamMetrics = {
     ...metrics,
     teamCapacity,
+  };
+
+  const isCompletedProject = Boolean(
+    finishLine?.isCompleted ||
+      String(project?.status || "").toLowerCase() === "completed" ||
+      project?.completedAt
+  );
+
+  const caseStudyProject = {
+    ...project,
+    completedAt:
+      finishLine?.completedAt ||
+      finishLine?.completionSnapshot?.completedAt ||
+      project?.completedAt,
+    completionSummary:
+      finishLine?.closureSummary ||
+      finishLine?.completionSnapshot?.summary ||
+      project?.completionSummary,
+    outcomeStatus:
+      finishLine?.outcomeStatus ||
+      finishLine?.completionSnapshot?.outcomeStatus ||
+      project?.outcomeStatus,
+    completedTasks:
+      finishLine?.completionSnapshot?.completedTaskCount ??
+      project?.completedTasks,
+    taskCount:
+      finishLine?.completionSnapshot?.totalTaskCount ??
+      project?.taskCount,
   };
 
   return (
@@ -2186,14 +2264,21 @@ function OverviewView({
         />
       </div>
 
-      {finishLine?.isCompleted ? (
-        <div className="mb-8">
-          <CompletedSnapshotPanel
-            finishLine={finishLine}
-            onReopenProject={onReopenProject}
-            isReopeningProject={isReopeningProject}
-          />
-        </div>
+      {isCompletedProject ? (
+        <>
+          <div className="mb-8">
+            <CompletedSnapshotPanel
+              finishLine={finishLine}
+              onReopenProject={onReopenProject}
+              isReopeningProject={isReopeningProject}
+              onViewCaseStudy={onViewCaseStudy}
+            />
+          </div>
+
+          <div className="mb-8">
+            <ProjectCaseStudyCard project={caseStudyProject} />
+          </div>
+        </>
       ) : null}
 
       <div className="mb-8">
@@ -2605,6 +2690,10 @@ export default function ProjectHome() {
       try {
         setIsCompletingProject(true);
         await completeProject(id, payload);
+        notifyProjectLifecycleSubscriptionRefresh({
+          projectId: id,
+          action: "completed",
+        });
         setShowCompleteProjectModal(false);
         await forceLifecycleRefresh();
 
@@ -2637,6 +2726,10 @@ export default function ProjectHome() {
       try {
         setIsReopeningProject(true);
         await reopenProject(id, { reason: "Reopened from ProjectHome finish line" });
+        notifyProjectLifecycleSubscriptionRefresh({
+          projectId: id,
+          action: "reopened",
+        });
         await forceLifecycleRefresh();
 
         toast({
@@ -2750,6 +2843,22 @@ export default function ProjectHome() {
   const isHistoricalProject = projectLifecycleState === "completed";
   const showHistoricalBanner = isHistoricalProject && activeView !== "overview";
 
+  const handleViewCaseStudy = useCallback(() => {
+    if (activeView !== "overview") {
+      setActiveView("overview");
+    }
+
+    if (typeof window === "undefined") return;
+
+    window.setTimeout(() => {
+      const target = document.getElementById("project-case-study");
+      target?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }, [activeView]);
+
   if (loading) return <LoadingState />;
 
   if (error) {
@@ -2785,6 +2894,7 @@ export default function ProjectHome() {
               onSprintAction={handleSprintAction}
               onFinishLineAction={handleFinishLineAction}
               onReopenProject={handleReopenProject}
+              onViewCaseStudy={handleViewCaseStudy}
               isReopeningProject={isReopeningProject}
               isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
@@ -2953,6 +3063,7 @@ export default function ProjectHome() {
           }}
           onReopenProject={handleReopenProject}
           isReopeningProject={isReopeningProject}
+          onViewCaseStudy={handleViewCaseStudy}
         />
       ) : null}
 

@@ -67,6 +67,41 @@ function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(safeNumber(value, 0))));
 }
 
+function getProjectLifecycleStatus(project) {
+  return String(
+    project?.status ||
+      project?.lifecycleStatus ||
+      project?.state ||
+      ""
+  ).toLowerCase();
+}
+
+function isCompletedProject(project) {
+  const status = getProjectLifecycleStatus(project);
+  return status === "completed" || Boolean(project?.completedAt);
+}
+
+function isArchivedProject(project) {
+  const status = getProjectLifecycleStatus(project);
+  return status === "archived" || Boolean(project?.isArchived);
+}
+
+function isReadyToCloseProject(project, progress = 0) {
+  return !isCompletedProject(project) && !isArchivedProject(project) && progress >= 100;
+}
+
+function getProjectRelationshipLabel(project) {
+  if (isCompletedProject(project)) {
+    return "View Case Study";
+  }
+
+  if (isArchivedProject(project)) {
+    return "Save";
+  }
+
+  return "Follow";
+}
+
 function getFeaturedProgress(project) {
   const metrics = project?.metrics || {};
   const direct =
@@ -91,9 +126,25 @@ function getFeaturedProgress(project) {
 function getMomentumMeta(project, progress) {
   const raw = String(project?.momentumState || project?.momentum || '').trim().toLowerCase();
 
-  if (raw.includes('complete') || progress >= 100) {
+  if (isCompletedProject(project)) {
     return {
       label: 'Completed',
+      tone: 'emerald',
+      chip: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20',
+    };
+  }
+
+  if (isArchivedProject(project)) {
+    return {
+      label: 'Archived',
+      tone: 'slate',
+      chip: 'bg-slate-50 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/[0.08]',
+    };
+  }
+
+  if (isReadyToCloseProject(project, progress)) {
+    return {
+      label: 'Ready to close',
       tone: 'emerald',
       chip: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20',
     };
@@ -128,6 +179,27 @@ function getMomentumMeta(project, progress) {
     tone: 'slate',
     chip: 'bg-slate-50 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/[0.08]',
   };
+}
+
+function isDiscoverLiveProject(project) {
+  return !isCompletedProject(project) && !isArchivedProject(project);
+}
+
+function hasCaseStudyData(project) {
+  const caseStudy = project?.caseStudy || project?.caseStudyData || {};
+
+  return Boolean(
+    caseStudy?.summary ||
+      caseStudy?.result ||
+      caseStudy?.outcome ||
+      caseStudy?.lessons ||
+      project?.caseStudySummary ||
+      project?.finalResult ||
+      project?.result ||
+      project?.results ||
+      project?.outcome ||
+      project?.lessons
+  );
 }
 
 function pluralize(count, singular, plural) {
@@ -278,6 +350,10 @@ function ProjectCard({ project, initialFollowing }) {
     initialFollowing || false,
   );
 
+  const relationshipLabel = getProjectRelationshipLabel(project);
+  const relationshipButtonText =
+    following && relationshipLabel === 'Follow' ? 'Following' : relationshipLabel;
+
   const handleFollow = (e) => {
     e.stopPropagation();
     if (isDemo) return; // Don't call API for demo projects
@@ -391,7 +467,7 @@ function ProjectCard({ project, initialFollowing }) {
             ) : (
               <Eye className="w-3 h-3" />
             )}
-            {following ? 'Following' : 'Follow'}
+            {relationshipButtonText}
           </button>
 
           {!isDemo && (
@@ -423,6 +499,100 @@ function FeaturedProjectsEmptyState() {
         Create a project → choose Public → enable Listed in Discover & Search.
       </p>
     </div>
+  );
+}
+
+function FeaturedProjectsSection({
+  title,
+  subtitle,
+  projects,
+  followStatuses,
+  emptyState = null,
+  showSortControls = false,
+  sortBy,
+  onSortChange,
+  tone = 'emerald',
+  icon: Icon = TrendingUp,
+}) {
+  if ((!projects || projects.length === 0) && !emptyState) {
+    return null;
+  }
+
+  const toneClasses = {
+    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500',
+    violet: 'text-violet-600 dark:text-violet-400 bg-violet-500',
+    amber: 'text-amber-600 dark:text-amber-400 bg-amber-500',
+    slate: 'text-slate-600 dark:text-zinc-300 bg-slate-400',
+  };
+
+  const activeTone = toneClasses[tone] || toneClasses.emerald;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeTone.split(' ').find((c) => c.startsWith('bg-')) || 'bg-emerald-500'}`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${activeTone.split(' ').find((c) => c.startsWith('bg-')) || 'bg-emerald-500'}`}></span>
+            </span>
+
+            <div className="min-w-0">
+              <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider ${activeTone.replace(/bg-[^\s]+/g, '').trim()}`}>
+                <Icon className="w-3 h-3" />
+                <span>{title}</span>
+              </div>
+
+              {subtitle && (
+                <p className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-zinc-500 normal-case tracking-normal">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {showSortControls && (
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] shrink-0">
+            {[
+              { id: 'trending', label: 'Trending', icon: TrendingUp },
+              { id: 'streak', label: 'Streaks', icon: Flame },
+            ].map(({ id, label, icon: SortIcon }) => (
+              <button
+                key={id}
+                onClick={() => onSortChange?.(id)}
+                className={
+                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all '
+                  + (sortBy === id
+                    ? 'bg-white dark:bg-white/[0.10] text-slate-800 dark:text-white shadow-sm'
+                    : 'text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/60')
+                }
+              >
+                <SortIcon className="w-3 h-3" />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {projects && projects.length > 0 ? (
+          projects.map((project) => {
+            const pid = project._id || project.id;
+            return (
+              <ProjectCard
+                key={pid}
+                project={project}
+                initialFollowing={!!followStatuses[pid]}
+              />
+            );
+          })
+        ) : (
+          emptyState
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -531,6 +701,15 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
     return 0;
   });
 
+  const liveProjects = sorted.filter(isDiscoverLiveProject);
+  const completedProjects = sorted.filter(isCompletedProject);
+  const caseStudyProjects = completedProjects.filter(hasCaseStudyData);
+  const recentlyShippedProjects = completedProjects.filter((project) => !hasCaseStudyData(project));
+  const hasVisibleLifecycleProjects =
+    liveProjects.length > 0 ||
+    recentlyShippedProjects.length > 0 ||
+    caseStudyProjects.length > 0;
+
   if (loading) {
     return (
       <div className="py-8 flex items-center justify-center">
@@ -540,58 +719,38 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with sort toggles */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Live Ranking</span>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <FeaturedProjectsSection
+        title="Live Ranking"
+        subtitle="Active, planning, and ready-to-close projects."
+        projects={liveProjects}
+        followStatuses={followStatuses}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        showSortControls
+        tone="emerald"
+        icon={TrendingUp}
+        emptyState={!hasVisibleLifecycleProjects ? <FeaturedProjectsEmptyState /> : null}
+      />
 
-        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06]">
-          {[
-            { id: 'trending', label: 'Trending', icon: TrendingUp },
-            { id: 'streak', label: 'Streaks', icon: Flame },
-          ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setSortBy(id)}
-              className={
-                'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all '
-                + (sortBy === id
-                  ? 'bg-white dark:bg-white/[0.10] text-slate-800 dark:text-white shadow-sm'
-                  : 'text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/60')
-              }
-            >
-              <Icon className="w-3 h-3" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <FeaturedProjectsSection
+        title="Recently Shipped"
+        subtitle="Completed projects that have formally shipped."
+        projects={recentlyShippedProjects}
+        followStatuses={followStatuses}
+        tone="violet"
+        icon={Star}
+      />
 
-      {/* Project cards — each card manages its own follow state via useFollow hook */}
-      <div className="space-y-3">
-        {sorted.length > 0 ? (
-          sorted.map((project) => {
-            const pid = project._id || project.id;
-            return (
-              <ProjectCard
-                key={pid}
-                project={project}
-                initialFollowing={!!followStatuses[pid]}
-              />
-            );
-          })
-        ) : (
-          <FeaturedProjectsEmptyState />
-        )}
-      </div>
+      <FeaturedProjectsSection
+        title="Case Studies"
+        subtitle="Completed projects with public proof, results, and lessons."
+        projects={caseStudyProjects}
+        followStatuses={followStatuses}
+        tone="amber"
+        icon={Zap}
+      />
     </div>
   );
 }
+

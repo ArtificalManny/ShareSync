@@ -68,9 +68,17 @@ export async function followProject(projectId) {
   try {
     const res = await client.post(`/follows/${id}`);
     return normalizeFollowMutationResult(res, true);
-  } catch (err) {
-    console.error('[follows] followProject failed:', err);
-    throw err;
+  } catch (primaryErr) {
+    try {
+      const fallbackRes = await client.post(`/projects/${id}/follow`);
+      return normalizeFollowMutationResult(fallbackRes, true);
+    } catch (fallbackErr) {
+      console.error('[follows] followProject failed:', {
+        primary: primaryErr?.response?.status || primaryErr?.message || primaryErr,
+        fallback: fallbackErr?.response?.status || fallbackErr?.message || fallbackErr,
+      });
+      throw fallbackErr;
+    }
   }
 }
 
@@ -86,9 +94,17 @@ export async function unfollowProject(projectId) {
   try {
     const res = await client.delete(`/follows/${id}`);
     return normalizeFollowMutationResult(res, false);
-  } catch (err) {
-    console.error('[follows] unfollowProject failed:', err);
-    throw err;
+  } catch (primaryErr) {
+    try {
+      const fallbackRes = await client.delete(`/projects/${id}/follow`);
+      return normalizeFollowMutationResult(fallbackRes, false);
+    } catch (fallbackErr) {
+      console.error('[follows] unfollowProject failed:', {
+        primary: primaryErr?.response?.status || primaryErr?.message || primaryErr,
+        fallback: fallbackErr?.response?.status || fallbackErr?.message || fallbackErr,
+      });
+      throw fallbackErr;
+    }
   }
 }
 
