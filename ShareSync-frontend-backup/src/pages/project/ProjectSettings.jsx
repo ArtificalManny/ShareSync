@@ -1,5 +1,5 @@
 // src/pages/project/ProjectSettings.jsx - Project-specific settings
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Settings, Image, Bell, AlertTriangle, ArrowLeft,
@@ -9,6 +9,40 @@ import { useAuth } from '../../context/AuthContext';
 import { useProjectOverview } from '../../hooks/useProjectOverview';
 import { toast } from '../../components/ui/toast';
 import client from '../../api/client';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECT BRANDING FRONTEND BRIDGE
+// ─────────────────────────────────────────────────────────────────────────────
+// The backend stores uploaded image URLs as relative values like:
+//   /uploads/project-branding-...
+// The browser is running on Vite, so previews need the backend asset origin.
+const RAW_PROJECT_ASSET_BASE =
+  client?.defaults?.baseURL ||
+  import.meta?.env?.VITE_API_URL ||
+  import.meta?.env?.VITE_BACKEND_URL ||
+  'http://localhost:5050/api';
+
+const PROJECT_ASSET_ORIGIN = String(RAW_PROJECT_ASSET_BASE)
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
+
+function resolveProjectAssetUrl(value) {
+  if (!value || typeof value !== 'string') return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+    return `${PROJECT_ASSET_ORIGIN}/${trimmed.replace(/^\/+/, '')}`;
+  }
+
+  return trimmed;
+}
+
 
 /**
  * ProjectSettings - Project-specific settings page
@@ -27,6 +61,7 @@ const ProjectSettings = () => {
   // Form State
   const [formData, setFormData] = useState({
     name: '',
+    icon: '📁',
     picture: '',
     banner: '',
     description: ''
@@ -42,7 +77,11 @@ const ProjectSettings = () => {
   });
 
   const [saving, setSaving] = useState(false);
+  const [uploadingBranding, setUploadingBranding] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  const logoFileInputRef = useRef(null);
+  const bannerFileInputRef = useRef(null);
 
   // 1. DETERMINE ROLE & PERMISSIONS
   const currentUserId = user?.id ? String(user.id) : '';
@@ -69,8 +108,9 @@ const ProjectSettings = () => {
     if (project) {
       setFormData({
         name: project.name || '',
-        picture: project.icon || '📁',
-        banner: project.banner || '',
+        icon: project.icon || project.emoji || '📁',
+        picture: project.logoUrl || project.logo || project.avatarUrl || project.picture || '',
+        banner: project.bannerUrl || project.banner || project.coverUrl || project.coverImageUrl || '',
         description: project.description || ''
       });
 
@@ -91,12 +131,13 @@ const ProjectSettings = () => {
     if (!canEditProjectInfo) return;
     setSaving(true);
     try {
-      // ✅ FIX: Removed 'banner' because it doesn't exist in the backend schema
-      // This stops NestJS from throwing a 400 Bad Request
       await client.put(`/projects/${id}`, {
         name: formData.name,
         description: formData.description,
-        icon: formData.picture
+        icon: formData.icon || '📁',
+        emoji: formData.icon || '📁',
+        logoUrl: formData.picture || '',
+        bannerUrl: formData.banner || ''
       });
       toast({ title: '✅ Project updated!', variant: 'success' });
       refresh(); // Reload data via hook
@@ -144,7 +185,78 @@ const ProjectSettings = () => {
   };
 
   const handleImageUpload = (type) => {
-    toast({ title: 'Image upload coming soon!', variant: 'default' });
+    if (!canEditProjectInfo || uploadingBranding) return;
+
+    if (type === 'banner') {
+      bannerFileInputRef.current?.click();
+      return;
+    }
+
+    logoFileInputRef.current?.click();
+  };
+
+  const handleBrandingFileSelected = async (type, event) => {
+    if (!canEditProjectInfo) return;
+
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+
+    if (!file.type?.startsWith('image/')) {
+      toast({
+        title: 'Please choose an image file',
+        variant: 'error'
+      });
+      event.target.value = '';
+      return;
+    }
+
+    const normalizedType = type === 'banner' ? 'banner' : 'logo';
+    const body = new FormData();
+    body.append('file', file);
+    body.append('kind', normalizedType);
+
+    setUploadingBranding(true);
+
+    try {
+      const response = await client.post(`/projects/${id}/branding-image`, body, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const payload = response?.data?.data || response?.data || {};
+      const url =
+        payload.url ||
+        payload.project?.[normalizedType === 'banner' ? 'bannerUrl' : 'logoUrl'] ||
+        '';
+
+      if (!url) {
+        throw new Error('Upload succeeded, but no image URL was returned.');
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        ...(normalizedType === 'banner'
+          ? { banner: url }
+          : { picture: url }),
+      }));
+
+      toast({
+        title: normalizedType === 'banner' ? '✅ Project banner uploaded!' : '✅ Project logo uploaded!',
+        variant: 'success'
+      });
+
+      refresh();
+    } catch (error) {
+      toast({
+        title: 'Image upload failed',
+        description: error.response?.data?.message || error.message,
+        variant: 'error'
+      });
+    } finally {
+      setUploadingBranding(false);
+      if (event?.target) event.target.value = '';
+    }
   };
 
   if (loading) {
@@ -158,6 +270,20 @@ const ProjectSettings = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] text-slate-800 dark:text-white pb-20 transition-colors">
       <div className="max-w-4xl mx-auto px-6 py-8">
+        <input
+          ref={logoFileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => handleBrandingFileSelected('logo', event)}
+        />
+        <input
+          ref={bannerFileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => handleBrandingFileSelected('banner', event)}
+        />
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -205,7 +331,7 @@ const ProjectSettings = () => {
               <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Banner</label>
               <div className="relative h-40 rounded-xl overflow-hidden bg-slate-700 group">
                 {formData.banner ? (
-                  <img src={formData.banner} alt="Banner" className="w-full h-full object-cover" />
+                  <img src={resolveProjectAssetUrl(formData.banner)} alt="Banner" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-500">
                     No banner set
@@ -222,7 +348,7 @@ const ProjectSettings = () => {
                     </button>
                     {formData.banner && (
                       <button
-                        onClick={() => setFormData({ ...formData, banner: null })}
+                        onClick={() => setFormData({ ...formData, banner: '' })}
                         className="px-4 py-2 bg-error-600 hover:bg-error-500 rounded-lg font-semibold transition-all flex items-center gap-2"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -237,13 +363,23 @@ const ProjectSettings = () => {
             {/* Project Picture & Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Icon</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Logo / Icon</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold relative group">
-                    {formData.picture}
+                  <div className="w-20 h-20 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold relative group overflow-hidden">
+                    {formData.picture ? (
+                      <img
+                        src={resolveProjectAssetUrl(formData.picture)}
+                        alt={`${formData.name || 'Project'} logo`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{formData.icon || '📁'}</span>
+                    )}
+
                     {canEditProjectInfo && (
                       <button
                         onClick={() => handleImageUpload('picture')}
+                        disabled={uploadingBranding}
                         className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                       >
                         <Camera className="w-6 h-6" />
@@ -254,9 +390,9 @@ const ProjectSettings = () => {
                     <input
                       type="text"
                       disabled={!canEditProjectInfo}
-                      value={formData.picture}
-                      onChange={(e) => setFormData({ ...formData, picture: e.target.value })}
-                      placeholder="Enter emoji or icon URL"
+                      value={formData.icon}
+                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                      placeholder="Enter emoji fallback, e.g. 📁"
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
                     />
                   </div>
@@ -290,11 +426,11 @@ const ProjectSettings = () => {
             {canEditProjectInfo && (
               <button
                 onClick={handleSaveProject}
-                disabled={saving}
+                disabled={saving || uploadingBranding}
                 className="w-full px-6 py-3 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20"
               >
                 <Save className="w-5 h-5" />
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? 'Saving...' : uploadingBranding ? 'Uploading image...' : 'Save Changes'}
               </button>
             )}
           </div>

@@ -50,6 +50,49 @@ const SIZE_CLASSES = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECT AVATAR BRANDING BRIDGE
+// ─────────────────────────────────────────────────────────────────────────────
+// Prefer uploaded project logos over symbolic icon/emoji fallbacks.
+const RAW_PROJECT_ASSET_BASE =
+  import.meta?.env?.VITE_API_URL ||
+  import.meta?.env?.VITE_BACKEND_URL ||
+  "http://localhost:5050/api";
+
+const PROJECT_ASSET_ORIGIN = String(RAW_PROJECT_ASSET_BASE)
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
+
+function resolveProjectAssetUrl(value) {
+  if (!value || typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+    return `${PROJECT_ASSET_ORIGIN}/${trimmed.replace(/^\/+/, "")}`;
+  }
+
+  return trimmed;
+}
+
+function getProjectLogoUrl(project, visual) {
+  return resolveProjectAssetUrl(
+    project?.logoUrl ||
+      project?.logo ||
+      project?.picture ||
+      project?.avatarUrl ||
+      project?.imageUrl ||
+      visual?.imageUrl ||
+      ""
+  );
+}
+
+
 export default function ProjectAvatar({
   project,
   size = "lg",
@@ -57,6 +100,7 @@ export default function ProjectAvatar({
   title,
 }) {
   const visual = getProjectVisuals(project);
+  const avatarImageUrl = getProjectLogoUrl(project, visual);
   const sizeClasses = SIZE_CLASSES[size] || SIZE_CLASSES.lg;
   const Icon = ICONS[visual.iconKey] || ICONS.project;
 
@@ -94,9 +138,9 @@ export default function ProjectAvatar({
         }}
       />
 
-      {visual.imageUrl ? (
+      {avatarImageUrl ? (
         <img
-          src={visual.imageUrl}
+          src={avatarImageUrl}
           alt=""
           className="relative z-10 w-full h-full object-cover"
           draggable="false"

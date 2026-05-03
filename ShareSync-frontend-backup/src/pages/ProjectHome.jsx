@@ -618,6 +618,45 @@ function SpectatorAccessBanner({ viewerAccess, following, followersCount }) {
 // PROJECT HEADER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PROJECT HOME BANNER BRANDING BRIDGE
+// ─────────────────────────────────────────────────────────────────────────────
+const RAW_PROJECT_HOME_ASSET_BASE =
+  import.meta?.env?.VITE_API_URL ||
+  import.meta?.env?.VITE_BACKEND_URL ||
+  "http://localhost:5050/api";
+
+const PROJECT_HOME_ASSET_ORIGIN = String(RAW_PROJECT_HOME_ASSET_BASE)
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
+
+function resolveProjectHomeAssetUrl(value) {
+  if (!value || typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
+    return `${PROJECT_HOME_ASSET_ORIGIN}/${trimmed.replace(/^\/+/, "")}`;
+  }
+
+  return trimmed;
+}
+
+function getProjectBannerUrl(project) {
+  return resolveProjectHomeAssetUrl(
+    project?.bannerUrl ||
+      project?.banner ||
+      project?.coverUrl ||
+      project?.coverImageUrl ||
+      ""
+  );
+}
+
 function ProjectHeader({
   project,
   metrics,
@@ -678,6 +717,16 @@ function ProjectHeader({
 
   return (
     <header className="px-10 py-6 border-b border-slate-200/60 bg-slate-50 dark:bg-[#0f172a] dark:border-white/10">
+      {getProjectBannerUrl(project) ? (
+        <div className="mb-6 h-36 md:h-44 overflow-hidden rounded-[28px] border border-slate-200/80 bg-slate-100 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <img
+            src={getProjectBannerUrl(project)}
+            alt={`${project?.name || "Project"} banner`}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ) : null}
+
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
         <span
           onClick={onBackToProjects}

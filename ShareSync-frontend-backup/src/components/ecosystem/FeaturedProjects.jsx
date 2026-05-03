@@ -167,6 +167,94 @@ function isPublicDiscoverableProject(project) {
   return isPublic && isListed;
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISCOVER FEATURED PROJECT BRANDING HYDRATION BRIDGE
+// ─────────────────────────────────────────────────────────────────────────────
+// /discovery/trending may return a lightweight project object without the newest
+// branding fields. Hydrate each visible real project from /projects/:id so
+// ProjectAvatar receives logoUrl/bannerUrl exactly like Projects.jsx/ProjectHome.
+function getProjectId(project) {
+  return project?._id || project?.id || project?.projectId || '';
+}
+
+function hasProjectBranding(project) {
+  return Boolean(
+    project?.logoUrl ||
+      project?.logo ||
+      project?.picture ||
+      project?.avatarUrl ||
+      project?.imageUrl ||
+      project?.bannerUrl ||
+      project?.banner ||
+      project?.coverUrl ||
+      project?.coverImageUrl
+  );
+}
+
+function unwrapProjectResponse(payload) {
+  if (!payload) return null;
+  if (payload?.data?.data && typeof payload.data.data === 'object') return payload.data.data;
+  if (payload?.data && typeof payload.data === 'object') return payload.data;
+  if (typeof payload === 'object') return payload;
+  return null;
+}
+
+async function hydrateProjectBranding(project) {
+  const projectId = getProjectId(project);
+
+  if (!project || !projectId || String(projectId).startsWith('demo-')) {
+    return project;
+  }
+
+  if (hasProjectBranding(project)) {
+    return project;
+  }
+
+  try {
+    const response = await client.get(`/projects/${projectId}`);
+    const fullProject = unwrapProjectResponse(response);
+
+    if (!fullProject || typeof fullProject !== 'object') {
+      return project;
+    }
+
+    return {
+      ...project,
+      ...fullProject,
+      _id: fullProject._id || project._id || project.id,
+      id: fullProject._id || fullProject.id || project.id || project._id,
+      name: fullProject.name || project.name || project.title || project.projectName,
+      title: fullProject.title || fullProject.name || project.title || project.name,
+      logoUrl:
+        fullProject.logoUrl ||
+        fullProject.logo ||
+        fullProject.picture ||
+        fullProject.avatarUrl ||
+        fullProject.imageUrl ||
+        project.logoUrl ||
+        project.logo ||
+        project.picture ||
+        project.avatarUrl ||
+        project.imageUrl ||
+        '',
+      bannerUrl:
+        fullProject.bannerUrl ||
+        fullProject.banner ||
+        fullProject.coverUrl ||
+        fullProject.coverImageUrl ||
+        project.bannerUrl ||
+        project.banner ||
+        project.coverUrl ||
+        project.coverImageUrl ||
+        '',
+    };
+  } catch (error) {
+    console.warn('[FeaturedProjects] Branding hydration skipped:', projectId, error?.message || error);
+    return project;
+  }
+}
+
 function ProjectCard({ project, initialFollowing }) {
   const navigate = useNavigate();
   const pid = project._id || project.id;
@@ -358,7 +446,11 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
             : [];
 
         if (!cancelled) {
-          const mapped = sourceItems.slice(0, maxVisible).map(p => {
+          const hydratedSourceItems = await Promise.all(
+            sourceItems.slice(0, maxVisible).map(hydrateProjectBranding)
+          );
+
+          const mapped = hydratedSourceItems.map(p => {
             const metrics = p.metrics || {};
             const taskCount = safeNumber(p.taskCount ?? metrics.totalTasks, 0);
             const completedTasks = safeNumber(p.completedTasks ?? metrics.completedTasks, 0);
@@ -373,6 +465,13 @@ export default function FeaturedProjects({ maxVisible = 6, searchQuery = '' }) {
               id: p._id || p.id,
               name: p.name || p.projectName || p.title,
               title: p.title || p.name || p.projectName,
+              logoUrl: p.logoUrl || p.logo || p.picture || p.avatarUrl || p.imageUrl || '',
+              bannerUrl: p.bannerUrl || p.banner || p.coverUrl || p.coverImageUrl || '',
+              logo: p.logo || p.logoUrl || p.picture || p.avatarUrl || p.imageUrl || '',
+              avatarUrl: p.avatarUrl || p.logoUrl || p.logo || p.picture || p.imageUrl || '',
+              imageUrl: p.imageUrl || p.logoUrl || p.logo || p.picture || p.avatarUrl || '',
+              banner: p.banner || p.bannerUrl || p.coverUrl || p.coverImageUrl || '',
+              coverUrl: p.coverUrl || p.bannerUrl || p.banner || p.coverImageUrl || '',
               memberCount: metrics.memberCount || p.memberCount || 0,
               shipCount: metrics.totalShips || p.shipCount || p.totalShips || 0,
               streak: p.streakDays || p.streak || 0,
