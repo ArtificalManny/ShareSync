@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, TooManyRequestsException, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIService } from './ai.service';
@@ -28,9 +28,8 @@ export class AIController {
     const usageCheck = await this.subscriptionsService.checkLimit(userId, 'aiCalls', amount);
 
     if (!usageCheck.allowed) {
-      throw new HttpException(
+      throw new TooManyRequestsException(
         `AI call limit reached for your current plan. Limit: ${usageCheck.limit}.`,
-        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 

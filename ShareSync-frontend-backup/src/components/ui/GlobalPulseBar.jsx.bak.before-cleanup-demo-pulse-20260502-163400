@@ -133,7 +133,7 @@ export default function GlobalPulseBar() {
 
   // Demo pulse disabled.
   // This used to randomly show fake bottom-screen popups such as:
-  // "fake demo pulse".
+  // "Sarah shipped API v2 endpoint".
   // Keep real event-driven pulses above, but do not generate fake demo activity.
   useEffect(() => {
     return undefined;

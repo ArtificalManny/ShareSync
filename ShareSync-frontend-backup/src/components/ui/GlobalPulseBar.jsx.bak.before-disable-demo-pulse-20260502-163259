@@ -131,13 +131,20 @@ export default function GlobalPulseBar() {
     };
   }, [triggerPulse]);
 
-  // Demo pulse disabled.
-  // This used to randomly show fake bottom-screen popups such as:
-  // "fake demo pulse".
-  // Keep real event-driven pulses above, but do not generate fake demo activity.
+  // Demo: Random pulse every 30-60 seconds (remove in production)
   useEffect(() => {
-    return undefined;
-  }, []);
+    const interval = setInterval(() => {
+      if (Math.random() > 0.85) { // 15% chance
+        triggerPulse({
+          user: 'Sarah',
+          action: 'shipped',
+          target: 'API v2 endpoint',
+        });
+      }
+    }, 45000);
+
+    return () => clearInterval(interval);
+  }, [triggerPulse]);
 
   return (
     <div className="global-pulse-bar">

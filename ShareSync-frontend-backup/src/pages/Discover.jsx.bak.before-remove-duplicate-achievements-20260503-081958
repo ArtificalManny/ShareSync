@@ -318,6 +318,12 @@ export default function Discover() {
               />
 
               <div className="rounded-[1.75rem] border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#111116]/80 shadow-sm p-4">
+                <Achievements
+                  currentLevel={currentLevel}
+                  currentXp={currentXp}
+                  currentStreak={streakDays}
+                  totalShips={totalShips}
+                />
               </div>
             </aside>
           </div>
@@ -355,6 +361,12 @@ export default function Discover() {
               />
 
               <div className="rounded-[1.75rem] border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#111116]/80 shadow-sm p-4">
+                <Achievements
+                  currentLevel={currentLevel}
+                  currentXp={currentXp}
+                  currentStreak={streakDays}
+                  totalShips={totalShips}
+                />
               </div>
 
               <div className="hidden xl:block rounded-[1.75rem] border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#111116]/80 shadow-sm p-5">

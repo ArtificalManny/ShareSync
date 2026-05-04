@@ -1,48 +1,20 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AIService } from './ai.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { SuggestionType, ChatRequestDto } from './dto';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
 export class AIController {
-  constructor(
-    private readonly aiService: AIService,
-    private readonly subscriptionsService: SubscriptionsService,
-  ) {}
-
-  private getRequestUserId(req: Request): string | null {
-    const user = (req as any)?.user || {};
-    return user.sub || user.userId || user.id || null;
-  }
-
-  private async chargeAiCall(req: Request, amount = 1): Promise<void> {
-    const userId = this.getRequestUserId(req);
-
-    if (!userId) {
-      return;
-    }
-
-    const usageCheck = await this.subscriptionsService.checkLimit(userId, 'aiCalls', amount);
-
-    if (!usageCheck.allowed) {
-      throw new HttpException(
-        `AI call limit reached for your current plan. Limit: ${usageCheck.limit}.`,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    await this.subscriptionsService.incrementUsage(userId, 'aiCalls', amount);
-  }
+  constructor(private readonly aiService: AIService) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // NEW ENDPOINTS (For MentorDock & AISuggestionCard)
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Post('chat')
-  async chat(@Req() req: Request, @Body() body: any) {
+  async chat(@Body() body: any) {
     const contextData = {
       scope: body.scope,
       projectId: body.projectId,
@@ -51,14 +23,12 @@ export class AIController {
     };
 
     const text = await this.aiService.generateChatResponse(body.prompt, contextData);
-    await this.chargeAiCall(req);
     return { text };
   }
 
   @Get('suggestion')
-  async getSingleSuggestion(@Req() req: Request) {
+  async getSingleSuggestion() {
     const suggestion = await this.aiService.generateSingleSuggestion();
-    await this.chargeAiCall(req);
     // Wrap it in the exact JSON format your React AISuggestionCard expects
     return { suggestion };
   }
@@ -75,15 +45,11 @@ export class AIController {
     const userId = (req as any).user?.userId || (req as any).user?.id;
     const limit = query.limit ? Number(query.limit) : undefined;
 
-    const suggestions = await this.aiService.getSuggestions(userId, {
+    return this.aiService.getSuggestions(userId, {
       type: query.type,
       projectId: query.projectId,
       limit,
     });
-
-    await this.chargeAiCall(req);
-
-    return suggestions;
   }
 
   @Post('analyze-task')

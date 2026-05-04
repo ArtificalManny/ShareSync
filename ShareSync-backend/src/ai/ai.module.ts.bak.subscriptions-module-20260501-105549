@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { AIController } from './ai.controller';
@@ -17,7 +16,6 @@ import { TasksModule } from '../tasks/tasks.module';
 
 @Module({
   imports: [
-    SubscriptionsModule,
     MongooseModule.forFeature([
       { name: Task.name, schema: TaskSchema },
       { name: Project.name, schema: ProjectSchema },

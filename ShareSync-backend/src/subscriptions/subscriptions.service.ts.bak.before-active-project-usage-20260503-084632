@@ -190,8 +190,6 @@ export class SubscriptionsService {
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     private readonly eventEmitter: EventEmitter2,
-    @InjectModel('Project')
-    private readonly projectModel: Model<any>,
   ) {
     this.initializeStripe();
   }
@@ -283,53 +281,6 @@ export class SubscriptionsService {
   // USAGE & LIMITS
   // ═══════════════════════════════════════════════════════════════════════════
 
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ACTIVE PROJECT USAGE COUNT BRIDGE
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Subscription project limits are based on active operating capacity, not total
-  // historical projects. Completed/archived projects remain visible but do not
-  // consume a free-plan active project slot.
-  private getActiveProjectUsageQuery(userId: string): Record<string, any> {
-    const oid = new Types.ObjectId(userId);
-
-    const inactiveProjectStatuses = [
-      'completed',
-      'done',
-      'archived',
-      'deleted',
-      'COMPLETED',
-      'DONE',
-      'ARCHIVED',
-      'DELETED',
-    ];
-
-    return {
-      $and: [
-        {
-          $or: [
-            { ownerId: oid },
-            { owner: oid },
-            { 'members.userId': oid },
-            { 'members.user': oid },
-          ],
-        },
-        {
-          $or: [
-            { completedAt: { $exists: false } },
-            { completedAt: null },
-          ],
-        },
-      ],
-      isArchived: { $ne: true },
-      status: { $nin: inactiveProjectStatuses },
-    };
-  }
-
-  private async countActiveProjectsForUser(userId: string): Promise<number> {
-    return this.projectModel.countDocuments(this.getActiveProjectUsageQuery(userId)).exec();
-  }
-
   async checkLimit(
     userId: string,
     resource: 'projects' | 'storage' | 'aiCalls',
@@ -343,7 +294,7 @@ export class SubscriptionsService {
     switch (resource) {
       case 'projects':
         limit = subscription.limits.projects;
-        current = await this.countActiveProjectsForUser(userId);
+        current = subscription.usage.projects || 0;
         break;
       case 'storage':
         limit = subscription.limits.storageBytes;

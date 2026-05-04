@@ -28,7 +28,6 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SubscriptionsService, PLAN_CONFIGS } from './subscriptions.service';
-import { VaultFile } from '../vault/schemas/vault-file.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -45,7 +44,6 @@ export class SubscriptionsController {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,
     @InjectModel('Project') private readonly projectModel: Model<any>,
-    @InjectModel(VaultFile.name) private readonly vaultFileModel: Model<any>,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -61,66 +59,16 @@ export class SubscriptionsController {
     const userId = req.user?.sub || req.user?.userId;
     const subscription = await this.subscriptionsService.getOrCreateSubscription(userId);
 
-    // SUBSCRIPTION USAGE REALTIME BRIDGE
-    // ACTIVE PROJECT USAGE COUNT BRIDGE
-    // Count active operating projects only. Completed and archived projects
-    // remain visible but do not consume free-plan project capacity.
-    // Projects and storage are derived from live records so the Navbar usage pill
-    // does not depend on stale subscription.usage snapshots.
+    // Get real project count instead of subscription doc's stale value
     const oid = new Types.ObjectId(userId);
-    const inactiveProjectStatuses = [
-      'completed',
-      'done',
-      'archived',
-      'deleted',
-      'COMPLETED',
-      'DONE',
-      'ARCHIVED',
-      'DELETED',
-    ];
-
-    const projectAccessQuery = {
-      $and: [
-        {
-          $or: [
-            { ownerId: oid },
-            { owner: oid },
-            { 'members.userId': oid },
-            { 'members.user': oid },
-          ],
-        },
-        {
-          $or: [
-            { completedAt: { $exists: false } },
-            { completedAt: null },
-          ],
-        },
+    const realProjectCount = await this.projectModel.countDocuments({
+      $or: [
+        { ownerId: oid },
+        { owner: oid },
+        { 'members.userId': oid },
       ],
       isArchived: { $ne: true },
-      status: { $nin: inactiveProjectStatuses },
-    };
-
-    const realProjectIds = await this.projectModel.distinct('_id', projectAccessQuery);
-    const realProjectCount = realProjectIds.length;
-
-    const storageRows = realProjectIds.length
-      ? await this.vaultFileModel.aggregate([
-          { $match: { projectId: { $in: realProjectIds } } },
-          {
-            $group: {
-              _id: null,
-              totalBytes: {
-                $sum: {
-                  $ifNull: ['$sizeInBytes', { $ifNull: ['$size', 0] }],
-                },
-              },
-            },
-          },
-        ])
-      : [];
-
-    const realStorageBytes = storageRows?.[0]?.totalBytes || 0;
-    const baseUsage = JSON.parse(JSON.stringify(subscription.usage || {}));
+    });
 
     return {
       success: true,
@@ -128,13 +76,7 @@ export class SubscriptionsController {
         plan: subscription.plan,
         status: subscription.status,
         billingInterval: subscription.billingInterval,
-        usage: {
-          ...baseUsage,
-          projects: realProjectCount,
-          storage: realStorageBytes,
-          aiCalls: baseUsage.aiCalls || 0,
-          aiCallsThisMonth: baseUsage.aiCallsThisMonth || 0,
-        },
+        usage: { ...JSON.parse(JSON.stringify(subscription.usage || {})), projects: realProjectCount },
         limits: subscription.limits,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
