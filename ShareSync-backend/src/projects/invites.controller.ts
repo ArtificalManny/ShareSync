@@ -63,4 +63,12 @@ import {
       const email = req.user?.email;
       return this.invites.acceptInvite(body?.token, userId, email);
     }
+
+    /** POST /invites/decline  body: { token } */
+    @Post('decline')
+    async decline(@Body() body: { token: string }, @Req() req: any) {
+      const userId = req.user?.sub || req.user?.userId || req.user?.id || req.user?._id;
+      const email = req.user?.email;
+      return this.invites.declineInvite(body?.token, userId, email);
+    }
   }

@@ -661,6 +661,74 @@ export class NotificationsService {
     });
   }
 
+
+  @OnEvent('project.invite.created')
+  async handleProjectInviteCreated(payload: {
+    projectId: string;
+    projectName: string;
+    inviteeEmail: string;
+    inviteToken: string;
+    role: string;
+    invitedBy: string;
+  }) {
+    const email = String(payload?.inviteeEmail || '').trim().toLowerCase();
+
+    if (!email || !payload?.inviteToken || !payload?.projectId) {
+      this.logger.warn('[NotificationsService] Skipping project invite notification: missing invite payload.');
+      return;
+    }
+
+    const invitee = await this.userModel
+      .findOne({ email })
+      .select('_id email username firstName lastName')
+      .lean();
+
+    if (!invitee?._id) {
+      this.logger.log(
+        `[NotificationsService] Invite notification skipped. No local user found for ${email}. Email delivery/local invite link still applies.`,
+      );
+      return;
+    }
+
+    const inviteeId = String(invitee._id);
+    const projectName = payload.projectName || 'this project';
+    const roleLabel = payload.role
+      ? String(payload.role).charAt(0).toUpperCase() + String(payload.role).slice(1)
+      : 'Member';
+
+    await this.notify({
+      userId: inviteeId,
+      type: NotificationType.PROJECT_INVITE,
+      title: 'Project invitation',
+      body: `You were invited to join ${projectName} as ${roleLabel}.`,
+      icon: '👋',
+      priority: NotificationPriority.HIGH,
+      triggeredBy: payload.invitedBy,
+      data: {
+        projectId: payload.projectId,
+        projectName,
+        inviteToken: payload.inviteToken,
+        inviteeEmail: email,
+        role: payload.role,
+      },
+      actions: [
+        {
+          label: 'Accept Invite',
+          url: `/invite/${payload.inviteToken}`,
+        },
+        {
+          label: 'View Projects',
+          url: '/projects',
+        },
+      ],
+      groupKey: `project-invite-${payload.projectId}-${inviteeId}-${payload.inviteToken}`,
+    });
+
+    this.logger.log(
+      `[NotificationsService] Project invite notification created for ${email} on ${projectName}.`,
+    );
+  }
+
   @OnEvent('project.member.added')
   async handleProjectMemberAdded(payload: { projectId: string; projectName: string; memberId: string; addedBy: string }) {
     await this.notify({

@@ -115,7 +115,7 @@ export class ProjectInvite {
   token: string;
 
   @Prop({ type: String, enum: InviteStatus, default: InviteStatus.PENDING })
-  status: InviteStatus | 'pending' | 'accepted' | 'revoked' | 'expired';
+  status: InviteStatus | 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   invitedBy?: Types.ObjectId;
@@ -126,8 +126,14 @@ export class ProjectInvite {
   @Prop({ type: Date })
   expiresAt?: Date;
 
+  @Prop({ type: Date })
+  respondedAt?: Date;
+
   @Prop({ type: Types.ObjectId, ref: 'User' })
   acceptedByUserId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  declinedByUserId?: Types.ObjectId;
 }
 
 export const ProjectInviteSchema = SchemaFactory.createForClass(ProjectInvite);

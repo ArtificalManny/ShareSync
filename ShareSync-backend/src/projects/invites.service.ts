@@ -198,6 +198,67 @@ export class InvitesService {
     }));
   }
 
+
+  async declineInvite(token: string, userId: string, userEmail?: string) {
+    if (!token) throw new BadRequestException('token is required');
+
+    const query: FilterQuery<ProjectDocument> = { 'invites.token': token };
+    const project = await this.projectModel.findOne(query);
+    if (!project) throw new NotFoundException('Invite not found');
+
+    const invite = (project.invites || []).find((i) => i.token === token);
+    if (!invite) throw new NotFoundException('Invite not found');
+
+    if (invite.status !== 'pending') {
+      throw new BadRequestException(`Invite is ${invite.status} and cannot be declined.`);
+    }
+
+    if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+      invite.status = 'expired';
+      await project.save();
+      throw new BadRequestException('Invite has expired.');
+    }
+
+    const inviteEmail = String((invite as any).email || '').trim().toLowerCase();
+    const accountEmail = String(userEmail || '').trim().toLowerCase();
+
+    if (inviteEmail && !accountEmail) {
+      throw new ForbiddenException('You must be logged in as the invited email address to decline this invite.');
+    }
+
+    if (inviteEmail && accountEmail && inviteEmail !== accountEmail) {
+      throw new ForbiddenException('This invite was sent to a different email address.');
+    }
+
+    invite.status = 'declined' as any;
+    (invite as any).declinedByUserId = new Types.ObjectId(userId);
+    (invite as any).respondedAt = new Date();
+
+    await project.save();
+
+    this.realtime.emitToProject(project.id, 'project:membersUpdated', {
+      projectId: project.id,
+      members: project.members,
+      invites: project.invites,
+    });
+
+    this.eventEmitter.emit('project.invite.declined', {
+      projectId: project.id,
+      projectName: project.name,
+      declinedBy: userId,
+      role: invite.role,
+      ownerId: this.getId(project.ownerId || project.owner),
+    });
+
+    this.logger.log(`Invite declined by user ${userId} for project ${project.name}`);
+
+    return {
+      projectId: project.id,
+      members: project.members,
+      invites: project.invites,
+    };
+  }
+
   async revokeInvite(projectId: string, token: string, actingUserId: string) {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new NotFoundException('Project not found');
