@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom"; // ⭐ ADDED: useParams
-import { acceptInvite } from "../api/invites"; // ⭐ FIXED: Updated to match your invites.js filename
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { acceptInvite } from "../api/invites";
 import { toast } from "../components/ui/Toaster.jsx";
 import { track } from "../utils/telemetry";
 import GradientText from "../components/ui/GradientText.jsx";
@@ -8,75 +8,144 @@ import GradientText from "../components/ui/GradientText.jsx";
 export default function AcceptInvite() {
   const navigate = useNavigate();
   const { search } = useLocation();
-  const { token: pathToken } = useParams(); // ⭐ Grabs the token directly from /invite/:token
+  const { token: pathToken } = useParams();
 
-  // ⭐ Fallback: grabs from ?token=... just in case old links use that format
-  const queryToken = new URLSearchParams(search).get("token");
-  
-  // Use whichever token exists!
+  const queryToken = useMemo(() => {
+    return new URLSearchParams(search).get("token");
+  }, [search]);
+
   const token = pathToken || queryToken;
 
-  const [status, setStatus] = useState("pending"); // 'pending' | 'ok' | 'error'
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("pending");
+  const [message, setMessage] = useState("Please wait while we confirm your invite.");
+  const [projectId, setProjectId] = useState(null);
 
   useEffect(() => {
     let ignore = false;
 
-    (async () => {
+    async function run() {
       if (!token) {
         setStatus("error");
         setMessage("Missing invite token.");
-        toast({ title: "Invite error", description: "Missing invite token", variant: "error" });
-        try { track("invite_error", { action: "accept", reason: "missing_token" }); } catch {}
+        toast({
+          title: "Invite error",
+          description: "Missing invite token.",
+          variant: "error",
+        });
+        try {
+          track("invite_error", { action: "accept", reason: "missing_token" });
+        } catch {}
         return;
       }
+
       try {
         const res = await acceptInvite(token);
+
         if (ignore) return;
-        const projectId = res?.projectId || res?.project?._id || res?.project?.id;
-        const userId = res?.userId || res?.user?.id || res?.user?._id;
+
+        const acceptedProjectId =
+          res?.projectId ||
+          res?.data?.projectId ||
+          res?.project?._id ||
+          res?.project?.id ||
+          res?.data?.project?._id ||
+          res?.data?.project?.id;
+
+        const acceptedUserId =
+          res?.userId ||
+          res?.data?.userId ||
+          res?.user?._id ||
+          res?.user?.id ||
+          res?.data?.user?._id ||
+          res?.data?.user?.id;
+
+        setProjectId(acceptedProjectId || null);
+        setStatus("ok");
+        setMessage("Invite accepted. Redirecting to the project…");
 
         toast({ title: "Invite accepted", variant: "success" });
-        try { track("invite_accepted", { projectId, userId }); } catch {}
 
-        setStatus("ok");
-        setMessage("Invite accepted. Redirecting…");
+        try {
+          track("invite_accepted", {
+            projectId: acceptedProjectId,
+            userId: acceptedUserId,
+          });
+        } catch {}
 
-        // Navigate to project if we have an id, else to /projects
+        window.dispatchEvent(
+          new CustomEvent("project:members-updated", {
+            detail: { projectId: acceptedProjectId },
+          })
+        );
+
         setTimeout(() => {
-          if (projectId) navigate(`/projects/${projectId}`, { replace: true });
-          else navigate("/projects", { replace: true });
+          if (acceptedProjectId) {
+            navigate(`/projects/${acceptedProjectId}`, { replace: true });
+          } else {
+            navigate("/projects", { replace: true });
+          }
         }, 900);
       } catch (e) {
         if (ignore) return;
-        const msg = e?.message || "Failed to accept invite.";
+
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          "Failed to accept invite.";
+
         setStatus("error");
         setMessage(msg);
-        toast({ title: "Invite error", description: msg, variant: "error" });
-        try { track("invite_error", { action: "accept", message: msg }); } catch {}
-      }
-    })();
 
-    return () => { ignore = true; };
+        toast({
+          title: "Invite error",
+          description: msg,
+          variant: "error",
+        });
+
+        try {
+          track("invite_error", { action: "accept", message: msg });
+        } catch {}
+      }
+    }
+
+    run();
+
+    return () => {
+      ignore = true;
+    };
   }, [token, navigate]);
 
   return (
     <main id="main" role="main" tabIndex={-1}>
-      <div className="px-4 sm:px-6 lg:px-8 py-10 max-w-md mx-auto">
-        <div className="rounded-2xl border border-border bg-surface p-6 text-center">
+      <div className="min-h-[70vh] px-4 sm:px-6 lg:px-8 py-10 flex items-center justify-center">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-surface p-6 text-center shadow-xl">
           <div className="text-lg font-semibold">
-            <GradientText variant="pandora">Accepting invite…</GradientText>
+            <GradientText variant="pandora">
+              {status === "ok"
+                ? "Invite accepted"
+                : status === "error"
+                  ? "Invite needs attention"
+                  : "Accepting invite…"}
+            </GradientText>
           </div>
-          <div className="mt-2 text-sm text-muted">
-            {status === "pending" && "Please wait while we confirm your invite."}
-            {status !== "pending" && message}
-          </div>
+
+          <div className="mt-2 text-sm text-muted">{message}</div>
+
+          {status === "pending" && (
+            <div className="mt-5 mx-auto h-2 w-28 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full w-1/2 animate-pulse rounded-full bg-violet-500" />
+            </div>
+          )}
+
           {status !== "pending" && (
             <button
-              className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-white bg-grad-blue"
-              onClick={() => navigate("/projects")}
+              className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white bg-grad-blue"
+              onClick={() => {
+                if (projectId) navigate(`/projects/${projectId}`, { replace: true });
+                else navigate("/projects", { replace: true });
+              }}
             >
-              Go to Projects
+              {projectId ? "Go to Project" : "Go to Projects"}
               <span className="shine pointer-events-none" aria-hidden="true" />
             </button>
           )}

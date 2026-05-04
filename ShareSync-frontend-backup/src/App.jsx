@@ -639,6 +639,7 @@ function AppRoutes() {
                 }
               />
               <Route path="/landing" element={<Landing />} />
+              <Route path="/invite/:token" element={<AcceptInvite />} />
               <Route path="/invite/accept" element={<AcceptInvite />} />
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />

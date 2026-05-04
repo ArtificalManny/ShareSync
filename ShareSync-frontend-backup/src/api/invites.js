@@ -53,4 +53,14 @@ export async function acceptInvite(token) {
   return res.data?.data || res.data;
 }
 
-export default { sendInvite, listInvites, revokeInvite, acceptInvite };
+/**
+ * Decline an invite using its token.
+ * @param {string} token
+ */
+export async function declineInvite(token) {
+  if (!token) throw new Error('Missing invite token.');
+  const res = await client.post('/invites/decline', { token });
+  return res.data?.data || res.data;
+}
+
+export default { sendInvite, listInvites, revokeInvite, acceptInvite, declineInvite };
