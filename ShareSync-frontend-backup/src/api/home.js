@@ -38,14 +38,37 @@ export async function fetchProjects() {
   return Array.isArray(data) ? data : [];
 }
 
-export async function fetchActivities({ limit = 50 } = {}) {
-  // Many implementations support GET /activities; we probe safely.
-  const data =
-    (await safeGet(`/activities?limit=${limit}`)) ||
-    (await safeGet(`/activity?limit=${limit}`)) ||
-    (await safeGet(`/user/activities?limit=${limit}`));
+export async function fetchActivities(options = {}) {
+  const limit = options?.limit || 80;
 
-  return Array.isArray(data) ? data : [];
+  const attempts = [
+    () => client.get("/activities/feed", { params: { limit } }),
+    () => client.get("/activity", { params: { scope: "user", limit } }),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const response = await attempt();
+      const data = response.data;
+
+      const items =
+        data?.items ||
+        data?.data?.items ||
+        data?.data ||
+        data?.activities ||
+        data;
+
+      return Array.isArray(items) ? items : [];
+    } catch (err) {
+      const status = err?.response?.status;
+
+      if (status && status !== 404) {
+        console.warn("[home.api] fetchActivities failed:", status, err?.message);
+      }
+    }
+  }
+
+  return [];
 }
 
 export async function fetchActivitySummary() {

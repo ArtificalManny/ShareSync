@@ -17,12 +17,18 @@ type UseSocketOptions = {
 function getSocketBaseUrl() {
   const socketUrl = import.meta.env.VITE_SOCKET_URL as string | undefined;
   const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
-  return (socketUrl || apiUrl || window.location.origin).replace(/\/+$/, "");
+
+  const raw = socketUrl || apiUrl || window.location.origin;
+
+  // If someone only sets VITE_API_URL=http://localhost:5050/api,
+  // Socket.IO still needs the backend origin, not the /api path.
+  return raw.replace(/\/api\/?$/, "").replace(/\/+$/, "");
 }
 
 function getTokenAny() {
   try {
     return (
+      localStorage.getItem("ss.token") ||
       localStorage.getItem("ss.jwt") ||
       localStorage.getItem("authToken") ||
       localStorage.getItem("accessToken") ||
@@ -137,7 +143,12 @@ export default function useSocket(
       socketRef.current = io(baseUrl, {
         autoConnect: false,
         withCredentials: true,
-        transports: ["websocket", "polling"],
+        // Polling first is more stable in local dev/proxy setups; Socket.IO can upgrade later.
+        transports: ["polling", "websocket"],
+        upgrade: true,
+        reconnection: true,
+        reconnectionAttempts: 8,
+        reconnectionDelay: 750,
         path: "/socket.io",
         auth: {
           token: resolveToken(token),

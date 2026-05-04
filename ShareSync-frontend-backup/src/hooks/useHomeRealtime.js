@@ -686,6 +686,95 @@ async function fetchUserStats() {
   }
 }
 
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  return 0;
+}
+
+function unwrapVelocityPayload(payload) {
+  if (!payload || typeof payload !== "object") return {};
+
+  return (
+    payload.data ||
+    payload.summary ||
+    payload.stats ||
+    payload.velocity ||
+    payload.userStats ||
+    payload
+  );
+}
+
+function mergeVelocityStats(payload, previous = {}) {
+  const safePrevious =
+    previous && typeof previous === "object" ? previous : {};
+
+  const stats = unwrapVelocityPayload(payload);
+
+  if (!stats || typeof stats !== "object") {
+    return safePrevious;
+  }
+
+  return {
+    ...safePrevious,
+    ...stats,
+
+    // Prefer lifetime/backend total when available.
+    // Fall back to weekly ships only if the backend does not expose a total yet.
+    ships: firstFiniteNumber(
+      stats.totalShips,
+      stats.ships,
+      stats.shipCount,
+      stats.weeklyShips,
+      safePrevious.ships
+    ),
+
+    streakDays: firstFiniteNumber(
+      stats.streakDays,
+      stats.currentStreak,
+      stats.streak,
+      safePrevious.streakDays
+    ),
+
+    focus:
+      stats.focus ??
+      stats.focusPercent ??
+      stats.completionRate ??
+      safePrevious.focus ??
+      null,
+
+    efficiency:
+      stats.efficiency ??
+      stats.efficiencyDelta ??
+      safePrevious.efficiency ??
+      null,
+
+    weeklyShips: firstFiniteNumber(
+      stats.weeklyShips,
+      stats.shipsThisWeek,
+      stats.shippedThisWeek,
+      safePrevious.weeklyShips
+    ),
+
+    activeDaysThisWeek: firstFiniteNumber(
+      stats.activeDaysThisWeek,
+      stats.daysActiveThisWeek,
+      safePrevious.activeDaysThisWeek
+    ),
+
+    lastWeekShips: firstFiniteNumber(
+      stats.lastWeekShips,
+      stats.shipsLastWeek,
+      safePrevious.lastWeekShips
+    ),
+
+    updatedAt: stats.updatedAt || safePrevious.updatedAt || new Date().toISOString(),
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN HOOK
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -705,6 +794,7 @@ export function useHomeRealtime() {
 
   // Poll timers
   const pollingRef = useRef({ projects: null, activities: null, summary: null });
+  const velocityRefreshTimerRef = useRef(null);
 
   // Keep last good payloads (so we can "keep old data" if a fetch fails)
   const lastGoodRef = useRef({
@@ -804,13 +894,10 @@ export function useHomeRealtime() {
       // (computed in deriveSummaryFromActivities) when backend omits them.
       if (statsRes.status === "fulfilled" && statsRes.value) {
         const stats = statsRes.value;
-        const merged = {
-          ...(lastGoodRef.current.summary || {}),
-          ships: stats.ships ?? stats.weeklyShips ?? 0,
-          streakDays: stats.streakDays ?? 0,
-          focus: stats.focus ?? stats.completionRate ?? null,
-          efficiency: stats.efficiency ?? null,
-        };
+        const merged = mergeVelocityStats(
+          stats,
+          lastGoodRef.current.summary || {}
+        );
         lastGoodRef.current.summary = merged;
         safeSet(setSummaryRaw, merged);
         anySuccess = true;
@@ -828,6 +915,41 @@ export function useHomeRealtime() {
       safeSet(setLoadingMissions, false);
     }
   }, [safeSet]);
+
+  const refreshVelocitySummary = useCallback(async () => {
+    try {
+      const stats = await fetchUserStats();
+
+      if (!stats) {
+        return;
+      }
+
+      const merged = mergeVelocityStats(
+        stats,
+        lastGoodRef.current.summary || {}
+      );
+
+      lastGoodRef.current.summary = merged;
+      safeSet(setSummaryRaw, merged);
+      safeSet(setIsConnected, true);
+    } catch (err) {
+      console.warn("[useHomeRealtime] Velocity refresh failed:", err?.message || err);
+      safeSet(setIsConnected, false);
+    }
+  }, [safeSet]);
+
+  const scheduleVelocityRefresh = useCallback(
+    (delay = 300) => {
+      if (velocityRefreshTimerRef.current) {
+        window.clearTimeout(velocityRefreshTimerRef.current);
+      }
+
+      velocityRefreshTimerRef.current = window.setTimeout(() => {
+        refreshVelocitySummary();
+      }, delay);
+    },
+    [refreshVelocitySummary]
+  );
 
   // Mount/unmount
   useEffect(() => {
@@ -885,13 +1007,10 @@ export function useHomeRealtime() {
       try {
         const stats = await fetchUserStats();
         if (stats) {
-          const merged = {
-            ...(lastGoodRef.current.summary || {}),
-            ships: stats.ships ?? stats.weeklyShips ?? 0,
-            streakDays: stats.streakDays ?? 0,
-            focus: stats.focus ?? stats.completionRate ?? null,
-            efficiency: stats.efficiency ?? null,
-          };
+          const merged = mergeVelocityStats(
+            stats,
+            lastGoodRef.current.summary || {}
+          );
           lastGoodRef.current.summary = merged;
           safeSet(setSummaryRaw, merged);
         }
@@ -907,6 +1026,10 @@ export function useHomeRealtime() {
       clearInterval(pollingRef.current.projects);
       clearInterval(pollingRef.current.activities);
       clearInterval(pollingRef.current.summary);
+
+      if (velocityRefreshTimerRef.current) {
+        window.clearTimeout(velocityRefreshTimerRef.current);
+      }
     };
   }, [loadOnce, safeSet]);
 
@@ -931,17 +1054,22 @@ export function useHomeRealtime() {
       safeSet(setIsConnected, true);
     };
 
-    // Keep this for components that don't rely on React Query caching yet
-    const onTaskCompleted = () => loadOnce();
+    // Keep this for components that don't rely on React Query caching yet.
+    // Local events should refresh backend-owned velocity truth quickly.
+    const onVelocityChanged = () => scheduleVelocityRefresh(200);
 
     window.addEventListener("local-ship", onLocalShip);
-    window.addEventListener("task.completed", onTaskCompleted);
+    window.addEventListener("task.completed", onVelocityChanged);
+    window.addEventListener("project.completed", onVelocityChanged);
+    window.addEventListener("project:lifecycle-updated", onVelocityChanged);
     
     return () => {
       window.removeEventListener("local-ship", onLocalShip);
-      window.removeEventListener("task.completed", onTaskCompleted);
+      window.removeEventListener("task.completed", onVelocityChanged);
+      window.removeEventListener("project.completed", onVelocityChanged);
+      window.removeEventListener("project:lifecycle-updated", onVelocityChanged);
     };
-  }, [safeSet, loadOnce]);
+  }, [safeSet, scheduleVelocityRefresh]);
 
   // ⭐ STEP 3: Listen for live Socket Activity events to update without refreshing
   const handleLiveActivity = useCallback((data) => {
@@ -963,17 +1091,65 @@ export function useHomeRealtime() {
       return [synthetic, ...arr];
     });
     
-    // Optimistically bump ships count locally if it's a ship event
+    // Optimistically bump ships count locally if it's a ship event,
+    // then quickly refetch backend stats so the UI cannot drift.
     if (String(synthetic.type).toLowerCase().includes("ship") || String(synthetic.type).toLowerCase().includes("complete")) {
       safeSet(setSummaryRaw, (prev) => {
-        if (!prev) return prev;
-        return { ...prev, ships: (prev.ships || 0) + 1 };
+        const base = prev || lastGoodRef.current.summary || {};
+        const next = {
+          ...base,
+          ships: Number(base.ships || 0) + 1,
+        };
+
+        lastGoodRef.current.summary = next;
+        return next;
       });
     }
-  }, [safeSet]);
 
-  useSocketEvent("activity:new", handleLiveActivity);
-  useSocketEvent("team:activity_updated", handleLiveActivity);
+    scheduleVelocityRefresh(350);
+  }, [safeSet, scheduleVelocityRefresh]);
+
+  const handleVelocityPayload = useCallback(
+    (payload) => {
+      const merged = mergeVelocityStats(
+        payload,
+        lastGoodRef.current.summary || {}
+      );
+
+      lastGoodRef.current.summary = merged;
+      safeSet(setSummaryRaw, merged);
+      safeSet(setIsConnected, true);
+    },
+    [safeSet]
+  );
+
+  const handleVelocityRefreshSignal = useCallback(
+    (payload) => {
+      if (payload) {
+        handleLiveActivity(payload);
+      }
+
+      scheduleVelocityRefresh(250);
+    },
+    [handleLiveActivity, scheduleVelocityRefresh]
+  );
+
+  useSocketEvent("user:velocity-updated", handleVelocityPayload);
+  useSocketEvent("velocity:updated", handleVelocityPayload);
+  useSocketEvent("stats:updated", handleVelocityPayload);
+  useSocketEvent("streak:update", handleVelocityPayload);
+  useSocketEvent("momentum:update", handleVelocityPayload);
+
+  useSocketEvent("activity:new", handleVelocityRefreshSignal);
+  useSocketEvent("team:activity_updated", handleVelocityRefreshSignal);
+  useSocketEvent("activityCreated", handleVelocityRefreshSignal);
+  useSocketEvent("activity:created", handleVelocityRefreshSignal);
+  useSocketEvent("taskCompleted", handleVelocityRefreshSignal);
+  useSocketEvent("task:completed", handleVelocityRefreshSignal);
+  useSocketEvent("taskUpdated", handleVelocityRefreshSignal);
+  useSocketEvent("task:update", handleVelocityRefreshSignal);
+  useSocketEvent("projectCompleted", handleVelocityRefreshSignal);
+  useSocketEvent("project.completed", handleVelocityRefreshSignal);
 
   const activities = useMemo(() => normalizeActivities(activitiesRaw), [activitiesRaw]);
   const missions = useMemo(() => {
