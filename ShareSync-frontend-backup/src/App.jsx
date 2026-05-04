@@ -127,6 +127,7 @@ import {
 
 // ⭐ Auth pages (NOT lazy - needed immediately)
 import Login from "./pages/Login";
+import GoogleCallback from "./pages/GoogleCallback.jsx";
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
 import Register from "./components/Register";
@@ -638,6 +639,7 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/auth/google/callback" element={<GoogleCallback />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/invite/:token" element={<AcceptInvite />} />
               <Route path="/invite/accept" element={<AcceptInvite />} />

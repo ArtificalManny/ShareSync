@@ -1,82 +1,72 @@
 // src/pages/GoogleCallback.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// GOOGLE OAUTH CALLBACK PAGE
-// After Google sign-in, the backend redirects here with ?token=xxx&user=...
-// This page extracts the token, stores it in AuthContext, and redirects home.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Loader2 } from 'lucide-react';
-import useDocumentTitle from "../hooks/useDocumentTitle";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function GoogleCallback() {
-  useDocumentTitle("OpenShare");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setToken, setUser } = useAuth();
-  const [error, setError] = useState(null);
+  const [message, setMessage] = useState("Signing you in with Google...");
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const userParam = searchParams.get('user');
-    const errorParam = searchParams.get('error');
-
-    if (errorParam) {
-      setError(decodeURIComponent(errorParam));
-      setTimeout(() => navigate('/login'), 3000);
-      return;
-    }
-
-    if (!token) {
-      setError('No authentication token received');
-      setTimeout(() => navigate('/login'), 3000);
-      return;
-    }
-
     try {
-      // Store token
-      localStorage.setItem('token', token);
-      if (setToken) setToken(token);
+      const error = searchParams.get("error");
+      if (error) {
+        console.error("[GoogleCallback] OAuth error:", error);
+        setMessage("Google sign-in failed. Redirecting...");
+        setTimeout(() => navigate(`/login?error=${encodeURIComponent(error)}`, { replace: true }), 900);
+        return;
+      }
 
-      // Parse and store user if provided
+      const token =
+        searchParams.get("token") ||
+        searchParams.get("accessToken") ||
+        searchParams.get("access_token");
+
+      const userParam = searchParams.get("user");
+
+      if (!token) {
+        console.error("[GoogleCallback] Missing token in callback URL.");
+        setMessage("Google sign-in failed: missing token.");
+        setTimeout(() => navigate("/login?error=missing_google_token", { replace: true }), 900);
+        return;
+      }
+
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("token", token);
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("ss.token", token);
+
       if (userParam) {
         try {
-          const user = JSON.parse(decodeURIComponent(userParam));
-          localStorage.setItem('user', JSON.stringify(user));
-          if (setUser) setUser(user);
-        } catch (e) {
-          console.warn('[GoogleCallback] Could not parse user param:', e);
+          const parsedUser = JSON.parse(decodeURIComponent(userParam));
+          localStorage.setItem("user", JSON.stringify(parsedUser));
+          localStorage.setItem("ss.user", JSON.stringify(parsedUser));
+        } catch (err) {
+          console.warn("[GoogleCallback] Could not parse user param:", err);
         }
       }
 
-      console.log('🟢 Google OAuth callback: Token stored, redirecting...');
-      navigate('/', { replace: true });
-    } catch (e) {
-      console.error('[GoogleCallback] Error processing callback:', e);
-      setError('Authentication failed');
-      setTimeout(() => navigate('/login'), 3000);
-    }
-  }, [searchParams, navigate, setToken, setUser]);
+      console.log("✅ Google OAuth token stored.");
+      console.log(JSON.parse(atob(token.split(".")[1])));
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <p className="text-red-500 font-medium mb-2">{error}</p>
-          <p className="text-sm text-slate-400">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
+      setMessage("Google sign-in successful. Redirecting...");
+      setTimeout(() => navigate("/home", { replace: true }), 350);
+    } catch (err) {
+      console.error("[GoogleCallback] Error processing callback:", err);
+      setMessage("Google sign-in failed. Redirecting...");
+      setTimeout(() => navigate("/login?error=google_callback_failed", { replace: true }), 900);
+    }
+  }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="flex items-center gap-3 text-slate-500">
-        <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
-        <span className="font-medium">Completing sign in...</span>
+    <main className="min-h-screen grid place-items-center bg-slate-50 px-6">
+      <div className="rounded-3xl border border-slate-200 bg-white px-8 py-7 shadow-xl text-center max-w-md">
+        <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-700 font-bold">
+          G
+        </div>
+        <h1 className="text-xl font-bold text-slate-900">Google Sign-In</h1>
+        <p className="mt-2 text-sm text-slate-500">{message}</p>
       </div>
-    </div>
+    </main>
   );
 }
