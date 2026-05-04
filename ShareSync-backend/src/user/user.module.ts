@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { User, UserSchema } from './schemas/user.schema';
+import { Task, TaskSchema } from '../tasks/schemas/task.schema';
 
 import { ProjectsModule } from '../projects/projects.module';
 import { ActivitiesModule } from '../activities/activities.module';
@@ -24,7 +25,10 @@ import { GamificationModule } from '../gamification/gamification.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Task.name, schema: TaskSchema },
+    ]),
 
     // Keep existing dependencies
     forwardRef(() => ProjectsModule),

@@ -358,6 +358,18 @@ export class UserController {
   // POST /users/me/avatar - Upload avatar
   // ─────────────────────────────────────────────────────────────────────────────
 
+
+  @Get('me/stats')
+  @UseGuards(JwtAuthGuard)
+  async getMyStats(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    return {
+      success: true,
+      data: await this.users.getMyStats(userId),
+    };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('me/avatar')
   @UseInterceptors(FileInterceptor('avatar'))
