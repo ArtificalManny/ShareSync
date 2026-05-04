@@ -49,21 +49,50 @@ export class InvitesService {
     return (ref._id || ref.id || ref)?.toString() || '';
   }
 
-  private assertOwnerOrThrow(project: ProjectDocument, actingUserId: string) {
-    const acting = String(actingUserId);
+  private getProjectMemberRole(project: any, actingUserId: string): string {
+    const acting = String(actingUserId || '');
 
-    // ownerId is the canonical owner field in your schema
-    if (this.getId(project.ownerId) === acting) return;
+    const member = (project.members || []).find((m: any) => {
+      const memberUserId = this.getId(m?.userId || m?.user || m?.memberId || m);
+      return memberUserId === acting;
+    });
 
-    // You *can* choose to allow ADMINs too; for now, keep strict "owner only"
-    const isOwnerMember =
-      (project.members || []).some(
-        (m) => this.getId(m.userId) === acting && m.role === MemberRole.OWNER,
-      );
+    return String(member?.role || '').toLowerCase();
+  }
 
-    if (!isOwnerMember) {
-      throw new ForbiddenException('Only owners can manage invites.');
+  private canManageInvites(project: any, actingUserId: string): boolean {
+    const acting = String(actingUserId || '');
+
+    if (!acting) return false;
+
+    // Support both current and legacy ownership fields.
+    const ownerLikeRefs = [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+      project.creatorId,
+      project.userId,
+    ];
+
+    const isOwnerLike = ownerLikeRefs.some((ref) => this.getId(ref) === acting);
+
+    if (isOwnerLike) {
+      return true;
     }
+
+    const role = this.getProjectMemberRole(project, acting);
+
+    // Treat admin/moderator/manager as invite-capable.
+    return ['owner', 'admin', 'moderator', 'manager'].includes(role);
+  }
+
+  private assertCanManageInvitesOrThrow(project: ProjectDocument, actingUserId: string) {
+    if (this.canManageInvites(project, actingUserId)) {
+      return;
+    }
+
+    throw new ForbiddenException('Only project owners or admins can manage invites.');
   }
 
   async createInvite(projectId: string, actingUserId: string, dto: CreateInviteDto) {
@@ -76,7 +105,7 @@ export class InvitesService {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new NotFoundException('Project not found');
 
-    this.assertOwnerOrThrow(project, actingUserId);
+    this.assertCanManageInvitesOrThrow(project, actingUserId);
 
     const now = Date.now();
     const expiresAt = new Date(now + INVITE_TTL_MS);
@@ -151,9 +180,11 @@ export class InvitesService {
     }
   }
 
-  async listInvites(projectId: string, _actingUserId: string) {
-    const project = await this.projectModel.findById(projectId).lean();
+  async listInvites(projectId: string, actingUserId: string) {
+    const project = await this.projectModel.findById(projectId);
     if (!project) throw new NotFoundException('Project not found');
+
+    this.assertCanManageInvitesOrThrow(project, actingUserId);
 
     return (project.invites || []).map((i: any) => ({
       email: i.email,
@@ -171,7 +202,7 @@ export class InvitesService {
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new NotFoundException('Project not found');
 
-    this.assertOwnerOrThrow(project, actingUserId);
+    this.assertCanManageInvitesOrThrow(project, actingUserId);
 
     const inv = (project.invites || []).find((i) => i.token === token);
     if (!inv) throw new NotFoundException('Invite not found');
@@ -210,6 +241,17 @@ export class InvitesService {
       invite.status = 'expired';
       await project.save();
       throw new BadRequestException('Invite has expired.');
+    }
+
+    const inviteEmail = String((invite as any).email || '').trim().toLowerCase();
+    const accountEmail = String(userEmail || '').trim().toLowerCase();
+
+    if (inviteEmail && !accountEmail) {
+      throw new ForbiddenException('You must be logged in as the invited email address to accept this invite.');
+    }
+
+    if (inviteEmail && accountEmail && inviteEmail !== accountEmail) {
+      throw new ForbiddenException('This invite was sent to a different email address.');
     }
 
     const alreadyMember =

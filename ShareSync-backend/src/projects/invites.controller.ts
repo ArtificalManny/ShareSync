@@ -13,11 +13,10 @@ import {
   
   // If you already have JWT & project guards, import and use them here:
   import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-  import { ProjectPermissionGuard } from './guards/project-permission.guard';
   // Optional custom decorators if you have them
   // import { CanManageProject } from './decorators/can-manage-project.decorator';
   
-  @UseGuards(JwtAuthGuard, ProjectPermissionGuard /*, CanManageProject */)
+  @UseGuards(JwtAuthGuard)
   @Controller('projects/:id/invites')
   export class InvitesController {
     constructor(private readonly invites: InvitesService) {}
