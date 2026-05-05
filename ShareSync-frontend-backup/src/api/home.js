@@ -1,9 +1,12 @@
 import api from "./client";
 
 /**
- * Home API helpers (SAFE).
- * - Uses existing endpoints when available.
- * - Falls back gracefully if an endpoint doesn't exist yet.
+ * Home API helpers.
+ *
+ * Rule:
+ * - Home must be scoped to the logged-in user's own workspace/project memberships.
+ * - Discover can show public/global activity.
+ * - Home must NOT fall back to public/global feeds for fresh accounts.
  */
 
 async function safeGet(url, config) {
@@ -12,9 +15,7 @@ async function safeGet(url, config) {
     return res?.data;
   } catch (err) {
     const status = err?.response?.status;
-    // 404/501 etc => endpoint not implemented; return null
     if (status && (status === 404 || status === 501)) return null;
-    // Other errors still shouldn't crash Home
     console.warn("[home.api] GET failed:", url, status, err?.message);
     return null;
   }
@@ -32,36 +33,105 @@ async function safePost(url, body, config) {
   }
 }
 
+function unwrapArray(payload, keys = []) {
+  if (Array.isArray(payload)) return payload;
+
+  for (const key of keys) {
+    const value = payload?.[key];
+    if (Array.isArray(value)) return value;
+  }
+
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data?.projects)) return payload.data.projects;
+  if (Array.isArray(payload?.data?.activities)) return payload.data.activities;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.projects)) return payload.projects;
+  if (Array.isArray(payload?.activities)) return payload.activities;
+
+  return [];
+}
+
+function getProjectIdFromActivity(activity) {
+  const raw =
+    activity?.projectId?._id ||
+    activity?.projectId ||
+    activity?.project?._id ||
+    activity?.project?.id ||
+    activity?.project ||
+    activity?.metadata?.projectId ||
+    activity?.meta?.projectId ||
+    activity?.raw?.projectId ||
+    activity?.raw?.project?._id ||
+    activity?.raw?.project?.id;
+
+  return raw ? String(raw) : "";
+}
+
+function filterActivitiesToProjects(items, projectIds) {
+  const allowed = new Set((projectIds || []).map(String).filter(Boolean));
+  if (!allowed.size) return [];
+
+  return (Array.isArray(items) ? items : []).filter((activity) => {
+    const projectId = getProjectIdFromActivity(activity);
+    return projectId && allowed.has(projectId);
+  });
+}
+
 export async function fetchProjects() {
-  // Known working endpoint from Projects.jsx
-  const data = await safeGet("/projects");
-  return Array.isArray(data) ? data : [];
+  const payload = await safeGet("/projects");
+  return unwrapArray(payload, ["projects"]);
 }
 
 export async function fetchActivities(options = {}) {
   const limit = options?.limit || 80;
+  const projectIds = Array.isArray(options?.projectIds)
+    ? options.projectIds.map(String).filter(Boolean)
+    : [];
+
+  // Fresh account / no project memberships = no Home Team Activity.
+  // Do NOT borrow from Discover/global/public feeds.
+  if (projectIds.length === 0) {
+    return [];
+  }
 
   const attempts = [
-    () => client.get("/activities/feed", { params: { limit } }),
-    () => client.get("/activity", { params: { scope: "user", limit } }),
+    () =>
+      api.get("/activity", {
+        params: {
+          scope: "user",
+          limit,
+          projectIds: projectIds.join(","),
+        },
+      }),
+    () =>
+      api.get("/activities", {
+        params: {
+          scope: "user",
+          limit,
+          projectIds: projectIds.join(","),
+        },
+      }),
+    () =>
+      api.get("/user/activities", {
+        params: {
+          limit,
+        },
+      }),
   ];
 
   for (const attempt of attempts) {
     try {
       const response = await attempt();
-      const data = response.data;
+      const items = unwrapArray(response?.data, ["items", "activities"]);
 
-      const items =
-        data?.items ||
-        data?.data?.items ||
-        data?.data ||
-        data?.activities ||
-        data;
+      const scoped = filterActivitiesToProjects(items, projectIds);
 
-      return Array.isArray(items) ? items : [];
+      // Return scoped result even when empty.
+      // Empty is correct for fresh/quiet accounts.
+      return scoped;
     } catch (err) {
       const status = err?.response?.status;
-
       if (status && status !== 404) {
         console.warn("[home.api] fetchActivities failed:", status, err?.message);
       }
@@ -73,33 +143,31 @@ export async function fetchActivities(options = {}) {
 
 export async function fetchActivitySummary() {
   const res = await safeGet("/users/me");
-
-  // Handle the various ways the backend might wrap the user object
   const user = res?.user || res?.data?.user || res?.data || res;
 
-  // If we couldn't get a real user, return null to force the fallback computation
   if (!user || (!user._id && !user.id && !user.email)) return null;
 
-  // ⭐ BUG FIX: Safely parse the focus metric
-  // If the database stores focus as an object (e.g. { score: 85 }), drill into it.
   let focusValue = 0;
-  if (typeof user.focus === 'number') {
+  if (typeof user.focus === "number") {
     focusValue = user.focus;
-  } else if (typeof user.focus === 'object' && user.focus !== null) {
-    focusValue = user.focus.score || user.focus.value || user.focus.current || user.focus.level || 0;
+  } else if (typeof user.focus === "object" && user.focus !== null) {
+    focusValue =
+      user.focus.score ||
+      user.focus.value ||
+      user.focus.current ||
+      user.focus.level ||
+      0;
   }
 
   return {
     ships: user.totalShips || 0,
     streakDays: user.currentStreak || user.streakDays || 0,
     focus: focusValue,
-    efficiency: 0, // Real 0 for efficiency until advanced analytics are built
+    efficiency: 0,
   };
 }
 
 export async function tryShipProject(projectId) {
-  // Optional: if backend supports a "ship" action, we use it.
-  // Otherwise returns null and the UI still works (fake ceremony).
   const data =
     (await safePost(`/projects/${projectId}/ship`, {})) ||
     (await safePost(`/projects/${projectId}/complete`, {})) ||

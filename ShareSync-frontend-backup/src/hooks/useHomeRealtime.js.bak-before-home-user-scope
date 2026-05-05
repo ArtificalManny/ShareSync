@@ -4,19 +4,6 @@ import client from "../api/client";
 // ⭐ STEP 3: Import socket event listener
 import { useSocketEvent } from "../context/SocketContext";
 
-function getHomeProjectId(project) {
-  const raw =
-    project?._id ||
-    project?.id ||
-    project?.projectId?._id ||
-    project?.projectId ||
-    project?.project?._id ||
-    project?.project?.id;
-
-  return raw ? String(raw) : "";
-}
-
-
 /**
  * Convert projects -> Home "missions" shape
  * Keeps your MissionCard happy without reworking the component.
@@ -825,22 +812,13 @@ export function useHomeRealtime() {
     safeSet(setLoadingMissions, true);
 
     try {
-      const projectsPayload = await fetchProjects();
-      const projectIdsForHome = (Array.isArray(projectsPayload) ? projectsPayload : [])
-        .map(getHomeProjectId)
-        .filter(Boolean);
-
-      const [aRes, sRes, iRes, statsRes] = await Promise.allSettled([
-        fetchActivities({ limit: 80, projectIds: projectIdsForHome }),
+      const [pRes, aRes, sRes, iRes, statsRes] = await Promise.allSettled([
+        fetchProjects(),
+        fetchActivities({ limit: 80 }),
         fetchActivitySummary(),
         fetchUserIntelligence(),
         fetchUserStats(),
       ]);
-
-      const pRes = {
-        status: "fulfilled",
-        value: Array.isArray(projectsPayload) ? projectsPayload : [],
-      };
 
       let anySuccess = false;
 
@@ -865,9 +843,29 @@ export function useHomeRealtime() {
       if (aRes.status === "fulfilled") {
         let a = Array.isArray(aRes.value) ? aRes.value : [];
 
-        // Home Team Activity is intentionally user/project scoped.
-        // If the scoped activity endpoint returns empty, keep it empty.
-        // Discover is where global/public activity belongs.
+        // ═════════════════════════════════════════════════════════════════
+        // FALLBACK: If activities endpoint returned empty, build activity
+        // items from real task data across all user projects.
+        // ═════════════════════════════════════════════════════════════════
+        if (a.length === 0) {
+          try {
+            // Primary: use /activities/feed with real user names
+            const feedItems = await fetchActivityFeed(50);
+            if (feedItems.length > 0) {
+              a = feedItems;
+            } else {
+              // Legacy fallback: cross-project tasks
+              const taskItems = await fetchCrossProjectTasks(30);
+              if (taskItems.length > 0) a = taskItems;
+            }
+          } catch (fallbackErr) {
+            console.warn('[useHomeRealtime] Feed fallback failed:', fallbackErr?.message);
+            try {
+              const taskItems = await fetchCrossProjectTasks(30);
+              if (taskItems.length > 0) a = taskItems;
+            } catch (_) {}
+          }
+        }
 
         lastGoodRef.current.activities = a;
         safeSet(setActivitiesRaw, a);
@@ -974,11 +972,7 @@ export function useHomeRealtime() {
 
     pollingRef.current.activities = setInterval(async () => {
       try {
-        const projectIdsForHome = (lastGoodRef.current.projects || [])
-          .map(getHomeProjectId)
-          .filter(Boolean);
-
-        let a = await fetchActivities({ limit: 80, projectIds: projectIdsForHome });
+        let a = await fetchActivities({ limit: 80 });
         let safeA = Array.isArray(a) ? a : [];
 
         // ═════════════════════════════════════════════════════════════════

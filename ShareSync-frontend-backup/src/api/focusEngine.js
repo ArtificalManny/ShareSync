@@ -1,91 +1,100 @@
 // src/api/focusEngine.js
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE H: Three-Move Focus Engine - API Layer (BULLETPROOF)
+// PHASE H: Three-Move Focus Engine - API Layer
+// User-scoped only for Home.jsx.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
-import { getTopMoves } from '../utils/focusRanking';
 
 /**
- * 🚨 HELPER: Aggressively digs through heavily nested API wrappers to find the array
- * Protects against { success: true, data: { success: true, data: [...] } }
+ * Safely unwrap API responses like:
+ * - [...]
+ * - { data: [...] }
+ * - { data: { data: [...] } }
+ * - { data: { tasks: [...] } }
+ * - { tasks: [...] }
  */
 const extractArray = (payload) => {
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.tasks)) return payload.tasks;
   if (payload.data && Array.isArray(payload.data.data)) return payload.data.data;
+  if (payload.data && Array.isArray(payload.data.tasks)) return payload.data.tasks;
   return [];
 };
 
+const isOpenTask = (task) => {
+  const status = String(task?.status || '').toLowerCase();
+
+  return (
+    status !== 'done' &&
+    status !== 'completed' &&
+    status !== 'complete' &&
+    status !== 'archived' &&
+    status !== 'deleted'
+  );
+};
+
 /**
- * Get user's top focus moves across all projects
- * @param {number} count - Number of moves to return
- * @returns {Promise<Array>}
+ * Get the logged-in user's top focus moves.
+ *
+ * Important:
+ * Home must NOT fall back to broad /tasks.
+ * If /tasks/priorities returns empty, return [].
+ * Fresh accounts should see the empty state.
  */
 export async function getUserFocusMoves(count = 3) {
   try {
-    let tasks = [];
+    const res = await client.get('/tasks/priorities', {
+      params: { limit: count },
+    });
 
-    // ATTEMPT 1: Try the strict backend priority algorithm
-    try {
-      const res = await client.get('/tasks/priorities', { params: { limit: count } });
-      tasks = extractArray(res.data || res);
-    } catch (err) {
-      console.warn("⚠️ Priorities endpoint failed, proceeding to fallback...");
-    }
+    const tasks = extractArray(res.data || res).filter(isOpenTask);
 
-    // ATTEMPT 2 (FALLBACK): If strict algorithm yielded nothing, cast a wider net
-    if (!tasks || tasks.length === 0) {
-      console.log("🟢 [API] Priorities empty. Falling back to general active tasks...");
-      
-      // Fetch recent tasks broadly
-      const res = await client.get('/tasks', { params: { limit: 20 } });
-      const allTasks = extractArray(res.data || res);
-
-      // Frontend Filter: Exclude anything that is already done
-      tasks = allTasks.filter(t => 
-        t.status !== 'DONE' && 
-        t.status !== 'done' && 
-        t.status !== 'COMPLETED'
-      );
-    }
-
-    return tasks;
-
+    return tasks.slice(0, count);
   } catch (error) {
-    console.error('🔴 [FocusEngine API] Fatal error fetching user focus:', error);
-    // If the server completely dies, return Mock Data so the UI doesn't break
-    return getMockUserFocusMoves();
+    console.warn('[FocusEngine API] User focus unavailable:', error?.message || error);
+
+    // Do not return mock data here.
+    // Do not fetch broad /tasks here.
+    // A fresh user should see "All caught up" / empty state.
+    return [];
   }
 }
 
 /**
- * Get project's critical moves
- * @param {string} projectId 
- * @param {number} count 
- * @returns {Promise<Array>}
+ * Get project-specific critical moves.
+ * This is allowed to fall back to /tasks because it remains scoped by projectId.
  */
 export async function getProjectFocusMoves(projectId, count = 3) {
+  if (!projectId) return [];
+
   try {
     const response = await client.get(`/projects/${projectId}/focus`, {
       params: { count },
     });
-    return extractArray(response.data || response);
+
+    return extractArray(response.data || response).filter(isOpenTask).slice(0, count);
   } catch (error) {
-    console.warn('⚠️ Project focus failed, using fallback:', error);
-    
-    // Fallback logic for projects
-    const res = await client.get('/tasks', { params: { projectId, limit: 10 } });
-    const allTasks = extractArray(res.data || res);
-    return allTasks.filter(t => t.status !== 'DONE' && t.status !== 'done');
+    console.warn('[FocusEngine API] Project focus failed, using project-scoped fallback:', error?.message || error);
+
+    try {
+      const res = await client.get('/tasks', {
+        params: { projectId, limit: Math.max(count, 10) },
+      });
+
+      const allTasks = extractArray(res.data || res);
+      return allTasks.filter(isOpenTask).slice(0, count);
+    } catch (fallbackError) {
+      console.warn('[FocusEngine API] Project task fallback failed:', fallbackError?.message || fallbackError);
+      return [];
+    }
   }
 }
 
 /**
- * Mark a move as completed
- * @param {string} moveId 
- * @returns {Promise<Object>}
+ * Mark a move as completed.
  */
 export async function completeFocusMove(moveId) {
   try {
@@ -98,10 +107,7 @@ export async function completeFocusMove(moveId) {
 }
 
 /**
- * Snooze a move (push to later)
- * @param {string} moveId 
- * @param {number} hours - Hours to snooze
- * @returns {Promise<Object>}
+ * Snooze a move.
  */
 export async function snoozeFocusMove(moveId, hours = 4) {
   try {
@@ -114,8 +120,7 @@ export async function snoozeFocusMove(moveId, hours = 4) {
 }
 
 /**
- * Get moves that user is blocking
- * @returns {Promise<Array>}
+ * Get moves that user is blocking.
  */
 export async function getBlockingMoves() {
   try {
@@ -125,43 +130,6 @@ export async function getBlockingMoves() {
     console.error('[FocusEngine API] Error fetching blocking moves:', error);
     return [];
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MOCK DATA (Safety Net)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function getMockUserFocusMoves() {
-  const now = new Date();
-  const allMoves = [
-    {
-      id: 'fm1',
-      title: 'Ship Sprint 3 retro document',
-      description: 'Complete and distribute the sprint retrospective',
-      type: 'ship',
-      impact: 'Unblocks PMM launch planning',
-      momentum: 220,
-      unblocks: 3,
-      deadline: new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString(),
-      project: { id: 'p1', name: 'ShareSync Core', color: '#7C3AED' },
-      assignee: { id: 'u1', name: 'You' },
-      createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'fm2',
-      title: 'Fix authentication timeout bug',
-      description: 'Users getting logged out after 5 minutes',
-      type: 'fix',
-      impact: 'Critical for beta launch',
-      momentum: 180,
-      unblocks: 5,
-      deadline: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-      project: { id: 'p1', name: 'ShareSync Core', color: '#7C3AED' },
-      assignee: { id: 'u1', name: 'You' },
-      createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    }
-  ];
-  return getTopMoves(allMoves, 3);
 }
 
 export default {
