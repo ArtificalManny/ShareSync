@@ -18,6 +18,7 @@ import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationPriority, NotificationType } from '../notifications/schemas/notification.schema';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 function safeNumber(value: any, fallback = 0): number {
   const parsed = Number(value);
@@ -92,6 +93,7 @@ export class ProjectsService {
     @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
     @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly subscriptionsService: SubscriptionsService,
     @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
@@ -367,6 +369,16 @@ export class ProjectsService {
     const publicConfig = this.normalizeProjectPublicConfig(dto as any);
 
     this.logger.log(`Creating project for user ${userId}: ${dto.name}`);
+
+    const projectUsageCheck = await this.subscriptionsService.checkLimit(userId, 'projects');
+
+    if (!projectUsageCheck.allowed) {
+      const planLimit = projectUsageCheck.limit === -1 ? 'unlimited' : projectUsageCheck.limit;
+
+      throw new ForbiddenException(
+        `Project limit reached. Your current plan allows ${planLimit} active projects. Complete, archive, or upgrade to create more projects.`,
+      );
+    }
 
     const emoji = (dto.emoji || dto.icon || '📁').trim();
     let visibility: ProjectVisibility = ProjectVisibility.PRIVATE;
