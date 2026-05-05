@@ -212,27 +212,45 @@ function computeStreakComparison(summary, activities) {
 // ACTIVITY FEED — Fetches from GET /activities/feed with real user names
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function fetchActivityFeed(limit = 50) {
+async function fetchActivityFeed(limit = 50, projectIds = []) {
+  const allowedProjectIds = new Set(
+    (Array.isArray(projectIds) ? projectIds : [])
+      .map((id) => String(id || ""))
+      .filter(Boolean)
+  );
+
+  // Home must never pull global dashboard activity for accounts with no projects.
+  if (allowedProjectIds.size === 0) {
+    return [];
+  }
+
   try {
-    const response = await client.get('/activities/feed', { params: { limit } });
-    const data = response.data;
-    const items = data?.items || data?.data?.items || [];
-    if (!items.length) return [];
-    // Map to the shape normalizeActivities expects
-    return items.map((item) => ({
-      _id: item._id || item.id,
-      type: item.type || item.action || 'ACTIVITY',
-      actorName: item.actorName || (item.userId?.firstName ? `${item.userId.firstName} ${item.userId.lastName || ''}`.trim() : null) || item.actor?.name || 'Someone',
-      profilePicture: item.userId?.profilePicture || item.actor?.profilePicture || item.profilePicture || null,
-      username: item.actor?.username || item.username,
-      projectName: item.details?.projectName || item.metadata?.projectName || item.payload?.projectName || null,
-      createdAt: item.createdAt,
-      timestamp: item.createdAt,
-      raw: item,
-      actor: item.actor || null,
-    }));
+    const response = await client.get("/activities/feed", {
+      params: {
+        limit,
+        projectIds: Array.from(allowedProjectIds).join(","),
+      },
+    });
+
+    const items = extractArray(response.data || response);
+
+    // Client-side safety filter even if the backend endpoint ignores projectIds.
+    return items.filter((item) => {
+      const rawProjectId =
+        item?.projectId?._id ||
+        item?.projectId?.id ||
+        item?.projectId ||
+        item?.project?._id ||
+        item?.project?.id ||
+        item?.project ||
+        item?.targetProjectId ||
+        item?.metadata?.projectId ||
+        item?.data?.projectId;
+
+      return rawProjectId && allowedProjectIds.has(String(rawProjectId));
+    });
   } catch (err) {
-    console.warn('[useHomeRealtime] Activity feed fetch failed:', err?.message);
+    console.warn("[useHomeRealtime] Scoped activity feed failed:", err?.message || err);
     return [];
   }
 }
@@ -566,72 +584,10 @@ async function fetchPriorityTasks(limit = 5) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function fetchCrossProjectTasks(limit = 30) {
-  try {
-    const response = await client.get('/tasks', {
-      params: {
-        sortBy: 'updatedAt',
-        sortOrder: 'desc',
-        limit,
-      },
-    });
-
-    const result = response.data?.data || response.data;
-    const tasks = result?.tasks || (Array.isArray(result) ? result : []);
-
-    if (!tasks.length) return [];
-
-    const items = [];
-
-    for (const task of tasks) {
-      // Find project name from task data
-      const projectName = task?.projectId?.name || task?.project?.name || null;
-
-      // If task is done and has completedAt, show completion event
-      if (task.status === 'done' && task.completedAt) {
-        items.push({
-          _id: `${task._id || task.id}-completed`,
-          type: 'TASK_COMPLETED',
-          actorName: 'Team member',
-          projectName,
-          createdAt: task.completedAt,
-          timestamp: task.completedAt,
-          raw: { taskTitle: task.title, projectName },
-        });
-      }
-
-      // If task is in progress, show it
-      if (task.status === 'in_progress') {
-        items.push({
-          _id: `${task._id || task.id}-in-progress`,
-          type: 'TASK_STARTED',
-          actorName: 'Team member',
-          projectName,
-          createdAt: task.updatedAt || task.createdAt,
-          timestamp: task.updatedAt || task.createdAt,
-          raw: { taskTitle: task.title, projectName },
-        });
-      }
-
-      // Always show creation event
-      items.push({
-        _id: `${task._id || task.id}-created`,
-        type: 'TASK_CREATED',
-        actorName: 'Team member',
-        projectName,
-        createdAt: task.createdAt,
-        timestamp: task.createdAt,
-        raw: { taskTitle: task.title, projectName },
-      });
-    }
-
-    // Sort by timestamp descending
-    items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-    return items.slice(0, limit);
-  } catch (err) {
-    console.warn('[useHomeRealtime] Cross-project task fallback failed:', err?.message);
-    return [];
-  }
+  // Disabled for Home.
+  // This was useful as an early demo fallback, but it can leak global/cross-user
+  // tasks into "Your 3 Moves Today" or "Team Activity" for fresh accounts.
+  return [];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -831,7 +787,7 @@ export function useHomeRealtime() {
         .filter(Boolean);
 
       const [aRes, sRes, iRes, statsRes] = await Promise.allSettled([
-        fetchActivities({ limit: 80, projectIds: projectIdsForHome }),
+        projectIdsForHome.length ? fetchActivities({ limit: 80, projectIds: projectIdsForHome }) : Promise.resolve([]),
         fetchActivitySummary(),
         fetchUserIntelligence(),
         fetchUserStats(),
@@ -978,7 +934,7 @@ export function useHomeRealtime() {
           .map(getHomeProjectId)
           .filter(Boolean);
 
-        let a = await fetchActivities({ limit: 80, projectIds: projectIdsForHome });
+        let a = projectIdsForHome.length ? await fetchActivities({ limit: 80, projectIds: projectIdsForHome }) : [];
         let safeA = Array.isArray(a) ? a : [];
 
         // ═════════════════════════════════════════════════════════════════
@@ -986,7 +942,7 @@ export function useHomeRealtime() {
         // ═════════════════════════════════════════════════════════════════
         if (safeA.length === 0) {
           try {
-            const feedItems = await fetchActivityFeed(50);
+            const feedItems = await fetchActivityFeed(50, projectIdsForHome);
             if (feedItems.length > 0) safeA = feedItems;
             else {
               const taskItems = await fetchCrossProjectTasks(30);
