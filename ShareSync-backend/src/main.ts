@@ -16,7 +16,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true,
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
