@@ -32,6 +32,7 @@ import { UserModule } from './user/user.module';
 
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
+import { DailyFocusModule } from './daily-focus/daily-focus.module';
 import { UserContextModule } from './user-context/user-context.module';
 import { RealtimeModule } from './realtime/realtime.module';
 
@@ -185,6 +186,7 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
     UserModule,
     ProjectsModule,
     TasksModule,
+    DailyFocusModule,
     UserContextModule,
     RealtimeModule,
 

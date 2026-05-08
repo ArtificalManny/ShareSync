@@ -74,6 +74,11 @@ export class ProjectMember {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
+  // Backward-compatible member alias used by older/newer project membership lookups.
+  // userId remains the primary field used by existing project member logic.
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  memberId?: Types.ObjectId;
+
   @Prop({ type: String, enum: MemberRole, default: MemberRole.MEMBER })
   role: MemberRole;
 
@@ -509,6 +514,14 @@ export class Project {
   @Prop({ type: Types.ObjectId, ref: 'User', index: true })
   owner?: Types.ObjectId;
 
+  // Backward-compatible creator aliases used by Daily Focus and older project records.
+  // ownerId remains the primary project ownership field.
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  createdBy?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  createdById?: Types.ObjectId;
+
   @Prop({ type: [ProjectMemberSchema], default: [] })
   members: ProjectMember[];
 
@@ -581,7 +594,12 @@ export const ProjectSchema = SchemaFactory.createForClass(Project);
 
 ProjectSchema.index({ name: 'text', description: 'text', tags: 'text' });
 ProjectSchema.index({ ownerId: 1, status: 1 });
+ProjectSchema.index({ owner: 1, status: 1 });
+ProjectSchema.index({ createdBy: 1, status: 1 });
+ProjectSchema.index({ createdById: 1, status: 1 });
 ProjectSchema.index({ 'members.userId': 1 });
+ProjectSchema.index({ 'members.user': 1 });
+ProjectSchema.index({ 'members.memberId': 1 });
 ProjectSchema.index({ visibility: 1, 'settings.isListed': 1 });
 ProjectSchema.index({ visibility: 1, 'settings.discoverable': 1, status: 1 });
 ProjectSchema.index({ status: 1, updatedAt: -1 });
@@ -590,3 +608,35 @@ ProjectSchema.index({ streakDays: -1 });
 ProjectSchema.index({ publicToken: 1 }, { sparse: true });
 ProjectSchema.index({ 'invites.token': 1 }, { sparse: true });
 ProjectSchema.index({ 'closureReadiness.isReadyToClose': 1, status: 1 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DAILY FOCUS / LEGACY ALIAS SYNC
+// Keeps owner/member alias fields aligned without changing primary fields.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+ProjectSchema.pre('save', function (next) {
+  const doc = this as any;
+
+  const primaryOwner = doc.ownerId || doc.owner || doc.createdBy || doc.createdById;
+
+  if (primaryOwner) {
+    if (!doc.ownerId) doc.ownerId = primaryOwner;
+    if (!doc.owner) doc.owner = primaryOwner;
+    if (!doc.createdBy) doc.createdBy = primaryOwner;
+    if (!doc.createdById) doc.createdById = primaryOwner;
+  }
+
+  if (Array.isArray(doc.members)) {
+    doc.members.forEach((member: any) => {
+      const primaryMember = member?.userId || member?.user || member?.memberId;
+
+      if (primaryMember) {
+        if (!member.userId) member.userId = primaryMember;
+        if (!member.memberId) member.memberId = primaryMember;
+      }
+    });
+  }
+
+  next();
+});
+

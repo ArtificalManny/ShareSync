@@ -516,12 +516,20 @@ export class ProjectsService {
       sortOrder = 'desc',
     } = options;
 
+    const userObjectId = new Types.ObjectId(userId);
+
     const query: any = {
       $or: [
-        { ownerId: new Types.ObjectId(userId) },
-        { owner: new Types.ObjectId(userId) },
-        { 'members.userId': new Types.ObjectId(userId) },
-        { 'members.user': new Types.ObjectId(userId) },
+        // Current owner/member fields
+        { ownerId: userObjectId },
+        { owner: userObjectId },
+        { 'members.userId': userObjectId },
+        { 'members.user': userObjectId },
+
+        // Backward-compatible / alternate project ownership fields
+        { createdBy: userObjectId },
+        { createdById: userObjectId },
+        { 'members.memberId': userObjectId },
       ],
       isArchived: { $ne: true },
     };

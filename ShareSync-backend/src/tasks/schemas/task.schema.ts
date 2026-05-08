@@ -159,6 +159,14 @@ export class Task {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   assignee?: Types.ObjectId;
 
+  // Backward-compatible assignment aliases used by older task records.
+  // These are optional and do not change the primary assigneeId field.
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  assignedTo?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  assignedToId?: Types.ObjectId;
+
   @ApiProperty({ description: 'Reporter/creator user ID' })
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   reporterId: Types.ObjectId;
@@ -168,6 +176,10 @@ export class Task {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
+
+  // Backward-compatible creator alias used by older task records.
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  createdById?: Types.ObjectId;
 
   @ApiProperty({ description: 'Due date' })
   @Prop({ type: Date, index: true })
@@ -275,6 +287,11 @@ export const TaskSchema = SchemaFactory.createForClass(Task);
 TaskSchema.index({ projectId: 1, status: 1 });
 TaskSchema.index({ projectId: 1, assigneeId: 1 });
 TaskSchema.index({ assigneeId: 1, status: 1 });
+TaskSchema.index({ assignedTo: 1, status: 1 });
+TaskSchema.index({ assignedToId: 1, status: 1 });
+TaskSchema.index({ createdBy: 1, status: 1 });
+TaskSchema.index({ createdById: 1, status: 1 });
+TaskSchema.index({ reporterId: 1, status: 1 });
 TaskSchema.index({ sprintId: 1, status: 1 });
 TaskSchema.index({ dueDate: 1, status: 1 });
 TaskSchema.index({ projectId: 1, priority: -1, isBlocking: -1, dueDate: 1 });
@@ -383,11 +400,29 @@ TaskSchema.statics.findBlockingTasks = function (projectId: string) {
 TaskSchema.pre('save', function (next) {
   const doc = this as any;
 
-  if (doc.assigneeId && !doc.assignee) doc.assignee = doc.assigneeId;
-  if (doc.assignee && !doc.assigneeId) doc.assigneeId = doc.assignee;
+  const primaryAssignee =
+    doc.assigneeId || doc.assignee || doc.assignedToId || doc.assignedTo;
 
-  if (doc.reporterId && !doc.reporter) doc.reporter = doc.reporterId;
-  if (doc.reporter && !doc.reporterId) doc.reporterId = doc.reporter;
+  if (primaryAssignee) {
+    if (!doc.assigneeId) doc.assigneeId = primaryAssignee;
+    if (!doc.assignee) doc.assignee = primaryAssignee;
+    if (!doc.assignedToId) doc.assignedToId = primaryAssignee;
+    if (!doc.assignedTo) doc.assignedTo = primaryAssignee;
+  }
+
+  const primaryReporter = doc.reporterId || doc.reporter;
+
+  if (primaryReporter) {
+    if (!doc.reporterId) doc.reporterId = primaryReporter;
+    if (!doc.reporter) doc.reporter = primaryReporter;
+  }
+
+  const primaryCreator = doc.createdBy || doc.createdById || doc.reporterId || doc.reporter;
+
+  if (primaryCreator) {
+    if (!doc.createdBy) doc.createdBy = primaryCreator;
+    if (!doc.createdById) doc.createdById = primaryCreator;
+  }
 
   if (doc.isModified('status') || doc.isModified('priority') || doc.isModified('isBlocking') || doc.isModified('blockingCount') || doc.isModified('isLegendary')) {
     doc.ceremonyTier = doc.determineCeremonyTier();

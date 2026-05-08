@@ -410,15 +410,23 @@ export class TasksService {
       await this.projectsService.findByIdWithAccess(projectId, userId);
     }
 
+    const userObjectId = new Types.ObjectId(userId);
+
     const tasks = await this.taskModel
       .find({
         ...(projectId ? { projectId: new Types.ObjectId(projectId) } : {}),
         $or: [
-          { assigneeId: new Types.ObjectId(userId) },
-          { assignee: new Types.ObjectId(userId) },
-          { createdBy: new Types.ObjectId(userId) },
-          { reporterId: new Types.ObjectId(userId) },
-          { reporter: new Types.ObjectId(userId) },
+          // Current task ownership/assignment fields
+          { assigneeId: userObjectId },
+          { assignee: userObjectId },
+          { reporterId: userObjectId },
+          { reporter: userObjectId },
+
+          // Backward-compatible / alternate field names used by older task records
+          { createdBy: userObjectId },
+          { createdById: userObjectId },
+          { assignedTo: userObjectId },
+          { assignedToId: userObjectId },
         ],
         status: { $in: ['todo', 'in_progress', 'backlog', 'TODO', 'IN_PROGRESS', 'BACKLOG'] },
         completedAt: null,
