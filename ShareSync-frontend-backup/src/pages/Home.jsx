@@ -512,7 +512,7 @@ export default function Home() {
           showFooter={true}
           showRefresh={true}
           onMoveClick={handleFocusMoveClick}
-          onViewAll={() => console.log("View all moves")}
+          onViewAll={() => console.log("View all daily focus moves")}
         />
       </div>
 
@@ -547,7 +547,7 @@ export default function Home() {
           >
             <SectionHeader
               icon={Zap}
-              title="Recommended for Today"
+              title="Suggested Projects & Missions"
               action="Refresh"
               onAction={() => refreshAll?.()}
               showMomentum

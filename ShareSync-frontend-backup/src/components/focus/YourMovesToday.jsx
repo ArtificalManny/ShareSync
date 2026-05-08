@@ -1,15 +1,16 @@
 // src/components/focus/YourMovesToday.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE 5: Your 3 Moves Today - Cross-Project Focus View
-// UPGRADED: "Progress Should Be Visible" & Gallery Walk Light/Dark Integration
+// PHASE 5: Your 3 Moves Today - Daily Focus View
+// UPGRADED: "What should we work on today?" command-card language
 // SURGICAL PASS:
-// - Prevent NaN momentum output
-// - Keep existing component contract intact
-// - Preserve layout and behavior
+// - Preserve existing API/data flow
+// - Preserve MoveCard rendering and actions
+// - Preserve user-scoped focus behavior
+// - Prepare component for future accept/edit/delete daily-plan persistence
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Target, Zap, RefreshCw, ChevronRight, Flame, AlertCircle } from 'lucide-react';
+import { Target, Zap, RefreshCw, ChevronRight, Flame, AlertCircle, FolderPlus, LayoutDashboard } from 'lucide-react';
 import MoveCard, { MoveCardSkeleton } from './MoveCard';
 import { getStatusColor } from '../../utils/statusColor';
 import { useFocusEngine } from '../../contexts/FocusEngineContext';
@@ -120,8 +121,11 @@ export default function YourMovesToday({
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
                 Your 3 Moves Today
               </h3>
+              <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mt-1 normal-case tracking-normal">
+                What should we work on today?
+              </p>
               {hasUrgentMoves && (
-                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mt-0.5">
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mt-1">
                   Action needed
                 </p>
               )}
@@ -180,20 +184,42 @@ export default function YourMovesToday({
           </button>
         </div>
       ) : displayMoves.length > 0 ? (
-        <div className="space-y-3">
-          {displayMoves.map((move, index) => (
-            <MoveCard
-              key={move.id}
-              move={move}
-              rank={index + 1}
-              onClick={onMoveClick}
-              onComplete={handleComplete}
-              onSnooze={handleSnooze}
-              showProject={true}
-              showActions={!isCompact}
-              variant={isCompact ? 'compact' : 'default'}
-            />
-          ))}
+        <div className="space-y-4">
+          {!isCompact && (
+            <div className="rounded-2xl border border-violet-100 dark:border-violet-500/15 bg-violet-50/40 dark:bg-violet-500/5 px-4 py-3">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-[var(--theme-accent-primary)]">
+                    Recommended from your active projects
+                  </p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-zinc-400 mt-1">
+                    OpenShare found the highest-leverage moves for this account right now.
+                  </p>
+                </div>
+
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-zinc-900 border border-violet-100 dark:border-violet-500/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 shadow-sm">
+                  <Zap className="w-3.5 h-3.5 text-[var(--theme-accent-primary)]" />
+                  Daily focus
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {displayMoves.map((move, index) => (
+              <MoveCard
+                key={move.id || move._id || move.taskId || `move-${index}`}
+                move={move}
+                rank={index + 1}
+                onClick={onMoveClick}
+                onComplete={handleComplete}
+                onSnooze={handleSnooze}
+                showProject={true}
+                showActions={!isCompact}
+                variant={isCompact ? 'compact' : 'default'}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <EmptyState onRefresh={handleRefresh} />
@@ -231,23 +257,52 @@ export default function YourMovesToday({
 }
 
 function EmptyState({ onRefresh }) {
+  const goToProjects = () => {
+    window.location.href = '/projects';
+  };
+
   return (
-    <div className="py-10 text-center bg-teal-50/50 dark:bg-teal-500/5 rounded-xl border border-teal-100 dark:border-teal-500/10">
+    <div className="py-10 px-5 text-center bg-teal-50/50 dark:bg-teal-500/5 rounded-xl border border-teal-100 dark:border-teal-500/10">
       <div className="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-500/20 mx-auto mb-4 flex items-center justify-center shadow-sm">
         <Flame className="w-8 h-8 text-teal-600 dark:text-teal-400" />
       </div>
+
       <h4 className="text-lg font-black text-slate-900 dark:text-zinc-100 mb-1">
         All caught up! 🎉
       </h4>
-      <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mb-5">
-        No critical moves right now. Great job staying on top of things.
+
+      <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mb-6 max-w-xl mx-auto">
+        No critical moves right now. Create a project or add tasks inside one of your projects to start building momentum.
       </p>
-      <button
-        onClick={onRefresh}
-        className="text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 px-4 py-2 rounded-lg text-slate-600 dark:text-zinc-300 hover:text-[var(--theme-accent-primary)] hover:border-[var(--theme-accent-primary)] transition-all shadow-sm"
-      >
-        Check again
-      </button>
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={goToProjects}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--theme-accent-primary)] px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 transition-all"
+        >
+          <FolderPlus className="w-4 h-4" />
+          Create Project
+        </button>
+
+        <button
+          type="button"
+          onClick={goToProjects}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 hover:text-[var(--theme-accent-primary)] hover:border-[var(--theme-accent-primary)] transition-all shadow-sm"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          View Projects
+        </button>
+
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 hover:text-[var(--theme-accent-primary)] hover:border-[var(--theme-accent-primary)] transition-all shadow-sm"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Check Again
+        </button>
+      </div>
     </div>
   );
 }
