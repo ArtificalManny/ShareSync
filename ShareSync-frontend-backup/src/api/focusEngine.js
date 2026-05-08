@@ -2,6 +2,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE H: Three-Move Focus Engine - API Layer
 // User-scoped only for Home.jsx.
+//
+// DAILY FOCUS ADDITION:
+// - Adds frontend helpers for /daily-focus/today
+// - Preserves existing /tasks/priorities behavior for current components
+// - Does NOT add broad /tasks fallback
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
@@ -24,6 +29,18 @@ const extractArray = (payload) => {
   return [];
 };
 
+/**
+ * Safely unwrap a standard backend response:
+ * - { success: true, data: ... }
+ * - { data: ... }
+ * - raw object
+ */
+const unwrapData = (payload) => {
+  if (!payload) return null;
+  if (payload.data !== undefined) return payload.data;
+  return payload;
+};
+
 const isOpenTask = (task) => {
   const status = String(task?.status || '').toLowerCase();
 
@@ -34,6 +51,29 @@ const isOpenTask = (task) => {
     status !== 'archived' &&
     status !== 'deleted'
   );
+};
+
+const getBrowserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+};
+
+/**
+ * Normalize Daily Focus payload shape.
+ */
+const normalizeDailyFocusPlan = (plan) => {
+  const safePlan = plan || {};
+
+  return {
+    dateKey: safePlan.dateKey || '',
+    status: safePlan.status || 'suggested',
+    question: safePlan.question || 'What should we work on today?',
+    suggestions: Array.isArray(safePlan.suggestions) ? safePlan.suggestions : [],
+    selectedMoves: Array.isArray(safePlan.selectedMoves) ? safePlan.selectedMoves : [],
+  };
 };
 
 /**
@@ -95,6 +135,10 @@ export async function getProjectFocusMoves(projectId, count = 3) {
 
 /**
  * Mark a move as completed.
+ *
+ * Existing legacy behavior:
+ * - This expects a real task ID.
+ * - Daily Focus moves should use completeDailyFocusMove(moveId).
  */
 export async function completeFocusMove(moveId) {
   try {
@@ -132,10 +176,154 @@ export async function getBlockingMoves() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// DAILY FOCUS API HELPERS
+// Backend routes:
+// GET    /daily-focus/today
+// POST   /daily-focus/today/accept
+// POST   /daily-focus/today/moves
+// PATCH  /daily-focus/today/moves/:moveId
+// DELETE /daily-focus/today/moves/:moveId
+// POST   /daily-focus/today/moves/:moveId/complete
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function getTodayDailyFocus(options = {}) {
+  const timezone = options.timezone || getBrowserTimezone();
+
+  try {
+    const response = await client.get('/daily-focus/today', {
+      params: { timezone },
+    });
+
+    return normalizeDailyFocusPlan(unwrapData(response.data || response));
+  } catch (error) {
+    console.warn('[FocusEngine API] Daily Focus unavailable:', error?.message || error);
+
+    return normalizeDailyFocusPlan({
+      status: 'suggested',
+      question: 'What should we work on today?',
+      suggestions: [],
+      selectedMoves: [],
+    });
+  }
+}
+
+export async function acceptTodayDailyFocus(moveIds = [], options = {}) {
+  const timezone = options.timezone || getBrowserTimezone();
+
+  if (!Array.isArray(moveIds) || moveIds.length === 0) {
+    throw new Error('acceptTodayDailyFocus requires at least one move id.');
+  }
+
+  try {
+    const response = await client.post('/daily-focus/today/accept', {
+      moveIds,
+      timezone,
+    });
+
+    return normalizeDailyFocusPlan(unwrapData(response.data || response));
+  } catch (error) {
+    console.error('[FocusEngine API] Error accepting Daily Focus moves:', error);
+    throw error;
+  }
+}
+
+export async function addDailyFocusMove({ title, projectId } = {}, options = {}) {
+  const timezone = options.timezone || getBrowserTimezone();
+  const cleanTitle = String(title || '').trim();
+
+  if (!cleanTitle) {
+    throw new Error('addDailyFocusMove requires a title.');
+  }
+
+  try {
+    const response = await client.post('/daily-focus/today/moves', {
+      title: cleanTitle,
+      projectId: projectId || undefined,
+      timezone,
+    });
+
+    return normalizeDailyFocusPlan(unwrapData(response.data || response));
+  } catch (error) {
+    console.error('[FocusEngine API] Error adding Daily Focus move:', error);
+    throw error;
+  }
+}
+
+export async function updateDailyFocusMove(moveId, { title } = {}, options = {}) {
+  const timezone = options.timezone || getBrowserTimezone();
+  const cleanTitle = String(title || '').trim();
+
+  if (!moveId) {
+    throw new Error('updateDailyFocusMove requires a move id.');
+  }
+
+  if (!cleanTitle) {
+    throw new Error('updateDailyFocusMove requires a title.');
+  }
+
+  try {
+    const response = await client.patch(`/daily-focus/today/moves/${moveId}`, {
+      title: cleanTitle,
+      timezone,
+    });
+
+    return normalizeDailyFocusPlan(unwrapData(response.data || response));
+  } catch (error) {
+    console.error('[FocusEngine API] Error updating Daily Focus move:', error);
+    throw error;
+  }
+}
+
+export async function deleteDailyFocusMove(moveId, options = {}) {
+  const timezone = options.timezone || getBrowserTimezone();
+
+  if (!moveId) {
+    throw new Error('deleteDailyFocusMove requires a move id.');
+  }
+
+  try {
+    const response = await client.delete(`/daily-focus/today/moves/${moveId}`, {
+      params: { timezone },
+    });
+
+    return normalizeDailyFocusPlan(unwrapData(response.data || response));
+  } catch (error) {
+    console.error('[FocusEngine API] Error deleting Daily Focus move:', error);
+    throw error;
+  }
+}
+
+export async function completeDailyFocusMove(moveId, options = {}) {
+  const timezone = options.timezone || getBrowserTimezone();
+
+  if (!moveId) {
+    throw new Error('completeDailyFocusMove requires a move id.');
+  }
+
+  try {
+    const response = await client.post(`/daily-focus/today/moves/${moveId}/complete`, {
+      timezone,
+    });
+
+    return normalizeDailyFocusPlan(unwrapData(response.data || response));
+  } catch (error) {
+    console.error('[FocusEngine API] Error completing Daily Focus move:', error);
+    throw error;
+  }
+}
+
 export default {
   getUserFocusMoves,
   getProjectFocusMoves,
   completeFocusMove,
   snoozeFocusMove,
   getBlockingMoves,
+
+  getTodayDailyFocus,
+  acceptTodayDailyFocus,
+  addDailyFocusMove,
+  updateDailyFocusMove,
+  deleteDailyFocusMove,
+  completeDailyFocusMove,
 };

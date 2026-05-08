@@ -591,7 +591,7 @@ export default function Navbar({
             </form>
           </div>
 
-          <div className="flex-1 min-w-0 flex items-center justify-start px-4">
+          <div className="flex-1 flex items-center justify-start px-4">
             {focusBlock.isActive && (
               <FocusBlockTimer
                 isActive={focusBlock.isActive}
@@ -625,7 +625,7 @@ export default function Navbar({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="hidden sm:block mr-2">
               <MomentumBadge />
             </div>
@@ -642,22 +642,10 @@ export default function Navbar({
               <span className="text-sm hidden sm:inline">New</span>
             </button>
 
-            <div className="hidden md:block shrink-0">
-              <NavbarSoundToggle />
-            </div>
-
+                        <div className="hidden md:block"><NavbarSoundToggle /></div>
             <BackgroundColorPicker />
 
-            <div
-              className="hidden md:flex shrink-0 items-center border-l border-slate-200/70 pl-3 ml-1 dark:border-white/10"
-              aria-label="Subscription and plan status"
-            >
-              <div className="relative rounded-2xl bg-gradient-to-r from-violet-200/70 via-amber-200/70 to-cyan-200/70 p-[1px] shadow-sm shadow-violet-500/10 dark:from-violet-500/25 dark:via-amber-500/25 dark:to-cyan-500/25">
-                <div className="rounded-[15px] bg-white/80 p-0.5 backdrop-blur-md dark:bg-[#0B0B10]/80">
-                  <SubscriptionButton />
-                </div>
-              </div>
-            </div>
+            <div className="hidden md:block"><SubscriptionButton /></div>
 
             <NotificationCenter />
 
