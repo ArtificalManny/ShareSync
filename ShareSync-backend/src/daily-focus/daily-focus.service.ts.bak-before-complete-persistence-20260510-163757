@@ -293,25 +293,17 @@ export class DailyFocusService {
       throw new NotFoundException('Daily focus plan not found');
     }
 
-    const selectedMoves = [...(plan.selectedMoves || [])] as any[];
-    const moveIndex = selectedMoves.findIndex((item) => item.id === moveId);
+    const move = (plan.selectedMoves || []).find((item) => item.id === moveId);
 
-    if (moveIndex === -1) {
+    if (!move) {
       throw new NotFoundException('Move not found');
     }
 
-    const now = new Date();
+    move.status = 'done';
+    move.completedAt = new Date();
+    move.updatedAt = new Date();
 
-    selectedMoves[moveIndex] = {
-      ...(selectedMoves[moveIndex] as any),
-      status: 'done',
-      completedAt: (selectedMoves[moveIndex] as any).completedAt || now,
-      updatedAt: now,
-    };
-
-    plan.selectedMoves = selectedMoves as any;
-
-    const activeMoves = selectedMoves.filter(
+    const activeMoves = (plan.selectedMoves || []).filter(
       (item) => item.status !== 'dismissed',
     );
 
@@ -320,15 +312,7 @@ export class DailyFocusService {
         ? 'completed'
         : 'accepted';
 
-    // Important: force Mongoose to persist nested array changes.
-    plan.markModified('selectedMoves');
-    plan.markModified('status');
-
     await plan.save();
-
-    this.logger.log(
-      `Completed daily focus move ${moveId} for user ${userId}. Plan status: ${plan.status}`,
-    );
 
     return this.getToday(userId, timezone);
   }
