@@ -48,8 +48,6 @@ import TeamPulse from "../components/social/TeamPulse";
 import LiveActivityFeed from "../components/social/LiveActivityFeed";
 import StreakComparison from "../components/social/StreakComparison";
 import MomentumContagion from "../components/social/MomentumContagion";
-import PulseCheckPrompt from "../components/pulse/PulseCheckPrompt";
-
 import { useShipSound, useXPSound, useAchievementUnlockSound } from "../sounds/AchievementSounds";
 import { useUISounds } from "../hooks/useSounds";
 
@@ -666,16 +664,7 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════════════════════════
             SECONDARY SUPPORT ZONE
         ═══════════════════════════════════════════════════════════════════ */}
-        {hasSuggestedTask && (
-          <div className="col-span-12">
-            <PulseCheckPrompt
-              suggestedTask={missions?.[0]?.title || null}
-              className="home-pulse-shell mb-0"
-            />
-          </div>
-        )}
-
-        {glowLevel >= 3 && (
+{glowLevel >= 3 && (
           <div className="col-span-12">
             <MomentumStatusBanner />
           </div>

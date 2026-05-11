@@ -11,7 +11,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  Target,
+  Target, Compass, ListChecks,
   Zap,
   RefreshCw,
   ChevronRight,
@@ -107,6 +107,54 @@ function normalizeDailyFocusMove(move) {
     isDailyFocusMove: true,
   };
 }
+
+
+function markDailyFocusMoveDoneInPlan(plan, moveId) {
+  if (!plan || !moveId) return plan;
+
+  const now = new Date().toISOString();
+
+  const markList = (items) => {
+    if (!Array.isArray(items)) return items;
+
+    return items.map((item) => {
+      if (getMoveIdentity(item) !== moveId) return item;
+
+      return {
+        ...item,
+        status: 'done',
+        completedAt: item.completedAt || now,
+        updatedAt: now,
+      };
+    });
+  };
+
+  const selectedMoves = markList(plan.selectedMoves);
+  const suggestions = markList(plan.suggestions);
+
+  const activeMoves = (
+    Array.isArray(selectedMoves) && selectedMoves.length > 0
+      ? selectedMoves
+      : Array.isArray(suggestions)
+        ? suggestions
+        : []
+  ).filter((item) => String(item?.status || '').toLowerCase() !== 'dismissed');
+
+  const nextStatus =
+    Array.isArray(selectedMoves) && selectedMoves.length > 0
+      ? activeMoves.length > 0 && activeMoves.every(isMoveDone)
+        ? 'completed'
+        : 'accepted'
+      : plan.status;
+
+  return {
+    ...plan,
+    status: nextStatus,
+    selectedMoves,
+    suggestions,
+  };
+}
+
 
 export default function YourMovesToday({
   variant = 'default',
@@ -328,13 +376,55 @@ export default function YourMovesToday({
     if (!moveId) return;
 
     if (dailyFocusMoveIds.has(moveId)) {
-      const updatedPlan = await completeDailyFocusMove(moveId);
-      setDailyFocusPlan(updatedPlan);
+      setIsPlanningAction(true);
+
+      try {
+        let planForCompletion = dailyFocusPlan;
+
+        // If the user completes a suggested move before explicitly accepting the plan,
+        // first lock today's visible suggestions into selectedMoves so completion can persist.
+        if (!hasAcceptedDailyPlan) {
+          const moveIdsToAccept = dailyFocusMoves
+            .slice(0, maxMoves)
+            .map(getMoveIdentity)
+            .filter(Boolean);
+
+          if (!moveIdsToAccept.includes(moveId)) {
+            moveIdsToAccept.unshift(moveId);
+          }
+
+          const acceptedPlan = await acceptTodayDailyFocus(
+            moveIdsToAccept.slice(0, maxMoves),
+          );
+
+          planForCompletion = acceptedPlan;
+          setDailyFocusPlan(acceptedPlan);
+        }
+
+        // Optimistic local update so the Completion stat changes immediately.
+        setDailyFocusPlan((currentPlan) =>
+          markDailyFocusMoveDoneInPlan(currentPlan || planForCompletion, moveId),
+        );
+
+        // Backend persistence.
+        const updatedPlan = await completeDailyFocusMove(moveId);
+        setDailyFocusPlan(updatedPlan);
+      } finally {
+        setIsPlanningAction(false);
+      }
+
       return;
     }
 
     if (completeMove) await completeMove(moveId);
-  }, [completeMove, dailyFocusMoveIds]);
+  }, [
+    completeMove,
+    dailyFocusMoveIds,
+    dailyFocusPlan,
+    dailyFocusMoves,
+    hasAcceptedDailyPlan,
+    maxMoves,
+  ]);
 
   const handleSnooze = useCallback(async (moveId, hours) => {
     if (snoozeMove) await snoozeMove(moveId, hours);
@@ -369,7 +459,7 @@ export default function YourMovesToday({
               {hasUrgentMoves ? (
                 <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
               ) : (
-                <Target className="w-5 h-5 text-[var(--theme-accent-primary)]" />
+                <Compass className="w-5 h-5 text-[var(--theme-accent-primary)]" />
               )}
             </div>
 
@@ -643,7 +733,7 @@ function DailyFocusIntroPanel({
                 Moves
               </p>
               <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-800 dark:text-zinc-100">
-                <Target className="h-4 w-4 text-[var(--theme-accent-primary)]" />
+                <ListChecks className="h-4 w-4 text-[var(--theme-accent-primary)]" />
                 {totalMoves}
               </div>
             </div>

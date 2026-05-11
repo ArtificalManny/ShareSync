@@ -36,6 +36,30 @@ const RANK_STYLES = {
 
 const getRankStyle = (rank) => RANK_STYLES[rank] || RANK_STYLES[3];
 
+function isMoveDone(move) {
+  const status = String(move?.status || '').toLowerCase();
+  return status === 'done' || status === 'completed' || status === 'complete';
+}
+
+function isDailyFocusMove(move) {
+  const id = String(move?.id || '');
+  return Boolean(
+    move?.isDailyFocusMove ||
+      id.startsWith('task_') ||
+      id.startsWith('project_') ||
+      id.startsWith('custom_')
+  );
+}
+
+function getMoveTargetId(move) {
+  return move?.taskId || move?._id || move?.id || move?.sourceId || '';
+}
+
+function getMomentumValue(move) {
+  const value = Number(move?.momentum ?? move?.estimatedMomentum ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
 export default function MoveCard({
   move, onClick, onComplete, onSnooze, showProject = true, showActions = true, variant = 'default', rank, 
 }) {
@@ -48,11 +72,17 @@ export default function MoveCard({
   const menuRef = useRef(null);
 
   const typeConfig = TYPE_CONFIG[move.type] || TYPE_CONFIG.default;
+  const TypeIcon = typeConfig.icon;
   const urgencyLevel = getUrgencyLevel(move.deadline);
   const urgencyStyles = URGENCY_STYLES[urgencyLevel] || URGENCY_STYLES.none;
   const timeLeft = getTimeUntilDeadline(move.deadline);
   const rankStyle = rank ? getRankStyle(rank) : getRankStyle(3);
   const isCompact = variant === 'compact';
+  const moveDone = isMoveDone(move);
+  const dailyFocusMove = isDailyFocusMove(move);
+  const shouldVisuallyExit = isExiting && !dailyFocusMove;
+  const doneVisual = moveDone || shouldVisuallyExit;
+  const momentumValue = getMomentumValue(move);
 
   const toggleMenu = useCallback((e) => {
     e.stopPropagation();
@@ -78,29 +108,35 @@ export default function MoveCard({
     };
   }, [showMenu]);
 
-  // 🚨 BEHAVIORAL FIX: Instant animation, then propagate up
+  // Daily Focus moves should stay visible after completion.
+  // Legacy task moves can still use the old exit animation.
   const handleComplete = useCallback(async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    if (isExiting) return;
-    
-    // Trigger visual exit instantly
+
+    if (isExiting || moveDone) return;
+
+    const targetId = getMoveTargetId(move);
+
+    if (!targetId || !onComplete) return;
+
+    if (dailyFocusMove) {
+      await onComplete(targetId);
+      return;
+    }
+
     setIsExiting(true);
-    
-    // Give the animation 300ms to play before destroying the component from state
+
     setTimeout(async () => {
-      const targetId = move.taskId || move._id || move.id;
-      if (targetId && onComplete) {
-        await onComplete(targetId);
-      }
+      await onComplete(targetId);
     }, 300);
-  }, [move, onComplete, isExiting]);
+  }, [move, onComplete, isExiting, moveDone, dailyFocusMove]);
 
   const handleSnooze = useCallback((e) => {
     e.stopPropagation();
     setIsExiting(true);
     setTimeout(() => {
-      const targetId = move.taskId || move._id || move.id;
+      const targetId = getMoveTargetId(move);
       if (targetId && onSnooze) onSnooze(targetId, 4);
     }, 300);
     setShowMenu(false);
@@ -125,29 +161,48 @@ export default function MoveCard({
       className={`
         group cursor-pointer
         ${isCompact ? 'p-3' : 'p-4'} rounded-xl
-        ${rankStyle.cardBg} border ${rankStyle.borderAccent}
-        ${urgencyStyles.border ? `border-l-2 ${urgencyStyles.border}` : ''}
-        ${urgencyStyles.bg}
+        ${
+          moveDone
+            ? 'border border-emerald-200/80 bg-emerald-50/70 shadow-sm shadow-emerald-500/10 dark:border-emerald-500/20 dark:bg-emerald-500/5'
+            : `${rankStyle.cardBg} border ${rankStyle.borderAccent}`
+        }
+        ${urgencyStyles.border && !moveDone ? `border-l-2 ${urgencyStyles.border}` : ''}
+        ${!moveDone ? urgencyStyles.bg : ''}
         
-        /* 🚨 SMOOTH EXIT ANIMATION */
+        /* Smooth Daily Focus completion behavior */
         transition-all duration-300 ease-in-out
-        ${isExiting ? 'opacity-0 scale-95 -translate-x-4 pointer-events-none' : 'opacity-100 scale-100'}
-        ${isHovered && !isExiting ? 'transform -translate-y-[2px] shadow-lg shadow-black/20' : ''}
+        ${shouldVisuallyExit ? 'opacity-0 scale-95 -translate-x-4 pointer-events-none' : 'opacity-100 scale-100'}
+        ${isHovered && !shouldVisuallyExit && !moveDone ? 'transform -translate-y-[2px] shadow-lg shadow-black/20' : ''}
+        ${moveDone ? 'cursor-default' : ''}
         relative z-10 hover:z-20
       `}
     >
       <div className="flex items-start gap-4">
         {rank ? (
-          <div className={`shrink-0 w-8 h-8 rounded-xl ${rankStyle.rankBg} shadow-inner flex items-center justify-center mt-0.5`}>
-            <span className={`text-sm tracking-tighter ${rankStyle.rankText}`}>#{rank}</span>
+          <div
+            className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center mt-0.5 ${
+              moveDone
+                ? 'bg-emerald-100 text-emerald-700 shadow-inner dark:bg-emerald-500/15 dark:text-emerald-300'
+                : `${rankStyle.rankBg} shadow-inner`
+            }`}
+          >
+            {moveDone ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <span className={`text-sm tracking-tighter ${rankStyle.rankText}`}>#{rank}</span>
+            )}
           </div>
         ) : (
-          <div className={`shrink-0 p-2.5 rounded-xl ${typeConfig.bg} mt-0.5`}>
-            <TypeConfig.icon className={`w-4 h-4 ${typeConfig.color}`} />
+          <div className={`shrink-0 p-2.5 rounded-xl ${moveDone ? 'bg-emerald-100 dark:bg-emerald-500/15' : typeConfig.bg} mt-0.5`}>
+            {moveDone ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+            ) : (
+              <TypeIcon className={`w-4 h-4 ${typeConfig.color}`} />
+            )}
           </div>
         )}
 
-        <div className={`flex-1 min-w-0 pr-2 transition-all duration-300 ${isExiting ? 'opacity-50 line-through grayscale' : ''}`}>
+        <div className={`flex-1 min-w-0 pr-2 transition-all duration-300 ${doneVisual ? 'opacity-75 grayscale-[0.15]' : ''}`}>
           {showProject && move.project && (
             <div className="flex items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide border" style={{ backgroundColor: `${move.project.color || '#3b82f6'}10`, color: move.project.color || '#3b82f6', borderColor: `${move.project.color || '#3b82f6'}20` }}>
@@ -162,7 +217,13 @@ export default function MoveCard({
             </div>
           )}
 
-          <h4 className={`${rankStyle.titleSize} text-text-primary group-hover:text-brand transition-colors ${isCompact ? 'line-clamp-1' : 'line-clamp-2'}`}>
+          <h4
+            className={`${rankStyle.titleSize} transition-colors ${
+              moveDone
+                ? 'text-slate-500 line-through decoration-emerald-500/50 decoration-2 group-hover:text-slate-500 dark:text-zinc-400'
+                : 'text-text-primary group-hover:text-brand'
+            } ${isCompact ? 'line-clamp-1' : 'line-clamp-2'}`}
+          >
             {move.title}
           </h4>
 
@@ -171,8 +232,19 @@ export default function MoveCard({
           )}
 
           <div className={`flex flex-wrap items-center gap-3.5 ${isCompact ? 'mt-2' : 'mt-3'}`}>
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-brand/10 border border-brand/20 rounded-md text-[11px] font-bold text-brand shadow-sm shadow-brand/5">
-              <Zap className="w-3 h-3" />+{move.momentum || 0}
+            {moveDone && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-[11px] font-black text-emerald-700 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <CheckCircle2 className="w-3 h-3" />
+                Done
+              </span>
+            )}
+
+            <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-bold shadow-sm ${
+              moveDone
+                ? 'border-slate-200 bg-white/70 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400'
+                : 'bg-brand/10 border-brand/20 text-brand shadow-brand/5'
+            }`}>
+              <Zap className="w-3 h-3" />+{momentumValue}
             </span>
             {move.unblocks > 0 && <UnblockIndicator count={move.unblocks} variant={isCompact ? 'compact' : 'default'} />}
             {timeLeft && (
@@ -186,13 +258,19 @@ export default function MoveCard({
         <div className="shrink-0 flex items-center gap-1.5">
           {showActions && (
             <>
-              <button 
-                onClick={handleComplete} 
-                disabled={isExiting} 
-                className={`p-2.5 rounded-xl border transition-all duration-200 active:scale-90 ${isExiting ? 'bg-success border-success text-white shadow-lg shadow-success/20' : 'bg-surface-2 border-white/[0.08] text-success/70 hover:bg-success hover:border-success hover:text-white hover:shadow-lg hover:shadow-success/20'} disabled:opacity-50`} 
-                title="Mark complete"
+              <button
+                onClick={handleComplete}
+                disabled={isExiting || moveDone}
+                className={`p-2.5 rounded-xl border transition-all duration-200 active:scale-90 ${
+                  moveDone
+                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20 cursor-default'
+                    : isExiting
+                      ? 'bg-success border-success text-white shadow-lg shadow-success/20'
+                      : 'bg-surface-2 border-white/[0.08] text-success/70 hover:bg-success hover:border-success hover:text-white hover:shadow-lg hover:shadow-success/20'
+                } disabled:opacity-100`}
+                title={moveDone ? 'Completed' : 'Mark complete'}
               >
-                <CheckCircle2 className={`w-5 h-5`} />
+                <CheckCircle2 className="w-5 h-5" />
               </button>
 
               <div className="relative" ref={menuRef}>
