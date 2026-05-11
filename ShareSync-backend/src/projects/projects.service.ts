@@ -676,7 +676,10 @@ export class ProjectsService {
   }): Promise<{ success: true }> {
     const project = await this.findByIdWithAccess(args.projectId, args.userId);
 
-    if (!this.canEdit(project, args.userId)) {
+    // Ship updates are lightweight project activity, not full project closeout/editing.
+    // Owners and real project members may post ship updates.
+    // Public spectators still cannot post because they are not owners/members.
+    if (!this.isProjectOwner(project, args.userId) && !this.isProjectMember(project, args.userId)) {
       throw new ForbiddenException('You do not have permission to post updates for this project');
     }
 

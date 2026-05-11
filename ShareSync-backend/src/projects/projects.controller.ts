@@ -496,6 +496,34 @@ export class ProjectsController {
   }
 
 
+
+  @Post(':id/ships')
+  @ApiOperation({ summary: 'Record a lightweight project ship update' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async recordShipUpdate(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() body: { title?: string; description?: string; projectName?: string },
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    const shipTitle =
+      String(body?.title || body?.description || 'Home mission shipped').trim() ||
+      'Home mission shipped';
+
+    const result = await this.projectsService.recordShipUpdate({
+      projectId: id,
+      userId,
+      shipTitle,
+      projectNameOverride: body?.projectName,
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
   @Post(':id/complete')
   @ApiOperation({ summary: 'Complete a project through the closeout flow' })
   @ApiParam({ name: 'id', description: 'Project ID' })
