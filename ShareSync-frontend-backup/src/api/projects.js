@@ -432,8 +432,82 @@ function normalizeReopenProjectPayload(payload = {}) {
 }
 
 export const getProjectClosureReadiness = async (projectId) => {
+  const id = String(projectId || "").trim();
+
+  if (!id) {
+    const err = new Error("projectId is required");
+    err.normalizedMessage = "projectId is required";
+    throw err;
+  }
+
+  const pickReadiness = (payload) => {
+    const data =
+      payload?.data ||
+      payload?.overview ||
+      payload?.result ||
+      payload;
+
+    const candidates = [
+      data?.closureReadiness,
+      data?.finishLine,
+      data?.readiness,
+      data?.project?.closureReadiness,
+      data?.project?.finishLine,
+      data?.project?.readiness,
+      payload?.closureReadiness,
+      payload?.finishLine,
+      payload?.readiness,
+      data,
+    ];
+
+    const hasUsableScore = (item) => {
+      if (!item || typeof item !== "object") return false;
+
+      const raw =
+        item.readinessScore ??
+        item.score ??
+        item.progress ??
+        item.completionPercent;
+
+      return Number.isFinite(Number(raw));
+    };
+
+    return candidates.find(hasUsableScore) || null;
+  };
+
+  // IMPORTANT:
+  // ProjectHome's Finish Line already uses the project overview contract.
+  // Home missions should use that same source first so the mini progress bar
+  // matches the Finish Line readiness score.
   try {
-    const response = await api.get(`/projects/${projectId}/closure-readiness`);
+    const overviewResponse = await api.get(`/projects/${id}/overview`);
+
+    // IMPORTANT:
+    // Do NOT use unwrap() here.
+    // unwrap() returns data.project when it sees a `project` key, which discards
+    // overview-level fields like `closureReadiness`.
+    const overviewPayload = overviewResponse?.data;
+    const overviewData =
+      overviewPayload?.data ||
+      overviewPayload?.overview ||
+      overviewPayload?.result ||
+      overviewPayload;
+
+    const readiness = pickReadiness(overviewData);
+
+    if (readiness && typeof readiness === "object") {
+      return normalizeClosureReadiness(readiness);
+    }
+  } catch (overviewErr) {
+    console.warn(
+      "[projects.js] Project overview readiness failed; falling back to closure-readiness endpoint:",
+      overviewErr?.normalizedMessage || overviewErr?.message || overviewErr
+    );
+  }
+
+  // Fallback for older backend contracts.
+  try {
+    const response = await api.get(`/projects/${id}/closure-readiness`);
     const data = unwrap(response);
     return normalizeClosureReadiness(data);
   } catch (err) {

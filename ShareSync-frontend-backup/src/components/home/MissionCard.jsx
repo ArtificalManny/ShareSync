@@ -6,7 +6,7 @@
 // - Displays task title, project context, recommendation reason, and real progress.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from "react";
+import React, { useState } from "react";
 import {
   AlertTriangle,
   CalendarClock,
@@ -14,14 +14,14 @@ import {
   CheckCircle2,
   Clock,
   Rocket,
-  Target,
-} from "lucide-react";
+  Target } from "lucide-react";
 import { ShipButton, ShippableCard } from "../ship";
 import useShipCeremony, { PHASES } from "../../hooks/useShipCeremony";
 import { tryShipProject } from "../../api/home";
+import { getProjectClosureReadiness } from "../../api/projects";
 import { getStatusColor } from "../../utils/statusColor";
 import FocusBlockBadge from "../focus/FocusBlockBadge";
-
+import ProjectAvatar from "../project/ProjectAvatar";
 function clampPercent(value) {
   const number = Number(value);
 
@@ -61,10 +61,15 @@ function getDisplayReason(project) {
 
 function getProgressValue(project) {
   return clampPercent(
-    project?.progress ??
+    project?.readinessScore ??
+      project?.closureReadiness?.readinessScore ??
+      project?.finishLine?.readinessScore ??
+      project?.readiness?.readinessScore ??
+      project?.progress ??
       project?.completion ??
       project?.completionPercent ??
       project?.percentComplete ??
+      project?.metrics?.readinessScore ??
       project?.metrics?.progress ??
       project?.metrics?.completion ??
       project?.metrics?.completionPercent ??
@@ -105,6 +110,100 @@ function getSignalIcon(project) {
   return <Clock className="w-3 h-3" />;
 }
 
+
+
+function getMissionProjectId(mission) {
+  const raw =
+    mission?.projectId?._id ||
+    mission?.projectId?.id ||
+    mission?.projectId ||
+    mission?.project?._id ||
+    mission?.project?.id ||
+    mission?._id ||
+    mission?.id;
+
+  if (!raw) return "";
+
+  if (typeof raw === "object") {
+    return String(raw._id || raw.id || raw.toString?.() || "");
+  }
+
+  return String(raw);
+}
+
+function normalizeMissionReadiness(readiness) {
+  const data =
+    readiness?.data ||
+    readiness?.closureReadiness ||
+    readiness?.finishLine ||
+    readiness?.readiness ||
+    readiness ||
+    {};
+
+  const score = clampPercent(
+    data?.readinessScore ??
+      data?.score ??
+      data?.progress ??
+      data?.completionPercent ??
+      0
+  );
+
+  return {
+    readinessScore: score,
+    progress: score,
+    isReadyToClose: Boolean(data?.isReadyToClose),
+    blockingReasons: Array.isArray(data?.blockingReasons) ? data.blockingReasons : [],
+    warnings: Array.isArray(data?.warnings) ? data.warnings : [],
+    closureReadiness: {
+      ...data,
+      readinessScore: score } };
+}
+
+
+function getMissionProjectForAvatar(mission) {
+  return {
+    ...mission,
+    _id: mission?._id || mission?.id || mission?.projectId,
+    id: mission?.id || mission?._id || mission?.projectId,
+    name: mission?.name || mission?.title || mission?.projectName,
+    title: mission?.title || mission?.name || mission?.projectName,
+    logoUrl:
+      mission?.logoUrl ||
+      mission?.logo ||
+      mission?.picture ||
+      mission?.avatarUrl ||
+      mission?.imageUrl ||
+      "",
+    logo:
+      mission?.logo ||
+      mission?.logoUrl ||
+      mission?.picture ||
+      mission?.avatarUrl ||
+      mission?.imageUrl ||
+      "",
+    picture:
+      mission?.picture ||
+      mission?.logoUrl ||
+      mission?.logo ||
+      mission?.avatarUrl ||
+      mission?.imageUrl ||
+      "",
+    avatarUrl:
+      mission?.avatarUrl ||
+      mission?.logoUrl ||
+      mission?.logo ||
+      mission?.picture ||
+      mission?.imageUrl ||
+      "",
+    imageUrl:
+      mission?.imageUrl ||
+      mission?.logoUrl ||
+      mission?.logo ||
+      mission?.picture ||
+      mission?.avatarUrl ||
+      "" };
+}
+
 export default function MissionCard({ project, onClick, onShipped }) {
   const { ship, phase, isItemShipping, isItemShipped } = useShipCeremony({
     onShip: async (projectId) => {
@@ -117,20 +216,31 @@ export default function MissionCard({ project, onClick, onShipped }) {
     onComplete: (projectId) => {
       onShipped?.(projectId);
     },
-    broadcastToTeam: true,
-  });
+    broadcastToTeam: true });
 
-  const projectId = project?.id || project?._id || project?.projectId;
+  
+  const projectId =
+    project?.sourceProjectId ||
+    project?.parentProjectId ||
+    project?.project?._id ||
+    project?.project?.id ||
+    project?.projectId?._id ||
+    project?.projectId?.id ||
+    project?.projectId ||
+    project?._id ||
+    project?.id;
   const isThisShipping = isItemShipping(projectId);
   const isThisShipped = isItemShipped(projectId);
   const currentPhase = isThisShipping || isThisShipped ? phase : PHASES.IDLE;
 
-  const title = getDisplayTitle(project);
-  const subtitle = getDisplaySubtitle(project);
-  const reason = getDisplayReason(project);
-  const progressValue = getProgressValue(project);
-  const priorityLabel = getPriorityLabel(project);
-  const isPriorityMission = isRecommendedTaskMission(project);
+  const hydratedProject = project;
+
+  const title = getDisplayTitle(hydratedProject);
+  const subtitle = getDisplaySubtitle(hydratedProject);
+  const reason = getDisplayReason(hydratedProject);
+  const progressValue = getProgressValue(hydratedProject);
+  const priorityLabel = getPriorityLabel(hydratedProject);
+  const isPriorityMission = isRecommendedTaskMission(hydratedProject);
 
   const getProgressFillClass = (percentage) => {
     if (percentage >= 100) return "bg-success";
@@ -163,28 +273,41 @@ export default function MissionCard({ project, onClick, onShipped }) {
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div
               className={`
-                w-10 h-10 rounded-lg flex items-center justify-center shrink-0
-                transition-all duration-300
+                relative shrink-0 transition-all duration-300
                 ${
-                  isThisShipped
-                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-                    : isThisShipping
-                      ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400"
-                      : isPriorityMission
-                        ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300 group-hover:bg-white dark:group-hover:bg-zinc-700 group-hover:shadow-md group-hover:scale-110"
-                        : "bg-slate-50 dark:bg-zinc-800 group-hover:bg-white dark:group-hover:bg-zinc-700 group-hover:shadow-md group-hover:scale-110 group-hover:text-blue-500 text-slate-500"
+                  isThisShipped || isThisShipping
+                    ? "scale-105"
+                    : "group-hover:scale-110"
                 }
               `}
             >
-              {isThisShipped ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : isThisShipping ? (
-                <Rocket className="w-4 h-4 animate-pulse" />
-              ) : isPriorityMission ? (
-                <Target className="w-4 h-4" />
-              ) : (
-                <span className="text-lg transition-colors duration-300">
-                  {project?.emoji || "◎"}
+              <ProjectAvatar
+                project={getMissionProjectForAvatar(hydratedProject)}
+                size="md"
+                className="shrink-0"
+                title={`${title || "Project"} logo`}
+              />
+
+              {(isThisShipped || isThisShipping || isPriorityMission) && (
+                <span
+                  className={`
+                    absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white shadow-sm
+                    ${
+                      isThisShipped
+                        ? "bg-emerald-500 text-white"
+                        : isThisShipping
+                          ? "bg-violet-500 text-white"
+                          : "bg-white text-violet-600"
+                    }
+                  `}
+                >
+                  {isThisShipped ? (
+                    <CheckCircle2 className="h-3 w-3" />
+                  ) : isThisShipping ? (
+                    <Rocket className="h-3 w-3 animate-pulse" />
+                  ) : (
+                    <Target className="h-3 w-3" />
+                  )}
                 </span>
               )}
             </div>
@@ -202,7 +325,7 @@ export default function MissionCard({ project, onClick, onShipped }) {
               >
                 {title}
                 <FocusBlockBadge
-                  isInFocus={project?.assigneeInFocus || project?.isInFocus || false}
+                  isInFocus={hydratedProject?.assigneeInFocus || hydratedProject?.isInFocus || false}
                   variant="compact"
                   className="ml-2 align-middle"
                 />

@@ -3,17 +3,214 @@ import { fetchProjects, fetchActivities, fetchActivitySummary } from "../api/hom
 import client from "../api/client";
 // ⭐ STEP 3: Import socket event listener
 import { useSocketEvent } from "../context/SocketContext";
+import { getProjectClosureReadiness } from "../api/projects";
+
+function extractArray(payload) {
+  if (Array.isArray(payload)) return payload;
+
+  if (!payload || typeof payload !== "object") return [];
+
+  const candidates = [
+    payload.data,
+    payload.items,
+    payload.results,
+    payload.activities,
+    payload.feed,
+    payload.records,
+    payload.docs,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
+
+  return [];
+}
 
 function getHomeProjectId(project) {
   const raw =
-    project?._id ||
-    project?.id ||
+    // Priority-task missions often have id/_id as the TASK id.
+    // Always prefer the parent project id first.
     project?.projectId?._id ||
-    project?.projectId ||
+    project?.projectId?.id ||
     project?.project?._id ||
-    project?.project?.id;
+    project?.project?.id ||
+    project?.recommendedTask?.projectId?._id ||
+    project?.recommendedTask?.projectId?.id ||
+    project?.recommendedTask?.projectId ||
+    project?.task?.projectId?._id ||
+    project?.task?.projectId?.id ||
+    project?.task?.projectId ||
+    project?.raw?.projectId?._id ||
+    project?.raw?.projectId?.id ||
+    project?.raw?.projectId ||
+    project?.metadata?.projectId ||
+    project?.payload?.projectId ||
+    project?.sourceProjectId ||
+    project?.parentProjectId ||
+    project?.projectId ||
+    project?._id ||
+    project?.id;
 
-  return raw ? String(raw) : "";
+  if (!raw) return "";
+
+  if (typeof raw === "object") {
+    return String(raw._id || raw.id || raw.toString?.() || "");
+  }
+
+  return String(raw);
+}
+
+
+
+function getHomeProjectLookupKeys(project) {
+  const normalizeId = (value) => {
+    if (!value) return "";
+
+    if (typeof value === "string" || typeof value === "number") {
+      return String(value).trim();
+    }
+
+    if (typeof value === "object") {
+      const nested =
+        value?._id ||
+        value?.id ||
+        value?.projectId ||
+        value?.sourceProjectId ||
+        value?.$oid ||
+        value?.value;
+
+      if (nested) return normalizeId(nested);
+
+      const stringified = value?.toString?.();
+      if (stringified && stringified !== "[object Object]") {
+        return String(stringified).trim();
+      }
+    }
+
+    return "";
+  };
+
+  const normalizeName = (value) => {
+    if (typeof value !== "string" && typeof value !== "number") return "";
+    return String(value).trim().toLowerCase();
+  };
+
+  const idCandidates = [
+    project?._id,
+    project?.id,
+    project?.projectId,
+    project?.sourceProjectId,
+    project?.parentProjectId,
+    project?.project?._id,
+    project?.project?.id,
+    project?.project?.projectId,
+    project?.recommendedTask?.projectId,
+    project?.task?.projectId,
+    project?.baseProject?._id,
+    project?.baseProject?.id,
+    project?.baseProject?.projectId,
+  ]
+    .map(normalizeId)
+    .filter(Boolean);
+
+  const nameCandidates = [
+    project?.name,
+    project?.title,
+    project?.projectName,
+    project?.baseMission,
+    project?.project?.name,
+    project?.project?.title,
+    project?.recommendedTask?.projectName,
+    project?.task?.projectName,
+    project?.baseProject?.name,
+    project?.baseProject?.title,
+  ]
+    .map(normalizeName)
+    .filter(Boolean)
+    .map((name) => `name:${name}`);
+
+  return [...new Set([...idCandidates, ...nameCandidates])];
+}
+
+
+function normalizeHomeReadinessNameKey(value) {
+  const text = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  return text ? `name:${text}` : "";
+}
+
+function getHomeProjectNameKeys(project) {
+  const candidates = [
+    project?.name,
+    project?.title,
+    project?.displayTitle,
+    project?.projectName,
+    project?.projectTitle,
+    project?.subtitle,
+    project?.category,
+
+    project?.project?.name,
+    project?.project?.title,
+    project?.raw?.project?.name,
+    project?.raw?.project?.title,
+
+    project?.recommendedTask?.projectName,
+    project?.recommendedTask?.projectTitle,
+    project?.task?.projectName,
+    project?.task?.projectTitle,
+  ];
+
+  return [
+    ...new Set(
+      candidates
+        .map(normalizeHomeReadinessNameKey)
+        .filter(Boolean)
+    ),
+  ];
+}
+
+function getHomeMissionReadinessKeys(project) {
+  return [
+    ...new Set([
+      ...getHomeProjectLookupKeys(project),
+      ...getHomeProjectNameKeys(project),
+    ]),
+  ];
+}
+
+
+function findHomeMissionSourceProject(mission, projects = []) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const missionKeys = new Set(getHomeMissionReadinessKeys(mission));
+
+  return (
+    safeProjects.find((project) =>
+      getHomeMissionReadinessKeys(project).some((key) => missionKeys.has(key))
+    ) || null
+  );
+}
+
+function getProjectLogoFields(project) {
+  const logoUrl =
+    project?.logoUrl ||
+    project?.logo ||
+    project?.picture ||
+    project?.avatarUrl ||
+    project?.imageUrl ||
+    "";
+
+  return {
+    logoUrl,
+    logo: project?.logo || logoUrl,
+    picture: project?.picture || logoUrl,
+    avatarUrl: project?.avatarUrl || logoUrl,
+    imageUrl: project?.imageUrl || logoUrl,
+    bannerUrl: project?.bannerUrl || project?.banner || project?.coverUrl || "",
+  };
 }
 
 
@@ -21,38 +218,247 @@ function getHomeProjectId(project) {
  * Convert projects -> Home "missions" shape
  * Keeps your MissionCard happy without reworking the component.
  */
+
+function getProjectId(project) {
+  const raw =
+    project?._id ||
+    project?.id ||
+    project?.projectId ||
+    project?.project?._id ||
+    project?.project?.id ||
+    project?.project?.projectId ||
+    "";
+
+  return raw ? String(raw) : "";
+}
+
+function toHomeDateKey(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().slice(0, 10);
+}
+
+function wasProjectShippedTodayForHome(project) {
+  const lastShipAt =
+    project?.lastShipAt ||
+    project?.metrics?.lastShipAt ||
+    project?.metrics?.lastActivityAt ||
+    project?.shippedAt ||
+    null;
+
+  if (!lastShipAt) return false;
+
+  return toHomeDateKey(lastShipAt) === toHomeDateKey(new Date());
+}
+
+function isProjectCompletedForHomeMission(project) {
+  const status = String(project?.status || "").toLowerCase();
+
+  return (
+    status === "completed" ||
+    status === "archived" ||
+    status === "deleted" ||
+    project?.isArchived === true ||
+    Boolean(project?.completedAt)
+  );
+}
+
+function getProjectLogoFieldsForHome(project) {
+  const logoUrl =
+    project?.logoUrl ||
+    project?.logo ||
+    project?.picture ||
+    project?.avatarUrl ||
+    project?.imageUrl ||
+    project?.project?.logoUrl ||
+    project?.project?.logo ||
+    project?.project?.picture ||
+    project?.project?.avatarUrl ||
+    project?.project?.imageUrl ||
+    "";
+
+  return {
+    logoUrl,
+    logo: project?.logo || logoUrl,
+    picture: project?.picture || logoUrl,
+    avatarUrl: project?.avatarUrl || logoUrl,
+    imageUrl: project?.imageUrl || logoUrl,
+  };
+}
+
+function toFiniteHomeNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function getMissionReadinessScore(project) {
+  const raw =
+    project?.closureReadiness?.readinessScore ??
+    project?.finishLine?.readinessScore ??
+    project?.readiness?.readinessScore ??
+    project?.readinessScore ??
+    project?.completionSnapshot?.readinessScore ??
+    project?.metrics?.readinessScore ??
+    project?.metrics?.completionPercent ??
+    project?.metrics?.progress ??
+    project?.progress ??
+    0;
+
+  return Math.max(0, Math.min(100, Math.round(toFiniteHomeNumber(raw, 0))));
+}
+
+
+
+function normalizeHomeMissionReadinessPayload(payload) {
+  const data =
+    payload?.data ||
+    payload?.readiness ||
+    payload?.closureReadiness ||
+    payload?.result ||
+    payload ||
+    {};
+
+  const readiness =
+    data?.closureReadiness ||
+    data?.readiness ||
+    data;
+
+  const score = Number(
+    readiness?.readinessScore ??
+      readiness?.score ??
+      data?.readinessScore ??
+      data?.score ??
+      0
+  );
+
+  return {
+    readinessScore: Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 0,
+    isReadyToClose: Boolean(readiness?.isReadyToClose ?? data?.isReadyToClose),
+    blockingReasons: Array.isArray(readiness?.blockingReasons) ? readiness.blockingReasons : [],
+    warnings: Array.isArray(readiness?.warnings) ? readiness.warnings : [],
+    closureReadiness: readiness,
+  };
+}
+
+async function hydrateMissionReadiness(missions = []) {
+  const safeMissions = Array.isArray(missions) ? missions : [];
+
+  const hydrated = await Promise.all(
+    safeMissions.map(async (mission) => {
+      const projectId = getHomeProjectId(mission);
+
+      if (!projectId) return mission;
+
+      try {
+        const readinessPayload = await getProjectClosureReadiness(projectId);
+        const readiness = normalizeHomeMissionReadinessPayload(readinessPayload);
+
+        return {
+          ...mission,
+          progress: readiness.readinessScore,
+          readinessScore: readiness.readinessScore,
+          isReadyToClose: readiness.isReadyToClose,
+          blockingReasons: readiness.blockingReasons,
+          warnings: readiness.warnings,
+          closureReadiness: readiness.closureReadiness,
+        };
+      } catch (error) {
+        console.warn("[useHomeRealtime] Failed to hydrate mission readiness:", {
+          projectId,
+          message: error?.message || error,
+        });
+
+        return mission;
+      }
+    })
+  );
+
+  return hydrated;
+}
+
 function toMissions(projects) {
   const safe = Array.isArray(projects) ? projects : [];
 
-  // Heuristic ranking: at-risk first, then most open tasks, then lowest velocity
-  const ranked = [...safe].sort((a, b) => {
+  const visibleProjects = safe.filter((project) => {
+    if (!project) return false;
+
+    // Completed/archived projects belong in history/case study areas, not Home suggestions.
+    if (isProjectCompletedForHomeMission(project)) return false;
+
+    // A ship update is a daily action. Once shipped today, remove it from this suggested queue.
+    if (wasProjectShippedTodayForHome(project)) return false;
+
+    return true;
+  });
+
+  // Heuristic ranking: at-risk first, then most open tasks, then lowest velocity/readiness.
+  const ranked = [...visibleProjects].sort((a, b) => {
     const aRisk = a?.isAtRisk ? 1 : 0;
     const bRisk = b?.isAtRisk ? 1 : 0;
     if (aRisk !== bRisk) return bRisk - aRisk;
 
-    const aOpen = a?.metrics?.openTasks?.value ?? 0;
-    const bOpen = b?.metrics?.openTasks?.value ?? 0;
+    const aOpen = a?.metrics?.openTasks?.value ?? a?.openTaskCount ?? 0;
+    const bOpen = b?.metrics?.openTasks?.value ?? b?.openTaskCount ?? 0;
     if (aOpen !== bOpen) return bOpen - aOpen;
 
-    const aVel = a?.metrics?.onTimePercent?.value ?? 0;
-    const bVel = b?.metrics?.onTimePercent?.value ?? 0;
-    return aVel - bVel;
+    const aReadiness = getMissionReadinessScore(a);
+    const bReadiness = getMissionReadinessScore(b);
+    return aReadiness - bReadiness;
   });
 
-  return ranked.slice(0, 3).map((p) => {
-    const velocity = p?.metrics?.onTimePercent?.value ?? 0;
-    const openTasks = p?.metrics?.openTasks?.value ?? 0;
+  return ranked.slice(0, 3).map((project) => {
+    const id =
+      getProjectId?.(project) ||
+      project?._id ||
+      project?.id ||
+      project?.projectId ||
+      project?.project?._id ||
+      project?.project?.id ||
+      "";
+
+    const name =
+      project?.name ||
+      project?.title ||
+      project?.project?.name ||
+      project?.project?.title ||
+      "Untitled Project";
+
+    const readinessScore = getMissionReadinessScore(project);
+    const logoFields = getProjectLogoFieldsForHome(project);
 
     return {
-      id: p?._id || p?.id,
-      _id: p?._id || p?.id,
-      title: p?.name || p?.title || "Untitled Project",
-      category: p?.season || "Core",
-      eta: openTasks > 10 ? "4h" : openTasks > 5 ? "2h" : "1h",
-      velocity,
-      health: velocity, // keep compatibility
-      emoji: p?.season === "shipping" ? "🚀" : p?.season === "exploring" ? "🌱" : "🛠",
-      raw: p,
+      ...project,
+      ...logoFields,
+
+      id: String(id),
+      _id: String(id),
+      projectId: String(id),
+
+      title: name,
+      name,
+      projectName: name,
+
+      status: project?.status,
+      completedAt: project?.completedAt,
+      shippedAt: project?.shippedAt,
+      lastShip: project?.lastShip || project?.metrics?.lastShip || "",
+      lastShipAt: project?.lastShipAt || project?.metrics?.lastShipAt || null,
+
+      progress: readinessScore,
+      readinessScore,
+      closureReadiness: project?.closureReadiness || null,
+
+      type: project?.type || "ship",
+      category: project?.category || "Core",
+      eta: project?.eta || "1h",
+      priority: project?.priority || "normal",
+      reason:
+        project?.reason ||
+        project?.description ||
+        "Recommended from your active project work.",
     };
   });
 }
@@ -270,6 +676,156 @@ async function fetchActivityFeed(limit = 50, projectIds = []) {
  * - This uses priority tasks to rank/select projects.
  * - The top task is attached as recommendedTask for future UI use.
  */
+
+function applyReadinessToMission(mission, readinessByProjectId = {}, projects = []) {
+  const matchedProject = findHomeMissionSourceProject(mission, projects);
+
+  const lookupKeys = [
+    ...getHomeMissionReadinessKeys(mission),
+    ...(matchedProject ? getHomeMissionReadinessKeys(matchedProject) : []),
+  ];
+
+  const readiness =
+    [...new Set(lookupKeys)]
+      .map((key) => readinessByProjectId[key])
+      .find(Boolean) || null;
+
+  if (!readiness) return mission;
+
+  const readinessScore = Math.max(
+    0,
+    Math.min(100, Math.round(Number(readiness.readinessScore ?? 0)))
+  );
+
+  return {
+    ...mission,
+    progress: readinessScore,
+    readinessScore,
+    isReadyToClose: Boolean(readiness.isReadyToClose),
+    blockingReasons: Array.isArray(readiness.blockingReasons)
+      ? readiness.blockingReasons
+      : [],
+    warnings: Array.isArray(readiness.warnings)
+      ? readiness.warnings
+      : [],
+    closureReadiness: readiness.closureReadiness || readiness,
+  };
+}
+
+
+/* FINAL_HOME_READINESS_APPLIER_START */
+function normalizeFinalHomeReadinessKey(value) {
+  if (value === null || value === undefined) return "";
+
+  if (typeof value === "object") {
+    const raw =
+      value._id ||
+      value.id ||
+      value.projectId ||
+      value.$oid ||
+      value.value ||
+      value.toString?.();
+
+    return raw ? String(raw).trim().toLowerCase() : "";
+  }
+
+  return String(value).trim().toLowerCase();
+}
+
+function collectFinalHomeMissionKeys(item) {
+  const keys = [
+    item?._id,
+    item?.id,
+    item?.projectId,
+    item?.sourceProjectId,
+    item?.parentProjectId,
+    item?.project?._id,
+    item?.project?.id,
+    item?.project?.projectId,
+  ]
+    .map(normalizeFinalHomeReadinessKey)
+    .filter(Boolean);
+
+  const names = [
+    item?.name,
+    item?.title,
+    item?.projectName,
+    item?.project?.name,
+    item?.project?.title,
+    item?.recommendedTask?.projectName,
+    item?.recommendedTask?.project?.name,
+    item?.recommendedTask?.project?.title,
+  ]
+    .map(normalizeFinalHomeReadinessKey)
+    .filter(Boolean)
+    .map((name) => `name:${name}`);
+
+  return [...new Set([...keys, ...names])];
+}
+
+function findFinalHomeSourceProject(mission, projects = []) {
+  const missionKeys = new Set(collectFinalHomeMissionKeys(mission));
+
+  return (Array.isArray(projects) ? projects : []).find((project) => {
+    const projectKeys = collectFinalHomeMissionKeys(project);
+    return projectKeys.some((key) => missionKeys.has(key));
+  });
+}
+
+function getFinalHomeReadinessScore(readiness) {
+  const raw =
+    readiness?.readinessScore ??
+    readiness?.closureReadiness?.readinessScore ??
+    readiness?.finishLine?.readinessScore ??
+    readiness?.score ??
+    readiness?.progress ??
+    readiness?.completionPercent;
+
+  const num = Number(raw);
+  return Number.isFinite(num) ? Math.max(0, Math.min(100, Math.round(num))) : null;
+}
+
+function applyFinalHomeReadinessToMission(mission, readinessByProjectId = {}, projects = []) {
+  const sourceProject = findFinalHomeSourceProject(mission, projects);
+
+  const lookupKeys = [
+    ...collectFinalHomeMissionKeys(mission),
+    ...collectFinalHomeMissionKeys(sourceProject),
+  ];
+
+  const readiness =
+    lookupKeys
+      .map((key) => readinessByProjectId[key])
+      .find((value) => getFinalHomeReadinessScore(value) !== null) || null;
+
+  if (!readiness) return mission;
+
+  const readinessScore = getFinalHomeReadinessScore(readiness);
+
+  if (readinessScore === null) return mission;
+
+  return {
+    ...mission,
+    progress: readinessScore,
+    readinessScore,
+    closureReadiness: {
+      ...(mission?.closureReadiness || {}),
+      ...(readiness?.closureReadiness || readiness),
+      readinessScore,
+    },
+    readiness: {
+      ...(mission?.readiness || {}),
+      ...(readiness?.readiness || readiness),
+      readinessScore,
+    },
+    finishLine: {
+      ...(mission?.finishLine || {}),
+      readinessScore,
+    },
+  };
+}
+/* FINAL_HOME_READINESS_APPLIER_END */
+
 function toPriorityMissions(priorityTasks, projects) {
   const safeTasks = Array.isArray(priorityTasks) ? priorityTasks : [];
   const safeProjects = Array.isArray(projects) ? projects : [];
@@ -755,6 +1311,7 @@ export function useHomeRealtime() {
   const [intelligenceData, setIntelligenceData] = useState(null);
 
   const [priorityTasks, setPriorityTasks] = useState([]);
+  const [missionReadinessByProjectId, setMissionReadinessByProjectId] = useState({});
   const [loadingMissions, setLoadingMissions] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
 
@@ -1114,10 +1671,217 @@ export function useHomeRealtime() {
   useSocketEvent("project.completed", handleVelocityRefreshSignal);
 
   const activities = useMemo(() => normalizeActivities(activitiesRaw), [activitiesRaw]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolveProjectIdForReadiness = (item) => {
+      const normalizeId = (value) => {
+        if (!value) return "";
+
+        if (typeof value === "string" || typeof value === "number") {
+          return String(value).trim();
+        }
+
+        if (typeof value === "object") {
+          const nested =
+            value?._id ||
+            value?.id ||
+            value?.projectId ||
+            value?.sourceProjectId ||
+            value?.$oid ||
+            value?.value;
+
+          if (nested) return normalizeId(nested);
+
+          const stringified = value?.toString?.();
+          if (stringified && stringified !== "[object Object]") {
+            return String(stringified).trim();
+          }
+        }
+
+        return "";
+      };
+
+      const candidates = [
+        item?._id,
+        item?.id,
+        item?.projectId,
+        item?.sourceProjectId,
+        item?.parentProjectId,
+        item?.project?._id,
+        item?.project?.id,
+        item?.project?.projectId,
+        item?.baseProject?._id,
+        item?.baseProject?.id,
+        item?.baseProject?.projectId,
+      ]
+        .map(normalizeId)
+        .filter(Boolean);
+
+      return candidates.find((value) => /^[a-f0-9]{24}$/i.test(value)) || candidates[0] || "";
+    };
+
+    const loadMissionReadiness = async () => {
+      const safeProjects = Array.isArray(projects) ? projects : [];
+
+      if (!safeProjects.length) {
+        return;
+      }
+
+      // Fetch readiness from the real project records, then store it under
+      // every ID/name key a Home mission could possibly use.
+      const workItems = [];
+      const seenProjectIds = new Set();
+
+      safeProjects.forEach((project) => {
+        if (!project || isProjectCompletedForHomeMission(project)) return;
+
+        const projectId =
+          (typeof resolveProjectIdForReadiness === "function"
+            ? resolveProjectIdForReadiness(project)
+            : "") ||
+          getHomeProjectId(project);
+
+        if (!projectId || seenProjectIds.has(projectId)) return;
+
+        seenProjectIds.add(projectId);
+
+        workItems.push({
+          projectId,
+          sourceProject: project,
+        });
+      });
+
+      if (!workItems.length) return;
+
+      const visibleMissions = [
+        ...toMissions(safeProjects),
+        ...toPriorityMissions(priorityTasks, safeProjects),
+      ];
+
+      const entries = await Promise.all(
+        workItems.map(async ({ projectId, sourceProject }) => {
+          try {
+            const readinessPayload = await getProjectClosureReadiness(projectId);
+            const readiness = normalizeHomeMissionReadinessPayload(readinessPayload);
+
+            const matchingMissions = visibleMissions.filter((mission) => {
+              const missionKeys = new Set(getHomeMissionReadinessKeys(mission));
+              return getHomeMissionReadinessKeys(sourceProject).some((key) =>
+                missionKeys.has(key)
+              );
+            });
+
+            const lookupKeys = [
+              projectId,
+              ...getHomeMissionReadinessKeys(sourceProject),
+              ...matchingMissions.flatMap((mission) =>
+                getHomeMissionReadinessKeys(mission)
+              ),
+            ].filter(Boolean);
+
+            const uniqueKeys = [...new Set(lookupKeys)];
+
+            if (import.meta?.env?.DEV) {
+              console.info("[useHomeRealtime] mission readiness hydrated", {
+                projectId,
+                projectName: sourceProject?.name || sourceProject?.title,
+                readinessScore: readiness?.readinessScore,
+                lookupKeys: uniqueKeys,
+              });
+            }
+
+            return {
+              projectId,
+              readiness,
+              lookupKeys: uniqueKeys,
+            };
+          } catch (error) {
+            console.warn("[useHomeRealtime] Mission readiness hydration failed:", {
+              projectId,
+              projectName: sourceProject?.name || sourceProject?.title,
+              message: error?.message || error,
+            });
+
+            return null;
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setMissionReadinessByProjectId((previous) => {
+        const next = { ...previous };
+
+        entries.filter(Boolean).forEach(({ readiness, lookupKeys }) => {
+          lookupKeys.forEach((key) => {
+            next[key] = readiness;
+          });
+        });
+
+        return next;
+      });
+    };
+
+
+    loadMissionReadiness();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projects, priorityTasks]);
+
   const missions = useMemo(() => {
     const priorityMissions = toPriorityMissions(priorityTasks, projects);
-    return priorityMissions.length > 0 ? priorityMissions : toMissions(projects);
-  }, [priorityTasks, projects]);
+    const baseMissions = priorityMissions.length > 0 ? priorityMissions : toMissions(projects);
+
+    return baseMissions.map((mission) =>
+      applyFinalHomeReadinessToMission(
+        mission,
+        missionReadinessByProjectId,
+        projects
+      )
+    );
+  }, [priorityTasks, projects, missionReadinessByProjectId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    window.__debugHomeMissions = () => {
+      const rows = missions.map((mission) => ({
+        id: mission?.id,
+        _id: mission?._id,
+        projectId:
+          mission?.projectId?._id ||
+          mission?.projectId?.id ||
+          mission?.projectId,
+        title: mission?.title || mission?.name,
+        progress: mission?.progress,
+        readinessScore: mission?.readinessScore,
+        closureReadinessScore: mission?.closureReadiness?.readinessScore,
+        status: mission?.status,
+      }));
+
+      console.table(rows);
+      console.log("missionReadinessByProjectId:", missionReadinessByProjectId);
+      console.log("projects:", projects);
+      console.log("priorityTasks:", priorityTasks);
+
+      return {
+        missions,
+        missionReadinessByProjectId,
+        projects,
+        priorityTasks,
+      };
+    };
+
+    return () => {
+      if (window.__debugHomeMissions) {
+        delete window.__debugHomeMissions;
+      }
+    };
+  }, [missions, missionReadinessByProjectId, projects, priorityTasks]);
 
   const computedSummary = useMemo(() => {
     if (summaryRaw && typeof summaryRaw === "object") {

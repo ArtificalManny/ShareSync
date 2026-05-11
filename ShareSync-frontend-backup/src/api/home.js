@@ -168,10 +168,28 @@ export async function fetchActivitySummary() {
 }
 
 export async function tryShipProject(projectId) {
-  const data =
-    (await safePost(`/projects/${projectId}/ship`, {})) ||
-    (await safePost(`/projects/${projectId}/complete`, {})) ||
-    (await safePost(`/projects/${projectId}/close`, {}));
+  if (!projectId) {
+    throw new Error("tryShipProject requires a projectId");
+  }
 
-  return data || null;
+  try {
+    const payload = {
+      title: "Home mission shipped",
+      description: "Shipped from Suggested Projects & Missions on Home.",
+      category: "home_mission",
+      source: "home_suggested_missions",
+    };
+
+    const response = await api.post(`/projects/${projectId}/ships`, payload);
+    return response?.data?.data || response?.data?.project || response?.data || null;
+  } catch (error) {
+    console.error("[Home] Project ship failed:", {
+      projectId,
+      status: error?.response?.status,
+      data: error?.response?.data,
+      message: error?.message,
+    });
+
+    throw error;
+  }
 }
