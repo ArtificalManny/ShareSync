@@ -321,57 +321,42 @@ export class AnnouncementsService {
     announcementId: string,
     userId: string,
     text: string,
-    attachments: any[] = [],
+    attachments?: string[],
   ) {
     const annId = this.toObjectId(announcementId, 'announcementId');
+    const userObjectId = this.toObjectId(userId, 'userId');
+    const trimmedText = String(text || '').trim();
 
-    const actorId = this.normalizeId(userId);
-    if (!actorId) {
-      throw new BadRequestException('User is required to comment');
-    }
-
-    const cleanText = String(text ?? '').trim();
-    if (!cleanText) {
+    if (!trimmedText) {
       throw new BadRequestException('Comment text is required');
     }
 
-    const existing = await this.announcementModel.findById(annId).exec();
+    const ann = await this.announcementModel.findById(annId).exec();
 
-    if (!existing) {
+    if (!ann) {
       throw new NotFoundException('Announcement not found');
     }
 
+    const doc: any = ann as any;
     const nextComment = {
       _id: new Types.ObjectId(),
-      userId: actorId,
-      authorId: actorId,
-      text: cleanText,
-      content: cleanText,
-      message: cleanText,
+      userId: userObjectId,
+      text: trimmedText,
       attachments: Array.isArray(attachments) ? attachments : [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const updated = await this.announcementModel
-      .findByIdAndUpdate(
-        annId,
-        {
-          $push: { comments: nextComment },
-        },
-        {
-          new: true,
-          runValidators: false,
-        },
-      )
-      .populate('authorId', this.userPopulateFields)
-      .exec();
-
-    if (!updated) {
-      throw new NotFoundException('Announcement not found');
+    if (!Array.isArray(doc.comments)) {
+      doc.comments = [];
     }
 
-    return updated;
+    doc.comments.push(nextComment);
+    doc.commentCount = doc.comments.length;
+
+    await ann.save();
+    await ann.populate('authorId', this.userPopulateFields);
+    return ann;
   }
 
   public async deleteComment(

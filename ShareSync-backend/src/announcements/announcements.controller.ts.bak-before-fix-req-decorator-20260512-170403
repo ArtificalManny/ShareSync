@@ -102,7 +102,7 @@ export class AnnouncementsController {
   @Post(':id/comments')
   async addComment(
     @Param('id') id: string,
-    @Request() req: any,
+    @Req() req: any,
     @Body() body: any = {},
   ) {
     const isMongoId = (value: any) =>

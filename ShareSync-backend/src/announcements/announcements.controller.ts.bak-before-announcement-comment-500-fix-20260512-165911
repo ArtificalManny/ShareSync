@@ -103,36 +103,12 @@ export class AnnouncementsController {
   async addComment(
     @Param('id') id: string,
     @Request() req: any,
-    @Body() body: any = {},
+    @Body() body: { text: string; attachments?: string[] },
   ) {
-    const isMongoId = (value: any) =>
-      typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
-
-    const userCandidates = [
-      req?.user?.userId,
-      req?.user?.id,
-      req?.user?._id,
-      req?.user?.sub,
-    ]
-      .map((value) => String(value || '').trim())
-      .filter(Boolean);
-
     const userId =
-      userCandidates.find(isMongoId) ||
-      userCandidates[0] ||
-      '';
+      String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
 
-    const text = String(
-      body?.text ??
-      body?.content ??
-      body?.message ??
-      body?.comment ??
-      ''
-    ).trim();
-
-    const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
-
-    return this.announcementsService.addComment(id, userId, text, attachments);
+    return this.announcementsService.addComment(id, userId, body.text, body.attachments);
   }
 
   @Delete(':id/comments/:commentId')

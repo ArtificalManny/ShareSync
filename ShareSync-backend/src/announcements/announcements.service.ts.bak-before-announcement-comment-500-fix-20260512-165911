@@ -335,16 +335,17 @@ export class AnnouncementsService {
       throw new BadRequestException('Comment text is required');
     }
 
-    const existing = await this.announcementModel.findById(annId).exec();
+    const ann = await this.announcementModel.findById(annId).exec();
 
-    if (!existing) {
+    if (!ann) {
       throw new NotFoundException('Announcement not found');
     }
 
+    const doc: any = ann;
+
     const nextComment = {
       _id: new Types.ObjectId(),
-      userId: actorId,
-      authorId: actorId,
+      userId: new Types.ObjectId(actorId),
       text: cleanText,
       content: cleanText,
       message: cleanText,
@@ -353,23 +354,23 @@ export class AnnouncementsService {
       updatedAt: new Date(),
     };
 
+    if (!Array.isArray(doc.comments)) {
+      doc.comments = [];
+    }
+
+    doc.comments.push(nextComment);
+    doc.commentCount = doc.comments.length;
+
+    // Required when comments is stored as a flexible/mixed array.
+    doc.markModified?.('comments');
+    doc.markModified?.('commentCount');
+
+    await doc.save();
+
     const updated = await this.announcementModel
-      .findByIdAndUpdate(
-        annId,
-        {
-          $push: { comments: nextComment },
-        },
-        {
-          new: true,
-          runValidators: false,
-        },
-      )
+      .findById(annId)
       .populate('authorId', this.userPopulateFields)
       .exec();
-
-    if (!updated) {
-      throw new NotFoundException('Announcement not found');
-    }
 
     return updated;
   }
