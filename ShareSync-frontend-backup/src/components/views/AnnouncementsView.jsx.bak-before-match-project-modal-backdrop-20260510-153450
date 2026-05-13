@@ -316,13 +316,7 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
     if (!text.trim() || posting) return;
     setPosting(true);
     try {
-      const cleanText = text.trim();
-      const updated = await addComment(projectId, getId(item), {
-        text: cleanText,
-        content: cleanText,
-        message: cleanText,
-        attachments: [],
-      });
+      const updated = await addComment(projectId, getId(item), { text: text.trim(), attachments: [] });
       onUpdate(updated);
       setText('');
       setExpanded(true);
@@ -793,15 +787,19 @@ export default function AnnouncementsView({ projectId }) {
       </div>
 
       {showCreate && (
-        <div className="pc-create-viewport fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4 sm:p-6">
           <button
             type="button"
-            className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px] pointer-events-auto"
+            className="absolute inset-0 z-0 cursor-default bg-slate-100/70 backdrop-blur-2xl transition-opacity"
+            style={{
+              WebkitBackdropFilter: 'blur(26px) saturate(0.45)',
+              backdropFilter: 'blur(26px) saturate(0.45)',
+            }}
             onClick={() => setShowCreate(false)}
             aria-label="Close post announcement modal backdrop"
           />
 
-          <div className="pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.34)] ring-1 ring-white/60">
             <div className="border-b border-slate-200/80 bg-white">
               <div className="flex items-center justify-between gap-5 px-8 py-5">
                 <div className="flex min-w-0 items-center gap-4">
@@ -830,7 +828,7 @@ export default function AnnouncementsView({ projectId }) {
               </div>
             </div>
 
-            <div className="flex-1 space-y-6 overflow-y-auto bg-white px-8 py-8">
+            <div className="space-y-6 overflow-y-auto p-8">
               <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
                 <label className="text-xs font-black uppercase tracking-[0.18em] text-slate-700">
                   Type Category

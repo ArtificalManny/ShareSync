@@ -316,13 +316,7 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
     if (!text.trim() || posting) return;
     setPosting(true);
     try {
-      const cleanText = text.trim();
-      const updated = await addComment(projectId, getId(item), {
-        text: cleanText,
-        content: cleanText,
-        message: cleanText,
-        attachments: [],
-      });
+      const updated = await addComment(projectId, getId(item), { text: text.trim(), attachments: [] });
       onUpdate(updated);
       setText('');
       setExpanded(true);

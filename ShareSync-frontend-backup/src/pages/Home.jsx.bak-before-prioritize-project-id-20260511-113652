@@ -238,36 +238,15 @@ const MomentumStatusBanner = () => {
 ─────────────────────────────────────────────────────────────────────────── */
 function getHomeProjectId(project) {
   const raw =
-    // Priority-task missions often have id/_id as the TASK id.
-    // Always prefer the parent project id first.
-    project?.projectId?._id ||
-    project?.projectId?.id ||
+    project?._id ||
+    project?.id ||
+    project?.projectId ||
     project?.project?._id ||
     project?.project?.id ||
-    project?.recommendedTask?.projectId?._id ||
-    project?.recommendedTask?.projectId?.id ||
-    project?.recommendedTask?.projectId ||
-    project?.task?.projectId?._id ||
-    project?.task?.projectId?.id ||
-    project?.task?.projectId ||
-    project?.raw?.projectId?._id ||
-    project?.raw?.projectId?.id ||
-    project?.raw?.projectId ||
-    project?.metadata?.projectId ||
-    project?.payload?.projectId ||
-    project?.sourceProjectId ||
-    project?.parentProjectId ||
-    project?.projectId ||
-    project?._id ||
-    project?.id;
+    project?.project?.projectId ||
+    "";
 
-  if (!raw) return "";
-
-  if (typeof raw === "object") {
-    return String(raw._id || raw.id || raw.toString?.() || "");
-  }
-
-  return String(raw);
+  return raw ? String(raw) : "";
 }
 
 export default function Home() {
