@@ -36,6 +36,7 @@ import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import MissionCard from "../components/home/MissionCard";
 import MissionCardSkeleton from "../components/home/MissionCardSkeleton";
 import IntelligencePanel from "../components/home/IntelligencePanel";
+import { useWorkloadIntelligence } from "../hooks/useWorkloadIntelligence";
 import WeekInMotion from "../components/home/WeekInMotion";
 import MissionClock from "../components/home/MissionClock";
 
@@ -303,6 +304,7 @@ export default function Home() {
   } catch (e) {}
 
   const { dashboardStats, loading: analyticsLoading } = useAnalytics() || {};
+  const workloadIntel = useWorkloadIntelligence({ refreshMs: 120000 });
 
   const {
     loadingMissions,
@@ -658,15 +660,16 @@ export default function Home() {
           <div className="home-right-rail col-span-12 xl:col-span-4 space-y-6">
             {hasUsefulIntelligence && (
               <IntelligencePanel
-                isBalanced={false}
+                workload={workloadIntel.data}
+                workloadLoading={workloadIntel.loading}
+                workloadError={workloadIntel.error}
+                isBalanced={workloadIntel.data?.isBalanced ?? false}
                 onBalanceClick={() => handleOpenPanel("balance")}
                 peakWindowStart={intelligence.peakWindowStart}
                 peakWindowEnd={intelligence.peakWindowEnd}
                 productivity={intelligence.productivity}
                 coWorkingMultiplier={intelligence.coWorkingMultiplier}
                 isCoWorking={intelligence.isCoWorking}
-                momentumLevel={glowLevel}
-                isFireMode={isFireMode}
               />
             )}
 
@@ -788,7 +791,12 @@ export default function Home() {
         </div>
 
         {panelContent === "balance" ? (
-          <TeamBalancePanel onBalanceComplete={() => setIsBalanced(true)} />
+          <TeamBalancePanel
+            workload={workloadIntel.data}
+            loading={workloadIntel.loading}
+            error={workloadIntel.error}
+            onRefresh={workloadIntel.refresh}
+          />
         ) : (
           <ProjectTelemetryPanel project={selectedMission} />
         )}
