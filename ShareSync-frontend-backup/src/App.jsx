@@ -130,6 +130,7 @@ import Login from "./pages/Login";
 import GoogleCallback from "./pages/GoogleCallback.jsx";
 import CreateAccount from "./pages/CreateAccount";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Register from "./components/Register";
 
 const Roadmap = lazy(() => import("./pages/Roadmap"));
@@ -525,13 +526,15 @@ function AppRoutes() {
   const [quickNotesOpen, setQuickNotesOpen] = useState(false);
   const { notes = [] } = useNotes();
 
-  const isAuthPage = [
-    "/login",
-    "/create-account",
-    "/forgot-password",
-    "/landing",
-    "/onboarding",
-  ].includes(location.pathname);
+  const isAuthPage =
+    [
+      "/login",
+      "/create-account",
+      "/forgot-password",
+      "/landing",
+      "/onboarding",
+    ].includes(location.pathname) ||
+    location.pathname.startsWith("/reset-password/");
   const showAppChrome = authUser && !isAuthPage;
 
   useEffect(() => {
@@ -628,6 +631,14 @@ function AppRoutes() {
                 element={
                   <PublicOnlyRoute>
                     <ForgotPassword />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/reset-password/:token"
+                element={
+                  <PublicOnlyRoute>
+                    <ResetPassword />
                   </PublicOnlyRoute>
                 }
               />

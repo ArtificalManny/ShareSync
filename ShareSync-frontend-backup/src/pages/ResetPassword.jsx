@@ -4,11 +4,11 @@
 // Token validation + new password entry
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, Check, AlertTriangle } from 'lucide-react';
-import { AuthContext } from '../AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { AuthLayout, AuthButton, AuthError } from '../layouts/AuthLayout';
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
@@ -16,7 +16,7 @@ export default function ResetPassword() {
   useDocumentTitle("Reset Password");
   const { token } = useParams();
   const navigate = useNavigate();
-  const { resetPassword, isAuthenticated, isLoading, authError, setAuthError } = useContext(AuthContext);
+  const { resetPassword, user, loading, authError, setAuthError } = useAuth();
   
   // Form state
   const [newPassword, setNewPassword] = useState('');
@@ -28,10 +28,10 @@ export default function ResetPassword() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate('/', { replace: true });
+    if (!loading && user) {
+      navigate('/home', { replace: true });
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [loading, user, navigate]);
 
   // Check if passwords match
   const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
@@ -82,7 +82,7 @@ export default function ResetPassword() {
   };
 
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <AuthLayout title="Loading..." subtitle="Please wait">
         <div className="flex justify-center py-8">
