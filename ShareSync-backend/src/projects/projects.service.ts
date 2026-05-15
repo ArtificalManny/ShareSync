@@ -573,43 +573,100 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to edit this project');
     }
 
+    const patch: Record<string, any> = {};
+    const now = new Date();
+
+    if (typeof dto.name === 'string') {
+      patch.name = dto.name.trim();
+    }
+
+    if (typeof (dto as any).title === 'string' && !patch.name) {
+      patch.name = String((dto as any).title).trim();
+    }
+
+    if (typeof dto.description === 'string') {
+      patch.description = dto.description.trim();
+    }
+
+    if (typeof (dto as any).icon === 'string') {
+      patch.icon = String((dto as any).icon).trim() || '📁';
+    }
+
+    if (typeof (dto as any).emoji === 'string') {
+      patch.emoji = String((dto as any).emoji).trim() || patch.icon || '📁';
+    }
+
+    if (typeof (dto as any).color === 'string') {
+      patch.color = String((dto as any).color).trim();
+    }
+
+    if (Array.isArray((dto as any).tags)) {
+      patch.tags = (dto as any).tags;
+    }
+
+    if (typeof (dto as any).category === 'string') {
+      patch.category = String((dto as any).category).trim();
+    }
+
+    if (typeof (dto as any).logoUrl === 'string' && String((dto as any).logoUrl).trim()) {
+      patch.logoUrl = String((dto as any).logoUrl).trim();
+    }
+
+    if (typeof (dto as any).bannerUrl === 'string' && String((dto as any).bannerUrl).trim()) {
+      patch.bannerUrl = String((dto as any).bannerUrl).trim();
+    }
+
+    if (typeof (dto as any).isStarred === 'boolean') {
+      patch.isStarred = (dto as any).isStarred;
+    }
+
+    if (typeof (dto as any).isArchived === 'boolean') {
+      patch.isArchived = (dto as any).isArchived;
+    }
+
     if (dto.status) {
-      if (dto.status === ProjectStatus.ARCHIVED) {
-        project.archivedAt = new Date();
-      } else if (dto.status === ProjectStatus.COMPLETED) {
-        project.completedAt = new Date();
+      const normalizedStatus = this.normalizeStatus(dto.status as any);
+      patch.status = normalizedStatus;
+
+      if (normalizedStatus === ProjectStatus.ARCHIVED) {
+        patch.archivedAt = now;
+        patch.isArchived = true;
+      } else if (normalizedStatus === ProjectStatus.COMPLETED) {
+        patch.completedAt = now;
+      } else {
+        patch.isArchived = false;
       }
     }
 
-    if ((dto as any).settings) {
-      (project as any).settings = {
-        ...(project as any).settings,
+    if ((dto as any).settings && typeof (dto as any).settings === 'object' && !Array.isArray((dto as any).settings)) {
+      const existingSettings = (project as any).settings || {};
+      patch.settings = {
+        ...existingSettings,
         ...(dto as any).settings,
       };
-      delete (dto as any).settings;
     }
 
-    if ((dto as any).goals) {
-      (project as any).goals = (dto as any).goals;
-      delete (dto as any).goals;
+    patch.updatedAt = now;
+
+    const updated = await this.projectModel
+      .findByIdAndUpdate(
+        projectId,
+        { $set: patch },
+        {
+          new: true,
+          runValidators: false,
+        },
+      )
+      .exec();
+
+    if (!updated) {
+      throw new NotFoundException('Project not found');
     }
-
-    if ((dto as any).emoji || (dto as any).icon) {
-      const nextEmoji = ((dto as any).emoji || (dto as any).icon || project.emoji || project.icon || '📁').trim();
-      project.emoji = nextEmoji;
-      project.icon = (dto as any).icon || nextEmoji;
-      delete (dto as any).emoji;
-      delete (dto as any).icon;
-    }
-
-    Object.assign(project, dto);
-
-    const updated = await project.save();
 
     this.eventEmitter.emit('project.updated', {
       projectId: updated._id,
       userId,
-      changes: dto,
+      changes: patch,
     });
 
     return updated;
