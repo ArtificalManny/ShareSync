@@ -129,22 +129,50 @@ const ProjectSettings = () => {
   // 3. API ACTIONS
   const handleSaveProject = async () => {
     if (!canEditProjectInfo) return;
+
+    const cleanIcon = String(formData.icon || '📁').trim() || '📁';
+
+    const payload = {
+      name: String(formData.name || '').trim(),
+      description: String(formData.description || '').trim(),
+      icon: cleanIcon,
+    };
+
+    const cleanLogoUrl = String(formData.picture || '').trim();
+    const cleanBannerUrl = String(formData.banner || '').trim();
+
+    // Do not send empty image URLs. Let the branding upload endpoint control these.
+    if (cleanLogoUrl && !cleanLogoUrl.startsWith('blob:')) {
+      payload.logoUrl = cleanLogoUrl;
+    }
+
+    if (cleanBannerUrl && !cleanBannerUrl.startsWith('blob:')) {
+      payload.bannerUrl = cleanBannerUrl;
+    }
+
     setSaving(true);
+
     try {
-      await client.put(`/projects/${id}`, {
-        name: formData.name,
-        description: formData.description,
-        icon: formData.icon || '📁',
-        emoji: formData.icon || '📁',
-        logoUrl: formData.picture || '',
-        bannerUrl: formData.banner || ''
-      });
+      await client.put(`/projects/${id}`, payload);
       toast({ title: '✅ Project updated!', variant: 'success' });
-      refresh(); // Reload data via hook
+      refresh();
     } catch (error) {
+      const backendPayload = error?.response?.data;
+
+      console.error('[ProjectSettings] Failed to update project:', {
+        status: error?.response?.status,
+        backendPayload,
+        requestPayload: payload,
+        message: error?.message,
+      });
+
       toast({
         title: 'Failed to update project',
-        description: error.response?.data?.message || error.message,
+        description:
+          backendPayload?.message ||
+          backendPayload?.error ||
+          error.message ||
+          'Internal server error',
         variant: 'error'
       });
     } finally {
@@ -393,7 +421,7 @@ const ProjectSettings = () => {
                       value={formData.icon}
                       onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                       placeholder="Enter emoji fallback, e.g. 📁"
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-colors disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500"
                     />
                   </div>
                 </div>
@@ -406,7 +434,7 @@ const ProjectSettings = () => {
                   disabled={!canEditProjectInfo}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-colors disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500"
                 />
               </div>
             </div>
@@ -419,7 +447,7 @@ const ProjectSettings = () => {
                 disabled={!canEditProjectInfo}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 resize-none transition-colors disabled:bg-slate-800 disabled:text-slate-500"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 resize-none transition-colors disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500"
               />
             </div>
 
