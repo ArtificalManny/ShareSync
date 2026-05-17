@@ -1,5 +1,11 @@
 import React, { useMemo } from "react";
-import { Sparkles, AlertTriangle, ArrowRight, Gauge } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Gauge,
+  Radar,
+  Sparkles
+} from "lucide-react";
 
 function normalizeRiskLabel(risk) {
   if (!risk) return "Risk";
@@ -59,7 +65,7 @@ export default function ForesightCard({ metrics, overview, loading }) {
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-amber-500" />
+            <Radar className="w-4 h-4 text-amber-500" />
           </div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Foresight</h3>
         </div>
