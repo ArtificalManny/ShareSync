@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, ClipboardCheck, Compass, Flame, FolderPlus, LayoutDashboard, ListChecks, Pencil, Plus, RefreshCw, Save, Sparkles, Target, Trash2, X, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, ClipboardCheck, Compass, Flame, FolderPlus, LayoutDashboard, ListChecks, Pencil, Plus, RefreshCw, Route, Save, Sparkles, Target, Trash2, X, Zap } from 'lucide-react';
 
 import MoveCard, { MoveCardSkeleton } from './MoveCard';
 import { getStatusColor } from '../../utils/statusColor';
@@ -693,7 +693,7 @@ function DailyFocusIntroPanel({
               {hasAcceptedDailyPlan ? (
                 <ClipboardCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
               ) : (
-                <Sparkles className="h-5 w-5 text-[var(--theme-accent-primary)]" />
+                <Route className="h-5 w-5 text-[var(--theme-accent-primary)]" />
               )}
             </div>
 
