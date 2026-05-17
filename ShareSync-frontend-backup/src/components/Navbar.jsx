@@ -361,7 +361,7 @@ const IconButton = ({
   <button
     onClick={onClick}
     title={title}
-    className={`relative p-2 text-slate-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}
+    className={`relative p-2 text-slate-600 dark:text-zinc-300 hover:text-violet-700 dark:hover:text-violet-300 hover:scale-110 focus-visible:outline-none transition-all duration-200 ${className}`}
   >
     {children}
     {badge}
@@ -570,9 +570,9 @@ export default function Navbar({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 flex items-center justify-center transition-colors duration-200">
-                <Layout className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
+                <Layout className="w-4 h-4 text-slate-600 dark:text-zinc-300" />
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-zinc-600" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
               <span className="text-sm font-bold text-slate-800 dark:text-white transition-colors duration-200">
                 {getPageName()}
               </span>
@@ -581,12 +581,12 @@ export default function Navbar({
             <div className="hidden lg:block h-5 w-px bg-slate-200 dark:bg-white/10 mx-2 transition-colors duration-200" />
 
             <form onSubmit={handleSearch} className="hidden md:flex items-center relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 mt-[1.5px] w-4 h-4 text-slate-400 dark:text-zinc-500 group-focus-within:text-violet-500 transition-colors duration-200" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 mt-[1.5px] w-4 h-4 text-slate-500 dark:text-zinc-400 group-focus-within:text-violet-600 dark:group-focus-within:text-violet-300 transition-colors duration-200" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search everything..."
-                className="navbar-dark-search bg-white/55 border border-slate-200/70 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-300 hover:border-slate-300 hover:bg-white/75 focus:w-72 focus:border-violet-400 focus:bg-white/90 focus:ring-2 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.035] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.06] dark:focus:border-violet-500/60 dark:focus:bg-white/[0.07] dark:focus:ring-violet-500/20 w-52"
+                className="navbar-dark-search bg-white/55 border border-slate-200/70 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition-all duration-300 hover:border-slate-300 hover:bg-white/75 focus:w-72 focus:border-violet-400 focus:bg-white/90 focus:ring-2 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.035] dark:text-zinc-100 dark:placeholder:text-zinc-400 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.06] dark:focus:border-violet-500/60 dark:focus:bg-white/[0.07] dark:focus:ring-violet-500/20 w-52"
               />
             </form>
           </div>
@@ -613,10 +613,10 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={onOpenQuickNotes}
-                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-white/70 hover:text-violet-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-violet-300"
+                className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-700 transition-all duration-200 hover:bg-white/70 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-zinc-200 dark:hover:bg-white/[0.07] dark:hover:text-violet-300"
                 title="Open Quick Notes"
               >
-                <StickyNote className="h-4 w-4 text-violet-500 dark:text-violet-400" />
+                <StickyNote className="h-4 w-4 text-violet-700 dark:text-violet-300" />
                 <span>Quick Notes</span>
                 <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
                   {quickNotesCount}
