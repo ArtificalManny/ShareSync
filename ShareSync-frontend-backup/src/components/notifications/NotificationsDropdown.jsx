@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import InviteNotificationItem from "./NotificationItem.jsx";
+// import InviteNotificationItem from "./NotificationItem.jsx";
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -395,7 +395,7 @@ export default function NotificationsDropdown({
         ) : (
           <div className="p-2 space-y-1">
             {notifications.map((notification) => (
-              <InviteNotificationItem
+              <NotificationItem
                 key={notification._id || notification.id}
                 notification={notification}
                 onMarkRead={markAsRead}
