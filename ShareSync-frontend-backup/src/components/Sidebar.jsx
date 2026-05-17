@@ -416,6 +416,85 @@ export default function Sidebar({ user }) {
     <>
       {autoHideEnabled && <div className="w-[72px] h-screen shrink-0" aria-hidden="true" />}
 
+      <style>{`
+        /* Sidebar clarity pass: darker labels + stronger nav icons */
+        #app-sidebar .openshare-sidebar-wordmark {
+          color: #0f172a !important;
+          font-weight: 800;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a,
+        #app-sidebar .openshare-sidebar-nav button {
+          color: #1e293b !important;
+          font-weight: 700;
+          opacity: 1 !important;
+          text-decoration-color: transparent !important;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a span,
+        #app-sidebar .openshare-sidebar-nav button span {
+          color: #1e293b !important;
+          font-weight: 700;
+          opacity: 1 !important;
+        }
+
+        #app-sidebar .openshare-sidebar-nav svg {
+          color: #334155 !important;
+          stroke-width: 2.35;
+          opacity: 1 !important;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a:hover,
+        #app-sidebar .openshare-sidebar-nav button:hover {
+          color: #0f172a !important;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a:hover span,
+        #app-sidebar .openshare-sidebar-nav button:hover span,
+        #app-sidebar .openshare-sidebar-nav a:hover svg,
+        #app-sidebar .openshare-sidebar-nav button:hover svg {
+          color: #0f172a !important;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a[aria-current="page"],
+        #app-sidebar .openshare-sidebar-nav a[aria-current="true"],
+        #app-sidebar .openshare-sidebar-nav .active {
+          color: #0f172a !important;
+          font-weight: 800;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a[aria-current="page"] span,
+        #app-sidebar .openshare-sidebar-nav a[aria-current="true"] span,
+        #app-sidebar .openshare-sidebar-nav .active span {
+          color: #0f172a !important;
+          font-weight: 800;
+        }
+
+        #app-sidebar .openshare-sidebar-nav a[aria-current="page"] svg,
+        #app-sidebar .openshare-sidebar-nav a[aria-current="true"] svg,
+        #app-sidebar .openshare-sidebar-nav .active svg {
+          color: #111827 !important;
+          stroke-width: 2.65;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          #app-sidebar .openshare-sidebar-wordmark {
+            color: #f8fafc !important;
+          }
+
+          #app-sidebar .openshare-sidebar-nav a,
+          #app-sidebar .openshare-sidebar-nav button,
+          #app-sidebar .openshare-sidebar-nav a span,
+          #app-sidebar .openshare-sidebar-nav button span {
+            color: #e5e7eb !important;
+          }
+
+          #app-sidebar .openshare-sidebar-nav svg {
+            color: #cbd5e1 !important;
+          }
+        }
+      `}</style>
+
       <aside
         ref={sidebarRef}
         id="app-sidebar"
@@ -440,20 +519,20 @@ export default function Sidebar({ user }) {
               monochrome={false}
             />
             {!collapsed && (
-              <span className="text-sm font-bold text-slate-800 tracking-wide whitespace-nowrap animate-in fade-in duration-200">
+              <span className="openshare-sidebar-wordmark text-sm font-extrabold text-slate-950 tracking-wide whitespace-nowrap animate-in fade-in duration-200">
                 OpenShare
               </span>
             )}
           </div>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
+        <nav className="openshare-sidebar-nav flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
           <SidebarItem to="/home" label="Home" icon={LayoutGrid} tone="violet" collapsed={collapsed} />
           <SidebarItem to="/projects" label="Projects" icon={Terminal} tone="sky" collapsed={collapsed} />
           <SidebarItem to="/discover" label="Discover" icon={Trophy} tone="amber" collapsed={collapsed} />
 
           <div className="py-4">
-            <div className="h-px bg-slate-100" />
+            <div className="h-px bg-slate-200/80" />
           </div>
 
           <SidebarItem to="/profile" label="Profile" icon={UserIcon} tone="emerald" collapsed={collapsed} />
