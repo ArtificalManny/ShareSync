@@ -10,23 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import {
-  Target, Compass, ListChecks,
-  Zap,
-  RefreshCw,
-  ChevronRight,
-  Flame,
-  AlertCircle,
-  FolderPlus,
-  LayoutDashboard,
-  Sparkles,
-  CheckCircle2,
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Save,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, ClipboardCheck, Compass, Flame, FolderPlus, LayoutDashboard, ListChecks, Pencil, Plus, RefreshCw, Save, Sparkles, Target, Trash2, X, Zap } from 'lucide-react';
 
 import MoveCard, { MoveCardSkeleton } from './MoveCard';
 import { getStatusColor } from '../../utils/statusColor';
@@ -623,7 +607,7 @@ export default function YourMovesToday({
               )}
 
               <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--theme-accent-primary)] bg-[var(--theme-accent-glow)] px-2.5 py-1 rounded-md">
-                <Zap className="w-3.5 h-3.5 fill-[var(--theme-accent-primary)]/20" />
+                <ListChecks className="w-5 h-5 text-emerald-700 dark:text-emerald-300" />
                 +{resolvedTotalMomentum} Momentum
               </span>
             </div>
@@ -673,7 +657,7 @@ function DailyFocusIntroPanel({
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-zinc-950 border border-violet-100 dark:border-violet-500/20 shadow-sm">
-              <Sparkles className="h-4.5 w-4.5 text-[var(--theme-accent-primary)]" />
+              <ClipboardCheck className="w-5 h-5 text-slate-800 dark:text-zinc-100" />
             </div>
 
             <div>
@@ -706,7 +690,11 @@ function DailyFocusIntroPanel({
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-zinc-950 border border-violet-100 dark:border-violet-500/20 shadow-sm">
-              <Sparkles className="h-5 w-5 text-[var(--theme-accent-primary)]" />
+              {hasAcceptedDailyPlan ? (
+                <ClipboardCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
+              ) : (
+                <Sparkles className="h-5 w-5 text-[var(--theme-accent-primary)]" />
+              )}
             </div>
 
             <div className="min-w-0">
