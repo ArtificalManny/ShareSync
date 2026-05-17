@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import api from '../../api/client';
 import PricingModal from './PricingModal';
+import { useProjectUsageCount } from '../../hooks/useProjectUsageCount';
 
 const REFRESH_INTERVAL_MS = 30000;
 
@@ -187,6 +188,11 @@ export default function SubscriptionButton() {
   const dropRef = useRef(null);
   const mountedRef = useRef(false);
 
+  const {
+    projectCount,
+    refresh: refreshProjectCount,
+  } = useProjectUsageCount({ refreshMs: REFRESH_INTERVAL_MS });
+
   const loadSubscription = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
 
@@ -314,8 +320,20 @@ export default function SubscriptionButton() {
   const usage = subscription?.usage || {};
   const limits = subscription?.limits || {};
 
-  const projectsUsed = toNumber(usage.projects, 0);
+  const subscriptionProjectsUsed = toNumber(usage.projects, 0);
+  const projectsUsed = toNumber(
+    projectCount ?? subscriptionProjectsUsed,
+    subscriptionProjectsUsed
+  );
   const projectsLimit = toNumber(limits.projects, 10);
+
+  const displayUsage = useMemo(
+    () => ({
+      ...usage,
+      projects: projectsUsed,
+    }),
+    [usage, projectsUsed]
+  );
 
   const aiUsed = toNumber(usage.aiCallsThisMonth ?? usage.aiCalls, 0);
   const aiLimit = toNumber(limits.aiCallsPerMonth, 100);
@@ -450,7 +468,10 @@ export default function SubscriptionButton() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => loadSubscription({ silent: true })}
+                  onClick={() => {
+                    loadSubscription({ silent: true });
+                    refreshProjectCount();
+                  }}
                   className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:text-violet-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-500 dark:hover:text-violet-300"
                   title="Refresh subscription"
                 >
@@ -559,7 +580,7 @@ export default function SubscriptionButton() {
       {showModal && (
         <PricingModal
           currentPlan={plan}
-          usage={usage}
+          usage={displayUsage}
           limits={limits}
           onUpgrade={handleUpgrade}
           onClose={() => setShowModal(false)}
