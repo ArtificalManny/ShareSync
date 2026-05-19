@@ -98,6 +98,7 @@ import * as SuggestionsPanelModule from "../components/suggestions/SuggestionsPa
 import { useSocketContext } from "../context/SocketContext";
 import { applyTaskUpdated } from "../utils/taskRealtime";
 import { getStatusColor } from "../utils/statusColor";
+import { buildProjectPulse } from "../utils/projectPulse";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW COMPONENTS
@@ -1186,10 +1187,34 @@ function PriorityStack({ moves }) {
 }
 
 function OverviewPulseCard({ pulse }) {
-  const today = Number.isFinite(Number(pulse?.todayCompleted)) ? Number(pulse.todayCompleted) : 0;
-  const inMotion = Number.isFinite(Number(pulse?.inMotion)) ? Number(pulse.inMotion) : 0;
-  const blocked = Number.isFinite(Number(pulse?.blocked)) ? Number(pulse.blocked) : 0;
-  const ready = Number.isFinite(Number(pulse?.ready)) ? Number(pulse.ready) : 0;
+  const today = readNumber(
+    pulse?.todayCompleted ??
+      pulse?.today ??
+      pulse?.completedToday ??
+      pulse?.shipsToday,
+    0
+  );
+
+  const inMotion = readNumber(
+    pulse?.inMotion ??
+      pulse?.active ??
+      pulse?.inProgress,
+    0
+  );
+
+  const blocked = readNumber(
+    pulse?.blocked ??
+      pulse?.blockedCount ??
+      pulse?.blockers,
+    0
+  );
+
+  const ready = readNumber(
+    pulse?.ready ??
+      pulse?.readyCount ??
+      pulse?.open,
+    0
+  );
 
   const items = [
     {
@@ -2196,9 +2221,47 @@ function OverviewView({
   isReopeningProject,
   isStartingSprint = false,
   projectOnlineCount = 0,
+  tasks = [],
+  blockers = [],
 }) {
   const summary = overview?.summary || {};
-  const pulse = overview?.pulse || {};
+  const serverPulse = overview?.pulse || {};
+
+  const derivedPulse = useMemo(() => {
+    return buildProjectPulse(project || overview?.project || {}, {
+      tasks,
+      blockers,
+    });
+  }, [project, overview?.project, tasks, blockers]);
+
+  const pulse = useMemo(() => {
+    const finishLineBlocked = readNumber(
+      overview?.finishLine?.blockerCount ??
+        overview?.finishLine?.blockersCount ??
+        overview?.finishLine?.unresolvedBlockers ??
+        overview?.finishLine?.unresolvedBlockerCount ??
+        (Array.isArray(overview?.finishLine?.blockers)
+          ? overview.finishLine.blockers.length
+          : 0),
+      0
+    );
+
+    const today = readNumber(derivedPulse?.today, 0);
+    const inMotion = readNumber(derivedPulse?.inMotion, 0);
+    const blocked = Math.max(readNumber(derivedPulse?.blocked, 0), finishLineBlocked);
+    const ready = readNumber(derivedPulse?.ready, 0);
+
+    return {
+      todayCompleted: today,
+      today,
+      completedToday: today,
+      shipsToday: today,
+      inMotion,
+      blocked,
+      ready,
+    };
+  }, [derivedPulse, overview?.finishLine]);
+
   const momentum = overview?.momentum || {};
   const finishLine = overview?.finishLine || null;
   const priorityStack = Array.isArray(overview?.priorityStack) ? overview.priorityStack : [];
@@ -2603,18 +2666,31 @@ export default function ProjectHome() {
 
     const handleOverviewRefreshSignal = (payload) => {
       if (!matchesProject(payload)) return;
+      setPulseRefreshKey((k) => k + 1);
       scheduleOverviewRefresh();
     };
 
     const eventMap = [
       ["taskUpdated", handleTaskPatch],
       ["task:update", handleTaskPatch],
+      ["taskStatusChanged", handleTaskPatch],
+      ["task:statusChanged", handleTaskPatch],
+      ["taskMoved", handleTaskPatch],
+      ["task:moved", handleTaskPatch],
+      ["taskCompleted", handleOverviewRefreshSignal],
+      ["task:completed", handleOverviewRefreshSignal],
       ["taskCreated", handleOverviewRefreshSignal],
       ["task:created", handleOverviewRefreshSignal],
       ["taskDeleted", handleOverviewRefreshSignal],
       ["task:deleted", handleOverviewRefreshSignal],
       ["activityCreated", handleOverviewRefreshSignal],
       ["activity:created", handleOverviewRefreshSignal],
+      ["blockerCreated", handleOverviewRefreshSignal],
+      ["blocker:created", handleOverviewRefreshSignal],
+      ["blockerUpdated", handleOverviewRefreshSignal],
+      ["blocker:updated", handleOverviewRefreshSignal],
+      ["blockerResolved", handleOverviewRefreshSignal],
+      ["blocker:resolved", handleOverviewRefreshSignal],
       ["goalCreated", handleOverviewRefreshSignal],
       ["goal:created", handleOverviewRefreshSignal],
       ["goalUpdated", handleOverviewRefreshSignal],
@@ -2960,6 +3036,8 @@ export default function ProjectHome() {
               isReopeningProject={isReopeningProject}
               isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
+              tasks={liveTasks}
+              blockers={overview?.blockers || overview?.blockingReasons || overview?.finishLine?.blockers || []}
             />
           );
 
