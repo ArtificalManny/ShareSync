@@ -28,7 +28,6 @@ import {
   ForesightCard,
   LiveActivityCard,
   TeamCapacityCard,
-  ActiveGoalsCard,
 } from "../components/project/pulse/card";
 
 import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
@@ -73,6 +72,11 @@ import {
   BellOff,
   Loader2,
   FileText,
+  ListOrdered,
+  ArrowUpRight,
+  GripVertical,
+  CircleDot,
+  Signpost,
 } from "lucide-react";
 
 // Hooks
@@ -99,6 +103,9 @@ import { useSocketContext } from "../context/SocketContext";
 import { applyTaskUpdated } from "../utils/taskRealtime";
 import { getStatusColor } from "../utils/statusColor";
 import buildProjectMomentum from "../utils/projectMomentum";
+import buildProjectForesight from "../utils/projectForesight";
+import buildProjectActiveGoals from "../utils/projectActiveGoals";
+import buildProjectTeamCapacity from "../utils/projectTeamCapacity";
 import { buildProjectPulse } from "../utils/projectPulse";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1147,45 +1154,147 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
   );
 }
 
-function PriorityStack({ moves }) {
-  const items = Array.isArray(moves) ? moves : [];
+function PriorityStack({ moves = [] }) {
+  const safeMoves = Array.isArray(moves) ? moves.filter(Boolean) : [];
+  const topMoves = safeMoves.slice(0, 4);
+
+  const getMoveTitle = (move) => {
+    if (typeof move === "string") return move;
+
+    return (
+      move?.title ||
+      move?.name ||
+      move?.taskTitle ||
+      move?.label ||
+      move?.text ||
+      move?.summary ||
+      "Untitled priority"
+    );
+  };
+
+  const getMoveMeta = (move, index) => {
+    if (typeof move === "string") {
+      return index === 0 ? "Highest leverage move" : "Ranked move";
+    }
+
+    return (
+      move?.projectName ||
+      move?.project?.name ||
+      move?.source ||
+      move?.status ||
+      (index === 0 ? "Highest leverage move" : "Ranked move")
+    );
+  };
+
+  const getMoveSignal = (move, index) => {
+    if (typeof move === "string") {
+      return index === 0 ? "Top move" : `Priority ${index + 1}`;
+    }
+
+    const rawScore =
+      move?.priorityScore ??
+      move?.score ??
+      move?.impactScore ??
+      move?.leverageScore ??
+      move?.points;
+
+    if (Number.isFinite(Number(rawScore))) {
+      return `${Math.round(Number(rawScore))} signal`;
+    }
+
+    return index === 0 ? "Top move" : `Priority ${index + 1}`;
+  };
 
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
-      <header className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center">
-            <Target className="w-4 h-4 text-rose-500" />
+    <section className="relative overflow-hidden bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-500 via-violet-500 to-cyan-400" />
+
+      <header className="flex items-center justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center shadow-sm">
+            <ListOrdered className="w-5 h-5" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Priority Stack</h3>
+
+          <div className="min-w-0">
+            <h3 className="font-semibold text-slate-900 dark:text-white">
+              Priority Stack
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              Ranked execution queue
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400 dark:text-zinc-500">Top moves</span>
+
+        <span className="text-xs text-slate-400 dark:text-zinc-500">
+          Top moves
+        </span>
       </header>
 
-      {items.length > 0 ? (
-        <ul className="space-y-2">
-          {items.slice(0, 5).map((m, i) => (
-            <li
-              key={m?._id || m?.id || i}
-              className={`text-xs text-slate-700 dark:text-zinc-300 pl-3 py-2 rounded-lg border-l-2 border-violet-400 bg-slate-50 dark:bg-zinc-800/50 ${getStatusColor(m)}`}
-            >
-              {m?.title || m?.label || m?.text || "Critical move"}
-            </li>
-          ))}
-        </ul>
+      {topMoves.length > 0 ? (
+        <div className="space-y-3">
+          {topMoves.map((move, index) => {
+            const title = getMoveTitle(move);
+            const meta = getMoveMeta(move, index);
+            const signal = getMoveSignal(move, index);
+
+            return (
+              <article
+                key={move?._id || move?.id || `${title}-${index}`}
+                className="group relative overflow-hidden rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.05] transition shadow-sm"
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-400 via-violet-500 to-cyan-400" />
+
+                <div className="flex items-center gap-4 px-4 py-3 pl-5">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <GripVertical className="w-4 h-4 opacity-60" />
+                    <span className="w-9 h-9 rounded-xl bg-white dark:bg-black/20 border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-xs font-bold text-rose-500">
+                      #{index + 1}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-slate-900 dark:text-white truncate">
+                      {title}
+                    </div>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
+                      <span>{meta}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="text-violet-600 dark:text-violet-300 font-semibold">
+                        {signal}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-black/20 border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-400 group-hover:text-violet-600 transition">
+                    <ArrowUpRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       ) : (
-        <div className="text-center py-4">
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-3">
-            No critical moves yet. Tasks you create will surface here by priority.
-          </p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500">
-            Switch to Tasks or Board to add your first task.
-          </p>
+        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-white/[0.08] bg-slate-50/70 dark:bg-white/[0.03] px-5 py-6 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-white dark:bg-black/20 border border-slate-200 dark:border-white/[0.08] flex items-center justify-center text-slate-400">
+            <Signpost className="w-5 h-5" />
+          </div>
+
+          <div>
+            <p className="font-semibold text-slate-800 dark:text-white">
+              No priority surfaced yet
+            </p>
+            <p className="text-sm text-slate-500 dark:text-zinc-400">
+              Add tasks, unblock work, or ship updates to generate a ranked stack.
+            </p>
+          </div>
         </div>
       )}
     </section>
   );
 }
+
+
 
 function OverviewPulseCard({ pulse }) {
   const today = readNumber(
@@ -1819,15 +1928,149 @@ function projectPulseGetPersonAvatar(value) {
   );
 }
 
+function projectPulseGetEntityId(value) {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (typeof value !== "object") return "";
+
+  const direct =
+    value._id ||
+    value.id ||
+    value.userId ||
+    value.user ||
+    value.memberId ||
+    value.member ||
+    value.actorId ||
+    value.actor ||
+    value.createdBy ||
+    value.updatedBy ||
+    value.completedBy ||
+    "";
+
+  if (typeof direct === "string") return direct.trim();
+
+  if (direct && typeof direct === "object" && direct !== value) {
+    return projectPulseGetEntityId(direct);
+  }
+
+  return "";
+}
+
+function projectPulseNormalizeMemberRecord(member) {
+  if (!member) return null;
+
+  const nested =
+    typeof member.userId === "object"
+      ? member.userId
+      : typeof member.user === "object"
+        ? member.user
+        : typeof member.memberId === "object"
+          ? member.memberId
+          : typeof member.member === "object"
+            ? member.member
+            : typeof member.profile === "object"
+              ? member.profile
+              : null;
+
+  const id =
+    projectPulseGetEntityId(nested) ||
+    projectPulseGetEntityId(member) ||
+    "";
+
+  const firstName = member.firstName || nested?.firstName || "";
+  const lastName = member.lastName || nested?.lastName || "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  return {
+    ...(nested || {}),
+    ...(typeof member === "object" ? member : {}),
+    _id: id || nested?._id || member?._id,
+    id: id || nested?.id || member?.id,
+    firstName,
+    lastName,
+    name:
+      member.name ||
+      nested?.name ||
+      member.fullName ||
+      nested?.fullName ||
+      member.displayName ||
+      nested?.displayName ||
+      fullName ||
+      member.username ||
+      nested?.username ||
+      member.email ||
+      nested?.email ||
+      "",
+    fullName:
+      member.fullName ||
+      nested?.fullName ||
+      member.displayName ||
+      nested?.displayName ||
+      fullName ||
+      "",
+    email: member.email || nested?.email || "",
+    username: member.username || nested?.username || "",
+    avatarUrl:
+      member.avatarUrl ||
+      nested?.avatarUrl ||
+      member.profilePicture ||
+      nested?.profilePicture ||
+      member.profileImage ||
+      nested?.profileImage ||
+      member.photoUrl ||
+      nested?.photoUrl ||
+      member.avatar ||
+      nested?.avatar ||
+      "",
+    profilePicture:
+      member.profilePicture ||
+      nested?.profilePicture ||
+      member.avatarUrl ||
+      nested?.avatarUrl ||
+      "",
+  };
+}
+
 function projectPulseGetProjectMembers(project) {
   const rawMembers = Array.isArray(project?.members) ? project.members : [];
 
-  return rawMembers
-    .map((member) => member?.userId || member?.user || member?.member || member)
-    .filter(Boolean);
+  const ownerCandidates = [
+    project?.ownerId,
+    project?.owner,
+    project?.createdById,
+    project?.createdBy,
+  ].filter(Boolean);
+
+  const normalized = [
+    ...rawMembers.map(projectPulseNormalizeMemberRecord),
+    ...ownerCandidates.map(projectPulseNormalizeMemberRecord),
+  ].filter(Boolean);
+
+  const seen = new Set();
+
+  return normalized.filter((member) => {
+    const key =
+      projectPulseGetEntityId(member) ||
+      String(member.email || "").toLowerCase() ||
+      String(member.username || "").toLowerCase() ||
+      String(member.name || "").toLowerCase();
+
+    if (!key) return true;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
 }
 
+
 function projectPulseResolveActor(activity, project) {
+  const projectMembers = projectPulseGetProjectMembers(project);
+
   const directActor =
     activity?.actor ||
     activity?.actorUser ||
@@ -1837,38 +2080,84 @@ function projectPulseResolveActor(activity, project) {
     activity?.createdBy ||
     activity?.updatedBy ||
     activity?.completedBy ||
-    activity?.completedByUser ||
-    activity?.owner ||
-    activity?.assignee ||
     activity?.raw?.actor ||
     activity?.raw?.user ||
-    activity?.raw?.createdBy ||
-    activity?.raw?.updatedBy ||
-    activity?.raw?.completedBy ||
     activity?.details?.actor ||
     activity?.details?.user ||
     activity?.metadata?.actor ||
     activity?.metadata?.user ||
     null;
 
+  const directId = projectPulseGetEntityId(directActor);
+
+  const candidateIds = [
+    directId,
+    activity?.actorId,
+    activity?.userId,
+    activity?.memberId,
+    activity?.authorId,
+    activity?.createdById,
+    activity?.updatedById,
+    activity?.completedById,
+    activity?.createdBy,
+    activity?.updatedBy,
+    activity?.completedBy,
+    activity?.raw?.actorId,
+    activity?.raw?.userId,
+    activity?.raw?.memberId,
+    activity?.details?.actorId,
+    activity?.details?.userId,
+    activity?.details?.memberId,
+    activity?.metadata?.actorId,
+    activity?.metadata?.userId,
+    activity?.metadata?.memberId,
+  ]
+    .map(projectPulseGetEntityId)
+    .filter(Boolean);
+
+  const candidateEmails = [
+    activity?.actorEmail,
+    activity?.userEmail,
+    activity?.email,
+    activity?.raw?.actorEmail,
+    activity?.raw?.userEmail,
+    activity?.details?.actorEmail,
+    activity?.details?.userEmail,
+    activity?.metadata?.actorEmail,
+    activity?.metadata?.userEmail,
+    directActor?.email,
+  ]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .filter(Boolean);
+
+  const matchedMember = projectMembers.find((member) => {
+    const memberId = projectPulseGetEntityId(member);
+    const memberEmail = String(member?.email || "").trim().toLowerCase();
+
+    return (
+      (memberId && candidateIds.includes(memberId)) ||
+      (memberEmail && candidateEmails.includes(memberEmail))
+    );
+  });
+
+  if (matchedMember) {
+    return {
+      ...(typeof directActor === "object" && directActor ? directActor : {}),
+      ...matchedMember,
+    };
+  }
+
   if (directActor && typeof directActor === "object") {
     return directActor;
   }
-
-  const projectMembers = projectPulseGetProjectMembers(project);
 
   if (projectMembers.length === 1) {
     return projectMembers[0];
   }
 
-  return (
-    project?.owner ||
-    project?.ownerId ||
-    project?.createdBy ||
-    project?.user ||
-    null
-  );
+  return null;
 }
+
 
 function projectPulseGetActorName(activity, project) {
   const directNameCandidates = [
@@ -1883,7 +2172,9 @@ function projectPulseGetActorName(activity, project) {
     activity?.raw?.actorName,
     activity?.raw?.userName,
     activity?.details?.actorName,
+    activity?.details?.userName,
     activity?.metadata?.actorName,
+    activity?.metadata?.userName,
   ];
 
   const directName = directNameCandidates.find(
@@ -1901,6 +2192,7 @@ function projectPulseGetActorName(activity, project) {
 
   return "Project member";
 }
+
 
 function projectPulseGetActorAvatar(activity, project) {
   const activityAvatar = projectPulseNormalizeAvatarSrc(
@@ -2082,6 +2374,7 @@ function ProjectActivityActorAvatar({ activity, actorName, project }) {
   );
 }
 
+
 function ProjectLiveActivityRow({ item, index, project }) {
   const actorName = projectPulseGetActorName(item, project);
   const action = projectPulseGetActionLabel(item);
@@ -2093,16 +2386,38 @@ function ProjectLiveActivityRow({ item, index, project }) {
     item?.timestamp ||
     item?.time ||
     item?.date ||
-    item?.ts;
+    item?.ts ||
+    null;
 
-  const isCompleted = status.toLowerCase() === "completed";
+  const statusKey = String(status || "").toLowerCase();
+
+  const tone =
+    statusKey.includes("completed") || statusKey.includes("shipped")
+      ? {
+          rail: "from-emerald-400 to-cyan-400",
+          dot: "bg-emerald-400",
+          badge:
+            "border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+        }
+      : statusKey.includes("blocked")
+        ? {
+            rail: "from-rose-400 to-orange-400",
+            dot: "bg-rose-400",
+            badge:
+              "border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+          }
+        : {
+            rail: "from-violet-400 to-cyan-400",
+            dot: "bg-violet-400",
+            badge:
+              "border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300",
+          };
 
   return (
-    <article
-      key={item?._id || item?.id || `${actorName}-${target}-${index}`}
-      className="rounded-[22px] border border-slate-200/80 bg-white/90 p-4 shadow-sm transition-all hover:border-violet-200 hover:shadow-md dark:border-white/[0.07] dark:bg-white/[0.035] dark:shadow-none dark:hover:border-violet-500/30"
-    >
-      <div className="flex items-start gap-3">
+    <article className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.03] dark:hover:border-violet-500/25">
+      <div className={`absolute inset-y-4 left-0 w-1 rounded-r-full bg-gradient-to-b ${tone.rail}`} />
+
+      <div className="flex items-start gap-3 pl-2">
         <ProjectActivityActorAvatar
           activity={item}
           actorName={actorName}
@@ -2110,33 +2425,25 @@ function ProjectLiveActivityRow({ item, index, project }) {
         />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
-                isCompleted
-                  ? "border border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-                  : "border border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300"
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.18em] ${tone.badge}`}
             >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isCompleted ? "bg-emerald-400" : "bg-violet-400"
-                }`}
-              />
+              <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
               {status}
             </span>
 
-            <span className="shrink-0 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
               {projectPulseFormatTimeAgo(timestamp)}
             </span>
           </div>
 
-          <p className="mt-2 text-sm leading-5 text-slate-700 dark:text-zinc-200">
-            <span className="font-black text-slate-900 dark:text-white">
+          <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-zinc-200">
+            <span className="font-black text-slate-950 dark:text-white">
               {actorName}
             </span>{" "}
             <span>{action}</span>{" "}
-            <span className="font-black text-slate-900 dark:text-white">
+            <span className="font-black text-slate-950 dark:text-white">
               {target}
             </span>
           </p>
@@ -2151,27 +2458,34 @@ function ProjectLiveActivityCard({ activities = [], project = null }) {
   const hasItems = items.length > 0;
 
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm dark:border-white/[0.06] dark:bg-[#111113] dark:shadow-none">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_12%,rgba(45,212,191,0.12),transparent_30%),radial-gradient(circle_at_12%_0%,rgba(124,58,237,0.08),transparent_34%)]" />
+    <section className="relative overflow-hidden rounded-[28px] border border-emerald-100/80 bg-white shadow-sm dark:border-emerald-500/20 dark:bg-[#111113] dark:shadow-none">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_12%,rgba(45,212,191,0.14),transparent_30%),radial-gradient(circle_at_12%_0%,rgba(124,58,237,0.08),transparent_34%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-400" />
 
       <header className="relative z-10 flex items-start justify-between gap-4 border-b border-slate-100/90 px-5 py-4 dark:border-white/[0.06]">
         <div className="flex items-start gap-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-            <Activity className="h-5 w-5" />
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <Activity className="h-6 w-6" />
             <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
-              Live Activity
-            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-black text-slate-950 dark:text-white">
+                Live Activity
+              </h3>
+              <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                Realtime
+              </span>
+            </div>
+
             <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
               Real-time execution signals from this project
             </p>
           </div>
         </div>
 
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           Now
         </span>
@@ -2182,7 +2496,7 @@ function ProjectLiveActivityCard({ activities = [], project = null }) {
           <div className="space-y-3">
             {items.map((item, index) => (
               <ProjectLiveActivityRow
-                key={item?._id || item?.id || index}
+                key={item?._id || item?.id || item?.createdAt || index}
                 item={item}
                 index={index}
                 project={project}
@@ -2190,15 +2504,176 @@ function ProjectLiveActivityCard({ activities = [], project = null }) {
             ))}
           </div>
         ) : (
-          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white/60 px-6 py-8 text-center dark:border-white/[0.07] dark:bg-white/[0.03]">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-300">
-              <Activity className="h-5 w-5" />
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-5 text-sm text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-400">
+            No live activity yet. Ship an update, complete a task, or resolve a blocker to create the first signal.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
+
+function ProjectActiveGoalsCard({ goals = [], loading = false, onGoalClick }) {
+  const items = Array.isArray(goals) ? goals.filter(Boolean) : [];
+
+  const activeCount = items.filter((goal) => !goal.done).length;
+  const blockedCount = items.filter((goal) => goal.blocked).length;
+
+  const avgProgress =
+    items.length > 0
+      ? Math.round(
+          items.reduce((sum, goal) => sum + Number(goal.progress || 0), 0) /
+            items.length
+        )
+      : 0;
+
+  return (
+    <section className="relative overflow-hidden rounded-[28px] border border-teal-100/80 bg-white p-5 shadow-sm dark:border-teal-500/20 dark:bg-[#111113] dark:shadow-none">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(45,212,191,0.14),transparent_34%),radial-gradient(circle_at_92%_12%,rgba(124,58,237,0.09),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-violet-500" />
+
+      <header className="relative z-10 mb-5 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-600 shadow-sm dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-black text-slate-950 dark:text-white">
+                Active Goals
+              </h3>
+
+              <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
+                Focus
+              </span>
             </div>
-            <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
-              No activity yet
+
+            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+              Live objectives shaping this project’s next execution moves.
             </p>
-            <p className="mt-1 max-w-[260px] text-xs leading-5 text-slate-500 dark:text-zinc-400">
-              Ship your first update to see the feed come alive.
+          </div>
+        </div>
+
+        <span className="text-xs font-semibold text-slate-400 dark:text-zinc-500">
+          {loading ? "Syncing" : "Live"}
+        </span>
+      </header>
+
+      <div className="relative z-10 mb-5 grid grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+            Active
+          </p>
+          <p className="mt-1 text-xl font-black text-slate-950 dark:text-white">
+            {activeCount}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+            Progress
+          </p>
+          <p className="mt-1 text-xl font-black text-slate-950 dark:text-white">
+            {avgProgress}%
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+            Blocked
+          </p>
+          <p className={`mt-1 text-xl font-black ${blockedCount > 0 ? "text-rose-500" : "text-slate-950 dark:text-white"}`}>
+            {blockedCount}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative z-10">
+        {items.length > 0 ? (
+          <div className="space-y-3">
+            {items.map((goal, index) => {
+              const progress = Math.max(0, Math.min(100, Number(goal.progress || 0)));
+
+              const tone = goal.blocked
+                ? "border-rose-100 bg-rose-50/70 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+                : goal.done
+                  ? "border-emerald-100 bg-emerald-50/70 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  : "border-violet-100 bg-violet-50/70 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300";
+
+              return (
+                <article
+                  key={goal.id || index}
+                  onClick={() => onGoalClick?.(goal.raw || goal)}
+                  className="group cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.03]"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black text-slate-600 dark:bg-white/[0.06] dark:text-zinc-300">
+                          #{index + 1}
+                        </span>
+
+                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${tone}`}>
+                          {goal.status || "Active"}
+                        </span>
+
+                        {goal.source ? (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:bg-white/[0.06] dark:text-zinc-400">
+                            {goal.source}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <h4 className="mt-3 text-sm font-black text-slate-950 dark:text-white">
+                        {goal.title}
+                      </h4>
+
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                        {goal.subtitle || "Keep this moving to protect project momentum."}
+                      </p>
+
+                      {goal.ownerName ? (
+                        <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+                          Owner: {goal.ownerName}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="shrink-0 text-right">
+                      <p className="text-lg font-black text-slate-950 dark:text-white">
+                        {progress}%
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                        Done
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.06]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-violet-500 transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center dark:border-white/[0.08] dark:bg-white/[0.03]">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-300">
+              <Target className="h-6 w-6" />
+            </div>
+
+            <h4 className="mt-4 text-sm font-black text-slate-950 dark:text-white">
+              No active goals yet
+            </h4>
+
+            <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-slate-500 dark:text-zinc-400">
+              Add a high-priority task, sprint goal, objective, or milestone. Once it exists, this panel becomes the project’s live focus board.
             </p>
           </div>
         )}
@@ -2222,6 +2697,7 @@ function OverviewView({
   isReopeningProject,
   isStartingSprint = false,
   projectOnlineCount = 0,
+  liveTasks = [],
   tasks = [],
   blockers = [],
   projectMomentum = null,
@@ -2269,8 +2745,58 @@ function OverviewView({
   const finishLine = overview?.finishLine || null;
   const priorityStack = Array.isArray(overview?.priorityStack) ? overview.priorityStack : [];
   const liveActivity = Array.isArray(overview?.liveActivity) ? overview.liveActivity : [];
-  const activeGoals = Array.isArray(overview?.activeGoals) ? overview.activeGoals : [];
-  const teamCapacity = Array.isArray(overview?.teamCapacity) ? overview.teamCapacity : [];
+  const rawActiveGoals = Array.isArray(overview?.activeGoals) ? overview.activeGoals : [];
+
+  const activeGoals = useMemo(() => {
+    const built = buildProjectActiveGoals({
+      project,
+      tasks: liveTasks,
+      overview,
+      priorityStack,
+      foresight: overview?.foresight || metrics?.foresight,
+    });
+
+    return built.length > 0 ? built : rawActiveGoals;
+  }, [
+    project,
+    liveTasks,
+    overview,
+    priorityStack,
+    metrics?.foresight,
+    rawActiveGoals,
+  ]);
+  const rawTeamCapacity =
+    Array.isArray(overview?.teamCapacity) || typeof overview?.teamCapacity === "object"
+      ? overview?.teamCapacity
+      : metrics?.teamCapacity || null;
+
+  const projectTasksForTeamCapacity =
+    typeof liveTasks !== "undefined" && Array.isArray(liveTasks)
+      ? liveTasks
+      : typeof tasks !== "undefined" && Array.isArray(tasks)
+        ? tasks
+        : [];
+
+  const teamCapacity = useMemo(() => {
+    return buildProjectTeamCapacity({
+      project,
+      tasks: projectTasksForTeamCapacity,
+      overview,
+      fallback: rawTeamCapacity,
+    });
+  }, [project, projectTasksForTeamCapacity, overview, rawTeamCapacity]);
+
+  const projectForesight = useMemo(() => {
+    return buildProjectForesight({
+      project: project || overview?.project || {},
+      tasks,
+      blockers,
+      priorityStack,
+      pulse,
+      momentum,
+      finishLine,
+    });
+  }, [project, overview?.project, tasks, blockers, priorityStack, pulse, momentum, finishLine]);
 
   const nextActionTitle =
     summary?.nextAction?.title ||
@@ -2307,7 +2833,7 @@ function OverviewView({
 
   const foresightMetrics = {
     ...metrics,
-    foresight: overview?.foresight || metrics?.foresight,
+    foresight: projectForesight || overview?.foresight || metrics?.foresight,
   };
 
   const teamMetrics = {
@@ -2348,7 +2874,7 @@ function OverviewView({
       <div className="grid grid-cols-12 gap-6 mb-8">
         <div className="col-span-12 lg:col-span-5">
           <OverviewSignalCard
-            icon={Route}
+            icon={Flag}
             label="What’s next"
             value={nextActionTitle}
             caption={
@@ -2441,7 +2967,7 @@ function OverviewView({
           <TeamCapacityCard metrics={teamMetrics} />
         </div>
         <div className="col-span-12 lg:col-span-7">
-          <ActiveGoalsCard
+          <ProjectActiveGoalsCard
             goals={activeGoals}
             loading={loading}
             onGoalClick={onObjectiveClick}
@@ -3057,6 +3583,7 @@ export default function ProjectHome() {
               isReopeningProject={isReopeningProject}
               isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
+              liveTasks={liveTasks}
               projectMomentum={projectMomentum}
               tasks={liveTasks}
               blockers={overview?.blockers || overview?.blockingReasons || overview?.finishLine?.blockers || []}
