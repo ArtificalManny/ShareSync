@@ -57,6 +57,7 @@ import {
   Clock,
   Zap,
   Target,
+  Route,
   TrendingUp,
   AlertTriangle,
   Play,
@@ -2281,7 +2282,7 @@ function OverviewView({
       <div className="grid grid-cols-12 gap-6 mb-8">
         <div className="col-span-12 lg:col-span-5">
           <OverviewSignalCard
-            icon={Target}
+            icon={Route}
             label="What’s next"
             value={nextActionTitle}
             caption={
