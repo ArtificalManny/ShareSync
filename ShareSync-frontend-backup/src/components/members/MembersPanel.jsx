@@ -67,38 +67,71 @@ const MembersPanel = ({ projectId, project, onClose, onProjectUpdated }) => {
   const { sortedMembers, isOwner, isModerator } = useMemo(() => {
     if (!activeProject) return { sortedMembers: [], isOwner: false, isModerator: false };
 
-    const owner = activeProject.owner || activeProject.ownerId;
-    const ownerId = owner?._id || owner?.id || owner;
+    const getObject = (value) => {
+      return value && typeof value === 'object' ? value : null;
+    };
+
+    const getId = (value) => {
+      if (!value) return '';
+      if (typeof value === 'object') {
+        return String(value._id || value.id || value.userId || value.memberId || '').trim();
+      }
+      return String(value).trim();
+    };
+
+    const pick = (...values) => {
+      for (const value of values) {
+        const text = String(value || '').trim();
+        if (text) return text;
+      }
+      return '';
+    };
+
+    const getFullName = (person, fallback = 'Project Owner') => {
+      const first = pick(person?.firstName, person?.firstname, person?.givenName);
+      const last = pick(person?.lastName, person?.lastname, person?.familyName);
+      const fullName = [first, last].filter(Boolean).join(' ').trim();
+
+      return pick(
+        person?.name,
+        person?.fullName,
+        person?.displayName,
+        fullName,
+        person?.username,
+        person?.email,
+        fallback
+      );
+    };
+
+    // Prefer populated owner objects before raw owner string IDs.
+    const ownerObject =
+      getObject(activeProject.ownerId) ||
+      getObject(activeProject.owner) ||
+      getObject(activeProject.createdBy) ||
+      getObject(activeProject.createdById);
+
+    const ownerId =
+      getId(activeProject.ownerId) ||
+      getId(activeProject.owner) ||
+      getId(activeProject.createdBy) ||
+      getId(activeProject.createdById);
+
     const members = activeProject.members || [];
 
     // Build normalized member list
     const memberList = [];
 
     // 1) Owner first
-    if (owner && typeof owner === 'object' && (owner.name || owner.firstName || owner.lastName || owner.username)) {
-      memberList.push({
-        id: String(owner._id || owner.id),
-        name: owner.name || `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || owner.username || 'Project Owner',
-        firstName: owner.firstName || '',
-        lastName: owner.lastName || '',
-        username: owner.username || '',
-        avatar: getAvatarFromUserLike(owner),
-        bio: owner.bio || owner.headline || '',
-        email: owner.email || '',
-        role: 'owner',
-        permissionRole: 'owner',
-        displayRole: 'Owner',
-      });
-    } else if (ownerId) {
+    if (ownerId) {
       memberList.push({
         id: String(ownerId),
-        name: 'Project Owner',
-        firstName: 'Project',
-        lastName: 'Owner',
-        username: '',
-        avatar: null,
-        bio: '',
-        email: '',
+        name: getFullName(ownerObject, 'Project Owner'),
+        firstName: ownerObject?.firstName || '',
+        lastName: ownerObject?.lastName || '',
+        username: ownerObject?.username || '',
+        avatar: getAvatarFromUserLike(ownerObject),
+        bio: ownerObject?.bio || ownerObject?.headline || '',
+        email: ownerObject?.email || '',
         role: 'owner',
         permissionRole: 'owner',
         displayRole: 'Owner',
