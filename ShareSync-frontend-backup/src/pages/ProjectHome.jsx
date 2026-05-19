@@ -98,6 +98,7 @@ import * as SuggestionsPanelModule from "../components/suggestions/SuggestionsPa
 import { useSocketContext } from "../context/SocketContext";
 import { applyTaskUpdated } from "../utils/taskRealtime";
 import { getStatusColor } from "../utils/statusColor";
+import buildProjectMomentum from "../utils/projectMomentum";
 import { buildProjectPulse } from "../utils/projectPulse";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1074,7 +1075,7 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
       <header className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-violet-500" />
+            <TrendingUp className="w-4 h-4 text-violet-500" />
           </div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Momentum</h3>
         </div>
@@ -2223,6 +2224,7 @@ function OverviewView({
   projectOnlineCount = 0,
   tasks = [],
   blockers = [],
+  projectMomentum = null,
 }) {
   const summary = overview?.summary || {};
   const serverPulse = overview?.pulse || {};
@@ -2262,7 +2264,8 @@ function OverviewView({
     };
   }, [derivedPulse, overview?.finishLine]);
 
-  const momentum = overview?.momentum || {};
+  const serverMomentum = overview?.momentum || {};
+  const momentum = projectMomentum || serverMomentum;
   const finishLine = overview?.finishLine || null;
   const priorityStack = Array.isArray(overview?.priorityStack) ? overview.priorityStack : [];
   const liveActivity = Array.isArray(overview?.liveActivity) ? overview.liveActivity : [];
@@ -2969,12 +2972,30 @@ export default function ProjectHome() {
     overviewOnlineCount
   );
 
+  const projectMomentum = useMemo(() => {
+    const activitySource = Array.isArray(activity)
+      ? activity
+      : Array.isArray(activity?.items)
+        ? activity.items
+        : Array.isArray(overview?.liveActivity)
+          ? overview.liveActivity
+          : [];
+
+    return buildProjectMomentum({
+      project,
+      tasks: liveTasks,
+      activities: activitySource,
+    });
+  }, [project, liveTasks, activity, overview?.liveActivity, pulseRefreshKey]);
+
   const headerMetrics = {
     ...metrics,
     momentum:
-      Number.isFinite(Number(overview?.momentum?.score))
-        ? Number(overview.momentum.score)
-        : metrics?.momentum || 0,
+      Number.isFinite(Number(projectMomentum?.score))
+        ? Number(projectMomentum.score)
+        : Number.isFinite(Number(overview?.momentum?.score))
+          ? Number(overview.momentum.score)
+          : metrics?.momentum || 0,
   };
 
   const projectLifecycleState = String(project?.status || "").toLowerCase();
@@ -3036,6 +3057,7 @@ export default function ProjectHome() {
               isReopeningProject={isReopeningProject}
               isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
+              projectMomentum={projectMomentum}
               tasks={liveTasks}
               blockers={overview?.blockers || overview?.blockingReasons || overview?.finishLine?.blockers || []}
             />
