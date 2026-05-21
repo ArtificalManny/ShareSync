@@ -77,6 +77,10 @@ import {
   GripVertical,
   CircleDot,
   Signpost,
+  TrendingDown,
+  GaugeCircle,
+  RadioTower,
+  PlayCircle,
 } from "lucide-react";
 
 // Hooks
@@ -1072,87 +1076,163 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
-  const pct = Math.min(100, momentum);
-  const radius = 36;
+  const score = Math.max(0, Math.min(100, Number(momentum) || 0));
+  const safeWeeklyShips = Math.max(0, Number(weeklyShips) || 0);
+  const safeTrend = Number.isFinite(Number(trend)) ? Number(trend) : 0;
+
+  const radius = 44;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (pct / 100) * circumference;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  const isBuilding = safeTrend > 0;
+  const isCooling = safeTrend < 0;
+
+  const statusLabel =
+    score >= 75
+      ? "High momentum"
+      : score >= 45
+        ? "Building"
+        : score > 0
+          ? "Warming up"
+          : "Needs signal";
+
+  const trendLabel = isBuilding ? `+${safeTrend}` : String(safeTrend);
+
+  const trendTone = isBuilding
+    ? "text-emerald-600 dark:text-emerald-300"
+    : isCooling
+      ? "text-rose-600 dark:text-rose-300"
+      : "text-slate-500 dark:text-zinc-400";
+
+  const TrendIcon = isBuilding ? TrendingUp : isCooling ? TrendingDown : GaugeCircle;
 
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
-      <header className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-violet-500" />
+    <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/[0.06] dark:bg-[#111113] dark:shadow-none">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(139,92,246,0.14),transparent_34%),radial-gradient(circle_at_92%_18%,rgba(45,212,191,0.12),transparent_32%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+
+      <header className="relative z-10 mb-5 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 bg-violet-50 text-violet-600 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+            <TrendingUp className="h-5 w-5" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Momentum</h3>
+
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                Momentum
+              </h3>
+              <span className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+                Pace Signal
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+              Shipping pace, trend, and execution energy.
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400 dark:text-zinc-500">Live</span>
+
+        <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+          Live
+        </span>
       </header>
 
-      <div className="flex items-center gap-5">
-        <div className="relative flex-shrink-0">
-          <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
-            <circle
-              cx="44"
-              cy="44"
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="6"
-              className="text-slate-100 dark:text-zinc-800"
-            />
-            <circle
-              cx="44"
-              cy="44"
-              r={radius}
-              fill="none"
-              stroke="url(#momentum-grad)"
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-700"
-            />
-            <defs>
-              <linearGradient id="momentum-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#7C3AED" />
-                <stop offset="100%" stopColor="#2DD4BF" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-bold text-slate-800 dark:text-zinc-100">
-              {momentum}
-            </span>
+      <div className="relative z-10 grid gap-5 md:grid-cols-[150px_1fr]">
+        <div className="flex items-center justify-center">
+          <div className="relative h-[132px] w-[132px]">
+            <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120">
+              <circle
+                cx="60"
+                cy="60"
+                r={radius}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="9"
+                className="text-slate-100 dark:text-white/[0.06]"
+              />
+              <circle
+                cx="60"
+                cy="60"
+                r={radius}
+                fill="none"
+                stroke="url(#momentumGradient)"
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-700"
+              />
+              <defs>
+                <linearGradient id="momentumGradient" x1="0" y1="0" x2="120" y2="120">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="55%" stopColor="#22d3ee" />
+                  <stop offset="100%" stopColor="#34d399" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-black text-slate-950 dark:text-white">
+                {score}
+              </span>
+              <span className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
+                Score
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-zinc-400">Weekly ships</span>
-            <span className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
-              {weeklyShips}
-            </span>
+        <div className="grid content-center gap-3">
+          <div className="rounded-2xl border border-slate-200/80 bg-white/75 p-4 shadow-sm dark:border-white/[0.07] dark:bg-white/[0.035] dark:shadow-none">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+                Current State
+              </p>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600 dark:bg-white/[0.06] dark:text-zinc-300">
+                {statusLabel}
+              </span>
+            </div>
+
+            <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+              {isBuilding
+                ? "Momentum is rising. Keep shipping the next visible move."
+                : isCooling
+                  ? "Momentum is cooling. Ship one focused task to rebuild pace."
+                  : "Momentum is stable. One shipped task can move this project forward."}
+            </p>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-zinc-400">Trend</span>
-            <span
-              className={`text-sm font-semibold ${
-                trend > 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : trend < 0
-                    ? "text-red-500"
-                    : "text-slate-500 dark:text-zinc-400"
-              }`}
-            >
-              {trend > 0 ? `+${trend}` : trend ?? "—"}
-            </span>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/75 p-4 shadow-sm dark:border-white/[0.07] dark:bg-white/[0.035]">
+              <div className="mb-2 flex items-center gap-2">
+                <RadioTower className="h-3.5 w-3.5 text-cyan-500" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+                  Weekly Ships
+                </p>
+              </div>
+              <p className="text-xl font-black text-slate-900 dark:text-white">
+                {safeWeeklyShips}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white/75 p-4 shadow-sm dark:border-white/[0.07] dark:bg-white/[0.035]">
+              <div className="mb-2 flex items-center gap-2">
+                <TrendIcon className={`h-3.5 w-3.5 ${trendTone}`} />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+                  Trend
+                </p>
+              </div>
+              <p className={`text-xl font-black ${trendTone}`}>
+                {trendLabel}
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 
 function PriorityStack({ moves = [] }) {
   const safeMoves = Array.isArray(moves) ? moves.filter(Boolean) : [];
@@ -1296,98 +1376,181 @@ function PriorityStack({ moves = [] }) {
 
 
 
-function OverviewPulseCard({ pulse }) {
-  const today = readNumber(
-    pulse?.todayCompleted ??
-      pulse?.today ??
-      pulse?.completedToday ??
-      pulse?.shipsToday,
-    0
+function OverviewPulseCard({ pulse = {} }) {
+  const today = Math.max(
+    0,
+    Number(
+      pulse?.todayCompleted ??
+        pulse?.today ??
+        pulse?.completedToday ??
+        pulse?.shipsToday ??
+        0
+    ) || 0
   );
 
-  const inMotion = readNumber(
-    pulse?.inMotion ??
-      pulse?.active ??
-      pulse?.inProgress,
-    0
+  const inMotion = Math.max(
+    0,
+    Number(pulse?.inMotion ?? pulse?.active ?? pulse?.inProgress ?? 0) || 0
   );
 
-  const blocked = readNumber(
-    pulse?.blocked ??
-      pulse?.blockedCount ??
-      pulse?.blockers,
-    0
+  const blocked = Math.max(
+    0,
+    Number(pulse?.blocked ?? pulse?.blockedCount ?? pulse?.blockers ?? 0) || 0
   );
 
-  const ready = readNumber(
-    pulse?.ready ??
-      pulse?.readyCount ??
-      pulse?.open,
-    0
+  const ready = Math.max(
+    0,
+    Number(pulse?.ready ?? pulse?.readyCount ?? pulse?.readyTasks ?? 0) || 0
   );
 
-  const items = [
+  const totalSignals = today + inMotion + blocked + ready;
+
+  const pulseState =
+    blocked > 0
+      ? "Blockers active"
+      : inMotion > 0
+        ? "Work moving"
+        : ready > 0
+          ? "Ready to ship"
+          : today > 0
+            ? "Shipped today"
+            : "Quiet";
+
+  const pulseMessage =
+    blocked > 0
+      ? "Execution has friction. Clear blockers before opening more work."
+      : inMotion > 0
+        ? "Work is currently moving. Keep the next handoff visible."
+        : ready > 0
+          ? "A task is ready. Push it forward to create momentum."
+          : today > 0
+            ? "Shipping happened today. Keep the project warm."
+            : "No active execution signal yet. Start one clear move.";
+
+  const signalCards = [
     {
       label: "Today",
       value: today,
       icon: Flame,
-      tone: "text-amber-500",
+      tone: "text-orange-500",
+      glow: "bg-orange-50 border-orange-100 dark:bg-orange-500/10 dark:border-orange-500/20",
+      bar: "from-orange-400 to-amber-300",
     },
     {
       label: "In motion",
       value: inMotion,
       icon: Zap,
       tone: "text-violet-500",
+      glow: "bg-violet-50 border-violet-100 dark:bg-violet-500/10 dark:border-violet-500/20",
+      bar: "from-violet-500 to-fuchsia-400",
     },
     {
       label: "Blocked",
       value: blocked,
       icon: AlertTriangle,
-      tone: blocked > 0 ? "text-amber-500" : "text-slate-400",
+      tone: blocked > 0 ? "text-rose-500" : "text-slate-400",
+      glow:
+        blocked > 0
+          ? "bg-rose-50 border-rose-100 dark:bg-rose-500/10 dark:border-rose-500/20"
+          : "bg-slate-50 border-slate-200 dark:bg-white/[0.035] dark:border-white/[0.07]",
+      bar: blocked > 0 ? "from-rose-500 to-orange-400" : "from-slate-300 to-slate-200",
     },
     {
       label: "Ready",
       value: ready,
       icon: Play,
       tone: "text-emerald-500",
+      glow: "bg-emerald-50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20",
+      bar: "from-emerald-500 to-cyan-400",
     },
   ];
 
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
-      <header className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
-            <Activity className="w-4 h-4 text-violet-500" />
+    <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/[0.06] dark:bg-[#111113] dark:shadow-none">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(20,184,166,0.12),transparent_32%),radial-gradient(circle_at_85%_15%,rgba(139,92,246,0.10),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-violet-500 to-emerald-400" />
+
+      <header className="relative z-10 mb-5 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 bg-violet-50 text-violet-600 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+            <Activity className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
           </div>
+
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Pulse</h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Unified snapshot of execution signals
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                Pulse
+              </h3>
+              <span className="rounded-full border border-cyan-100 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300">
+                Live Signals
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+              Unified snapshot of execution signals.
             </p>
           </div>
         </div>
-        <span className="text-xs text-slate-400 dark:text-zinc-500">Live</span>
+
+        <div className="text-right">
+          <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+            Live
+          </span>
+          <p className="mt-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+            {totalSignals} signals
+          </p>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        {items.map((item) => {
-          const Icon = item.icon;
+      <div className="relative z-10 mb-5 rounded-2xl border border-slate-200/80 bg-white/75 p-4 shadow-sm dark:border-white/[0.07] dark:bg-white/[0.035] dark:shadow-none">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+              Current Readout
+            </p>
+            <h4 className="mt-1 text-lg font-black text-slate-900 dark:text-white">
+              {pulseState}
+            </h4>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+              {pulseMessage}
+            </p>
+          </div>
+
+          <div className="hidden h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-cyan-100 bg-cyan-50 text-cyan-600 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300 sm:flex">
+            <RadioTower className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 grid gap-3 md:grid-cols-4">
+        {signalCards.map((card) => {
+          const Icon = card.icon;
+          const isActive = Number(card.value) > 0;
 
           return (
             <div
-              key={item.label}
-              className="rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-zinc-900/50 px-4 py-3"
+              key={card.label}
+              className={`relative overflow-hidden rounded-2xl border p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:shadow-none ${card.glow}`}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 ${item.tone}`} />
-                <span className="text-xs text-slate-500 dark:text-zinc-400">
-                  {item.label}
-                </span>
+              <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${card.bar} ${isActive ? "opacity-100" : "opacity-35"}`} />
+
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Icon className={`h-4 w-4 ${card.tone}`} />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-zinc-300">
+                    {card.label}
+                  </span>
+                </div>
+
+                {isActive ? (
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.75)]" />
+                ) : null}
               </div>
-              <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
-                {item.value}
-              </div>
+
+              <p className="text-3xl font-black text-slate-950 dark:text-white">
+                {card.value}
+              </p>
             </div>
           );
         })}
@@ -1399,6 +1562,313 @@ function OverviewPulseCard({ pulse }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // OVERVIEW HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
+
+
+function NextMoveSignalCard({
+  title,
+  caption,
+  activeGoalCount = 0,
+  onOpenNextMoves,
+}) {
+  const safeTitle = String(title || "").trim() || "No priority surfaced yet";
+  const hasPriority = safeTitle.toLowerCase() !== "no priority surfaced yet";
+
+  const statusLabel = hasPriority ? "Ready" : "Scanning";
+  const executionCue = hasPriority
+    ? "This is the highest-leverage move surfaced from the project signal."
+    : "Open tasks, blockers, or goals will surface the next move.";
+
+  return (
+    <section className="group relative overflow-hidden rounded-[28px] border border-violet-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-[1px] hover:border-violet-300 hover:shadow-lg hover:shadow-violet-500/10 dark:border-violet-500/20 dark:bg-[#111113] dark:shadow-none">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-fuchsia-400 to-cyan-400" />
+      <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-violet-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 left-10 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
+
+      <div className="relative p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+              <Flag className="h-5 w-5" />
+              <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                  What’s next
+                </p>
+
+                <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+                  Next move
+                </span>
+
+                <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300">
+                  {statusLabel}
+                </span>
+              </div>
+
+              <h3 className="max-w-[560px] truncate text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                {safeTitle}
+              </h3>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-zinc-400">
+                {caption}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm dark:bg-black/20 dark:text-violet-300">
+                <Sparkles className="h-4 w-4" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                  Execution cue
+                </p>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                  {executionCue}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenNextMoves}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 text-xs font-black text-violet-700 shadow-sm transition-all hover:-translate-y-[1px] hover:bg-violet-50 hover:shadow-md dark:border-violet-500/20 dark:bg-white/[0.04] dark:text-violet-300 dark:hover:bg-violet-500/10"
+            >
+              <span>Open Next Moves</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+
+function OwnerSignalCard({ ownerName, caption }) {
+  const safeOwnerName = String(ownerName || "").trim() || "Project owner";
+  const initials =
+    safeOwnerName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "PO";
+
+  return (
+    <section className="group relative overflow-hidden rounded-[28px] border border-emerald-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-[1px] hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-500/10 dark:border-emerald-500/20 dark:bg-[#111113] dark:shadow-none">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-500" />
+      <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-emerald-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 left-8 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
+
+      <div className="relative p-5">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+
+              <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                  Who owns it
+                </p>
+
+                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  Owner
+                </span>
+              </div>
+
+              <h3 className="max-w-[360px] truncate text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                {safeOwnerName}
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-zinc-400">
+                {caption}
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-black text-emerald-700 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-emerald-300 sm:flex">
+            {initials}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                Ownership signal
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                Clear project accountability is assigned.
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m3 11 4-8 4 8" />
+                <path d="m13 11 4-8 4 8" />
+                <path d="M7 11v10" />
+                <path d="M17 11v10" />
+                <path d="M3 21h18" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+
+function BlockedSignalCard({ blockedLabel, caption }) {
+  const safeBlockedLabel = String(blockedLabel || "0 blockers").trim();
+  const match = safeBlockedLabel.match(/\d+/);
+  const blockerCount = match ? Number(match[0]) : 0;
+
+  const severity =
+    blockerCount >= 10 ? "Critical" : blockerCount > 0 ? "Needs review" : "Clear";
+
+  const severityClasses =
+    blockerCount >= 10
+      ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+      : blockerCount > 0
+        ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
+        : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300";
+
+  const cardTint =
+    blockerCount >= 10
+      ? "from-rose-500 via-orange-400 to-amber-300"
+      : blockerCount > 0
+        ? "from-amber-400 via-orange-400 to-rose-400"
+        : "from-emerald-400 via-cyan-400 to-violet-500";
+
+  const readout =
+    blockerCount > 0
+      ? "Execution friction is constraining momentum."
+      : "No active blockers are currently constraining execution.";
+
+  return (
+    <section className="group relative overflow-hidden rounded-[28px] border border-amber-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-[1px] hover:border-amber-300 hover:shadow-lg hover:shadow-amber-500/10 dark:border-amber-500/20 dark:bg-[#111113] dark:shadow-none">
+      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${cardTint}`} />
+      <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-amber-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 left-8 h-40 w-40 rounded-full bg-rose-400/10 blur-3xl" />
+
+      <div className="relative p-5">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                <path d="M12 9v4" />
+                <path d="M12 17h.01" />
+              </svg>
+
+              <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-white bg-amber-400 dark:border-[#111113]" />
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                  What’s blocked
+                </p>
+
+                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${severityClasses}`}>
+                  {severity}
+                </span>
+              </div>
+
+              <h3 className="max-w-[360px] truncate text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                {safeBlockedLabel}
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-zinc-400">
+                {caption}
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-white text-lg font-black text-amber-700 shadow-sm dark:border-amber-500/20 dark:bg-white/[0.03] dark:text-amber-300 sm:flex">
+            {blockerCount}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                Blocker signal
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                {readout}
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 
 function OverviewSignalCard({
   icon: Icon,
@@ -2691,6 +3161,7 @@ function OverviewView({
   loading,
   onObjectiveClick,
   onSprintAction,
+  onOpenNextMoves,
   onFinishLineAction,
   onReopenProject,
   onViewCaseStudy,
@@ -2873,40 +3344,33 @@ function OverviewView({
     <div className="p-10 max-w-[1600px] mx-auto">
       <div className="grid grid-cols-12 gap-6 mb-8">
         <div className="col-span-12 lg:col-span-5">
-          <OverviewSignalCard
-            icon={Flag}
-            label="What’s next"
-            value={nextActionTitle}
+          <NextMoveSignalCard
+            title={nextActionTitle}
+            activeGoalCount={activeGoalCount}
             caption={
               activeGoalCount > 0
                 ? `${activeGoalCount} active goal${activeGoalCount === 1 ? "" : "s"} shaping priorities`
                 : "Surface the next action before opening deeper views"
             }
-            tone="violet"
+            onOpenNextMoves={onOpenNextMoves}
           />
         </div>
 
         <div className="col-span-12 sm:col-span-6 lg:col-span-3">
-          <OverviewSignalCard
-            icon={AlertTriangle}
-            label="What’s blocked"
-            value={blockedCount === 0 ? "No blockers" : `${blockedCount} blocker${blockedCount === 1 ? "" : "s"}`}
+          <BlockedSignalCard
+            blockedLabel={blockedCount === 0 ? "No blockers" : `${blockedCount} blocker${blockedCount === 1 ? "" : "s"}`}
             caption={
               blockedCount === 0
                 ? "Nothing critical is blocked right now"
                 : "Resolve blockers fast to protect momentum"
             }
-            tone={blockedCount > 0 ? "amber" : "neutral"}
           />
         </div>
 
         <div className="col-span-12 sm:col-span-6 lg:col-span-4">
-          <OverviewSignalCard
-            icon={Users}
-            label="Who owns it"
-            value={ownerName}
+          <OwnerSignalCard
+            ownerName={ownerName}
             caption={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${onlineCount} online now`}
-            tone="teal"
           />
         </div>
       </div>
@@ -2955,6 +3419,9 @@ function OverviewView({
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
         <SprintCard
           sprint={overview?.sprint || sprint}
+          project={project}
+          overview={overview}
+          loading={loading}
           onAction={onSprintAction}
           isStarting={isStartingSprint}
         />
@@ -3577,6 +4044,7 @@ export default function ProjectHome() {
               loading={loading}
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
+              onOpenNextMoves={() => setActiveView("suggestions")}
               onFinishLineAction={handleFinishLineAction}
               onReopenProject={handleReopenProject}
               onViewCaseStudy={handleViewCaseStudy}
