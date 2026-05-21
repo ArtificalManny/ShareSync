@@ -1,615 +1,569 @@
-import React, { useMemo } from "react";
+import React, { useState } from "react";
 import {
+  ArrowRight,
   AlertTriangle,
   CheckCircle2,
+  ClipboardList,
   Flag,
-  Gauge,
-  Target,
-  Layers3,
+  GaugeCircle,
   Sparkles,
-  ArrowRight,
-  Clock3,
-  RotateCcw,
+  Target,
+  TriangleAlert,
 } from "lucide-react";
 
-function cn(...classes) {
-  return classes.filter(Boolean).join(" ");
+function readNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }
 
-function safeNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, readNumber(value, 0)));
 }
 
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
 }
 
-function formatLabel(value) {
-  if (!value) return "";
-  return String(value)
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (m) => m.toUpperCase());
+function getFinishLineTitle(finishLine) {
+  return finishLine?.title || finishLine?.name || "Finish Line";
 }
 
-function formatDate(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function pluralize(count, singular, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
-function getTone(state) {
-  switch (state) {
-    case "completed":
-      return {
-        shell:
-          "border-emerald-200/80 dark:border-emerald-500/20 bg-white dark:bg-[#111113]",
-        hero:
-          "bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-500/10 dark:via-emerald-500/[0.03] dark:to-teal-500/[0.06]",
-        icon:
-          "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-        chip:
-          "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20",
-        button:
-          "bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/20 dark:hover:bg-emerald-500/15",
-        meter: "from-emerald-500 to-teal-500",
-        accent: "text-emerald-600 dark:text-emerald-300",
-        soft:
-          "bg-emerald-50/80 dark:bg-emerald-500/8 border-emerald-100 dark:border-emerald-500/10",
-      };
-
-    case "ready":
-      return {
-        shell:
-          "border-teal-200/80 dark:border-teal-500/20 bg-white dark:bg-[#111113]",
-        hero:
-          "bg-gradient-to-br from-teal-50 via-white to-cyan-50 dark:from-teal-500/10 dark:via-teal-500/[0.03] dark:to-cyan-500/[0.06]",
-        icon:
-          "bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300",
-        chip:
-          "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/20",
-        button:
-          "bg-teal-600 text-white hover:bg-teal-700 shadow-sm shadow-teal-500/20",
-        meter: "from-teal-500 to-cyan-500",
-        accent: "text-teal-600 dark:text-teal-300",
-        soft:
-          "bg-teal-50/80 dark:bg-teal-500/8 border-teal-100 dark:border-teal-500/10",
-      };
-
-    case "almost_ready":
-      return {
-        shell:
-          "border-amber-200/80 dark:border-amber-500/20 bg-white dark:bg-[#111113]",
-        hero:
-          "bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-500/10 dark:via-amber-500/[0.03] dark:to-orange-500/[0.06]",
-        icon:
-          "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-        chip:
-          "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20",
-        button:
-          "bg-amber-600 text-white hover:bg-amber-700 shadow-sm shadow-amber-500/20",
-        meter: "from-amber-500 to-orange-500",
-        accent: "text-amber-600 dark:text-amber-300",
-        soft:
-          "bg-amber-50/80 dark:bg-amber-500/8 border-amber-100 dark:border-amber-500/10",
-      };
-
-    default:
-      return {
-        shell:
-          "border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#111113]",
-        hero:
-          "bg-gradient-to-br from-slate-50 via-white to-violet-50/70 dark:from-white/[0.03] dark:via-white/[0.015] dark:to-violet-500/[0.05]",
-        icon:
-          "bg-slate-100 text-slate-700 dark:bg-white/[0.07] dark:text-zinc-200",
-        chip:
-          "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-white/[0.04] dark:text-zinc-300 dark:border-white/[0.08]",
-        button:
-          "bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-500/20",
-        meter: "from-violet-500 to-fuchsia-500",
-        accent: "text-violet-600 dark:text-violet-300",
-        soft:
-          "bg-slate-50/80 dark:bg-white/[0.03] border-slate-100 dark:border-white/[0.06]",
-      };
-  }
-}
-
-function getIcon(state, isCompleted) {
-  if (isCompleted || state === "completed") return CheckCircle2;
-  if (state === "ready") return Flag;
-  if (state === "almost_ready") return Gauge;
-  return AlertTriangle;
-}
-
-function MiniMetric({ icon: Icon, label, value, tone }) {
+function getStatusLabel(finishLine) {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border px-4 py-3",
-        "bg-white/70 dark:bg-white/[0.02]",
-        "border-slate-200/80 dark:border-white/[0.06]"
-      )}
-    >
-      <div className="flex items-center gap-2 mb-1.5">
-        <Icon className={cn("w-3.5 h-3.5", tone)} />
-        <span className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+    finishLine?.statusLabel ||
+    finishLine?.status ||
+    finishLine?.phaseLabel ||
+    (finishLine?.isCompleted ? "Completed" : "Almost ready to close")
+  );
+}
+
+function getPrimarySummary(finishLine) {
+  return (
+    finishLine?.summary ||
+    finishLine?.headline ||
+    finishLine?.primarySummary ||
+    `${readNumber(finishLine?.blockers, 0)} blocker${
+      readNumber(finishLine?.blockers, 0) === 1 ? "" : "s"
+    } unresolved`
+  );
+}
+
+function getSecondarySummary(finishLine) {
+  return (
+    finishLine?.secondarySummary ||
+    finishLine?.subheadline ||
+    finishLine?.closureSummary ||
+    `${readNumber(
+      finishLine?.closureBlockers ?? finishLine?.closeBlockers,
+      0
+    )} closure blocker${
+      readNumber(
+        finishLine?.closureBlockers ?? finishLine?.closeBlockers,
+        0
+      ) === 1
+        ? ""
+        : "s"
+    }`
+  );
+}
+
+function getReadiness(finishLine) {
+  return clampPercent(
+    finishLine?.readiness ??
+      finishLine?.readinessScore ??
+      finishLine?.score ??
+      0
+  );
+}
+
+function getPenaltyText(finishLine) {
+  const explicit =
+    finishLine?.penaltyText ||
+    finishLine?.frictionText ||
+    finishLine?.message;
+
+  if (explicit) return explicit;
+
+  const withheld = readNumber(
+    finishLine?.withheldPoints ??
+      finishLine?.pointsHeldBack ??
+      finishLine?.riskPoints,
+    0
+  );
+
+  if (withheld > 0) {
+    return `${withheld} points are being held back by unfinished execution risk and closure friction.`;
+  }
+
+  return "Project closure readiness is being monitored across execution risk, blockers, and completion signals.";
+}
+
+function getBlockingReasons(finishLine) {
+  return normalizeArray(
+    finishLine?.blockingReasons ||
+      finishLine?.reasons ||
+      finishLine?.blockerReasons
+  );
+}
+
+function getWarnings(finishLine) {
+  return normalizeArray(finishLine?.warnings);
+}
+
+function getRecommendedText(finishLine) {
+  if (typeof finishLine?.recommendedNextMove === "string") {
+    return finishLine.recommendedNextMove;
+  }
+
+  if (typeof finishLine?.recommendation === "string") {
+    return finishLine.recommendation;
+  }
+
+  if (typeof finishLine?.nextMoveText === "string") {
+    return finishLine.nextMoveText;
+  }
+
+  if (finishLine?.nextMove?.title) {
+    return `Finish "${finishLine.nextMove.title}" first, then review remaining closure blockers.`;
+  }
+
+  return "Review the remaining closure blockers and complete the highest-leverage finishing move first.";
+}
+
+function getRecommendedChipLabel(finishLine) {
+  return (
+    finishLine?.nextMove?.title ||
+    finishLine?.nextMoveLabel ||
+    finishLine?.ctaHint ||
+    "Next move"
+  );
+}
+
+function getPrimaryActionLabel(finishLine) {
+  return (
+    finishLine?.primaryActionLabel ||
+    finishLine?.actionLabel ||
+    "View Finish Readiness"
+  );
+}
+
+function getMetric(finishLine, keys, fallback = 0) {
+  for (const key of keys) {
+    if (finishLine?.[key] != null) return readNumber(finishLine[key], fallback);
+  }
+  return fallback;
+}
+
+function getTheme(readiness) {
+  if (readiness >= 85) {
+    return {
+      rail: "from-emerald-500 via-lime-400 to-cyan-400",
+      pill:
+        "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+      soft:
+        "from-emerald-50 via-cyan-50 to-white dark:from-emerald-500/10 dark:via-cyan-500/5 dark:to-transparent",
+      icon:
+        "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    };
+  }
+
+  if (readiness >= 60) {
+    return {
+      rail: "from-amber-500 via-orange-500 to-yellow-400",
+      pill:
+        "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300",
+      soft:
+        "from-amber-50 via-orange-50 to-white dark:from-amber-500/10 dark:via-orange-500/5 dark:to-transparent",
+      icon:
+        "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300",
+    };
+  }
+
+  return {
+    rail: "from-rose-500 via-orange-500 to-amber-400",
+    pill:
+      "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300",
+    soft:
+      "from-rose-50 via-orange-50 to-white dark:from-rose-500/10 dark:via-orange-500/5 dark:to-transparent",
+    icon:
+      "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300",
+  };
+}
+
+function MetricCard({ icon: Icon, label, value, tone = "neutral" }) {
+  const toneClasses =
+    tone === "danger"
+      ? "text-rose-500"
+      : tone === "warning"
+      ? "text-amber-500"
+      : tone === "accent"
+      ? "text-violet-500"
+      : "text-emerald-500";
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white/85 p-4 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.03]">
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className={`h-4 w-4 ${toneClasses}`} />
+        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
           {label}
         </span>
       </div>
-      <div className="text-2xl font-semibold text-slate-900 dark:text-zinc-100">
+      <div className="text-[22px] font-black leading-none text-slate-950 dark:text-white">
         {value}
       </div>
     </div>
   );
 }
 
-function EmptyListState({ text }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-white/[0.08] px-4 py-4 text-sm text-slate-500 dark:text-zinc-400">
-      {text}
-    </div>
-  );
-}
+export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMoveClick }) {
+  const title = getFinishLineTitle(finishLine);
+  const statusLabel = getStatusLabel(finishLine);
+  const primarySummary = getPrimarySummary(finishLine);
+  const secondarySummary = getSecondarySummary(finishLine);
+  const readiness = getReadiness(finishLine);
+  const penaltyText = getPenaltyText(finishLine);
+  const blockingReasons = getBlockingReasons(finishLine);
+  const warnings = getWarnings(finishLine);
+  const recommendedText = getRecommendedText(finishLine);
+  const recommendedChipLabel = getRecommendedChipLabel(finishLine);
+  const primaryActionLabel = getPrimaryActionLabel(finishLine);
 
-export default function FinishLineCard({
-  finishLine,
-  onPrimaryAction,
-  className = "",
-}) {
-  const data = finishLine || {};
+  const [isNextMoveOpen, setIsNextMoveOpen] = useState(false);
 
-  const state = data?.state || "not_ready";
-  const isCompleted = Boolean(data?.isCompleted);
-  const isReadyToClose = Boolean(data?.isReadyToClose);
-  const readinessScore = safeNumber(data?.readinessScore, 0);
-  const blockingReasons = Array.isArray(data?.blockingReasons)
-    ? data.blockingReasons
-    : [];
-  const warnings = Array.isArray(data?.warnings) ? data.warnings : [];
-  const closureSummary = data?.closureSummary || "";
-  const completedAt = formatDate(data?.completedAt);
-  const outcomeStatus = formatLabel(data?.outcomeStatus);
-  const recommendation =
-    data?.recommendedAction || "Finish-line guidance will appear here.";
-  const primaryLabel = data?.primaryActionLabel || "View Finish Line";
+  const nextMove = finishLine?.nextMove || null;
+  const nextMoveTitle =
+    nextMove?.title ||
+    nextMove?.name ||
+    recommendedChipLabel ||
+    "Next move";
 
-  const tone = useMemo(() => getTone(state), [state]);
-  const Icon = useMemo(() => getIcon(state, isCompleted), [state, isCompleted]);
+  const nextMoveDescription =
+    nextMove?.description ||
+    nextMove?.summary ||
+    recommendedText ||
+    "Review the recommended next move for this project.";
 
-  const progressRing = clamp(readinessScore, 0, 100);
-  const radius = 34;
+  const nextMoveMeta = [
+    nextMove?.status,
+    nextMove?.priority,
+    nextMove?.type,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+
+  const handleNextMoveClick = () => {
+    if (typeof onNextMoveClick === "function") {
+      onNextMoveClick(nextMove || finishLine);
+      return;
+    }
+
+    if (typeof onPrimaryAction === "function") {
+      onPrimaryAction(finishLine);
+      return;
+    }
+
+    setIsNextMoveOpen(true);
+  };
+
+  const openTasks = getMetric(finishLine, ["openTasks", "openTaskCount"]);
+  const criticalOpen = getMetric(finishLine, ["criticalOpen", "criticalOpenCount"]);
+  const blockers = getMetric(finishLine, ["blockers", "blockerCount"]);
+  const activeGoals = getMetric(finishLine, ["activeGoals", "activeGoalCount"]);
+  const goalsDone = getMetric(finishLine, ["goalsDone", "goalsCompleted", "completedGoals"]);
+  const closureBlockers = getMetric(finishLine, ["closureBlockers", "closeBlockers", "closureBlockerCount"]);
+  const warningsCount = warnings.length || getMetric(finishLine, ["warningCount"], 0);
+
+  const theme = getTheme(readiness);
+
+  const radius = 30;
   const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference - (progressRing / 100) * circumference;
-
-  const blockerHeadline = useMemo(() => {
-    if (isCompleted) return "Closed cleanly";
-    if (isReadyToClose) return "Core closure checks passed";
-    if (blockingReasons.length > 0) {
-      return `${blockingReasons.length} closure blocker${blockingReasons.length === 1 ? "" : "s"}`;
-    }
-    if (warnings.length > 0) {
-      return `${warnings.length} follow-up note${warnings.length === 1 ? "" : "s"}`;
-    }
-    return "Finish-line signals are warming up";
-  }, [isCompleted, isReadyToClose, blockingReasons.length, warnings.length]);
-
-  const scoreGap = Math.max(0, 100 - progressRing);
-  const openTaskCount = safeNumber(data?.openTaskCount, 0);
-  const openCriticalTaskCount = safeNumber(data?.openCriticalTaskCount, 0);
-  const blockedTaskCount = safeNumber(data?.blockedTaskCount, 0);
-  const activeGoalCount = safeNumber(data?.activeGoalCount, 0);
-  const completedGoalCount = safeNumber(data?.completedGoalCount, 0);
-
-  const scoreSignals = useMemo(() => {
-    const items = [];
-
-    if (openCriticalTaskCount > 0) {
-      items.push({
-        label: pluralize(openCriticalTaskCount, "critical open"),
-        tone: "amber",
-      });
-    }
-
-    if (blockedTaskCount > 0) {
-      items.push({
-        label: pluralize(blockedTaskCount, "blocker"),
-        tone: "rose",
-      });
-    }
-
-    if (activeGoalCount > 0 && !isCompleted) {
-      items.push({
-        label: pluralize(activeGoalCount, "active goal"),
-        tone: "violet",
-      });
-    }
-
-    if (Boolean(data?.hasActiveSprint) && !isCompleted) {
-      items.push({
-        label: "active sprint",
-        tone: "amber",
-      });
-    }
-
-    if (warnings.length > 0) {
-      items.push({
-        label: pluralize(warnings.length, "warning"),
-        tone: "slate",
-      });
-    }
-
-    return items;
-  }, [
-    openCriticalTaskCount,
-    blockedTaskCount,
-    activeGoalCount,
-    warnings.length,
-    data?.hasActiveSprint,
-    isCompleted,
-  ]);
-
-  const scoreNarrative = useMemo(() => {
-    if (isCompleted) {
-      return "This score is now historical. The project has already been closed out.";
-    }
-
-    if (progressRing >= 100) {
-      return "The finish line is fully clear. Nothing is currently withholding a perfect readiness score.";
-    }
-
-    if (isReadyToClose && warnings.length > 0) {
-      return `${scoreGap} points are still withheld by closeout proof signals, not execution risk.`;
-    }
-
-    if (blockingReasons.length > 0) {
-      return `${scoreGap} points are being held back by unfinished execution risk and closure friction.`;
-    }
-
-    if (warnings.length > 0) {
-      return `${scoreGap} points are being held back by unresolved closeout signals.`;
-    }
-
-    return `${scoreGap} points remain before the finish line reaches a perfect score.`;
-  }, [
-    isCompleted,
-    isReadyToClose,
-    progressRing,
-    scoreGap,
-    warnings.length,
-    blockingReasons.length,
-  ]);
+  const strokeDashoffset = circumference - (readiness / 100) * circumference;
 
   return (
-    <section
-      className={cn(
-        "rounded-[28px] border shadow-sm dark:shadow-none overflow-hidden",
-        tone.shell,
-        className
-      )}
-    >
-      <div className={cn("p-5 md:p-6", tone.hero)}>
-        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
-          <div className="flex items-start gap-4 min-w-0 flex-1">
-            <div
-              className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0",
-                tone.icon
-              )}
-            >
-              <Icon className="w-6 h-6" />
-            </div>
+    <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-white/[0.06] dark:bg-[#111113] dark:shadow-none">
+      <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${theme.rail}`} />
+      <div className={`pointer-events-none absolute right-0 top-0 h-48 w-48 bg-gradient-to-br ${theme.soft} blur-3xl`} />
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100">
-                  Finish Line
-                </h3>
-
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                    tone.chip
-                  )}
-                >
-                  {data?.headline || "Finish status"}
-                </span>
-
-                {completedAt ? (
-                  <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium bg-white/70 text-slate-600 border border-slate-200/80 dark:bg-white/[0.05] dark:text-zinc-300 dark:border-white/[0.08]">
-                    <Clock3 className="w-3 h-3" />
-                    {completedAt}
-                  </span>
-                ) : null}
-              </div>
-
-              <p className="text-sm md:text-[15px] leading-relaxed text-slate-700 dark:text-zinc-200 mb-3">
-                {data?.subheadline || "Closure readiness details will appear here."}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                <span className={cn("font-semibold", tone.accent)}>
-                  {blockerHeadline}
-                </span>
-
-                {outcomeStatus ? (
-                  <span className="text-slate-500 dark:text-zinc-400">
-                    Outcome: <span className="text-slate-700 dark:text-zinc-200 font-medium">{outcomeStatus}</span>
-                  </span>
-                ) : null}
-
-                {Boolean(data?.hasActiveSprint) && !isCompleted ? (
-                  <span className="text-amber-600 dark:text-amber-300 font-medium">
-                    Active sprint still running
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-5 xl:pl-4">
-            <div className="relative w-[92px] h-[92px] flex-shrink-0">
-              <svg width="92" height="92" viewBox="0 0 92 92" className="-rotate-90">
-                <circle
-                  cx="46"
-                  cy="46"
-                  r={radius}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  className="text-slate-200 dark:text-zinc-800"
-                />
-                <circle
-                  cx="46"
-                  cy="46"
-                  r={radius}
-                  fill="none"
-                  stroke="url(#finish-line-grad)"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashoffset}
-                  className="transition-all duration-700"
-                />
-                <defs>
-                  <linearGradient id="finish-line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop
-                      offset="0%"
-                      stopColor={
-                        state === "completed"
-                          ? "#10B981"
-                          : state === "ready"
-                            ? "#14B8A6"
-                            : state === "almost_ready"
-                              ? "#F59E0B"
-                              : "#7C3AED"
-                      }
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={
-                        state === "completed"
-                          ? "#14B8A6"
-                          : state === "ready"
-                            ? "#06B6D4"
-                            : state === "almost_ready"
-                              ? "#F97316"
-                              : "#D946EF"
-                      }
-                    />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-[26px] font-semibold text-slate-900 dark:text-zinc-100 leading-none">
-                  {progressRing}
-                </div>
-                <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-zinc-500 mt-1">
-                  readiness
-                </div>
-              </div>
-            </div>
-
-            {typeof onPrimaryAction === "function" ? (
-              <button
-                type="button"
-                onClick={onPrimaryAction}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-2xl px-4 py-3",
-                  "text-sm font-medium transition-all duration-200",
-                  "hover:-translate-y-0.5 active:translate-y-0",
-                  tone.button
-                )}
+      <div className="relative p-6 md:p-7">
+        <div className="mb-6 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-4">
+              <div
+                className={`mt-0.5 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${theme.icon}`}
               >
-                {isCompleted ? (
-                  <RotateCcw className="w-4 h-4" />
-                ) : (
-                  <ArrowRight className="w-4 h-4" />
-                )}
-                <span>{primaryLabel}</span>
-              </button>
-            ) : null}
+                <GaugeCircle className="h-6 w-6" />
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[20px] font-black tracking-tight text-slate-950 dark:text-white md:text-[22px]">
+                    {title}
+                  </h3>
+
+                  <span className={`rounded-full border px-3 py-1 text-xs font-black ${theme.pill}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+
+                <p className="mt-3 text-[16px] font-bold tracking-tight text-slate-900 dark:text-zinc-100 md:text-[18px]">
+                  {primarySummary}
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-zinc-400">
+                  {secondarySummary}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex w-full flex-col gap-4 xl:w-auto xl:min-w-[420px]">
+            <div className="rounded-[24px] border border-slate-200 bg-white/85 px-4 py-4 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <div className="flex items-center gap-4">
+                <div className="relative flex h-[86px] w-[86px] items-center justify-center shrink-0">
+                  <svg width="86" height="86" viewBox="0 0 86 86" className="-rotate-90">
+                    <circle
+                      cx="43"
+                      cy="43"
+                      r={radius}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      className="text-slate-200 dark:text-zinc-800"
+                    />
+                    <circle
+                      cx="43"
+                      cy="43"
+                      r={radius}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                      className="text-amber-500 transition-all duration-700"
+                    />
+                  </svg>
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[18px] font-black leading-none text-slate-950 dark:text-white">
+                      {readiness}
+                    </span>
+                    <span className="mt-1 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
+                      Readiness
+                    </span>
+                  </div>
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
+                    Close readiness
+                  </p>
+                  <p className="mt-1 text-[15px] font-bold text-slate-900 dark:text-white">
+                    Execution, risk, and completion alignment
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                    A quick read on how close this project is to wrapping cleanly.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onPrimaryAction?.(finishLine)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:scale-[1.01] hover:shadow-xl"
+            >
+              <span>{primaryActionLabel}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
-        <div className="mt-5 h-2 rounded-full bg-slate-200/80 dark:bg-white/[0.06] overflow-hidden">
+        <div className="mb-5 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800">
           <div
-            className={cn(
-              "h-full rounded-full transition-all duration-700 bg-gradient-to-r",
-              tone.meter
-            )}
-            style={{ width: `${progressRing}%` }}
+            className={`h-3 rounded-full bg-gradient-to-r ${theme.rail} transition-all duration-700`}
+            style={{ width: `${readiness}%` }}
           />
         </div>
 
-        <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
-            {scoreNarrative}
-          </p>
+        <p className="mb-5 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+          {penaltyText}
+        </p>
 
-          {scoreSignals.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {scoreSignals.map((signal) => (
-                <span
-                  key={signal.label}
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold border",
-                    signal.tone === "rose"
-                      ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20"
-                      : signal.tone === "amber"
-                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20"
-                        : signal.tone === "violet"
-                          ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/20"
-                          : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-white/[0.04] dark:text-zinc-300 dark:border-white/[0.08]"
-                  )}
-                >
-                  {signal.label}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
-              No active drag on the score
-            </span>
-          )}
-        </div>
-      </div>
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">
+            {closureBlockers} blocker{closureBlockers === 1 ? "" : "s"}
+          </span>
 
-      <div className="p-5 md:p-6">
-        <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 mb-5">
-          <MiniMetric
-            icon={Layers3}
-            label="Open tasks"
-            value={openTaskCount}
-            tone="text-slate-500"
-          />
-          <MiniMetric
-            icon={AlertTriangle}
-            label="Critical open"
-            value={openCriticalTaskCount}
-            tone="text-amber-500"
-          />
-          <MiniMetric
-            icon={Sparkles}
-            label="Blockers"
-            value={blockedTaskCount}
-            tone="text-rose-500"
-          />
-          <MiniMetric
-            icon={Target}
-            label="Active goals"
-            value={activeGoalCount}
-            tone="text-violet-500"
-          />
-          <MiniMetric
-            icon={CheckCircle2}
-            label="Goals done"
-            value={completedGoalCount}
-            tone="text-emerald-500"
-          />
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-zinc-300">
+            {warningsCount} warning{warningsCount === 1 ? "" : "s"}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-4">
-          <div className={cn("rounded-[24px] border p-4", tone.soft)}>
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                Blocking reasons
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <MetricCard icon={ClipboardList} label="Open Tasks" value={openTasks} tone="neutral" />
+          <MetricCard icon={TriangleAlert} label="Critical Open" value={criticalOpen} tone="warning" />
+          <MetricCard icon={AlertTriangle} label="Blockers" value={blockers} tone="danger" />
+          <MetricCard icon={Target} label="Active Goals" value={activeGoals} tone="accent" />
+          <MetricCard icon={CheckCircle2} label="Goals Done" value={goalsDone} tone="neutral" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.15fr_1fr]">
+          <div className="rounded-[26px] border border-slate-200 bg-white/75 p-5 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="mb-4 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <h4 className="text-[13px] font-black uppercase tracking-[0.16em] text-slate-600 dark:text-zinc-300">
+                Blocking Reasons
               </h4>
             </div>
 
             {blockingReasons.length > 0 ? (
-              <ul className="space-y-2.5">
-                {blockingReasons.slice(0, 4).map((item, index) => (
-                  <li
-                    key={`blocking-${index}`}
-                    className="rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.02] px-3.5 py-3 text-sm text-slate-700 dark:text-zinc-200 leading-relaxed"
+              <div className="space-y-3">
+                {blockingReasons.map((reason, index) => (
+                  <div
+                    key={`${reason}-${index}`}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/85 px-4 py-3 text-sm text-slate-700 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-zinc-300"
                   >
-                    {item}
-                  </li>
+                    {reason}
+                  </div>
                 ))}
-              </ul>
+              </div>
             ) : (
-              <EmptyListState
-                text={
-                  isCompleted || isReadyToClose
-                    ? "No blockers remain. The project has crossed the finish line cleanly."
-                    : "No blocking reasons are currently reported."
-                }
-              />
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-400">
+                No blocking reasons have been recorded.
+              </div>
             )}
           </div>
 
-          <div className="space-y-4">
-            <div className={cn("rounded-[24px] border p-4", tone.soft)}>
-              <div className="flex items-center gap-2 mb-3">
-                <Flag className="w-4 h-4 text-violet-500" />
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                  Recommended next move
+          <div className="space-y-5">
+            <div className="rounded-[26px] border border-slate-200 bg-white/75 p-5 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <div className="mb-4 flex items-center gap-2">
+                <Flag className="h-4 w-4 text-violet-500" />
+                <h4 className="text-[13px] font-black uppercase tracking-[0.16em] text-slate-600 dark:text-zinc-300">
+                  Recommended Next Move
                 </h4>
               </div>
 
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-zinc-200">
-                {recommendation}
+              <p className="text-sm leading-6 text-slate-700 dark:text-zinc-300">
+                {recommendedText}
               </p>
 
-              {data?.nextMoveTitle ? (
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-medium bg-white/80 text-slate-700 border border-slate-200/80 dark:bg-white/[0.03] dark:text-zinc-200 dark:border-white/[0.08]">
-                  <ArrowRight className="w-3 h-3" />
-                  {data.nextMoveTitle}
-                </div>
-              ) : null}
+              <button
+                type="button"
+                onClick={handleNextMoveClick}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-zinc-300 dark:hover:border-violet-400/30 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+                <span>{recommendedChipLabel}</span>
+              </button>
             </div>
 
-            {warnings.length > 0 ? (
-              <div className="rounded-[24px] border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Gauge className="w-4 h-4 text-slate-500" />
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                    Warnings
-                  </h4>
-                </div>
+            <div className="rounded-[26px] border border-slate-200 bg-white/75 p-5 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <div className="mb-4 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-slate-500" />
+                <h4 className="text-[13px] font-black uppercase tracking-[0.16em] text-slate-600 dark:text-zinc-300">
+                  Warnings
+                </h4>
+              </div>
 
-                <ul className="space-y-2">
-                  {warnings.slice(0, 3).map((item, index) => (
-                    <li
-                      key={`warning-${index}`}
-                      className="text-sm text-slate-600 dark:text-zinc-300 leading-relaxed"
+              {warnings.length > 0 ? (
+                <div className="space-y-3">
+                  {warnings.map((warning, index) => (
+                    <div
+                      key={`${warning}-${index}`}
+                      className="text-sm leading-6 text-slate-700 dark:text-zinc-300"
                     >
-                      {item}
-                    </li>
+                      {warning}
+                    </div>
                   ))}
-                </ul>
-              </div>
-            ) : null}
-
-            {closureSummary ? (
-              <div className="rounded-[24px] border border-slate-200 dark:border-white/[0.06] bg-slate-50/70 dark:bg-white/[0.02] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                    Closure summary
-                  </h4>
                 </div>
-
-                <p className="text-sm leading-relaxed text-slate-700 dark:text-zinc-200">
-                  {closureSummary}
-                </p>
-              </div>
-            ) : null}
+              ) : (
+                <div className="text-sm text-slate-500 dark:text-zinc-400">
+                  No warnings are currently flagged.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {isNextMoveOpen ? (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Recommended next move"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
+            aria-label="Close recommended next move"
+            onClick={() => setIsNextMoveOpen(false)}
+          />
+
+          <div className="relative w-full max-w-xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl dark:border-white/[0.08] dark:bg-[#111113]">
+            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+
+            <div className="p-6">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-500">
+                    Recommended next move
+                  </p>
+                  <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                    {nextMoveTitle}
+                  </h3>
+                  {nextMoveMeta ? (
+                    <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                      {nextMoveMeta}
+                    </p>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsNextMoveOpen(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-zinc-300"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                <p className="text-sm leading-6 text-slate-700 dark:text-zinc-300">
+                  {nextMoveDescription}
+                </p>
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsNextMoveOpen(false)}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-zinc-300"
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNextMoveOpen(false);
+                    onPrimaryAction?.(finishLine);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 via-cyan-500 to-emerald-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.01]"
+                >
+                  <span>Open finish readiness</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
     </section>
   );
 }

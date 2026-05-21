@@ -1,158 +1,234 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  BrainCircuit,
   Gauge,
   Radar,
-  Sparkles
+  Route,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
-function normalizeRiskLabel(risk) {
-  if (!risk) return "Risk";
-  if (typeof risk === "string") return risk;
-  return risk.summary || risk.label || risk.title || risk.message || "Risk";
+function clampNumber(value, min = 0, max = 100, fallback = 0) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, number));
 }
 
-function normalizeRecommendation(risk) {
-  if (!risk || typeof risk === "string") return "";
-  return risk.recommendation || risk.action || "";
+function readText(value, fallback) {
+  const text = String(value || "").trim();
+  return text || fallback;
 }
 
-export default function ForesightCard({ metrics, overview, loading }) {
-  const foresight = useMemo(() => {
-    return metrics?.foresight || overview?.foresight || null;
-  }, [metrics, overview]);
+function getTone(severity) {
+  const level = String(severity || "low").toLowerCase();
 
-  const risks = useMemo(() => {
-    if (Array.isArray(foresight?.risks) && foresight.risks.length > 0) {
-      return foresight.risks;
-    }
-    if (Array.isArray(metrics?.risks) && metrics.risks.length > 0) {
-      return metrics.risks;
-    }
-    if (Array.isArray(overview?.risks) && overview.risks.length > 0) {
-      return overview.risks;
-    }
-    return [];
-  }, [foresight, metrics, overview]);
+  if (level === "high") {
+    return {
+      ring: "border-rose-200 dark:border-rose-500/20",
+      iconWrap:
+        "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20",
+      badge:
+        "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+      glow: "rgba(244,63,94,0.12)",
+      line: "from-rose-500 via-orange-400 to-amber-300",
+    };
+  }
 
-  const nextAction =
-    foresight?.nextAction ||
-    metrics?.nextAction ||
-    overview?.nextAction ||
-    "";
+  if (level === "medium") {
+    return {
+      ring: "border-amber-200 dark:border-amber-500/20",
+      iconWrap:
+        "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20",
+      badge:
+        "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+      glow: "rgba(245,158,11,0.13)",
+      line: "from-amber-400 via-orange-400 to-violet-400",
+    };
+  }
 
-  const summary =
-    foresight?.summary ||
-    foresight?.message ||
-    "";
+  return {
+    ring: "border-emerald-200 dark:border-emerald-500/20",
+    iconWrap:
+      "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20",
+    badge:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    glow: "rgba(16,185,129,0.12)",
+    line: "from-emerald-400 via-cyan-400 to-violet-400",
+  };
+}
 
-  const recommendation =
-    foresight?.recommendation ||
-    (Array.isArray(risks) && risks.length > 0
-      ? normalizeRecommendation(risks[0])
-      : "");
+export default function ForesightCard({ metrics = {}, foresight: directForesight = null }) {
+  const data = directForesight || metrics?.foresight || {};
+  const signals = data?.signals || {};
 
-  const confidence =
-    typeof foresight?.confidence === "number"
-      ? Math.max(0, Math.min(100, Math.round(foresight.confidence * (foresight.confidence <= 1 ? 100 : 1))))
-      : null;
+  const severity = data?.severity || "low";
+  const tone = getTone(severity);
 
-  const isEmpty = !summary && !nextAction && risks.length === 0;
+  const confidence = clampNumber(
+    data?.confidence ?? data?.confidenceScore ?? metrics?.confidence,
+    0,
+    100,
+    72
+  );
+
+  const prediction = readText(
+    data?.prediction,
+    "Execution signals are still forming. Add movement to generate a sharper forecast."
+  );
+
+  const suggestedNext = readText(
+    data?.suggestedNext || data?.nextMove || data?.suggestedMove,
+    "Choose the next high-leverage move"
+  );
+
+  const recommendation = readText(
+    data?.recommendation,
+    "Keep the scope narrow and finish the next visible move."
+  );
+
+  const riskLabel = readText(data?.riskLabel || data?.statusLabel, "Stable read");
+
+  const risks = Array.isArray(data?.risks) ? data.risks.filter(Boolean) : [];
+
+  const blocked = clampNumber(signals?.blocked, 0, 999, 0);
+  const ready = clampNumber(signals?.ready, 0, 999, 0);
+  const trend = Number.isFinite(Number(signals?.trend)) ? Number(signals.trend) : 0;
 
   return (
-    <section className="bg-white dark:bg-[#111113] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 shadow-sm dark:shadow-none">
-      <header className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-            <Radar className="w-4 h-4 text-amber-500" />
+    <section
+      className={`relative overflow-hidden rounded-[28px] border ${tone.ring} bg-white p-5 shadow-sm dark:bg-[#111113] dark:shadow-none`}
+    >
+      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${tone.line}`} />
+      <div
+        className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full blur-3xl"
+        style={{ background: tone.glow }}
+      />
+      <div className="pointer-events-none absolute -left-20 bottom-0 h-40 w-40 rounded-full bg-violet-500/5 blur-3xl" />
+
+      <header className="relative z-10 mb-5 flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${tone.iconWrap}`}
+          >
+            <Radar className="h-5 w-5" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">Foresight</h3>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-black text-slate-950 dark:text-white">
+                Foresight
+              </h3>
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${tone.badge}`}>
+                <Gauge className="h-3.5 w-3.5" />
+                {confidence}% confidence
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+              Predictive execution readout
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {confidence !== null ? (
-            <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
-              <Gauge className="w-3 h-3" />
-              {confidence}% confidence
-            </span>
-          ) : null}
-
-          <span className="text-xs text-slate-400 dark:text-zinc-500">
-            {loading ? "Loading…" : "AI"}
-          </span>
-        </div>
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+          <BrainCircuit className="h-3.5 w-3.5" />
+          AI
+        </span>
       </header>
 
-      {isEmpty ? (
-        <div className="text-center py-3">
-          <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 mx-auto mb-3 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-amber-400" />
+      <div className="relative z-10 space-y-4">
+        <div className={`rounded-2xl border p-4 ${tone.ring} bg-white/70 dark:bg-white/[0.03]`}>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              Prediction
+            </p>
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${tone.badge}`}>
+              {riskLabel}
+            </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-1">
-            AI predictions unlock after stronger project signals appear.
-          </p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500">
-            Keep shipping — patterns emerge fast.
+
+          <p className="text-sm leading-6 text-slate-800 dark:text-zinc-200">
+            {prediction}
           </p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {summary ? (
-            <div className="rounded-xl border border-amber-100 dark:border-amber-500/15 bg-amber-50/50 dark:bg-amber-500/5 px-3 py-3">
-              <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Prediction</div>
-              <div className="text-sm text-slate-700 dark:text-zinc-200 leading-relaxed">
-                {summary}
-              </div>
-            </div>
-          ) : null}
 
-          {nextAction ? (
-            <div>
-              <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Suggested next</div>
-              <div className="inline-flex items-start gap-2 text-sm text-slate-700 dark:text-zinc-200">
-                <ArrowRight className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                <span>
-                  {typeof nextAction === "string"
-                    ? nextAction
-                    : nextAction?.title || nextAction?.label || nextAction?.text || "Recommended next move"}
-                </span>
-              </div>
-            </div>
-          ) : null}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              Blocked
+            </p>
+            <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+              {blocked}
+            </p>
+          </div>
 
-          {recommendation ? (
-            <div>
-              <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Recommendation</div>
-              <div className="text-sm text-slate-700 dark:text-zinc-200">
-                {recommendation}
-              </div>
-            </div>
-          ) : null}
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              Ready
+            </p>
+            <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+              {ready}
+            </p>
+          </div>
 
-          {Array.isArray(risks) && risks.length > 0 ? (
-            <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.04]">
-              <div className="text-xs text-slate-400 dark:text-zinc-500 flex items-center gap-1.5">
-                <AlertTriangle className="w-3 h-3 text-red-400" />
-                Risks
-              </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              Trend
+            </p>
+            <p className={`mt-1 text-lg font-black ${trend < 0 ? "text-rose-500" : trend > 0 ? "text-emerald-600" : "text-slate-950 dark:text-white"}`}>
+              {trend > 0 ? `+${trend}` : trend}
+            </p>
+          </div>
+        </div>
 
-              {risks.slice(0, 3).map((risk, i) => (
-                <div key={i} className="rounded-lg bg-slate-50 dark:bg-white/[0.03] px-3 py-2">
-                  <div className="text-xs text-slate-700 dark:text-zinc-200">
-                    {normalizeRiskLabel(risk)}
-                  </div>
-                  {normalizeRecommendation(risk) ? (
-                    <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                      {normalizeRecommendation(risk)}
-                    </div>
-                  ) : null}
-                </div>
+        <div className="space-y-3 border-t border-slate-100 pt-4 dark:border-white/[0.06]">
+          <div>
+            <p className="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <Route className="h-3.5 w-3.5" />
+              Suggested next
+            </p>
+            <p className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-zinc-200">
+              <ArrowRight className="h-4 w-4 text-amber-500" />
+              {suggestedNext}
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <Sparkles className="h-3.5 w-3.5" />
+              Recommendation
+            </p>
+            <p className="text-sm leading-6 text-slate-700 dark:text-zinc-300">
+              {recommendation}
+            </p>
+          </div>
+        </div>
+
+        {risks.length > 0 ? (
+          <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-3 dark:border-rose-500/20 dark:bg-rose-500/10">
+            <p className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-rose-500">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Risks
+            </p>
+            <div className="space-y-1.5">
+              {risks.slice(0, 3).map((risk, index) => (
+                <p key={`${risk}-${index}`} className="text-xs leading-5 text-slate-600 dark:text-zinc-300">
+                  {risk}
+                </p>
               ))}
             </div>
-          ) : null}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+            <p className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+              <ShieldCheck className="h-4 w-4" />
+              No major execution risk detected from current signals.
+            </p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

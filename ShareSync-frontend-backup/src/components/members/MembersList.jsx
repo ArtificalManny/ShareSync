@@ -1,4 +1,3 @@
-// src/components/members/MembersList.jsx - Display project members
 import React, { useState } from 'react';
 import {
   Check,
@@ -31,6 +30,118 @@ const RECOMMENDED_DISPLAY_ROLES = [
 
 const normalizeId = (value) => String(value || '').trim();
 
+const pickFirstString = (...values) => {
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (text) return text;
+  }
+  return '';
+};
+
+const getNestedUser = (member = {}) => {
+  return (
+    member.user ||
+    member.userId ||
+    member.account ||
+    member.profile ||
+    member.member ||
+    {}
+  );
+};
+
+const getMemberId = (member = {}) => {
+  const nestedUser = getNestedUser(member);
+
+  return normalizeId(
+    member.id ||
+      member._id ||
+      member.user ||
+      member.userId ||
+      member.user?._id ||
+      member.user?.id ||
+      member.userId?._id ||
+      member.userId?.id ||
+      nestedUser._id ||
+      nestedUser.id
+  );
+};
+
+const getMemberEmail = (member = {}) => {
+  const nestedUser = getNestedUser(member);
+
+  return pickFirstString(
+    member.email,
+    member.userEmail,
+    member.emailAddress,
+    nestedUser.email,
+    nestedUser.userEmail,
+    nestedUser.emailAddress
+  );
+};
+
+const getMemberDisplayName = (member = {}) => {
+  const nestedUser = getNestedUser(member);
+
+  const firstName = pickFirstString(
+    member.firstName,
+    member.firstname,
+    member.givenName,
+    nestedUser.firstName,
+    nestedUser.firstname,
+    nestedUser.givenName
+  );
+
+  const lastName = pickFirstString(
+    member.lastName,
+    member.lastname,
+    member.familyName,
+    nestedUser.lastName,
+    nestedUser.lastname,
+    nestedUser.familyName
+  );
+
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+  return pickFirstString(
+    fullName,
+    member.fullName,
+    member.displayName,
+    member.name,
+    member.username,
+    nestedUser.fullName,
+    nestedUser.displayName,
+    nestedUser.name,
+    nestedUser.username,
+    getMemberEmail(member),
+    'Member'
+  );
+};
+
+const getMemberAvatar = (member = {}) => {
+  const nestedUser = getNestedUser(member);
+
+  return pickFirstString(
+    member.avatar,
+    member.avatarUrl,
+    member.profilePicture,
+    member.profilePictureUrl,
+    member.photoURL,
+    member.photoUrl,
+    member.image,
+    member.imageUrl,
+    member.picture,
+    nestedUser.avatar,
+    nestedUser.avatarUrl,
+    nestedUser.profilePicture,
+    nestedUser.profilePictureUrl,
+    nestedUser.photoURL,
+    nestedUser.photoUrl,
+    nestedUser.image,
+    nestedUser.imageUrl,
+    nestedUser.picture
+  );
+};
+
 const MembersList = ({
   members = [],
   currentUserId,
@@ -58,17 +169,17 @@ const MembersList = ({
       owner: {
         icon: <Crown className="w-3 h-3" />,
         label: 'Owner',
-        color: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-500 dark:text-yellow-400',
+        color: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-600 dark:text-yellow-400',
       },
       admin: {
         icon: <Star className="w-3 h-3" />,
         label: 'Admin',
-        color: 'bg-purple-500/20 border-purple-500/30 text-purple-600 dark:text-purple-400',
+        color: 'bg-purple-500/20 border-purple-500/30 text-purple-700 dark:text-purple-400',
       },
       member: {
         icon: null,
         label: 'Member',
-        color: 'bg-slate-200/50 border-slate-300 text-slate-600 dark:bg-slate-500/20 dark:border-slate-500/30 dark:text-slate-400',
+        color: 'bg-slate-100 border-slate-300 text-slate-700 dark:bg-slate-500/20 dark:border-slate-500/30 dark:text-slate-300',
       },
     };
 
@@ -78,7 +189,7 @@ const MembersList = ({
   const getPermissionRole = (member) => member.permissionRole || member.role || 'member';
 
   const openActionsFor = (member) => {
-    const memberId = normalizeId(member.id);
+    const memberId = getMemberId(member);
     const nextOpen = openMenuId === memberId ? null : memberId;
 
     setOpenMenuId(nextOpen);
@@ -98,7 +209,7 @@ const MembersList = ({
   };
 
   const handleRoleSelect = async (member, displayRole) => {
-    const memberId = normalizeId(member.id);
+    const memberId = getMemberId(member);
     const normalizedRole = String(displayRole || '').replace(/\s+/g, ' ').trim();
 
     if (!memberId || !normalizedRole || typeof onUpdateMemberDisplayRole !== 'function') return;
@@ -123,7 +234,8 @@ const MembersList = ({
   };
 
   const handleRemove = async (member) => {
-    const memberId = normalizeId(member.id);
+    const memberId = getMemberId(member);
+    const displayName = getMemberDisplayName(member);
 
     if (!memberId || typeof onRemoveMember !== 'function') return;
 
@@ -135,7 +247,7 @@ const MembersList = ({
     setPendingRemoveId(memberId);
 
     try {
-      await onRemoveMember(memberId, member.name || 'Member');
+      await onRemoveMember(memberId, displayName);
       closeActions();
     } finally {
       setPendingRemoveId(null);
@@ -144,24 +256,34 @@ const MembersList = ({
   };
 
   if (compact) {
-    // Compact view - just avatars
     return (
       <div className="flex items-center -space-x-2">
-        {members.slice(0, 5).map((member, idx) => (
-          <div
-            key={member.id || idx}
-            className="w-8 h-8 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-white"
-            title={member.name}
-          >
-            {member.avatar ? (
-              <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              getInitials(member.name)
-            )}
-          </div>
-        ))}
+        {members.slice(0, 5).map((member, idx) => {
+          const displayName = getMemberDisplayName(member);
+          const avatar = getMemberAvatar(member);
+
+          return (
+            <div
+              key={getMemberId(member) || getMemberEmail(member) || idx}
+              className="w-8 h-8 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-sm font-bold text-white overflow-hidden"
+              title={displayName}
+            >
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={displayName}
+                  className="w-full h-full rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                getInitials(displayName)
+              )}
+            </div>
+          );
+        })}
+
         {members.length > 5 && (
-          <div className="w-8 h-8 bg-slate-700 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs font-bold text-slate-300">
+          <div className="w-8 h-8 bg-slate-700 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-xs font-bold text-slate-100">
             +{members.length - 5}
           </div>
         )}
@@ -171,18 +293,24 @@ const MembersList = ({
 
   return (
     <div className="space-y-2">
-      {members.map((member) => {
-        const memberId = normalizeId(member.id);
+      {members.map((member, idx) => {
+        const memberId = getMemberId(member);
+        const displayName = getMemberDisplayName(member);
+        const email = getMemberEmail(member);
+        const avatar = getMemberAvatar(member);
+
         const permissionRole = getPermissionRole(member);
         const badge = getRoleBadge(permissionRole);
         const isCurrentUser = memberId === normalizeId(currentUserId);
         const hasDisplayRole = Boolean(String(member.displayRole || '').trim());
+
         const canManageMember = Boolean(
           isModerator &&
-          !isCurrentUser &&
-          permissionRole !== 'owner' &&
-          memberId
+            !isCurrentUser &&
+            permissionRole !== 'owner' &&
+            memberId
         );
+
         const menuOpen = openMenuId === memberId;
         const rolePending = pendingRoleId === memberId;
         const removePending = pendingRemoveId === memberId;
@@ -190,35 +318,44 @@ const MembersList = ({
 
         return (
           <div
-            key={memberId || member.email || member.name}
+            key={memberId || email || displayName || idx}
             className="relative flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] rounded-xl transition-all border border-transparent dark:border-white/[0.02]"
           >
-            {/* Avatar */}
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center text-lg font-bold text-white flex-shrink-0 overflow-hidden">
-              {member.avatar ? (
-                <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+            <div className="w-11 h-11 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center text-base font-bold text-white flex-shrink-0 overflow-hidden ring-1 ring-white/80 dark:ring-white/10">
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={displayName}
+                  className="w-full h-full rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
               ) : (
-                getInitials(member.name)
+                getInitials(displayName)
               )}
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base font-bold text-slate-900 dark:text-white truncate flex items-center gap-2">
-                  {member.name}
+                <span className="text-base font-bold text-slate-950 dark:text-white truncate flex items-center gap-2">
+                  {displayName}
                   {isCurrentUser && (
                     <span className="text-[11px] font-bold text-violet-700 bg-violet-100 dark:text-violet-300 dark:bg-violet-500/20 px-2 py-0.5 rounded-md tracking-wide uppercase">
-                      (you)
+                      You
                     </span>
                   )}
                 </span>
               </div>
 
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                  {member.email}
-                </p>
+                {email ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                    {email}
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-400 dark:text-slate-500 truncate">
+                    No email listed
+                  </p>
+                )}
 
                 {hasDisplayRole && permissionRole !== 'owner' && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-700 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300">
@@ -229,13 +366,11 @@ const MembersList = ({
               </div>
             </div>
 
-            {/* Permission Role Badge */}
             <div className={`px-3 py-1 ${badge.color} border rounded-full text-xs font-semibold flex items-center gap-1 flex-shrink-0`}>
               {badge.icon}
               {badge.label}
             </div>
 
-            {/* Actions */}
             {canManageMember ? (
               <div className="relative flex-shrink-0">
                 <button
@@ -244,9 +379,9 @@ const MembersList = ({
                   className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
-                  aria-label={`Manage ${member.name}`}
+                  aria-label={`Manage ${displayName}`}
                 >
-                  <MoreVertical className="w-4 h-4 text-slate-400" />
+                  <MoreVertical className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                 </button>
 
                 {menuOpen && (
@@ -260,6 +395,7 @@ const MembersList = ({
                           This label does not change permissions.
                         </p>
                       </div>
+
                       <button
                         type="button"
                         onClick={closeActions}
@@ -312,30 +448,31 @@ const MembersList = ({
                               value={customRole}
                               onChange={(event) => setCustomRole(event.target.value)}
                               onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                  handleCustomRoleSave(member);
-                                }
-
-                                if (event.key === 'Escape') {
-                                  setCustomEditorId(null);
-                                }
+                                if (event.key === 'Enter') handleCustomRoleSave(member);
+                                if (event.key === 'Escape') setCustomEditorId(null);
                               }}
                               maxLength={40}
                               placeholder="Example: Frontend Lead"
                               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-[#111113] dark:text-white dark:focus:border-violet-500/40 dark:focus:ring-violet-500/10"
                               autoFocus
                             />
+
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-[11px] text-slate-400">
                                 {customRole.trim().length}/40
                               </span>
+
                               <button
                                 type="button"
                                 disabled={rolePending || !customRole.trim()}
                                 onClick={() => handleCustomRoleSave(member)}
                                 className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 disabled:opacity-50"
                               >
-                                {rolePending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                                {rolePending ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
                                 Save
                               </button>
                             </div>

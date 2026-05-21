@@ -27,7 +27,8 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import StackTaskRow from "./StackTaskRow";
 import { useStackTasks } from "./useStackTasks";
-import { completeTask, moveTask, createTask } from "../../api/taskApi";
+import { completeTask, moveTask } from "../../api/taskApi";
+import { createTask } from "../../api/tasks";
 import { Layers, RefreshCw, Plus, X, User, ChevronDown } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -810,7 +810,10 @@ function ProjectHeader({
   };
 
   return (
-    <header className="px-10 py-6 border-b border-slate-200/60 bg-slate-50 dark:bg-[#0f172a] dark:border-white/10">
+    <header className="relative overflow-hidden px-6 md:px-10 py-6 border-b border-slate-200/70 bg-white/85 backdrop-blur-2xl shadow-[0_1px_0_rgba(226,232,240,0.75)] dark:border-white/10 dark:bg-[#07111f]/90 dark:shadow-none">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400 opacity-80" />
+      <div className="pointer-events-none absolute -top-28 right-16 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-400/10" />
+      <div className="pointer-events-none absolute -bottom-32 left-32 h-64 w-64 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/10" />
       {getProjectBannerUrl(project) ? (
         <div className="mb-6 h-36 md:h-44 overflow-hidden rounded-[28px] border border-slate-200/80 bg-slate-100 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
           <img
@@ -901,7 +904,7 @@ function ProjectHeader({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          {canUseMemberActions ? (
+          {canUseMemberActions && (isCompleted || isReadyToClose) ? (
             <button
               onClick={handlePrimaryAction}
               disabled={isLifecycleBusy}
@@ -1002,10 +1005,11 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
       className="
         px-10
         border-b border-slate-200/90 dark:border-white/10
-        bg-white dark:bg-[#0f172a]
+        bg-white/82 dark:bg-[#07111f]/88
+        backdrop-blur-2xl
         sticky top-0 z-[100]
         transition-colors duration-300
-        shadow-[0_1px_0_rgba(226,232,240,0.85)] dark:shadow-none
+        shadow-[0_1px_0_rgba(226,232,240,0.85),0_12px_30px_rgba(15,23,42,0.04)] dark:shadow-[0_1px_0_rgba(255,255,255,0.06)]
       "
     >
       <style>{`
@@ -3341,7 +3345,7 @@ function OverviewView({
   };
 
   return (
-    <div className="p-10 max-w-[1600px] mx-auto">
+    <div className="relative z-10 p-6 md:p-10 max-w-[1640px] mx-auto">
       <div className="grid grid-cols-12 gap-6 mb-8">
         <div className="col-span-12 lg:col-span-5">
           <NextMoveSignalCard
@@ -4171,7 +4175,10 @@ export default function ProjectHome() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.12),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.22),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.16),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] dark:text-zinc-100">
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-70 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:64px_64px] dark:opacity-30" />
+      <div className="pointer-events-none fixed -top-32 right-12 z-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-400/10" />
+      <div className="pointer-events-none fixed bottom-10 left-20 z-0 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
       {SHOW_DEBUG && (
         <div className="px-10 py-3 border-b border-slate-200/60 bg-white/40 text-xs text-slate-500 flex flex-wrap gap-3">
           <span>ProjectHome OK</span>
@@ -4224,7 +4231,7 @@ export default function ProjectHome() {
         />
       ) : null}
 
-      <main key={pulseRefreshKey}>{renderViewContent()}</main>
+      <main key={pulseRefreshKey} className="relative z-10">{renderViewContent()}</main>
 
       <CompleteProjectModal
         isOpen={showCompleteProjectModal}

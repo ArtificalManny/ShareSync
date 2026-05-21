@@ -246,6 +246,7 @@ const MessageProvider = lazy(() =>
 
 import { UserContext } from "./context/UserContext";
 import FeatureGate from "./utils/FeatureGate.jsx";
+import PageTitleManager from "./components/seo/PageTitleManager";
 // import useBrandTheme from "./hooks/useBrandTheme.js";
 
 function ScrollToHash() {
@@ -599,7 +600,8 @@ function AppRoutes() {
             }
           >
             <ScrollToHash />
-            <Routes>
+            <PageTitleManager />
+      <Routes>
               <Route path="/" element={<RootRouteRedirect />} />
 
               <Route

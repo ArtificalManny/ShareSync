@@ -1,61 +1,119 @@
 // src/features/stack/useStackTasks.js
-// ═══════════════════════════════════════════════════════════════════════════════
-// useStackTasks
-// - Fetches priority stack tasks for a project
-// - Uses fetchStackTasks (GET /tasks/stack)
-// - Optional realtime patching if a socket with .on/.off is provided
-// - Safe defaults, minimal assumptions
-// ═══════════════════════════════════════════════════════════════════════════════
+// Project-wide task source for ProjectHome > Tasks
+// - Fetches all tasks visible to the project from GET /projects/:projectId/tasks
+// - Filters locally to the active stack: todo + in_progress
+// - Keeps the existing StackPanel API intact
+// - Supports socket refresh + polling fallback so other browsers/users stay updated
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchStackTasks } from "../../api/taskApi";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { listTasks } from "../../api/tasks";
 
-function getTaskId(task) {
-  return task?.id || task?._id || "";
+function normalizeId(value) {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number") return String(value);
+  if (value?._id) return String(value._id).trim();
+  if (value?.id) return String(value.id).trim();
+  return value?.toString?.()?.trim?.() || "";
 }
 
-function normalizePriority(p) {
-  const v = (p || "").toString().toLowerCase();
-  if (v === "critical") return 4;
-  if (v === "high") return 3;
-  if (v === "medium") return 2;
-  if (v === "low") return 1;
-  const n = Number(p);
-  return Number.isFinite(n) ? n : 0;
+function unwrapTasks(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.tasks)) return payload.tasks;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data?.tasks)) return payload.data.tasks;
+  return [];
 }
 
-function sortLikeBackend(list) {
-  return [...(list || [])].sort((a, b) => {
-    const pa = normalizePriority(a?.priority);
-    const pb = normalizePriority(b?.priority);
-    if (pb !== pa) return pb - pa;
+function normalizeStatus(status) {
+  return String(status || "").trim().toLowerCase();
+}
 
-    const ba = a?.isBlocking ? 1 : 0;
-    const bb = b?.isBlocking ? 1 : 0;
-    if (bb !== ba) return bb - ba;
+function isStackTask(task) {
+  const status = normalizeStatus(task?.status);
 
-    const sa = typeof a?.stackOrder === "number" ? a.stackOrder : 999999;
-    const sb = typeof b?.stackOrder === "number" ? b.stackOrder : 999999;
-    if (sa !== sb) return sa - sb;
+  return (
+    status === "todo" ||
+    status === "to_do" ||
+    status === "open" ||
+    status === "in_progress" ||
+    status === "in-progress"
+  );
+}
 
-    const da = a?.dueDate ? new Date(a.dueDate).getTime() : 9999999999999;
-    const db = b?.dueDate ? new Date(b.dueDate).getTime() : 9999999999999;
-    return da - db;
+function getTaskProjectId(task) {
+  return normalizeId(
+    task?.projectId ||
+      task?.project ||
+      task?.project?._id ||
+      task?.project?.id
+  );
+}
+
+function getTaskAssigneeId(task) {
+  return normalizeId(
+    task?.assigneeId ||
+      task?.assignee ||
+      task?.assignedTo ||
+      task?.assignedToId ||
+      task?.ownerId ||
+      task?.owner
+  );
+}
+
+function sortStackTasks(list) {
+  const priorityRank = (priority) => {
+    const value = String(priority || "").toLowerCase();
+    if (value === "critical") return 4;
+    if (value === "high") return 3;
+    if (value === "medium") return 2;
+    if (value === "low") return 1;
+    return 0;
+  };
+
+  return [...list].sort((a, b) => {
+    const blockingA = a?.isBlocking ? 1 : 0;
+    const blockingB = b?.isBlocking ? 1 : 0;
+    if (blockingB !== blockingA) return blockingB - blockingA;
+
+    const priorityA = priorityRank(a?.priority);
+    const priorityB = priorityRank(b?.priority);
+    if (priorityB !== priorityA) return priorityB - priorityA;
+
+    const orderA = Number.isFinite(Number(a?.stackOrder))
+      ? Number(a.stackOrder)
+      : 999999;
+    const orderB = Number.isFinite(Number(b?.stackOrder))
+      ? Number(b.stackOrder)
+      : 999999;
+    if (orderA !== orderB) return orderA - orderB;
+
+    const dueA = a?.dueDate ? new Date(a.dueDate).getTime() : 9999999999999;
+    const dueB = b?.dueDate ? new Date(b.dueDate).getTime() : 9999999999999;
+    if (dueA !== dueB) return dueA - dueB;
+
+    const createdA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const createdB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return createdB - createdA;
   });
 }
 
-function applyTaskPatch(prev, patch) {
-  const id = getTaskId(patch);
-  if (!id) return prev;
+function payloadBelongsToProject(payload, projectId) {
+  const item =
+    payload?.task ||
+    payload?.data?.task ||
+    payload?.data ||
+    payload?.payload ||
+    payload;
 
-  const idx = prev.findIndex((t) => getTaskId(t) === id);
-  if (idx === -1) {
-    // If it's a new/updated task and looks stack-eligible, let it join.
-    return sortLikeBackend([patch, ...prev]);
-  }
-  const next = [...prev];
-  next[idx] = { ...next[idx], ...patch };
-  return sortLikeBackend(next);
+  const payloadProjectId = getTaskProjectId(item);
+
+  // Some socket events do not include projectId. In that case, refresh safely.
+  if (!payloadProjectId) return true;
+
+  return payloadProjectId === normalizeId(projectId);
 }
 
 export function useStackTasks({
@@ -64,73 +122,129 @@ export function useStackTasks({
   limit = 10,
   socket = null,
   enabled = true,
+  pollMs = 10000,
 } = {}) {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(enabled && projectId));
   const [error, setError] = useState(null);
 
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
-  const canRun = useMemo(() => {
-    return Boolean(enabled && projectId);
-  }, [enabled, projectId]);
+  const refresh = useCallback(async () => {
+    const normalizedProjectId = normalizeId(projectId);
 
-  const load = useCallback(async () => {
-    if (!canRun) return;
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
+    if (!enabled || !normalizedProjectId) {
+      setTasks([]);
+      setLoading(false);
+      setError(null);
+      return [];
+    }
+
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
 
     setLoading(true);
     setError(null);
 
     try {
-      const data = await fetchStackTasks({ projectId, limit, assigneeId });
-      const list = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
-      setTasks(sortLikeBackend(list));
-    } catch (e) {
-      setError(e);
+      // Use the project-wide endpoint so every project member sees the same task queue.
+      const payload = await listTasks(normalizedProjectId, {});
+      const rawTasks = unwrapTasks(payload);
+
+      const normalizedAssigneeId = normalizeId(assigneeId);
+      const safeLimit = Number.isFinite(Number(limit)) && Number(limit) > 0
+        ? Number(limit)
+        : 10;
+
+      let nextTasks = rawTasks
+        .filter((task) => {
+          const taskProjectId = getTaskProjectId(task);
+          return !taskProjectId || taskProjectId === normalizedProjectId;
+        })
+        .filter(isStackTask);
+
+      if (normalizedAssigneeId) {
+        nextTasks = nextTasks.filter(
+          (task) => getTaskAssigneeId(task) === normalizedAssigneeId
+        );
+      }
+
+      nextTasks = sortStackTasks(nextTasks).slice(0, safeLimit);
+
+      if (requestIdRef.current === requestId) {
+        setTasks(nextTasks);
+      }
+
+      return nextTasks;
+    } catch (err) {
+      if (requestIdRef.current === requestId) {
+        setError(err);
+      }
+
+      return [];
     } finally {
-      setLoading(false);
-      inFlightRef.current = false;
+      if (requestIdRef.current === requestId) {
+        setLoading(false);
+      }
     }
-  }, [canRun, projectId, limit, assigneeId]);
+  }, [projectId, assigneeId, limit, enabled]);
 
-  // initial + param changes
   useEffect(() => {
-    if (!canRun) {
-      setTasks([]);
-      return;
-    }
-    load();
-  }, [canRun, load]);
+    refresh();
+  }, [refresh]);
 
-  // optional realtime
   useEffect(() => {
-    if (!socket || !canRun) return;
-    if (typeof socket.on !== "function" || typeof socket.off !== "function") return;
+    if (!enabled || !projectId || !socket) return undefined;
 
-    const handler = (payload) => {
-      const payloadProjectId = payload?.projectId?.toString?.() || payload?.projectId;
-      if (payloadProjectId && payloadProjectId !== projectId) return;
+    const events = [
+      "taskCreated",
+      "taskUpdated",
+      "taskDeleted",
+      "taskCompleted",
+      "taskMoved",
+      "task:created",
+      "task:updated",
+      "task:deleted",
+      "task:completed",
+      "task:moved",
+      "projectUpdated",
+      "project:updated",
+    ];
 
-      setTasks((prev) => applyTaskPatch(Array.isArray(prev) ? prev : [], payload));
+    const handleTaskSignal = (payload) => {
+      if (payloadBelongsToProject(payload, projectId)) {
+        refresh();
+      }
     };
 
-    socket.on("taskUpdated", handler);
-    socket.on("task:update", handler);
+    events.forEach((eventName) => {
+      socket.on?.(eventName, handleTaskSignal);
+    });
 
     return () => {
-      socket.off("taskUpdated", handler);
-      socket.off("task:update", handler);
+      events.forEach((eventName) => {
+        socket.off?.(eventName, handleTaskSignal);
+      });
     };
-  }, [socket, canRun, projectId]);
+  }, [enabled, projectId, socket, refresh]);
+
+  useEffect(() => {
+    if (!enabled || !projectId || !pollMs) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      refresh();
+    }, pollMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [enabled, projectId, pollMs, refresh]);
 
   return {
     tasks,
-    setTasks,
     loading,
     error,
-    refresh: load,
+    refresh,
+    setTasks,
   };
 }
 
+export default useStackTasks;

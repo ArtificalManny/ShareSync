@@ -1,15 +1,32 @@
 import client from './client';
 
-/**
- * Normalize task shape so UI code can rely on presence of schedule fields.
- * Ensures dueDate/completedAt are strings (or null) and scheduleState is one of the allowed values.
- */
-function normalizeTask(t) {
-  if (!t || typeof t !== 'object') return t;
-  const allowed = new Set(['early', 'on_time', 'late', 'at_risk', null, undefined]);
-  const scheduleState = allowed.has(t.scheduleState) ? t.scheduleState : null;
+function unwrap(payload) {
+  if (payload?.data?.data !== undefined) return payload.data.data;
+  if (payload?.data !== undefined) return payload.data;
+  return payload;
+}
+
+function unwrapArray(payload) {
+  const data = unwrap(payload);
+
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.tasks)) return data.tasks;
+
+  return [];
+}
+
+function normalizeTask(t = {}) {
+  const scheduleState =
+    t.scheduleState ??
+    t.status ??
+    "todo";
+
   return {
     ...t,
+    id: t.id || t._id,
+    _id: t._id || t.id,
     dueDate: t.dueDate ?? null,
     completedAt: t.completedAt ?? null,
     scheduleState,
@@ -18,45 +35,52 @@ function normalizeTask(t) {
 
 export async function createTask(projectId, payload) {
   if (!projectId) throw new Error('projectId is required');
-  const { data } = await client.post(`/projects/${projectId}/tasks`, payload);
-  return normalizeTask(data);
+
+  const response = await client.post(`/projects/${projectId}/tasks`, payload);
+  const task = unwrap(response);
+
+  return normalizeTask(task);
 }
 
 export async function patchTask(projectId, taskId, patch) {
   if (!projectId) throw new Error('projectId is required');
   if (!taskId) throw new Error('taskId is required');
-  const { data } = await client.patch(`/projects/${projectId}/tasks/${taskId}`, patch);
-  return normalizeTask(data);
+
+  const response = await client.patch(`/projects/${projectId}/tasks/${taskId}`, patch);
+  const task = unwrap(response);
+
+  return normalizeTask(task);
 }
 
 export async function listTasks(projectId, params = {}) {
   if (!projectId) throw new Error('projectId is required');
-  const { data } = await client.get(`/projects/${projectId}/tasks`, { params });
-  if (Array.isArray(data)) {
-    return data.map(normalizeTask);
-  }
-  const items = Array.isArray(data?.items) ? data.items.map(normalizeTask) : [];
-  return { items, nextCursor: data?.nextCursor ?? null };
+
+  const response = await client.get(`/projects/${projectId}/tasks`, { params });
+  return unwrapArray(response).map(normalizeTask);
 }
 
 export async function getPriorityTasks(limit = 3, projectId = null) {
   const params = { limit };
   if (projectId) params.projectId = projectId;
-  
-  const { data } = await client.get('/tasks/priorities', { params });
-  const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
-  return items.map(normalizeTask);
+
+  const response = await client.get('/tasks/priorities', { params });
+  return unwrapArray(response).map(normalizeTask);
 }
 
-// ⭐ FIX FOR SCREENSHOT 1: Add missing getSmartSuggestions
 export async function getSmartSuggestions(projectId) {
   try {
-    const { data } = await client.get(`/projects/${projectId}/suggestions/smart`);
-    return Array.isArray(data?.data) ? data.data : [];
+    const response = await client.get(`/projects/${projectId}/suggestions/smart`);
+    return unwrapArray(response);
   } catch (err) {
     console.warn("Could not load smart suggestions:", err);
     return [];
   }
 }
 
-export default { createTask, patchTask, listTasks, getPriorityTasks, getSmartSuggestions };
+export default {
+  createTask,
+  patchTask,
+  listTasks,
+  getPriorityTasks,
+  getSmartSuggestions,
+};
