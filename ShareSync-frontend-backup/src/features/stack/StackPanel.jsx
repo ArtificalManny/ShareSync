@@ -17,6 +17,14 @@
 // - Inline task creation via createTask API (proven endpoint).
 // - Proper light/dark mode using ShareSync design tokens.
 //
+// VISUAL POLISH PASS:
+// - More striking Tasks shell
+// - Gradient live rail
+// - Command-center header
+// - Task signal summary cards
+// - Stronger empty state
+// - Better add-task composer
+//
 // ASSIGNMENT PASS:
 // - Preserves optional assigneeId in inline add flow
 // - Uses a real member picker when teamMembers are provided
@@ -29,7 +37,20 @@ import StackTaskRow from "./StackTaskRow";
 import { useStackTasks } from "./useStackTasks";
 import { completeTask, moveTask } from "../../api/taskApi";
 import { createTask } from "../../api/tasks";
-import { Layers, RefreshCw, Plus, X, User, ChevronDown } from "lucide-react";
+import {
+  Layers,
+  RefreshCw,
+  Plus,
+  X,
+  User,
+  ChevronDown,
+  Sparkles,
+  RadioTower,
+  ListChecks,
+  Flame,
+  ShieldAlert,
+  CircleDot,
+} from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +74,26 @@ function normalizeId(v) {
   if (v?._id) return String(v._id).trim();
   if (v?.id) return String(v.id).trim();
   return v?.toString?.()?.trim?.() || "";
+}
+
+function getTaskAssigneeId(task) {
+  return normalizeId(
+    task?.assigneeId ||
+      task?.assignee?._id ||
+      task?.assignee?.id ||
+      task?.assignedTo?._id ||
+      task?.assignedTo?.id ||
+      task?.ownerId ||
+      ""
+  );
+}
+
+function isBlockingTask(task) {
+  return Boolean(task?.isBlocking || task?.blocking || task?.blocked);
+}
+
+function isCriticalTask(task) {
+  return String(task?.priority || "").toLowerCase() === "critical";
 }
 
 function getMemberName(member) {
@@ -370,58 +411,152 @@ export default function StackPanel({
   const visibleCount = filteredTasks.filter(isInStack).length;
   const hasFilter = !!normalizedMilestoneId;
 
-  return (
-    <div className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1f1f23] shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-3 p-4 pb-0">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center">
-            <Layers className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">
-              {title}
-            </div>
-            <div className="text-xs text-slate-500 dark:text-white/50">
-              {projectId
-                ? `${visibleCount} task${visibleCount === 1 ? "" : "s"} ready${hasFilter ? " (filtered)" : ""}`
-                : "Select a project"}
-            </div>
-          </div>
-        </div>
+  const taskSignals = useMemo(() => {
+    const stackTasks = filteredTasks.filter(isInStack);
 
-        <div className="flex items-center gap-2">
-          {projectId && !showAddForm ? (
+    return {
+      ready: stackTasks.length,
+      blocking: stackTasks.filter(isBlockingTask).length,
+      critical: stackTasks.filter(isCriticalTask).length,
+      assigned: stackTasks.filter((task) => Boolean(getTaskAssigneeId(task))).length,
+    };
+  }, [filteredTasks]);
+
+  return (
+    <section className="relative w-full overflow-hidden rounded-[1.75rem] border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-[#141418]/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:shadow-[0_24px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+      <div className="absolute -left-24 -top-24 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
+      <div className="absolute -right-20 top-10 h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl" />
+
+      <div className="relative p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="relative">
+              <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-white dark:ring-[#141418]" />
+              <div className="h-12 w-12 rounded-2xl bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-400/20 flex items-center justify-center shadow-sm">
+                <Layers className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-bold text-slate-950 dark:text-white">
+                  {title}
+                </h2>
+
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 dark:border-violet-400/20 bg-violet-50 dark:bg-violet-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
+                  <Sparkles className="h-3 w-3" />
+                  Tasks
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+                  <RadioTower className="h-3 w-3" />
+                  Live
+                </span>
+              </div>
+
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
+                {projectId
+                  ? `${visibleCount} task${visibleCount === 1 ? "" : "s"} ready${hasFilter ? " in this milestone" : " across this project"}`
+                  : "Select a project to build the next execution queue."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {projectId && !showAddForm ? (
+              <button
+                type="button"
+                onClick={handleOpenAddForm}
+                className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/30 active:translate-y-0"
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </button>
+            ) : null}
+
             <button
               type="button"
-              onClick={handleOpenAddForm}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg
-                bg-violet-600 hover:bg-violet-700 text-white
-                transition-colors shadow-sm"
+              onClick={refresh}
+              disabled={!projectId || loading}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-white/70 transition-all hover:bg-slate-200 dark:hover:bg-white/15 disabled:opacity-50"
+              title="Refresh tasks"
             >
-              <Plus className="h-3.5 w-3.5" />
-              Add Task
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
             </button>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={!projectId || loading}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg
-              bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15
-              text-slate-600 dark:text-white/70
-              disabled:opacity-50 transition-colors"
-            title="Refresh tasks"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          </div>
         </div>
-      </div>
 
-      {showAddForm ? (
-        <div className="mx-4 mt-3 p-3 rounded-xl border border-violet-200 dark:border-violet-500/20 bg-violet-50/50 dark:bg-violet-500/5">
-          <div className="flex items-center gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] p-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
+              <ListChecks className="h-3.5 w-3.5 text-violet-500" />
+              Ready
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+              {taskSignals.ready}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-200/80 dark:border-amber-400/20 bg-amber-50/60 dark:bg-amber-500/10 p-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
+              <Flame className="h-3.5 w-3.5" />
+              Blocking
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+              {taskSignals.blocking}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-rose-200/80 dark:border-rose-400/20 bg-rose-50/60 dark:bg-rose-500/10 p-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-rose-600 dark:text-rose-300">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              Critical
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+              {taskSignals.critical}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-cyan-200/80 dark:border-cyan-400/20 bg-cyan-50/60 dark:bg-cyan-500/10 p-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">
+              <User className="h-3.5 w-3.5" />
+              Assigned
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+              {taskSignals.assigned}
+            </div>
+          </div>
+        </div>
+
+        {showAddForm ? (
+          <div className="mt-5 rounded-3xl border border-violet-200 dark:border-violet-400/20 bg-gradient-to-br from-violet-50 via-white to-cyan-50 dark:from-violet-500/10 dark:via-white/[0.04] dark:to-cyan-500/10 p-4 shadow-inner">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-white dark:bg-white/10 border border-violet-200 dark:border-violet-400/20 flex items-center justify-center">
+                  <CircleDot className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">
+                    Create execution task
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-zinc-400">
+                    Add the next concrete move for this project.
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseAddForm}
+                className="p-2 rounded-xl text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white/70 hover:bg-white/80 dark:hover:bg-white/10 transition-colors"
+                title="Cancel"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
             <input
               ref={addInputRef}
               type="text"
@@ -430,191 +565,167 @@ export default function StackPanel({
               onKeyDown={handleAddKeyDown}
               placeholder="Task title…"
               disabled={addingTask}
-              className="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg
-                bg-white dark:bg-white/10
-                border border-slate-200 dark:border-white/10
-                text-slate-900 dark:text-white
-                placeholder-slate-400 dark:placeholder-white/40
-                focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-400
-                disabled:opacity-50
-                transition-shadow"
+              className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 shadow-sm outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
             />
-            <button
-              type="button"
-              onClick={handleCloseAddForm}
-              className="p-2 rounded-lg text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white/70 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-              title="Cancel"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
 
-          <div className="mt-2.5 grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-2.5 items-center">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-white/40 mr-1">
-                Priority:
-              </span>
-              {PRIORITY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setNewPriority(opt.value)}
-                  disabled={addingTask}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-all
-                    ${newPriority === opt.value ? opt.active : opt.idle}
-                    disabled:opacity-50`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative min-w-0">
-              {memberOptions.length > 0 ? (
-                <>
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35 pointer-events-none" />
-                  <select
-                    value={newAssigneeId}
-                    onChange={(e) => setNewAssigneeId(e.target.value)}
+            <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-[auto_1fr_auto] xl:items-center">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/40">
+                  Priority
+                </span>
+                {PRIORITY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setNewPriority(opt.value)}
                     disabled={addingTask}
-                    className="w-full pl-9 pr-9 py-2 rounded-lg text-xs appearance-none
-                      bg-white dark:bg-white/10
-                      border border-slate-200 dark:border-white/10
-                      text-slate-900 dark:text-white
-                      focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400
-                      disabled:opacity-50 transition-shadow"
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full border transition-all ${
+                      newPriority === opt.value ? opt.active : opt.idle
+                    } disabled:opacity-50`}
                   >
-                    <option value="">Unassigned</option>
-                    {memberOptions.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}{member.role ? ` · ${member.role}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35 pointer-events-none" />
-                </>
-              ) : (
-                <>
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35" />
-                  <input
-                    type="text"
-                    value={newAssigneeId}
-                    onChange={(e) => setNewAssigneeId(e.target.value)}
-                    onKeyDown={handleAddKeyDown}
-                    placeholder="Optional assignee ID"
-                    disabled={addingTask}
-                    className="w-full text-xs px-9 py-2 rounded-lg
-                      bg-white dark:bg-white/10
-                      border border-slate-200 dark:border-white/10
-                      text-slate-900 dark:text-white
-                      placeholder-slate-400 dark:placeholder-white/40
-                      focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400
-                      disabled:opacity-50 transition-shadow"
-                  />
-                </>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAddTask}
-              disabled={addingTask || !newTitle.trim()}
-              className="inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg
-                bg-violet-600 hover:bg-violet-700 text-white
-                disabled:opacity-40 disabled:hover:bg-violet-600
-                transition-colors shadow-sm"
-            >
-              {addingTask ? (
-                <RefreshCw className="h-3 w-3 animate-spin" />
-              ) : (
-                <Plus className="h-3 w-3" />
-              )}
-              {addingTask ? "Adding…" : "Add"}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="mx-4 mt-3 text-xs rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3">
-          <div className="font-semibold text-red-700 dark:text-red-200">
-            Couldn't load tasks
-          </div>
-          <div className="text-red-600/80 dark:text-red-200/70 mt-1">
-            {String(error?.message || error)}
-          </div>
-        </div>
-      ) : null}
-
-      {actionError ? (
-        <div className="mx-4 mt-3 text-xs rounded-xl border border-amber-200 dark:border-yellow-500/30 bg-amber-50 dark:bg-yellow-500/10 p-3">
-          <div className="font-semibold text-amber-700 dark:text-yellow-200">
-            Action failed
-          </div>
-          <div className="text-amber-600/80 dark:text-yellow-200/70 mt-1">
-            {String(actionError?.message || actionError)}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="p-4 pt-3 space-y-1.5 min-h-[120px]">
-        {loading && filteredTasks.length === 0 ? (
-          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/40 p-3">
-            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            Loading tasks…
-          </div>
-        ) : null}
-
-        {!loading && filteredTasks.length === 0 ? (
-          <div
-            onClick={!showAddForm ? handleOpenAddForm : undefined}
-            className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-white/[0.10] rounded-2xl bg-slate-50/50 dark:bg-[#111113]/50 hover:bg-slate-50 dark:hover:bg-[#1f1f23]/80 transition-all duration-300 group cursor-pointer"
-          >
-            <div className="relative w-16 h-16 mx-auto mb-4">
-              <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative w-full h-full rounded-2xl bg-white dark:bg-surface-2 shadow-sm border border-slate-200 dark:border-white/[0.05] flex items-center justify-center group-hover:scale-105 group-hover:shadow-md transition-all duration-300">
-                <Layers className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+                    {opt.label}
+                  </button>
+                ))}
               </div>
-            </div>
 
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              {hasFilter ? "No tasks in this milestone" : "No tasks ready right now."}
-            </h3>
+              <div className="relative min-w-0">
+                {memberOptions.length > 0 ? (
+                  <>
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35 pointer-events-none" />
+                    <select
+                      value={newAssigneeId}
+                      onChange={(e) => setNewAssigneeId(e.target.value)}
+                      disabled={addingTask}
+                      className="w-full appearance-none rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 py-3 pl-9 pr-9 text-xs text-slate-900 dark:text-white outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
+                    >
+                      <option value="">Unassigned</option>
+                      {memberOptions.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                          {member.role ? ` · ${member.role}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35 pointer-events-none" />
+                  </>
+                ) : (
+                  <>
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-white/35" />
+                    <input
+                      type="text"
+                      value={newAssigneeId}
+                      onChange={(e) => setNewAssigneeId(e.target.value)}
+                      onKeyDown={handleAddKeyDown}
+                      placeholder="Optional assignee ID"
+                      disabled={addingTask}
+                      className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-9 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
+                    />
+                  </>
+                )}
+              </div>
 
-            <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-[280px] mx-auto text-center mb-6">
-              {hasFilter
-                ? "Try another milestone, or assign tasks to this milestone."
-                : "Add the next task your team should act on so this queue becomes your clear next-step view."}
-            </p>
-
-            {!hasFilter && projectId && !showAddForm ? (
               <button
                 type="button"
-                className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold shadow-md group-hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                onClick={handleAddTask}
+                disabled={addingTask || !newTitle.trim()}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 hover:bg-violet-700 disabled:translate-y-0 disabled:opacity-40 disabled:hover:bg-violet-600"
               >
-                <Plus className="w-4 h-4" />
-                Add Your First Task
+                {addingTask ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {addingTask ? "Adding…" : "Add Task"}
               </button>
-            ) : null}
+            </div>
           </div>
         ) : null}
 
-        {filteredTasks.map((t) => {
-          const id = getTaskId(t);
-          const rowDisabled = !projectId || actionBusyId === id;
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4 text-xs">
+            <div className="font-bold text-red-700 dark:text-red-200">
+              Couldn't load tasks
+            </div>
+            <div className="mt-1 text-red-600/80 dark:text-red-200/70">
+              {String(error?.message || error)}
+            </div>
+          </div>
+        ) : null}
 
-          return (
-            <StackTaskRow
-              key={id || Math.random()}
-              task={t}
-              disabled={rowDisabled}
-              onStart={handleStart}
-              onMoveToReview={handleMoveToReview}
-              onComplete={handleComplete}
-            />
-          );
-        })}
+        {actionError ? (
+          <div className="mt-4 rounded-2xl border border-amber-200 dark:border-yellow-500/30 bg-amber-50 dark:bg-yellow-500/10 p-4 text-xs">
+            <div className="font-bold text-amber-700 dark:text-yellow-200">
+              Action failed
+            </div>
+            <div className="mt-1 text-amber-600/80 dark:text-yellow-200/70">
+              {String(actionError?.message || actionError)}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-5 min-h-[140px] rounded-3xl border border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-black/10 p-3 sm:p-4">
+          {loading && filteredTasks.length === 0 ? (
+            <div className="flex items-center gap-2 p-4 text-xs text-slate-400 dark:text-white/40">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              Loading tasks…
+            </div>
+          ) : null}
+
+          {!loading && filteredTasks.length === 0 ? (
+            <div
+              onClick={!showAddForm ? handleOpenAddForm : undefined}
+              className="group flex cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border-2 border-dashed border-slate-300 dark:border-white/[0.10] bg-white/70 dark:bg-white/[0.03] px-6 py-14 text-center transition-all duration-300 hover:border-violet-300 dark:hover:border-violet-400/30 hover:bg-white dark:hover:bg-white/[0.05]"
+            >
+              <div className="relative mb-5 h-20 w-20">
+                <div className="absolute inset-0 rounded-3xl bg-violet-500/20 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="relative flex h-full w-full items-center justify-center rounded-3xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/10 shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg">
+                  <Layers className="h-9 w-9 text-violet-600 dark:text-violet-300" />
+                </div>
+              </div>
+
+              <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+                {hasFilter ? "No tasks in this milestone" : "No tasks ready right now."}
+              </h3>
+
+              <p className="mx-auto mb-6 max-w-[340px] text-sm leading-6 text-slate-500 dark:text-zinc-400">
+                {hasFilter
+                  ? "Try another milestone, or assign tasks to this milestone."
+                  : "Add the next task your team should act on so this queue becomes your clear next-step view."}
+              </p>
+
+              {!hasFilter && projectId && !showAddForm ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition-all group-hover:-translate-y-0.5 group-hover:bg-violet-700 active:translate-y-0"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Your First Task
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {filteredTasks.length > 0 ? (
+            <div className="space-y-2">
+              {filteredTasks.map((t) => {
+                const id = getTaskId(t);
+                const rowDisabled = !projectId || actionBusyId === id;
+
+                return (
+                  <StackTaskRow
+                    key={id || Math.random()}
+                    task={t}
+                    disabled={rowDisabled}
+                    onStart={handleStart}
+                    onMoveToReview={handleMoveToReview}
+                    onComplete={handleComplete}
+                  />
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
