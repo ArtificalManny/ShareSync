@@ -49,6 +49,38 @@ export default function UploadModal({ isOpen, onClose, onUpload, folders = [] })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 dark:bg-black/65 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <style>
+        {`
+          .upload-modal-submit-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(124, 58, 237, 0.92) !important;
+            box-shadow: 0 14px 32px rgba(109, 40, 217, 0.34) !important;
+            opacity: 1 !important;
+          }
+
+          .upload-modal-submit-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            box-shadow: 0 18px 40px rgba(109, 40, 217, 0.46) !important;
+            transform: translateY(-1px);
+          }
+
+          .upload-modal-submit-button:disabled {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+            color: #ffffff !important;
+            opacity: 0.88 !important;
+            cursor: not-allowed !important;
+            box-shadow: 0 10px 24px rgba(109, 40, 217, 0.22) !important;
+          }
+
+          .upload-modal-submit-button,
+          .upload-modal-submit-button span,
+          .upload-modal-submit-button svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+          }
+        `}
+      </style>
       <div
         className="
           relative w-full max-w-md overflow-hidden rounded-3xl
@@ -214,22 +246,42 @@ export default function UploadModal({ isOpen, onClose, onUpload, folders = [] })
               onClick={handleSubmit}
               disabled={isUploading || !file}
               className="
+                upload-modal-submit-button
+                relative isolate overflow-hidden
                 px-6 py-2.5 rounded-xl
-                text-sm font-semibold text-white
-                bg-gradient-to-r from-violet-600 to-indigo-600
-                hover:from-violet-500 hover:to-indigo-500
-                shadow-lg shadow-violet-900/20
+                text-sm font-black text-white
                 transition-all
-                disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none
                 flex items-center gap-2
+                disabled:cursor-not-allowed disabled:opacity-100
               "
             >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-xl"
+                style={{
+                  background: file
+                    ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
+                    : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
+                  boxShadow: file
+                    ? '0 14px 32px rgba(109, 40, 217, 0.34)'
+                    : '0 10px 24px rgba(109, 40, 217, 0.22)',
+                }}
+              />
+
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-xl border border-violet-200/90"
+              />
+
               {isUploading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="relative z-10 w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <UploadCloud className="w-4 h-4" />
+                <UploadCloud className="relative z-10 w-4 h-4 text-white" />
               )}
-              {isUploading ? 'Uploading...' : 'Upload'}
+
+              <span className="relative z-10 text-white drop-shadow-sm">
+                {isUploading ? 'Uploading...' : 'Upload'}
+              </span>
             </button>
           </div>
         </div>
