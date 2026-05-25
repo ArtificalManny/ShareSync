@@ -179,7 +179,7 @@ export default function FlowTaskCard({ task }) {
         e.dataTransfer.effectAllowed = "move";
       }}
       className="
-        group rounded-[1rem] border border-slate-200/70 dark:border-slate-800
+        flow-task-card group rounded-[1rem] border border-slate-200/70 dark:border-slate-800
         bg-white/90 dark:bg-slate-900/70
         p-2.5 shadow-sm hover:shadow-md
         transition cursor-grab active:cursor-grabbing
@@ -192,11 +192,11 @@ export default function FlowTaskCard({ task }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
-            <div className="mt-0.5 text-slate-300 dark:text-slate-600 group-hover:text-violet-400 transition-colors">
+            <div className="flow-task-grip mt-0.5 text-slate-300 dark:text-slate-500 group-hover:text-violet-400 transition-colors">
               <GripVertical className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 break-words leading-snug">
+              <div className="flow-task-title text-[13px] font-black text-slate-950 dark:text-slate-100 break-words leading-snug">
                 {task?.title || "Untitled task"}
               </div>
 
@@ -212,7 +212,7 @@ export default function FlowTaskCard({ task }) {
         {priority ? (
           <div className="shrink-0">
             <span
-              className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${priority.className}`}
+              className={`flow-task-priority text-[10px] px-2 py-0.5 rounded-full border font-black ${priority.className}`}
             >
               {priority.label}
             </span>
@@ -226,7 +226,7 @@ export default function FlowTaskCard({ task }) {
           {blocked ? (
             <span
               className="
-                inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md
+                flow-task-blocked-chip inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md
                 bg-amber-100 dark:bg-yellow-500/15 text-amber-700 dark:text-yellow-300
                 border border-amber-200 dark:border-yellow-500/20
               "
@@ -238,7 +238,7 @@ export default function FlowTaskCard({ task }) {
 
           {dueMeta ? (
             <span
-              className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md border ${dueMeta.className}`}
+              className={`flow-task-due-chip inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md border ${dueMeta.className}`}
             >
               <Calendar className="w-2.5 h-2.5" />
               {dueMeta.label}
@@ -248,7 +248,7 @@ export default function FlowTaskCard({ task }) {
       )}
 
       {/* Footer */}
-      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+      <div className="flow-task-footer mt-2 flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400">
         <div className="min-w-0 flex items-center gap-2">
           <div
             className="

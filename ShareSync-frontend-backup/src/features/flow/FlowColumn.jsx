@@ -141,7 +141,7 @@ export default function FlowColumn({
 
   return (
     <section
-      className={`rounded-[1.35rem] border bg-white/60 dark:bg-slate-900/40 p-2.5 flex flex-col min-h-[220px] max-h-[calc(100vh-19rem)] overflow-hidden transition-all ${
+      className={`flow-lane flow-lane-${status} rounded-[1.35rem] border bg-white/60 dark:bg-slate-900/40 p-2.5 flex flex-col min-h-[220px] max-h-[calc(100vh-19rem)] overflow-hidden transition-all ${
         isOver
           ? "border-violet-300 dark:border-violet-500/40 bg-violet-50/30 dark:bg-violet-500/5"
           : "border-slate-200/70 dark:border-slate-800"
@@ -171,14 +171,14 @@ export default function FlowColumn({
       aria-label={`${meta.title} lane`}
     >
       {/* Column header */}
-      <header className="flex items-start justify-between gap-2 px-1 pb-2">
+      <header className="flow-lane-header flex items-start justify-between gap-2 px-1 pb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${meta.dotClass}`} />
             <div className={`text-[13px] font-semibold ${meta.titleClass}`}>
               {meta.title}
             </div>
-            <span className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md">
+            <span className="flow-lane-count text-xs text-slate-500 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md">
               {count}
             </span>
           </div>
@@ -192,7 +192,7 @@ export default function FlowColumn({
             type="button"
             onClick={() => setIsAdding(true)}
             disabled={isDisabled}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500 hover:text-violet-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flow-lane-add-button p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-violet-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title={meta.addLabel}
           >
             <Plus className="w-4 h-4" />
@@ -201,10 +201,10 @@ export default function FlowColumn({
       </header>
 
       {/* Task list */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+      <div className="flow-lane-scroll min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {/* Inline add form */}
         {isAdding && (
-          <div className="rounded-xl border border-violet-300 dark:border-violet-500/30 bg-white dark:bg-[#111113] p-2.5 shadow-sm">
+          <div className="flow-lane-composer rounded-xl border border-violet-300 dark:border-violet-500/30 bg-white dark:bg-[#111113] p-2.5 shadow-sm">
             <input
               ref={inputRef}
               type="text"
@@ -230,7 +230,7 @@ export default function FlowColumn({
                 type="button"
                 onClick={handleAddTask}
                 disabled={!newTitle.trim() || saving}
-                className="px-3 py-1.5 rounded-lg bg-violet-500 text-white text-xs font-medium hover:bg-violet-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flow-lane-submit-button px-3 py-1.5 rounded-lg bg-violet-500 text-white text-xs font-black hover:bg-violet-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {saving ? "Adding..." : "Add"}
               </button>
@@ -253,7 +253,7 @@ export default function FlowColumn({
           <button
             type="button"
             onClick={() => (onAddTask && !isDisabled ? setIsAdding(true) : null)}
-            className="w-full mt-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-500/30 p-3 text-center transition-colors group"
+            className="flow-lane-empty w-full mt-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-500/30 p-3 text-center transition-colors group"
           >
             <Plus className="w-4 h-4 mx-auto mb-1.5 text-slate-300 dark:text-zinc-600 group-hover:text-violet-400 transition-colors" />
             <div className="text-xs font-semibold text-slate-600 dark:text-zinc-300 group-hover:text-violet-500 transition-colors">

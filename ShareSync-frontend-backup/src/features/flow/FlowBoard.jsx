@@ -184,18 +184,371 @@ export default function FlowBoard({
   }
 
   return (
-    <section className={`relative ${className}`} aria-label="Project board">
-      <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/82 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-black/30">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+    <section className={`flow-command-board relative ${className}`} aria-label="Project board">
+      <style className="flow-board-visual-style">
+        {`
+          .flow-board-shell {
+            isolation: isolate;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
+              radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.15), transparent 32%),
+              radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.12), transparent 28%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.84)) !important;
+            border-color: rgba(124, 58, 237, 0.22) !important;
+            box-shadow:
+              0 28px 92px rgba(15, 23, 42, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .flow-board-shell {
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
+              radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.13), transparent 32%),
+              radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.10), transparent 28%),
+              linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.92)) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            box-shadow:
+              0 30px 105px rgba(0, 0, 0, 0.50),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .flow-board-rail {
+            height: 5px !important;
+            background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 44%, #34d399 100%) !important;
+            box-shadow:
+              0 0 24px rgba(139, 92, 246, 0.42),
+              0 0 28px rgba(34, 211, 238, 0.30);
+          }
+
+          .flow-board-header {
+            border-radius: 26px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.62);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+          }
+
+          .dark .flow-board-header {
+            background: rgba(15, 23, 42, 0.42);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .flow-board-icon {
+            background:
+              radial-gradient(circle at 30% 18%, rgba(255,255,255,0.92), transparent 34%),
+              linear-gradient(135deg, rgba(139, 92, 246, 0.20), rgba(34, 211, 238, 0.14)) !important;
+            box-shadow:
+              0 18px 36px rgba(124, 58, 237, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.74) !important;
+          }
+
+          .dark .flow-board-icon {
+            background:
+              radial-gradient(circle at 30% 18%, rgba(255,255,255,0.18), transparent 34%),
+              linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(34, 211, 238, 0.14)) !important;
+            box-shadow:
+              0 18px 40px rgba(124, 58, 237, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .flow-live-pill,
+          .flow-refresh-button {
+            backdrop-filter: blur(18px);
+            background: rgba(255, 255, 255, 0.84) !important;
+            border-color: rgba(148, 163, 184, 0.28) !important;
+            box-shadow:
+              0 12px 26px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+          }
+
+          .dark .flow-live-pill,
+          .dark .flow-refresh-button {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 14px 30px rgba(0, 0, 0, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .flow-refresh-button:hover {
+            color: #6d28d9 !important;
+            border-color: rgba(139, 92, 246, 0.34) !important;
+            box-shadow:
+              0 18px 38px rgba(124, 58, 237, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.74) !important;
+          }
+
+          .flow-stat-card {
+            position: relative;
+            overflow: hidden;
+            min-height: 96px;
+            backdrop-filter: blur(18px);
+            box-shadow:
+              0 14px 34px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              border-color 180ms ease;
+          }
+
+          .flow-stat-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.36), transparent 62%);
+            opacity: 0.90;
+          }
+
+          .dark .flow-stat-card {
+            box-shadow:
+              0 16px 38px rgba(0, 0, 0, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .dark .flow-stat-card::before {
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.12), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 62%);
+          }
+
+          .flow-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow:
+              0 20px 46px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.76) !important;
+          }
+
+          .flow-stat-card > * {
+            position: relative;
+            z-index: 1;
+          }
+
+          .flow-stat-total { border-top: 3px solid rgba(100, 116, 139, 0.72) !important; }
+          .flow-stat-motion { border-top: 3px solid rgba(139, 92, 246, 0.86) !important; }
+          .flow-stat-review { border-top: 3px solid rgba(245, 158, 11, 0.86) !important; }
+          .flow-stat-blocked { border-top: 3px solid rgba(244, 63, 94, 0.86) !important; }
+          .flow-stat-done { border-top: 3px solid rgba(16, 185, 129, 0.86) !important; }
+
+          .flow-stage-chip {
+            box-shadow:
+              0 10px 22px rgba(15, 23, 42, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.68);
+            backdrop-filter: blur(14px);
+          }
+
+          .dark .flow-stage-chip {
+            box-shadow:
+              0 10px 24px rgba(0, 0, 0, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          }
+
+          .flow-column-grid {
+            align-items: stretch;
+          }
+
+          .flow-lane {
+            position: relative;
+            backdrop-filter: blur(18px);
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(248, 250, 252, 0.64)) !important;
+            box-shadow:
+              0 16px 38px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.72);
+          }
+
+          .dark .flow-lane {
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.10), transparent 34%),
+              linear-gradient(135deg, rgba(30, 41, 59, 0.62), rgba(15, 23, 42, 0.46)) !important;
+            box-shadow:
+              0 18px 44px rgba(0, 0, 0, 0.34),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .flow-lane-backlog { border-top: 3px solid rgba(148, 163, 184, 0.78) !important; }
+          .flow-lane-todo { border-top: 3px solid rgba(34, 211, 238, 0.86) !important; }
+          .flow-lane-in_progress { border-top: 3px solid rgba(139, 92, 246, 0.86) !important; }
+          .flow-lane-review { border-top: 3px solid rgba(245, 158, 11, 0.86) !important; }
+          .flow-lane-done { border-top: 3px solid rgba(16, 185, 129, 0.86) !important; }
+
+          .flow-lane-header {
+            border-radius: 18px;
+            padding: 10px 10px 9px;
+            background: rgba(255, 255, 255, 0.46);
+            border: 1px solid rgba(255, 255, 255, 0.56);
+          }
+
+          .dark .flow-lane-header {
+            background: rgba(255, 255, 255, 0.045);
+            border-color: rgba(255, 255, 255, 0.07);
+          }
+
+          .flow-lane-count {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+          }
+
+          .flow-lane-add-button {
+            background: rgba(255, 255, 255, 0.68) !important;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+          }
+
+          .flow-lane-add-button:hover {
+            color: #7c3aed !important;
+            background: rgba(245, 243, 255, 0.92) !important;
+            border-color: rgba(139, 92, 246, 0.28);
+          }
+
+          .dark .flow-lane-add-button {
+            background: rgba(255, 255, 255, 0.06) !important;
+            border-color: rgba(255, 255, 255, 0.08);
+          }
+
+          .flow-lane-scroll {
+            scrollbar-width: thin;
+          }
+
+          .flow-lane-composer {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.12), transparent 38%),
+              rgba(255, 255, 255, 0.92) !important;
+            box-shadow:
+              0 14px 30px rgba(124, 58, 237, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.70);
+          }
+
+          .dark .flow-lane-composer {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.15), transparent 38%),
+              rgba(15, 23, 42, 0.88) !important;
+            box-shadow:
+              0 16px 34px rgba(0, 0, 0, 0.34),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .flow-lane-submit-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 10px 22px rgba(109, 40, 217, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24);
+          }
+
+          .flow-lane-empty {
+            background:
+              radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.08), transparent 46%),
+              rgba(255, 255, 255, 0.35) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
+          }
+
+          .dark .flow-lane-empty {
+            background:
+              radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.12), transparent 46%),
+              rgba(255, 255, 255, 0.025) !important;
+          }
+
+          .flow-task-card {
+            position: relative;
+            overflow: hidden;
+            background:
+              radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.08), transparent 38%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 252, 0.90)) !important;
+            box-shadow:
+              0 12px 28px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78);
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              border-color 180ms ease;
+          }
+
+          .dark .flow-task-card {
+            background:
+              radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.13), transparent 38%),
+              linear-gradient(135deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.62)) !important;
+            box-shadow:
+              0 14px 34px rgba(0, 0, 0, 0.34),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .flow-task-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.10), transparent 32%);
+            opacity: 0;
+            transition: opacity 180ms ease;
+          }
+
+          .flow-task-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(139, 92, 246, 0.30) !important;
+            box-shadow:
+              0 18px 40px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.82);
+          }
+
+          .dark .flow-task-card:hover {
+            border-color: rgba(139, 92, 246, 0.36) !important;
+            box-shadow:
+              0 20px 46px rgba(0, 0, 0, 0.44),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          }
+
+          .flow-task-card:hover::before {
+            opacity: 1;
+          }
+
+          .flow-task-card > * {
+            position: relative;
+            z-index: 1;
+          }
+
+          .flow-task-grip {
+            border-radius: 10px;
+            padding: 2px;
+            background: rgba(148, 163, 184, 0.10);
+          }
+
+          .flow-task-title {
+            letter-spacing: -0.01em;
+          }
+
+          .flow-task-priority,
+          .flow-task-blocked-chip,
+          .flow-task-due-chip {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+          }
+
+          .flow-task-footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.14);
+            padding-top: 8px;
+          }
+
+          .dark .flow-task-footer {
+            border-top-color: rgba(255, 255, 255, 0.07);
+          }
+        `}
+      </style>
+
+      <div className="flow-board-shell relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/82 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-black/30">
+        <div className="flow-board-rail absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
 
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/10" />
         <div className="pointer-events-none absolute -right-24 -top-16 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-300/10" />
         <div className="pointer-events-none absolute bottom-0 right-1/3 h-40 w-72 rounded-full bg-emerald-400/10 blur-3xl dark:bg-emerald-300/10" />
 
         <div className="relative p-5 sm:p-6 lg:p-7">
-          <header className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <header className="flow-board-header mb-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:from-violet-500/15 dark:via-white/[0.04] dark:to-cyan-500/10 dark:text-violet-300">
+              <div className="flow-board-icon relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:from-violet-500/15 dark:via-white/[0.04] dark:to-cyan-500/10 dark:text-violet-300">
                 <LayoutDashboard className="h-6 w-6" />
                 <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-slate-950" />
               </div>
@@ -227,7 +580,7 @@ export default function FlowBoard({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
+              <div className="flow-live-pill inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.15)]" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                   Live Board
@@ -237,7 +590,7 @@ export default function FlowBoard({
               <button
                 type="button"
                 onClick={reload}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2 text-xs font-black text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 hover:shadow-lg hover:shadow-violet-500/10 active:translate-y-0 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-300 dark:hover:border-violet-400/20 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
+                className="flow-refresh-button inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2 text-xs font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 hover:shadow-lg hover:shadow-violet-500/10 active:translate-y-0 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-violet-400/20 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
               >
                 <RefreshCw className="h-4 w-4" />
                 Refresh
@@ -246,7 +599,7 @@ export default function FlowBoard({
           </header>
 
           <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.035]">
+            <div className="flow-stat-card flow-stat-total rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.035]">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
                 Total
               </div>
@@ -255,7 +608,7 @@ export default function FlowBoard({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
+            <div className="flow-stat-card flow-stat-motion rounded-2xl border border-violet-100 bg-violet-50/60 p-4 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-500 dark:text-violet-300">
                 In Motion
               </div>
@@ -264,7 +617,7 @@ export default function FlowBoard({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
+            <div className="flow-stat-card flow-stat-review rounded-2xl border border-amber-100 bg-amber-50/60 p-4 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-600 dark:text-amber-300">
                 Review
               </div>
@@ -273,7 +626,7 @@ export default function FlowBoard({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-rose-100 bg-rose-50/60 p-4 shadow-sm dark:border-rose-400/20 dark:bg-rose-500/10">
+            <div className="flow-stat-card flow-stat-blocked rounded-2xl border border-rose-100 bg-rose-50/60 p-4 shadow-sm dark:border-rose-400/20 dark:bg-rose-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300">
                 Blocked
               </div>
@@ -282,7 +635,7 @@ export default function FlowBoard({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10">
+            <div className="flow-stat-card flow-stat-done rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">
                 Done
               </div>
@@ -300,7 +653,7 @@ export default function FlowBoard({
               return (
                 <span
                   key={status}
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black ${meta.chip}`}
+                  className={`flow-stage-chip inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black ${meta.chip}`}
                 >
                   <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
                   {meta.label}
@@ -397,7 +750,7 @@ export default function FlowBoard({
             <div className="relative">
               <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-gradient-to-r from-violet-500/5 via-cyan-400/5 to-emerald-400/5 blur-2xl" />
 
-              <div className="relative grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-5 [&>*]:min-w-0">
+              <div className="flow-column-grid relative grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-5 [&>*]:min-w-0">
                 {FLOW_STATUSES.map((status) => (
                   <FlowColumn
                     key={status}
