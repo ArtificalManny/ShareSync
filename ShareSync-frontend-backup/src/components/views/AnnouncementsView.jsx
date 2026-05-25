@@ -191,7 +191,7 @@ function AttachmentGallery({ attachments }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group block rounded-2xl border border-slate-200 bg-white p-1 shadow-sm hover:shadow-xl hover:shadow-violet-500/10 transition-all overflow-hidden"
+          className="announcement-attachment-card group block rounded-2xl border border-slate-200 bg-white p-1 shadow-sm hover:shadow-xl hover:shadow-violet-500/10 transition-all overflow-hidden"
         >
           <img
             src={url}
@@ -449,7 +449,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
 
   return (
     <article
-      className={`group relative mb-6 overflow-hidden rounded-[2rem] border bg-white transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:shadow-2xl ${
+      className={`announcement-card group relative mb-6 overflow-hidden rounded-[2rem] border bg-white transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:shadow-2xl ${
         isPinned
           ? 'border-amber-200 shadow-amber-500/10'
           : isUrgent
@@ -538,7 +538,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
           </div>
         </div>
 
-        <div className={`mt-5 rounded-2xl border ${style.border} ${style.soft} p-5 ring-1 ${style.ring}`}>
+        <div className={`announcement-message-panel mt-5 rounded-2xl border ${style.border} ${style.soft} p-5 ring-1 ${style.ring}`}>
           <h3 className="mb-2 text-xl font-black leading-tight tracking-tight text-slate-950">
             {displayTitle}
           </h3>
@@ -697,7 +697,130 @@ export default function AnnouncementsView({ projectId }) {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
-      <div className="relative overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-sm">
+      <style>
+        {`
+          .announcements-hero-panel {
+            background:
+              radial-gradient(circle at 8% 14%, rgba(139, 92, 246, 0.18), transparent 34%),
+              radial-gradient(circle at 92% 8%, rgba(34, 211, 238, 0.16), transparent 32%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.82)) !important;
+            border-color: rgba(124, 58, 237, 0.20) !important;
+            box-shadow:
+              0 28px 90px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .announcements-hero-panel {
+            background:
+              radial-gradient(circle at 8% 14%, rgba(139, 92, 246, 0.22), transparent 34%),
+              radial-gradient(circle at 92% 8%, rgba(34, 211, 238, 0.13), transparent 32%),
+              linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.90)) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 34px 110px rgba(0, 0, 0, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .announcements-primary-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            box-shadow:
+              0 18px 44px rgba(109, 40, 217, 0.34),
+              inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+            border: 1px solid rgba(196, 181, 253, 0.70) !important;
+          }
+
+          .announcements-primary-button:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            box-shadow:
+              0 24px 58px rgba(109, 40, 217, 0.46),
+              inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+          }
+
+          .announcement-card {
+            background:
+              radial-gradient(circle at 5% 0%, rgba(139, 92, 246, 0.10), transparent 32%),
+              radial-gradient(circle at 96% 6%, rgba(34, 211, 238, 0.08), transparent 30%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92)) !important;
+            border-color: rgba(148, 163, 184, 0.34) !important;
+            box-shadow:
+              0 22px 70px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+          }
+
+          .announcement-card:hover {
+            border-color: rgba(124, 58, 237, 0.32) !important;
+            box-shadow:
+              0 32px 90px rgba(124, 58, 237, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .announcement-card {
+            background:
+              radial-gradient(circle at 5% 0%, rgba(139, 92, 246, 0.16), transparent 32%),
+              radial-gradient(circle at 96% 6%, rgba(34, 211, 238, 0.10), transparent 30%),
+              linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(2, 6, 23, 0.82)) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 28px 90px rgba(0, 0, 0, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+          }
+
+          .announcement-message-panel {
+            background:
+              linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.70)) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.70),
+              0 14px 34px rgba(15, 23, 42, 0.06) !important;
+          }
+
+          .dark .announcement-message-panel {
+            background:
+              linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(30, 41, 59, 0.54)) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.07),
+              0 18px 44px rgba(0, 0, 0, 0.30) !important;
+          }
+
+          .announcement-attachment-card {
+            background:
+              linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.86)) !important;
+            border-color: rgba(148, 163, 184, 0.36) !important;
+            box-shadow:
+              0 18px 46px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .announcement-attachment-card:hover {
+            border-color: rgba(124, 58, 237, 0.32) !important;
+            box-shadow:
+              0 28px 70px rgba(124, 58, 237, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .announcement-create-modal {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.10), transparent 34%),
+              radial-gradient(circle at 92% 0%, rgba(34, 211, 238, 0.08), transparent 32%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+            border-color: rgba(124, 58, 237, 0.18) !important;
+            box-shadow:
+              0 34px 110px rgba(15, 23, 42, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .announcement-create-modal {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
+              radial-gradient(circle at 92% 0%, rgba(34, 211, 238, 0.10), transparent 32%),
+              linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94)) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 38px 120px rgba(0, 0, 0, 0.48),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+        `}
+      </style>
+      <div className="announcements-hero-panel relative overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-sm">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(124,58,237,0.12),transparent_32%),radial-gradient(circle_at_90%_10%,rgba(20,184,166,0.10),transparent_30%)]" />
 
         <div className="relative flex flex-col gap-5 p-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
@@ -755,10 +878,24 @@ export default function AnnouncementsView({ projectId }) {
 
             <button
               onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/40"
+              className="announcements-primary-button relative isolate inline-flex items-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40"
             >
-              <Plus className="h-5 w-5" />
-              Post Update
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.26)',
+                }}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/80"
+              />
+              <Plus className="relative z-10 h-5 w-5 text-white drop-shadow-sm" />
+              <span className="relative z-10 text-white drop-shadow-sm">
+                Post Update
+              </span>
             </button>
           </div>
         </div>
@@ -801,7 +938,7 @@ export default function AnnouncementsView({ projectId }) {
             aria-label="Close post announcement modal backdrop"
           />
 
-          <div className="pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
+          <div className="announcement-create-modal pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
             <div className="border-b border-slate-200/80 bg-white">
               <div className="flex items-center justify-between gap-5 px-8 py-5">
                 <div className="flex min-w-0 items-center gap-4">
@@ -924,22 +1061,47 @@ export default function AnnouncementsView({ projectId }) {
               <button
                 onClick={handleCreate}
                 disabled={!title.trim() || !message.trim() || posting || anyUploading}
-                className="flex items-center gap-2 rounded-2xl bg-violet-600 px-8 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="announcements-primary-button relative isolate flex items-center gap-2 overflow-hidden rounded-2xl px-8 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-100"
               >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-2xl"
+                  style={{
+                    background:
+                      title.trim() && message.trim() && !posting && !anyUploading
+                        ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
+                        : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
+                    boxShadow:
+                      title.trim() && message.trim() && !posting && !anyUploading
+                        ? 'inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 16px 36px rgba(109, 40, 217, 0.34)'
+                        : 'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 24px rgba(109, 40, 217, 0.20)',
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/80"
+                />
+
                 {posting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Transmitting...
+                    <Loader2 className="relative z-10 h-4 w-4 animate-spin text-white" />
+                    <span className="relative z-10 text-white drop-shadow-sm">
+                      Transmitting...
+                    </span>
                   </>
                 ) : anyUploading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Uploading...
+                    <Loader2 className="relative z-10 h-4 w-4 animate-spin text-white" />
+                    <span className="relative z-10 text-white drop-shadow-sm">
+                      Uploading...
+                    </span>
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4" />
-                    Broadcast Update
+                    <Send className="relative z-10 h-4 w-4 text-white drop-shadow-sm" />
+                    <span className="relative z-10 text-white drop-shadow-sm">
+                      Broadcast Update
+                    </span>
                   </>
                 )}
               </button>
