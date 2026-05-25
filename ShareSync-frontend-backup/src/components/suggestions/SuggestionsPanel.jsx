@@ -170,8 +170,164 @@ const SuggestionsPanel = ({ projectId, project }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
+    <div className="suggestions-next-panel bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+      <style>
+        {`
+          .suggestions-next-panel {
+            position: relative;
+            overflow: hidden;
+            background:
+              radial-gradient(circle at 7% 0%, rgba(139, 92, 246, 0.16), transparent 32%),
+              radial-gradient(circle at 96% 8%, rgba(34, 211, 238, 0.12), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 252, 0.82)) !important;
+            border-color: rgba(124, 58, 237, 0.18) !important;
+            box-shadow:
+              0 28px 90px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+            backdrop-filter: blur(18px);
+          }
+
+          .dark .suggestions-next-panel {
+            background:
+              radial-gradient(circle at 7% 0%, rgba(139, 92, 246, 0.20), transparent 32%),
+              radial-gradient(circle at 96% 8%, rgba(34, 211, 238, 0.10), transparent 34%),
+              linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.88)) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 34px 110px rgba(0, 0, 0, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .suggestions-next-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 4px;
+            background: linear-gradient(90deg, #8b5cf6, #22d3ee, #10b981);
+            opacity: 0.92;
+          }
+
+          .suggestions-next-header {
+            position: relative;
+            border-radius: 1.5rem;
+            padding: 0.35rem 0.25rem;
+          }
+
+          .suggestions-primary-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(196, 181, 253, 0.76) !important;
+            box-shadow:
+              0 16px 36px rgba(109, 40, 217, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+          }
+
+          .suggestions-primary-button:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            box-shadow:
+              0 22px 52px rgba(109, 40, 217, 0.48),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+          }
+
+          .suggestions-primary-button,
+          .suggestions-primary-button span,
+          .suggestions-primary-button svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+          }
+
+          .suggestions-filter-rail {
+            background: rgba(255, 255, 255, 0.70) !important;
+            border-color: rgba(148, 163, 184, 0.28) !important;
+            box-shadow:
+              0 14px 36px rgba(15, 23, 42, 0.07),
+              inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .dark .suggestions-filter-rail {
+            background: rgba(15, 23, 42, 0.60) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow:
+              0 16px 42px rgba(0, 0, 0, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .suggestion-next-card {
+            position: relative;
+            background:
+              radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.08), transparent 30%),
+              radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.07), transparent 30%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.88)) !important;
+            border-color: rgba(148, 163, 184, 0.34) !important;
+            box-shadow:
+              0 18px 52px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .suggestion-next-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(124, 58, 237, 0.34) !important;
+            box-shadow:
+              0 28px 74px rgba(124, 58, 237, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .suggestion-next-card {
+            background:
+              radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.14), transparent 30%),
+              radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.09), transparent 30%),
+              linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(2, 6, 23, 0.76)) !important;
+            border-color: rgba(255, 255, 255, 0.09) !important;
+            box-shadow:
+              0 24px 74px rgba(0, 0, 0, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .suggestion-next-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8b5cf6, #22d3ee, #10b981);
+            opacity: 0;
+            transition: opacity 180ms ease;
+          }
+
+          .suggestion-next-card:hover::before {
+            opacity: 0.90;
+          }
+
+          .suggestion-action-bar {
+            background: rgba(248, 250, 252, 0.54);
+          }
+
+          .dark .suggestion-action-bar {
+            background: rgba(2, 6, 23, 0.26);
+          }
+
+          .suggestions-list-shell {
+            position: relative;
+          }
+
+          .suggestions-empty-state {
+            background:
+              radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.12), transparent 38%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(248, 250, 252, 0.62)) !important;
+            border-color: rgba(148, 163, 184, 0.34) !important;
+            box-shadow:
+              0 18px 52px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .dark .suggestions-empty-state {
+            background:
+              radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.16), transparent 38%),
+              linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.70)) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+          }
+        `}
+      </style>
+      <div className="suggestions-next-header flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-violet-50 dark:bg-violet-500/15 rounded-lg border border-violet-100 dark:border-violet-500/20">
             <Lightbulb className="w-5 h-5 text-violet-600 dark:text-violet-400" />
@@ -187,10 +343,22 @@ const SuggestionsPanel = ({ projectId, project }) => {
         {canSuggest ? (
           <button
             onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-all flex items-center gap-2 shadow-sm"
+            className="suggestions-primary-button relative isolate flex items-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 text-sm font-black text-white shadow-sm transition-all hover:-translate-y-0.5"
           >
-            <Plus className="w-4 h-4" />
-            Suggest
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-xl"
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.26), 0 16px 36px rgba(109,40,217,0.38)',
+              }}
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-xl border border-violet-200/80"
+            />
+            <Plus className="relative z-10 w-4 h-4 text-white drop-shadow-sm" />
+            <span className="relative z-10 text-white drop-shadow-sm">Suggest</span>
           </button>
         ) : (
           isPublicProject && !isFollowing && (
@@ -202,7 +370,7 @@ const SuggestionsPanel = ({ projectId, project }) => {
       </div>
 
       <div className="flex items-center flex-wrap gap-4 mb-6">
-        <div className="flex gap-1 bg-slate-50 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200 dark:border-white/[0.06]">
+        <div className="suggestions-filter-rail flex gap-1 bg-slate-50 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200 dark:border-white/[0.06]">
           <button onClick={() => setFilter('all')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filter === 'all' ? 'bg-white dark:bg-white/[0.08] text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/[0.08]' : 'text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/60'}`}>All</button>
           <button onClick={() => setFilter('pending')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filter === 'pending' ? 'bg-white dark:bg-white/[0.08] text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/[0.08]' : 'text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/60'}`}>Pending</button>
           <button onClick={() => setFilter('implemented')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filter === 'implemented' ? 'bg-white dark:bg-white/[0.08] text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/[0.08]' : 'text-slate-500 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/60'}`}>Done</button>
@@ -218,13 +386,13 @@ const SuggestionsPanel = ({ projectId, project }) => {
         </div>
       </div>
 
-      <div className="space-y-4 min-h-[200px]">
+      <div className="suggestions-list-shell space-y-4 min-h-[200px]">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 rounded-full border-2 border-violet-500/20 border-t-violet-600 animate-spin" />
           </div>
         ) : filteredSuggestions.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-dashed border-slate-200 dark:border-white/[0.06]">
+          <div className="suggestions-empty-state text-center py-12 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-dashed border-slate-200 dark:border-white/[0.06]">
             <Lightbulb className="w-10 h-10 text-slate-400 dark:text-white/20 mx-auto mb-3" />
             <p className="text-slate-500 dark:text-white/40 text-sm">No suggestions found.</p>
           </div>

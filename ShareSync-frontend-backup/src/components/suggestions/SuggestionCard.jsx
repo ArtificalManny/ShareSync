@@ -107,7 +107,7 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false,
     <div
       onClick={onClick}
       className={
-        "group rounded-xl overflow-hidden bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:border-slate-300 dark:hover:border-white/[0.1] transition-all duration-200"
+        "suggestion-next-card group rounded-xl overflow-hidden bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:border-slate-300 dark:hover:border-white/[0.1] transition-all duration-200"
         + (onClick ? " cursor-pointer" : "")
         + (isImplemented ? " opacity-70 border-l-2 border-l-emerald-500" : "")
       }
@@ -186,7 +186,7 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false,
       {/* ═══════════════════════════════════════════════════════════════════
           ZONE 3: Action — Vote + Comments + Implement
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.04] flex items-center justify-between">
+      <div className="suggestion-action-bar px-4 py-3 border-t border-slate-100 dark:border-white/[0.04] flex items-center justify-between">
         <div className="flex items-center gap-4">
           {/* Vote Button */}
           <button
