@@ -423,24 +423,337 @@ export default function StackPanel({
   }, [filteredTasks]);
 
   return (
-    <section className="relative w-full overflow-hidden rounded-[1.75rem] border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-[#141418]/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:shadow-[0_24px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+    <>
+      <style className="stack-command-style">
+        {`
+          .stack-command-panel {
+            isolation: isolate;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
+              radial-gradient(circle at 84% 4%, rgba(34, 211, 238, 0.14), transparent 32%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.86)) !important;
+            border-color: rgba(124, 58, 237, 0.22) !important;
+            box-shadow:
+              0 28px 90px rgba(15, 23, 42, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .stack-command-panel {
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
+              radial-gradient(circle at 84% 4%, rgba(34, 211, 238, 0.13), transparent 32%),
+              linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.92)) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            box-shadow:
+              0 30px 100px rgba(0, 0, 0, 0.48),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .stack-command-rail {
+            height: 5px !important;
+            background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 42%, #34d399 100%) !important;
+            box-shadow:
+              0 0 22px rgba(139, 92, 246, 0.42),
+              0 0 26px rgba(34, 211, 238, 0.30);
+          }
+
+          .stack-command-header {
+            border-radius: 24px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.58);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.70);
+          }
+
+          .dark .stack-command-header {
+            background: rgba(15, 23, 42, 0.40);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .stack-command-icon {
+            background:
+              radial-gradient(circle at 30% 18%, rgba(255,255,255,0.92), transparent 34%),
+              linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(34, 211, 238, 0.12)) !important;
+            box-shadow:
+              0 16px 34px rgba(124, 58, 237, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+          }
+
+          .dark .stack-command-icon {
+            background:
+              radial-gradient(circle at 30% 18%, rgba(255,255,255,0.18), transparent 34%),
+              linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(34, 211, 238, 0.14)) !important;
+            box-shadow:
+              0 16px 38px rgba(124, 58, 237, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .stack-command-title {
+            letter-spacing: -0.02em;
+          }
+
+          .stack-primary-button,
+          .stack-composer-add-button,
+          .stack-first-task-button {
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            border: 1px solid rgba(221, 214, 254, 0.78) !important;
+            box-shadow:
+              0 16px 34px rgba(109, 40, 217, 0.34),
+              inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+          }
+
+          .stack-primary-button:hover,
+          .stack-composer-add-button:hover,
+          .stack-first-task-button:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%) !important;
+            box-shadow:
+              0 20px 44px rgba(109, 40, 217, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+          }
+
+          .stack-primary-button svg,
+          .stack-composer-add-button svg,
+          .stack-first-task-button svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+          }
+
+          .stack-refresh-button {
+            background: rgba(255, 255, 255, 0.82) !important;
+            border: 1px solid rgba(148, 163, 184, 0.30) !important;
+            box-shadow:
+              0 12px 26px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .dark .stack-refresh-button {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 14px 30px rgba(0, 0, 0, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .stack-signal-card {
+            position: relative;
+            overflow: hidden;
+            min-height: 94px;
+            backdrop-filter: blur(18px);
+            box-shadow:
+              0 14px 34px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.72);
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              border-color 180ms ease;
+          }
+
+          .stack-signal-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.36), transparent 62%);
+            opacity: 0.85;
+          }
+
+          .dark .stack-signal-card {
+            box-shadow:
+              0 16px 38px rgba(0, 0, 0, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .dark .stack-signal-card::before {
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.12), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 62%);
+            opacity: 1;
+          }
+
+          .stack-signal-card:hover {
+            transform: translateY(-2px);
+            box-shadow:
+              0 20px 46px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.76);
+          }
+
+          .dark .stack-signal-card:hover {
+            box-shadow:
+              0 22px 52px rgba(0, 0, 0, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          }
+
+          .stack-signal-card > * {
+            position: relative;
+            z-index: 1;
+          }
+
+          .stack-signal-ready {
+            border-top: 3px solid rgba(139, 92, 246, 0.82) !important;
+          }
+
+          .stack-signal-blocking {
+            border-top: 3px solid rgba(245, 158, 11, 0.82) !important;
+          }
+
+          .stack-signal-critical {
+            border-top: 3px solid rgba(244, 63, 94, 0.82) !important;
+          }
+
+          .stack-signal-assigned {
+            border-top: 3px solid rgba(6, 182, 212, 0.82) !important;
+          }
+
+          .stack-task-composer {
+            box-shadow:
+              0 18px 46px rgba(124, 58, 237, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.76);
+          }
+
+          .dark .stack-task-composer {
+            box-shadow:
+              0 20px 50px rgba(0, 0, 0, 0.34),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .stack-task-list-shell {
+            background:
+              linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(248, 250, 252, 0.48)) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.72),
+              0 16px 42px rgba(15, 23, 42, 0.06);
+          }
+
+          .dark .stack-task-list-shell {
+            background:
+              linear-gradient(135deg, rgba(15, 23, 42, 0.42), rgba(2, 6, 23, 0.24)) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.06),
+              0 18px 46px rgba(0, 0, 0, 0.30);
+          }
+
+          .stack-task-row {
+            overflow: hidden;
+            background:
+              radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.08), transparent 34%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.90)) !important;
+            box-shadow:
+              0 10px 26px rgba(15, 23, 42, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78);
+          }
+
+          .dark .stack-task-row {
+            background:
+              radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.13), transparent 34%),
+              linear-gradient(135deg, rgba(30, 41, 59, 0.66), rgba(15, 23, 42, 0.48)) !important;
+            box-shadow:
+              0 12px 30px rgba(0, 0, 0, 0.32),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .stack-task-row::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.10), transparent 26%);
+            opacity: 0;
+            transition: opacity 180ms ease;
+          }
+
+          .stack-task-row:hover {
+            transform: translateY(-1px);
+            border-color: rgba(139, 92, 246, 0.28) !important;
+            box-shadow:
+              0 16px 38px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.82);
+          }
+
+          .dark .stack-task-row:hover {
+            border-color: rgba(139, 92, 246, 0.34) !important;
+            box-shadow:
+              0 18px 44px rgba(0, 0, 0, 0.44),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          }
+
+          .stack-task-row:hover::before {
+            opacity: 1;
+          }
+
+          .stack-task-row-inner {
+            position: relative;
+            z-index: 1;
+          }
+
+          .stack-task-title {
+            letter-spacing: -0.01em;
+          }
+
+          .stack-task-complete-button {
+            padding: 2px;
+            border-radius: 999px;
+          }
+
+          .stack-task-action {
+            min-width: 82px;
+            min-height: 38px;
+            border-radius: 14px !important;
+            border: 1px solid rgba(221, 214, 254, 0.70) !important;
+            box-shadow:
+              0 12px 28px rgba(109, 40, 217, 0.26),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              background 180ms ease;
+          }
+
+          .stack-task-action:hover {
+            transform: translateY(-1px);
+            box-shadow:
+              0 16px 34px rgba(109, 40, 217, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+          }
+
+          .stack-start-action {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+          }
+
+          .stack-review-action {
+            background: linear-gradient(135deg, #38bdf8 0%, #2563eb 52%, #1d4ed8 100%) !important;
+          }
+
+          .stack-task-action,
+          .stack-task-action span,
+          .stack-task-action svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+          }
+        `}
+      </style>
+
+      <section className="stack-command-panel relative w-full overflow-hidden rounded-[1.75rem] border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-[#141418]/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:shadow-[0_24px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+      <div className="stack-command-rail absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
       <div className="absolute -left-24 -top-24 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
       <div className="absolute -right-20 top-10 h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl" />
 
       <div className="relative p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="stack-command-header flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="relative">
               <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 ring-4 ring-white dark:ring-[#141418]" />
-              <div className="h-12 w-12 rounded-2xl bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-400/20 flex items-center justify-center shadow-sm">
+              <div className="stack-command-icon h-12 w-12 rounded-2xl bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-400/20 flex items-center justify-center shadow-sm">
                 <Layers className="h-5 w-5 text-violet-600 dark:text-violet-300" />
               </div>
             </div>
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base font-bold text-slate-950 dark:text-white">
+                <h2 className="stack-command-title text-base font-black text-slate-950 dark:text-white">
                   {title}
                 </h2>
 
@@ -468,10 +781,26 @@ export default function StackPanel({
               <button
                 type="button"
                 onClick={handleOpenAddForm}
-                className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/30 active:translate-y-0"
+                className="stack-primary-button relative isolate inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-xs font-black text-white shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0"
               >
-                <Plus className="h-4 w-4" />
-                Add Task
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-2xl"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255,255,255,0.28), 0 16px 36px rgba(109,40,217,0.38)',
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/80"
+                />
+                <Plus className="relative z-10 h-4 w-4 text-white drop-shadow-sm" />
+                <span className="relative z-10 text-white drop-shadow-sm">
+                  Add Task
+                </span>
               </button>
             ) : null}
 
@@ -479,7 +808,7 @@ export default function StackPanel({
               type="button"
               onClick={refresh}
               disabled={!projectId || loading}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-white/70 transition-all hover:bg-slate-200 dark:hover:bg-white/15 disabled:opacity-50"
+              className="stack-refresh-button inline-flex items-center gap-2 rounded-2xl bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-white/80 transition-all hover:-translate-y-0.5 hover:bg-slate-200 dark:hover:bg-white/15 disabled:translate-y-0 disabled:opacity-50"
               title="Refresh tasks"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -489,7 +818,7 @@ export default function StackPanel({
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] p-4">
+          <div className="stack-signal-card stack-signal-ready rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
               <ListChecks className="h-3.5 w-3.5 text-violet-500" />
               Ready
@@ -499,7 +828,7 @@ export default function StackPanel({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-amber-200/80 dark:border-amber-400/20 bg-amber-50/60 dark:bg-amber-500/10 p-4">
+          <div className="stack-signal-card stack-signal-blocking rounded-2xl border border-amber-200/80 dark:border-amber-400/20 bg-amber-50/60 dark:bg-amber-500/10 p-4">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
               <Flame className="h-3.5 w-3.5" />
               Blocking
@@ -509,7 +838,7 @@ export default function StackPanel({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-rose-200/80 dark:border-rose-400/20 bg-rose-50/60 dark:bg-rose-500/10 p-4">
+          <div className="stack-signal-card stack-signal-critical rounded-2xl border border-rose-200/80 dark:border-rose-400/20 bg-rose-50/60 dark:bg-rose-500/10 p-4">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-rose-600 dark:text-rose-300">
               <ShieldAlert className="h-3.5 w-3.5" />
               Critical
@@ -519,7 +848,7 @@ export default function StackPanel({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-cyan-200/80 dark:border-cyan-400/20 bg-cyan-50/60 dark:bg-cyan-500/10 p-4">
+          <div className="stack-signal-card stack-signal-assigned rounded-2xl border border-cyan-200/80 dark:border-cyan-400/20 bg-cyan-50/60 dark:bg-cyan-500/10 p-4">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">
               <User className="h-3.5 w-3.5" />
               Assigned
@@ -531,7 +860,7 @@ export default function StackPanel({
         </div>
 
         {showAddForm ? (
-          <div className="mt-5 rounded-3xl border border-violet-200 dark:border-violet-400/20 bg-gradient-to-br from-violet-50 via-white to-cyan-50 dark:from-violet-500/10 dark:via-white/[0.04] dark:to-cyan-500/10 p-4 shadow-inner">
+          <div className="stack-task-composer mt-5 rounded-3xl border border-violet-200 dark:border-violet-400/20 bg-gradient-to-br from-violet-50 via-white to-cyan-50 dark:from-violet-500/10 dark:via-white/[0.04] dark:to-cyan-500/10 p-4 shadow-inner">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-xl bg-white dark:bg-white/10 border border-violet-200 dark:border-violet-400/20 flex items-center justify-center">
@@ -628,14 +957,37 @@ export default function StackPanel({
                 type="button"
                 onClick={handleAddTask}
                 disabled={addingTask || !newTitle.trim()}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 hover:bg-violet-700 disabled:translate-y-0 disabled:opacity-40 disabled:hover:bg-violet-600"
+                className="stack-composer-add-button relative isolate inline-flex min-h-[48px] items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-3 text-xs font-black text-white shadow-lg transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:translate-y-0"
               >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-2xl"
+                  style={{
+                    background:
+                      addingTask || !newTitle.trim()
+                        ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)'
+                        : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                    boxShadow:
+                      addingTask || !newTitle.trim()
+                        ? 'inset 0 1px 0 rgba(255,255,255,0.24), 0 10px 24px rgba(109,40,217,0.20)'
+                        : 'inset 0 1px 0 rgba(255,255,255,0.28), 0 16px 36px rgba(109,40,217,0.38)',
+                    opacity: addingTask || !newTitle.trim() ? 0.76 : 1,
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/80"
+                />
+
                 {addingTask ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <RefreshCw className="relative z-10 h-4 w-4 animate-spin text-white drop-shadow-sm" />
                 ) : (
-                  <Plus className="h-4 w-4" />
+                  <Plus className="relative z-10 h-4 w-4 text-white drop-shadow-sm" />
                 )}
-                {addingTask ? "Adding…" : "Add Task"}
+
+                <span className="relative z-10 whitespace-nowrap text-white drop-shadow-sm">
+                  {addingTask ? "Adding…" : "Add Task"}
+                </span>
               </button>
             </div>
           </div>
@@ -663,7 +1015,7 @@ export default function StackPanel({
           </div>
         ) : null}
 
-        <div className="mt-5 min-h-[140px] rounded-3xl border border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-black/10 p-3 sm:p-4">
+        <div className="stack-task-list-shell mt-5 min-h-[140px] rounded-3xl border border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-black/10 p-3 sm:p-4">
           {loading && filteredTasks.length === 0 ? (
             <div className="flex items-center gap-2 p-4 text-xs text-slate-400 dark:text-white/40">
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -696,7 +1048,7 @@ export default function StackPanel({
               {!hasFilter && projectId && !showAddForm ? (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition-all group-hover:-translate-y-0.5 group-hover:bg-violet-700 active:translate-y-0"
+                  className="stack-first-task-button inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/20 transition-all group-hover:-translate-y-0.5 group-hover:bg-violet-700 active:translate-y-0"
                 >
                   <Plus className="h-4 w-4" />
                   Add Your First Task
@@ -726,6 +1078,7 @@ export default function StackPanel({
           ) : null}
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

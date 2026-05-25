@@ -242,7 +242,7 @@ export default function StackTaskRow({
         icon: Send,
         onClick: () => onMoveToReview?.(task),
         classes:
-          "bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
+          "stack-review-action bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
       };
     }
 
@@ -253,7 +253,7 @@ export default function StackTaskRow({
         icon: Play,
         onClick: () => onStart?.(task),
         classes:
-          "bg-violet-600 hover:bg-violet-700 text-white shadow-sm",
+          "stack-start-action bg-violet-600 hover:bg-violet-700 text-white shadow-sm",
       };
     }
 
@@ -262,7 +262,7 @@ export default function StackTaskRow({
 
   return (
     <div
-      className={`group relative rounded-xl border-l-[3px] border border-slate-200 dark:border-white/10
+      className={`stack-task-row group relative rounded-xl border-l-[3px] border border-slate-200 dark:border-white/10
         bg-white dark:bg-white/[0.03]
         hover:bg-slate-50 dark:hover:bg-white/[0.06]
         transition-all duration-200
@@ -271,14 +271,14 @@ export default function StackTaskRow({
         ${disabled && !completing ? "opacity-60" : ""}
       `}
     >
-      <div className="p-3">
+      <div className="stack-task-row-inner p-3">
         <div className="flex items-start gap-3">
           {/* ── Checkbox ───────────────────────────────────────────────── */}
           <button
             type="button"
             onClick={handleCheckboxClick}
             disabled={disabled || completing}
-            className={`mt-0.5 flex-shrink-0 rounded-full transition-colors
+            className={`stack-task-complete-button mt-0.5 flex-shrink-0 rounded-full transition-colors
               ${
                 completing
                   ? "text-teal-500 dark:text-teal-400"
@@ -300,7 +300,7 @@ export default function StackTaskRow({
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="font-medium text-sm text-slate-800 dark:text-white truncate">
+                  <div className="stack-task-title font-bold text-sm text-slate-900 dark:text-white truncate">
                     {title}
                   </div>
 
@@ -380,7 +380,7 @@ export default function StackTaskRow({
                   type="button"
                   disabled={disabled}
                   onClick={primaryAction.onClick}
-                  className={`inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold px-3 py-2 rounded-lg
+                  className={`stack-task-action inline-flex items-center justify-center gap-1.5 text-[11px] font-black px-3 py-2 rounded-lg
                     disabled:opacity-50 transition-colors flex-shrink-0 ${primaryAction.classes}`}
                   title={primaryAction.title}
                 >
