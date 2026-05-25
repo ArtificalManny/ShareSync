@@ -190,7 +190,12 @@ function FileCard({
   };
 
   return (
-    <div className="group relative p-4 rounded-xl bg-surface-1 border border-white/[0.06] hover:border-white/[0.12] hover:bg-surface-2 transition-all cursor-pointer">
+    <div className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-200 hover:shadow-[0_28px_70px_rgba(124,58,237,0.16)] dark:border-white/[0.08] dark:bg-white/[0.045] dark:shadow-black/25 dark:hover:border-violet-400/25">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-violet-400/10 blur-2xl transition-opacity duration-300 group-hover:opacity-100 dark:bg-violet-500/10" />
+
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-violet-400/10 blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-violet-500/10" />
+
       <button
         type="button"
         onClick={(event) => {
@@ -198,27 +203,28 @@ function FileCard({
           setIsMenuOpen((value) => !value);
         }}
         className="
-          absolute top-2.5 right-2.5 z-20
-          w-8 h-8 rounded-lg
-          bg-black/35 hover:bg-black/55 text-white
-          opacity-0 group-hover:opacity-100 focus:opacity-100
-          flex items-center justify-center
-          transition-all
+          absolute right-4 top-4 z-20
+          flex h-9 w-9 items-center justify-center rounded-2xl
+          border border-white/70 bg-white/85 text-slate-600
+          opacity-0 shadow-lg shadow-slate-900/10 backdrop-blur-xl
+          transition-all hover:-translate-y-0.5 hover:text-slate-950
+          group-hover:opacity-100 focus:opacity-100
+          dark:border-white/[0.1] dark:bg-black/35 dark:text-white
+          dark:hover:bg-black/55
         "
         title="File actions"
         aria-label={`Actions for ${fileName}`}
       >
-        <MoreHorizontal className="w-4 h-4" />
+        <MoreHorizontal className="h-4 w-4" />
       </button>
 
       {isMenuOpen ? (
         <div
           className="
-            absolute top-11 right-2.5 z-30 w-48
-            rounded-xl border border-slate-200 dark:border-white/[0.08]
-            bg-white dark:bg-[#141418]
-            shadow-xl shadow-slate-900/10 dark:shadow-black/30
-            overflow-hidden
+            absolute right-4 top-14 z-30 w-52
+            overflow-hidden rounded-2xl border border-slate-200
+            bg-white shadow-2xl shadow-slate-900/15
+            dark:border-white/[0.08] dark:bg-[#141418] dark:shadow-black/40
           "
           onClick={(event) => event.stopPropagation()}
         >
@@ -226,17 +232,16 @@ function FileCard({
             type="button"
             onClick={handleRenameClick}
             className="
-              w-full px-3 py-2.5 text-left text-sm
-              text-slate-700 dark:text-zinc-200
-              hover:bg-slate-50 dark:hover:bg-white/[0.06]
-              transition-colors
+              w-full px-4 py-3 text-left text-sm font-semibold
+              text-slate-700 transition-colors hover:bg-slate-50
+              dark:text-zinc-200 dark:hover:bg-white/[0.06]
             "
           >
             Rename
           </button>
 
-          <div className="px-3 py-2.5 border-t border-slate-100 dark:border-white/[0.06]">
-            <label className="block text-[11px] uppercase tracking-wide font-semibold text-slate-500 dark:text-zinc-500 mb-1.5">
+          <div className="border-t border-slate-100 px-4 py-3 dark:border-white/[0.06]">
+            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
               Move to
             </label>
 
@@ -244,11 +249,10 @@ function FileCard({
               value={currentFolderId || ''}
               onChange={handleMoveChange}
               className="
-                w-full rounded-lg border border-slate-200 dark:border-white/[0.08]
-                bg-white dark:bg-[#101014]
-                px-2 py-2 text-xs
-                text-slate-800 dark:text-zinc-100
-                outline-none focus:ring-2 focus:ring-violet-500/30
+                w-full rounded-xl border border-slate-200 bg-white
+                px-3 py-2 text-xs font-semibold text-slate-800 outline-none
+                focus:ring-2 focus:ring-violet-500/30
+                dark:border-white/[0.08] dark:bg-[#101014] dark:text-zinc-100
               "
             >
               <option value="">Project Root</option>
@@ -264,11 +268,9 @@ function FileCard({
             type="button"
             onClick={handleDeleteClick}
             className="
-              w-full px-3 py-2.5 text-left text-sm
-              text-red-600 dark:text-red-400
-              hover:bg-red-50 dark:hover:bg-red-500/10
-              border-t border-slate-100 dark:border-white/[0.06]
-              transition-colors
+              w-full border-t border-slate-100 px-4 py-3 text-left text-sm font-semibold
+              text-red-600 transition-colors hover:bg-red-50
+              dark:border-white/[0.06] dark:text-red-400 dark:hover:bg-red-500/10
             "
           >
             Delete
@@ -278,26 +280,32 @@ function FileCard({
 
       <div
         className={`
-          w-full aspect-square rounded-lg flex items-center justify-center mb-3
-          relative overflow-hidden
-          ${canPreviewImage ? 'bg-slate-100 dark:bg-surface-2' : style.bg}
+          relative mb-4 flex aspect-square w-full items-center justify-center overflow-hidden rounded-[1.35rem]
+          border border-slate-200/80 shadow-inner
+          ${canPreviewImage ? 'bg-slate-100 dark:bg-white/[0.04]' : `${style.bg} bg-opacity-80`}
         `}
       >
         {canPreviewImage ? (
           <img
             src={fileUrl}
             alt={fileName}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <Icon className={`w-10 h-10 ${style.color}`} />
+          <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-white/60 bg-white/70 shadow-lg shadow-slate-900/5 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.06]">
+            <Icon className={`h-10 w-10 ${style.color}`} />
+          </div>
         )}
 
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+        <div className="absolute left-3 top-3 rounded-full border border-slate-300/90 bg-slate-950/88 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)] backdrop-blur-xl dark:border-white/30 dark:bg-black/80 dark:text-white">
+          {fileType}
+        </div>
+
+        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/70 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100">
           {isLegacyStorageUrl ? (
-            <span className="px-2 py-1 rounded-md bg-white/10 text-white text-xs text-center">
+            <span className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-center text-xs font-bold text-white">
               Re-upload needed
             </span>
           ) : fileUrl ? (
@@ -307,11 +315,11 @@ function FileCard({
                 target="_blank"
                 rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition-all hover:-translate-y-0.5 hover:bg-white/20"
                 title="Open preview"
                 aria-label={`Open ${fileName}`}
               >
-                <Eye className="w-5 h-5" />
+                <Eye className="h-5 w-5" />
               </a>
 
               <a
@@ -320,36 +328,38 @@ function FileCard({
                 rel="noreferrer"
                 download={fileName}
                 onClick={(e) => e.stopPropagation()}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition-all hover:-translate-y-0.5 hover:bg-white/20"
                 title="Download file"
                 aria-label={`Download ${fileName}`}
               >
-                <Download className="w-5 h-5" />
+                <Download className="h-5 w-5" />
               </a>
             </>
           ) : (
-            <span className="px-2 py-1 rounded-md bg-white/10 text-white text-xs">
+            <span className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-xs font-bold text-white">
               No preview
             </span>
           )}
         </div>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <h4
-          className="font-medium text-slate-900 dark:text-text-primary text-sm truncate mb-1"
+          className="mb-2 truncate text-sm font-black text-slate-950 dark:text-white"
           title={fileName}
         >
           {fileName}
         </h4>
 
-        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-text-tertiary">
-          <span>{formatBytes(file?.sizeInBytes || file?.size || 0)}</span>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-zinc-400">
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-white/[0.06]">
+            {formatBytes(file?.sizeInBytes || file?.size || 0)}
+          </span>
+
           {createdDate ? (
-            <>
-              <span>•</span>
-              <span>{createdDate}</span>
-            </>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-white/[0.06]">
+              {createdDate}
+            </span>
           ) : null}
         </div>
       </div>
@@ -358,43 +368,90 @@ function FileCard({
 }
 
 
+
+
 function FolderSection({ folder, files, folders, viewMode, isExpanded, onToggle, onRenameFile, onMoveFile, onDeleteFile }) {
+  const folderName = folder?.name || 'Untitled folder';
+  const isPrivate = folder?.accessLevel === 'private';
+
   return (
-    <div className="mb-6">
-      <button onClick={onToggle} className="flex items-center gap-3 px-2 py-2 w-full hover:bg-surface-1 rounded-lg transition-colors">
-        <ChevronRight className={`w-4 h-4 text-slate-500 dark:text-text-tertiary ${isExpanded ? 'rotate-90' : ''} transition-transform`} />
-        <Folder className={`w-5 h-5 ${folder.accessLevel === 'private' ? 'text-brand-400' : 'text-warning-400'}`} />
-        <span className="font-medium text-slate-900 dark:text-text-primary">{folder.name}</span>
-        <span className="text-sm text-slate-500 dark:text-text-tertiary">({files.length} files)</span>
-        {folder.accessLevel === 'private' && (
-          <span className="px-2 py-0.5 rounded-md bg-surface-2 text-xs text-slate-500 dark:text-text-tertiary ml-2 border border-white/[0.04]">
-            Private
+    <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/75 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-black/25">
+      <button
+        onClick={onToggle}
+        className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.04]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-600 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+            <Folder className="h-5 w-5" />
           </span>
-        )}
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-base font-black text-slate-950 dark:text-white">
+                {folderName}
+              </span>
+
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-400">
+                {files.length} file{files.length === 1 ? '' : 's'}
+              </span>
+
+              {isPrivate ? (
+                <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                  Private
+                </span>
+              ) : null}
+            </div>
+
+            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-zinc-400">
+              Organized project assets and supporting files.
+            </p>
+          </div>
+        </div>
+
+        <ChevronRight
+          className={`h-5 w-5 flex-shrink-0 text-slate-400 transition-transform duration-200 dark:text-zinc-500 ${
+            isExpanded ? 'rotate-90' : ''
+          }`}
+        />
       </button>
       
       {isExpanded && files.length > 0 && (
-        <div className="mt-3 ml-7 grid grid-cols-4 gap-4">
-          {files.map(file => (
-            <FileCard
-              key={file._id}
-              file={file}
-              folders={folders}
-              onRenameFile={onRenameFile}
-              onMoveFile={onMoveFile}
-              onDeleteFile={onDeleteFile}
-            />
-          ))}
+        <div className="border-t border-slate-200/70 p-5 dark:border-white/[0.08]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {files.map(file => (
+              <FileCard
+                key={file._id}
+                file={file}
+                folders={folders}
+                onRenameFile={onRenameFile}
+                onMoveFile={onMoveFile}
+                onDeleteFile={onDeleteFile}
+              />
+            ))}
+          </div>
         </div>
       )}
+
       {isExpanded && files.length === 0 && (
-        <div className="mt-3 ml-7 py-4 text-sm text-slate-500 dark:text-text-tertiary border-l-2 border-surface-2 pl-4">
-          Folder is empty
+        <div className="border-t border-slate-200/70 p-5 dark:border-white/[0.08]">
+          <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center dark:border-white/[0.08] dark:bg-white/[0.03]">
+            <Archive className="mx-auto mb-3 h-8 w-8 text-slate-400 dark:text-zinc-500" />
+            <p className="text-sm font-black text-slate-700 dark:text-zinc-200">
+              Folder is empty
+            </p>
+            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-zinc-500">
+              Move files here or upload new assets into this folder.
+            </p>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
+
+
+
 
 export default function VaultView({ projectId }) {
   const [loading, setLoading] = useState(true);
@@ -515,100 +572,214 @@ export default function VaultView({ projectId }) {
   const usagePercentage = Math.min((data.storage.usedBytes / data.storage.limitBytes) * 100, 100);
 
   return (
-    <div className="p-10 max-w-[1400px] mx-auto relative">
+    <div className="relative mx-auto max-w-[1500px] px-4 py-8 pb-32 sm:px-6 lg:px-10">
+      <style>
+        {`
+          .vault-upload-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(124, 58, 237, 0.95) !important;
+            box-shadow: 0 16px 36px rgba(109, 40, 217, 0.38) !important;
+            opacity: 1 !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+            isolation: isolate !important;
+          }
+
+          .vault-upload-button:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            box-shadow: 0 20px 44px rgba(109, 40, 217, 0.5) !important;
+          }
+
+          .vault-upload-button,
+          .vault-upload-button span,
+          .vault-upload-button svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+          }
+        `}
+      </style>
       {loading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-0/50 backdrop-blur-sm">
-          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] bg-white/60 backdrop-blur-xl dark:bg-slate-950/50">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-xl dark:border-white/[0.08] dark:bg-[#111113]">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+            <span className="text-sm font-black text-slate-700 dark:text-zinc-200">
+              Loading vault...
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Storage Progress Bar */}
-      <div className="mb-8 p-5 rounded-2xl bg-surface-1 border border-white/[0.04]">
-        <div className="flex justify-between items-end mb-3">
-          <div>
-            {/* LIGHT MODE CONTRAST FIX: Workspace Storage */}
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-text-primary">
-              Workspace Storage
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-text-tertiary">
-              Using {formatBytes(data.storage.usedBytes)} of {formatBytes(data.storage.limitBytes)}
-            </p>
-          </div>
-          <button
-            onClick={() => setIsUpgradeModalOpen(true)}
-            className="text-xs font-medium text-violet-700 dark:text-brand-400 hover:text-violet-600 dark:hover:text-brand-300"
-          >
-            Upgrade Plan
-          </button>
-        </div>
-        <div className="h-2 w-full bg-surface-3 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${usagePercentage > 90 ? 'bg-error-500' : 'bg-brand-500'}`}
-            style={{ width: `${usagePercentage}%` }}
-          />
-        </div>
-      </div>
+      <section className="relative mb-8 overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
+        <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" />
 
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          
-          {/* THE SILENT CONSUMER: Upload Button + Mini Storage Indicator */}
-          <div className="relative flex flex-col group">
-            <button 
-              onClick={() => setIsUploadModalOpen(true)} 
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-medium hover:bg-brand-400 transition-colors relative z-10"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Upload</span>
-            </button>
-
-            {/* Tiny silent storage indicator underneath */}
-            <div 
-              className="absolute -bottom-1.5 left-1.5 right-1.5 h-1 rounded-full overflow-hidden bg-black/10 dark:bg-white/10"
-              title={`${formatBytes(data.storage.usedBytes)} / ${formatBytes(data.storage.limitBytes)} used`}
-            >
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  usagePercentage > 90 
-                    ? 'bg-error-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' 
-                    : usagePercentage > 75 
-                      ? 'bg-warning-500' 
-                      : 'bg-white/40'
-                }`} 
-                style={{ width: `${usagePercentage}%` }} 
-              />
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-200">
+              <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
+              <Archive className="h-6 w-6" />
             </div>
+
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  Project Vault
+                </h2>
+
+                <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                  File Command
+                </span>
+
+                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200">
+                  Live Assets
+                </span>
+              </div>
+
+              <p className="max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
+                Store, organize, preview, and move project assets from one clear source of truth.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 sm:min-w-[420px]">
+            <div className="rounded-3xl border border-slate-200 bg-white/85 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+                Files
+              </div>
+              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+                {data.files.length}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700 dark:text-amber-200">
+                Folders
+              </div>
+              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+                {data.folders.length}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-cyan-200 bg-cyan-50/80 p-4 shadow-sm dark:border-cyan-400/20 dark:bg-cyan-500/10">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-200">
+                Visible
+              </div>
+              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+                {filteredFiles.length}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-7 rounded-[1.75rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-950 dark:text-white">
+                  Storage Intelligence
+                </h3>
+
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  {Math.round(usagePercentage)}% Used
+                </span>
+              </div>
+
+              <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+                Using {formatBytes(data.storage.usedBytes)} of {formatBytes(data.storage.limitBytes)}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="inline-flex items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-700 transition-all hover:-translate-y-0.5 hover:bg-violet-100 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20"
+            >
+              Upgrade Plan
+            </button>
+          </div>
+
+          <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner dark:bg-white/[0.06]">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${
+                usagePercentage > 90
+                  ? 'bg-gradient-to-r from-red-500 to-rose-500'
+                  : usagePercentage > 75
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                    : 'bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400'
+              }`}
+              style={{ width: `${usagePercentage}%` }}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex flex-col group">
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="vault-upload-button relative z-10 isolate inline-flex items-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-sm font-black transition-all hover:-translate-y-0.5 focus:outline-none"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.26)',
+                }}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/90"
+              />
+              <Upload className="relative z-10 h-4 w-4 text-white drop-shadow-sm" />
+              <span className="relative z-10 text-white drop-shadow-sm">Upload</span>
+            </button>
           </div>
 
           <button
             onClick={() => setIsFolderModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08] text-slate-700 dark:text-text-secondary text-sm hover:bg-surface-2 transition-colors"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-200 hover:bg-amber-50 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-200 dark:hover:border-amber-400/20 dark:hover:bg-amber-500/10"
           >
-            <FolderPlus className="w-4 h-4" />
+            <FolderPlus className="h-4 w-4" />
             <span>New Folder</span>
           </button>
         </div>
-        
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-1 border border-white/[0.08]">
-          <Search className="w-4 h-4 text-slate-500 dark:text-text-tertiary" />
+
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.05]">
+          <Search className="h-4 w-4 flex-shrink-0 text-slate-400 dark:text-zinc-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search files..."
-            className="bg-transparent text-sm text-slate-900 dark:text-text-primary placeholder:text-slate-500 dark:placeholder:text-text-tertiary outline-none w-48"
+            className="w-full min-w-[220px] bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-zinc-500 lg:w-72"
           />
         </div>
-      </div>
+      </section>
       
-      <div>
+      <section className="relative">
         {rootFiles.length > 0 && (
-          <div className="mb-8">
-            {/* LIGHT MODE CONTRAST FIX: Project Root */}
-            <h3 className="text-sm font-medium text-slate-700 dark:text-text-secondary uppercase tracking-wide mb-4">
-              Project Root
-            </h3>
-            <div className="grid grid-cols-4 gap-4">
+          <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-black/25">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="mb-1 flex items-center gap-2">
+                  <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-700 dark:text-zinc-200">
+                    Project Root
+                  </h3>
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-400">
+                    {rootFiles.length} file{rootFiles.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+                  Top-level files available to the project.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {rootFiles.map(file => (
                 <FileCard
                   key={file._id}
@@ -645,37 +816,49 @@ export default function VaultView({ projectId }) {
 
         {!loading && data.folders.length === 0 && data.files.length === 0 && (
           <div className="mt-8 space-y-6">
-            {/* ✅ Priority 1: Category quick-start cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               {[
-                { label: 'Documents', emoji: '📄', desc: 'Specs, notes, guides', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
-                { label: 'Design', emoji: '🎨', desc: 'Mockups, wireframes', bg: 'bg-pink-500/10', border: 'border-pink-500/20', text: 'text-pink-400' },
-                { label: 'Media', emoji: '🎬', desc: 'Images, videos, audio', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400' },
-                { label: 'Code', emoji: '💻', desc: 'Scripts, configs, exports', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-400' },
+                { label: 'Documents', emoji: '📄', desc: 'Specs, notes, guides', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-500' },
+                { label: 'Design', emoji: '🎨', desc: 'Mockups, wireframes', bg: 'bg-pink-500/10', border: 'border-pink-500/20', text: 'text-pink-500' },
+                { label: 'Media', emoji: '🎬', desc: 'Images, videos, audio', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-500' },
+                { label: 'Code', emoji: '💻', desc: 'Scripts, configs, exports', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-500' },
               ].map((cat) => (
                 <button
                   key={cat.label}
                   onClick={() => setIsFolderModalOpen(true)}
-                  className={`p-5 rounded-2xl ${cat.bg} border border-dashed ${cat.border} text-center hover:scale-[1.02] transition-all duration-200 cursor-pointer`}
+                  className={`rounded-[1.75rem] ${cat.bg} border border-dashed ${cat.border} p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl`}
                 >
-                  <div className="text-3xl mb-2">{cat.emoji}</div>
-                  <h4 className={`text-sm font-semibold ${cat.text} mb-1`}>{cat.label}</h4>
-                  <p className="text-xs text-slate-500 dark:text-text-tertiary">{cat.desc}</p>
+                  <div className="mb-3 text-4xl">{cat.emoji}</div>
+                  <h4 className={`mb-1 text-sm font-black ${cat.text}`}>{cat.label}</h4>
+                  <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">{cat.desc}</p>
                 </button>
               ))}
             </div>
 
-            {/* Original empty state */}
-            <div className="py-16 text-center border border-dashed border-white/[0.1] rounded-2xl bg-surface-1/30">
-              <Archive className="w-12 h-12 text-slate-500 dark:text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-text-primary mb-2">Vault is empty</h3>
-              <p className="text-sm text-slate-600 dark:text-text-tertiary mb-6">
+            <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white/70 px-6 py-16 text-center shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035]">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl border border-violet-200 bg-violet-50 text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                <Archive className="h-8 w-8" />
+              </div>
+
+              <h3 className="mb-2 text-xl font-black text-slate-950 dark:text-white">
+                Vault is empty
+              </h3>
+
+              <p className="mx-auto mb-6 max-w-md text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
                 Upload files or create folders to organize your assets securely.
               </p>
+
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+              >
+                <Upload className="h-4 w-4" />
+                Upload first file
+              </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       <CreateFolderModal
         isOpen={isFolderModalOpen}
