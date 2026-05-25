@@ -297,7 +297,7 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
   const card = (
     <div
       ref={cardRef}
-      className="relative rounded-2xl overflow-hidden"
+      className="weekly-momentum-card relative rounded-2xl overflow-hidden"
       style={{
         background: tier.bg,
         boxShadow: `0 0 60px -20px rgba(${tier.glowRGB}, 0.12), 0 20px 40px -15px rgba(0,0,0,0.4)`,
@@ -447,7 +447,58 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
   // ─── Embedded mode ───────────────────────────────────────────────────────
   if (embedded) {
     return (
-      <div className="space-y-3">
+      <div className="weekly-momentum-shell space-y-3">
+        <style>
+          {`
+            .weekly-momentum-shell {
+              position: relative;
+            }
+
+            .weekly-momentum-card {
+              border: 1px solid rgba(139,92,246,0.22) !important;
+              box-shadow:
+                0 30px 90px rgba(15,23,42,0.22),
+                0 0 90px rgba(139,92,246,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.08) !important;
+              min-height: 335px;
+            }
+
+            .weekly-momentum-card::before {
+              content: "";
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background:
+                radial-gradient(circle at 8% 10%, rgba(139,92,246,0.22), transparent 30%),
+                radial-gradient(circle at 94% 16%, rgba(34,211,238,0.14), transparent 30%),
+                linear-gradient(180deg, rgba(255,255,255,0.03), transparent 38%);
+              z-index: 1;
+            }
+
+            .weekly-save-button {
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+              color: #ffffff !important;
+              border: 1px solid rgba(196,181,253,0.72) !important;
+              box-shadow:
+                0 16px 36px rgba(109,40,217,0.34),
+                inset 0 1px 0 rgba(255,255,255,0.24) !important;
+            }
+
+            .weekly-save-button:hover {
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+              box-shadow:
+                0 22px 48px rgba(109,40,217,0.46),
+                inset 0 1px 0 rgba(255,255,255,0.24) !important;
+            }
+
+            .weekly-save-button,
+            .weekly-save-button span,
+            .weekly-save-button svg {
+              color: #ffffff !important;
+              stroke: #ffffff !important;
+            }
+          `}
+        </style>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
@@ -458,11 +509,34 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
               <RefreshCw className="w-4 h-4" />
             </button>
             <button
-              onClick={handleExport} disabled={exporting}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 transition-all shadow-sm hover:shadow-violet-500/20"
+              onClick={handleExport}
+              disabled={exporting}
+              className="weekly-save-button relative isolate flex items-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-xs font-black text-white transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-100 hover:-translate-y-0.5"
             >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              {exporting ? 'Exporting...' : 'Save as Image'}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-xl"
+                style={{
+                  background: exporting
+                    ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)'
+                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                  boxShadow: exporting
+                    ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 24px rgba(109,40,217,0.22)'
+                    : 'inset 0 1px 0 rgba(255,255,255,0.26), 0 16px 36px rgba(109,40,217,0.38)',
+                }}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-xl border border-violet-200/80"
+              />
+              {exporting ? (
+                <Loader2 className="relative z-10 w-3.5 h-3.5 animate-spin text-white drop-shadow-sm" />
+              ) : (
+                <Download className="relative z-10 w-3.5 h-3.5 text-white drop-shadow-sm" />
+              )}
+              <span className="relative z-10 text-white drop-shadow-sm">
+                {exporting ? 'Exporting...' : 'Save as Image'}
+              </span>
             </button>
           </div>
         </div>
@@ -478,11 +552,34 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
       <div className="relative w-full max-w-3xl">
         <div className="flex items-center justify-between mb-4">
           <button
-            onClick={handleExport} disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm disabled:opacity-50 transition-all border border-white/10"
+            onClick={handleExport}
+            disabled={exporting}
+            className="weekly-save-button relative isolate flex items-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-black text-white backdrop-blur-sm transition-all border border-white/10 disabled:cursor-not-allowed disabled:opacity-100 hover:-translate-y-0.5"
           >
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Save as Image
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-xl"
+              style={{
+                background: exporting
+                  ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)'
+                  : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                boxShadow: exporting
+                  ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 24px rgba(109,40,217,0.22)'
+                  : 'inset 0 1px 0 rgba(255,255,255,0.26), 0 16px 36px rgba(109,40,217,0.38)',
+              }}
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-xl border border-violet-200/80"
+            />
+            {exporting ? (
+              <Loader2 className="relative z-10 w-4 h-4 animate-spin text-white drop-shadow-sm" />
+            ) : (
+              <Download className="relative z-10 w-4 h-4 text-white drop-shadow-sm" />
+            )}
+            <span className="relative z-10 text-white drop-shadow-sm">
+              Save as Image
+            </span>
           </button>
           <button onClick={onClose} className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all">
             <X className="w-5 h-5" />

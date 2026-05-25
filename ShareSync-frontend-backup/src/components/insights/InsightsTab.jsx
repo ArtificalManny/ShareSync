@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
+import { Gauge, Clock3, Target, Users2, Activity, Scale } from 'lucide-react';
 import { getProjectInsights } from '../../api/insights';
 import MetricCard from './MetricCard';
 import SprintHealth from './SprintHealth';
@@ -55,20 +56,149 @@ const InsightsTab = ({ projectId }) => {
   const aiInsights = data?.aiInsights;
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="insights-tab-shell space-y-6 pb-20">
+      <style>
+        {`
+          .insights-tab-shell {
+            position: relative;
+          }
+
+          .insights-tab-shell::before {
+            content: "";
+            position: absolute;
+            inset: -24px -18px auto -18px;
+            height: 320px;
+            pointer-events: none;
+            background:
+              radial-gradient(circle at 8% 12%, rgba(139, 92, 246, 0.16), transparent 34%),
+              radial-gradient(circle at 88% 10%, rgba(34, 211, 238, 0.13), transparent 34%);
+            opacity: 0.85;
+            z-index: -1;
+          }
+
+          .insights-tab-header {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(124, 58, 237, 0.16);
+            border-radius: 1.75rem;
+            padding: 1.25rem 1.35rem;
+            background:
+              radial-gradient(circle at 8% 18%, rgba(139, 92, 246, 0.16), transparent 34%),
+              radial-gradient(circle at 96% 8%, rgba(34, 211, 238, 0.12), transparent 32%),
+              linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,250,252,0.82));
+            box-shadow:
+              0 24px 76px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255,255,255,0.78);
+            backdrop-filter: blur(18px);
+          }
+
+          .dark .insights-tab-header {
+            border-color: rgba(255,255,255,0.10);
+            background:
+              radial-gradient(circle at 8% 18%, rgba(139, 92, 246, 0.20), transparent 34%),
+              radial-gradient(circle at 96% 8%, rgba(34, 211, 238, 0.10), transparent 32%),
+              linear-gradient(135deg, rgba(15,23,42,0.94), rgba(2,6,23,0.88));
+            box-shadow:
+              0 30px 96px rgba(0,0,0,0.40),
+              inset 0 1px 0 rgba(255,255,255,0.08);
+          }
+
+          .insights-range-selector {
+            border-radius: 999px !important;
+            background: rgba(255,255,255,0.74) !important;
+            box-shadow:
+              0 12px 32px rgba(15,23,42,0.08),
+              inset 0 1px 0 rgba(255,255,255,0.72);
+          }
+
+          .dark .insights-range-selector {
+            background: rgba(15,23,42,0.70) !important;
+            box-shadow:
+              0 14px 40px rgba(0,0,0,0.32),
+              inset 0 1px 0 rgba(255,255,255,0.06);
+          }
+
+          .insights-momentum-banner {
+            background:
+              radial-gradient(circle at 3% 35%, rgba(16,185,129,0.22), transparent 28%),
+              linear-gradient(135deg, rgba(236,253,245,0.96), rgba(240,253,250,0.78)) !important;
+            border-color: rgba(16,185,129,0.28) !important;
+            box-shadow:
+              0 18px 52px rgba(16,185,129,0.10),
+              inset 0 1px 0 rgba(255,255,255,0.70) !important;
+          }
+
+          .dark .insights-momentum-banner {
+            background:
+              radial-gradient(circle at 3% 35%, rgba(16,185,129,0.18), transparent 28%),
+              linear-gradient(135deg, rgba(6,78,59,0.30), rgba(2,6,23,0.72)) !important;
+            border-color: rgba(16,185,129,0.22) !important;
+          }
+
+          .insights-metrics-grid > *,
+          .insights-charts-grid > div > * {
+            position: relative;
+            overflow: hidden;
+            border-color: rgba(148,163,184,0.36) !important;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139,92,246,0.10), transparent 32%),
+              radial-gradient(circle at 100% 0%, rgba(34,211,238,0.08), transparent 30%),
+              linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.88)) !important;
+            box-shadow:
+              0 20px 58px rgba(15,23,42,0.10),
+              inset 0 1px 0 rgba(255,255,255,0.72) !important;
+            backdrop-filter: blur(16px);
+            transition:
+              transform 220ms ease,
+              box-shadow 220ms ease,
+              border-color 220ms ease;
+          }
+
+          .insights-metrics-grid > *:hover,
+          .insights-charts-grid > div > *:hover {
+            transform: translateY(-2px);
+            border-color: rgba(124,58,237,0.36) !important;
+            box-shadow:
+              0 30px 78px rgba(124,58,237,0.16),
+              inset 0 1px 0 rgba(255,255,255,0.80) !important;
+          }
+
+          .dark .insights-metrics-grid > *,
+          .dark .insights-charts-grid > div > * {
+            border-color: rgba(255,255,255,0.10) !important;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139,92,246,0.16), transparent 32%),
+              radial-gradient(circle at 100% 0%, rgba(34,211,238,0.10), transparent 30%),
+              linear-gradient(180deg, rgba(15,23,42,0.86), rgba(2,6,23,0.78)) !important;
+            box-shadow:
+              0 28px 90px rgba(0,0,0,0.42),
+              inset 0 1px 0 rgba(255,255,255,0.07) !important;
+          }
+
+          .insights-metrics-grid > *::before,
+          .insights-charts-grid > div > *::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8b5cf6, #22d3ee, #10b981);
+            opacity: 0.82;
+          }
+        `}
+      </style>
 
       {/* ✅ Weekly Momentum Report — always renders, fetches its own data */}
       <WeeklyMomentumReport projectId={projectId} embedded />
 
       {/* Header & Controls */}
-      <div className="flex items-center justify-between">
+      <div className="insights-tab-header flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Project Insights</h2>
           <p className="text-sm text-slate-500 dark:text-zinc-400">Velocity, cycle time, and team health.</p>
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex bg-slate-100 dark:bg-[#18181b] border border-slate-200 dark:border-[#27272a] rounded-lg p-1">
+        <div className="insights-range-selector flex bg-slate-100 dark:bg-[#18181b] border border-slate-200 dark:border-[#27272a] rounded-lg p-1">
           {['7d', '14d', '30d'].map((r) => (
             <button
               key={r}
@@ -109,7 +239,7 @@ const InsightsTab = ({ projectId }) => {
         <>
           {/* AI Insights Banner (Optional but awesome) */}
           {aiInsights && aiInsights.length > 0 && (
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-xl p-4 flex gap-4 items-start">
+            <div className="insights-momentum-banner bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-xl p-4 flex gap-4 items-start">
               <div className="bg-emerald-500/20 p-2 rounded-lg text-emerald-400">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
               </div>
@@ -121,15 +251,19 @@ const InsightsTab = ({ projectId }) => {
           )}
 
           {/* Top Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="insights-metrics-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               title="Velocity"
+              icon={Gauge}
+              iconTone="violet"
               value={metrics.velocity.value}
               trend={metrics.velocity.trend}
               unit={metrics.velocity.unit}
             />
             <MetricCard
               title="Avg Cycle Time"
+              icon={Clock3}
+              iconTone="blue"
               value={metrics.cycleTime.value}
               trend={metrics.cycleTime.trend}
               unit={metrics.cycleTime.unit}
@@ -137,12 +271,16 @@ const InsightsTab = ({ projectId }) => {
             />
             <MetricCard
               title="Completion Rate"
+              icon={Target}
+              iconTone="emerald"
               value={metrics.completionRate.value}
               trend={metrics.completionRate.trend}
               unit={metrics.completionRate.unit}
             />
             <MetricCard
               title="Collaboration"
+              icon={Users2}
+              iconTone="cyan"
               value={metrics.collaboration.value}
               trend={metrics.collaboration.trend}
               unit={metrics.collaboration.unit}
@@ -150,12 +288,18 @@ const InsightsTab = ({ projectId }) => {
           </div>
 
           {/* Main Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="insights-charts-grid grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-1">
-              <SprintHealth completionRate={metrics.completionRate.value} />
+              <SprintHealth
+                icon={Activity}
+                completionRate={metrics.completionRate.value}
+              />
             </div>
             <div className="lg:col-span-2">
-              <TeamBalance teamData={teamBalance} />
+              <TeamBalance
+                icon={Scale}
+                teamData={teamBalance}
+              />
             </div>
           </div>
         </>

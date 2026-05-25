@@ -523,7 +523,7 @@ function ActivityRow({ item, fallbackActor }) {
   const ago = timeAgo(item?.createdAt || item?.timestamp || item?.updatedAt);
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-slate-100 dark:border-white/[0.04] last:border-b-0 group">
+    <div className="insights-activity-row flex items-start gap-3 py-3 border-b border-slate-100 dark:border-white/[0.04] last:border-b-0 group">
       <div className="flex flex-col items-center mt-1">
         <div className={`w-2 h-2 rounded-full ${config.dot}`} />
         <div className="w-px flex-1 bg-slate-200 dark:bg-white/[0.06] mt-1 min-h-[28px] group-last:hidden" />
@@ -749,9 +749,65 @@ export default function ActivityFeed({ projectId, limit = 50, className = '' }) 
 
   return (
     <div
-      className={`bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] rounded-xl ${className}`}
+      className={`insights-activity-panel bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/[0.06] rounded-xl ${className}`}
       style={{ boxShadow: '0 2px 12px rgba(139, 92, 246, 0.04)' }}
     >
+      <style>
+        {`
+          .insights-activity-panel {
+            overflow: hidden;
+            border-color: rgba(148,163,184,0.34) !important;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139,92,246,0.10), transparent 30%),
+              radial-gradient(circle at 96% 0%, rgba(34,211,238,0.08), transparent 30%),
+              linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.90)) !important;
+            box-shadow:
+              0 24px 72px rgba(15,23,42,0.10),
+              inset 0 1px 0 rgba(255,255,255,0.74) !important;
+            backdrop-filter: blur(16px);
+          }
+
+          .dark .insights-activity-panel {
+            border-color: rgba(255,255,255,0.10) !important;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139,92,246,0.16), transparent 30%),
+              radial-gradient(circle at 96% 0%, rgba(34,211,238,0.10), transparent 30%),
+              linear-gradient(180deg, rgba(15,23,42,0.88), rgba(2,6,23,0.82)) !important;
+            box-shadow:
+              0 30px 90px rgba(0,0,0,0.42),
+              inset 0 1px 0 rgba(255,255,255,0.07) !important;
+          }
+
+          .insights-activity-panel::before {
+            content: "";
+            display: block;
+            height: 3px;
+            background: linear-gradient(90deg, #8b5cf6, #22d3ee, #10b981);
+            opacity: 0.90;
+          }
+
+          .insights-activity-row {
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+            border-radius: 1rem;
+            transition:
+              background 180ms ease,
+              transform 180ms ease,
+              box-shadow 180ms ease;
+          }
+
+          .insights-activity-row:hover {
+            background: rgba(139,92,246,0.055);
+            transform: translateX(2px);
+            box-shadow: inset 3px 0 0 rgba(139,92,246,0.32);
+          }
+
+          .dark .insights-activity-row:hover {
+            background: rgba(139,92,246,0.10);
+            box-shadow: inset 3px 0 0 rgba(167,139,250,0.42);
+          }
+        `}
+      </style>
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/[0.06]">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-violet-500 dark:text-violet-400" />
