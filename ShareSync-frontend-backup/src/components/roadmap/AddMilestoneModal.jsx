@@ -92,7 +92,196 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+    <div className="roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+      <style className="roadmap-create-final-button-visibility-style">
+        {`
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-hard-purple-button,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-hard-purple-button:disabled,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-hard-purple-button[disabled],
+          .roadmap-create-milestone-modal button.roadmap-create-hard-purple-button,
+          .roadmap-create-milestone-modal button.roadmap-create-hard-purple-button:disabled,
+          .roadmap-create-milestone-modal button.roadmap-create-hard-purple-button[disabled],
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-force-visible-button-v2,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-force-visible-button-v2:disabled,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-force-visible-button-v2[disabled],
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-button,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-button:disabled,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-button[disabled] {
+            background-color: #7c3aed !important;
+            background-image: linear-gradient(135deg, #a855f7 0%, #7c3aed 46%, #5b21b6 100%) !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            opacity: 1 !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+            border: 1px solid rgba(221, 214, 254, 0.96) !important;
+            box-shadow:
+              0 18px 42px rgba(109, 40, 217, 0.46),
+              inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28) !important;
+          }
+
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-hard-purple-button *,
+          .roadmap-create-milestone-modal button.roadmap-create-hard-purple-button *,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-force-visible-button-v2 *,
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-button * {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+            fill: none !important;
+            -webkit-text-fill-color: #ffffff !important;
+            opacity: 1 !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+          }
+
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-hard-purple-button:hover:not(:disabled),
+          .roadmap-create-milestone-modal button.roadmap-create-hard-purple-button:hover:not(:disabled),
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-force-visible-button-v2:hover:not(:disabled),
+          .roadmap-create-milestone-modal-v2 button.roadmap-create-button:hover:not(:disabled) {
+            transform: translateY(-1px) !important;
+            background-image: linear-gradient(135deg, #9333ea 0%, #6d28d9 48%, #4c1d95 100%) !important;
+            box-shadow:
+              0 22px 50px rgba(109, 40, 217, 0.54),
+              inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+          }
+        `}
+      </style>
+      <style className="roadmap-create-button-inline-visibility-v3-style">
+        {`
+          .roadmap-create-hard-purple-button,
+          .roadmap-create-hard-purple-button span,
+          .roadmap-create-hard-purple-button svg,
+          .roadmap-create-hard-purple-button * {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          .roadmap-create-hard-purple-button:disabled {
+            opacity: 0.92 !important;
+            cursor: not-allowed !important;
+          }
+
+          .roadmap-create-hard-purple-button:hover:not(:disabled) {
+            filter: brightness(1.04) saturate(1.08);
+            transform: translateY(-1px);
+          }
+        `}
+      </style>
+      <style className="roadmap-create-button-visibility-v2-style">
+        {`
+          .roadmap-create-force-visible-button-v2 {
+            position: relative !important;
+            isolation: isolate !important;
+            overflow: hidden !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            color: #ffffff !important;
+            opacity: 1 !important;
+            border: 1px solid rgba(221, 214, 254, 0.92) !important;
+            box-shadow:
+              0 16px 36px rgba(109, 40, 217, 0.40),
+              inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.24) !important;
+          }
+
+          .roadmap-create-force-visible-button-v2:hover:not(:disabled) {
+            transform: translateY(-1px) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            box-shadow:
+              0 20px 44px rgba(109, 40, 217, 0.48),
+              inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+          }
+
+          .roadmap-create-force-visible-button-v2:disabled {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+            color: #ffffff !important;
+            opacity: 0.88 !important;
+            cursor: not-allowed !important;
+            box-shadow:
+              0 12px 28px rgba(109, 40, 217, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
+          }
+
+          .roadmap-create-force-visible-button-v2,
+          .roadmap-create-force-visible-button-v2 span,
+          .roadmap-create-force-visible-button-v2 svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+            opacity: 1 !important;
+          }
+        `}
+      </style>
+      <style className="roadmap-create-modal-visual-style">
+        {`
+          .roadmap-create-milestone-modal > div {
+            border-color: rgba(124, 58, 237, 0.18) !important;
+            box-shadow:
+              0 34px 110px rgba(15, 23, 42, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+          }
+
+          .dark .roadmap-create-milestone-modal > div {
+            border-color: rgba(255, 255, 255, 0.10) !important;
+            box-shadow:
+              0 34px 120px rgba(0, 0, 0, 0.58),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .roadmap-create-milestone-modal footer,
+          .roadmap-create-milestone-modal [class*="sticky"][class*="bottom"] {
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.82), rgba(226, 232, 240, 0.74)) !important;
+            border-color: rgba(148, 163, 184, 0.20) !important;
+            backdrop-filter: blur(20px);
+          }
+
+          .dark .roadmap-create-milestone-modal footer,
+          .dark .roadmap-create-milestone-modal [class*="sticky"][class*="bottom"] {
+            background:
+              linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.82)) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .roadmap-create-button {
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            color: #ffffff !important;
+            border-color: rgba(221, 214, 254, 0.88) !important;
+            box-shadow:
+              0 16px 36px rgba(109, 40, 217, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+            opacity: 1 !important;
+          }
+
+          .roadmap-create-button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            box-shadow:
+              0 20px 44px rgba(109, 40, 217, 0.44),
+              inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+          }
+
+          .roadmap-create-button:disabled {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+            color: #ffffff !important;
+            opacity: 0.82 !important;
+            cursor: not-allowed !important;
+            box-shadow:
+              0 12px 28px rgba(109, 40, 217, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+          }
+
+          .roadmap-create-button,
+          .roadmap-create-button span,
+          .roadmap-create-button svg {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.22);
+          }
+        `}
+      </style>
       {/* Backdrop */}
       <button
         className="absolute inset-0 cursor-default"
@@ -236,11 +425,22 @@ export default function AddMilestoneModal({ projectId, onClose }) {
               <button
                 type="submit"
                 disabled={!canSave}
-                className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all ${
+                className={`roadmap-create-hard-purple-button roadmap-create-force-visible-button-v2 roadmap-create-button inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all ${
                   canSave
                     ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25 hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/35"
                     : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-white/[0.08] dark:text-white/30"
                 }`}
+              
+                style={{
+                  background:
+                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)",
+                  color: "#ffffff",
+                  opacity: 1,
+                  border: "1px solid rgba(221, 214, 254, 0.92)",
+                  boxShadow:
+                    "0 16px 36px rgba(109, 40, 217, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.30)",
+                  textShadow: "0 1px 8px rgba(0, 0, 0, 0.24)",
+                }}
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flag className="h-4 w-4" />}
                 Create Milestone

@@ -196,7 +196,7 @@ const MilestoneCard = ({
   return (
     <div
       onClick={handleClick}
-      className={`
+      className={`roadmap-milestone-card 
         group relative p-5 rounded-xl cursor-pointer
         bg-white dark:bg-surface-1 border transition-all duration-200
         ${isSelected

@@ -417,7 +417,7 @@ function DeleteConfirmModal({ milestone, onClose, onConfirm, deleting, error: de
           <button
             onClick={onConfirm}
             disabled={deleting}
-            className="
+            className="roadmap-refresh-button 
               flex-1 py-2.5 rounded-xl
               bg-red-500 dark:bg-error-500 text-white text-sm font-medium
               hover:bg-red-600 dark:hover:bg-error-600
@@ -665,174 +665,663 @@ export default function RoadmapPanel({
   );
 
   return (
-    <section className={`p-10 max-w-[1600px] mx-auto ${className}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-6 mb-6">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <MapIcon className="w-5 h-5 text-violet-500 dark:text-brand-400" />
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-text-primary">Roadmap</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200/70 text-violet-700 dark:bg-white/[0.06] dark:border-transparent dark:text-text-tertiary">
-              {counts.all} milestones
-            </span>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-text-tertiary">
-            Track milestones and deadlines. Progress updates instantly as tasks change.
-          </p>
-        </div>
+    <section className={`roadmap-command-map px-4 py-8 sm:px-6 lg:px-10 max-w-[1600px] mx-auto ${className}`}>
+        <style className="roadmap-final-button-visibility-style">
+          {`
+            section.roadmap-command-map button.roadmap-hard-purple-button,
+            section.roadmap-command-map button.roadmap-hard-purple-button:disabled,
+            section.roadmap-command-map button.roadmap-hard-purple-button[disabled],
+            section.roadmap-command-map button.roadmap-force-visible-button-v2,
+            section.roadmap-command-map button.roadmap-force-visible-button-v2:disabled,
+            section.roadmap-command-map button.roadmap-force-visible-button-v2[disabled],
+            section.roadmap-command-map button.roadmap-add-milestone-button,
+            section.roadmap-command-map button.roadmap-add-milestone-button:disabled,
+            section.roadmap-command-map button.roadmap-add-milestone-button[disabled] {
+              background-color: #7c3aed !important;
+              background-image: linear-gradient(135deg, #a855f7 0%, #7c3aed 46%, #5b21b6 100%) !important;
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+              opacity: 1 !important;
+              filter: none !important;
+              mix-blend-mode: normal !important;
+              border: 1px solid rgba(221, 214, 254, 0.96) !important;
+              box-shadow:
+                0 18px 42px rgba(109, 40, 217, 0.46),
+                inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+              text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28) !important;
+            }
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={fetchData}
-            className="
-              inline-flex items-center gap-2 px-3 py-2 rounded-xl
-              bg-white dark:bg-surface-1
-              border border-slate-200 dark:border-white/[0.08]
-              text-slate-700 dark:text-text-secondary text-sm
-              hover:bg-slate-50 dark:hover:bg-surface-2
-              hover:border-slate-300 dark:hover:border-white/[0.12]
-              transition-all
-            "
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
+            section.roadmap-command-map button.roadmap-hard-purple-button *,
+            section.roadmap-command-map button.roadmap-force-visible-button-v2 *,
+            section.roadmap-command-map button.roadmap-add-milestone-button * {
+              color: #ffffff !important;
+              stroke: #ffffff !important;
+              fill: none !important;
+              -webkit-text-fill-color: #ffffff !important;
+              opacity: 1 !important;
+              filter: none !important;
+              mix-blend-mode: normal !important;
+            }
 
-          <button
-            onClick={() => onAddMilestone?.()}
-            className="
-              inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-rose-500 dark:bg-brand-500 text-white text-sm font-medium
-              hover:bg-rose-400 dark:hover:bg-brand-400 transition-colors
-            "
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Milestone</span>
-          </button>
-        </div>
-      </div>
+            section.roadmap-command-map button.roadmap-hard-purple-button:hover:not(:disabled),
+            section.roadmap-command-map button.roadmap-force-visible-button-v2:hover:not(:disabled),
+            section.roadmap-command-map button.roadmap-add-milestone-button:hover:not(:disabled) {
+              transform: translateY(-1px) !important;
+              background-image: linear-gradient(135deg, #9333ea 0%, #6d28d9 48%, #4c1d95 100%) !important;
+              box-shadow:
+                0 22px 50px rgba(109, 40, 217, 0.54),
+                inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+            }
+          `}
+        </style>
+        <style className="roadmap-button-inline-visibility-v3-style">
+          {`
+            .roadmap-hard-purple-button,
+            .roadmap-hard-purple-button span,
+            .roadmap-hard-purple-button svg,
+            .roadmap-hard-purple-button * {
+              color: #ffffff !important;
+              stroke: #ffffff !important;
+              opacity: 1 !important;
+            }
 
-      {/* Filter bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-6">
-        <div className="flex items-center gap-2 text-slate-500 dark:text-text-tertiary">
-          <Filter className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-wider">Filter</span>
-        </div>
+            .roadmap-hard-purple-button:disabled {
+              opacity: 0.92 !important;
+              cursor: not-allowed !important;
+            }
 
-        <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((opt) => {
-            const active = status === opt.id;
-            const n = counts[opt.id] ?? (opt.id === "all" ? counts.all : 0);
-            return (
+            .roadmap-hard-purple-button:hover:not(:disabled) {
+              filter: brightness(1.04) saturate(1.08);
+              transform: translateY(-1px);
+            }
+          `}
+        </style>
+        <style className="roadmap-button-visibility-v2-style">
+          {`
+            .roadmap-force-visible-button-v2 {
+              position: relative !important;
+              isolation: isolate !important;
+              overflow: hidden !important;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+              color: #ffffff !important;
+              opacity: 1 !important;
+              border: 1px solid rgba(221, 214, 254, 0.92) !important;
+              box-shadow:
+                0 16px 36px rgba(109, 40, 217, 0.40),
+                inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+              text-shadow: 0 1px 8px rgba(0, 0, 0, 0.24) !important;
+            }
+
+            .roadmap-force-visible-button-v2:hover:not(:disabled) {
+              transform: translateY(-1px) !important;
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+              box-shadow:
+                0 20px 44px rgba(109, 40, 217, 0.48),
+                inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+            }
+
+            .roadmap-force-visible-button-v2:disabled {
+              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+              color: #ffffff !important;
+              opacity: 0.88 !important;
+              cursor: not-allowed !important;
+              box-shadow:
+                0 12px 28px rgba(109, 40, 217, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
+            }
+
+            .roadmap-force-visible-button-v2,
+            .roadmap-force-visible-button-v2 span,
+            .roadmap-force-visible-button-v2 svg {
+              color: #ffffff !important;
+              stroke: #ffffff !important;
+              opacity: 1 !important;
+            }
+          `}
+        </style>
+        <style className="roadmap-command-map-visual-style">
+          {`
+            .roadmap-command-map {
+              isolation: isolate;
+            }
+
+            .roadmap-command-map > div:first-of-type {
+              background:
+                radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
+                radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.15), transparent 32%),
+                radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.12), transparent 28%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.82)) !important;
+              border-color: rgba(124, 58, 237, 0.22) !important;
+              box-shadow:
+                0 30px 96px rgba(15, 23, 42, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+            }
+
+            .dark .roadmap-command-map > div:first-of-type {
+              background:
+                radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
+                radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.13), transparent 32%),
+                radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.10), transparent 28%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.92)) !important;
+              border-color: rgba(255, 255, 255, 0.12) !important;
+              box-shadow:
+                0 32px 110px rgba(0, 0, 0, 0.52),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .roadmap-command-map > div:first-of-type > div:first-child {
+              height: 5px !important;
+              background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 44%, #34d399 100%) !important;
+              box-shadow:
+                0 0 24px rgba(139, 92, 246, 0.42),
+                0 0 28px rgba(34, 211, 238, 0.30);
+            }
+
+            .roadmap-command-map header:first-of-type {
+              border-radius: 28px;
+              padding: 16px;
+              background: rgba(255, 255, 255, 0.46);
+              border: 1px solid rgba(255, 255, 255, 0.64);
+              box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.76),
+                0 18px 40px rgba(15, 23, 42, 0.06);
+              backdrop-filter: blur(18px);
+            }
+
+            .dark .roadmap-command-map header:first-of-type {
+              background: rgba(15, 23, 42, 0.42);
+              border-color: rgba(255, 255, 255, 0.08);
+              box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 20px 46px rgba(0, 0, 0, 0.30);
+            }
+
+            .roadmap-command-map header:first-of-type .h-14.w-14 {
+              background:
+                radial-gradient(circle at 30% 18%, rgba(255,255,255,0.92), transparent 34%),
+                linear-gradient(135deg, rgba(139, 92, 246, 0.20), rgba(34, 211, 238, 0.14)) !important;
+              box-shadow:
+                0 18px 36px rgba(124, 58, 237, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.74) !important;
+            }
+
+            .dark .roadmap-command-map header:first-of-type .h-14.w-14 {
+              background:
+                radial-gradient(circle at 30% 18%, rgba(255,255,255,0.18), transparent 34%),
+                linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(34, 211, 238, 0.14)) !important;
+              box-shadow:
+                0 18px 40px rgba(124, 58, 237, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .roadmap-refresh-button {
+              background: rgba(255, 255, 255, 0.86) !important;
+              color: #334155 !important;
+              border-color: rgba(148, 163, 184, 0.28) !important;
+              box-shadow:
+                0 12px 26px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.74) !important;
+              backdrop-filter: blur(18px);
+            }
+
+            .roadmap-refresh-button:hover {
+              color: #6d28d9 !important;
+              border-color: rgba(139, 92, 246, 0.34) !important;
+              box-shadow:
+                0 18px 38px rgba(124, 58, 237, 0.16),
+                inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+            }
+
+            .dark .roadmap-refresh-button {
+              background: rgba(255, 255, 255, 0.08) !important;
+              color: rgba(226, 232, 240, 0.92) !important;
+              border-color: rgba(255, 255, 255, 0.10) !important;
+            }
+
+            .roadmap-add-milestone-button {
+              position: relative;
+              isolation: isolate;
+              overflow: hidden;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+              color: #ffffff !important;
+              border-color: rgba(221, 214, 254, 0.84) !important;
+              box-shadow:
+                0 16px 36px rgba(109, 40, 217, 0.36),
+                inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+              opacity: 1 !important;
+            }
+
+            .roadmap-add-milestone-button:hover {
+              transform: translateY(-1px);
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+              box-shadow:
+                0 20px 44px rgba(109, 40, 217, 0.44),
+                inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+            }
+
+            .roadmap-add-milestone-button,
+            .roadmap-add-milestone-button span,
+            .roadmap-add-milestone-button svg {
+              color: #ffffff !important;
+              opacity: 1 !important;
+              text-shadow: 0 1px 8px rgba(0, 0, 0, 0.22);
+            }
+
+            .roadmap-command-map header + div > div {
+              position: relative;
+              overflow: hidden;
+              min-height: 100px;
+              backdrop-filter: blur(18px);
+              box-shadow:
+                0 14px 34px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+              transition:
+                transform 180ms ease,
+                box-shadow 180ms ease,
+                border-color 180ms ease;
+            }
+
+            .roadmap-command-map header + div > div::before {
+              content: "";
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background:
+                radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.92), transparent 34%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.36), transparent 62%);
+              opacity: 0.88;
+            }
+
+            .roadmap-command-map header + div > div > * {
+              position: relative;
+              z-index: 1;
+            }
+
+            .roadmap-command-map header + div > div:hover {
+              transform: translateY(-2px);
+              box-shadow:
+                0 20px 46px rgba(15, 23, 42, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.76) !important;
+            }
+
+            .dark .roadmap-command-map header + div > div {
+              box-shadow:
+                0 16px 38px rgba(0, 0, 0, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+            }
+
+            .roadmap-command-map header + div > div:nth-child(1) {
+              border-top: 3px solid rgba(100, 116, 139, 0.76) !important;
+            }
+
+            .roadmap-command-map header + div > div:nth-child(2) {
+              border-top: 3px solid rgba(56, 189, 248, 0.88) !important;
+            }
+
+            .roadmap-command-map header + div > div:nth-child(3) {
+              border-top: 3px solid rgba(139, 92, 246, 0.88) !important;
+            }
+
+            .roadmap-command-map header + div > div:nth-child(4) {
+              border-top: 3px solid rgba(16, 185, 129, 0.88) !important;
+            }
+
+            .roadmap-command-map header + div > div:nth-child(5) {
+              border-top: 3px solid rgba(244, 63, 94, 0.88) !important;
+            }
+
+            .roadmap-command-map button {
+              transition:
+                transform 180ms ease,
+                box-shadow 180ms ease,
+                border-color 180ms ease,
+                background 180ms ease;
+            }
+
+            .roadmap-command-map button:hover {
+              transform: translateY(-1px);
+            }
+
+            .roadmap-command-map select {
+              box-shadow:
+                0 10px 24px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+            }
+
+            .roadmap-milestone-card {
+              position: relative;
+              overflow: hidden;
+              background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.08), transparent 38%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92)) !important;
+              border-color: rgba(148, 163, 184, 0.22) !important;
+              box-shadow:
+                0 16px 38px rgba(15, 23, 42, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+              transition:
+                transform 180ms ease,
+                box-shadow 180ms ease,
+                border-color 180ms ease;
+            }
+
+            .roadmap-milestone-card::before {
+              content: "";
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background:
+                radial-gradient(circle at 14% 0%, rgba(255, 255, 255, 0.95), transparent 34%),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.08), transparent 34%);
+              opacity: 0.85;
+            }
+
+            .roadmap-milestone-card > * {
+              position: relative;
+              z-index: 1;
+            }
+
+            .roadmap-milestone-card:hover {
+              transform: translateY(-3px);
+              border-color: rgba(139, 92, 246, 0.34) !important;
+              box-shadow:
+                0 24px 54px rgba(15, 23, 42, 0.16),
+                inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+            }
+
+            .dark .roadmap-milestone-card {
+              background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.13), transparent 38%),
+                linear-gradient(135deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.62)) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
+              box-shadow:
+                0 18px 44px rgba(0, 0, 0, 0.36),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+            }
+
+            .dark .roadmap-milestone-card:hover {
+              border-color: rgba(139, 92, 246, 0.38) !important;
+              box-shadow:
+                0 24px 58px rgba(0, 0, 0, 0.46),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+          `}
+        </style>
+      <div className="relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
+        <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:44px_44px] opacity-60 dark:opacity-20" />
+
+        <div className="relative p-5 sm:p-7 lg:p-8">
+          {/* Header */}
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-3xl border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300">
+                  <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
+                  <MapIcon className="h-6 w-6" />
+                </div>
+
+                <div>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                      Roadmap
+                    </h2>
+
+                    <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                      Milestone Map
+                    </span>
+
+                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200">
+                      Live Timeline
+                    </span>
+                  </div>
+
+                  <p className="max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
+                    Track milestones, deadlines, and delivery progress as tasks move across the project.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
               <button
-                key={opt.id}
-                onClick={() => setStatus(opt.id)}
-                className={`
-                  px-3 py-1.5 rounded-xl text-sm transition-all border
-                  ${
-                    active
-                      ? "bg-violet-50 border-violet-200 text-violet-700 dark:bg-brand-500/10 dark:border-brand-500/25 dark:text-brand-300"
-                      : "bg-white dark:bg-surface-1 border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-2 hover:border-slate-300 dark:hover:border-white/[0.12]"
-                  }
-                `}
+                onClick={fetchData}
+                className="roadmap-refresh-button 
+                  inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 px-4 py-2.5
+                  text-sm font-bold text-slate-700 shadow-sm transition-all
+                  hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-md
+                  dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200 dark:hover:bg-white/[0.10]
+                "
+                title="Refresh"
               >
-                <span>{opt.label}</span>
-                <span className={`ml-2 text-xs ${active ? "text-violet-700 dark:text-brand-300" : "text-slate-500 dark:text-text-tertiary"}`}>
-                  {n}
-                </span>
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
               </button>
-            );
-          })}
-        </div>
 
-        <div className="lg:ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-2 text-slate-500 dark:text-text-tertiary">
-            <ArrowUpDown className="w-4 h-4" />
-            <span className="text-xs uppercase tracking-wider">Sort</span>
+              <button
+                onClick={() => onAddMilestone?.()}
+                className="roadmap-hard-purple-button roadmap-force-visible-button-v2 roadmap-add-milestone-button 
+                  inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-600
+                  px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-fuchsia-500/25 transition-all
+                  hover:-translate-y-0.5 hover:shadow-xl hover:shadow-fuchsia-500/35
+                "
+              
+                style={{
+                  background:
+                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)",
+                  color: "#ffffff",
+                  opacity: 1,
+                  border: "1px solid rgba(221, 214, 254, 0.92)",
+                  boxShadow:
+                    "0 16px 36px rgba(109, 40, 217, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.30)",
+                  textShadow: "0 1px 8px rgba(0, 0, 0, 0.24)",
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Milestone</span>
+              </button>
+            </div>
           </div>
 
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="
-              px-3 py-2 rounded-xl text-sm
-              bg-white dark:bg-surface-1
-              border border-slate-200 dark:border-white/[0.08]
-              text-slate-700 dark:text-text-secondary
-              focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:focus:ring-brand-500/30
-            "
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          {/* Signal stats */}
+          <div className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-5">
+            {STATUS_OPTIONS.map((opt) => {
+              const n = counts[opt.id] ?? (opt.id === "all" ? counts.all : 0);
+              const active = status === opt.id;
+
+              const tone =
+                opt.id === "completed"
+                  ? "border-emerald-200 bg-emerald-50/80 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+                  : opt.id === "overdue"
+                    ? "border-rose-200 bg-rose-50/80 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200"
+                    : opt.id === "in-progress"
+                      ? "border-violet-200 bg-violet-50/80 text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200"
+                      : opt.id === "planned"
+                        ? "border-cyan-200 bg-cyan-50/80 text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200"
+                        : "border-slate-200 bg-white/80 text-slate-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-200";
+
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setStatus(opt.id)}
+                  className={`
+                    group relative overflow-hidden rounded-3xl border p-4 text-left shadow-sm transition-all
+                    hover:-translate-y-0.5 hover:shadow-lg
+                    ${tone}
+                    ${active ? "ring-2 ring-violet-400/30 dark:ring-violet-300/20" : ""}
+                  `}
+                >
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">
+                    {opt.label}
+                  </div>
+                  <div className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+                    {n}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filter + Sort bar */}
+          <div className="mt-7 flex flex-col gap-4 rounded-[1.75rem] border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] lg:flex-row lg:items-center">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-white/[0.06] dark:text-zinc-300">
+                <Filter className="h-4 w-4" />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.22em]">Filter</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map((opt) => {
+                const active = status === opt.id;
+                const n = counts[opt.id] ?? (opt.id === "all" ? counts.all : 0);
+
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setStatus(opt.id)}
+                    className={`
+                      inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-black transition-all
+                      ${
+                        active
+                          ? "border-violet-200 bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200/70 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200 dark:ring-violet-400/10"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.08]"
+                      }
+                    `}
+                  >
+                    <span>{opt.label}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-white/[0.08] dark:text-zinc-400">
+                      {n}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="lg:ml-auto flex items-center gap-2">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-400">
+                <ArrowUpDown className="h-4 w-4" />
+                <span className="text-[11px] font-black uppercase tracking-[0.22em]">Sort</span>
+              </div>
+
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="
+                  rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700
+                  shadow-sm outline-none transition-all
+                  focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10
+                  dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200 dark:focus:border-violet-400/30
+                "
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="mt-7">
+            {loading && (
+              <div className="rounded-[2rem] border border-slate-200 bg-white/80 p-12 text-center shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-violet-200 bg-violet-50 text-violet-600 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+                <p className="text-sm font-bold text-slate-600 dark:text-zinc-300">
+                  Loading milestone map...
+                </p>
+              </div>
+            )}
+
+            {!loading && error && (
+              <div className="rounded-[2rem] border border-rose-200 bg-rose-50/80 p-8 shadow-sm dark:border-rose-400/20 dark:bg-rose-500/10">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-rose-500 shadow-sm dark:bg-white/[0.08]">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-black text-rose-700 dark:text-rose-200">
+                      Couldn't load milestones
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-zinc-300">
+                      {error}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={fetchData}
+                  className="roadmap-refresh-button mt-3 inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-white px-4 py-2 text-sm font-black text-rose-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-rose-400/20 dark:bg-white/[0.06] dark:text-rose-200"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && (items?.length || 0) === 0 && (
+              <div className="relative overflow-hidden rounded-[2rem] border border-dashed border-violet-200 bg-white/80 p-12 text-center shadow-sm dark:border-violet-400/20 dark:bg-white/[0.04]">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-cyan-50 dark:from-violet-500/10 dark:via-transparent dark:to-cyan-500/10" />
+
+                <div className="relative">
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-200">
+                    <MapIcon className="h-7 w-7" />
+                  </div>
+
+                  <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                    No milestones yet
+                  </h3>
+
+                  <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
+                    Create a milestone for your next release, demo, deadline, or major project checkpoint.
+                  </p>
+
+                  <button
+                    onClick={() => onAddMilestone?.()}
+                    className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create first milestone
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!loading && !error && (itemsWithProgress?.length || 0) > 0 && (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {itemsWithProgress.map((m) => {
+                  const mid = getMilestoneId(m);
+                  const isSelected = normalizeId(selectedMilestoneId) === normalizeId(mid);
+
+                  return (
+                    <div
+                      key={mid}
+                      className="group rounded-[1.75rem] bg-gradient-to-br from-violet-500/20 via-cyan-400/15 to-emerald-400/20 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-black/40"
+                    >
+                      <div className="rounded-[1.7rem] bg-white/95 dark:bg-[#111113]/95">
+                        <MilestoneCard
+                          milestone={m}
+                          onClick={handleCardClick}
+                          showActions={true}
+                          isSelected={isSelected}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          onStatusChange={handleStatusChange}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Content */}
-      {loading && (
-        <div className="p-10 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] text-center">
-          <div className="w-10 h-10 rounded-full border-2 border-violet-200 dark:border-brand-500/20 border-t-violet-500 dark:border-t-brand-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-text-tertiary text-sm">Loading milestones...</p>
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="p-8 rounded-2xl bg-red-50 dark:bg-error-500/10 border border-red-200 dark:border-error-500/15">
-          <div className="text-red-600 dark:text-error-300 font-medium mb-2">Couldn't load milestones</div>
-          <div className="text-sm text-slate-600 dark:text-text-secondary mb-4">{error}</div>
-          <button
-            onClick={fetchData}
-            className="px-4 py-2 rounded-xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-2 transition-colors"
-          >
-            Try again
-          </button>
-        </div>
-      )}
-
-      {!loading && !error && (items?.length || 0) === 0 && (
-        <div className="p-12 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] text-center">
-          <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-brand-500/10 text-violet-500 dark:text-brand-400 flex items-center justify-center mx-auto mb-4">
-            <MapIcon className="w-6 h-6" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary mb-2">No milestones yet</h3>
-          <p className="text-sm text-slate-600 dark:text-text-tertiary mb-6 max-w-md mx-auto">
-            Create a milestone for your next release, demo, or deadline — and track progress as tasks get completed.
-          </p>
-          <button
-            onClick={() => onAddMilestone?.()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-500 dark:bg-brand-500 text-white text-sm font-medium hover:bg-rose-400 dark:hover:bg-brand-400 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create first milestone
-          </button>
-        </div>
-      )}
-
-      {!loading && !error && (itemsWithProgress?.length || 0) > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {itemsWithProgress.map((m) => {
-            const mid = getMilestoneId(m);
-            const isSelected = normalizeId(selectedMilestoneId) === normalizeId(mid);
-
-            return (
-              <MilestoneCard
-                key={mid}
-                milestone={m}
-                onClick={handleCardClick}
-                showActions={true}
-                isSelected={isSelected}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onStatusChange={handleStatusChange}
-              />
-            );
-          })}
-        </div>
-      )}
 
       {editingMilestone ? (
         <EditMilestoneModal
