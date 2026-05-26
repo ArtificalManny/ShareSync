@@ -89,15 +89,21 @@ const SuggestionsPanel = ({ projectId, project }) => {
   const handleVote = async (suggestionId) => {
     try {
       const result = await upvoteSuggestion(projectId, suggestionId);
+
       setSuggestions(prev => prev.map(s => {
         const id = s.id || s._id;
         if (id === suggestionId) {
-          return { ...s, upvotes: result.upvotes || s.upvotes };
+          return {
+            ...s,
+            upvotes: Array.isArray(result?.upvotes) ? result.upvotes : s.upvotes,
+          };
         }
         return s;
       }));
+
+      return result;
     } catch (err) {
-      toast({ title: "Vote failed", variant: "error" });
+      throw err;
     }
   };
 

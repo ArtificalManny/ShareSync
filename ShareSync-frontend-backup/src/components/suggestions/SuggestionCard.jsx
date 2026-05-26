@@ -69,15 +69,23 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false,
 
   const suggestionId = suggestion.id || suggestion._id;
 
-  const handleVote = (e) => {
+  const handleVote = async (e) => {
     e.stopPropagation();
+
     if (voted) {
       toast({ title: 'Already voted', variant: 'default' });
       return;
     }
+
     setVoted(true);
-    onVote?.(suggestionId);
-    toast({ title: 'Vote counted!', variant: 'success' });
+
+    try {
+      await onVote?.(suggestionId);
+      toast({ title: 'Vote counted!', variant: 'success' });
+    } catch (error) {
+      setVoted(false);
+      toast({ title: 'Vote failed', variant: 'error' });
+    }
   };
 
   const handleImplement = async (e) => {
@@ -260,7 +268,7 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false,
             }
           >
             <ThumbsUp className={"w-3.5 h-3.5" + (voted ? " fill-current" : "")} />
-            <span>{(suggestion.votes || 0) + (suggestion.upvotes?.length || 0) + (voted ? 1 : 0)}</span>
+            <span>{(suggestion.votes || 0) + (suggestion.upvotes?.length || 0)}</span>
           </button>
 
           {/* Comments Count */}
