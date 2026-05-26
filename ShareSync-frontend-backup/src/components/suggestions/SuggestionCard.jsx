@@ -13,6 +13,7 @@
 import React, { useState } from 'react';
 import { ThumbsUp, MessageCircle, CheckCircle, Clock, ChevronRight } from 'lucide-react';
 import { toast } from '../ui/toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 /* ─────────────────────────────────────────────────────────────────────────
    CONTEXT CONFIG
@@ -62,6 +63,7 @@ function AttachmentGallery({ attachments }) {
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────── */
 const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false, onClick }) => {
+  const { user } = useAuth();
   const [voted, setVoted] = useState(false);
   const [implementing, setImplementing] = useState(false);
 
@@ -95,10 +97,56 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false,
   const isImplemented = suggestion.implemented || suggestion.status === 'completed';
 
   // Author display
-  const authorInitial = suggestion.authorId?.firstName?.[0] || suggestion.author?.name?.[0] || '?';
-  const authorName = suggestion.authorId?.firstName
-    ? (suggestion.authorId.firstName + ' ' + (suggestion.authorId.lastName || '')).trim()
-    : (suggestion.author?.name || 'Unknown');
+  const authorSource = suggestion.authorId || suggestion.author || suggestion.createdBy || suggestion.user || {};
+
+  const authorName = authorSource.firstName
+    ? (authorSource.firstName + ' ' + (authorSource.lastName || '')).trim()
+    : (authorSource.name || authorSource.username || suggestion.author?.name || 'Unknown');
+
+  const authorInitial = authorName?.trim()?.[0]?.toUpperCase() || '?';
+
+  const authorIdValue =
+    authorSource._id ||
+    authorSource.id ||
+    suggestion.authorId?._id ||
+    suggestion.authorId?.id ||
+    suggestion.authorId ||
+    suggestion.author?.id ||
+    suggestion.author?._id ||
+    '';
+
+  const currentUserId = user?._id || user?.id || '';
+  const currentUserEmail = user?.email || '';
+
+  const isCurrentUserAuthor =
+    (authorIdValue && currentUserId && String(authorIdValue) === String(currentUserId)) ||
+    (authorSource.email && currentUserEmail && String(authorSource.email).toLowerCase() === String(currentUserEmail).toLowerCase()) ||
+    (authorName && user?.firstName && authorName.toLowerCase() === (user.firstName + ' ' + (user.lastName || '')).trim().toLowerCase());
+
+  const currentUserAvatarUrl =
+    user?.profilePicture ||
+    user?.avatarUrl ||
+    user?.avatar ||
+    user?.photoUrl ||
+    user?.imageUrl ||
+    null;
+
+  const authorAvatarUrl =
+    authorSource.profilePicture ||
+    authorSource.avatarUrl ||
+    authorSource.avatar ||
+    authorSource.photoUrl ||
+    authorSource.imageUrl ||
+    suggestion.authorId?.profilePicture ||
+    suggestion.authorId?.avatarUrl ||
+    suggestion.authorId?.avatar ||
+    suggestion.authorId?.photoUrl ||
+    suggestion.author?.profilePicture ||
+    suggestion.author?.avatarUrl ||
+    suggestion.author?.avatar ||
+    suggestion.author?.photoUrl ||
+    (isCurrentUserAuthor ? currentUserAvatarUrl : null) ||
+    null;
   const timeDisplay = suggestion.timeAgo || (suggestion.createdAt
     ? new Date(suggestion.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : '');
@@ -157,10 +205,24 @@ const SuggestionCard = ({ suggestion, onVote, onImplement, canImplement = false,
 
         {/* Author + Time */}
         <div className="flex items-center gap-2 mt-3">
-          <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-[10px] font-medium text-slate-600 dark:text-white/50">
-            {authorInitial}
+          <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-white/50 ring-1 ring-white/80 dark:ring-white/[0.08] shadow-sm shrink-0">
+            {authorAvatarUrl ? (
+              <img
+                src={authorAvatarUrl}
+                alt={authorName}
+                className="h-full w-full object-cover"
+                onError={function(e) {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.textContent = authorInitial;
+                  }
+                }}
+              />
+            ) : (
+              authorInitial
+            )}
           </div>
-          <span className="text-xs text-slate-600 dark:text-white/50">{authorName}</span>
+          <span className="text-xs font-medium text-slate-600 dark:text-white/50">{authorName}</span>
           <span className="text-slate-400 dark:text-white/30">{"\u00B7"}</span>
           <span className="text-xs text-slate-500 dark:text-white/40 flex items-center gap-1">
             <Clock className="w-3 h-3" />
