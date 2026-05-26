@@ -4175,7 +4175,124 @@ export default function ProjectHome() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.12),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.22),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.16),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] dark:text-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.12),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.22),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.16),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] dark:text-zinc-100" data-project-home-polish="safe-v5">
+
+      <style className="project-home-safe-visual-polish-v5-style">{`
+        /*
+          ProjectHome Safe Visual Polish v5
+
+          Rules:
+          - No layout changes.
+          - No margin/padding changes.
+          - No height/min-height changes.
+          - No fixed/absolute positioning.
+          - No broad child repositioning.
+          - Visual-only: background, shadow, border, text contrast, glow.
+        */
+
+        [data-project-home-polish="safe-v5"] {
+          background:
+            radial-gradient(circle at 10% 8%, rgba(139, 92, 246, 0.10), transparent 30%),
+            radial-gradient(circle at 92% 10%, rgba(45, 212, 191, 0.12), transparent 34%),
+            linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(239, 246, 255, 0.92)) !important;
+        }
+
+        .dark [data-project-home-polish="safe-v5"] {
+          background:
+            radial-gradient(circle at 10% 8%, rgba(139, 92, 246, 0.18), transparent 32%),
+            radial-gradient(circle at 92% 10%, rgba(45, 212, 191, 0.14), transparent 34%),
+            linear-gradient(180deg, rgba(2, 6, 23, 0.98), rgba(15, 23, 42, 0.96)) !important;
+        }
+
+        [data-project-home-polish="safe-v5"] header {
+          background-image:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(248, 250, 252, 0.62)),
+            radial-gradient(circle at 92% 12%, rgba(34, 211, 238, 0.14), transparent 36%),
+            radial-gradient(circle at 8% 10%, rgba(139, 92, 246, 0.13), transparent 34%) !important;
+          border-color: rgba(148, 163, 184, 0.30) !important;
+          box-shadow:
+            0 18px 48px rgba(15, 23, 42, 0.08),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.58) !important;
+          backdrop-filter: blur(18px) saturate(1.12);
+        }
+
+        .dark [data-project-home-polish="safe-v5"] header {
+          background-image:
+            linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(2, 6, 23, 0.82)),
+            radial-gradient(circle at 92% 12%, rgba(34, 211, 238, 0.13), transparent 36%),
+            radial-gradient(circle at 8% 10%, rgba(139, 92, 246, 0.18), transparent 34%) !important;
+          border-color: rgba(148, 163, 184, 0.22) !important;
+          box-shadow:
+            0 18px 48px rgba(0, 0, 0, 0.28),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.06) !important;
+        }
+
+        [data-project-home-polish="safe-v5"] header h1,
+        [data-project-home-polish="safe-v5"] header h2 {
+          text-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        }
+
+        [data-project-home-polish="safe-v5"] nav {
+          background-image:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.74), rgba(241, 245, 249, 0.58)) !important;
+          border-color: rgba(148, 163, 184, 0.28) !important;
+          box-shadow:
+            0 14px 34px rgba(15, 23, 42, 0.065),
+            inset 0 1px 0 rgba(255, 255, 255, 0.58) !important;
+          backdrop-filter: blur(18px) saturate(1.12);
+        }
+
+        .dark [data-project-home-polish="safe-v5"] nav {
+          background-image:
+            linear-gradient(135deg, rgba(15, 23, 42, 0.84), rgba(2, 6, 23, 0.76)) !important;
+          border-color: rgba(148, 163, 184, 0.20) !important;
+          box-shadow:
+            0 14px 34px rgba(0, 0, 0, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        }
+
+        [data-project-home-polish="safe-v5"] nav button,
+        [data-project-home-polish="safe-v5"] nav a {
+          transition:
+            color 180ms ease,
+            background-color 180ms ease,
+            box-shadow 180ms ease,
+            border-color 180ms ease,
+            filter 180ms ease;
+        }
+
+        [data-project-home-polish="safe-v5"] nav button:hover,
+        [data-project-home-polish="safe-v5"] nav a:hover {
+          filter: saturate(1.12);
+          text-shadow: 0 8px 22px rgba(124, 58, 237, 0.16);
+        }
+
+        [data-project-home-polish="safe-v5"] nav button[aria-selected="true"],
+        [data-project-home-polish="safe-v5"] nav button[aria-current="page"],
+        [data-project-home-polish="safe-v5"] nav a[aria-current="page"] {
+          background-image:
+            linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(34, 211, 238, 0.08)) !important;
+          border-color: rgba(167, 139, 250, 0.52) !important;
+          box-shadow:
+            0 12px 30px rgba(124, 58, 237, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+        }
+
+        [data-project-home-polish="safe-v5"] [class*="from-violet"],
+        [data-project-home-polish="safe-v5"] [class*="from-purple"] {
+          box-shadow:
+            0 14px 34px rgba(124, 58, 237, 0.20),
+            inset 0 1px 0 rgba(255, 255, 255, 0.26);
+        }
+
+        [data-project-home-polish="safe-v5"] [class*="border-purple"],
+        [data-project-home-polish="safe-v5"] [class*="border-violet"] {
+          box-shadow:
+            0 0 0 1px rgba(196, 181, 253, 0.18),
+            0 12px 30px rgba(124, 58, 237, 0.08);
+        }
+      `}</style>
+
       <div className="pointer-events-none fixed inset-0 z-0 opacity-70 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:64px_64px] dark:opacity-30" />
       <div className="pointer-events-none fixed -top-32 right-12 z-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-400/10" />
       <div className="pointer-events-none fixed bottom-10 left-20 z-0 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
