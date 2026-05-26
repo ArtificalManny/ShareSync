@@ -36,6 +36,16 @@ export class SuggestionsController {
     return this.suggestionsService.findAllForProject(projectId, userId);
   }
 
+  @Post(':id/upvote')
+  upvote(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @Request() req
+  ) {
+    const userId = req.user.id || req.user._id || req.user.sub;
+    return this.suggestionsService.toggleUpvote(projectId, id, userId);
+  }
+
   @Patch(':id')
   @UseInterceptors(TextModerationInterceptor)
   update(

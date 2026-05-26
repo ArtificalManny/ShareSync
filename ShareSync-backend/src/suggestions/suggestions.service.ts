@@ -75,15 +75,37 @@ export class SuggestionsService {
     await this.suggestionModel.deleteOne({ _id: suggestionId });
   }
 
-  async toggleUpvote(suggestionId: string, userId: string): Promise<{ upvotes: string[]; voted: boolean }> {
-    const suggestion = await this.suggestionModel.findById(suggestionId);
+  async toggleUpvote(projectId: string, suggestionId: string, userId: string): Promise<{ upvotes: string[]; voted: boolean; count: number }> {
+    const project = await this.projectModel.findById(projectId);
+    if (!project) throw new NotFoundException('Project not found');
+
+    const suggestion = await this.suggestionModel.findOne({ _id: suggestionId, projectId });
     if (!suggestion) throw new NotFoundException('Suggestion not found');
+
+    if (!Array.isArray(suggestion.upvotes)) {
+      suggestion.upvotes = [];
+    }
+
     const idx = suggestion.upvotes.findIndex((id: any) => id?.toString() === userId);
     let voted: boolean;
-    if (idx >= 0) { suggestion.upvotes.splice(idx, 1); voted = false; }
-    else { suggestion.upvotes.push(new Types.ObjectId(userId) as any); voted = true; }
+
+    if (idx >= 0) {
+      suggestion.upvotes.splice(idx, 1);
+      voted = false;
+    } else {
+      suggestion.upvotes.push(new Types.ObjectId(userId) as any);
+      voted = true;
+    }
+
     await suggestion.save();
-    return { upvotes: suggestion.upvotes, voted };
+
+    const upvotes = suggestion.upvotes.map((id: any) => id?.toString());
+
+    return {
+      upvotes,
+      voted,
+      count: upvotes.length,
+    };
   }
 
   async addComment(suggestionId: string, userId: string, content: string, authorName?: string): Promise<any> {
