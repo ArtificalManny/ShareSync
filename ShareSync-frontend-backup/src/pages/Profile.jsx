@@ -75,6 +75,7 @@ import ProfileStrength from "../components/profile/ProfileStrength";
 import { useAnalytics } from "../contexts/AnalyticsContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useSettings } from "../context/SettingsContext";
+import "./Profile.css";
 
 /* ─────────────────────────────────────────────────────────────────────────
    UTILS
@@ -344,7 +345,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
           <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Edit Profile</h2>
-          <button
+          <button data-profile-action="save-profile" data-profile-action="edit-profile"
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
@@ -461,7 +462,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
           >
             Cancel
           </button>
-          <button
+          <button data-profile-action="save-profile"
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all shadow-md disabled:opacity-50"
@@ -1188,7 +1189,7 @@ export default function Profile() {
 
   return (
     <div 
-      className="min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto"
+      className="profile-visual-shell min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto"
       style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
     >
       {/* Phase 7: Edit Modal */}
@@ -1199,75 +1200,84 @@ export default function Profile() {
           onSave={load} 
         />
       )}
-
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative mb-16 px-4">
-        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center overflow-hidden rounded-[2rem] border border-white/90 bg-white/90 px-6 py-7 text-center shadow-[0_18px_50px_rgba(139,92,246,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-black/20 sm:px-10 sm:py-9">
-          {/* Soft atmospheric background */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.96),rgba(255,255,255,0.88)_30%,rgba(255,255,255,0.74)_50%,rgba(245,243,255,0.22)_72%,rgba(236,254,255,0.16)_100%)]" />
+      <section className="profile-hero-surface flex flex-col items-center mb-16">
+        <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
 
-          {/* Cyan glow */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-cyan-300/8 blur-3xl" />
+        <div className="profile-hero-copy text-center mt-8">
+          <h1 className="profile-hero-name text-4xl font-semibold text-slate-800 dark:text-white mb-3">
+            {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
+          </h1>
 
-          {/* Violet glow */}
-          <div className="pointer-events-none absolute -left-16 bottom-0 h-60 w-60 rounded-full bg-violet-300/8 blur-3xl" />
+          <div className="profile-hero-meta flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-sm text-slate-500 dark:text-zinc-400">
+              ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
+            </span>
 
-          {/* Top sheen */}
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/95 to-transparent" />
+            {/* Core Verified Badge - Teal (#2DD4BF) */}
+            <span
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white shadow-sm shadow-teal-500/20"
+              style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Core Verified
+            </span>
 
-          {/* Inner content */}
-          <div className="relative z-10 flex w-full flex-col items-center">
-            <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
-            
-            <div className="mt-8 text-center">
-              <h1 className="mb-3 text-4xl font-semibold text-slate-800 dark:text-white">
-                {name.fullName || user?.email?.split('@')[0] || 'Loading...'}
-              </h1>
-              
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <span className="text-sm text-slate-500 dark:text-zinc-400">
-                  ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
-                </span>
-                
-                {/* Core Verified Badge - Teal (#2DD4BF) */}
-                <span
-                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow-sm shadow-teal-500/20"
-                  style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Core Verified
-                </span>
-                
-                {skillProfile?.archetype?.current && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-400">
-                    <Star className="h-3.5 w-3.5" />
-                    {skillProfile.archetype.current}
-                  </span>
-                )}
-              </div>
-              
-              {user?.bio && (
-                <p className="mx-auto mt-6 max-w-lg leading-relaxed text-slate-600 dark:text-zinc-300">
-                  {user.bio}
-                </p>
-              )}
-              
-              {/* Edit button - Purple primary action */}
-              {isOwnProfile && (
-                <button 
-                  type="button"
-                  onClick={handleEditProfile}
-                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-500/35 ring-2 ring-violet-200/80 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-violet-500/45 focus:outline-none focus:ring-4 focus:ring-violet-300"
-                  style={{ backgroundColor: '#7C3AED', color: '#FFFFFF' }}
-                >
-                  <Edit3 className="h-4 w-4 text-white" />
-                  <span className="text-white">Edit Profile</span>
-                </button>
-              )}
-            </div>
+            {skillProfile?.archetype?.current && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 text-xs font-medium border border-violet-200 dark:border-violet-500/20">
+                <Star className="w-3.5 h-3.5" />
+                {skillProfile.archetype.current}
+              </span>
+            )}
           </div>
+
+          {user?.bio && (
+            <p className="profile-hero-bio mt-6 text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+              {user.bio}
+            </p>
+          )}
+
+          {/* Edit button - Blue action */}
+          {isOwnProfile && (
+            <button
+              type="button"
+              onClick={handleEditProfile}
+              data-profile-edit-real-v19="true"
+              className="profile-edit-cta-force-v19 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-black transition-all duration-200"
+              ref={(node) => {
+                if (!node) return;
+
+                node.style.setProperty("appearance", "none", "important");
+                node.style.setProperty("-webkit-appearance", "none", "important");
+                node.style.setProperty("background", "linear-gradient(135deg, #a855f7 0%, #7c3aed 52%, #6d28d9 100%)", "important");
+                node.style.setProperty("background-color", "#7c3aed", "important");
+                node.style.setProperty("background-image", "linear-gradient(135deg, #a855f7 0%, #7c3aed 52%, #6d28d9 100%)", "important");
+                node.style.setProperty("color", "#ffffff", "important");
+                node.style.setProperty("-webkit-text-fill-color", "#ffffff", "important");
+                node.style.setProperty("border", "1px solid rgba(221, 214, 254, 0.98)", "important");
+                node.style.setProperty("opacity", "1", "important");
+                node.style.setProperty("visibility", "visible", "important");
+                node.style.setProperty("box-shadow", "0 18px 42px rgba(124, 58, 237, 0.42), 0 0 0 5px rgba(139, 92, 246, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.38)", "important");
+                node.style.setProperty("filter", "none", "important");
+                node.style.setProperty("mix-blend-mode", "normal", "important");
+                node.style.setProperty("backdrop-filter", "none", "important");
+                node.style.setProperty("-webkit-backdrop-filter", "none", "important");
+
+                node.querySelectorAll("*").forEach((child) => {
+                  child.style.setProperty("color", "#ffffff", "important");
+                  child.style.setProperty("-webkit-text-fill-color", "#ffffff", "important");
+                  child.style.setProperty("opacity", "1", "important");
+                  child.style.setProperty("filter", "none", "important");
+                  child.style.setProperty("mix-blend-mode", "normal", "important");
+                });
+              }}
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit Profile</span>
+            </button>
+          )}
         </div>
       </section>
 
