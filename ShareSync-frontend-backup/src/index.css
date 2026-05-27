@@ -611,3 +611,38 @@ html[data-theme="dark"] header.navbar svg,
   color: inherit;
 }
 
+
+/* ContextIndicator floating AI button centering */
+.floating-ai-center-scope {
+  display: grid !important;
+  place-items: center !important;
+  place-content: center !important;
+  line-height: 1 !important;
+}
+
+.floating-ai-center-scope button,
+.floating-ai-center-scope [role="button"] {
+  display: grid !important;
+  place-items: center !important;
+  place-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+.floating-ai-center-scope svg {
+  display: block !important;
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: static !important;
+  transform: translate(0, 0) !important;
+}
+
+
+/* Final optical centering for bottom-right AI sparkle button */
+.floating-ai-center-scope svg {
+  transform: translate(0px, -1px) !important;
+  transform-origin: center center !important;
+}
+

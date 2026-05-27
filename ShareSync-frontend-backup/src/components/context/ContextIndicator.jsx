@@ -91,7 +91,7 @@ const ContextIndicator = () => {
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="fixed bottom-6 right-6 z-50"
+          className="floating-ai-center-scope fixed bottom-6 right-6 z-50"
         >
           <motion.div
             layout
