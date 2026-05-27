@@ -1656,8 +1656,85 @@ function NextMoveSignalCard({
 
 
 
-function OwnerSignalCard({ ownerName, caption }) {
+
+// ═══════════════════════════════════════════════════════════════════════
+// PROJECTHOME OWNER AVATAR URL HELPER v2
+// Finds the owner's real profile image from the project/summary payload.
+// Keeps initials as fallback when the backend does not provide an image.
+// ═══════════════════════════════════════════════════════════════════════
+
+function getProjectOwnerAvatarUrl(projectLike, summary = null) {
+  const avatarKeys = [
+    "profilePicture",
+    "profilePictureUrl",
+    "avatarUrl",
+    "avatar",
+    "photoUrl",
+    "imageUrl",
+    "picture",
+    "profileImage",
+  ];
+
+  const readAvatar = (value) => {
+    if (!value || typeof value !== "object") return "";
+
+    for (const key of avatarKeys) {
+      const candidate = value?.[key];
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+
+    return "";
+  };
+
+  const candidates = [
+    summary?.owner,
+    summary?.ownerSummary,
+    summary?.ownerSummary?.owner,
+    summary?.ownerSummary?.user,
+    summary?.ownerSummary?.userId,
+
+    projectLike?.owner,
+    projectLike?.ownerId,
+    projectLike?.createdBy,
+    projectLike?.createdById,
+    projectLike?.user,
+    projectLike?.userId,
+  ];
+
+  if (Array.isArray(projectLike?.members)) {
+    for (const member of projectLike.members) {
+      const role = String(member?.role || member?.projectRole || "").toLowerCase();
+      const isOwner =
+        role === "owner" ||
+        role === "admin" ||
+        member?.isOwner === true ||
+        member?.owner === true;
+
+      if (!isOwner) continue;
+
+      candidates.push(
+        member?.user,
+        member?.userId,
+        member?.member,
+        member
+      );
+    }
+  }
+
+  for (const candidate of candidates) {
+    const avatar = readAvatar(candidate);
+    if (avatar) return avatar;
+  }
+
+  return "";
+}
+
+
+function OwnerSignalCard({ ownerName, ownerAvatarUrl, caption }) {
   const safeOwnerName = String(ownerName || "").trim() || "Project owner";
+  const safeOwnerAvatarUrl = String(ownerAvatarUrl || "").trim();
   const initials =
     safeOwnerName
       .split(/\s+/)
@@ -1716,8 +1793,28 @@ function OwnerSignalCard({ ownerName, caption }) {
             </div>
           </div>
 
-          <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-black text-emerald-700 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-emerald-300 sm:flex">
-            {initials}
+          <div
+            className="hidden h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white text-sm font-black text-emerald-700 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-emerald-300 sm:flex"
+            title={safeOwnerName}
+            aria-label={`${safeOwnerName} profile picture`}
+          >
+            {safeOwnerAvatarUrl ? (
+              <>
+                <img
+                  src={safeOwnerAvatarUrl}
+                  alt={`${safeOwnerName} profile`}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                    event.currentTarget.nextElementSibling?.classList.remove("hidden");
+                  }}
+                />
+                <span className="hidden">{initials}</span>
+              </>
+            ) : (
+              <span>{initials}</span>
+            )}
           </div>
         </div>
 
@@ -3292,6 +3389,16 @@ function OverviewView({
     summary
   );
 
+  const ownerAvatarUrl = getProjectOwnerAvatarUrl(
+    (typeof project !== "undefined" && project) ||
+      (typeof activeProject !== "undefined" && activeProject) ||
+      (typeof currentProject !== "undefined" && currentProject) ||
+      overview?.project ||
+      overview?.rawProject ||
+      null,
+    summary
+  );
+
   const memberCount =
     Number.isFinite(Number(summary?.ownerSummary?.memberCount))
       ? Number(summary.ownerSummary.memberCount)
@@ -3374,6 +3481,7 @@ function OverviewView({
         <div className="col-span-12 sm:col-span-6 lg:col-span-4">
           <OwnerSignalCard
             ownerName={ownerName}
+            ownerAvatarUrl={ownerAvatarUrl}
             caption={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${onlineCount} online now`}
           />
         </div>
