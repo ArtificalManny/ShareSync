@@ -49,6 +49,7 @@ import SubscriptionButton from "./subscription/SubscriptionButton";
 import FocusBlockTimer from "./focus/FocusBlockTimer";
 import { useFocusBlock } from "../hooks/useFocusBlock";
 import FocusBlockScheduler from "./focus/FocusBlockScheduler";
+import "./Navbar.css";
 
 const DEFAULT_PIC = "/default-profile.png";
 
