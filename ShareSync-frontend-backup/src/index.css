@@ -646,3 +646,108 @@ html[data-theme="dark"] header.navbar svg,
   transform-origin: center center !important;
 }
 
+/* =========================================================
+   STACKPANEL DARK TASK SIGNAL CARDS v2
+   Visual-only readability polish for ProjectHome > Tasks.
+   ========================================================= */
+
+.stack-signal-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.stack-signal-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.dark .stack-signal-card,
+html[data-theme="dark"] .stack-signal-card,
+body.dark .stack-signal-card {
+  color: #f8fafc !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .stack-signal-ready,
+html[data-theme="dark"] .stack-signal-ready,
+body.dark .stack-signal-ready {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(139, 92, 246, 0.38), transparent 44%),
+    linear-gradient(135deg, rgba(30, 27, 75, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(167, 139, 250, 0.78) !important;
+}
+
+html.dark .stack-signal-blocking,
+html[data-theme="dark"] .stack-signal-blocking,
+body.dark .stack-signal-blocking {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(251, 191, 36, 0.40), transparent 44%),
+    linear-gradient(135deg, rgba(69, 46, 5, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(251, 191, 36, 0.90) !important;
+}
+
+html.dark .stack-signal-critical,
+html[data-theme="dark"] .stack-signal-critical,
+body.dark .stack-signal-critical {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(244, 63, 94, 0.40), transparent 44%),
+    linear-gradient(135deg, rgba(76, 5, 25, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(251, 113, 133, 0.92) !important;
+}
+
+html.dark .stack-signal-assigned,
+html[data-theme="dark"] .stack-signal-assigned,
+body.dark .stack-signal-assigned {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(34, 211, 238, 0.36), transparent 44%),
+    linear-gradient(135deg, rgba(8, 51, 68, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(103, 232, 249, 0.90) !important;
+}
+
+html.dark .stack-signal-ready div:first-child,
+html[data-theme="dark"] .stack-signal-ready div:first-child,
+body.dark .stack-signal-ready div:first-child,
+html.dark .stack-signal-ready svg,
+html[data-theme="dark"] .stack-signal-ready svg,
+body.dark .stack-signal-ready svg {
+  color: #c4b5fd !important;
+}
+
+html.dark .stack-signal-blocking div:first-child,
+html[data-theme="dark"] .stack-signal-blocking div:first-child,
+body.dark .stack-signal-blocking div:first-child,
+html.dark .stack-signal-blocking svg,
+html[data-theme="dark"] .stack-signal-blocking svg,
+body.dark .stack-signal-blocking svg {
+  color: #fbbf24 !important;
+}
+
+html.dark .stack-signal-critical div:first-child,
+html[data-theme="dark"] .stack-signal-critical div:first-child,
+body.dark .stack-signal-critical div:first-child,
+html.dark .stack-signal-critical svg,
+html[data-theme="dark"] .stack-signal-critical svg,
+body.dark .stack-signal-critical svg {
+  color: #fb7185 !important;
+}
+
+html.dark .stack-signal-assigned div:first-child,
+html[data-theme="dark"] .stack-signal-assigned div:first-child,
+body.dark .stack-signal-assigned div:first-child,
+html.dark .stack-signal-assigned svg,
+html[data-theme="dark"] .stack-signal-assigned svg,
+body.dark .stack-signal-assigned svg {
+  color: #67e8f9 !important;
+}
+
+html.dark .stack-signal-card div:last-child,
+html[data-theme="dark"] .stack-signal-card div:last-child,
+body.dark .stack-signal-card div:last-child {
+  color: #ffffff !important;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.14);
+}
+
+/* END STACKPANEL DARK TASK SIGNAL CARDS v2 */
