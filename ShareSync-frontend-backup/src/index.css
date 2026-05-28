@@ -1043,3 +1043,88 @@ html.dark .discover-public-signals-panel [class*="bg-cyan-"] {
 }
 
 /* END DISCOVER PUBLIC SIGNALS DARK CARDS v1 */
+
+/* =========================================================
+   SETTINGS BILLING TEAM PLAN DARKMODE v1
+   Settings > Subscription & Billing:
+   fixes low-contrast Team Plan text in dark mode.
+   ========================================================= */
+
+.settings-billing-contrast-fix {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Target the plan banner/card without touching Settings logic */
+html.dark .settings-billing-contrast-fix [class*="border-amber"],
+html.dark .settings-billing-contrast-fix [class*="bg-amber"],
+html.dark .settings-billing-contrast-fix [class*="bg-yellow"],
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"],
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="bg-amber"],
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="bg-yellow"],
+body.dark .settings-billing-contrast-fix [class*="border-amber"],
+body.dark .settings-billing-contrast-fix [class*="bg-amber"],
+body.dark .settings-billing-contrast-fix [class*="bg-yellow"] {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(251, 191, 36, 0.34), transparent 38%),
+    linear-gradient(135deg, rgba(69, 46, 5, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(251, 191, 36, 0.90) !important;
+  color: #f8fafc !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Force the Team Plan title to be readable */
+html.dark .settings-billing-contrast-fix [class*="border-amber"] h1,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] h2,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] h3,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] h4,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] strong,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] .font-bold,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] .font-semibold,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] .font-medium,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] h1,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] h2,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] h3,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] h4,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] strong,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] .font-bold,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] .font-semibold,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] .font-medium,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] h1,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] h2,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] h3,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] h4,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] strong,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] .font-bold,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] .font-semibold,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] .font-medium {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+/* Keep the price line visible without overpowering the title */
+html.dark .settings-billing-contrast-fix [class*="border-amber"] p,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] span,
+html.dark .settings-billing-contrast-fix [class*="border-amber"] div,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] p,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] span,
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="border-amber"] div,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] p,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] span,
+body.dark .settings-billing-contrast-fix [class*="border-amber"] div {
+  color: rgba(248, 250, 252, 0.82) !important;
+}
+
+/* Preserve the orange crown/icon circle as a strong accent */
+html.dark .settings-billing-contrast-fix [class*="bg-orange"],
+html[data-theme="dark"] .settings-billing-contrast-fix [class*="bg-orange"],
+body.dark .settings-billing-contrast-fix [class*="bg-orange"] {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 28px rgba(249, 115, 22, 0.28) !important;
+}
+
+/* END SETTINGS BILLING TEAM PLAN DARKMODE v1 */

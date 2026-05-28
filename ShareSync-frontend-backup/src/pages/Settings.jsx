@@ -1022,7 +1022,9 @@ export default function Settings() {
             iconColor="text-fuchsia-600 dark:text-fuchsia-400"
             title="Subscription & Billing"
           >
-            <BillingSettings />
+            <div className="settings-billing-contrast-fix">
+              <BillingSettings />
+            </div>
           </SectionCard>
 
           {/* ✅ PHONE VERIFICATION (Item 13) */}
