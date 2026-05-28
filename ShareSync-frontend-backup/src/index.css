@@ -751,3 +751,77 @@ body.dark .stack-signal-card div:last-child {
 }
 
 /* END STACKPANEL DARK TASK SIGNAL CARDS v2 */
+
+/* =========================================================
+   OVERVIEW PULSE SIGNALCARDS DARKMODE v1
+   ProjectHome > Overview > Pulse:
+   Today / In motion / Ready dark-mode readability.
+   ========================================================= */
+
+html.dark .overview-pulse-signal-card,
+html[data-theme="dark"] .overview-pulse-signal-card,
+body.dark .overview-pulse-signal-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #f8fafc !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .overview-pulse-today,
+html[data-theme="dark"] .overview-pulse-today,
+body.dark .overview-pulse-today {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(251, 146, 60, 0.42), transparent 44%),
+    linear-gradient(135deg, rgba(67, 20, 7, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(251, 146, 60, 0.88) !important;
+}
+
+html.dark .overview-pulse-in-motion,
+html[data-theme="dark"] .overview-pulse-in-motion,
+body.dark .overview-pulse-in-motion {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(139, 92, 246, 0.42), transparent 44%),
+    linear-gradient(135deg, rgba(30, 27, 75, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(167, 139, 250, 0.88) !important;
+}
+
+html.dark .overview-pulse-ready,
+html[data-theme="dark"] .overview-pulse-ready,
+body.dark .overview-pulse-ready {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(16, 185, 129, 0.40), transparent 44%),
+    linear-gradient(135deg, rgba(6, 78, 59, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(52, 211, 153, 0.90) !important;
+}
+
+html.dark .overview-pulse-today svg,
+html.dark .overview-pulse-today span {
+  color: #fb923c !important;
+}
+
+html.dark .overview-pulse-in-motion svg,
+html.dark .overview-pulse-in-motion span {
+  color: #c4b5fd !important;
+}
+
+html.dark .overview-pulse-ready svg,
+html.dark .overview-pulse-ready span {
+  color: #34d399 !important;
+}
+
+html.dark .overview-pulse-signal-card p,
+html.dark .overview-pulse-signal-card div,
+html.dark .overview-pulse-signal-card span {
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.10);
+}
+
+html.dark .overview-pulse-signal-card .text-3xl,
+html[data-theme="dark"] .overview-pulse-signal-card .text-3xl,
+body.dark .overview-pulse-signal-card .text-3xl {
+  color: #ffffff !important;
+}
+
+/* END OVERVIEW PULSE SIGNALCARDS DARKMODE v1 */

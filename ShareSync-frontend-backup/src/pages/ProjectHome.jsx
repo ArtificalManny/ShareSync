@@ -1437,7 +1437,7 @@ function OverviewPulseCard({ pulse = {} }) {
       value: today,
       icon: Flame,
       tone: "text-orange-500",
-      glow: "bg-orange-50 border-orange-100 dark:bg-orange-500/10 dark:border-orange-500/20",
+      glow: "overview-pulse-today overview-pulse-signal-card bg-orange-50 border-orange-100 dark:bg-orange-500/10 dark:border-orange-500/20",
       bar: "from-orange-400 to-amber-300",
     },
     {
@@ -1445,7 +1445,7 @@ function OverviewPulseCard({ pulse = {} }) {
       value: inMotion,
       icon: Zap,
       tone: "text-violet-500",
-      glow: "bg-violet-50 border-violet-100 dark:bg-violet-500/10 dark:border-violet-500/20",
+      glow: "overview-pulse-in-motion overview-pulse-signal-card bg-violet-50 border-violet-100 dark:bg-violet-500/10 dark:border-violet-500/20",
       bar: "from-violet-500 to-fuchsia-400",
     },
     {
@@ -1464,7 +1464,7 @@ function OverviewPulseCard({ pulse = {} }) {
       value: ready,
       icon: Play,
       tone: "text-emerald-500",
-      glow: "bg-emerald-50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20",
+      glow: "overview-pulse-ready overview-pulse-signal-card bg-emerald-50 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20",
       bar: "from-emerald-500 to-cyan-400",
     },
   ];
