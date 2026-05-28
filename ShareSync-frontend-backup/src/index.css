@@ -1518,3 +1518,162 @@ body.dark .your-moves-footer {
 }
 
 /* END YOUR MOVES TODAY FINAL DARKMODE v5 */
+
+/* =========================================================
+   STREAK COMPARISON DARKMODE STRIKE v1
+   Home > Your Streak card.
+   ========================================================= */
+
+.streak-comparison-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.streak-comparison-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.streak-comparison-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+}
+
+/* Main card shell */
+html.dark .streak-comparison-card,
+html[data-theme="dark"] .streak-comparison-card,
+body.dark .streak-comparison-card {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(251, 146, 60, 0.20), transparent 34%),
+    radial-gradient(circle at 94% 12%, rgba(139, 92, 246, 0.16), transparent 36%),
+    linear-gradient(135deg, rgba(20, 24, 38, 0.98), rgba(9, 14, 26, 0.98)) !important;
+  border: 1px solid rgba(251, 146, 60, 0.26) !important;
+  color: #f8fafc !important;
+  box-shadow:
+    0 24px 58px rgba(0, 0, 0, 0.40),
+    0 0 0 1px rgba(251, 146, 60, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
+}
+
+html.dark .streak-comparison-card::before,
+html[data-theme="dark"] .streak-comparison-card::before,
+body.dark .streak-comparison-card::before {
+  opacity: 1;
+  background:
+    linear-gradient(120deg, rgba(251, 146, 60, 0.10), transparent 42%, rgba(139, 92, 246, 0.12));
+}
+
+/* Header text */
+html.dark .streak-comparison-card h3,
+html.dark .streak-comparison-card .text-text-primary,
+html.dark .streak-comparison-card .font-medium,
+html.dark .streak-comparison-card .font-bold,
+html.dark .streak-comparison-card .font-black,
+html[data-theme="dark"] .streak-comparison-card h3,
+html[data-theme="dark"] .streak-comparison-card .text-text-primary,
+html[data-theme="dark"] .streak-comparison-card .font-medium,
+html[data-theme="dark"] .streak-comparison-card .font-bold,
+html[data-theme="dark"] .streak-comparison-card .font-black,
+body.dark .streak-comparison-card h3,
+body.dark .streak-comparison-card .text-text-primary,
+body.dark .streak-comparison-card .font-medium,
+body.dark .streak-comparison-card .font-bold,
+body.dark .streak-comparison-card .font-black {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+/* Secondary text */
+html.dark .streak-comparison-card p,
+html.dark .streak-comparison-card span,
+html.dark .streak-comparison-card .text-text-secondary,
+html.dark .streak-comparison-card .text-text-tertiary,
+html[data-theme="dark"] .streak-comparison-card p,
+html[data-theme="dark"] .streak-comparison-card span,
+html[data-theme="dark"] .streak-comparison-card .text-text-secondary,
+html[data-theme="dark"] .streak-comparison-card .text-text-tertiary,
+body.dark .streak-comparison-card p,
+body.dark .streak-comparison-card span,
+body.dark .streak-comparison-card .text-text-secondary,
+body.dark .streak-comparison-card .text-text-tertiary {
+  color: rgba(226, 232, 240, 0.84) !important;
+  opacity: 1 !important;
+}
+
+/* Streak number / flame accent */
+html.dark .streak-comparison-card .text-warning-500,
+html.dark .streak-comparison-card .text-energy-500,
+html[data-theme="dark"] .streak-comparison-card .text-warning-500,
+html[data-theme="dark"] .streak-comparison-card .text-energy-500,
+body.dark .streak-comparison-card .text-warning-500,
+body.dark .streak-comparison-card .text-energy-500 {
+  color: #fb923c !important;
+  filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.35));
+}
+
+/* Purple / success accents */
+html.dark .streak-comparison-card .text-brand-400,
+html[data-theme="dark"] .streak-comparison-card .text-brand-400,
+body.dark .streak-comparison-card .text-brand-400 {
+  color: #c4b5fd !important;
+}
+
+html.dark .streak-comparison-card .text-success,
+html[data-theme="dark"] .streak-comparison-card .text-success,
+body.dark .streak-comparison-card .text-success {
+  color: #5eead4 !important;
+}
+
+/* Comparison bars */
+html.dark .streak-comparison-bars .bg-surface-2,
+html[data-theme="dark"] .streak-comparison-bars .bg-surface-2,
+body.dark .streak-comparison-bars .bg-surface-2 {
+  background: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html.dark .streak-comparison-bars .bg-surface-3,
+html[data-theme="dark"] .streak-comparison-bars .bg-surface-3,
+body.dark .streak-comparison-bars .bg-surface-3 {
+  background: rgba(148, 163, 184, 0.35) !important;
+}
+
+/* Leader card */
+html.dark .streak-comparison-leader-card,
+html[data-theme="dark"] .streak-comparison-leader-card,
+body.dark .streak-comparison-leader-card {
+  background:
+    radial-gradient(circle at 6% 0%, rgba(251, 146, 60, 0.14), transparent 40%),
+    rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(251, 146, 60, 0.22) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 14px 32px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Catch-up message strip */
+html.dark .streak-comparison-catchup,
+html[data-theme="dark"] .streak-comparison-catchup,
+body.dark .streak-comparison-catchup {
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(135deg, rgba(251, 146, 60, 0.10), rgba(139, 92, 246, 0.08)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+/* Buttons */
+html.dark .streak-comparison-card button,
+html[data-theme="dark"] .streak-comparison-card button,
+body.dark .streak-comparison-card button {
+  background: rgba(255, 255, 255, 0.065) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* END STREAK COMPARISON DARKMODE STRIKE v1 */

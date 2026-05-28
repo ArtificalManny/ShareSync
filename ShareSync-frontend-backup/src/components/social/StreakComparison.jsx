@@ -45,7 +45,7 @@ const ComparisonBar = ({ yourValue, compareValue, maxValue, label, color = 'bran
   };
 
   return (
-    <div className="space-y-2">
+    <div className="streak-comparison-bars space-y-2">
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs text-text-secondary">You</span>
@@ -118,7 +118,7 @@ const TeamLeaderCard = ({ leader, yourStreak }) => {
   return (
     <div
       className={`
-      p-3 rounded-xl
+      streak-comparison-leader-card p-3 rounded-xl
       ${isYouLeading ? 'bg-warning-500/10 border border-warning-500/20' : 'bg-surface-2 border border-white/[0.06]'}
     `}
     >
@@ -192,7 +192,7 @@ const CatchUpMessage = ({ yourStreak, teamAverage, teamBest }) => {
   const Icon = icon;
 
   return (
-    <div className={`flex items-center gap-2 text-sm ${color}`}>
+    <div className={`streak-comparison-catchup flex items-center gap-2 text-sm ${color}`}>
       <Icon className="w-4 h-4" />
       <span>{message}</span>
     </div>
@@ -273,6 +273,7 @@ export default function StreakComparison({
       <div
         onClick={onViewDetails}
         className={`
+          streak-comparison-card streak-comparison-card--compact
           p-4 rounded-xl bg-surface-1 border border-white/[0.06]
           ${onViewDetails ? 'cursor-pointer hover:bg-surface-2' : ''}
           transition-colors
@@ -327,7 +328,7 @@ export default function StreakComparison({
   // DEFAULT VARIANT
   // ═════════════════════════════════════════════════════════════════════════
   return (
-    <div className={`p-4 rounded-xl bg-surface-1 border border-white/[0.06] ${className}`}>
+    <div className={`streak-comparison-card streak-comparison-card--default p-4 rounded-xl bg-surface-1 border border-white/[0.06] ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Flame className={`w-4 h-4 ${isFireMode ? 'text-energy-500' : 'text-warning-500'}`} />
