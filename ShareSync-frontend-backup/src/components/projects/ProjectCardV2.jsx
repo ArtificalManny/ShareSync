@@ -265,7 +265,7 @@ function SignalChip({ icon: Icon, label, value, tone = 'neutral' }) {
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 min-w-0 ${toneClasses[tone] || toneClasses.neutral}`}
+      className={`project-card-v2-signal project-card-v2-signal-${tone} flex items-center gap-2 rounded-lg border px-2.5 py-2 min-w-0 ${toneClasses[tone] || toneClasses.neutral}`}
     >
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <div className="min-w-0">
@@ -577,7 +577,7 @@ export default function ProjectCardV2({
     <div
       onClick={handleCardClick}
       className={`
-        group relative overflow-hidden rounded-2xl cursor-pointer flex flex-col justify-between
+        project-card-v2-shell group relative overflow-hidden rounded-2xl cursor-pointer flex flex-col justify-between
         bg-white border border-slate-200/90
         transition-all duration-200 hover:-translate-y-0.5
         ${className}
@@ -637,7 +637,7 @@ export default function ProjectCardV2({
           </div>
 
           <div
-            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${stateBadgeClasses[stateMeta.tone]}`}
+            className={`project-card-v2-state-badge project-card-v2-state-${stateMeta.tone} shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${stateBadgeClasses[stateMeta.tone]}`}
           >
             {stateMeta.label}
           </div>
@@ -646,7 +646,7 @@ export default function ProjectCardV2({
         {/* Main focus: next move / blocked / ready */}
         <div
           className={`
-            rounded-xl border p-3.5 mb-4
+            project-card-v2-cue project-card-v2-cue-${primaryCue.tone} rounded-xl border p-3.5 mb-4
             ${primaryCue.tone === 'red'
               ? 'bg-red-50 border-red-200'
               : primaryCue.tone === 'violet'
@@ -700,7 +700,7 @@ export default function ProjectCardV2({
         </div>
 
         {/* Secondary progress strip */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="project-card-v2-progress rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
               Progress
@@ -727,7 +727,7 @@ export default function ProjectCardV2({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-slate-100 bg-white/80">
+      <div className="project-card-v2-footer px-5 py-4 border-t border-slate-100 bg-white/80">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <MiniMemberStack
