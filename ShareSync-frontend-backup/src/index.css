@@ -1348,3 +1348,173 @@ body.dark .project-card-v2-footer .rounded-full {
 }
 
 /* END PROJECT CARD V2 DARKMODE SAFE v1 */
+
+/* =========================================================
+   YOUR MOVES TODAY FINAL DARKMODE v5
+   Home > Your 3 Moves Today.
+   Direct classes now exist in YourMovesToday.jsx.
+   ========================================================= */
+
+.your-moves-today-panel {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+html.dark .your-moves-today-panel,
+html[data-theme="dark"] .your-moves-today-panel,
+body.dark .your-moves-today-panel {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.24), transparent 36%),
+    radial-gradient(circle at 96% 18%, rgba(45, 212, 191, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(8, 13, 25, 0.96)) !important;
+  border-color: rgba(167, 139, 250, 0.30) !important;
+  color: #f8fafc !important;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(167, 139, 250, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .your-moves-recommendation-card,
+html[data-theme="dark"] .your-moves-recommendation-card,
+body.dark .your-moves-recommendation-card {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.22), transparent 42%),
+    radial-gradient(circle at 94% 0%, rgba(45, 212, 191, 0.12), transparent 38%),
+    rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(196, 181, 253, 0.30) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 18px 38px rgba(0, 0, 0, 0.24) !important;
+}
+
+html.dark .your-moves-move-card-wrap,
+html[data-theme="dark"] .your-moves-move-card-wrap,
+body.dark .your-moves-move-card-wrap {
+  border-radius: 2rem !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(167, 139, 250, 0.36) !important;
+  background:
+    radial-gradient(circle at 7% 0%, rgba(139, 92, 246, 0.32), transparent 42%),
+    radial-gradient(circle at 96% 20%, rgba(45, 212, 191, 0.18), transparent 40%),
+    linear-gradient(135deg, rgba(20, 24, 38, 0.98), rgba(9, 14, 26, 0.98)) !important;
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
+}
+
+html.dark .your-moves-move-card-wrap > *,
+html[data-theme="dark"] .your-moves-move-card-wrap > *,
+body.dark .your-moves-move-card-wrap > * {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.20), transparent 42%),
+    radial-gradient(circle at 94% 18%, rgba(45, 212, 191, 0.12), transparent 38%),
+    rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f8fafc !important;
+  box-shadow: none !important;
+}
+
+html.dark .your-moves-move-card-wrap [class*="bg-white"],
+html.dark .your-moves-move-card-wrap [class*="bg-slate-50"],
+html.dark .your-moves-move-card-wrap [class*="bg-gray-50"],
+html.dark .your-moves-move-card-wrap [class*="bg-zinc-50"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="bg-white"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="bg-slate-50"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="bg-gray-50"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="bg-zinc-50"],
+body.dark .your-moves-move-card-wrap [class*="bg-white"],
+body.dark .your-moves-move-card-wrap [class*="bg-slate-50"],
+body.dark .your-moves-move-card-wrap [class*="bg-gray-50"],
+body.dark .your-moves-move-card-wrap [class*="bg-zinc-50"] {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html.dark .your-moves-move-card-wrap h1,
+html.dark .your-moves-move-card-wrap h2,
+html.dark .your-moves-move-card-wrap h3,
+html.dark .your-moves-move-card-wrap h4,
+html.dark .your-moves-move-card-wrap strong,
+html.dark .your-moves-move-card-wrap .font-bold,
+html.dark .your-moves-move-card-wrap .font-black,
+html[data-theme="dark"] .your-moves-move-card-wrap h1,
+html[data-theme="dark"] .your-moves-move-card-wrap h2,
+html[data-theme="dark"] .your-moves-move-card-wrap h3,
+html[data-theme="dark"] .your-moves-move-card-wrap h4,
+html[data-theme="dark"] .your-moves-move-card-wrap strong,
+html[data-theme="dark"] .your-moves-move-card-wrap .font-bold,
+html[data-theme="dark"] .your-moves-move-card-wrap .font-black,
+body.dark .your-moves-move-card-wrap h1,
+body.dark .your-moves-move-card-wrap h2,
+body.dark .your-moves-move-card-wrap h3,
+body.dark .your-moves-move-card-wrap h4,
+body.dark .your-moves-move-card-wrap strong,
+body.dark .your-moves-move-card-wrap .font-bold,
+body.dark .your-moves-move-card-wrap .font-black {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.14);
+}
+
+html.dark .your-moves-move-card-wrap p,
+html.dark .your-moves-move-card-wrap span,
+html.dark .your-moves-move-card-wrap div,
+html.dark .your-moves-move-card-wrap button,
+html.dark .your-moves-move-card-wrap [class*="text-slate-"],
+html.dark .your-moves-move-card-wrap [class*="text-zinc-"],
+html.dark .your-moves-move-card-wrap [class*="text-gray-"],
+html[data-theme="dark"] .your-moves-move-card-wrap p,
+html[data-theme="dark"] .your-moves-move-card-wrap span,
+html[data-theme="dark"] .your-moves-move-card-wrap div,
+html[data-theme="dark"] .your-moves-move-card-wrap button,
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-slate-"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-zinc-"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-gray-"],
+body.dark .your-moves-move-card-wrap p,
+body.dark .your-moves-move-card-wrap span,
+body.dark .your-moves-move-card-wrap div,
+body.dark .your-moves-move-card-wrap button,
+body.dark .your-moves-move-card-wrap [class*="text-slate-"],
+body.dark .your-moves-move-card-wrap [class*="text-zinc-"],
+body.dark .your-moves-move-card-wrap [class*="text-gray-"] {
+  color: rgba(226, 232, 240, 0.90) !important;
+  opacity: 1 !important;
+}
+
+html.dark .your-moves-move-card-wrap [class*="text-violet-"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-violet-"],
+body.dark .your-moves-move-card-wrap [class*="text-violet-"] {
+  color: #c4b5fd !important;
+}
+
+html.dark .your-moves-move-card-wrap [class*="text-red-"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-red-"],
+body.dark .your-moves-move-card-wrap [class*="text-red-"] {
+  color: #fb7185 !important;
+}
+
+html.dark .your-moves-move-card-wrap [class*="text-teal-"],
+html.dark .your-moves-move-card-wrap [class*="text-emerald-"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-teal-"],
+html[data-theme="dark"] .your-moves-move-card-wrap [class*="text-emerald-"],
+body.dark .your-moves-move-card-wrap [class*="text-teal-"],
+body.dark .your-moves-move-card-wrap [class*="text-emerald-"] {
+  color: #5eead4 !important;
+}
+
+html.dark .your-moves-move-card-wrap button,
+html[data-theme="dark"] .your-moves-move-card-wrap button,
+body.dark .your-moves-move-card-wrap button {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+html.dark .your-moves-footer,
+html[data-theme="dark"] .your-moves-footer,
+body.dark .your-moves-footer {
+  border-top-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* END YOUR MOVES TODAY FINAL DARKMODE v5 */
