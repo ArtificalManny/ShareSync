@@ -825,3 +825,221 @@ body.dark .overview-pulse-signal-card .text-3xl {
 }
 
 /* END OVERVIEW PULSE SIGNALCARDS DARKMODE v1 */
+
+/* =========================================================
+   DISCOVER HERO NETWORK STAT CARDS v1
+   Discover hero: Signals / Ships / Streak dark-mode polish.
+   ========================================================= */
+
+.discover-network-stat-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 76px;
+}
+
+.discover-network-stat-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.dark .discover-network-stat-card,
+html[data-theme="dark"] .discover-network-stat-card,
+body.dark .discover-network-stat-card {
+  color: #f8fafc !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .discover-network-stat-emerald,
+html[data-theme="dark"] .discover-network-stat-emerald,
+body.dark .discover-network-stat-emerald {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(16, 185, 129, 0.40), transparent 44%),
+    linear-gradient(135deg, rgba(6, 78, 59, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(52, 211, 153, 0.90) !important;
+}
+
+html.dark .discover-network-stat-amber,
+html[data-theme="dark"] .discover-network-stat-amber,
+body.dark .discover-network-stat-amber {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(251, 191, 36, 0.42), transparent 44%),
+    linear-gradient(135deg, rgba(69, 46, 5, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(251, 191, 36, 0.90) !important;
+}
+
+html.dark .discover-network-stat-violet,
+html[data-theme="dark"] .discover-network-stat-violet,
+body.dark .discover-network-stat-violet {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(139, 92, 246, 0.42), transparent 44%),
+    linear-gradient(135deg, rgba(30, 27, 75, 0.98), rgba(15, 23, 42, 0.94)) !important;
+  border-color: rgba(167, 139, 250, 0.88) !important;
+}
+
+html.dark .discover-network-stat-card > div > div:first-child,
+html[data-theme="dark"] .discover-network-stat-card > div > div:first-child,
+body.dark .discover-network-stat-card > div > div:first-child {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+html.dark .discover-network-stat-emerald svg,
+html[data-theme="dark"] .discover-network-stat-emerald svg,
+body.dark .discover-network-stat-emerald svg {
+  color: #34d399 !important;
+  filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.35));
+}
+
+html.dark .discover-network-stat-amber svg,
+html[data-theme="dark"] .discover-network-stat-amber svg,
+body.dark .discover-network-stat-amber svg {
+  color: #fbbf24 !important;
+  filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.35));
+}
+
+html.dark .discover-network-stat-violet svg,
+html[data-theme="dark"] .discover-network-stat-violet svg,
+body.dark .discover-network-stat-violet svg {
+  color: #c4b5fd !important;
+  filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.35));
+}
+
+html.dark .discover-network-stat-card .tabular-nums,
+html[data-theme="dark"] .discover-network-stat-card .tabular-nums,
+body.dark .discover-network-stat-card .tabular-nums {
+  color: #ffffff !important;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.16);
+}
+
+html.dark .discover-network-stat-card .uppercase,
+html[data-theme="dark"] .discover-network-stat-card .uppercase,
+body.dark .discover-network-stat-card .uppercase {
+  opacity: 1 !important;
+  color: rgba(248, 250, 252, 0.78) !important;
+}
+
+/* END DISCOVER HERO NETWORK STAT CARDS v1 */
+
+/* =========================================================
+   DISCOVER PUBLIC SIGNALS DARK CARDS v1
+   Discover > Latest Public Signals:
+   Activity card + Your Progress card dark-mode polish.
+   ========================================================= */
+
+.discover-public-signals-panel {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+html.dark .discover-public-signals-panel,
+html[data-theme="dark"] .discover-public-signals-panel,
+body.dark .discover-public-signals-panel {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 18%, rgba(34, 211, 238, 0.10), transparent 34%),
+    rgba(15, 15, 20, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 22px 56px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* The large white feed cards inside Latest Public Signals */
+html.dark .discover-public-signals-panel [class*="bg-white"][class*="rounded"],
+html[data-theme="dark"] .discover-public-signals-panel [class*="bg-white"][class*="rounded"],
+body.dark .discover-public-signals-panel [class*="bg-white"][class*="rounded"] {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.22), transparent 38%),
+    radial-gradient(circle at 92% 12%, rgba(45, 212, 191, 0.14), transparent 36%),
+    linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(10, 10, 14, 0.96)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  color: #f8fafc !important;
+}
+
+/* Keep small icon pills readable instead of washed out */
+html.dark .discover-public-signals-panel [class*="bg-slate-"],
+html[data-theme="dark"] .discover-public-signals-panel [class*="bg-slate-"],
+body.dark .discover-public-signals-panel [class*="bg-slate-"] {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Fix faint gray text inside the activity/progress cards */
+html.dark .discover-public-signals-panel [class*="text-slate-"],
+html.dark .discover-public-signals-panel [class*="text-zinc-"],
+html.dark .discover-public-signals-panel [class*="text-gray-"],
+html[data-theme="dark"] .discover-public-signals-panel [class*="text-slate-"],
+html[data-theme="dark"] .discover-public-signals-panel [class*="text-zinc-"],
+html[data-theme="dark"] .discover-public-signals-panel [class*="text-gray-"],
+body.dark .discover-public-signals-panel [class*="text-slate-"],
+body.dark .discover-public-signals-panel [class*="text-zinc-"],
+body.dark .discover-public-signals-panel [class*="text-gray-"] {
+  color: rgba(248, 250, 252, 0.76) !important;
+}
+
+/* Headings, usernames, numbers, and labels */
+html.dark .discover-public-signals-panel h1,
+html.dark .discover-public-signals-panel h2,
+html.dark .discover-public-signals-panel h3,
+html.dark .discover-public-signals-panel h4,
+html.dark .discover-public-signals-panel strong,
+html.dark .discover-public-signals-panel .font-bold,
+html.dark .discover-public-signals-panel .font-black,
+html[data-theme="dark"] .discover-public-signals-panel h1,
+html[data-theme="dark"] .discover-public-signals-panel h2,
+html[data-theme="dark"] .discover-public-signals-panel h3,
+html[data-theme="dark"] .discover-public-signals-panel h4,
+html[data-theme="dark"] .discover-public-signals-panel strong,
+html[data-theme="dark"] .discover-public-signals-panel .font-bold,
+html[data-theme="dark"] .discover-public-signals-panel .font-black,
+body.dark .discover-public-signals-panel h1,
+body.dark .discover-public-signals-panel h2,
+body.dark .discover-public-signals-panel h3,
+body.dark .discover-public-signals-panel h4,
+body.dark .discover-public-signals-panel strong,
+body.dark .discover-public-signals-panel .font-bold,
+body.dark .discover-public-signals-panel .font-black {
+  color: #ffffff !important;
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.10);
+}
+
+/* Preserve accent colors while making them glow slightly */
+html.dark .discover-public-signals-panel .text-violet-500,
+html.dark .discover-public-signals-panel .text-violet-600,
+html.dark .discover-public-signals-panel .text-violet-700 {
+  color: #c4b5fd !important;
+}
+
+html.dark .discover-public-signals-panel .text-emerald-500,
+html.dark .discover-public-signals-panel .text-emerald-600,
+html.dark .discover-public-signals-panel .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+html.dark .discover-public-signals-panel .text-amber-500,
+html.dark .discover-public-signals-panel .text-amber-600,
+html.dark .discover-public-signals-panel .text-amber-700 {
+  color: #fbbf24 !important;
+}
+
+/* Progress bars / tiny separators should not vanish */
+html.dark .discover-public-signals-panel [class*="bg-amber-"],
+html.dark .discover-public-signals-panel [class*="bg-orange-"],
+html.dark .discover-public-signals-panel [class*="bg-red-"],
+html.dark .discover-public-signals-panel [class*="bg-violet-"],
+html.dark .discover-public-signals-panel [class*="bg-emerald-"],
+html.dark .discover-public-signals-panel [class*="bg-cyan-"] {
+  opacity: 1 !important;
+}
+
+/* END DISCOVER PUBLIC SIGNALS DARK CARDS v1 */
