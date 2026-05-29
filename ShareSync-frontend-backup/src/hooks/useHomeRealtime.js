@@ -1570,6 +1570,42 @@ export function useHomeRealtime() {
 
       safeSet(setActivitiesRaw, (prev) => [synthetic, ...(Array.isArray(prev) ? prev : [])]);
       lastGoodRef.current.activities = [synthetic, ...(Array.isArray(lastGoodRef.current.activities) ? lastGoodRef.current.activities : [])];
+
+      // Optimistic velocity bump so Home updates immediately.
+      // Backend stats refetch below will correct the value if needed.
+      safeSet(setSummaryRaw, (prev) => {
+        const base = prev || lastGoodRef.current.summary || {};
+        const currentShips = firstFiniteNumber(
+          base.ships,
+          base.totalShips,
+          base.shipCount,
+          base.weeklyShips,
+          0
+        );
+
+        const currentWeeklyShips = firstFiniteNumber(
+          base.weeklyShips,
+          base.shipsThisWeek,
+          base.shippedThisWeek,
+          0
+        );
+
+        const next = {
+          ...base,
+          ships: currentShips + 1,
+          totalShips: firstFiniteNumber(base.totalShips, base.ships, 0) + 1,
+          shipCount: firstFiniteNumber(base.shipCount, base.ships, 0) + 1,
+          weeklyShips: currentWeeklyShips + 1,
+          shipsThisWeek: currentWeeklyShips + 1,
+          shippedThisWeek: currentWeeklyShips + 1,
+          updatedAt: new Date().toISOString(),
+        };
+
+        lastGoodRef.current.summary = next;
+        return next;
+      });
+
+      scheduleVelocityRefresh(250);
       safeSet(setIsConnected, true);
     };
 
@@ -1577,16 +1613,34 @@ export function useHomeRealtime() {
     // Local events should refresh backend-owned velocity truth quickly.
     const onVelocityChanged = () => scheduleVelocityRefresh(200);
 
+    const velocityEvents = [
+      "task.completed",
+      "task:completed",
+      "taskCompleted",
+      "task.updated",
+      "task:updated",
+      "taskUpdated",
+      "activity.created",
+      "activity:created",
+      "activityCreated",
+      "openshare:activity-created",
+      "openshare:stats-refresh",
+      "project.completed",
+      "projectCompleted",
+      "project:lifecycle-updated",
+      "local-ship-refresh",
+    ];
+
     window.addEventListener("local-ship", onLocalShip);
-    window.addEventListener("task.completed", onVelocityChanged);
-    window.addEventListener("project.completed", onVelocityChanged);
-    window.addEventListener("project:lifecycle-updated", onVelocityChanged);
-    
+    velocityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, onVelocityChanged);
+    });
+
     return () => {
       window.removeEventListener("local-ship", onLocalShip);
-      window.removeEventListener("task.completed", onVelocityChanged);
-      window.removeEventListener("project.completed", onVelocityChanged);
-      window.removeEventListener("project:lifecycle-updated", onVelocityChanged);
+      velocityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, onVelocityChanged);
+      });
     };
   }, [safeSet, scheduleVelocityRefresh]);
 
@@ -1892,10 +1946,14 @@ export function useHomeRealtime() {
 
       const fallback = computeSummaryFromActivities(activities);
       return {
+        ...summaryRaw,
         ships: ships ?? fallback.ships,
         streakDays: streakDays ?? fallback.streakDays,
         focus: focus ?? fallback.focus,
         efficiency: efficiency ?? fallback.efficiency,
+        weeklyShips: summaryRaw.weeklyShips ?? summaryRaw.shipsThisWeek ?? summaryRaw.shippedThisWeek ?? fallback.ships,
+        activeDaysThisWeek: summaryRaw.activeDaysThisWeek ?? summaryRaw.daysActiveThisWeek ?? fallback.streakDays,
+        lastWeekShips: summaryRaw.lastWeekShips ?? summaryRaw.shipsLastWeek ?? 0,
       };
     }
 
@@ -1940,6 +1998,38 @@ export function useHomeRealtime() {
       isCoWorking: false,
     };
   }, [intelligenceData]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    window.__debugHomeVelocity = () => {
+      const payload = {
+        summaryRaw,
+        computedSummary,
+        lastGoodSummary: lastGoodRef.current.summary,
+        shippedStats,
+        streakComparison,
+      };
+
+      console.table({
+        ships: computedSummary?.ships,
+        streakDays: computedSummary?.streakDays,
+        weeklyShips: computedSummary?.weeklyShips,
+        activeDaysThisWeek: computedSummary?.activeDaysThisWeek,
+        lastWeekShips: computedSummary?.lastWeekShips,
+      });
+
+      console.log("[Home Velocity Debug]", payload);
+      return payload;
+    };
+
+    window.__refreshHomeVelocity = () => refreshVelocitySummary();
+
+    return () => {
+      delete window.__debugHomeVelocity;
+      delete window.__refreshHomeVelocity;
+    };
+  }, [summaryRaw, computedSummary, shippedStats, streakComparison, refreshVelocitySummary]);
 
   return {
     loadingMissions,

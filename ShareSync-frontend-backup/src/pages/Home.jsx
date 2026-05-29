@@ -738,7 +738,7 @@ export default function Home() {
                       ? "text-orange-500"
                       : "text-violet-600 dark:text-violet-400"
                   }
-                  description="Total validated deployments in the last 7 days."
+                  description="Total validated ships across your account."
                 />
                 <StatCard
                   label="Streak"
