@@ -296,8 +296,8 @@ const ProjectSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#09090B] text-slate-800 dark:text-white pb-20 transition-colors">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="project-settings-page min-h-screen bg-slate-50 dark:bg-[#09090B] text-slate-800 dark:text-white pb-20 transition-colors">
+      <div className="project-settings-shell max-w-4xl mx-auto px-6 py-8">
         <input
           ref={logoFileInputRef}
           type="file"
@@ -314,7 +314,7 @@ const ProjectSettings = () => {
         />
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="project-settings-header flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate(`/projects/${id}`)}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -337,7 +337,7 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 1: PROJECT INFO (Role-Based Access)        */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className={`bg-slate-800/50 backdrop-blur-xl border ${canEditProjectInfo ? 'border-brand-500/20' : 'border-slate-700/50'} rounded-2xl p-6 shadow-xl mb-6 relative overflow-hidden`}>
+        <div className={`project-settings-card project-information-card bg-slate-800/50 backdrop-blur-xl border ${canEditProjectInfo ? 'border-brand-500/20' : 'border-slate-700/50'} rounded-2xl p-6 shadow-xl mb-6 relative overflow-hidden`}>
 
           {!canEditProjectInfo && (
             <div className="absolute top-0 right-0 p-4">
@@ -467,24 +467,24 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 2: NOTIFICATIONS (User Specific)           */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className="bg-white dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
+        <div className="project-settings-card project-notifications-card bg-white dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
           <div className="flex items-center gap-3 mb-6">
             <Bell className="w-5 h-5 text-blue-400" />
             <h2 className="text-xl font-bold text-slate-800 dark:text-white">Your Notification Preferences</h2>
           </div>
 
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+          <p className="project-notifications-description text-sm text-slate-600 dark:text-slate-400 mb-6">
             Control what you hear from this project. These settings are personal to you and will not affect the rest of the team.
           </p>
 
           <div className="space-y-4 mb-6">
             {Object.entries(notificationSettings).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/[0.04]">
+              <div key={key} className="project-notification-row flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/[0.04]">
                 <div>
-                  <div className="font-semibold text-slate-800 dark:text-white capitalize">
+                  <div className="project-notification-title font-semibold text-slate-800 dark:text-white capitalize">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                  <div className="project-notification-subtitle text-sm text-slate-500 dark:text-slate-400">
                     {key === 'taskAssigned' && 'Get notified when you are assigned to a task'}
                     {key === 'taskCompleted' && 'Get notified when team tasks are completed'}
                     {key === 'announcements' && 'Get notified of project-wide announcements'}
@@ -510,7 +510,7 @@ const ProjectSettings = () => {
           <button
             onClick={handleSaveNotifications}
             disabled={saving}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+            className="project-notification-save-btn w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
           >
             <Save className="w-5 h-5" />
             {saving ? 'Saving...' : 'Save Preferences'}
@@ -520,7 +520,7 @@ const ProjectSettings = () => {
         {/* ══════════════════════════════════════════════════ */}
         {/* SECTION 3: DANGER ZONE                             */}
         {/* ══════════════════════════════════════════════════ */}
-        <div className="bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
+        <div className="project-settings-card project-danger-card bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="w-5 h-5 text-error-400" />
             <h2 className="text-xl font-bold text-error-400">Danger Zone</h2>
