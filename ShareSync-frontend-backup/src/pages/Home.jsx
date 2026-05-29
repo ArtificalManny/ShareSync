@@ -690,9 +690,23 @@ export default function Home() {
                 showChart={false}
                 showLeader={true}
                 showRank={true}
-                userStreakDays={streakComparison.userStreakDays}
-                teamAvgDays={streakComparison.teamAvgDays}
-                rankText={streakComparison.rankText}
+                userStreakDays={
+                  Number(
+                    summary?.streakDays ??
+                      summary?.currentStreak ??
+                      streakComparison?.userStreakDays ??
+                      0
+                  ) || 0
+                }
+                teamAvgDays={
+                  Number(
+                    streakComparison?.teamAvgDays ??
+                      summary?.teamAvgDays ??
+                      summary?.teamAverageStreak ??
+                      0
+                  ) || 0
+                }
+                rankText={streakComparison?.rankText || "Top 3"}
               />
             )}
           </div>
