@@ -2907,3 +2907,621 @@ html[data-theme="dark"] .your-moves-empty-state button:not(:first-of-type),
 }
 
 /* END YOUR MOVES EMPTY STATE DARKMODE FIX V2 */
+
+/* =========================================================
+   QUICK NOTES ADD BUTTON POLISH V2
+   Clear + actions and stronger dark-mode design for Quick Notes.
+   ========================================================= */
+
+.quick-notes-drawer-polished {
+  overflow: hidden;
+}
+
+.quick-notes-list-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9));
+  backdrop-filter: blur(14px);
+}
+
+.quick-notes-list-label {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(71, 85, 105, 0.88);
+}
+
+.quick-notes-list-add-button,
+.quick-notes-add-button,
+.quick-notes-editor-create-button,
+.quick-notes-empty-create-button {
+  position: relative;
+  isolation: isolate;
+}
+
+.quick-notes-list-add-button,
+.quick-notes-add-button,
+.quick-notes-editor-create-button,
+.quick-notes-empty-create-button {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.42), transparent 34%),
+    linear-gradient(135deg, #a855f7 0%, #7c3aed 55%, #6d28d9 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(196, 181, 253, 0.75) !important;
+  box-shadow:
+    0 12px 26px rgba(124, 58, 237, 0.24),
+    0 0 18px rgba(139, 92, 246, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+.quick-notes-list-add-button {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.quick-notes-list-add-button:hover,
+.quick-notes-add-button:hover,
+.quick-notes-editor-create-button:hover,
+.quick-notes-empty-create-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.quick-notes-list-add-button:active,
+.quick-notes-add-button:active,
+.quick-notes-editor-create-button:active,
+.quick-notes-empty-create-button:active {
+  transform: translateY(0);
+}
+
+.quick-notes-list-add-button svg,
+.quick-notes-add-button svg,
+.quick-notes-editor-create-button svg {
+  color: #ffffff !important;
+  stroke: currentColor !important;
+}
+
+.quick-notes-editor-create-button {
+  min-height: 2.4rem;
+}
+
+/* Dark mode */
+html.dark .quick-notes-drawer-polished,
+html[data-theme="dark"] .quick-notes-drawer-polished,
+.dark .quick-notes-drawer-polished,
+[data-theme="dark"] .quick-notes-drawer-polished {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.16), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.10), transparent 34%),
+    #0f172a !important;
+  border-left-color: rgba(167, 139, 250, 0.20) !important;
+}
+
+html.dark .quick-notes-list-toolbar,
+html[data-theme="dark"] .quick-notes-list-toolbar,
+.dark .quick-notes-list-toolbar,
+[data-theme="dark"] .quick-notes-list-toolbar {
+  border-bottom-color: rgba(148, 163, 184, 0.16);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94));
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.dark .quick-notes-list-label,
+html[data-theme="dark"] .quick-notes-list-label,
+.dark .quick-notes-list-label,
+[data-theme="dark"] .quick-notes-list-label {
+  color: rgba(226, 232, 240, 0.86);
+  text-shadow: 0 0 18px rgba(139, 92, 246, 0.20);
+}
+
+html.dark .quick-notes-list-add-button,
+html.dark .quick-notes-add-button,
+html.dark .quick-notes-editor-create-button,
+html.dark .quick-notes-empty-create-button,
+html[data-theme="dark"] .quick-notes-list-add-button,
+html[data-theme="dark"] .quick-notes-add-button,
+html[data-theme="dark"] .quick-notes-editor-create-button,
+html[data-theme="dark"] .quick-notes-empty-create-button,
+.dark .quick-notes-list-add-button,
+.dark .quick-notes-add-button,
+.dark .quick-notes-editor-create-button,
+.dark .quick-notes-empty-create-button,
+[data-theme="dark"] .quick-notes-list-add-button,
+[data-theme="dark"] .quick-notes-add-button,
+[data-theme="dark"] .quick-notes-editor-create-button,
+[data-theme="dark"] .quick-notes-empty-create-button {
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.28), transparent 30%),
+    linear-gradient(135deg, #c084fc 0%, #8b5cf6 48%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(216, 180, 254, 0.68) !important;
+  box-shadow:
+    0 16px 34px rgba(139, 92, 246, 0.30),
+    0 0 26px rgba(34, 211, 238, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+html.dark .quick-notes-list-add-button:focus-visible,
+html.dark .quick-notes-add-button:focus-visible,
+html.dark .quick-notes-editor-create-button:focus-visible,
+html.dark .quick-notes-empty-create-button:focus-visible,
+.dark .quick-notes-list-add-button:focus-visible,
+.dark .quick-notes-add-button:focus-visible,
+.dark .quick-notes-editor-create-button:focus-visible,
+.dark .quick-notes-empty-create-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 4px rgba(196, 181, 253, 0.32),
+    0 16px 34px rgba(139, 92, 246, 0.30),
+    0 0 26px rgba(34, 211, 238, 0.14) !important;
+}
+
+/* END QUICK NOTES ADD BUTTON POLISH V2 */
+
+/* =========================================================
+   QUICK NOTES DRAWER CONTRAST REPAIR
+   Fixes washed-out note list/editor text in light + dark mode.
+   Styling only. No note storage, auth, or create/delete logic changes.
+   ========================================================= */
+
+/* Base drawer surface */
+.quick-notes-drawer,
+.quick-notes-drawer-polished {
+  color: #0f172a !important;
+  background:
+    radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.08), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+}
+
+/* Left notes column */
+.quick-notes-drawer .quick-notes-list,
+.quick-notes-drawer-polished .quick-notes-list {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+  border-right-color: rgba(203, 213, 225, 0.95) !important;
+}
+
+/* Note rows */
+.quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button),
+.quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) {
+  color: #0f172a !important;
+  background: transparent !important;
+  border-bottom-color: rgba(226, 232, 240, 0.95) !important;
+}
+
+/* Selected / active note row */
+.quick-notes-drawer .quick-notes-list button[class*="bg-violet"],
+.quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"] {
+  background:
+    linear-gradient(135deg, rgba(237, 233, 254, 0.96), rgba(245, 243, 255, 0.82)) !important;
+  border-left: 3px solid #8b5cf6 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 10px 24px rgba(124, 58, 237, 0.08) !important;
+}
+
+/* Note title/subtitle readability */
+.quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+.quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"] {
+  color: #111827 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+.quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"] {
+  color: #64748b !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Selected note text */
+.quick-notes-drawer .quick-notes-list button[class*="bg-violet"] [class*="font"],
+.quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"] [class*="font"] {
+  color: #6d28d9 !important;
+}
+
+.quick-notes-drawer .quick-notes-list button[class*="bg-violet"] [class*="text-xs"],
+.quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"] [class*="text-xs"] {
+  color: #7c3aed !important;
+}
+
+/* Editor title/body fields */
+.quick-notes-drawer input,
+.quick-notes-drawer textarea,
+.quick-notes-drawer [contenteditable="true"],
+.quick-notes-drawer-polished input,
+.quick-notes-drawer-polished textarea,
+.quick-notes-drawer-polished [contenteditable="true"] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.quick-notes-drawer input::placeholder,
+.quick-notes-drawer textarea::placeholder,
+.quick-notes-drawer-polished input::placeholder,
+.quick-notes-drawer-polished textarea::placeholder {
+  color: rgba(100, 116, 139, 0.78) !important;
+}
+
+/* Dark mode drawer */
+html.dark .quick-notes-drawer,
+html.dark .quick-notes-drawer-polished,
+html[data-theme="dark"] .quick-notes-drawer,
+html[data-theme="dark"] .quick-notes-drawer-polished,
+.dark .quick-notes-drawer,
+.dark .quick-notes-drawer-polished,
+[data-theme="dark"] .quick-notes-drawer,
+[data-theme="dark"] .quick-notes-drawer-polished {
+  color: #e5e7eb !important;
+  background:
+    radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.18), transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.08), transparent 32%),
+    linear-gradient(135deg, #020617, #0f172a 62%, #111827) !important;
+  border-left-color: rgba(167, 139, 250, 0.22) !important;
+}
+
+/* Dark mode left notes column */
+html.dark .quick-notes-drawer .quick-notes-list,
+html.dark .quick-notes-drawer-polished .quick-notes-list,
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-list,
+html[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list,
+.dark .quick-notes-drawer .quick-notes-list,
+.dark .quick-notes-drawer-polished .quick-notes-list,
+[data-theme="dark"] .quick-notes-drawer .quick-notes-list,
+[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.96)) !important;
+  border-right-color: rgba(148, 163, 184, 0.20) !important;
+}
+
+/* Dark mode note rows */
+html.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button),
+html.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button),
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button),
+html[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button),
+.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button),
+.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button),
+[data-theme="dark"] .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button),
+[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) {
+  color: #e5e7eb !important;
+  background: transparent !important;
+  border-bottom-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+/* Dark mode note row hover */
+html.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button):hover,
+html.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button):hover,
+.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button):hover,
+.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button):hover {
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(34, 211, 238, 0.06)) !important;
+}
+
+/* Dark mode selected note */
+html.dark .quick-notes-drawer .quick-notes-list button[class*="bg-violet"],
+html.dark .quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"],
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-list button[class*="bg-violet"],
+html[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"],
+.dark .quick-notes-drawer .quick-notes-list button[class*="bg-violet"],
+.dark .quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"],
+[data-theme="dark"] .quick-notes-drawer .quick-notes-list button[class*="bg-violet"],
+[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button[class*="bg-violet"] {
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(15, 23, 42, 0.96)) !important;
+  border-left: 3px solid #a78bfa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.28),
+    0 0 22px rgba(139, 92, 246, 0.12) !important;
+}
+
+/* Dark mode note text */
+html.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+html.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+html[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+[data-theme="dark"] .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"],
+[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="font"] {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+html.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+html[data-theme="dark"] .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+html[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+.dark .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+.dark .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+[data-theme="dark"] .quick-notes-drawer .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"],
+[data-theme="dark"] .quick-notes-drawer-polished .quick-notes-list button:not(.quick-notes-list-add-button) [class*="text-xs"] {
+  color: #aab7ca !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Dark mode editor/header fields */
+html.dark .quick-notes-drawer input,
+html.dark .quick-notes-drawer textarea,
+html.dark .quick-notes-drawer [contenteditable="true"],
+html.dark .quick-notes-drawer-polished input,
+html.dark .quick-notes-drawer-polished textarea,
+html.dark .quick-notes-drawer-polished [contenteditable="true"],
+html[data-theme="dark"] .quick-notes-drawer input,
+html[data-theme="dark"] .quick-notes-drawer textarea,
+html[data-theme="dark"] .quick-notes-drawer [contenteditable="true"],
+html[data-theme="dark"] .quick-notes-drawer-polished input,
+html[data-theme="dark"] .quick-notes-drawer-polished textarea,
+html[data-theme="dark"] .quick-notes-drawer-polished [contenteditable="true"],
+.dark .quick-notes-drawer input,
+.dark .quick-notes-drawer textarea,
+.dark .quick-notes-drawer [contenteditable="true"],
+.dark .quick-notes-drawer-polished input,
+.dark .quick-notes-drawer-polished textarea,
+.dark .quick-notes-drawer-polished [contenteditable="true"],
+[data-theme="dark"] .quick-notes-drawer input,
+[data-theme="dark"] .quick-notes-drawer textarea,
+[data-theme="dark"] .quick-notes-drawer [contenteditable="true"],
+[data-theme="dark"] .quick-notes-drawer-polished input,
+[data-theme="dark"] .quick-notes-drawer-polished textarea,
+[data-theme="dark"] .quick-notes-drawer-polished [contenteditable="true"] {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: rgba(15, 23, 42, 0.84) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html.dark .quick-notes-drawer input::placeholder,
+html.dark .quick-notes-drawer textarea::placeholder,
+html.dark .quick-notes-drawer-polished input::placeholder,
+html.dark .quick-notes-drawer-polished textarea::placeholder,
+.dark .quick-notes-drawer input::placeholder,
+.dark .quick-notes-drawer textarea::placeholder,
+.dark .quick-notes-drawer-polished input::placeholder,
+.dark .quick-notes-drawer-polished textarea::placeholder {
+  color: rgba(203, 213, 225, 0.58) !important;
+}
+
+/* Make the editor pane itself avoid bright-white/dark mismatch */
+html.dark .quick-notes-drawer [class*="border-b"],
+html.dark .quick-notes-drawer-polished [class*="border-b"],
+.dark .quick-notes-drawer [class*="border-b"],
+.dark .quick-notes-drawer-polished [class*="border-b"] {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+/* END QUICK NOTES DRAWER CONTRAST REPAIR */
+
+/* =========================================================
+   QUICK NOTES PLUS LIGHT MODE VISIBILITY FIX
+   Makes the + button obvious in light mode without touching note logic.
+   ========================================================= */
+
+.quick-notes-list-toolbar .quick-notes-list-add-button,
+.quick-notes-list-toolbar button[aria-label="Create new note"] {
+  position: relative !important;
+  display: inline-flex !important;
+  width: 2.15rem !important;
+  height: 2.15rem !important;
+  min-width: 2.15rem !important;
+  min-height: 2.15rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(124, 58, 237, 0.85) !important;
+  background:
+    radial-gradient(circle at 32% 20%, rgba(255, 255, 255, 0.48), transparent 32%),
+    linear-gradient(135deg, #a855f7 0%, #7c3aed 58%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow:
+    0 12px 26px rgba(124, 58, 237, 0.25),
+    0 0 0 4px rgba(124, 58, 237, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+/* Use a CSS-rendered plus so it stays visible even if the SVG inherits a bad color. */
+.quick-notes-list-toolbar .quick-notes-list-add-button svg,
+.quick-notes-list-toolbar button[aria-label="Create new note"] svg {
+  display: none !important;
+}
+
+.quick-notes-list-toolbar .quick-notes-list-add-button::before,
+.quick-notes-list-toolbar button[aria-label="Create new note"]::before {
+  content: "+" !important;
+  display: block !important;
+  color: #ffffff !important;
+  font-size: 1.45rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  transform: translateY(-1px);
+  text-shadow: 0 1px 8px rgba(15, 23, 42, 0.28);
+}
+
+.quick-notes-list-toolbar .quick-notes-list-add-button:hover,
+.quick-notes-list-toolbar button[aria-label="Create new note"]:hover {
+  transform: translateY(-1px) scale(1.04) !important;
+  filter: brightness(1.05) !important;
+  box-shadow:
+    0 16px 32px rgba(124, 58, 237, 0.32),
+    0 0 0 5px rgba(124, 58, 237, 0.10),
+    0 0 24px rgba(34, 211, 238, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+}
+
+.quick-notes-list-toolbar .quick-notes-list-add-button:active,
+.quick-notes-list-toolbar button[aria-label="Create new note"]:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* Dark mode keeps the same visible + but with stronger glow. */
+html.dark .quick-notes-list-toolbar .quick-notes-list-add-button,
+html.dark .quick-notes-list-toolbar button[aria-label="Create new note"],
+html[data-theme="dark"] .quick-notes-list-toolbar .quick-notes-list-add-button,
+html[data-theme="dark"] .quick-notes-list-toolbar button[aria-label="Create new note"],
+.dark .quick-notes-list-toolbar .quick-notes-list-add-button,
+.dark .quick-notes-list-toolbar button[aria-label="Create new note"],
+[data-theme="dark"] .quick-notes-list-toolbar .quick-notes-list-add-button,
+[data-theme="dark"] .quick-notes-list-toolbar button[aria-label="Create new note"] {
+  border-color: rgba(216, 180, 254, 0.78) !important;
+  background:
+    radial-gradient(circle at 32% 20%, rgba(255, 255, 255, 0.34), transparent 32%),
+    linear-gradient(135deg, #c084fc 0%, #8b5cf6 48%, #22d3ee 100%) !important;
+  box-shadow:
+    0 16px 34px rgba(139, 92, 246, 0.36),
+    0 0 0 4px rgba(168, 85, 247, 0.14),
+    0 0 26px rgba(34, 211, 238, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+
+/* END QUICK NOTES PLUS LIGHT MODE VISIBILITY FIX */
+
+/* =========================================================
+   FINAL QUICK NOTES PLUS VISIBILITY FIX
+   Forces the Quick Notes list + button to be readable in light and dark mode.
+   ========================================================= */
+
+/* Light mode: make the + unmistakable */
+.quick-notes-list-toolbar button,
+.quick-notes-list-toolbar .quick-notes-list-add-button,
+.quick-notes-list-toolbar .quick-notes-add-button,
+.quick-notes-list-toolbar button[aria-label="Create new note"],
+.quick-notes-list-toolbar button[title="Create new note"] {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  min-width: 2.25rem !important;
+  min-height: 2.25rem !important;
+
+  padding: 0 !important;
+  border-radius: 999px !important;
+
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.45), transparent 34%),
+    linear-gradient(135deg, #9333ea 0%, #7c3aed 52%, #2563eb 100%) !important;
+
+  border: 1px solid rgba(88, 28, 135, 0.72) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+
+  box-shadow:
+    0 12px 26px rgba(124, 58, 237, 0.28),
+    0 0 0 3px rgba(124, 58, 237, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+
+  transform: none;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease !important;
+}
+
+/* Hide any inherited Lucide/SVG plus if it is too faint */
+.quick-notes-list-toolbar button svg,
+.quick-notes-list-toolbar .quick-notes-list-add-button svg,
+.quick-notes-list-toolbar .quick-notes-add-button svg,
+.quick-notes-list-toolbar button[aria-label="Create new note"] svg,
+.quick-notes-list-toolbar button[title="Create new note"] svg {
+  display: none !important;
+}
+
+/* Draw a guaranteed high-contrast plus */
+.quick-notes-list-toolbar button::before,
+.quick-notes-list-toolbar .quick-notes-list-add-button::before,
+.quick-notes-list-toolbar .quick-notes-add-button::before,
+.quick-notes-list-toolbar button[aria-label="Create new note"]::before,
+.quick-notes-list-toolbar button[title="Create new note"]::before {
+  content: "+" !important;
+  display: block !important;
+  color: #ffffff !important;
+  font-size: 1.55rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  transform: translateY(-1px) !important;
+  text-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.45),
+    0 0 12px rgba(255, 255, 255, 0.18) !important;
+}
+
+.quick-notes-list-toolbar button:hover,
+.quick-notes-list-toolbar .quick-notes-list-add-button:hover,
+.quick-notes-list-toolbar .quick-notes-add-button:hover,
+.quick-notes-list-toolbar button[aria-label="Create new note"]:hover,
+.quick-notes-list-toolbar button[title="Create new note"]:hover {
+  transform: translateY(-1px) scale(1.04) !important;
+  filter: brightness(1.08) saturate(1.08) !important;
+  box-shadow:
+    0 16px 34px rgba(124, 58, 237, 0.36),
+    0 0 0 4px rgba(124, 58, 237, 0.16),
+    0 0 24px rgba(37, 99, 235, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+.quick-notes-list-toolbar button:active,
+.quick-notes-list-toolbar .quick-notes-list-add-button:active,
+.quick-notes-list-toolbar .quick-notes-add-button:active,
+.quick-notes-list-toolbar button[aria-label="Create new note"]:active,
+.quick-notes-list-toolbar button[title="Create new note"]:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* Dark mode: keep it premium and visible */
+html.dark .quick-notes-list-toolbar button,
+html.dark .quick-notes-list-toolbar .quick-notes-list-add-button,
+html.dark .quick-notes-list-toolbar .quick-notes-add-button,
+html.dark .quick-notes-list-toolbar button[aria-label="Create new note"],
+html.dark .quick-notes-list-toolbar button[title="Create new note"],
+html[data-theme="dark"] .quick-notes-list-toolbar button,
+html[data-theme="dark"] .quick-notes-list-toolbar .quick-notes-list-add-button,
+html[data-theme="dark"] .quick-notes-list-toolbar .quick-notes-add-button,
+html[data-theme="dark"] .quick-notes-list-toolbar button[aria-label="Create new note"],
+html[data-theme="dark"] .quick-notes-list-toolbar button[title="Create new note"],
+.dark .quick-notes-list-toolbar button,
+.dark .quick-notes-list-toolbar .quick-notes-list-add-button,
+.dark .quick-notes-list-toolbar .quick-notes-add-button,
+.dark .quick-notes-list-toolbar button[aria-label="Create new note"],
+.dark .quick-notes-list-toolbar button[title="Create new note"],
+[data-theme="dark"] .quick-notes-list-toolbar button,
+[data-theme="dark"] .quick-notes-list-toolbar .quick-notes-list-add-button,
+[data-theme="dark"] .quick-notes-list-toolbar .quick-notes-add-button,
+[data-theme="dark"] .quick-notes-list-toolbar button[aria-label="Create new note"],
+[data-theme="dark"] .quick-notes-list-toolbar button[title="Create new note"] {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.34), transparent 34%),
+    linear-gradient(135deg, #c084fc 0%, #8b5cf6 48%, #22d3ee 100%) !important;
+
+  border-color: rgba(216, 180, 254, 0.82) !important;
+  color: #ffffff !important;
+
+  box-shadow:
+    0 16px 34px rgba(139, 92, 246, 0.38),
+    0 0 0 4px rgba(168, 85, 247, 0.16),
+    0 0 26px rgba(34, 211, 238, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+/* END FINAL QUICK NOTES PLUS VISIBILITY FIX */
