@@ -721,7 +721,7 @@ export default function Home() {
 
         {hasMeaningfulVelocity && (
           <div className="col-span-12">
-            <div className={sectionCardClasses} data-momentum={glowLevel}>
+            <div className={`home-velocity-metrics-panel ${sectionCardClasses}`} data-momentum={glowLevel}>
               <SectionHeader
                 icon={TrendingUp}
                 iconColor="text-violet-600 dark:text-violet-400"
@@ -729,7 +729,7 @@ export default function Home() {
                 rightSlot={LivePill}
               />
 
-              <div className="home-stat-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="home-velocity-stat-grid home-stat-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                 <StatCard
                   label="Ships"
                   value={summary?.ships || 0}

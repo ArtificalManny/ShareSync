@@ -1876,3 +1876,190 @@ body.dark .project-danger-card {
 }
 
 /* END PROJECT SETTINGS VISUAL STRIKE v1 */
+
+/* =========================================================
+   HOME VELOCITY METRICS VISUAL STRIKE v2
+   Scoped polish for Home.jsx > Velocity Metrics.
+   ========================================================= */
+
+.home-velocity-metrics-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.75rem !important;
+  border: 1px solid rgba(139, 92, 246, 0.22) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.13), transparent 34%),
+    radial-gradient(circle at 92% 100%, rgba(45, 212, 191, 0.11), transparent 38%),
+    rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    0 22px 70px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+.home-velocity-metrics-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 1;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 48%, #2dd4bf 100%);
+  opacity: 0.95;
+}
+
+.home-velocity-metrics-panel::after {
+  content: "";
+  position: absolute;
+  right: -6rem;
+  bottom: -8rem;
+  z-index: 0;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.20), transparent 66%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.home-velocity-metrics-panel > * {
+  position: relative;
+  z-index: 2;
+}
+
+html.dark .home-page .home-velocity-metrics-panel,
+html[data-theme="dark"] .home-page .home-velocity-metrics-panel,
+.dark .home-page .home-velocity-metrics-panel,
+[data-theme="dark"] .home-page .home-velocity-metrics-panel {
+  border-color: rgba(167, 139, 250, 0.24) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.24), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(45, 212, 191, 0.16), transparent 40%),
+    linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(2, 6, 23, 0.96)) !important;
+  box-shadow:
+    0 26px 86px rgba(0, 0, 0, 0.42),
+    0 0 44px rgba(139, 92, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Make header pop without touching other Home headers */
+.home-velocity-metrics-panel h2,
+.home-velocity-metrics-panel h3 {
+  letter-spacing: -0.02em;
+}
+
+html.dark .home-page .home-velocity-metrics-panel h2,
+html.dark .home-page .home-velocity-metrics-panel h3,
+html[data-theme="dark"] .home-page .home-velocity-metrics-panel h2,
+html[data-theme="dark"] .home-page .home-velocity-metrics-panel h3,
+.dark .home-page .home-velocity-metrics-panel h2,
+.dark .home-page .home-velocity-metrics-panel h3 {
+  color: rgba(248, 250, 252, 0.98) !important;
+  text-shadow: 0 0 24px rgba(167, 139, 250, 0.20);
+}
+
+/* Ships + Streak cards */
+.home-velocity-stat-grid > * {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.35rem !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.72)) !important;
+  box-shadow:
+    0 16px 38px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.home-velocity-stat-grid > *::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.0), rgba(139, 92, 246, 0.85), rgba(45, 212, 191, 0.0));
+  opacity: 0.85;
+}
+
+.home-velocity-stat-grid > *::after {
+  content: "";
+  position: absolute;
+  right: -2.75rem;
+  top: -2.75rem;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.18), transparent 64%);
+  pointer-events: none;
+}
+
+.home-velocity-stat-grid > *:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.34) !important;
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.12),
+    0 0 24px rgba(139, 92, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+html.dark .home-page .home-velocity-stat-grid > *,
+html[data-theme="dark"] .home-page .home-velocity-stat-grid > *,
+.dark .home-page .home-velocity-stat-grid > *,
+[data-theme="dark"] .home-page .home-velocity-stat-grid > * {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(139, 92, 246, 0.20), transparent 34%),
+    linear-gradient(135deg, rgba(30, 41, 59, 0.84), rgba(15, 23, 42, 0.78)) !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+html.dark .home-page .home-velocity-stat-grid > *:nth-child(2),
+html[data-theme="dark"] .home-page .home-velocity-stat-grid > *:nth-child(2),
+.dark .home-page .home-velocity-stat-grid > *:nth-child(2),
+[data-theme="dark"] .home-page .home-velocity-stat-grid > *:nth-child(2) {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(251, 146, 60, 0.20), transparent 34%),
+    radial-gradient(circle at 92% 88%, rgba(139, 92, 246, 0.20), transparent 36%),
+    linear-gradient(135deg, rgba(30, 41, 59, 0.84), rgba(15, 23, 42, 0.78)) !important;
+}
+
+/* Make all stat card text readable in dark mode */
+html.dark .home-page .home-velocity-stat-grid > * *,
+html[data-theme="dark"] .home-page .home-velocity-stat-grid > * *,
+.dark .home-page .home-velocity-stat-grid > * *,
+[data-theme="dark"] .home-page .home-velocity-stat-grid > * * {
+  color: rgba(226, 232, 240, 0.86);
+}
+
+/* Main numbers */
+html.dark .home-page .home-velocity-stat-grid > *:first-child [class*="text-"],
+html[data-theme="dark"] .home-page .home-velocity-stat-grid > *:first-child [class*="text-"],
+.dark .home-page .home-velocity-stat-grid > *:first-child [class*="text-"],
+[data-theme="dark"] .home-page .home-velocity-stat-grid > *:first-child [class*="text-"] {
+  color: #c084fc !important;
+  text-shadow: 0 0 24px rgba(192, 132, 252, 0.22);
+}
+
+html.dark .home-page .home-velocity-stat-grid > *:nth-child(2) [class*="text-"],
+html[data-theme="dark"] .home-page .home-velocity-stat-grid > *:nth-child(2) [class*="text-"],
+.dark .home-page .home-velocity-stat-grid > *:nth-child(2) [class*="text-"],
+[data-theme="dark"] .home-page .home-velocity-stat-grid > *:nth-child(2) [class*="text-"] {
+  color: #f59e0b !important;
+  text-shadow: 0 0 24px rgba(245, 158, 11, 0.20);
+}
+
+/* Keep descriptions softer than the big values */
+html.dark .home-page .home-velocity-stat-grid p,
+html[data-theme="dark"] .home-page .home-velocity-stat-grid p,
+.dark .home-page .home-velocity-stat-grid p,
+[data-theme="dark"] .home-page .home-velocity-stat-grid p {
+  color: rgba(203, 213, 225, 0.78) !important;
+  text-shadow: none !important;
+}
+
+/* END HOME VELOCITY METRICS VISUAL STRIKE v2 */
