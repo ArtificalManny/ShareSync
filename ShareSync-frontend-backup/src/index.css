@@ -2226,3 +2226,172 @@ html[data-theme="dark"] .streak-comparison-card:hover,
 }
 
 /* END STREAK COMPARISON VISUAL STRIKE */
+
+/* =========================================================
+   HOME INTELLIGENCE PANEL VISUAL STRIKE V2
+   Scoped polish for Home.jsx > IntelligencePanel wrapper.
+   ========================================================= */
+
+.home-intelligence-panel {
+  position: relative;
+  isolation: isolate;
+  border-radius: 1.75rem;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.55), rgba(245, 158, 11, 0.45), rgba(34, 211, 238, 0.45));
+  box-shadow:
+    0 22px 70px rgba(15, 23, 42, 0.10),
+    0 0 34px rgba(168, 85, 247, 0.08);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.home-intelligence-panel::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.20), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.18), transparent 40%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.home-intelligence-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Make the IntelligencePanel's own card inherit the premium shell */
+.home-intelligence-panel > div,
+.home-intelligence-panel > section,
+.home-intelligence-panel > article {
+  border-radius: 1.7rem !important;
+  overflow: hidden;
+  border: 1px solid rgba(168, 85, 247, 0.16) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.08), transparent 34%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.08), transparent 40%),
+    rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 18px 55px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Dark mode: make Intelligence feel like a real command module */
+html.dark .home-intelligence-panel,
+html[data-theme="dark"] .home-intelligence-panel,
+.dark .home-intelligence-panel,
+[data-theme="dark"] .home-intelligence-panel {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.72), rgba(245, 158, 11, 0.55), rgba(34, 211, 238, 0.46));
+  box-shadow:
+    0 26px 90px rgba(0, 0, 0, 0.44),
+    0 0 54px rgba(168, 85, 247, 0.14),
+    0 0 52px rgba(245, 158, 11, 0.10);
+}
+
+html.dark .home-intelligence-panel > div,
+html.dark .home-intelligence-panel > section,
+html.dark .home-intelligence-panel > article,
+html[data-theme="dark"] .home-intelligence-panel > div,
+html[data-theme="dark"] .home-intelligence-panel > section,
+html[data-theme="dark"] .home-intelligence-panel > article,
+.dark .home-intelligence-panel > div,
+.dark .home-intelligence-panel > section,
+.dark .home-intelligence-panel > article,
+[data-theme="dark"] .home-intelligence-panel > div,
+[data-theme="dark"] .home-intelligence-panel > section,
+[data-theme="dark"] .home-intelligence-panel > article {
+  border-color: rgba(245, 158, 11, 0.22) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.18), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.17), transparent 42%),
+    linear-gradient(135deg, rgba(24, 24, 27, 0.98), rgba(2, 6, 23, 0.98)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 20px 70px rgba(0, 0, 0, 0.30) !important;
+}
+
+/* Text clarity */
+html.dark .home-intelligence-panel h1,
+html.dark .home-intelligence-panel h2,
+html.dark .home-intelligence-panel h3,
+html.dark .home-intelligence-panel h4,
+html[data-theme="dark"] .home-intelligence-panel h1,
+html[data-theme="dark"] .home-intelligence-panel h2,
+html[data-theme="dark"] .home-intelligence-panel h3,
+html[data-theme="dark"] .home-intelligence-panel h4,
+.dark .home-intelligence-panel h1,
+.dark .home-intelligence-panel h2,
+.dark .home-intelligence-panel h3,
+.dark .home-intelligence-panel h4 {
+  color: rgba(248, 250, 252, 0.98) !important;
+  text-shadow: 0 0 22px rgba(168, 85, 247, 0.18);
+}
+
+html.dark .home-intelligence-panel p,
+html.dark .home-intelligence-panel span,
+html[data-theme="dark"] .home-intelligence-panel p,
+html[data-theme="dark"] .home-intelligence-panel span,
+.dark .home-intelligence-panel p,
+.dark .home-intelligence-panel span {
+  color: rgba(226, 232, 240, 0.86) !important;
+}
+
+/* Make warning/orange intelligence signals pop */
+html.dark .home-intelligence-panel [class*="amber"],
+html.dark .home-intelligence-panel [class*="orange"],
+html[data-theme="dark"] .home-intelligence-panel [class*="amber"],
+html[data-theme="dark"] .home-intelligence-panel [class*="orange"],
+.dark .home-intelligence-panel [class*="amber"],
+.dark .home-intelligence-panel [class*="orange"] {
+  color: #f59e0b !important;
+  text-shadow:
+    0 0 18px rgba(245, 158, 11, 0.26),
+    0 0 34px rgba(245, 158, 11, 0.12);
+}
+
+/* Inner warning / peak window blocks */
+html.dark .home-intelligence-panel [class*="rounded"],
+html[data-theme="dark"] .home-intelligence-panel [class*="rounded"],
+.dark .home-intelligence-panel [class*="rounded"],
+[data-theme="dark"] .home-intelligence-panel [class*="rounded"] {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.dark .home-intelligence-panel [class*="border-amber"],
+html.dark .home-intelligence-panel [class*="border-orange"],
+html[data-theme="dark"] .home-intelligence-panel [class*="border-amber"],
+html[data-theme="dark"] .home-intelligence-panel [class*="border-orange"],
+.dark .home-intelligence-panel [class*="border-amber"],
+.dark .home-intelligence-panel [class*="border-orange"] {
+  border-color: rgba(245, 158, 11, 0.42) !important;
+  box-shadow:
+    0 0 28px rgba(245, 158, 11, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Hover lift */
+.home-intelligence-panel:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.08);
+  box-shadow:
+    0 30px 90px rgba(15, 23, 42, 0.14),
+    0 0 48px rgba(168, 85, 247, 0.14),
+    0 0 44px rgba(245, 158, 11, 0.10);
+}
+
+html.dark .home-intelligence-panel:hover,
+html[data-theme="dark"] .home-intelligence-panel:hover,
+.dark .home-intelligence-panel:hover,
+[data-theme="dark"] .home-intelligence-panel:hover {
+  box-shadow:
+    0 32px 100px rgba(0, 0, 0, 0.50),
+    0 0 62px rgba(168, 85, 247, 0.18),
+    0 0 64px rgba(245, 158, 11, 0.14);
+}
+
+/* END HOME INTELLIGENCE PANEL VISUAL STRIKE V2 */

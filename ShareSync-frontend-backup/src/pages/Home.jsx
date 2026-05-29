@@ -659,18 +659,20 @@ export default function Home() {
         {hasRightRail && (
           <div className="home-right-rail col-span-12 xl:col-span-4 space-y-6">
             {hasUsefulIntelligence && (
-              <IntelligencePanel
-                workload={workloadIntel.data}
-                workloadLoading={workloadIntel.loading}
-                workloadError={workloadIntel.error}
-                isBalanced={workloadIntel.data?.isBalanced ?? false}
-                onBalanceClick={() => handleOpenPanel("balance")}
-                peakWindowStart={intelligence.peakWindowStart}
-                peakWindowEnd={intelligence.peakWindowEnd}
-                productivity={intelligence.productivity}
-                coWorkingMultiplier={intelligence.coWorkingMultiplier}
-                isCoWorking={intelligence.isCoWorking}
-              />
+              <div className="home-intelligence-panel" data-momentum={glowLevel}>
+                <IntelligencePanel
+                  workload={workloadIntel.data}
+                  workloadLoading={workloadIntel.loading}
+                  workloadError={workloadIntel.error}
+                  isBalanced={workloadIntel.data?.isBalanced ?? false}
+                  onBalanceClick={() => handleOpenPanel("balance")}
+                  peakWindowStart={intelligence.peakWindowStart}
+                  peakWindowEnd={intelligence.peakWindowEnd}
+                  productivity={intelligence.productivity}
+                  coWorkingMultiplier={intelligence.coWorkingMultiplier}
+                  isCoWorking={intelligence.isCoWorking}
+                />
+              </div>
             )}
 
             {hasTeamActivity && (
