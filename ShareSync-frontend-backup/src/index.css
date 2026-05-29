@@ -2395,3 +2395,515 @@ html[data-theme="dark"] .home-intelligence-panel:hover,
 }
 
 /* END HOME INTELLIGENCE PANEL VISUAL STRIKE V2 */
+
+/* =========================================================
+   HOME SUGGESTED MISSIONS VISUAL STRIKE
+   Scoped polish for Home.jsx > Suggested Projects & Missions.
+   ========================================================= */
+
+.home-suggested-missions-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.65rem !important;
+  border: 1px solid rgba(139, 92, 246, 0.22) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.12), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(45, 212, 191, 0.10), transparent 40%),
+    rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.10),
+    0 0 34px rgba(139, 92, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+.home-suggested-missions-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 1;
+  background: linear-gradient(90deg, #8b5cf6 0%, #22d3ee 48%, #34d399 100%);
+  opacity: 0.98;
+}
+
+.home-suggested-missions-panel::after {
+  content: "";
+  position: absolute;
+  right: -5rem;
+  bottom: -7rem;
+  width: 18rem;
+  height: 18rem;
+  z-index: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.18), transparent 68%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.home-suggested-missions-panel > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Dark mode shell */
+html.dark .home-suggested-missions-panel,
+html[data-theme="dark"] .home-suggested-missions-panel,
+.dark .home-suggested-missions-panel,
+[data-theme="dark"] .home-suggested-missions-panel {
+  border-color: rgba(139, 92, 246, 0.38) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.20), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.16), transparent 42%),
+    linear-gradient(135deg, rgba(24, 24, 27, 0.97), rgba(2, 6, 23, 0.97)) !important;
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.46),
+    0 0 54px rgba(139, 92, 246, 0.14),
+    0 0 58px rgba(34, 211, 238, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Header clarity */
+html.dark .home-suggested-missions-panel h1,
+html.dark .home-suggested-missions-panel h2,
+html.dark .home-suggested-missions-panel h3,
+html.dark .home-suggested-missions-panel h4,
+html[data-theme="dark"] .home-suggested-missions-panel h1,
+html[data-theme="dark"] .home-suggested-missions-panel h2,
+html[data-theme="dark"] .home-suggested-missions-panel h3,
+html[data-theme="dark"] .home-suggested-missions-panel h4,
+.dark .home-suggested-missions-panel h1,
+.dark .home-suggested-missions-panel h2,
+.dark .home-suggested-missions-panel h3,
+.dark .home-suggested-missions-panel h4 {
+  color: rgba(248, 250, 252, 0.98) !important;
+  text-shadow: 0 0 22px rgba(139, 92, 246, 0.18);
+}
+
+html.dark .home-suggested-missions-panel p,
+html.dark .home-suggested-missions-panel span,
+html[data-theme="dark"] .home-suggested-missions-panel p,
+html[data-theme="dark"] .home-suggested-missions-panel span,
+.dark .home-suggested-missions-panel p,
+.dark .home-suggested-missions-panel span {
+  color: rgba(226, 232, 240, 0.86) !important;
+}
+
+/* Mission rows inside the panel */
+.home-suggested-missions-panel .space-y-3 > div {
+  border-radius: 1.15rem;
+}
+
+html.dark .home-suggested-missions-panel .space-y-3 > div,
+html[data-theme="dark"] .home-suggested-missions-panel .space-y-3 > div,
+.dark .home-suggested-missions-panel .space-y-3 > div,
+[data-theme="dark"] .home-suggested-missions-panel .space-y-3 > div {
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(34, 211, 238, 0.08)) !important;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Inner mission card polish without touching other Home modules */
+html.dark .home-suggested-missions-panel .space-y-3 > div > *,
+html[data-theme="dark"] .home-suggested-missions-panel .space-y-3 > div > *,
+.dark .home-suggested-missions-panel .space-y-3 > div > *,
+[data-theme="dark"] .home-suggested-missions-panel .space-y-3 > div > * {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Progress / momentum accents */
+.home-suggested-missions-panel [class*="bg-violet"],
+.home-suggested-missions-panel [class*="bg-purple"] {
+  box-shadow: 0 0 22px rgba(139, 92, 246, 0.24);
+}
+
+html.dark .home-suggested-missions-panel [class*="bg-violet"],
+html.dark .home-suggested-missions-panel [class*="bg-purple"],
+html[data-theme="dark"] .home-suggested-missions-panel [class*="bg-violet"],
+html[data-theme="dark"] .home-suggested-missions-panel [class*="bg-purple"],
+.dark .home-suggested-missions-panel [class*="bg-violet"],
+.dark .home-suggested-missions-panel [class*="bg-purple"] {
+  box-shadow:
+    0 0 20px rgba(139, 92, 246, 0.36),
+    0 0 38px rgba(139, 92, 246, 0.16);
+}
+
+/* Ship button / action text */
+html.dark .home-suggested-missions-panel button,
+html.dark .home-suggested-missions-panel a,
+html[data-theme="dark"] .home-suggested-missions-panel button,
+html[data-theme="dark"] .home-suggested-missions-panel a,
+.dark .home-suggested-missions-panel button,
+.dark .home-suggested-missions-panel a {
+  color: rgba(248, 250, 252, 0.92);
+}
+
+/* Hover lift */
+.home-suggested-missions-panel {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.home-suggested-missions-panel:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.40) !important;
+  box-shadow:
+    0 30px 90px rgba(15, 23, 42, 0.14),
+    0 0 48px rgba(139, 92, 246, 0.12),
+    0 0 44px rgba(34, 211, 238, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+html.dark .home-suggested-missions-panel:hover,
+html[data-theme="dark"] .home-suggested-missions-panel:hover,
+.dark .home-suggested-missions-panel:hover,
+[data-theme="dark"] .home-suggested-missions-panel:hover {
+  box-shadow:
+    0 32px 100px rgba(0, 0, 0, 0.52),
+    0 0 62px rgba(139, 92, 246, 0.18),
+    0 0 64px rgba(34, 211, 238, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+/* END HOME SUGGESTED MISSIONS VISUAL STRIKE */
+
+/* =========================================================
+   YOUR MOVES TODAY VISUAL STRIKE V5
+   Scoped polish for src/components/focus/YourMovesToday.jsx.
+   ========================================================= */
+
+.your-moves-today-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.75rem !important;
+  border: 1px solid rgba(139, 92, 246, 0.26) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.12), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(45, 212, 191, 0.10), transparent 42%),
+    rgba(255, 255, 255, 0.96) !important;
+  box-shadow:
+    0 24px 76px rgba(15, 23, 42, 0.10),
+    0 0 34px rgba(139, 92, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+.your-moves-today-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 1;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6 0%, #22d3ee 48%, #34d399 100%);
+}
+
+.your-moves-today-panel::after {
+  content: "";
+  position: absolute;
+  right: -7rem;
+  bottom: -8rem;
+  z-index: 0;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.18), transparent 68%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.your-moves-today-panel > * {
+  position: relative;
+  z-index: 2;
+}
+
+.your-moves-focus-brief,
+.your-moves-today-panel .space-y-4 > div:first-child:not(.your-moves-list) {
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(34, 211, 238, 0.06)) !important;
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  box-shadow:
+    0 12px 34px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+/* Existing MoveCard rows without wrapping them */
+.your-moves-list > *,
+.your-moves-today-panel .space-y-3 > * {
+  border-radius: 999px !important;
+  border: 1px solid rgba(139, 92, 246, 0.20) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.08), transparent 38%),
+    rgba(255, 255, 255, 0.97) !important;
+  box-shadow:
+    0 16px 44px rgba(15, 23, 42, 0.08),
+    0 0 24px rgba(139, 92, 246, 0.08) !important;
+}
+
+/* Dark mode command-card shell */
+html.dark .your-moves-today-panel,
+html[data-theme="dark"] .your-moves-today-panel,
+.dark .your-moves-today-panel,
+[data-theme="dark"] .your-moves-today-panel {
+  border-color: rgba(139, 92, 246, 0.44) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.22), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.16), transparent 42%),
+    linear-gradient(135deg, rgba(24, 24, 27, 0.98), rgba(2, 6, 23, 0.98)) !important;
+  box-shadow:
+    0 30px 96px rgba(0, 0, 0, 0.50),
+    0 0 58px rgba(139, 92, 246, 0.16),
+    0 0 58px rgba(34, 211, 238, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .your-moves-focus-brief,
+html.dark .your-moves-today-panel .space-y-4 > div:first-child:not(.your-moves-list),
+html[data-theme="dark"] .your-moves-focus-brief,
+html[data-theme="dark"] .your-moves-today-panel .space-y-4 > div:first-child:not(.your-moves-list),
+.dark .your-moves-focus-brief,
+.dark .your-moves-today-panel .space-y-4 > div:first-child:not(.your-moves-list) {
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(34, 211, 238, 0.12)) !important;
+  border-color: rgba(139, 92, 246, 0.34) !important;
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Dark mode MoveCard rows */
+html.dark .your-moves-list > *,
+html.dark .your-moves-today-panel .space-y-3 > *,
+html[data-theme="dark"] .your-moves-list > *,
+html[data-theme="dark"] .your-moves-today-panel .space-y-3 > *,
+.dark .your-moves-list > *,
+.dark .your-moves-today-panel .space-y-3 > * {
+  border-color: rgba(167, 139, 250, 0.46) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.24), transparent 42%),
+    radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.16), transparent 42%),
+    linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.98)) !important;
+  box-shadow:
+    0 22px 64px rgba(0, 0, 0, 0.38),
+    0 0 40px rgba(139, 92, 246, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Force text clarity inside dark move rows */
+html.dark .your-moves-today-panel h1,
+html.dark .your-moves-today-panel h2,
+html.dark .your-moves-today-panel h3,
+html.dark .your-moves-today-panel h4,
+html.dark .your-moves-today-panel p,
+html.dark .your-moves-today-panel span,
+html.dark .your-moves-today-panel button,
+html[data-theme="dark"] .your-moves-today-panel h1,
+html[data-theme="dark"] .your-moves-today-panel h2,
+html[data-theme="dark"] .your-moves-today-panel h3,
+html[data-theme="dark"] .your-moves-today-panel h4,
+html[data-theme="dark"] .your-moves-today-panel p,
+html[data-theme="dark"] .your-moves-today-panel span,
+html[data-theme="dark"] .your-moves-today-panel button,
+.dark .your-moves-today-panel h1,
+.dark .your-moves-today-panel h2,
+.dark .your-moves-today-panel h3,
+.dark .your-moves-today-panel h4,
+.dark .your-moves-today-panel p,
+.dark .your-moves-today-panel span,
+.dark .your-moves-today-panel button {
+  color: rgba(248, 250, 252, 0.92) !important;
+}
+
+html.dark .your-moves-today-panel strong,
+html[data-theme="dark"] .your-moves-today-panel strong,
+.dark .your-moves-today-panel strong {
+  color: #ffffff !important;
+}
+
+/* Keep purple accent text glowing */
+html.dark .your-moves-today-panel [class*="violet"],
+html.dark .your-moves-today-panel [class*="purple"],
+html.dark .your-moves-today-panel [class*="theme-accent"],
+html[data-theme="dark"] .your-moves-today-panel [class*="violet"],
+html[data-theme="dark"] .your-moves-today-panel [class*="purple"],
+html[data-theme="dark"] .your-moves-today-panel [class*="theme-accent"],
+.dark .your-moves-today-panel [class*="violet"],
+.dark .your-moves-today-panel [class*="purple"],
+.dark .your-moves-today-panel [class*="theme-accent"] {
+  color: #c4b5fd !important;
+  text-shadow: 0 0 20px rgba(167, 139, 250, 0.26);
+}
+
+.your-moves-today-panel,
+.your-moves-list > *,
+.your-moves-today-panel .space-y-3 > * {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    filter 180ms ease;
+}
+
+.your-moves-today-panel:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.05);
+}
+
+.your-moves-list > *:hover,
+.your-moves-today-panel .space-y-3 > *:hover {
+  transform: translateY(-1px);
+  border-color: rgba(167, 139, 250, 0.62) !important;
+}
+
+html.dark .your-moves-list > *:hover,
+html.dark .your-moves-today-panel .space-y-3 > *:hover,
+html[data-theme="dark"] .your-moves-list > *:hover,
+html[data-theme="dark"] .your-moves-today-panel .space-y-3 > *:hover,
+.dark .your-moves-list > *:hover,
+.dark .your-moves-today-panel .space-y-3 > *:hover {
+  box-shadow:
+    0 26px 76px rgba(0, 0, 0, 0.46),
+    0 0 52px rgba(139, 92, 246, 0.24),
+    0 0 44px rgba(34, 211, 238, 0.14) !important;
+}
+
+/* END YOUR MOVES TODAY VISUAL STRIKE V5 */
+
+/* =========================================================
+   YOUR MOVES EMPTY STATE DARKMODE FIX V2
+   Scoped fix for "All caught up!" inside YourMovesToday.jsx.
+   ========================================================= */
+
+.your-moves-empty-state {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem !important;
+  border: 1px solid rgba(20, 184, 166, 0.20) !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.10), transparent 42%),
+    rgba(255, 255, 255, 0.96) !important;
+  box-shadow:
+    0 18px 56px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+.your-moves-empty-state::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #14b8a6 0%, #22d3ee 48%, #8b5cf6 100%);
+  opacity: 0.95;
+}
+
+.your-moves-empty-icon,
+.your-moves-empty-state > div:first-child {
+  background:
+    linear-gradient(135deg, rgba(153, 246, 228, 0.95), rgba(204, 251, 241, 0.80)) !important;
+  color: #0f766e !important;
+  box-shadow:
+    0 14px 30px rgba(20, 184, 166, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.your-moves-empty-icon svg,
+.your-moves-empty-state > div:first-child svg {
+  color: #0f766e !important;
+  stroke: currentColor !important;
+}
+
+/* Dark mode: remove the bright white empty-state card */
+html.dark .your-moves-empty-state,
+html[data-theme="dark"] .your-moves-empty-state,
+.dark .your-moves-empty-state,
+[data-theme="dark"] .your-moves-empty-state {
+  border-color: rgba(45, 212, 191, 0.38) !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.22), transparent 42%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.18), transparent 44%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98)) !important;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.42),
+    0 0 46px rgba(20, 184, 166, 0.14),
+    0 0 42px rgba(139, 92, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+html.dark .your-moves-empty-icon,
+html.dark .your-moves-empty-state > div:first-child,
+html[data-theme="dark"] .your-moves-empty-icon,
+html[data-theme="dark"] .your-moves-empty-state > div:first-child,
+.dark .your-moves-empty-icon,
+.dark .your-moves-empty-state > div:first-child,
+[data-theme="dark"] .your-moves-empty-icon,
+[data-theme="dark"] .your-moves-empty-state > div:first-child {
+  background:
+    linear-gradient(135deg, rgba(45, 212, 191, 0.34), rgba(139, 92, 246, 0.26)) !important;
+  color: #5eead4 !important;
+  box-shadow:
+    0 18px 48px rgba(20, 184, 166, 0.18),
+    0 0 36px rgba(139, 92, 246, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .your-moves-empty-icon svg,
+html.dark .your-moves-empty-state > div:first-child svg,
+html[data-theme="dark"] .your-moves-empty-icon svg,
+html[data-theme="dark"] .your-moves-empty-state > div:first-child svg,
+.dark .your-moves-empty-icon svg,
+.dark .your-moves-empty-state > div:first-child svg {
+  color: #5eead4 !important;
+  stroke: currentColor !important;
+}
+
+html.dark .your-moves-empty-state h4,
+html[data-theme="dark"] .your-moves-empty-state h4,
+.dark .your-moves-empty-state h4,
+[data-theme="dark"] .your-moves-empty-state h4 {
+  color: rgba(248, 250, 252, 0.98) !important;
+  text-shadow: 0 0 24px rgba(45, 212, 191, 0.16);
+}
+
+html.dark .your-moves-empty-state p,
+html[data-theme="dark"] .your-moves-empty-state p,
+.dark .your-moves-empty-state p,
+[data-theme="dark"] .your-moves-empty-state p {
+  color: rgba(203, 213, 225, 0.92) !important;
+}
+
+html.dark .your-moves-empty-state button,
+html[data-theme="dark"] .your-moves-empty-state button,
+.dark .your-moves-empty-state button,
+[data-theme="dark"] .your-moves-empty-state button {
+  border-color: rgba(148, 163, 184, 0.24) !important;
+  color: rgba(248, 250, 252, 0.94) !important;
+}
+
+html.dark .your-moves-empty-state button:first-of-type,
+html[data-theme="dark"] .your-moves-empty-state button:first-of-type,
+.dark .your-moves-empty-state button:first-of-type,
+[data-theme="dark"] .your-moves-empty-state button:first-of-type {
+  background: linear-gradient(135deg, #14b8a6, #0d9488) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 16px 38px rgba(20, 184, 166, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+html.dark .your-moves-empty-state button:not(:first-of-type),
+html[data-theme="dark"] .your-moves-empty-state button:not(:first-of-type),
+.dark .your-moves-empty-state button:not(:first-of-type),
+[data-theme="dark"] .your-moves-empty-state button:not(:first-of-type) {
+  background: rgba(15, 23, 42, 0.74) !important;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* END YOUR MOVES EMPTY STATE DARKMODE FIX V2 */

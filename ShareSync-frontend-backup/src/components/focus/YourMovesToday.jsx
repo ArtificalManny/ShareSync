@@ -265,8 +265,8 @@ function EmptyState({ onRefresh }) {
   };
 
   return (
-    <div className="your-moves-empty-card py-10 px-5 text-center bg-teal-50/50 dark:bg-teal-500/5 rounded-xl border border-teal-100 dark:border-teal-500/10">
-      <div className="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-500/20 mx-auto mb-4 flex items-center justify-center shadow-sm">
+    <div className="your-moves-empty-state your-moves-empty-card py-10 px-5 text-center bg-teal-50/50 dark:bg-teal-500/5 rounded-xl border border-teal-100 dark:border-teal-500/10">
+      <div className="your-moves-empty-icon w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-500/20 mx-auto mb-4 flex items-center justify-center shadow-sm">
         <Flame className="w-8 h-8 text-teal-600 dark:text-teal-400" />
       </div>
 
