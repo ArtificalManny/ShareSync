@@ -1,5 +1,5 @@
 // src/components/views/ThreadsView.jsx
-// Split-panel project discussion view with Messenger-style member picker
+// Split-panel project thread view with Messenger-style member picker
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   MessageCircle, Pin, Search, Plus, Clock, Users,
@@ -216,7 +216,7 @@ function ThreadItem({ thread, isActive, onClick }) {
         </span>
       </div>
       <p className="text-xs text-slate-500 dark:text-white/40 truncate mb-1.5">
-        {thread.lastMessage || 'No discussion yet'}
+        {thread.lastMessage || 'No thread activity yet'}
       </p>
       <div className="flex items-center gap-3 text-[10px] text-slate-400 dark:text-white/30">
         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{thread.participantCount || 0}</span>
@@ -333,8 +333,8 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
   if (!thread) return null;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center gap-3">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 px-5 py-3.5 border-b border-slate-100 dark:border-white/[0.06] flex items-center gap-3">
         <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] lg:hidden">
           <ChevronLeft className="w-4 h-4 text-slate-500" />
         </button>
@@ -346,7 +346,7 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4 [scrollbar-gutter:stable]">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-slate-400">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -357,8 +357,8 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
             <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 flex items-center justify-center mx-auto mb-3">
               <MessageCircle className="w-6 h-6 text-violet-500" />
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">Start the project discussion</p>
-            <p className="text-xs text-slate-400 dark:text-white/30">Send a message to get this discussion moving</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-white/60 mb-1">Start the project thread</p>
+            <p className="text-xs text-slate-400 dark:text-white/30">Send a message to get this thread moving</p>
           </div>
         ) : messages.map((msg, idx) => {
           // ⭐ BULLETPROOF OWNERSHIP CHECK ⭐
@@ -378,7 +378,7 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
         })}
       </div>
 
-      <div className="px-5 py-3 border-t border-slate-100 dark:border-white/[0.06]">
+      <div className="shrink-0 px-5 py-3 border-t border-slate-100 dark:border-white/[0.06]">
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -390,7 +390,7 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
                 handleSend();
               }
             }}
-            placeholder="Add to this discussion..."
+            placeholder="Add to this thread..."
             maxLength={5000}
             className="flex-1 text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
           />
@@ -426,7 +426,7 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
       const created = await createThread({ projectId, title: title.trim(), category });
       onCreated?.(created);
       onClose();
-      toast({ title: 'Discussion created', variant: 'success' });
+      toast({ title: 'Thread created', variant: 'success' });
     } catch (err) {
       toast({ title: err?.message || 'Failed', variant: 'error' });
     } finally {
@@ -437,9 +437,9 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="discussion-create-modal-card relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-[#1f1f23] shadow-2xl overflow-hidden">
+      <div className="team room-create-modal-card relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-[#1f1f23] shadow-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">New Discussion</h2>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">New Thread</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06]">
             <X className="w-4 h-4 text-slate-400" />
           </button>
@@ -546,7 +546,7 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Discussion Title</label>
+            <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Thread Title</label>
             <input
               type="text"
               value={title}
@@ -584,9 +584,9 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
             <button
               onClick={handleCreate}
               disabled={!title.trim() || creating}
-              className="discussion-modal-create-button discussion-force-purple flex-1 rounded-xl border border-violet-300 !bg-violet-700 px-5 py-3 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
+              className="team room-modal-create-button team room-force-purple flex-1 rounded-xl border border-violet-300 !bg-violet-700 px-5 py-3 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
             >
-              {creating ? 'Creating...' : 'Create Discussion'}
+              {creating ? 'Creating...' : 'Create Thread'}
             </button>
           </div>
         </div>
@@ -615,7 +615,7 @@ function getThreadTitle(thread) {
     thread?.name ||
     thread?.subject ||
     thread?.topic ||
-    "Untitled discussion"
+    "Untitled team room"
   );
 }
 
@@ -625,7 +625,7 @@ function getThreadPreview(thread) {
     thread?.preview ||
     thread?.description ||
     thread?.body ||
-    "No discussion yet"
+    "No thread activity yet"
   );
 }
 
@@ -653,7 +653,7 @@ function ThreadListItem({ thread, active = false, onClick }) {
     >
       <div
         className={`
-          relative overflow-hidden rounded-[1.35rem] p-4 transition-all
+          relative overflow-hidden rounded-[1.35rem] p-3 transition-all
           ${
             active
               ? "bg-violet-50/90 dark:bg-violet-500/10"
@@ -785,7 +785,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             ...t,
             id: t._id || t.id,
             title: t.title || 'Untitled',
-            lastMessage: t.replyCount > 0 ? 'Recent activity' : 'No discussion yet',
+            lastMessage: t.replyCount > 0 ? 'Recent activity' : 'No thread activity yet',
             participantCount: t.participants?.length || 0,
             replyCount: t.replyCount || 0,
             category: t.category || 'general',
@@ -807,16 +807,16 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
   const regularThreads = filtered.filter(t => !t.isPinned);
 
   return (
-    <section className="discussion-visual-scope relative mx-auto max-w-[1600px] px-4 py-7 pb-32 sm:px-6 lg:px-10">
-      <style className="discussion-visual-strike-style">{`
-        .discussion-visual-scope {
-          --discussion-purple: #7c3aed;
-          --discussion-violet: #8b5cf6;
-          --discussion-cyan: #22d3ee;
-          --discussion-emerald: #34d399;
+    <section className="team room-visual-scope relative mx-auto max-w-[1600px] px-4 py-5 pb-10 sm:px-6 lg:px-10">
+      <style className="team room-visual-strike-style">{`
+        .team room-visual-scope {
+          --team room-purple: #7c3aed;
+          --team room-violet: #8b5cf6;
+          --team room-cyan: #22d3ee;
+          --team room-emerald: #34d399;
         }
 
-        .discussion-holo-shell {
+        .team room-holo-shell {
           isolation: isolate;
           border-color: rgba(139, 92, 246, 0.28) !important;
           background:
@@ -828,7 +828,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255,255,255,0.95) !important;
         }
 
-        .dark .discussion-holo-shell {
+        .dark .team room-holo-shell {
           border-color: rgba(139, 92, 246, 0.24) !important;
           background:
             radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
@@ -839,22 +839,22 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255,255,255,0.08) !important;
         }
 
-        .discussion-command-orb {
+        .team room-command-orb {
           background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,243,255,0.92)) !important;
           box-shadow:
             0 16px 34px rgba(124, 58, 237, 0.18),
             0 0 0 8px rgba(139, 92, 246, 0.08) !important;
         }
 
-        .dark .discussion-command-orb {
+        .dark .team room-command-orb {
           background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(34, 211, 238, 0.08)) !important;
           box-shadow:
             0 18px 40px rgba(0, 0, 0, 0.34),
             0 0 0 8px rgba(139, 92, 246, 0.12) !important;
         }
 
-        .discussion-primary-button,
-        .discussion-modal-create-button {
+        .team room-primary-button,
+        .team room-modal-create-button {
           opacity: 1 !important;
           color: #fff !important;
           background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #06b6d4 100%) !important;
@@ -864,8 +864,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255,255,255,0.34) !important;
         }
 
-        .discussion-primary-button:hover:not(:disabled),
-        .discussion-modal-create-button:hover:not(:disabled) {
+        .team room-primary-button:hover:not(:disabled),
+        .team room-modal-create-button:hover:not(:disabled) {
           transform: translateY(-2px) !important;
           filter: brightness(1.05) saturate(1.08) !important;
           box-shadow:
@@ -874,19 +874,19 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255,255,255,0.38) !important;
         }
 
-        .discussion-primary-button *,
-        .discussion-modal-create-button * {
+        .team room-primary-button *,
+        .team room-modal-create-button * {
           color: #fff !important;
           opacity: 1 !important;
         }
 
-        .discussion-modal-create-button:disabled {
+        .team room-modal-create-button:disabled {
           opacity: 0.72 !important;
           cursor: not-allowed !important;
           background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
         }
 
-        .discussion-stat-card {
+        .team room-stat-card {
           position: relative;
           overflow: hidden;
           min-height: 112px;
@@ -899,7 +899,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
         }
 
-        .discussion-stat-card:hover {
+        .team room-stat-card:hover {
           transform: translateY(-2px);
           box-shadow:
             0 22px 54px rgba(15, 23, 42, 0.12),
@@ -907,7 +907,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255,255,255,0.98) !important;
         }
 
-        .dark .discussion-stat-card {
+        .dark .team room-stat-card {
           background:
             radial-gradient(circle at 18% 0%, rgba(255,255,255,0.10), transparent 36%),
             linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)) !important;
@@ -916,60 +916,60 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255,255,255,0.08) !important;
         }
 
-        .discussion-thread-stage {
+        .team room-thread-stage {
           border-color: rgba(148, 163, 184, 0.38) !important;
           box-shadow:
             0 24px 70px rgba(15, 23, 42, 0.12),
             inset 0 1px 0 rgba(255,255,255,0.86) !important;
         }
 
-        .discussion-thread-rail {
+        .team room-thread-rail {
           background:
             linear-gradient(180deg, rgba(15,23,42,0.94), rgba(30,41,59,0.90)) !important;
           box-shadow: inset -1px 0 0 rgba(255,255,255,0.12) !important;
         }
 
-        .discussion-thread-rail input {
+        .team room-thread-rail input {
           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18) !important;
         }
 
-        .discussion-thread-list-card {
+        .team room-thread-list-card {
           border-color: rgba(148, 163, 184, 0.28) !important;
           box-shadow: 0 12px 32px rgba(15, 23, 42, 0.09) !important;
         }
 
-        .discussion-thread-list-card:hover {
+        .team room-thread-list-card:hover {
           box-shadow:
             0 18px 44px rgba(124, 58, 237, 0.16),
             0 0 0 4px rgba(139, 92, 246, 0.07) !important;
         }
 
-        .discussion-conversation-canvas {
+        .team room-conversation-canvas {
           background:
             radial-gradient(circle at 50% 28%, rgba(139, 92, 246, 0.12), transparent 26%),
             radial-gradient(circle at 88% 18%, rgba(34, 211, 238, 0.14), transparent 30%),
             linear-gradient(135deg, rgba(255,255,255,0.98), rgba(241,245,249,0.70)) !important;
         }
 
-        .dark .discussion-conversation-canvas {
+        .dark .team room-conversation-canvas {
           background:
             radial-gradient(circle at 50% 28%, rgba(139, 92, 246, 0.12), transparent 28%),
             radial-gradient(circle at 88% 18%, rgba(34, 211, 238, 0.10), transparent 32%),
             linear-gradient(135deg, rgba(15,23,42,0.98), rgba(2,6,23,0.96)) !important;
         }
 
-        .discussion-empty-orb {
+        .team room-empty-orb {
           background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,243,255,0.94)) !important;
           box-shadow:
             0 18px 42px rgba(124, 58, 237, 0.18),
             0 0 0 10px rgba(139, 92, 246, 0.08) !important;
         }
 
-        .dark .discussion-empty-orb {
+        .dark .team room-empty-orb {
           background: linear-gradient(135deg, rgba(139,92,246,0.20), rgba(34,211,238,0.08)) !important;
         }
 
-        .discussion-create-modal-card {
+        .team room-create-modal-card {
           border-color: rgba(139, 92, 246, 0.28) !important;
           background:
             radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.14), transparent 32%),
@@ -978,7 +978,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           box-shadow: 0 30px 90px rgba(15, 23, 42, 0.24) !important;
         }
 
-        .dark .discussion-create-modal-card {
+        .dark .team room-create-modal-card {
           background:
             radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
             radial-gradient(circle at 88% 0%, rgba(34, 211, 238, 0.10), transparent 36%),
@@ -987,10 +987,10 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         }
       `}</style>
 
-        <style className="discussion-button-visibility-v3-style">
+        <style className="team room-button-visibility-v3-style">
           {`
-            .discussion-primary-button,
-            .discussion-modal-create-button {
+            .team room-primary-button,
+            .team room-modal-create-button {
               position: relative !important;
               isolation: isolate !important;
               overflow: hidden !important;
@@ -1004,8 +1004,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               mix-blend-mode: normal !important;
             }
 
-            .discussion-primary-button::before,
-            .discussion-modal-create-button::before {
+            .team room-primary-button::before,
+            .team room-modal-create-button::before {
               content: "" !important;
               position: absolute !important;
               inset: 1px !important;
@@ -1017,14 +1017,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               pointer-events: none !important;
             }
 
-            .discussion-primary-button,
-            .discussion-primary-button *,
-            .discussion-primary-button span,
-            .discussion-primary-button svg,
-            .discussion-modal-create-button,
-            .discussion-modal-create-button *,
-            .discussion-modal-create-button span,
-            .discussion-modal-create-button svg {
+            .team room-primary-button,
+            .team room-primary-button *,
+            .team room-primary-button span,
+            .team room-primary-button svg,
+            .team room-modal-create-button,
+            .team room-modal-create-button *,
+            .team room-modal-create-button span,
+            .team room-modal-create-button svg {
               color: #ffffff !important;
               -webkit-text-fill-color: #ffffff !important;
               opacity: 1 !important;
@@ -1033,8 +1033,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               text-shadow: 0 1px 8px rgba(15, 23, 42, 0.32) !important;
             }
 
-            .discussion-primary-button:hover:not(:disabled),
-            .discussion-modal-create-button:hover:not(:disabled) {
+            .team room-primary-button:hover:not(:disabled),
+            .team room-modal-create-button:hover:not(:disabled) {
               background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
               box-shadow:
                 0 22px 48px rgba(124, 58, 237, 0.52),
@@ -1042,8 +1042,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               transform: translateY(-1px) !important;
             }
 
-            .discussion-primary-button:disabled,
-            .discussion-modal-create-button:disabled {
+            .team room-primary-button:disabled,
+            .team room-modal-create-button:disabled {
               background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%) !important;
               border-color: rgba(221, 214, 254, 0.98) !important;
               opacity: 0.92 !important;
@@ -1053,16 +1053,16 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                 0 0 0 1px rgba(255, 255, 255, 0.36) inset !important;
             }
 
-            .discussion-primary-button:disabled *,
-            .discussion-modal-create-button:disabled * {
+            .team room-primary-button:disabled *,
+            .team room-modal-create-button:disabled * {
               color: #ffffff !important;
               -webkit-text-fill-color: #ffffff !important;
               opacity: 1 !important;
               text-shadow: 0 1px 8px rgba(15, 23, 42, 0.28) !important;
             }
-        /* FINAL visibility override: Discussion buttons only */
-        .discussion-primary-button,
-        .discussion-modal-create-button {
+        /* FINAL visibility override: Team Room buttons only */
+        .team room-primary-button,
+        .team room-modal-create-button {
           background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
           color: #ffffff !important;
           opacity: 1 !important;
@@ -1076,12 +1076,12 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           backdrop-filter: none !important;
         }
 
-        .discussion-primary-button *,
-        .discussion-primary-button span,
-        .discussion-primary-button svg,
-        .discussion-modal-create-button *,
-        .discussion-modal-create-button span,
-        .discussion-modal-create-button svg {
+        .team room-primary-button *,
+        .team room-primary-button span,
+        .team room-primary-button svg,
+        .team room-modal-create-button *,
+        .team room-modal-create-button span,
+        .team room-modal-create-button svg {
           color: #ffffff !important;
           stroke: #ffffff !important;
           fill: none;
@@ -1090,8 +1090,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           mix-blend-mode: normal !important;
         }
 
-        .discussion-primary-button:hover:not(:disabled),
-        .discussion-modal-create-button:hover:not(:disabled) {
+        .team room-primary-button:hover:not(:disabled),
+        .team room-modal-create-button:hover:not(:disabled) {
           background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
           box-shadow:
             0 22px 54px rgba(124, 58, 237, 0.52),
@@ -1099,8 +1099,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           transform: translateY(-1px);
         }
 
-        .discussion-primary-button:disabled,
-        .discussion-modal-create-button:disabled {
+        .team room-primary-button:disabled,
+        .team room-modal-create-button:disabled {
           background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 48%, #7c3aed 100%) !important;
           color: #ffffff !important;
           opacity: 0.92 !important;
@@ -1110,23 +1110,23 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
         }
 
-        .discussion-primary-button:disabled *,
-        .discussion-primary-button:disabled span,
-        .discussion-primary-button:disabled svg,
-        .discussion-modal-create-button:disabled *,
-        .discussion-modal-create-button:disabled span,
-        .discussion-modal-create-button:disabled svg {
+        .team room-primary-button:disabled *,
+        .team room-primary-button:disabled span,
+        .team room-primary-button:disabled svg,
+        .team room-modal-create-button:disabled *,
+        .team room-modal-create-button:disabled span,
+        .team room-modal-create-button:disabled svg {
           color: #ffffff !important;
           stroke: #ffffff !important;
           opacity: 1 !important;
         }
           
 
-        /* discussion-buttons-hard-final-css */
-        button.discussion-primary-button,
-        button.discussion-modal-create-button,
-        .discussion-primary-button,
-        .discussion-modal-create-button {
+        /* team room-buttons-hard-final-css */
+        button.team room-primary-button,
+        button.team room-modal-create-button,
+        .team room-primary-button,
+        .team room-modal-create-button {
           position: relative !important;
           isolation: isolate !important;
           background-color: #7c3aed !important;
@@ -1147,27 +1147,27 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           transform: translateZ(0) !important;
         }
 
-        button.discussion-primary-button::before,
-        button.discussion-primary-button::after,
-        button.discussion-modal-create-button::before,
-        button.discussion-modal-create-button::after,
-        .discussion-primary-button::before,
-        .discussion-primary-button::after,
-        .discussion-modal-create-button::before,
-        .discussion-modal-create-button::after {
+        button.team room-primary-button::before,
+        button.team room-primary-button::after,
+        button.team room-modal-create-button::before,
+        button.team room-modal-create-button::after,
+        .team room-primary-button::before,
+        .team room-primary-button::after,
+        .team room-modal-create-button::before,
+        .team room-modal-create-button::after {
           content: none !important;
           display: none !important;
           opacity: 0 !important;
         }
 
-        button.discussion-primary-button *,
-        button.discussion-modal-create-button *,
-        .discussion-primary-button *,
-        .discussion-modal-create-button *,
-        .discussion-primary-button span,
-        .discussion-modal-create-button span,
-        .discussion-primary-button svg,
-        .discussion-modal-create-button svg {
+        button.team room-primary-button *,
+        button.team room-modal-create-button *,
+        .team room-primary-button *,
+        .team room-modal-create-button *,
+        .team room-primary-button span,
+        .team room-modal-create-button span,
+        .team room-primary-button svg,
+        .team room-modal-create-button svg {
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           opacity: 1 !important;
@@ -1176,12 +1176,12 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           mix-blend-mode: normal !important;
         }
 
-        button.discussion-primary-button:disabled,
-        button.discussion-modal-create-button:disabled,
-        .discussion-primary-button:disabled,
-        .discussion-modal-create-button:disabled,
-        .discussion-primary-button[disabled],
-        .discussion-modal-create-button[disabled] {
+        button.team room-primary-button:disabled,
+        button.team room-modal-create-button:disabled,
+        .team room-primary-button:disabled,
+        .team room-modal-create-button:disabled,
+        .team room-primary-button[disabled],
+        .team room-modal-create-button[disabled] {
           background-color: #7c3aed !important;
           background-image: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #7c3aed 100%) !important;
           color: #ffffff !important;
@@ -1194,10 +1194,10 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           cursor: not-allowed !important;
         }
 
-        button.discussion-primary-button:hover:not(:disabled),
-        button.discussion-modal-create-button:hover:not(:disabled),
-        .discussion-primary-button:hover:not(:disabled),
-        .discussion-modal-create-button:hover:not(:disabled) {
+        button.team room-primary-button:hover:not(:disabled),
+        button.team room-modal-create-button:hover:not(:disabled),
+        .team room-primary-button:hover:not(:disabled),
+        .team room-modal-create-button:hover:not(:disabled) {
           background-color: #6d28d9 !important;
           background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%) !important;
           box-shadow:
@@ -1210,17 +1210,17 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         </style>
 
 
-      <div className="discussion-holo-shell relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
+      <div className="team room-holo-shell relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:44px_44px] opacity-60 dark:opacity-20" />
 
-        <div className="relative p-5 sm:p-7 lg:p-8">
+        <div className="relative p-4 sm:p-5 lg:p-6">
           {/* Header */}
-          <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="discussion-command-orb relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300">
+              <div className="team room-command-orb relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300">
                 <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
                 <MessageCircle className="h-6 w-6" />
               </div>
@@ -1228,7 +1228,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               <div className="min-w-0">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                    Discussion
+                    Team Room
                   </h2>
 
                   <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
@@ -1241,7 +1241,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                 </div>
 
                 <p className="max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
-                  Centralize decisions, questions, and project context so the team can move without scattered side conversations.
+                  Centralize decisions, questions, and project context so the team can move from one shared room.
                 </p>
               </div>
             </div>
@@ -1257,74 +1257,74 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
 
               <button
                 onClick={() => setShowCreate(true)}
-                className="discussion-primary-button discussion-force-purple inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-2.5 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
+                className="team room-primary-button team room-force-purple inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-2.5 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
               >
                 <Plus className="h-4 w-4" />
-                <span>New Discussion</span>
+                <span>New Thread</span>
               </button>
             </div>
           </div>
 
           {/* Signal stats */}
-          <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div className="discussion-stat-card rounded-3xl border border-violet-200 bg-violet-50/80 p-4 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
+          <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="team room-stat-card rounded-3xl border border-violet-200 bg-violet-50/80 p-3 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-200">
                 Threads
               </div>
-              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+              <div className="mt-1.5 text-2xl font-black text-slate-950 dark:text-white">
                 {threads.length}
               </div>
             </div>
 
-            <div className="discussion-stat-card rounded-3xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
+            <div className="team room-stat-card rounded-3xl border border-amber-200 bg-amber-50/80 p-3 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200">
                 Pinned
               </div>
-              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+              <div className="mt-1.5 text-2xl font-black text-slate-950 dark:text-white">
                 {pinnedThreads.length}
               </div>
             </div>
 
-            <div className="discussion-stat-card rounded-3xl border border-cyan-200 bg-cyan-50/80 p-4 shadow-sm dark:border-cyan-400/20 dark:bg-cyan-500/10">
+            <div className="team room-stat-card rounded-3xl border border-cyan-200 bg-cyan-50/80 p-3 shadow-sm dark:border-cyan-400/20 dark:bg-cyan-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-200">
                 Visible
               </div>
-              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+              <div className="mt-1.5 text-2xl font-black text-slate-950 dark:text-white">
                 {filtered.length}
               </div>
             </div>
 
-            <div className="discussion-stat-card rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10">
+            <div className="team room-stat-card rounded-3xl border border-emerald-200 bg-emerald-50/80 p-3 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">
                 Members
               </div>
-              <div className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
+              <div className="mt-1.5 text-2xl font-black text-slate-950 dark:text-white">
                 {projectMembers.length}
               </div>
             </div>
           </div>
 
-          {/* Main discussion shell */}
-          <div className="discussion-thread-stage grid min-h-[620px] overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/30 lg:grid-cols-[380px_1fr]">
+          {/* Main team room shell */}
+          <div className="team room-thread-stage grid h-[68vh] min-h-[520px] max-h-[720px] overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/30 lg:grid-cols-[340px_1fr]">
             {/* Thread rail */}
             <aside
               className={
-                'discussion-thread-rail border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#101014]/80 ' +
+                'team room-thread-rail min-h-0 border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#101014]/80 ' +
                 (activeThread ? 'hidden lg:flex lg:flex-col' : 'flex flex-col')
               }
             >
-              <div className="border-b border-slate-200/80 p-4 dark:border-white/[0.08]">
+              <div className="shrink-0 border-b border-slate-200/80 p-3 dark:border-white/[0.08]">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search discussions..."
+                    placeholder="Search team threads..."
                     className="w-full rounded-2xl border border-slate-200 bg-white px-11 py-3 text-sm font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-violet-400/30"
                   />
                 </div>
 
-                <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                   {CHANNELS.map((channel) => {
                     const active = activeChannel === channel.id;
                     const count =
@@ -1353,14 +1353,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 [scrollbar-gutter:stable]">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
                       <Loader2 className="h-5 w-5 animate-spin" />
                     </div>
                     <p className="text-sm font-bold text-slate-500 dark:text-zinc-400">
-                      Loading discussions...
+                      Loading team rooms...
                     </p>
                   </div>
                 ) : filtered.length === 0 ? (
@@ -1369,7 +1369,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                       <MessageCircle className="h-6 w-6" />
                     </div>
                     <p className="text-sm font-black text-slate-800 dark:text-white">
-                      No discussions found
+                      No team threads found
                     </p>
                     <p className="mt-1 text-xs font-medium leading-5 text-slate-500 dark:text-zinc-400">
                       Start a new thread or adjust your filter.
@@ -1387,14 +1387,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                     {pinnedThreads.length > 0 && (
                       <div className="flex items-center gap-2 px-2 pt-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
                         <Pin className="h-3.5 w-3.5" />
-                        Pinned discussions
+                        Pinned team rooms
                       </div>
                     )}
 
                     {pinnedThreads.map((thread) => (
                       <div
                         key={thread._id || thread.id}
-                        className="discussion-thread-list-card rounded-[1.4rem] bg-gradient-to-br from-amber-400/30 via-violet-400/20 to-cyan-400/20 p-[1px] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                        className="team room-thread-list-card rounded-[1.4rem] bg-gradient-to-br from-amber-400/30 via-violet-400/20 to-cyan-400/20 p-[1px] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
                       >
                         <div className="rounded-[1.35rem] bg-white/95 dark:bg-[#111113]/95">
                           <ThreadListItem
@@ -1415,7 +1415,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                     {regularThreads.map((thread) => (
                       <div
                         key={thread._id || thread.id}
-                        className="discussion-thread-list-card rounded-[1.4rem] border border-slate-200/80 bg-white/80 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg dark:border-white/[0.08] dark:bg-white/[0.04] dark:hover:border-violet-400/20"
+                        className="team room-thread-list-card rounded-[1.4rem] border border-slate-200/80 bg-white/80 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg dark:border-white/[0.08] dark:bg-white/[0.04] dark:hover:border-violet-400/20"
                       >
                         <ThreadListItem
                           thread={thread}
@@ -1430,9 +1430,9 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
             </aside>
 
             {/* Conversation stage */}
-            <main className={'discussion-conversation-canvas min-w-0 flex-1 flex-col bg-gradient-to-br from-white via-slate-50/50 to-cyan-50/40 dark:from-[#0f0f13] dark:via-[#111116] dark:to-cyan-950/10 ' + (!activeThread ? 'hidden lg:flex' : 'flex')}>
+            <main className={'team room-conversation-canvas min-h-0 min-w-0 flex-1 flex-col bg-gradient-to-br from-white via-slate-50/50 to-cyan-50/40 dark:from-[#0f0f13] dark:via-[#111116] dark:to-cyan-950/10 ' + (!activeThread ? 'hidden lg:flex' : 'flex')}>
               {activeThread ? (
-                <div className="flex h-full min-h-[620px] flex-col">
+                <div className="flex h-full min-h-0 flex-col">
                   <ConversationPanel
                     thread={activeThread}
                     currentUserId={currentUserId}
@@ -1440,9 +1440,9 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                   />
                 </div>
               ) : (
-                <div className="flex min-h-[620px] flex-1 items-center justify-center p-8">
+                <div className="flex h-full min-h-0 flex-1 items-center justify-center p-6">
                   <div className="max-w-md text-center">
-                    <div className="discussion-empty-orb mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-violet-200 bg-violet-50 text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                    <div className="team room-empty-orb mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-violet-200 bg-violet-50 text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
                       <MessageCircle className="h-9 w-9" />
                     </div>
 
@@ -1456,19 +1456,19 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                     </div>
 
                     <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                      Select a discussion
+                      Select a thread
                     </h3>
 
                     <p className="mt-2 text-sm font-medium leading-6 text-slate-500 dark:text-zinc-400">
-                      Choose a project thread from the left, or start a new discussion to capture decisions, blockers, and questions in one place.
+                      Choose a project thread from the left, or start a new thread to capture decisions, blockers, and questions in one place.
                     </p>
 
                     <button
                       onClick={() => setShowCreate(true)}
-                      className="discussion-primary-button discussion-force-purple mt-6 inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-3 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
+                      className="team room-primary-button team room-force-purple mt-6 inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-3 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
                     >
                       <Plus className="h-4 w-4" />
-                      Start New Discussion
+                      Start New Thread
                     </button>
                   </div>
                 </div>
@@ -1490,7 +1490,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               category: thread?.category || 'general',
               participantCount: thread?.participantCount || 0,
               replyCount: thread?.replyCount || 0,
-              lastMessage: thread?.lastMessage || 'No discussion yet',
+              lastMessage: thread?.lastMessage || 'No thread activity yet',
               createdAt: thread?.createdAt || new Date().toISOString(),
             };
 
