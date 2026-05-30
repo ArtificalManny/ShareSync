@@ -162,19 +162,19 @@ const SuggestionsPanel =
 const PROJECT_VIEWS = [
   {
     id: "overview",
-    label: "Overview",
+    label: "Command",
     icon: Eye,
-    description: "Status, blockers, next moves",
+    description: "Status, blockers, next move",
   },
   {
     id: "tasks",
-    label: "Tasks",
+    label: "Moves",
     icon: Layers,
-    description: "Priority queue",
+    description: "Execution queue",
   },
   {
     id: "board",
-    label: "Board",
+    label: "Flow",
     icon: GitBranch,
     description: "Workflow lanes",
   },
@@ -182,7 +182,7 @@ const PROJECT_VIEWS = [
     id: "roadmap",
     label: "Roadmap",
     icon: Map,
-    description: "Timeline view",
+    description: "Milestones & timeline",
   },
   {
     id: "schedule",
@@ -192,10 +192,10 @@ const PROJECT_VIEWS = [
   },
   {
     id: "discussion",
-    label: "Discussion",
+    label: "Team Room",
     icon: MessageCircle,
     badge: 3,
-    description: "Project-bound conversation",
+    description: "Threads & team context",
   },
   {
     id: "files",
@@ -207,13 +207,13 @@ const PROJECT_VIEWS = [
     id: "announcements",
     label: "Announcements",
     icon: Megaphone,
-    description: "Broadcasts",
+    description: "Project broadcasts",
   },
   {
     id: "insights",
-    label: "Insights",
+    label: "Signals",
     icon: BarChart3,
-    description: "Analytics",
+    description: "Velocity & health",
   },
   {
     id: "suggestions",
