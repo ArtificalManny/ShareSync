@@ -10,6 +10,9 @@ import "./styles/motion.css";
 import "./registerSW.js";
 
 import posthog from "posthog-js"; // ✅ PHASE 2: The Neural Network
+import { forceMovesStartButtonVisibility } from "./utils/forceMovesStartButtonVisibility";
+
+forceMovesStartButtonVisibility();
 
 if (import.meta.env.MODE !== "production") {
   import("./utils/perfLog.js");

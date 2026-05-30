@@ -242,7 +242,7 @@ export default function StackTaskRow({
         icon: Send,
         onClick: () => onMoveToReview?.(task),
         classes:
-          "stack-review-action bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
+          "bg-sky-600 hover:bg-sky-700 text-white border border-sky-500/80 shadow-[0_12px_28px_rgba(2,132,199,0.30)] ring-1 ring-sky-200/60 disabled:!opacity-100 disabled:!bg-sky-600 disabled:!text-white disabled:!border-sky-500 dark:bg-blue-500 dark:hover:bg-blue-400 dark:text-white dark:border-blue-300/40 dark:disabled:!bg-blue-500/25 dark:disabled:!text-blue-100 dark:disabled:!border-blue-300/30",
       };
     }
 
@@ -253,7 +253,7 @@ export default function StackTaskRow({
         icon: Play,
         onClick: () => onStart?.(task),
         classes:
-          "stack-start-action bg-violet-600 hover:bg-violet-700 text-white shadow-sm",
+          "stack-start-action bg-violet-700 hover:bg-violet-800 text-white border border-violet-400/80 shadow-[0_14px_30px_rgba(124,58,237,0.35)] ring-1 ring-violet-200/70 disabled:!opacity-100 disabled:!bg-violet-700 disabled:!text-white disabled:!border-violet-400 dark:bg-violet-500 dark:hover:bg-violet-400 dark:text-white dark:border-violet-300/40 dark:disabled:!bg-violet-500/25 dark:disabled:!text-violet-100 dark:disabled:!border-violet-300/30",
       };
     }
 
@@ -380,8 +380,20 @@ export default function StackTaskRow({
                   type="button"
                   disabled={disabled}
                   onClick={primaryAction.onClick}
+                  style={
+                    primaryAction.label === "Start"
+                      ? {
+                          background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 55%, #6d28d9 100%)",
+                          color: "#ffffff",
+                          opacity: 1,
+                          border: "1px solid rgba(124, 58, 237, 0.55)",
+                          boxShadow: "0 12px 28px rgba(124, 58, 237, 0.28)",
+                          WebkitTextFillColor: "#ffffff",
+                        }
+                      : undefined
+                  }
                   className={`stack-task-action inline-flex items-center justify-center gap-1.5 text-[11px] font-black px-3 py-2 rounded-lg
-                    disabled:opacity-50 transition-colors flex-shrink-0 ${primaryAction.classes}`}
+                    disabled:cursor-not-allowed transition-colors flex-shrink-0 ${primaryAction.classes}`}
                   title={primaryAction.title}
                 >
                   <primaryAction.icon className="h-3.5 w-3.5" />
