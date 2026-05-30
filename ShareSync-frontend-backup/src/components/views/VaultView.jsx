@@ -696,7 +696,7 @@ export default function VaultView({ projectId }) {
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-xl dark:border-white/[0.08] dark:bg-[#111113]">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
             <span className="text-sm font-black text-slate-700 dark:text-zinc-200">
-              Loading vault...
+              Loading files...
             </span>
           </div>
         </div>
@@ -717,7 +717,7 @@ export default function VaultView({ projectId }) {
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                  Project Vault
+                  Files
                 </h2>
 
                 <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
@@ -933,7 +933,7 @@ export default function VaultView({ projectId }) {
               </div>
 
               <h3 className="mb-2 text-xl font-black text-slate-950 dark:text-white">
-                Vault is empty
+                No files yet
               </h3>
 
               <p className="mx-auto mb-6 max-w-md text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">

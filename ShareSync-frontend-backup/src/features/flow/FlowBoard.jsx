@@ -172,7 +172,7 @@ export default function FlowBoard({
 
           <div>
             <div className="text-sm font-black text-slate-950 dark:text-white">
-              Board
+              Flow
             </div>
             <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               No project selected.
@@ -184,7 +184,7 @@ export default function FlowBoard({
   }
 
   return (
-    <section className={`flow-command-board relative ${className}`} aria-label="Project board">
+    <section className={`flow-command-board relative ${className}`} aria-label="Project flow">
       <style className="flow-board-visual-style">
         {`
           .flow-board-shell {
@@ -643,7 +643,7 @@ export default function FlowBoard({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                    Board
+                    Flow
                   </h2>
 
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300">
@@ -670,7 +670,7 @@ export default function FlowBoard({
               <div className="flow-live-pill inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.15)]" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  Live Board
+                  Live Flow
                 </span>
               </div>
 
@@ -782,7 +782,7 @@ export default function FlowBoard({
 
                 <div className="min-w-0">
                   <div className="text-sm font-black text-rose-600 dark:text-rose-300">
-                    Board failed to load
+                    Flow failed to load
                   </div>
                   <div className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                     {error}
@@ -819,7 +819,7 @@ export default function FlowBoard({
               </div>
 
               <h3 className="relative text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                Your board is empty.
+                Your flow is empty.
               </h3>
 
               <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-400">

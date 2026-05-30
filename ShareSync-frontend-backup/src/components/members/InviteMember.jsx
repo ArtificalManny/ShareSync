@@ -55,17 +55,24 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 pt-14 backdrop-blur-sm sm:pt-16">
+      <div className="relative max-h-[calc(100vh-5.5rem)] w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-violet-500/35 bg-slate-950 p-6 shadow-2xl ring-1 ring-white/10">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
         
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
+        <div className="relative z-10 mb-6 flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-cyan-500/20 ring-1 ring-white/15">
               <UserPlus className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Invite Members</h2>
+              <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-cyan-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Share Access
+              </div>
+              <h2 className="text-3xl font-black leading-tight tracking-tight text-white">
+                Invite Members
+              </h2>
               <p className="text-sm text-slate-400">{projectName}</p>
             </div>
           </div>

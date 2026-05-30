@@ -1,7 +1,7 @@
 // src/components/suggestions/SuggestionsPanel.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Lightbulb, Plus, TrendingUp, Clock } from 'lucide-react';
+import { Sparkles, Plus, TrendingUp, Clock } from 'lucide-react';
 import SuggestionCard from './SuggestionCard';
 import SuggestionForm from './SuggestionForm';
 import { getSuggestions, createSuggestion, updateSuggestion, deleteSuggestion, upvoteSuggestion } from '../../api/suggestions';
@@ -336,12 +336,12 @@ const SuggestionsPanel = ({ projectId, project }) => {
       <div className="suggestions-next-header flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-violet-50 dark:bg-violet-500/15 rounded-lg border border-violet-100 dark:border-violet-500/20">
-            <Lightbulb className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+            <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Suggestions</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Next Moves</h2>
             <p className="text-sm text-slate-500 dark:text-white/40">
-              {isPublicProject ? 'Community feedback for this project' : 'Internal ideas & requests'}
+              {isPublicProject ? 'Community ideas and next actions for this project' : 'Internal ideas and next actions'}
             </p>
           </div>
         </div>
@@ -369,7 +369,7 @@ const SuggestionsPanel = ({ projectId, project }) => {
         ) : (
           isPublicProject && !isFollowing && (
             <div className="text-xs text-slate-400 dark:text-white/30 bg-slate-50 dark:bg-white/[0.04] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.06]">
-              Follow project to suggest
+              Follow project to suggest a next move
             </div>
           )
         )}
@@ -399,8 +399,8 @@ const SuggestionsPanel = ({ projectId, project }) => {
           </div>
         ) : filteredSuggestions.length === 0 ? (
           <div className="suggestions-empty-state text-center py-12 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-dashed border-slate-200 dark:border-white/[0.06]">
-            <Lightbulb className="w-10 h-10 text-slate-400 dark:text-white/20 mx-auto mb-3" />
-            <p className="text-slate-500 dark:text-white/40 text-sm">No suggestions found.</p>
+            <Sparkles className="w-10 h-10 text-slate-400 dark:text-white/20 mx-auto mb-3" />
+            <p className="text-slate-500 dark:text-white/40 text-sm">No next moves found.</p>
           </div>
         ) : (
           filteredSuggestions.map((suggestion) => (

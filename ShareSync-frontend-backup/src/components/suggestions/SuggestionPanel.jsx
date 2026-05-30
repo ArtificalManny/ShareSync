@@ -1,6 +1,6 @@
 // src/components/suggestions/SuggestionsPanel.jsx - Panel showing all suggestions
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, Plus, TrendingUp, Clock, Filter } from 'lucide-react';
+import { Sparkles, Plus, TrendingUp, Clock, Filter } from 'lucide-react';
 import SuggestionCard from './SuggestionCard';
 import SuggestionForm from './SuggestionForm';
 
@@ -118,11 +118,11 @@ const SuggestionsPanel = ({ projectId, isProjectMember = false, isPublicProject 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Lightbulb className="w-6 h-6 text-yellow-400" />
+          <Sparkles className="w-6 h-6 text-yellow-400" />
           <div>
-            <h2 className="text-xl font-bold text-white">Suggestions</h2>
+            <h2 className="text-xl font-bold text-white">Next Moves</h2>
             <p className="text-sm text-slate-400">
-              {isPublicProject ? 'Community feedback for this project' : 'Ideas from spectators'}
+              {isPublicProject ? 'Community ideas and next actions for this project' : 'Ideas and next actions from the community'}
             </p>
           </div>
         </div>
@@ -203,8 +203,8 @@ const SuggestionsPanel = ({ projectId, isProjectMember = false, isPublicProject 
       <div className="space-y-4">
         {filteredSuggestions.length === 0 ? (
           <div className="text-center py-12">
-            <Lightbulb className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400">No suggestions yet</p>
+            <Sparkles className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400">No next moves yet</p>
             {isPublicProject && (
               <button
                 onClick={() => setShowForm(true)}
