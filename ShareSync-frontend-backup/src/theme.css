@@ -171,3 +171,49 @@ button[data-openshare-start-force="true"]:hover:not(:disabled) {
 }
 /* end openshare-force-start-button-visible-by-attribute-v1 */
 
+/* openshare-subscription-button-dark-legibility-v1 */
+html.dark .openshare-subscription-menu,
+html[data-theme="dark"] .openshare-subscription-menu {
+  background: #121216 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.52) !important;
+}
+
+html.dark .openshare-subscription-menu > div:first-child,
+html[data-theme="dark"] .openshare-subscription-menu > div:first-child {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(245, 158, 11, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 0%, rgba(124, 58, 237, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(18, 18, 22, 0.98)) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .openshare-subscription-menu .text-slate-800,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .openshare-subscription-menu .text-slate-600,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-600 {
+  color: #d4d4d8 !important;
+}
+
+html.dark .openshare-subscription-menu .text-slate-500,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-500,
+html.dark .openshare-subscription-menu .text-slate-400,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-400 {
+  color: #a1a1aa !important;
+}
+
+html.dark .openshare-subscription-menu .openshare-feature-pill,
+html[data-theme="dark"] .openshare-subscription-menu .openshare-feature-pill {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(251, 191, 36, 0.38) !important;
+  color: #fde68a !important;
+}
+
+html.dark .openshare-subscription-menu button,
+html[data-theme="dark"] .openshare-subscription-menu button {
+  color: #e5e7eb !important;
+}

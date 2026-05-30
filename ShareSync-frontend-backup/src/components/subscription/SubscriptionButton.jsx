@@ -79,6 +79,25 @@ function formatBytes(bytes) {
   return `${Math.round(mb)}MB`;
 }
 
+
+function getStorageBytesFromUsage(usage = {}) {
+  const explicitBytes = usage.storageBytes ?? usage.storageUsedBytes;
+
+  if (explicitBytes !== undefined && explicitBytes !== null) {
+    return toNumber(explicitBytes, 0);
+  }
+
+  const legacyStorage = toNumber(usage.storage, 0);
+
+  // Legacy fallback:
+  // Some older billing UI stored storage as MB, while the dropdown expects bytes.
+  if (legacyStorage > 0 && legacyStorage < 1024 * 1024) {
+    return legacyStorage * 1024 * 1024;
+  }
+
+  return legacyStorage;
+}
+
 function getPlanLabel(plan) {
   if (plan === 'team') return 'Team';
   if (plan === 'enterprise') return 'Enterprise';
@@ -172,7 +191,7 @@ function UsageRow({
 
 function FeaturePill({ children }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-amber-200 bg-white/70 px-2 py-1 text-[10px] font-bold text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
+    <span className="openshare-feature-pill inline-flex items-center rounded-full border border-amber-200 bg-white/70 px-2 py-1 text-[10px] font-bold text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
       {children}
     </span>
   );
@@ -338,10 +357,7 @@ export default function SubscriptionButton() {
   const aiUsed = toNumber(usage.aiCallsThisMonth ?? usage.aiCalls, 0);
   const aiLimit = toNumber(limits.aiCallsPerMonth, 100);
 
-  const storageUsed = toNumber(
-    usage.storageBytes ?? usage.storageUsedBytes ?? usage.storage,
-    0
-  );
+  const storageUsed = getStorageBytesFromUsage(usage);
   const storageLimit = toNumber(limits.storageBytes, 1024 * 1024 * 1024);
 
   const membersUsed = toNumber(
@@ -431,7 +447,7 @@ export default function SubscriptionButton() {
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#1a1a1f] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl dark:shadow-none overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="openshare-subscription-menu absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#1a1a1f] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl dark:shadow-none overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
           <div
             className={`px-4 py-3 border-b border-slate-100 dark:border-white/[0.06] ${
               isPremium
@@ -455,14 +471,34 @@ export default function SubscriptionButton() {
                   )}
                 </div>
 
-                <div>
-                  <span className="block text-sm font-bold text-slate-800 dark:text-white">
-                    {planLabel} Plan
-                  </span>
-                  <span className="block text-[10px] font-medium text-slate-400 dark:text-zinc-500">
-                    {isPremium ? 'Premium limits unlocked' : refreshAgeLabel}
-                  </span>
-                </div>
+                {isPremium ? (
+                  <div className="min-w-0 max-w-[205px] rounded-2xl border border-amber-200/80 bg-white/95 px-3 py-2 shadow-sm ring-1 ring-white/70 dark:border-amber-400/30 dark:bg-[#0b1020]/95 dark:ring-amber-300/10">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-sm font-black text-slate-950 dark:text-white">
+                        {planLabel} Plan
+                      </span>
+
+                      <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-200">
+                        Active
+                      </span>
+                    </div>
+
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-bold text-amber-700 dark:text-amber-200">
+                      <ShieldCheck className="h-3 w-3 shrink-0" />
+                      <span>Premium limits unlocked</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="block text-sm font-bold text-slate-800 dark:text-white">
+                      {planLabel} Plan
+                    </span>
+
+                    <span className="block text-[10px] font-medium text-slate-400 dark:text-zinc-500">
+                      {refreshAgeLabel}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
