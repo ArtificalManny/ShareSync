@@ -34,6 +34,7 @@ import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 import CompleteProjectModal from "../components/project/CompleteProjectModal";
 import ProjectAvatar from "../components/project/ProjectAvatar";
+import InviteMember from "../components/members/InviteMember";
 import ProjectCaseStudyCard from "../components/project/ProjectCaseStudyCard";
 
 // Icons
@@ -759,6 +760,7 @@ function ProjectHeader({
   onSettings,
   onBackToProjects,
   onMembersClick,
+  onShareInviteClick,
   onLifecycleAction,
   isLifecycleBusy = false,
   viewerAccess,
@@ -975,6 +977,9 @@ function ProjectHeader({
 
           <button
             type="button"
+            onClick={onShareInviteClick}
+            aria-label="Share invite link"
+            title="Share invite link"
             className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
           >
             <Share2 className="w-4 h-4" />
@@ -3595,6 +3600,7 @@ export default function ProjectHome() {
   const [activeView, setActiveView] = useState("overview");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
   const [isMembersPanelOpen, setIsMembersPanelOpen] = useState(false);
+  const [isInviteMemberOpen, setIsInviteMemberOpen] = useState(false);
 
   const { joinProject, leaveProject } = useCursorContext();
   const { flashShip } = useCursorFlash();
@@ -3699,6 +3705,28 @@ export default function ProjectHome() {
   const handleSpectatorFollowToggle = useCallback(async () => {
     await toggleSpectatorFollow();
   }, [toggleSpectatorFollow]);
+
+  const handleInviteMember = useCallback(async ({ email, role }) => {
+    if (!id) {
+      throw new Error("Missing project ID");
+    }
+
+    const response = await fetch(`/api/projects/${id}/invites`, {
+      method: "POST",
+      headers: buildJsonHeaders(),
+      body: JSON.stringify({ email, role }),
+    });
+
+    const payload = await readApiJson(response);
+
+    if (!response.ok) {
+      throw new Error(payload?.message || "Failed to send invitation");
+    }
+
+    await refreshSilently?.();
+
+    return payload;
+  }, [id, refreshSilently]);
 
   useEffect(() => {
     console.log("[ProjectHome] render-state", {
@@ -4173,6 +4201,38 @@ export default function ProjectHome() {
         case "tasks":
           return (
             <div className={pageWrap}>
+              <section className="relative mb-4 overflow-hidden rounded-[24px] border border-violet-200/70 bg-white/80 p-4 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-none">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
+                <div className="pointer-events-none absolute -left-14 -top-16 h-32 w-32 rounded-full bg-violet-400/12 blur-3xl" />
+                <div className="pointer-events-none absolute -right-14 -bottom-16 h-32 w-32 rounded-full bg-cyan-400/12 blur-3xl" />
+
+                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+                      Execution Queue
+                    </div>
+
+                    <h2 className="text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                      Moves
+                    </h2>
+
+                    <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-600 dark:text-zinc-400">
+                      The next visible work, blockers, assignments, and execution priority for this project.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-3 py-2 shadow-sm dark:border-white/[0.08] dark:bg-black/20">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
+                      Mode
+                    </p>
+                    <p className="mt-0.5 text-xs font-black text-slate-800 dark:text-zinc-100">
+                      Live project queue
+                    </p>
+                  </div>
+                </div>
+              </section>
+
               <StackPanel
                 projectId={id}
                 limit={10}
@@ -4422,6 +4482,7 @@ export default function ProjectHome() {
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
         onMembersClick={() => setIsMembersPanelOpen(true)}
+        onShareInviteClick={() => setIsInviteMemberOpen(true)}
         onLifecycleAction={handleFinishLineAction}
         isLifecycleBusy={isCompletingProject || isReopeningProject}
         viewerAccess={viewerAccess}
@@ -4481,6 +4542,15 @@ export default function ProjectHome() {
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}
+        />
+      )}
+
+      {isInviteMemberOpen && (
+        <InviteMember
+          projectId={id}
+          projectName={project?.name || "Project"}
+          onInvite={handleInviteMember}
+          onClose={() => setIsInviteMemberOpen(false)}
         />
       )}
 
