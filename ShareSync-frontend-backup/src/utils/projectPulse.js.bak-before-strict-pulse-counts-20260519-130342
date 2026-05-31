@@ -1,0 +1,143 @@
+// src/utils/projectPulse.js
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizeStatus(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/_/g, "-");
+}
+
+function isToday(dateLike) {
+  if (!dateLike) return false;
+
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const now = new Date();
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+function getTaskStatus(task) {
+  return normalizeStatus(
+    task?.status ||
+      task?.state ||
+      task?.phase ||
+      task?.lifecycle ||
+      task?.column ||
+      ""
+  );
+}
+
+function isTaskDone(task) {
+  const status = getTaskStatus(task);
+
+  return [
+    "done",
+    "complete",
+    "completed",
+    "shipped",
+    "closed",
+    "resolved",
+  ].includes(status);
+}
+
+function isTaskInMotion(task) {
+  const status = getTaskStatus(task);
+
+  return [
+    "active",
+    "building",
+    "doing",
+    "in-progress",
+    "in-motion",
+    "started",
+    "working",
+  ].includes(status);
+}
+
+function isTaskBlocked(task) {
+  const status = getTaskStatus(task);
+
+  return (
+    task?.blocked === true ||
+    task?.isBlocked === true ||
+    task?.blocker === true ||
+    task?.hasBlocker === true ||
+    ["blocked", "blocker", "stuck", "at-risk"].includes(status)
+  );
+}
+
+function isTaskReady(task) {
+  const status = getTaskStatus(task);
+
+  return [
+    "ready",
+    "todo",
+    "to-do",
+    "open",
+    "backlog",
+    "planned",
+    "planning",
+    "not-started",
+  ].includes(status);
+}
+
+function getTaskCompletedDate(task) {
+  return (
+    task?.completedAt ||
+    task?.doneAt ||
+    task?.shippedAt ||
+    task?.closedAt ||
+    task?.resolvedAt ||
+    null
+  );
+}
+
+export function buildProjectPulse(project = {}, options = {}) {
+  const explicitTasks = asArray(options.tasks);
+
+  const projectTasks = [
+    ...asArray(project?.tasks),
+    ...asArray(project?.openTasks),
+    ...asArray(project?.items),
+  ];
+
+  const tasks = explicitTasks.length ? explicitTasks : projectTasks;
+
+  const explicitBlockers = asArray(options.blockers);
+  const projectBlockers = [
+    ...asArray(project?.blockers),
+    ...asArray(project?.risks),
+    ...asArray(project?.issues),
+  ];
+
+  const blockedFromTasks = tasks.filter(isTaskBlocked).length;
+  const blockedFromLists = explicitBlockers.length || projectBlockers.length;
+
+  const completedTodayFromTasks = tasks.filter((task) => {
+    if (!isTaskDone(task)) return false;
+    return isToday(getTaskCompletedDate(task) || task?.updatedAt);
+  }).length;
+
+  const completedTodayFromProject =
+    Number(project?.todayShips || project?.shipsToday || project?.completedToday || 0) || 0;
+
+  return {
+    today: Math.max(completedTodayFromTasks, completedTodayFromProject),
+    inMotion: tasks.filter((task) => isTaskInMotion(task) && !isTaskDone(task)).length,
+    blocked: Math.max(blockedFromTasks, blockedFromLists, Number(project?.blockedCount || 0) || 0),
+    ready: tasks.filter((task) => isTaskReady(task) && !isTaskDone(task) && !isTaskBlocked(task)).length,
+  };
+}
+
+export default buildProjectPulse;

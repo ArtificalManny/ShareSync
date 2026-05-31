@@ -1,4 +1,28 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+from pathlib import Path
+import shutil
+import datetime
+import re
+
+root = Path.cwd()
+
+billing_path = root / "src/components/settings/BillingSettings.jsx"
+subscription_button_path = root / "src/components/subscription/SubscriptionButton.jsx"
+theme_path = root / "src/theme.css"
+
+stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+def backup(path):
+    if path.exists():
+        backup_path = path.with_suffix(path.suffix + f".backup-before-billing-sync-{stamp}")
+        shutil.copy2(path, backup_path)
+        return backup_path
+    return None
+
+billing_backup = backup(billing_path)
+button_backup = backup(subscription_button_path)
+theme_backup = backup(theme_path)
+
+billing_code = r'''import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Crown,
   Folder,
@@ -65,15 +89,6 @@ function unwrapPayload(responseOrValue) {
 function toNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function firstPositiveNumber(...values) {
-  for (const value of values) {
-    const n = Number(value);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-
-  return 0;
 }
 
 function getPlanKey(plan) {
@@ -321,13 +336,9 @@ export default function BillingSettings() {
   const storageUsed = getStorageBytesFromUsage(usage);
   const storageLimit = toNumber(limits.storageBytes, PLAN_LIMIT_DEFAULTS[plan].storageBytes);
 
-  const membersUsed = firstPositiveNumber(
-    usage.membersPerProject,
-    usage.maxMembersInProject,
-    usage.activeMembers,
-    subscription?.activeMembers,
-    subscription?.membersPerProject,
-    subscription?.memberCount
+  const membersUsed = toNumber(
+    usage.membersPerProject ?? usage.maxMembersInProject ?? subscription?.activeMembers,
+    0
   );
   const membersLimit = toNumber(
     limits.membersPerProject,
@@ -489,3 +500,131 @@ export default function BillingSettings() {
     </div>
   );
 }
+'''
+
+billing_path.parent.mkdir(parents=True, exist_ok=True)
+billing_path.write_text(billing_code)
+
+# Patch SubscriptionButton.jsx for storage consistency + dark mode legibility.
+if subscription_button_path.exists():
+    text = subscription_button_path.read_text()
+
+    if "function getStorageBytesFromUsage" not in text:
+        helper = r'''
+function getStorageBytesFromUsage(usage = {}) {
+  const explicitBytes = usage.storageBytes ?? usage.storageUsedBytes;
+
+  if (explicitBytes !== undefined && explicitBytes !== null) {
+    return toNumber(explicitBytes, 0);
+  }
+
+  const legacyStorage = toNumber(usage.storage, 0);
+
+  // Legacy fallback:
+  // Some older billing UI stored storage as MB, while the dropdown expects bytes.
+  if (legacyStorage > 0 && legacyStorage < 1024 * 1024) {
+    return legacyStorage * 1024 * 1024;
+  }
+
+  return legacyStorage;
+}
+
+'''
+        text = text.replace("function getPlanLabel(plan) {", helper + "function getPlanLabel(plan) {", 1)
+
+    text = re.sub(
+        r"const storageUsed = toNumber\(\s*usage\.storageBytes\s*\?\?\s*usage\.storageUsedBytes\s*\?\?\s*usage\.storage,\s*0\s*\);",
+        "const storageUsed = getStorageBytesFromUsage(usage);",
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+
+    text = text.replace(
+        'className="absolute right-0 top-full mt-2 w-80 ',
+        'className="openshare-subscription-menu absolute right-0 top-full mt-2 w-80 ',
+        1,
+    )
+
+    text = text.replace(
+        'className="inline-flex items-center rounded-full border border-amber-200',
+        'className="openshare-feature-pill inline-flex items-center rounded-full border border-amber-200',
+        1,
+    )
+
+    subscription_button_path.write_text(text)
+
+# Add global dark-mode contrast hardening for SubscriptionButton dropdown.
+if theme_path.exists():
+    css = theme_path.read_text()
+    marker = "/* openshare-subscription-button-dark-legibility-v1 */"
+
+    block = r'''
+/* openshare-subscription-button-dark-legibility-v1 */
+html.dark .openshare-subscription-menu,
+html[data-theme="dark"] .openshare-subscription-menu {
+  background: #121216 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.52) !important;
+}
+
+html.dark .openshare-subscription-menu > div:first-child,
+html[data-theme="dark"] .openshare-subscription-menu > div:first-child {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(245, 158, 11, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 0%, rgba(124, 58, 237, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(18, 18, 22, 0.98)) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+html.dark .openshare-subscription-menu .text-slate-800,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .openshare-subscription-menu .text-slate-600,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-600 {
+  color: #d4d4d8 !important;
+}
+
+html.dark .openshare-subscription-menu .text-slate-500,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-500,
+html.dark .openshare-subscription-menu .text-slate-400,
+html[data-theme="dark"] .openshare-subscription-menu .text-slate-400 {
+  color: #a1a1aa !important;
+}
+
+html.dark .openshare-subscription-menu .openshare-feature-pill,
+html[data-theme="dark"] .openshare-subscription-menu .openshare-feature-pill {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(251, 191, 36, 0.38) !important;
+  color: #fde68a !important;
+}
+
+html.dark .openshare-subscription-menu button,
+html[data-theme="dark"] .openshare-subscription-menu button {
+  color: #e5e7eb !important;
+}
+'''
+
+    if marker not in css:
+        css = css.rstrip() + "\n\n" + block.strip() + "\n"
+        theme_path.write_text(css)
+
+print("✅ Subscription & Billing synced with SubscriptionButton usage logic.")
+print("")
+print("Updated:")
+print(f"- {billing_path}")
+print(f"- {subscription_button_path}")
+print(f"- {theme_path}")
+print("")
+print("Backups:")
+print(f"- BillingSettings: {billing_backup}")
+print(f"- SubscriptionButton: {button_backup}")
+print(f"- theme.css: {theme_backup}")
+print("")
+print("Next:")
+print("1. Stop Vite with Control+C")
+print("2. Restart: npm run dev")
+print("3. Hard refresh Chrome: Cmd+Shift+R")

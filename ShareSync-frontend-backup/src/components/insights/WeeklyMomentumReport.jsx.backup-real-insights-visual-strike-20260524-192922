@@ -1,0 +1,495 @@
+// src/components/insights/WeeklyMomentumReport.jsx
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEEKLY MOMENTUM REPORT — "Spotify Wrapped" for your productivity
+// Auto-generates every Monday. Shareable as image.
+// No PM tool does this. Your users become your marketing.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Zap, Flame, TrendingUp, TrendingDown, Minus, Clock, Target,
+  CheckCircle2, Download, Share2, Sparkles, Trophy, ArrowUp,
+  ChevronRight, Calendar, Star, Loader2, RefreshCw, X,
+} from 'lucide-react';
+import client from '../../api/client';
+import { getGamificationStats } from '../../api/gamification';
+import { toast } from '../ui/toast';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function getWeekRange() {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const lastMonday = new Date(monday);
+  lastMonday.setDate(monday.getDate() - 7);
+  const lastSunday = new Date(monday);
+  lastSunday.setDate(monday.getDate() - 1);
+
+  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  return {
+    current: { start: monday, end: sunday, label: `${fmt(monday)} – ${fmt(sunday)}` },
+    previous: { start: lastMonday, end: lastSunday, label: `${fmt(lastMonday)} – ${fmt(lastSunday)}` },
+    weekNumber: Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + 1) / 7),
+    year: now.getFullYear(),
+  };
+}
+
+function trendIcon(val) {
+  if (val > 0) return { Icon: TrendingUp, color: 'text-emerald-400', label: `+${val}` };
+  if (val < 0) return { Icon: TrendingDown, color: 'text-rose-400', label: `${val}` };
+  return { Icon: Minus, color: 'text-white/20', label: '—' };
+}
+
+function getMomentumVerdict(momentum) {
+  if (momentum >= 80) return { label: 'On Fire', emoji: '🔥', tier: 'legendary', quote: 'Unstoppable. Your team sees it.' };
+  if (momentum >= 60) return { label: 'Flowing', emoji: '🌊', tier: 'epic', quote: 'Deep in the zone. Keep shipping.' };
+  if (momentum >= 40) return { label: 'Building', emoji: '🧱', tier: 'rare', quote: 'Steady progress. Consistency wins.' };
+  if (momentum >= 20) return { label: 'Warming Up', emoji: '☀️', tier: 'common', quote: 'Getting started. One ship changes everything.' };
+  return { label: 'Fresh Start', emoji: '🌱', tier: 'starter', quote: 'Every streak starts with one day.' };
+}
+
+const TIER_COLORS = {
+  legendary: {
+    gradient: 'from-amber-400 via-orange-500 to-rose-500',
+    accent: '#f59e0b',
+    glowRGB: '245, 158, 11',
+    bg: 'linear-gradient(135deg, #1a120a 0%, #2d1810 50%, #1a0f1a 100%)',
+  },
+  epic: {
+    gradient: 'from-violet-400 via-fuchsia-500 to-pink-500',
+    accent: '#a855f7',
+    glowRGB: '168, 85, 247',
+    bg: 'linear-gradient(135deg, #0f0a1a 0%, #1a1032 50%, #0d0a14 100%)',
+  },
+  rare: {
+    gradient: 'from-cyan-400 via-blue-500 to-violet-500',
+    accent: '#3b82f6',
+    glowRGB: '59, 130, 246',
+    bg: 'linear-gradient(135deg, #0a0f1a 0%, #0d1a2e 50%, #0a0d14 100%)',
+  },
+  common: {
+    gradient: 'from-slate-400 via-violet-400 to-blue-400',
+    accent: '#8b5cf6',
+    glowRGB: '139, 92, 246',
+    bg: 'linear-gradient(135deg, #0f0f1a 0%, #141428 50%, #0a0d14 100%)',
+  },
+  starter: {
+    gradient: 'from-slate-500 via-slate-400 to-violet-400',
+    accent: '#7c3aed',
+    glowRGB: '124, 58, 237',
+    bg: 'linear-gradient(135deg, #0c0c14 0%, #111120 50%, #0a0a10 100%)',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MINI STAT — Compact inline stat for the grid
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function MiniStat({ icon: Icon, label, value, accentRGB = '139,92,246' }) {
+  return (
+    <div
+      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
+      style={{
+        background: `linear-gradient(135deg, rgba(${accentRGB}, 0.08) 0%, rgba(255,255,255,0.02) 100%)`,
+        border: `1px solid rgba(${accentRGB}, 0.1)`,
+      }}
+    >
+      <div
+        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{ background: `rgba(${accentRGB}, 0.12)` }}
+      >
+        <Icon className="w-3.5 h-3.5 text-white/60" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[8px] uppercase tracking-[0.15em] text-white/30 font-bold leading-none mb-1">{label}</p>
+        <p className="text-base font-black text-white leading-none">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DAILY BAR CHART — Compact horizontal bars
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function DailyBars({ dailyCounts = [], accentRGB = '139,92,246' }) {
+  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const fullDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const max = Math.max(...dailyCounts, 1);
+
+  return (
+    <div className="flex items-end gap-1.5 h-12">
+      {days.map((day, i) => {
+        const count = dailyCounts[i] || 0;
+        const heightPct = Math.max(10, (count / max) * 100);
+        const isToday = new Date().getDay() === (i === 6 ? 0 : i + 1);
+        return (
+          <div key={`${fullDays[i]}-${i}`} className="flex-1 flex flex-col items-center gap-1" title={`${fullDays[i]}: ${count} ships`}>
+            <div className="w-full relative" style={{ height: '36px' }}>
+              <div
+                className="absolute bottom-0 w-full rounded-sm transition-all duration-700"
+                style={{
+                  height: `${heightPct}%`,
+                  minHeight: '3px',
+                  background: isToday
+                    ? `linear-gradient(to top, rgba(${accentRGB}, 0.9), rgba(${accentRGB}, 0.4))`
+                    : count > 0
+                    ? 'rgba(255,255,255,0.2)'
+                    : 'rgba(255,255,255,0.04)',
+                  boxShadow: isToday ? `0 0 8px rgba(${accentRGB}, 0.3)` : 'none',
+                }}
+              />
+            </div>
+            <span className={`text-[8px] font-bold ${isToday ? 'text-white/70' : 'text-white/20'}`}>
+              {day}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default function WeeklyMomentumReport({ projectId, onClose, embedded = false }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const cardRef = useRef(null);
+
+  // ─── Fetch all data from existing endpoints ──────────────────────────────
+  const fetchReport = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [gamRes, overviewRes, pulseRes] = await Promise.allSettled([
+        getGamificationStats(),
+        projectId ? client.get(`/analytics/project/${projectId}/overview`).then(r => r.data?.data || r.data) : Promise.resolve(null),
+        projectId ? client.get(`/projects/${projectId}/pulse`).then(r => r.data?.data || r.data) : Promise.resolve(null),
+      ]);
+
+      const gam = gamRes.status === 'fulfilled' ? gamRes.value : {};
+      const overview = overviewRes.status === 'fulfilled' ? overviewRes.value : {};
+      const pulse = pulseRes.status === 'fulfilled' ? pulseRes.value : {};
+
+      // ═════════════════════════════════════════════════════════════════════
+      // FIX: getPulseData() returns { metrics: { weeklyShips, momentum, ... } }
+      // We must read from pulse.metrics sub-object, NOT pulse directly.
+      // Full fallback chain so this works with both current and enhanced backend.
+      // ═════════════════════════════════════════════════════════════════════
+      const pMetrics = pulse?.metrics || {};
+
+      const momentum = pMetrics.momentum || pulse?.momentum || overview?.velocity || 0;
+      const streak = gam?.streak?.current || gam?.streak?.currentStreak || gam?.streakDays || gam?.currentStreak || 0;
+      const weeklyXP = gam?.weeklyXP || 0;
+      const totalXP = gam?.totalXP || 0;
+      const level = gam?.level || 1;
+
+      // FIX: Read tasks from pulse flat fields (enhanced backend) → pulse.metrics → overview
+      const totalTasks = pulse?.totalTasks || overview?.totalTasks || pMetrics.totalTasks || 0;
+      const tasksCompleted = pulse?.completedTasks || overview?.completedTasks || pMetrics.completedTasks || 0;
+      const completionRate = pMetrics.completionRate || overview?.completionRate || (totalTasks > 0 ? Math.round((tasksCompleted / totalTasks) * 100) : 0);
+
+      // FIX: weeklyShips lives inside pulse.metrics, not pulse directly
+      const weeklyShips = pMetrics.weeklyShips || pulse?.completedThisWeek || pulse?.weeklyShips || 0;
+
+      const todayIndex = (new Date().getDay() + 6) % 7;
+      const dailyCounts = Array(7).fill(0);
+      if (weeklyShips > 0) {
+        const daysActive = Math.min(todayIndex + 1, 7);
+        const perDay = Math.floor(weeklyShips / daysActive);
+        const remainder = weeklyShips % daysActive;
+        for (let i = 0; i <= todayIndex && i < 7; i++) {
+          dailyCounts[i] = perDay + (i < remainder ? 1 : 0);
+        }
+      }
+
+      setData({
+        momentum, streak, weeklyXP, totalXP, level,
+        tasksCompleted, totalTasks, completionRate, weeklyShips, dailyCounts,
+        verdict: getMomentumVerdict(momentum),
+        weekRange: getWeekRange(),
+        // FIX: momentumTrend also lives in pMetrics
+        trends: { momentum: pMetrics.momentumTrend || pulse?.momentumTrend || 0, ships: 0, xp: 0 },
+      });
+    } catch (err) {
+      console.error('[WeeklyMomentumReport] fetch error:', err);
+      setData({
+        momentum: 0, streak: 0, weeklyXP: 0, totalXP: 0, level: 1,
+        tasksCompleted: 0, totalTasks: 0, completionRate: 0, weeklyShips: 0,
+        dailyCounts: Array(7).fill(0),
+        verdict: getMomentumVerdict(0),
+        weekRange: getWeekRange(),
+        trends: { momentum: 0, ships: 0, xp: 0 },
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => { fetchReport(); }, [fetchReport]);
+
+  // Auto-refresh every 30 seconds to pick up new activity
+  useEffect(() => {
+    if (!projectId) return;
+    const interval = setInterval(() => {
+      fetchReport();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [projectId, fetchReport]);
+
+  // ─── Export as image ─────────────────────────────────────────────────────
+  const handleExport = useCallback(async () => {
+    if (!cardRef.current) return;
+    setExporting(true);
+    try {
+      const { default: html2canvas } = await import('html2canvas').catch(() => ({ default: null }));
+      if (html2canvas) {
+        const canvas = await html2canvas(cardRef.current, {
+          backgroundColor: null, scale: 2, useCORS: true, logging: false,
+        });
+        const link = document.createElement('a');
+        link.download = `openshare-week-${data?.weekRange?.weekNumber || 'report'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        toast({ title: 'Report downloaded!', variant: 'success' });
+      } else {
+        const text = `OpenShare Weekly Report\nWeek ${data?.weekRange?.weekNumber}\nMomentum: ${data?.momentum}\nShips: ${data?.weeklyShips}\nStreak: ${data?.streak}d\nXP: ${data?.weeklyXP}`;
+        await navigator.clipboard.writeText(text);
+        toast({ title: 'Report copied to clipboard', variant: 'success' });
+      }
+    } catch { toast({ title: 'Export failed', variant: 'error' }); }
+    finally { setExporting(false); }
+  }, [data]);
+
+  // ─── Loading ─────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={`${embedded ? '' : 'p-6'}`}>
+        <div className="rounded-2xl p-8 flex items-center justify-center h-48" style={{ background: 'linear-gradient(135deg, #0c0c14 0%, #111120 100%)' }}>
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+            <p className="text-sm text-white/30 font-medium">Generating report...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const { verdict, weekRange } = data;
+  const tier = TIER_COLORS[verdict.tier] || TIER_COLORS.common;
+
+  // ─── The Card — LANDSCAPE layout ─────────────────────────────────────────
+  const card = (
+    <div
+      ref={cardRef}
+      className="relative rounded-2xl overflow-hidden"
+      style={{
+        background: tier.bg,
+        boxShadow: `0 0 60px -20px rgba(${tier.glowRGB}, 0.12), 0 20px 40px -15px rgba(0,0,0,0.4)`,
+      }}
+    >
+      {/* Ambient glow */}
+      <div
+        className="absolute top-0 right-0 w-[400px] h-[300px] rounded-full opacity-[0.06] blur-[80px]"
+        style={{ background: `radial-gradient(circle, rgba(${tier.glowRGB}, 1) 0%, transparent 70%)` }}
+      />
+      {/* Dot grid */}
+      <div
+        className="absolute inset-0 opacity-[0.025]"
+        style={{ backgroundImage: 'radial-gradient(circle, white 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }}
+      />
+
+      <div className="relative z-10 p-6">
+
+        {/* ── Top bar: branding + week ──────────────────────────────── */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: `rgba(${tier.glowRGB}, 0.1)`, border: `1px solid rgba(${tier.glowRGB}, 0.12)` }}
+            >
+              <Sparkles className="w-3.5 h-3.5" style={{ color: tier.accent }} />
+            </div>
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35">Weekly Report</span>
+              <span className="text-[9px] text-white/15 ml-2 font-medium">W{weekRange.weekNumber} · {weekRange.current.label}</span>
+            </div>
+          </div>
+          <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">OpenShare</span>
+        </div>
+
+        {/* ── Main: 3-column landscape layout ──────────────────────── */}
+        <div className="grid grid-cols-12 gap-5">
+
+          {/* LEFT: Momentum hero */}
+          <div className="col-span-4 flex flex-col items-center justify-center text-center">
+            {/* Verdict */}
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
+              style={{ background: `rgba(${tier.glowRGB}, 0.08)`, border: `1px solid rgba(${tier.glowRGB}, 0.12)` }}
+            >
+              <span className="text-sm">{verdict.emoji}</span>
+              <span className={`text-[10px] font-black bg-gradient-to-r ${tier.gradient} bg-clip-text text-transparent uppercase tracking-wide`}>
+                {verdict.label}
+              </span>
+            </div>
+
+            {/* Score */}
+            <div className="mb-1.5">
+              <span className={`text-5xl font-black bg-gradient-to-br ${tier.gradient} bg-clip-text text-transparent leading-none`}>
+                {data.momentum}
+              </span>
+            </div>
+            <p className="text-[8px] text-white/20 uppercase tracking-[0.2em] font-bold mb-2">Momentum</p>
+            <p className="text-[10px] text-white/30 italic leading-relaxed max-w-[180px]">"{verdict.quote}"</p>
+          </div>
+
+          {/* CENTER: Daily bars + stats grid */}
+          <div className="col-span-5 flex flex-col justify-between">
+            {/* Daily bars */}
+            <div className="mb-4">
+              <p className="text-[8px] uppercase tracking-[0.15em] text-white/20 font-bold mb-2">Daily Ships</p>
+              <DailyBars dailyCounts={data.dailyCounts} accentRGB={tier.glowRGB} />
+            </div>
+
+            {/* 2x2 stats */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <MiniStat icon={Zap} label="Ships" value={data.weeklyShips} accentRGB={tier.glowRGB} />
+              <MiniStat icon={Flame} label="Streak" value={`${data.streak}d`} accentRGB="251,146,60" />
+              <MiniStat icon={Star} label="XP" value={`+${data.weeklyXP}`} accentRGB="250,204,21" />
+              <MiniStat icon={Target} label="Done" value={`${data.completionRate}%`} accentRGB="52,211,153" />
+            </div>
+          </div>
+
+          {/* RIGHT: Level + meta */}
+          <div className="col-span-3 flex flex-col justify-between">
+            {/* Level card */}
+            <div
+              className="px-3.5 py-3 rounded-xl mb-3"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Trophy className="w-3 h-3 text-amber-400/60" />
+                  <span className="text-[9px] font-bold text-white/35">Level {data.level}</span>
+                </div>
+                <span className="text-[9px] font-black text-white/50 tabular-nums">{data.totalXP.toLocaleString()} XP</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${tier.gradient}`}
+                  style={{
+                    width: `${Math.min(100, (data.totalXP % 1000) / 10)}%`,
+                    boxShadow: `0 0 6px rgba(${tier.glowRGB}, 0.3)`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Tasks summary */}
+            <div
+              className="px-3.5 py-3 rounded-xl mb-3"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
+            >
+              <p className="text-[8px] uppercase tracking-[0.15em] text-white/20 font-bold mb-1.5">Tasks</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-black text-white/70">{data.tasksCompleted}</span>
+                <span className="text-[10px] text-white/25 font-medium">/ {data.totalTasks}</span>
+              </div>
+              <p className="text-[9px] text-white/20 mt-0.5">completed</p>
+            </div>
+
+            {/* Trend indicator */}
+            {data.trends.momentum !== 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                {data.trends.momentum > 0 ? (
+                  <TrendingUp className="w-3 h-3 text-emerald-400/60" />
+                ) : (
+                  <TrendingDown className="w-3 h-3 text-rose-400/60" />
+                )}
+                <span className={`text-[9px] font-bold ${data.trends.momentum > 0 ? 'text-emerald-400/60' : 'text-rose-400/60'}`}>
+                  {data.trends.momentum > 0 ? '+' : ''}{data.trends.momentum} vs last week
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Footer ──────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.03]">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ background: `rgba(${tier.glowRGB}, 0.12)` }}>
+              <span className="text-[7px] font-black text-white/40">O</span>
+            </div>
+            <span className="text-[9px] text-white/12 font-bold">openshare.io</span>
+          </div>
+          <span className="text-[9px] text-white/12 font-bold tabular-nums">{weekRange.year} · W{weekRange.weekNumber}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── Embedded mode ───────────────────────────────────────────────────────
+  if (embedded) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
+            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">{weekRange.current.label}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchReport} className="p-2 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors" title="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleExport} disabled={exporting}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 transition-all shadow-sm hover:shadow-violet-500/20"
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {exporting ? 'Exporting...' : 'Save as Image'}
+            </button>
+          </div>
+        </div>
+        {card}
+      </div>
+    );
+  }
+
+  // ─── Modal mode ──────────────────────────────────────────────────────────
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
+      <button className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} aria-label="Close" />
+      <div className="relative w-full max-w-3xl">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={handleExport} disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm disabled:opacity-50 transition-all border border-white/10"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Save as Image
+          </button>
+          <button onClick={onClose} className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {card}
+      </div>
+    </div>
+  );
+}

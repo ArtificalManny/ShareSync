@@ -1,0 +1,90 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   OPENSHARE PALETTE OVERRIDES - "The Gallery Walk" Foundation
+   Replaces legacy Ember/Deakins with the new Violet/Blue/Slate system.
+   ────────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Soft Slate Neutrals (Light Mode Default) */
+  --surface-0: #F8FAFC;  --surface-0-rgb: 248 250 252;
+  --surface-1: #FFFFFF;  --surface-1-rgb: 255 255 255;
+  --surface-2: #F1F5F9;  --surface-2-rgb: 241 245 249;
+  --nav-0:     #FFFFFF;  --nav-0-rgb: 255 255 255;
+
+  /* Text (Accessible Contrast) */
+  --text-primary:   #1E293B; --text-primary-rgb: 30 41 59;
+  --text-secondary: #475569; --text-secondary-rgb: 71 85 105;
+  --text-tertiary:  #64748B; --text-tertiary-rgb: 100 116 139;
+
+  /* Borders */
+  --border-default: #E2E8F0;
+  --border-subtle:  #F1F5F9;
+  --border-brand:   #C4B5FD;
+
+  /* Primary Brand (Electric Violet) */
+  --brand-500: #8B5CF6; --brand-500-rgb: 139 92 246;
+  --brand-600: #7C3AED; --brand-600-rgb: 124 58 237;
+  --brand-700: #6D28D9;
+
+  /* Action (Ocean Blue) */
+  --action-500: #3B82F6; --action-500-rgb: 59 130 246;
+
+  /* Feedback */
+  --success-500: #14B8A6; --success-500-rgb: 20 184 166; /* Teal */
+  --warning-500: #F59E0B; --warning-500-rgb: 245 158 11; /* Amber */
+  --info-500:    #3B82F6; --info-500-rgb: 59 130 246;    /* Blue */
+  --danger-500:  #F43F5E; --danger-500-rgb: 244 63 94;   /* Rose */
+
+  /* Master Gradients */
+  --gradient-brand: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  --grad-primary:   linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); /* Sunset CTA */
+  --grad-pandora:   linear-gradient(135deg, #8B5CF6 0%, #06B6D4 75%, #2DD4BF 100%); /* Aurora */
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     PHASE 4: ANTI-BLOAT & STRUCTURAL GUARDRAILS (The Weaponized "No")
+     ────────────────────────────────────────────────────────────────────────────── */
+     
+  /* 1. The Z-Index Guillotine 
+     We strictly limit z-index tiers. If a requested feature requires a z-index
+     higher than these bounds to support nested flyouts, the feature is too complex.
+     Reject the Jira-fication. Redesign it to be a single-level interaction. */
+  --z-base:       0;
+  --z-elevated:   10;  /* Cards, sticky headers */
+  --z-dropdown:   40;  /* Standard menus */
+  --z-overlay:    50;  /* Slide-out panels, standard modals */
+  --z-lifeline:   90;  /* Telemetry / Feedback FAB */
+  --z-critical:   100; /* Toasts, fatal errors */
+
+  /* 2. Strict Spatial Boundaries
+     Prevents UI from becoming a bloated, edge-to-edge spreadsheet. */
+  --max-content-width: 1600px; /* Preserves the "Gallery" feel on ultra-wides */
+  --panel-width:       480px;  /* Standardized panel width. No resizable splitters. */
+  
+  /* 3. Dropdown Depth Limits
+     Prevents infinite nesting (the hallmark of legacy enterprise software).
+     If a menu needs to be taller than this, the user is overwhelmed. Break it down. */
+  --dropdown-max-height: 320px;
+  
+  /* 4. Motion Guardrails
+     Standardize animations so developers don't add bespoke, distracting physics. */
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.16, 1, 0.3, 1); /* Apple-grade ease */
+}
+
+/* Dark mode mapping (The Grand Entrance) */
+:root.dark,
+[data-theme="dark"],
+.auth-layout {
+  --surface-0: #0F172A;  --surface-0-rgb: 15 23 42;
+  --surface-1: rgba(30, 41, 59, 0.6);
+  --surface-2: rgba(51, 65, 85, 0.4);
+  
+  --text-primary:   #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-tertiary:  #94A3B8;
+
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+
+  --bg-canvas:  var(--surface-0);
+  --bg-surface: var(--surface-1);
+  --bg-elevated:var(--surface-2);
+}

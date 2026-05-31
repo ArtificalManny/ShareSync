@@ -67,15 +67,6 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function firstPositiveNumber(...values) {
-  for (const value of values) {
-    const n = Number(value);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-
-  return 0;
-}
-
 function getPlanKey(plan) {
   const normalized = String(plan || "free").toLowerCase();
   if (normalized === "team") return "team";
@@ -321,13 +312,9 @@ export default function BillingSettings() {
   const storageUsed = getStorageBytesFromUsage(usage);
   const storageLimit = toNumber(limits.storageBytes, PLAN_LIMIT_DEFAULTS[plan].storageBytes);
 
-  const membersUsed = firstPositiveNumber(
-    usage.membersPerProject,
-    usage.maxMembersInProject,
-    usage.activeMembers,
-    subscription?.activeMembers,
-    subscription?.membersPerProject,
-    subscription?.memberCount
+  const membersUsed = toNumber(
+    usage.membersPerProject ?? usage.maxMembersInProject ?? subscription?.activeMembers,
+    0
   );
   const membersLimit = toNumber(
     limits.membersPerProject,

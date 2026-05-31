@@ -1,0 +1,126 @@
+/* ===== Existing styles (kept) ===== */
+.projects-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.main-content {
+  flex: 1;
+}
+
+.projects-header {
+  margin-bottom: 1rem;
+}
+
+.project-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.project-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.loader {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--purple-accent);
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 1.2s infinite;
+}
+
+@keyframes pulse-slow {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.hover-glow {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px var(--purple-accent), 0 0 10px var(--teal-accent);
+  transform: scale(1.02);
+}
+
+.project-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.project-card:hover {
+  box-shadow: 0 0 15px var(--purple-accent), 0 0 5px var(--teal-accent);
+  transform: translateY(-2px);
+}
+
+/* ===== Profile revamp additions ===== */
+
+/* Generic card for profile widgets */
+.profile-card {
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--card));
+  border-radius: 1rem; /* 16px */
+  padding: 1rem;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+
+/* Streak animation (gentle throb) */
+@keyframes streakGlow {
+  0%   { transform: translateZ(0) scale(1);   filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0)); }
+  50%  { transform: translateZ(0) scale(1.02); filter: drop-shadow(0 6px 16px rgba(251, 191, 36, .18)); }
+  100% { transform: translateZ(0) scale(1);   filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0)); }
+}
+.streak-pulse {
+  animation: streakGlow 1.4s ease-in-out infinite;
+}
+
+/* Badges */
+.badge-tile {
+  border: 1px solid rgb(var(--border));
+  background: rgb(var(--surface));
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  text-align: center;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.badge-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,.06);
+}
+.badge-locked {
+  opacity: .6;
+  filter: grayscale(0.3);
+}
+
+/* XP ring soft glow frame (optional utility if you wrap the ring) */
+.xp-ring-glow {
+  box-shadow: 0 12px 38px rgba(79, 70, 229, 0.12), 0 2px 10px rgba(79, 70, 229, 0.08);
+  border-radius: 9999px;
+}
+
+/* Reduced-motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .streak-pulse { animation: none !important; }
+  .badge-tile { transition: none !important; }
+}

@@ -1,0 +1,613 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARESYNC - Main Stylesheet v4.0 "The Gallery Walk" (Adaptive)
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   Import order matters! Organized for proper cascade:
+   1. Palette (raw color values - FIRST)
+   2. Design tokens (semantic variables)
+   3. Theme application
+   4. Gradients
+   5. Momentum systems
+   6. Component styles
+   7. Utilities
+   8. Tailwind
+   
+   NO BACKEND CHANGES - Pure CSS
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. MASTER COLOR PALETTE (Must be first!)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/palette.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. DESIGN TOKENS (References palette)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/tokens.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. THEME APPLICATION
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/theme.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. GRADIENT SYSTEM
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/gradients.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. COLOR SYSTEM (Legacy - may contain additional colors)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/colors.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. MOMENTUM GLOW SYSTEM (Phase 1)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/momentum-glow.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. ENTRANCE ANIMATIONS (Phase A)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/entrance.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. HEARTBEAT SYSTEM (Phase A) - Momentum-responsive body
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/heartbeat.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. PHASE C: MOMENTUM ENGINE STYLES
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/momentum-engine.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. LIVING CARDS (Phase B)
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/living-cards.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   11. COMPONENT STYLES
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/card.css';
+@import './styles/button.css';
+@import './styles/input.css';
+@import './styles/avatar.css';
+@import './styles/badge.css';
+@import './styles/modal.css';
+@import './styles/dropdown.css';
+@import './styles/tooltip.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   12. UTILITIES
+───────────────────────────────────────────────────────────────────────────── */
+@import './styles/utilities.css';
+@import './styles/animations.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   13. TAILWIND
+───────────────────────────────────────────────────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLOBAL STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Base HTML setup */
+html {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  /* CHANGED: Force light mode for "The Gallery Walk" */
+  color-scheme: light;
+}
+
+/* Body defaults with momentum support */
+body {
+  background: var(--surface-0);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  
+  /* Smooth transitions for momentum changes and theme toggles */
+  transition: background 0.3s ease-out, color 0.3s ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SEMANTIC COLOR UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.text-brand { color: var(--brand-600); }
+.text-brand-light { color: var(--brand-400); }
+.bg-brand { background-color: var(--brand-600); }
+.border-brand { border-color: var(--brand-600); }
+
+/* Success/Error/Warning utilities */
+.text-success { color: var(--success-500); }
+.text-error { color: var(--error-500); }
+.text-warning { color: var(--warning-500); }
+
+/* Energy (fire mode) utilities */
+.text-energy { color: var(--energy-500); }
+.bg-energy { background-color: var(--energy-500); }
+.border-energy { border-color: var(--energy-500); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASS SIDEBAR EFFECT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#app-sidebar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BENTO CARD ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.bento-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  transition: 
+    transform 200ms ease,
+    box-shadow 300ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.bento-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-default);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCROLLBAR STYLING (Adaptive)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--slate-300);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #27272a; /* zinc-800 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-400);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46; /* zinc-700 */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SELECTION STYLING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+::selection {
+  background: var(--brand-500);
+  color: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOMENTUM ENGINE GLOBAL UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Glow utilities */
+.shadow-glow-brand {
+  box-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
+}
+
+.shadow-glow-cyan {
+  box-shadow: 0 0 20px rgba(var(--palette-cyan-500-rgb), 0.3);
+}
+
+.shadow-glow-energy {
+  box-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
+}
+
+/* Momentum-responsive text glow */
+body[data-momentum="4"] .text-glow,
+body[data-momentum="5"] .text-glow {
+  text-shadow: 0 0 20px rgba(var(--palette-violet-500-rgb), 0.3);
+}
+
+body[data-momentum-fire="true"] .text-glow {
+  text-shadow: 0 0 20px rgba(var(--palette-orange-500-rgb), 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION GLOBAL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  body {
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   "THE GALLERY WALK" - LIGHT MODE ENFORCEMENT
+   ═══════════════════════════════════════════════════════════════════════════════
+   
+   This section ensures the app maintains the unified light theme aesthetic.
+   The sidebar and main content should feel like one cohesive "gallery" space.
+   
+   NOTE: Auth pages (Login, etc.) still use their own dark "Grand Entrance" 
+   theme via AuthLayout.jsx - this only affects the main app.
+   
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Override system dark mode preference for main app */
+:root {
+  --gallery-bg: #F8FAFC;
+  --gallery-bg-accent: #EEF2FF;
+  --gallery-text: #1E293B;
+  --gallery-text-muted: #64748B;
+  --gallery-border: #E2E8F0;
+  --gallery-shadow: 0 4px 24px rgba(139, 92, 246, 0.06);
+}
+
+/* Ensure light backgrounds on key structural elements */
+.app-layout,
+.main-layout {
+  background-color: var(--gallery-bg);
+}
+
+/* Sidebar "Gallery Wall" styling reinforcement */
+#app-sidebar {
+  background-color: #FFFFFF;
+  border-right-color: var(--gallery-border);
+}
+
+/* Remove any unintended dark borders on main content wrapper */
+.app-layout > div,
+.main-layout > div {
+  border-color: transparent;
+}
+
+/* Light mode input fields */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  background-color: #FFFFFF;
+  border-color: var(--gallery-border);
+  color: var(--gallery-text);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Buttons maintain their gradient colors but on light bg */
+.btn-primary,
+button[type="submit"] {
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+}
+
+/* Dropdown menus */
+[role="menu"],
+[role="listbox"],
+.dropdown-menu {
+  background-color: #FFFFFF;
+  border-color: var(--gallery-border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal overlays - lighter backdrop */
+.modal-backdrop,
+[class*="backdrop"] {
+  background-color: rgba(15, 23, 42, 0.3);
+}
+
+/* Modal content */
+.modal-content,
+[role="dialog"] > div {
+  background-color: #FFFFFF;
+  border-color: var(--gallery-border);
+}
+
+/* Tooltips - keep dark for contrast */
+[role="tooltip"],
+.tooltip {
+  background-color: #1E293B;
+  color: #FFFFFF;
+}
+
+/* Status indicators maintain their semantic colors */
+.status-online { color: #10B981; }
+.status-offline { color: #94A3B8; }
+.status-busy { color: #F59E0B; }
+.status-dnd { color: #EF4444; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THE GALLERY WALK - INPUT OVERRIDES
+   Forces pristine white inputs, ignoring OS-level dark mode preferences.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+html, body {
+  color-scheme: light !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PART 6: BLUEPRINT STARTER KIT UTILITIES (The Gebbia Lens)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Global Card Style Update */
+.card, [class*="card"] {
+  background: var(--color-surface-primary, #FFFFFF);
+  border: 1px solid var(--color-border-default, #E2E8F0);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover, [class*="card"]:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+/* Hero Greeting Enhancement */
+.greeting-hero {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary, #111827);
+}
+
+.greeting-hero .user-name {
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Metric Number Styling */
+.metric-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section Stagger Animation */
+.dashboard-section {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: sectionReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dashboard-section:nth-child(1) { animation-delay: 0.05s; }
+.dashboard-section:nth-child(2) { animation-delay: 0.1s; }
+.dashboard-section:nth-child(3) { animation-delay: 0.15s; }
+.dashboard-section:nth-child(4) { animation-delay: 0.2s; }
+.dashboard-section:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes sectionReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Streak Fire Glow */
+.streak-counter {
+  color: #D97706;
+  text-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
+  animation: streakPulse 3s ease-in-out infinite;
+}
+
+@keyframes streakPulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(217, 119, 6, 0.2); }
+  50% { text-shadow: 0 0 30px rgba(217, 119, 6, 0.4); }
+}
+
+/* Achievement Badge Gold Treatment */
+.achievement-badge.earned {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+}
+
+.achievement-xp {
+  color: #D97706;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLOBAL DARK SHELL OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════════════
+
+   Purpose:
+   - The older "Gallery Walk" section intentionally forced several app-shell
+     surfaces toward light mode.
+   - That worked for the original light gallery aesthetic, but it creates white
+     patches when the user selects Dark mode.
+   - These overrides only activate under `.dark`, preserving light mode while
+     making the shared app shell coherent in dark mode.
+
+   Scope:
+   - App shell / page canvas
+   - Sidebar shell
+   - Top/header shell
+   - Shared CSS variables used by pages like Profile.jsx
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.dark {
+  --gallery-bg: #09090B;
+  --gallery-border: rgba(255, 255, 255, 0.08);
+  --bg-page: radial-gradient(circle at top, rgba(139, 92, 246, 0.14), transparent 32%),
+    linear-gradient(180deg, #09090B 0%, #0F0F14 48%, #09090B 100%);
+}
+
+/* Main app canvas */
+.dark .app-layout,
+.dark .main-layout {
+  background:
+    radial-gradient(circle at top, rgba(139, 92, 246, 0.12), transparent 34%),
+    linear-gradient(180deg, #09090B 0%, #0F0F14 48%, #09090B 100%);
+  color: #F8FAFC;
+}
+
+/* Sidebar: override Gallery Walk white enforcement */
+.dark #app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 28, 0.98) 100%) !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+  color: #E5E7EB;
+  box-shadow: 18px 0 55px rgba(0, 0, 0, 0.28);
+}
+
+/* Reduce the pale sidebar wash when the sidebar is expanded */
+.dark #app-sidebar::before,
+.dark #app-sidebar::after {
+  opacity: 0.18;
+}
+
+/* Top navigation / app header surfaces */
+.dark .app-layout header,
+.dark .main-layout header,
+.dark .app-layout nav,
+.dark .main-layout nav,
+.dark [role="banner"] {
+  background-color: rgba(9, 9, 11, 0.82);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #F8FAFC;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Common shell children that were previously forced by Gallery Walk */
+.dark .app-layout > div,
+.dark .main-layout > div {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Native form controls inside the app shell */
+.dark .app-layout input,
+.dark .app-layout select,
+.dark .app-layout textarea,
+.dark .main-layout input,
+.dark .main-layout select,
+.dark .main-layout textarea {
+  color-scheme: dark;
+}
+
+/* Guardrail for pages using var(--bg-page) inline */
+.dark [style*="--bg-page"],
+.dark [style*="var(--bg-page"] {
+  color: #F8FAFC;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAVBAR DARK SURFACE CSS OVERRIDE
+   ═══════════════════════════════════════════════════════════════════════════════
+
+   Purpose:
+   - Navbar.jsx is the correct component, but the older Gallery Walk CSS can keep
+     shared shell surfaces visually light.
+   - This override only activates in dark mode.
+   - It targets the navbar shell and its search field without changing light mode.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+html.dark header.navbar,
+html.dark .navbar.navbar-dark-surface-refined,
+html[data-theme="dark"] header.navbar,
+html[data-theme="dark"] .navbar.navbar-dark-surface-refined,
+.dark header.navbar,
+.dark .navbar.navbar-dark-surface-refined,
+[data-theme="dark"] header.navbar,
+[data-theme="dark"] .navbar.navbar-dark-surface-refined {
+  background: linear-gradient(
+    90deg,
+    rgba(9, 9, 11, 0.96) 0%,
+    rgba(15, 15, 20, 0.94) 50%,
+    rgba(9, 9, 11, 0.96) 100%
+  ) !important;
+  background-color: #09090B !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #F8FAFC !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 34px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+html.dark header.navbar input,
+html.dark .navbar .navbar-dark-search,
+html[data-theme="dark"] header.navbar input,
+html[data-theme="dark"] .navbar .navbar-dark-search,
+.dark header.navbar input,
+.dark .navbar .navbar-dark-search,
+[data-theme="dark"] header.navbar input,
+[data-theme="dark"] .navbar .navbar-dark-search {
+  background: rgba(255, 255, 255, 0.045) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #F8FAFC !important;
+}
+
+html.dark header.navbar input::placeholder,
+html[data-theme="dark"] header.navbar input::placeholder,
+.dark header.navbar input::placeholder,
+[data-theme="dark"] header.navbar input::placeholder {
+  color: rgba(212, 212, 216, 0.58) !important;
+}
+
+html.dark header.navbar svg,
+html[data-theme="dark"] header.navbar svg,
+.dark header.navbar svg,
+[data-theme="dark"] header.navbar svg {
+  color: inherit;
+}
+

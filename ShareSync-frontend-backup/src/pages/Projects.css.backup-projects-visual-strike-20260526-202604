@@ -1,0 +1,57 @@
+/* Projects.css */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* SHARESYNC PROJECTS STYLES v4.1 - Ultra Clean Base                               */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.projects-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.main-content { flex: 1; }
+.projects-header { margin-bottom: 0.75rem; }
+
+/* ------------------------------------------------------------------ */
+/* Card Baseline Accessibilty                                         */
+/* ------------------------------------------------------------------ */
+.project-card {
+  position: relative;            
+  overflow: hidden;              
+  will-change: transform, box-shadow;
+}
+
+/* Visible keyboard focus for accessibility */
+.project-card:focus-visible,
+[data-shine]:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 4px;
+  border-radius: 16px; /* Updated to match new 2xl radius */
+}
+
+/* ------------------------------------------------------------------ */
+/* Micro utilities + loaders                                           */
+/* ------------------------------------------------------------------ */
+.loader {
+  border: 2px solid rgba(243,244,246,0.5);
+  border-top: 2px solid var(--purple-accent);
+  border-radius: 50%;
+  width: 6px; height: 6px;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { 0% { transform: rotate(0) } 100% { transform: rotate(360deg) } }
+
+.animate-pulse-slow { animation: pulse-slow 1s infinite; }
+@keyframes pulse-slow { 0% { transform: scale(1) } 50% { transform: scale(1.05) } 100% { transform: scale(1) } }
+
+.animate-fade-in { animation: fadeIn 0.2s ease-out; }
+@keyframes fadeIn { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: translateY(0); } }
+
+/* ✨ subtle linear "shine" sweep used elsewhere */
+@keyframes shine {
+  0%   { transform: translateX(-40%); opacity: 0.0; }
+  20%  { opacity: 1; }
+  100% { transform: translateX(180%); opacity: 0; }
+}
