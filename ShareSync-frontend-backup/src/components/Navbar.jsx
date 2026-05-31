@@ -394,6 +394,7 @@ export default function Navbar({
     const root = document.documentElement;
     const dataTheme = root.getAttribute("data-theme");
     const storedTheme =
+      window.localStorage.getItem("ss.theme") ||
       window.localStorage.getItem("theme") ||
       window.localStorage.getItem("openShareTheme") ||
       window.localStorage.getItem("sharesync-theme");
@@ -448,10 +449,23 @@ export default function Navbar({
 
     root.classList.toggle("dark", nextTheme === "dark");
     root.setAttribute("data-theme", nextTheme);
+
+    if (document.body) {
+      document.body.dataset.theme = nextTheme;
+      document.body.style.backgroundColor =
+        nextTheme === "dark" ? "#09090B" : "#F8FAFC";
+    }
+
+    // Keep the new Settings.jsx source of truth and older legacy keys synced.
+    window.localStorage.setItem("ss.theme", nextTheme);
     window.localStorage.setItem("theme", nextTheme);
+    window.localStorage.setItem("openShareTheme", nextTheme);
+    window.localStorage.setItem("sharesync-theme", nextTheme);
+
     setDetectedDarkMode(nextTheme === "dark");
 
     try {
+      window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new CustomEvent("theme:toggled", { detail: { theme: nextTheme } }));
     } catch {}
   };
