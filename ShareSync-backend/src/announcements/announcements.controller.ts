@@ -15,7 +15,9 @@ import { TextModerationInterceptor } from '../moderation/moderation.interceptor'
 
 import { AnnouncementsService } from './announcements.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { SkipThrottle } from '@nestjs/throttler';
 
+@SkipThrottle({ default: true, short: true, medium: true, long: true })
 @Controller('projects/:projectId/announcements')
 @UseGuards(JwtAuthGuard)
 export class AnnouncementsController {

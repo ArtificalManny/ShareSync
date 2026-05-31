@@ -296,7 +296,11 @@ export class AnnouncementsService {
     }
 
     const doc: any = ann as any;
-    const likedBy = Array.isArray(doc.likedBy) ? doc.likedBy : [];
+    const likedBy = Array.isArray((doc as any).likes)
+      ? [...(doc as any).likes]
+      : Array.isArray((doc as any).likedBy)
+        ? [...(doc as any).likedBy]
+        : [];
 
     const existingIndex = likedBy.findIndex(
       (entry: any) => this.normalizeId(entry) === userObjectId.toString(),
@@ -308,9 +312,9 @@ export class AnnouncementsService {
       likedBy.push(userObjectId);
     }
 
-    doc.likedBy = likedBy;
-    doc.likesCount = likedBy.length;
-    doc.likes = likedBy.length;
+    (doc as any).likedBy = likedBy;
+    (doc as any).likesCount = likedBy.length;
+    (doc as any).likes = likedBy;
 
     await ann.save();
     await ann.populate('authorId', this.userPopulateFields);
