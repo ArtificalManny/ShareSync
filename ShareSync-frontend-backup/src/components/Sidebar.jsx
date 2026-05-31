@@ -630,6 +630,32 @@ export default function Sidebar({ user }) {
           color: #ffffff !important;
         }
 
+
+        /* FIX: Sidebar wordmark follows manual app dark mode */
+        html.dark #app-sidebar .openshare-sidebar-wordmark,
+        html[data-theme="dark"] #app-sidebar .openshare-sidebar-wordmark,
+        [data-theme="dark"] #app-sidebar .openshare-sidebar-wordmark {
+          color: #f8fafc !important;
+          -webkit-text-fill-color: #f8fafc !important;
+          opacity: 1 !important;
+          font-size: 15px !important;
+          line-height: 1rem !important;
+          font-weight: 950 !important;
+          letter-spacing: -0.015em !important;
+          text-shadow:
+            0 0 1px rgba(255, 255, 255, 0.95),
+            0 0 16px rgba(139, 92, 246, 0.58),
+            0 2px 12px rgba(0, 0, 0, 0.65) !important;
+        }
+
+        html.dark #app-sidebar .sidebar-brand-zone,
+        html[data-theme="dark"] #app-sidebar .sidebar-brand-zone,
+        [data-theme="dark"] #app-sidebar .sidebar-brand-zone {
+          background:
+            radial-gradient(circle at 42% 35%, rgba(139, 92, 246, 0.16), transparent 44%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent) !important;
+        }
+
         @media (prefers-color-scheme: dark) {
           #app-sidebar {
             background:
@@ -720,7 +746,7 @@ export default function Sidebar({ user }) {
               monochrome={false}
             />
             {!collapsed && (
-              <span className="openshare-sidebar-wordmark text-sm font-extrabold text-slate-950 tracking-wide whitespace-nowrap animate-in fade-in duration-200">
+              <span className="openshare-sidebar-wordmark text-[15px] font-black text-slate-950 dark:text-white tracking-wide whitespace-nowrap animate-in fade-in duration-200">
                 OpenShare
               </span>
             )}
