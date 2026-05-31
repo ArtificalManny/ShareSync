@@ -82,6 +82,118 @@ function getId(item) {
   return item?._id || item?.id || '';
 }
 
+function unwrapAnnouncementPayload(payload) {
+  return (
+    payload?.data?.announcement ||
+    payload?.announcement ||
+    payload?.data?.data ||
+    payload?.data ||
+    payload?.item ||
+    payload
+  );
+}
+
+function getCurrentUserId(user) {
+  return String(
+    user?.userId ||
+    user?._id ||
+    user?.id ||
+    user?.sub ||
+    ''
+  );
+}
+
+function getLikeId(like) {
+  return String(
+    like?._id ||
+    like?.id ||
+    like?.userId?._id ||
+    like?.userId?.id ||
+    like?.userId ||
+    like?.user?._id ||
+    like?.user?.id ||
+    like?.authorId?._id ||
+    like?.authorId ||
+    like ||
+    ''
+  );
+}
+
+function getLikeValueForCurrentUser(user) {
+  return (
+    user?._id ||
+    user?.id ||
+    user?.userId ||
+    user?.sub ||
+    user
+  );
+}
+
+function normalizeAnnouncementLikeState(announcement, currentUser) {
+  const currentUserId = getCurrentUserId(currentUser);
+
+  const likesArray = Array.isArray(announcement?.likes)
+    ? announcement.likes
+    : Array.isArray(announcement?.likedBy)
+      ? announcement.likedBy
+      : [];
+
+  const hasLiked = currentUserId
+    ? likesArray.some((like) => getLikeId(like) === currentUserId)
+    : false;
+
+  const countFromLikesCount = Number(announcement?.likesCount);
+  const countFromNumericLikes = Number(announcement?.likes);
+
+  const likeCount = Number.isFinite(countFromLikesCount)
+    ? countFromLikesCount
+    : Number.isFinite(countFromNumericLikes)
+      ? countFromNumericLikes
+      : likesArray.length;
+
+  return {
+    ...announcement,
+    likes: likesArray,
+    likedBy: likesArray,
+    _clientHasLiked: hasLiked,
+    _clientLikeCount: Math.max(0, likeCount),
+  };
+}
+
+function setLocalAnnouncementLike(announcement, currentUser, shouldLike) {
+  const currentUserId = getCurrentUserId(currentUser);
+  const likes = Array.isArray(announcement?.likes) ? announcement.likes : [];
+  const alreadyLiked = currentUserId
+    ? likes.some((like) => getLikeId(like) === currentUserId)
+    : false;
+
+  let nextLikes = likes;
+
+  if (shouldLike && !alreadyLiked) {
+    nextLikes = [...likes, getLikeValueForCurrentUser(currentUser)];
+  }
+
+  if (!shouldLike && alreadyLiked) {
+    nextLikes = likes.filter((like) => getLikeId(like) !== currentUserId);
+  }
+
+  const currentCount =
+    Number.isFinite(Number(announcement?._clientLikeCount))
+      ? Number(announcement._clientLikeCount)
+      : likes.length;
+
+  const nextCount = shouldLike
+    ? Math.max(currentCount, likes.length) + (alreadyLiked ? 0 : 1)
+    : Math.max(0, currentCount - 1);
+
+  return {
+    ...announcement,
+    likes: nextLikes,
+    _clientHasLiked: shouldLike,
+    _clientLikeCount: nextCount,
+  };
+}
+
 // ─── Time Helper ────────────────────────────────────────────────────────────
 
 function timeAgo(ts) {
@@ -307,7 +419,7 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
   const [posting, setPosting] = useState(false);
   const inputRef = useRef(null);
   
-  const currentUserId = String(currentUser?.userId || currentUser?._id || currentUser?.id || currentUser?.sub || '');
+  const currentUserId = getCurrentUserId(currentUser);
 
   const comments = Array.isArray(item.comments) ? item.comments : [];
   const commentCount = comments.length;
@@ -427,21 +539,76 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
   const displayTitle = item.title || item.subject || item.name || 'Untitled Announcement';
   const displayMessage = item.message || item.content || item.text || item.description || '';
 
-  const likes = Array.isArray(item.likes) ? item.likes : [];
-  const likeCount = likes.length;
-  const hasLiked = likes.some(l => String(l?._id || l) === currentUserId);
+  const likes = Array.isArray(item.likes)
+    ? item.likes
+    : Array.isArray(item.likedBy)
+      ? item.likedBy
+      : [];
+  const serverHasLiked = likes.some((like) => getLikeId(like) === currentUserId);
+  const hasLiked =
+    typeof item._clientHasLiked === 'boolean'
+      ? item._clientHasLiked
+      : serverHasLiked;
+
+  const likeCount =
+    Number.isFinite(Number(item._clientLikeCount))
+      ? Number(item._clientLikeCount)
+      : Number.isFinite(Number(item.likesCount))
+        ? Number(item.likesCount)
+        : Number.isFinite(Number(item.likes))
+          ? Number(item.likes)
+          : likes.length;
   const commentCount = Array.isArray(item.comments) ? item.comments.length : 0;
   const engagementCount = likeCount + commentCount;
 
   const handleLike = async () => {
     if (liking) return;
+
+    const announcementId = getId(item);
+    if (!announcementId) {
+      toast({ title: 'Could not find announcement ID', variant: 'error' });
+      return;
+    }
+
+    if (!currentUserId) {
+      toast({ title: 'Please sign in to like announcements', variant: 'error' });
+      return;
+    }
+
+    const previous = item;
+    const nextLiked = !hasLiked;
+    const optimistic = setLocalAnnouncementLike(item, currentUser, nextLiked);
+
     setLiking(true);
+    onUpdate(optimistic);
 
     try {
-      const updated = await toggleLike(projectId, getId(item));
-      onUpdate(updated);
-    } catch {
-      toast({ title: 'Failed to like', variant: 'error' });
+      const response = await toggleLike(projectId, announcementId);
+      const updated = unwrapAnnouncementPayload(response);
+
+      if (updated && getId(updated)) {
+        const serverLikes = Array.isArray(updated.likes) ? updated.likes : [];
+
+        onUpdate({
+          ...updated,
+
+          // Keep the visual state aligned with the user's click.
+          // The backend response may return a stale likes array or a user-id shape
+          // that does not match the frontend's currentUserId check.
+          likes: nextLiked
+            ? serverLikes
+            : serverLikes.filter((like) => getLikeId(like) !== currentUserId),
+
+          _clientHasLiked: nextLiked,
+          _clientLikeCount: optimistic._clientLikeCount,
+        });
+      }
+    } catch (error) {
+      onUpdate(previous);
+      toast({
+        title: error?.response?.data?.message || error?.message || 'Failed to update like',
+        variant: 'error',
+      });
     } finally {
       setLiking(false);
     }
@@ -635,13 +802,20 @@ export default function AnnouncementsView({ projectId }) {
     setError(null);
     try {
       const data = await getAnnouncements(projectId);
-      if (mountedRef.current) setAnnouncements(Array.isArray(data) ? data : []);
+      if (mountedRef.current) {
+        const safeData = Array.isArray(data) ? data : [];
+        setAnnouncements(
+          safeData.map((announcement) =>
+            normalizeAnnouncementLikeState(announcement, user)
+          )
+        );
+      }
     } catch (e) {
       if (mountedRef.current) setError(e?.message || 'Failed to load');
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, user]);
 
   useEffect(() => { mountedRef.current = true; load(); return () => { mountedRef.current = false; }; }, [load]);
 
@@ -662,7 +836,7 @@ export default function AnnouncementsView({ projectId }) {
         attachments: created.attachments || attachmentUrls
       };
 
-      setAnnouncements(prev => [optimisticAnnouncement, ...prev]);
+      setAnnouncements(prev => [normalizeAnnouncementLikeState(optimisticAnnouncement, user), ...prev]);
       setTitle(''); setMessage(''); setType('info'); setPinned(false); setUploadedFiles([]); setShowCreate(false);
       toast({ title: 'Announcement posted!', variant: 'success' });
     } catch (e) {
@@ -683,10 +857,23 @@ export default function AnnouncementsView({ projectId }) {
     catch { toast({ title: 'Failed to delete', variant: 'error' }); }
   };
 
-  const handleUpdate = (updated) => {
+  const handleUpdate = (payload) => {
+    const updated = unwrapAnnouncementPayload(payload);
     if (!updated) return;
+
     const uid = getId(updated);
-    setAnnouncements(prev => prev.map(a => getId(a) === uid ? updated : a));
+    if (!uid) {
+      load();
+      return;
+    }
+
+    setAnnouncements((prev) =>
+      prev.map((announcement) =>
+        getId(announcement) === uid
+          ? normalizeAnnouncementLikeState({ ...announcement, ...updated }, user)
+          : announcement
+      )
+    );
   };
 
   const sorted = [...announcements].sort((a, b) => {
