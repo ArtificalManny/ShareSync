@@ -1,3 +1,13 @@
 node_modules/
 dist/
 .env.env*
+
+# Local environment secrets
+.env
+.env.*
+*.env
+*.env.*
+
+# Local one-off setup scripts
+set-mongodb-env.py
+reset-mongodb-uri-clean.py
