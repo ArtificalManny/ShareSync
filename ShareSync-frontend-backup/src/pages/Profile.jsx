@@ -71,7 +71,7 @@ import TrendCharts from "../components/growth/TrendCharts";
 
 // Growth Hook
 import { useGrowthTrack } from "../hooks/useGrowthTrack";
-import ProfileStrength from "../components/profile/ProfileStrength";
+import ProfileStrength from "../components/Profile/ProfileStrength";
 import { useAnalytics } from "../contexts/AnalyticsContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useSettings } from "../context/SettingsContext";
