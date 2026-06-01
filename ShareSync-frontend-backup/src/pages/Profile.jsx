@@ -345,7 +345,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10">
           <h2 className="text-xl font-semibold text-slate-800 dark:text-white">Edit Profile</h2>
-          <button data-profile-action="save-profile" data-profile-action="edit-profile"
+          <button data-profile-action="close-profile-editor"
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >

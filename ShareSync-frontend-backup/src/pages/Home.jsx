@@ -30,7 +30,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { Zap, Clock, TrendingUp, Flame, Rocket, X, Wifi, WifiOff } from "lucide-react";
 import "./Home.css";
 
-import { useRenovation } from "../context/RenovationCOntext";
+import { useRenovation } from "../context/RenovationContext";
 import TeamBalancePanel from "../components/home/TeamBalancePanel";
 import ProjectTelemetryPanel from "../components/home/ProjectTelemetryPanel";
 import MissionCard from "../components/home/MissionCard";
