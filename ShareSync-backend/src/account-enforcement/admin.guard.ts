@@ -21,8 +21,7 @@ export class AdminGuard implements CanActivate {
       user.isAdmin === true ||
       role === 'admin' ||
       roles.includes('admin') ||
-      roles.includes('founder') ||
-      roles.includes('owner');
+      roles.includes('founder');
 
     if (!isAdmin) {
       throw new ForbiddenException('Admin access required');
