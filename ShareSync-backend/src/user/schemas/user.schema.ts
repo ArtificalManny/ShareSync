@@ -7,6 +7,14 @@ type ThemeMode = 'light' | 'dark' | 'system';
 export type DigestFrequency = 'daily' | 'weekly' | 'off';
 export type NotificationChannel = 'email' | 'sms' | 'inApp';
 
+export type AccountStatus =
+  | 'active'
+  | 'warned'
+  | 'suspended'
+  | 'disabled'
+  | 'banned';
+
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⭐ PHASE 1 FIX: Added toJSON/toObject with virtuals: true
 //    so the virtual 'name' getter (firstName + lastName) is included
@@ -89,6 +97,50 @@ export class User extends Document {
 
   @Prop({ default: false })
   publicProfile?: boolean;
+
+  // ============================================
+  // ACCOUNT ENFORCEMENT / MODERATION STATUS
+  // ============================================
+  @Prop({
+    type: String,
+    enum: ['active', 'warned', 'suspended', 'disabled', 'banned'],
+    default: 'active',
+    index: true,
+  })
+  accountStatus?: AccountStatus;
+
+  @Prop()
+  accountStatusReason?: string;
+
+  @Prop()
+  accountStatusNote?: string;
+
+  @Prop()
+  accountStatusChangedAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  accountStatusChangedBy?: Types.ObjectId;
+
+  @Prop()
+  suspendedUntil?: Date;
+
+  @Prop({
+    type: [
+      {
+        reason: { type: String, default: '' },
+        note: { type: String, default: '' },
+        issuedAt: { type: Date, default: Date.now },
+        issuedBy: { type: Types.ObjectId, ref: 'User' },
+      },
+    ],
+    default: [],
+  })
+  warnings?: Array<{
+    reason?: string;
+    note?: string;
+    issuedAt?: Date;
+    issuedBy?: Types.ObjectId;
+  }>;
 
   // ============================================
   // PREFERENCES (NEW, but non-breaking)

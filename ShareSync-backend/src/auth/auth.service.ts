@@ -4,7 +4,7 @@
 // ⚠️ EMAIL SENDING IS STUBBED — Codes are logged to console for testing
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
@@ -38,6 +38,8 @@ export class AuthService {
 
     if (!user) return null;
 
+    this.enforceAccountAllowed(user);
+
     return user;
   }
 
@@ -69,6 +71,8 @@ export class AuthService {
     }
 
     if (!ok) throw new UnauthorizedException('Invalid credentials');
+
+    this.enforceAccountAllowed(user);
 
     const { password: _pw, ...safe } = user as any;
     return safe;
@@ -139,6 +143,7 @@ export class AuthService {
         achievements: user.achievements || [],
         badges: user.badges || [],
         roles: user.roles || [],
+        accountStatus: user.accountStatus || 'active',
       },
     };
   }
@@ -230,6 +235,8 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('Invalid user');
     }
+
+    this.enforceAccountAllowed(user);
 
     if (user.isEmailVerified) {  // ⭐ Using existing field name
       throw new BadRequestException('Email already verified');
@@ -449,6 +456,7 @@ export class AuthService {
     let user = await this.userModel.findOne({ googleId: profile.googleId }).lean();
 
     if (user) {
+      this.enforceAccountAllowed(user);
       console.log('🟢 GOOGLE AUTH: Existing Google-linked user found:', user.email);
       const { password: _pw, ...safe } = user as any;
       return safe;
@@ -460,6 +468,7 @@ export class AuthService {
       .lean();
 
     if (user) {
+      this.enforceAccountAllowed(user);
       console.log('🟡 GOOGLE AUTH: Existing email user found, linking Google account');
       await this.userModel.findByIdAndUpdate(user._id, {
         googleId: profile.googleId,
@@ -519,6 +528,36 @@ export class AuthService {
   // ═══════════════════════════════════════════════════════════════════════════
   // HELPER METHODS
   // ═══════════════════════════════════════════════════════════════════════════
+
+  private enforceAccountAllowed(user: any): void {
+    const status = String(user?.accountStatus || 'active').toLowerCase();
+
+    if (!['suspended', 'disabled', 'banned'].includes(status)) {
+      return;
+    }
+
+    if (status === 'suspended') {
+      const until = user?.suspendedUntil ? new Date(user.suspendedUntil) : null;
+      const hasValidUntil =
+        until instanceof Date && Number.isFinite(until.getTime());
+
+      if (hasValidUntil && until.getTime() <= Date.now()) {
+        return;
+      }
+
+      throw new ForbiddenException(
+        hasValidUntil
+          ? `Account suspended until ${until.toISOString()}`
+          : 'Account suspended',
+      );
+    }
+
+    if (status === 'disabled') {
+      throw new ForbiddenException('Account disabled');
+    }
+
+    throw new ForbiddenException('Account banned');
+  }
 
   private async generateToken(
     user: UserDocument,
