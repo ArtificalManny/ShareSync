@@ -39,36 +39,67 @@ async function bootstrap() {
 
   const isProd = process.env.NODE_ENV === 'production';
 
-  const corsOrigins = configService.get<string>(
-    'CORS_ORIGINS',
-    'http://localhost:3000,http://localhost:5173,http://localhost:54693',
-  );
+  const normalizeOrigin = (value?: string | null) =>
+    value ? value.trim().replace(/\\/+$/, '') : '';
 
-  const allowedList = corsOrigins
+  const defaultCorsOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:54693',
+    'https://openshare-frontend.onrender.com',
+    'https://openshare.ca',
+    'https://www.openshare.ca',
+  ];
+
+  const configuredCorsOrigins =
+    configService.get<string>('CORS_ORIGINS') ||
+    process.env.CORS_ORIGINS ||
+    defaultCorsOrigins.join(',');
+
+  const allowedList = configuredCorsOrigins
     .split(',')
-    .map((s) => s.trim())
+    .map(normalizeOrigin)
     .filter(Boolean);
+
+  logger.log(`CORS allowed origins: ${allowedList.join(', ')}`);
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
+      const normalizedOrigin = normalizeOrigin(origin);
 
-      if (!isProd) {
-        const isLocalhost =
-          /^http:\/\/localhost:\d+$/.test(origin) ||
-          /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
-
-        if (isLocalhost) return callback(null, true);
+      if (!normalizedOrigin) {
+        return callback(null, true);
       }
 
-      if (allowedList.includes(origin)) return callback(null, true);
+      const isLocalhost =
+        /^http:\\/\\/localhost:\\d+$/.test(normalizedOrigin) ||
+        /^http:\\/\\/127\\.0\\.0\\.1:\\d+$/.test(normalizedOrigin);
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+      if (!isProd && isLocalhost) {
+        return callback(null, true);
+      }
+
+      if (allowedList.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      logger.warn(`CORS blocked for origin: ${normalizedOrigin}`);
+
+      // Important: do not throw here. Throwing causes Render preflight requests to return HTTP 500.
+      return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
     credentials: true,
     maxAge: 86400,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   app.use(compression());
