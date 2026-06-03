@@ -1,4 +1,3 @@
-//Users/realmannyrivas/Documents/OpenShare/OpenShare-frontend-backup/src/components/layout/PageHeader.jsx
 import React from "react";
 
 /**
