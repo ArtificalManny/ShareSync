@@ -92,9 +92,11 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 import { ModerationModule } from './moderation/moderation.module';
 import { ContentReportsModule } from './content-reports/content-reports.module';
+import { AccountEnforcementModule } from './account-enforcement/account-enforcement.module';
 
 @Module({
   imports: [
+    AccountEnforcementModule,
     // ─────────────────────────────────────────────────────────────────────────
     // GLOBAL CONFIGURATION
     // ─────────────────────────────────────────────────────────────────────────
