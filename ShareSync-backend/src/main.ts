@@ -40,7 +40,7 @@ async function bootstrap() {
   const isProd = process.env.NODE_ENV === 'production';
 
   const normalizeOrigin = (value?: string | null) =>
-    value ? value.trim().replace(/\\/+$/, '') : '';
+    value ? value.trim().replace(/\/+$/, '') : '';
 
   const defaultCorsOrigins = [
     'http://localhost:3000',
@@ -72,8 +72,8 @@ async function bootstrap() {
       }
 
       const isLocalhost =
-        /^http:\\/\\/localhost:\\d+$/.test(normalizedOrigin) ||
-        /^http:\\/\\/127\\.0\\.0\\.1:\\d+$/.test(normalizedOrigin);
+        /^http:\/\/localhost:\d+$/.test(normalizedOrigin) ||
+        /^http:\/\/127\.0\.0\.1:\d+$/.test(normalizedOrigin);
 
       if (!isProd && isLocalhost) {
         return callback(null, true);
