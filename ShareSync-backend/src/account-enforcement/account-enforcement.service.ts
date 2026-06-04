@@ -44,7 +44,7 @@ export class AccountEnforcementService {
 
     this.validateStatusPayload(status, dto.suspendedUntil);
 
-    const update: any = {
+    const setFields: any = {
       accountStatus: status,
       accountStatusReason: reason,
       accountStatusNote: internalNote,
@@ -52,12 +52,18 @@ export class AccountEnforcementService {
       accountStatusChangedBy: changedBy,
     };
 
-    if (status === AccountStatusDto.SUSPENDED) {
-      update.suspendedUntil = dto.suspendedUntil
-        ? new Date(dto.suspendedUntil)
-        : undefined;
+    const update: any = {
+      $set: setFields,
+    };
+
+    if (status === AccountStatusDto.SUSPENDED && dto.suspendedUntil) {
+      setFields.suspendedUntil = new Date(dto.suspendedUntil);
     } else {
-      update.suspendedUntil = undefined;
+      // Clean stale suspension metadata whenever the user is restored,
+      // warned, disabled, banned, or suspended without an end date.
+      update.$unset = {
+        suspendedUntil: '',
+      };
     }
 
     if (status === AccountStatusDto.WARNED) {
