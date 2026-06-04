@@ -141,6 +141,7 @@ const Projects = lazy(() => import("./pages/Projects"));
 const ProjectsCreate = lazy(() => import("./pages/ProjectsCreate"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
+const AccountStatus = lazy(() => import("./pages/AccountStatus"));
 const ProjectHome = lazy(() => import("./pages/ProjectHome"));
 const DMPage = lazy(() => import("./pages/DMPage.jsx"));
 const Messages = lazy(() => import("./pages/Messages.jsx"));
@@ -151,6 +152,7 @@ const Discover = lazy(() => import("./pages/Discover.jsx"));
 const AdminModerationProjects = lazy(() =>
   import("./pages/admin/AdminModerationProjects.jsx")
 );
+const AdminAccountEnforcement = lazy(() => import("./pages/admin/AdminAccountEnforcement.jsx"));
 const PulseAdmin = lazy(() => import("./pages/admin/PulseAdmin.jsx"));
 const Analytics = lazy(() => import("./pages/Analytics.jsx"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
@@ -534,6 +536,7 @@ function AppRoutes() {
       "/forgot-password",
       "/landing",
       "/onboarding",
+      "/account-status",
     ].includes(location.pathname) ||
     location.pathname.startsWith("/reset-password/");
   const showAppChrome = authUser && !isAuthPage;
@@ -644,6 +647,7 @@ function AppRoutes() {
                   </PublicOnlyRoute>
                 }
               />
+              <Route path="/account-status" element={<AccountStatus />} />
               <Route
                 path="/onboarding"
                 element={
@@ -803,6 +807,14 @@ function AppRoutes() {
                 element={
                   <ProtectedRoute>
                     <Discover />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/account-enforcement"
+                element={
+                  <ProtectedRoute>
+                    <AdminAccountEnforcement />
                   </ProtectedRoute>
                 }
               />
