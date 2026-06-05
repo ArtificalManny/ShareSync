@@ -46,14 +46,14 @@ export default function QuickNotesDrawer({
     <>
       {open && (
         <div
-          className="fixed inset-0 z-[70] bg-slate-950/35 backdrop-blur-[1px] dark:bg-black/55"
+          className="fixed inset-0 z-[9990] bg-slate-950/35 backdrop-blur-[1px] dark:bg-black/55"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`quick-notes-drawer fixed top-0 right-0 z-[80] flex h-screen w-[380px] max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 dark:border-white/10 dark:bg-[#0F172A] ${
+        className={`quick-notes-drawer fixed top-0 right-0 z-[9999] flex h-screen w-[380px] max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 dark:border-white/10 dark:bg-[#0F172A] ${
           open ? "translate-x-0" : "translate-x-full pointer-events-none"
         }`}
         role="dialog"
