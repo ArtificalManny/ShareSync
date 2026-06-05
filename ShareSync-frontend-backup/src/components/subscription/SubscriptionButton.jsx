@@ -489,14 +489,19 @@ export default function SubscriptionButton() {
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <span className="block text-sm font-bold text-slate-800 dark:text-white">
-                      {planLabel} Plan
-                    </span>
+                  <div className="min-w-0 max-w-[215px] rounded-2xl border border-violet-100 bg-white/95 px-3 py-2 shadow-sm ring-1 ring-white/70 dark:border-violet-400/25 dark:bg-[#0b1020]/95 dark:ring-violet-300/10">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-sm font-black text-slate-950 dark:text-white">
+                        {planLabel} Plan
+                      </span>
 
-                    <span className="block text-[10px] font-medium text-slate-400 dark:text-zinc-500">
-                      {refreshAgeLabel}
-                    </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[9px] font-black text-violet-700 dark:border-violet-400/25 dark:bg-violet-400/10 dark:text-violet-200">
+                        <RefreshCw className={`h-2.5 w-2.5 ${loading ? 'animate-spin' : ''}`} />
+                        <span className="max-w-[92px] truncate">
+                          {refreshAgeLabel}
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
