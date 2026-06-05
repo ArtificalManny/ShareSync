@@ -526,7 +526,7 @@ export default function SubscriptionButton() {
                       setShowDropdown(false);
                       setShowModal(true);
                     }}
-                    className="inline-flex h-7 shrink-0 items-center rounded-lg px-2.5 text-[11px] font-black text-violet-700 transition-colors hover:bg-violet-50 hover:text-violet-800 dark:text-violet-300 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
+                    className="inline-flex h-7 shrink-0 items-center mr-2 rounded-lg px-2.5 text-[11px] font-black text-violet-700 transition-colors hover:bg-violet-50 hover:text-violet-800 dark:text-violet-300 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
                   >
                     Upgrade
                   </button>
