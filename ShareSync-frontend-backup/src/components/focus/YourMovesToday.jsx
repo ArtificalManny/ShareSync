@@ -20,6 +20,64 @@ function toFiniteNumber(value, fallback = 0) {
   return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
+function MovesMomentumGlyph({ urgent = false }) {
+  return (
+    <div
+      className={`group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] shadow-[0_18px_45px_rgba(124,58,237,0.20)] ring-1 ring-white/80 dark:ring-white/10 ${
+        urgent
+          ? 'bg-[conic-gradient(from_155deg,#f59e0b,#fb7185,#8b5cf6,#f59e0b)]'
+          : 'bg-[conic-gradient(from_155deg,#14b8a6,#38bdf8,#8b5cf6,#14b8a6)]'
+      }`}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-[2px] rounded-[1.18rem] bg-white/94 dark:bg-[#08111f]/94" />
+      <div
+        className={`absolute inset-0 opacity-70 blur-xl ${
+          urgent ? 'bg-amber-300/45' : 'bg-cyan-300/45'
+        }`}
+      />
+
+      <svg
+        viewBox="0 0 48 48"
+        className="relative z-10 h-8 w-8 transition-transform duration-300 group-hover:scale-110"
+        fill="none"
+      >
+        <path
+          d="M15 31C18.5 20.5 27.2 17.8 34 13"
+          stroke={urgent ? '#f59e0b' : '#14b8a6'}
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M15 31C21.8 30.4 28.5 28.1 36 21"
+          stroke={urgent ? '#fb7185' : '#8b5cf6'}
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          opacity="0.75"
+        />
+        <circle cx="14" cy="32" r="4.2" fill={urgent ? '#f59e0b' : '#14b8a6'} />
+        <circle cx="24" cy="23" r="3.4" fill={urgent ? '#fb7185' : '#38bdf8'} />
+        <circle cx="35" cy="14" r="4.2" fill="#8b5cf6" />
+        <path
+          d="M32.9 14.1L34.3 15.5L37.2 12.3"
+          stroke="white"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+
+      <span className="absolute right-1.5 top-1.5 z-20 h-2.5 w-2.5 rounded-full bg-white shadow-sm">
+        <span
+          className={`block h-full w-full rounded-full ${
+            urgent ? 'bg-amber-500' : 'bg-emerald-400'
+          }`}
+        />
+      </span>
+    </div>
+  );
+}
+
 export default function YourMovesToday({
   variant = 'default',
   maxMoves = 3,
@@ -101,19 +159,7 @@ export default function YourMovesToday({
       {showHeader && (
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div
-              className={`p-2.5 rounded-xl shadow-sm ${
-                hasUrgentMoves
-                  ? 'bg-amber-50 dark:bg-amber-500/10'
-                  : 'bg-slate-50 dark:bg-white/5'
-              }`}
-            >
-              {hasUrgentMoves ? (
-                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
-              ) : (
-                <Target className="w-5 h-5 text-[var(--theme-accent-primary)]" />
-              )}
-            </div>
+            <MovesMomentumGlyph urgent={hasUrgentMoves} />
 
             <div>
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
