@@ -1,7 +1,6 @@
 // src/components/home/IntelligencePanel.jsx
 import React, { useState, useEffect } from "react";
 import {
-  Activity,
   AlertCircle,
   CheckCircle2,
   ChevronRight,
@@ -227,6 +226,80 @@ function CoWorkingBoost({ multiplier = 2.1, isActive = true }) {
   );
 }
 
+function IntelligenceCoreGlyph({ active = false }) {
+  return (
+    <div
+      className={`
+        group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden
+        rounded-2xl shadow-[0_14px_36px_rgba(139,92,246,0.22)]
+        ring-1 ring-white/80 dark:ring-white/10
+        ${
+          active
+            ? "bg-[conic-gradient(from_160deg,#8b5cf6,#ec4899,#22d3ee,#14b8a6,#8b5cf6)]"
+            : "bg-[conic-gradient(from_160deg,#8b5cf6,#38bdf8,#64748b,#8b5cf6)]"
+        }
+      `}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-[2px] rounded-[0.9rem] bg-white/95 dark:bg-[#08111f]/95" />
+
+      <div
+        className={`
+          absolute inset-0 opacity-75 blur-xl
+          ${active ? "bg-fuchsia-300/35" : "bg-violet-300/35"}
+        `}
+      />
+
+      <svg
+        viewBox="0 0 48 48"
+        className="relative z-10 h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+        fill="none"
+      >
+        <path
+          d="M24 8L37.5 15.8V31.4L24 39.2L10.5 31.4V15.8L24 8Z"
+          fill="white"
+          fillOpacity="0.62"
+          stroke={active ? "#ec4899" : "#8b5cf6"}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+
+        <path
+          d="M24 14V24M16.5 18.5L24 24L31.5 18.5M16.5 29.5L24 24L31.5 29.5"
+          stroke={active ? "#8b5cf6" : "#38bdf8"}
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        <circle cx="24" cy="24" r="4.4" fill={active ? "#8b5cf6" : "#14b8a6"} />
+        <circle cx="24" cy="14" r="2.4" fill="#38bdf8" />
+        <circle cx="16.5" cy="18.5" r="2.4" fill="#8b5cf6" />
+        <circle cx="31.5" cy="18.5" r="2.4" fill={active ? "#ec4899" : "#8b5cf6"} />
+        <circle cx="16.5" cy="29.5" r="2.4" fill="#14b8a6" />
+        <circle cx="31.5" cy="29.5" r="2.4" fill="#38bdf8" />
+
+        <path
+          d="M22.4 24.1L23.6 25.3L26.2 22.3"
+          stroke="white"
+          strokeWidth="1.45"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+
+      <span className="absolute right-1.5 top-1.5 z-20 h-2 w-2 rounded-full bg-white shadow-sm">
+        <span
+          className={`
+            block h-full w-full rounded-full
+            ${active ? "bg-fuchsia-400" : "bg-emerald-400"}
+          `}
+        />
+      </span>
+    </div>
+  );
+}
+
 export default function IntelligencePanel({
   workload = null,
   workloadLoading = false,
@@ -276,8 +349,8 @@ export default function IntelligencePanel({
 
   return (
     <div className="p-6 rounded-2xl bg-white dark:bg-[#1f1f23] border border-slate-200/80 dark:border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-      <div className="flex items-center gap-2 mb-6">
-        <Activity className="w-4 h-4 text-violet-500" />
+      <div className="flex items-center gap-3 mb-6">
+        <IntelligenceCoreGlyph active={!workloadLoading && !workloadError} />
 
         <h2 className="text-sm font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-widest">
           Intelligence
