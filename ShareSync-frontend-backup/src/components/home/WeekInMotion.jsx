@@ -44,6 +44,132 @@ function safeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function WeekCalendarGlyph({ momentum = "idle" }) {
+  const isActive =
+    momentum === "rising" ||
+    momentum === "building" ||
+    momentum === "steady";
+
+  const cells = [0, 1, 2, 3, 4, 5, 6];
+
+  return (
+    <div
+      className={`
+        group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden
+        rounded-[1.35rem] shadow-[0_18px_45px_rgba(20,184,166,0.20)]
+        ring-1 ring-white/80 dark:ring-white/10
+        ${
+          isActive
+            ? "bg-[conic-gradient(from_180deg,#0f766e,#22d3ee,#8b5cf6,#0f766e)]"
+            : "bg-[conic-gradient(from_180deg,#64748b,#8b5cf6,#22d3ee,#64748b)]"
+        }
+      `}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-[2px] rounded-[1.18rem] bg-white/95 dark:bg-[#08111f]/95" />
+
+      <div
+        className={`
+          absolute inset-0 opacity-75 blur-xl
+          ${isActive ? "bg-teal-300/40" : "bg-violet-300/35"}
+        `}
+      />
+
+      <svg
+        viewBox="0 0 48 48"
+        className="relative z-10 h-8 w-8 transition-transform duration-300 group-hover:scale-110"
+        fill="none"
+      >
+        <rect
+          x="10"
+          y="11"
+          width="28"
+          height="27"
+          rx="7"
+          fill="white"
+          fillOpacity="0.72"
+          stroke={isActive ? "#14b8a6" : "#8b5cf6"}
+          strokeWidth="2"
+        />
+
+        <path
+          d="M16 9.5V15M32 9.5V15"
+          stroke={isActive ? "#0f766e" : "#7c3aed"}
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+
+        <path
+          d="M15 21H33"
+          stroke="#94a3b8"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          opacity="0.75"
+        />
+
+        <path
+          d="M16 31C18.5 27.5 21 29.5 23.5 25.5C26.2 21.2 30.5 24.5 33 20"
+          stroke={isActive ? "#14b8a6" : "#38bdf8"}
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {cells.map((cell) => {
+          const x = 14 + cell * 3.35;
+          const isMiddle = cell === 3;
+          const isWeekend = cell >= 5;
+
+          return (
+            <rect
+              key={cell}
+              x={x}
+              y={isMiddle ? 33 : 34}
+              width="2.1"
+              height={isMiddle ? 4.2 : 3}
+              rx="1"
+              fill={
+                isMiddle
+                  ? "#8b5cf6"
+                  : isWeekend
+                    ? "#38bdf8"
+                    : isActive
+                      ? "#14b8a6"
+                      : "#94a3b8"
+              }
+              opacity={cell === 0 || cell === 6 ? 0.72 : 1}
+            />
+          );
+        })}
+
+        <circle
+          cx="34.5"
+          cy="14"
+          r="3.5"
+          fill={isActive ? "#22c55e" : "#8b5cf6"}
+        />
+
+        <path
+          d="M32.9 14.1L34.1 15.3L36.5 12.5"
+          stroke="white"
+          strokeWidth="1.45"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+
+      <span className="absolute right-1.5 top-1.5 z-20 h-2.5 w-2.5 rounded-full bg-white shadow-sm">
+        <span
+          className={`
+            block h-full w-full rounded-full
+            ${isActive ? "bg-emerald-400" : "bg-violet-400"}
+          `}
+        />
+      </span>
+    </div>
+  );
+}
+
 function firstNumber(...values) {
   for (const value of values) {
     const parsed = Number(value);
@@ -744,10 +870,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
 
       <div className="relative mb-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 via-white to-cyan-100 text-violet-700 shadow-[0_12px_30px_rgba(139,92,246,0.18)] ring-1 ring-white/70 dark:from-violet-500/20 dark:via-white/8 dark:to-cyan-400/15 dark:text-violet-100 dark:ring-white/10">
-            <Zap className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.9)]" />
-          </div>
+          <WeekCalendarGlyph momentum={displayData.momentum} />
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
