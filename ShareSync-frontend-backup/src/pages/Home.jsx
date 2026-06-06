@@ -133,10 +133,107 @@ const StatCard = ({
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
+   SUGGESTED MISSIONS GLYPH - discovery/radar visual
+─────────────────────────────────────────────────────────────────────────── */
+const SuggestedMissionsGlyph = ({ active = false }) => {
+  return (
+    <div
+      className={`
+        group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden
+        rounded-2xl shadow-[0_14px_36px_rgba(20,184,166,0.18)]
+        ring-1 ring-white/80 dark:ring-white/10
+        ${
+          active
+            ? "bg-[conic-gradient(from_135deg,#f97316,#ec4899,#8b5cf6,#14b8a6,#f97316)]"
+            : "bg-[conic-gradient(from_135deg,#14b8a6,#38bdf8,#8b5cf6,#14b8a6)]"
+        }
+      `}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-[2px] rounded-[0.9rem] bg-white/95 dark:bg-[#08111f]/95" />
+      <div
+        className={`
+          absolute inset-0 opacity-70 blur-xl
+          ${active ? "bg-orange-300/35" : "bg-cyan-300/35"}
+        `}
+      />
+
+      <svg
+        viewBox="0 0 48 48"
+        className="relative z-10 h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+        fill="none"
+      >
+        <circle
+          cx="24"
+          cy="24"
+          r="13"
+          stroke={active ? "#f97316" : "#14b8a6"}
+          strokeWidth="2.2"
+          strokeDasharray="3 4"
+          opacity="0.78"
+        />
+
+        <circle
+          cx="24"
+          cy="24"
+          r="6.5"
+          fill={active ? "#f97316" : "#8b5cf6"}
+          fillOpacity="0.12"
+          stroke={active ? "#ec4899" : "#8b5cf6"}
+          strokeWidth="2"
+        />
+
+        <path
+          d="M24 9V14M24 34V39M9 24H14M34 24H39"
+          stroke="#94a3b8"
+          strokeWidth="2"
+          strokeLinecap="round"
+          opacity="0.85"
+        />
+
+        <path
+          d="M24 24L34 16"
+          stroke={active ? "#ec4899" : "#38bdf8"}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+
+        <circle
+          cx="34"
+          cy="16"
+          r="4.2"
+          fill={active ? "#ec4899" : "#14b8a6"}
+        />
+
+        <path
+          d="M32.1 16.1L33.4 17.3L36.2 14.2"
+          stroke="white"
+          strokeWidth="1.55"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        <circle cx="24" cy="24" r="2.4" fill="#8b5cf6" />
+      </svg>
+
+      <span className="absolute right-1.5 top-1.5 z-20 h-2 w-2 rounded-full bg-white shadow-sm">
+        <span
+          className={`
+            block h-full w-full rounded-full
+            ${active ? "bg-orange-400" : "bg-emerald-400"}
+          `}
+        />
+      </span>
+    </div>
+  );
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
    SECTION HEADER - Light theme
 ─────────────────────────────────────────────────────────────────────────── */
 const SectionHeader = ({
   icon: Icon,
+  iconNode = null,
   iconColor = "text-violet-600 dark:text-violet-400",
   title,
   action,
@@ -155,7 +252,11 @@ const SectionHeader = ({
   return (
     <div className="flex justify-between items-center mb-6">
       <div className="flex items-center gap-2">
-        <Icon className={`w-4 h-4 ${isFireMode ? "text-orange-500" : iconColor}`} />
+        {iconNode ? (
+          iconNode
+        ) : Icon ? (
+          <Icon className={`w-4 h-4 ${isFireMode ? "text-orange-500" : iconColor}`} />
+        ) : null}
         <h2 className="text-sm font-medium text-slate-600 dark:text-zinc-300">{title}</h2>
         {showMomentum && isFireMode && (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 animate-pulse">
@@ -580,7 +681,7 @@ export default function Home() {
             data-momentum={glowLevel}
           >
             <SectionHeader
-              icon={Zap}
+              iconNode={<SuggestedMissionsGlyph active={isFireMode || glowLevel >= 3} />}
               title="Suggested Projects & Missions"
               action="Refresh"
               onAction={() => refreshAll?.()}
