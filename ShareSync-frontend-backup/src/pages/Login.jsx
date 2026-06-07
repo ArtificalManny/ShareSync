@@ -14,6 +14,20 @@ import { useAuth } from "../context/AuthContext";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
+function getGoogleOAuthUrl() {
+  const rawBase = import.meta.env.VITE_API_URL || "http://localhost:5050/api";
+  const base = String(rawBase).replace(/\/+$/, "");
+
+  // Supports both:
+  // VITE_API_URL=http://localhost:5050
+  // VITE_API_URL=http://localhost:5050/api
+  if (base.endsWith("/api")) {
+    return `${base}/auth/google`;
+  }
+
+  return `${base}/api/auth/google`;
+}
+
 export default function Login() {
   useDocumentTitle("OpenShare");
   const navigate = useNavigate();
@@ -73,7 +87,7 @@ export default function Login() {
         <button
           type="button"
           onClick={() => {
-            window.location.href = 'http://localhost:5050/api/auth/google';
+            window.location.href = getGoogleOAuthUrl();
           }}
           className="
             btn-outline
