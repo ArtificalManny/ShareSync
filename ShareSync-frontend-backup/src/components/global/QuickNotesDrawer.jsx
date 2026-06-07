@@ -46,21 +46,21 @@ export default function QuickNotesDrawer({
     <>
       {open && (
         <div
-          className="fixed inset-0 z-[70] bg-slate-950/35 backdrop-blur-[1px] dark:bg-black/55"
+          className="fixed inset-0 z-[9990] bg-slate-950/35 backdrop-blur-[1px] dark:bg-black/55"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`quick-notes-drawer fixed top-0 right-0 z-[80] flex h-screen w-[380px] max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 dark:border-white/10 dark:bg-[#0F172A] ${
-          open ? "translate-x-0" : "translate-x-full pointer-events-none"
+        className={`quick-notes-drawer fixed right-0 top-0 z-[9999] flex h-screen w-[380px] max-w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 dark:border-white/10 dark:bg-[#0F172A] ${
+          open ? "translate-x-0" : "pointer-events-none translate-x-full"
         }`}
         role="dialog"
         aria-modal="true"
         aria-label="Quick Notes"
       >
-        <div className="quick-notes-header flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white/10">
+        <div className="quick-notes-header sticky top-0 z-[10000] flex shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[#0F172A]/95">
           <div>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Quick Notes
@@ -73,12 +73,13 @@ export default function QuickNotesDrawer({
           <div className="flex items-center gap-2">
             <button
               onClick={handleNew}
-              className="inline-flex items-center justify-center rounded-lg bg-violet-600 p-2 text-white transition-colors hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-[#0F172A]"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-[#0F172A]"
               title="New note"
               aria-label="New note"
               type="button"
             >
               <Plus className="h-4 w-4" />
+              <span>New</span>
             </button>
 
             <button
@@ -138,7 +139,7 @@ export default function QuickNotesDrawer({
                         </div>
 
                         {note.pinned ? (
-                          <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-70 text-violet-600 dark:text-violet-300" />
+                          <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600 opacity-70 dark:text-violet-300" />
                         ) : null}
                       </button>
                     </li>
