@@ -79,6 +79,7 @@ function formatBytes(bytes) {
   return `${Math.round(mb)}MB`;
 }
 
+
 function getStorageBytesFromUsage(usage = {}) {
   const explicitBytes = usage.storageBytes ?? usage.storageUsedBytes;
 
@@ -130,7 +131,7 @@ function UsageBar({ value, max, color = 'bg-violet-500', premium = false }) {
       : color;
 
   return (
-    <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.06]">
+    <div className="h-1 w-full bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
       <div
         className={`h-full rounded-full transition-all duration-500 ${barColor}`}
         style={{ width: `${pct}%` }}
@@ -155,16 +156,15 @@ function UsageRow({
 
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
           <Icon
-            className={`h-3.5 w-3.5 ${
+            className={`w-3.5 h-3.5 ${
               premium
                 ? 'text-amber-500 dark:text-amber-300'
                 : 'text-slate-400 dark:text-zinc-500'
             }`}
           />
-
           <span className="text-xs font-medium text-slate-600 dark:text-zinc-300">
             {label}
           </span>
@@ -193,160 +193,6 @@ function FeaturePill({ children }) {
   return (
     <span className="openshare-feature-pill inline-flex items-center rounded-full border border-amber-200 bg-white/70 px-2 py-1 text-[10px] font-bold text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
       {children}
-    </span>
-  );
-}
-
-function FreePlanOrbitGlyph() {
-  return (
-    <div
-      className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[conic-gradient(from_155deg,#8b5cf6,#38bdf8,#14b8a6,#8b5cf6)] p-[1.5px] shadow-[0_14px_34px_rgba(139,92,246,0.22)]"
-      aria-hidden="true"
-    >
-      <div className="absolute inset-[1.5px] rounded-[0.65rem] bg-white/95 dark:bg-[#0b1020]/95" />
-
-      <div className="absolute inset-0 bg-cyan-300/35 opacity-70 blur-xl" />
-
-      <svg
-        viewBox="0 0 48 48"
-        className="relative z-10 h-6 w-6"
-        fill="none"
-      >
-        <circle
-          cx="24"
-          cy="24"
-          r="12.5"
-          stroke="#8b5cf6"
-          strokeWidth="2"
-          strokeDasharray="3 4"
-          opacity="0.9"
-        />
-
-        <ellipse
-          cx="24"
-          cy="24"
-          rx="17"
-          ry="7.5"
-          stroke="#38bdf8"
-          strokeWidth="1.9"
-          opacity="0.8"
-          transform="rotate(-28 24 24)"
-        />
-
-        <ellipse
-          cx="24"
-          cy="24"
-          rx="7.5"
-          ry="17"
-          stroke="#14b8a6"
-          strokeWidth="1.9"
-          opacity="0.75"
-          transform="rotate(-28 24 24)"
-        />
-
-        <circle
-          cx="24"
-          cy="24"
-          r="4"
-          fill="#8b5cf6"
-        />
-
-        <circle
-          cx="35"
-          cy="15"
-          r="3.5"
-          fill="#38bdf8"
-        />
-
-        <path
-          d="M33.3 15.1L34.5 16.3L37 13.4"
-          stroke="white"
-          strokeWidth="1.35"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        <path
-          d="M14 34L18 30M30 18L34 14"
-          stroke="#14b8a6"
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.85"
-        />
-      </svg>
-    </div>
-  );
-}
-
-
-function FreePlanOrbitGlyphCompact() {
-  return (
-    <span
-      className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[conic-gradient(from_155deg,#8b5cf6,#38bdf8,#14b8a6,#8b5cf6)] p-[1px] shadow-[0_8px_20px_rgba(139,92,246,0.22)]"
-      aria-hidden="true"
-    >
-      <span className="absolute inset-[1px] rounded-[0.45rem] bg-white/95 dark:bg-[#0b1020]/95" />
-      <span className="absolute inset-0 bg-cyan-300/30 opacity-70 blur-lg" />
-
-      <svg
-        viewBox="0 0 48 48"
-        className="relative z-10 h-4 w-4"
-        fill="none"
-      >
-        <circle
-          cx="24"
-          cy="24"
-          r="12.5"
-          stroke="#8b5cf6"
-          strokeWidth="2.3"
-          strokeDasharray="3 4"
-          opacity="0.92"
-        />
-
-        <ellipse
-          cx="24"
-          cy="24"
-          rx="17"
-          ry="7.5"
-          stroke="#38bdf8"
-          strokeWidth="2"
-          opacity="0.86"
-          transform="rotate(-28 24 24)"
-        />
-
-        <ellipse
-          cx="24"
-          cy="24"
-          rx="7.5"
-          ry="17"
-          stroke="#14b8a6"
-          strokeWidth="2"
-          opacity="0.78"
-          transform="rotate(-28 24 24)"
-        />
-
-        <circle
-          cx="24"
-          cy="24"
-          r="4.2"
-          fill="#8b5cf6"
-        />
-
-        <circle
-          cx="35"
-          cy="15"
-          r="3.7"
-          fill="#38bdf8"
-        />
-
-        <path
-          d="M33.3 15.1L34.5 16.3L37 13.4"
-          stroke="white"
-          strokeWidth="1.45"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
     </span>
   );
 }
@@ -398,8 +244,8 @@ export default function SubscriptionButton() {
 
     loadSubscription({ silent: true });
 
-    const close = (event) => {
-      if (dropRef.current && !dropRef.current.contains(event.target)) {
+    const close = (e) => {
+      if (dropRef.current && !dropRef.current.contains(e.target)) {
         setShowDropdown(false);
       }
     };
@@ -470,14 +316,11 @@ export default function SubscriptionButton() {
     };
   }, [loadSubscription]);
 
-  const handleUpgrade = async (planToUpgrade) => {
+  const handleUpgrade = async (plan) => {
     setLoading(true);
 
     try {
-      const response = await api.post('/subscriptions/checkout', {
-        plan: planToUpgrade,
-      });
-
+      const response = await api.post('/subscriptions/checkout', { plan });
       const url = response.data?.data?.url || response.data?.url;
 
       if (url) {
@@ -556,17 +399,17 @@ export default function SubscriptionButton() {
       <button
         type="button"
         onClick={() => setShowDropdown((current) => !current)}
-        className={`relative flex items-center gap-2 rounded-xl py-1.5 pl-3 pr-2.5 text-sm font-medium transition-all duration-200 ${
+        className={`relative flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 ${
           isPremium
-            ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-violet-600 text-white shadow-sm shadow-amber-500/25 hover:-translate-y-0.5 hover:shadow-md'
-            : 'border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-violet-300 dark:border-white/10 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:border-violet-500/30'
+            ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-violet-600 text-white shadow-sm shadow-amber-500/25 hover:shadow-md hover:-translate-y-0.5'
+            : 'bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/10 text-slate-600 dark:text-zinc-300 hover:border-violet-300 dark:hover:border-violet-500/30 shadow-sm'
         }`}
         title={titleLabel}
       >
         {isPremium ? (
-          <Crown className="h-3.5 w-3.5" />
+          <Crown className="w-3.5 h-3.5" />
         ) : (
-          <FreePlanOrbitGlyphCompact />
+          <Zap className="w-3.5 h-3.5 text-violet-500" />
         )}
 
         <div className="flex flex-col items-start leading-none">
@@ -575,7 +418,7 @@ export default function SubscriptionButton() {
           </span>
 
           <span
-            className={`mt-0.5 text-[9px] font-bold ${
+            className={`text-[9px] font-bold mt-0.5 ${
               isPremium
                 ? 'text-white/80'
                 : 'text-slate-400 dark:text-zinc-500'
@@ -584,7 +427,7 @@ export default function SubscriptionButton() {
             {buttonSubLabel}
           </span>
 
-          <div className="mt-0.5 h-0.5 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+          <div className="w-16 h-0.5 mt-0.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 primaryPct >= 80 && !isPremium
@@ -604,23 +447,29 @@ export default function SubscriptionButton() {
       </button>
 
       {showDropdown && (
-        <div className="openshare-subscription-menu absolute right-0 top-full z-[100] mt-2 w-80 animate-in overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl duration-200 fade-in slide-in-from-top-2 dark:border-white/10 dark:bg-[#1a1a1f] dark:shadow-none">
+        <div className="openshare-subscription-menu absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#1a1a1f] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl dark:shadow-none overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
           <div
-            className={`border-b border-slate-100 px-4 py-3 dark:border-white/[0.06] ${
+            className={`px-4 py-3 border-b border-slate-100 dark:border-white/[0.06] ${
               isPremium
                 ? 'bg-gradient-to-br from-amber-50 via-orange-50 to-violet-50 dark:from-amber-500/10 dark:via-orange-500/10 dark:to-violet-500/10'
                 : ''
             }`}
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                {isPremium ? (
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-violet-600 text-white shadow-sm shadow-amber-500/25">
-                    <Crown className="h-4 w-4" />
-                  </div>
-                ) : (
-                  <FreePlanOrbitGlyph />
-                )}
+              <div className="flex items-center gap-2">
+                <div
+                  className={`grid h-9 w-9 place-items-center rounded-xl ${
+                    isPremium
+                      ? 'bg-gradient-to-br from-amber-400 to-violet-600 text-white shadow-sm shadow-amber-500/25'
+                      : 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300'
+                  }`}
+                >
+                  {isPremium ? (
+                    <Crown className="w-4 h-4" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                </div>
 
                 {isPremium ? (
                   <div className="min-w-0 max-w-[205px] rounded-2xl border border-amber-200/80 bg-white/95 px-3 py-2 shadow-sm ring-1 ring-white/70 dark:border-amber-400/30 dark:bg-[#0b1020]/95 dark:ring-amber-300/10">
@@ -639,7 +488,7 @@ export default function SubscriptionButton() {
                       <span>Premium limits unlocked</span>
                     </div>
                   </div>
-                ) : (
+                                                                ) : (
                   <div className="inline-flex min-w-0 max-w-[172px] items-center gap-1.5 rounded-full border border-violet-200/80 bg-white/95 px-3 py-1.5 shadow-sm ring-1 ring-white/70 dark:border-violet-400/25 dark:bg-[#0b1020]/95 dark:ring-violet-300/10">
                     <span className="shrink-0 whitespace-nowrap text-sm font-black text-slate-950 dark:text-white">
                       {planLabel} Plan
@@ -652,7 +501,7 @@ export default function SubscriptionButton() {
                 )}
               </div>
 
-              <div className="flex shrink-0 items-center gap-1.5">
+                            <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -662,7 +511,7 @@ export default function SubscriptionButton() {
                   className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:text-violet-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-500 dark:hover:text-violet-300"
                   title="Refresh subscription"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
 
                 {!isPremium && (
@@ -683,7 +532,7 @@ export default function SubscriptionButton() {
             {isPremium && (
               <div className="mt-3 rounded-2xl border border-amber-200/80 bg-white/70 p-3 dark:border-amber-400/20 dark:bg-white/[0.04]">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-200">
-                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   Team features active
                 </div>
 
@@ -701,7 +550,6 @@ export default function SubscriptionButton() {
                 <div className="text-xs font-bold text-violet-700 dark:text-violet-200">
                   Upgrade to Team
                 </div>
-
                 <div className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
                   Unlock 50 projects, 25 members per project, 10GB storage, and 1,000 AI calls per month.
                 </div>
@@ -709,7 +557,7 @@ export default function SubscriptionButton() {
             )}
           </div>
 
-          <div className="space-y-4 p-4">
+          <div className="p-4 space-y-4">
             <UsageRow
               icon={Folder}
               label="Projects"
@@ -749,17 +597,17 @@ export default function SubscriptionButton() {
             />
           </div>
 
-          <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 dark:border-white/[0.06] dark:bg-white/[0.02]">
+          <div className="px-4 py-3 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02]">
             <button
               type="button"
               onClick={() => {
                 setShowDropdown(false);
                 setShowModal(true);
               }}
-              className="flex w-full items-center justify-between text-sm font-medium text-slate-600 transition-colors hover:text-violet-600 dark:text-zinc-300 dark:hover:text-violet-400"
+              className="w-full flex items-center justify-between text-sm font-medium text-slate-600 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
             >
               <span>{isPremium ? 'Manage plan' : 'View all plans'}</span>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
