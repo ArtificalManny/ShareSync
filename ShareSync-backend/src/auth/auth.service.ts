@@ -91,7 +91,15 @@ export class AuthService {
     // ⭐ Check if user is verified (using isEmailVerified - existing field)
     if (user.isEmailVerified === false) {
       // User exists but not verified - resend code and return special response
-      await this.resendVerificationCode(String(user._id));
+      void this.resendVerificationCode(String(user._id)).catch((error: any) => {
+        console.error('❌ Auto resend verification failed during login:', {
+          message: error?.message,
+          code: error?.code,
+          command: error?.command,
+          response: error?.response,
+          responseCode: error?.responseCode,
+        });
+      });
       return {
         success: false,
         needsVerification: true,
