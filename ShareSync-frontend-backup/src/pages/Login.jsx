@@ -93,11 +93,40 @@ export default function Login() {
 
       setError(result.error || result.message || "Login failed");
     } catch (err) {
+      const errorPayload = err?.response?.data?.data ?? err?.response?.data ?? {};
       const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
+        errorPayload?.message ||
+        errorPayload?.error ||
         err?.message ||
         "Login failed. Check your credentials.";
+
+      if (
+        errorPayload?.needsVerification ||
+        String(msg || "").toLowerCase().includes("verify your email")
+      ) {
+        try {
+          localStorage.setItem(
+            "openshare.pendingVerification",
+            JSON.stringify({
+              userId: errorPayload?.userId || null,
+              email,
+              createdAt: Date.now(),
+            }),
+          );
+        } catch {
+          // Ignore storage failures.
+        }
+
+        navigate("/verify-email", {
+          replace: true,
+          state: {
+            userId: errorPayload?.userId || null,
+            email,
+          },
+        });
+        return;
+      }
+
       setError(String(msg));
     } finally {
       setSubmitting(false);
