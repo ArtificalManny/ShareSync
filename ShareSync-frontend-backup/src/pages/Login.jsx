@@ -61,9 +61,33 @@ export default function Login() {
 
       if (result.success) {
         navigate("/home", { replace: true });
-      } else {
-        setError(result.error || "Login failed");
+        return;
       }
+
+      if (result.needsVerification && result.userId) {
+        try {
+          localStorage.setItem(
+            "openshare.pendingVerification",
+            JSON.stringify({
+              userId: result.userId,
+              email,
+            }),
+          );
+        } catch {
+          // Ignore storage failures.
+        }
+
+        navigate("/verify-email", {
+          replace: true,
+          state: {
+            userId: result.userId,
+            email,
+          },
+        });
+        return;
+      }
+
+      setError(result.error || result.message || "Login failed");
     } catch (err) {
       const msg =
         err?.response?.data?.message ||

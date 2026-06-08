@@ -124,7 +124,31 @@ export function AuthProvider({ children }) {
       setUser(userData);
       return { success: true };
     } catch (error) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || "Login failed";
+      const errorPayload = error.response?.data?.data ?? error.response?.data;
+
+      if (errorPayload?.needsVerification) {
+        const message =
+          errorPayload.message ||
+          errorPayload.error ||
+          "Please verify your email";
+
+        setAuthError(message);
+
+        return {
+          success: false,
+          needsVerification: true,
+          userId: errorPayload.userId,
+          error: message,
+          message,
+        };
+      }
+
+      const errorMsg =
+        errorPayload?.error ||
+        errorPayload?.message ||
+        error.message ||
+        "Login failed";
+
       setAuthError(errorMsg);
       return { success: false, error: errorMsg };
     }

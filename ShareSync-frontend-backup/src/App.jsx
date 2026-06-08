@@ -129,6 +129,7 @@ import {
 import Login from "./pages/Login";
 import GoogleCallback from "./pages/GoogleCallback.jsx";
 import CreateAccount from "./pages/CreateAccount";
+import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Register from "./components/Register";
@@ -625,6 +626,14 @@ function AppRoutes() {
                 element={
                   <PublicOnlyRoute>
                     <CreateAccount />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/verify-email"
+                element={
+                  <PublicOnlyRoute>
+                    <VerifyEmail />
                   </PublicOnlyRoute>
                 }
               />
