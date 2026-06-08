@@ -9,6 +9,7 @@ import { DevAuthController } from './dev-auth.controller';
 import { AuthService } from './auth.service';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
+import { MailerConfigModule } from '../mailer/mailer.module';
 
 // IMPORTANT: use the REAL strategy file, not the barrel
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -17,6 +18,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 @Module({
   imports: [
     ConfigModule,
+    MailerConfigModule,
     PassportModule,
 
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),

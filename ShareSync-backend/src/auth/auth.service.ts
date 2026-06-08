@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { MailerService } from '@nestjs-modules/mailer';
 
 import { User, UserDocument } from '../user/schemas/user.schema';
 
@@ -18,6 +19,7 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly jwt: JwtService,
+    private readonly mailer: MailerService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -206,15 +208,17 @@ export class AuthService {
       verificationCodeExpiry: codeExpiry,
       tokenVersion: 0,
     });
-
-    // ⚠️ STUB: Log verification code instead of emailing
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('📧 VERIFICATION CODE FOR', dto.email);
-    console.log('📧 CODE:', verificationCode);
-    console.log('�� EXPIRES:', codeExpiry.toISOString());
-    console.log('═══════════════════════════════════════════════════════════');
+    try {
+      await this.sendVerificationEmail(dto.email.toLowerCase(), verificationCode, codeExpiry);
+    } catch (error) {
+      // Avoid trapping a new user in "email already registered" if production email fails.
+      await this.userModel.findByIdAndDelete(user._id).catch(() => undefined);
+      console.error('❌ Failed to send verification email:', (error as Error)?.message || error);
+      throw new BadRequestException('Could not send verification email. Please try again later.');
+    }
 
     return { userId: String(user._id) };
+
   }
 
   /**
@@ -292,13 +296,8 @@ export class AuthService {
     user.verificationCode = hashedCode;
     user.verificationCodeExpiry = codeExpiry;
     await user.save();
+    await this.sendVerificationEmail(user.email, verificationCode, codeExpiry);
 
-    // ⚠️ STUB: Log verification code instead of emailing
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('📧 NEW VERIFICATION CODE FOR', user.email);
-    console.log('📧 CODE:', verificationCode);
-    console.log('📧 EXPIRES:', codeExpiry.toISOString());
-    console.log('═══════════════════════════════════════════════════════════');
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -331,15 +330,15 @@ export class AuthService {
     user.passwordResetToken = hashedToken;
     user.passwordResetExpires = tokenExpiry;
     await user.save();
-
-    // ⚠️ STUB: Log reset URL instead of emailing
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('🔑 PASSWORD RESET FOR', user.email);
-    console.log('🔑 RESET URL:', resetUrl);
-    console.log('🔑 TOKEN:', resetToken);
-    console.log('🔑 EXPIRES:', tokenExpiry.toISOString());
-    console.log('═══════════════════════════════════════════════════════════');
+
+    try {
+      await this.sendPasswordResetEmail(user.email, resetUrl, tokenExpiry);
+    } catch (error) {
+      // Keep forgot-password response silent for account-enumeration safety.
+      console.error('❌ Failed to send password reset email:', (error as Error)?.message || error);
+    }
+
   }
 
   /**
@@ -586,6 +585,105 @@ export class AuthService {
     delete obj.passwordResetToken;
     delete obj.passwordResetExpires;
     return obj;
+  }
+
+  private isSmtpConfigured(): boolean {
+    return Boolean(
+      process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS,
+    );
+  }
+
+  private getMailFrom(): string {
+    return (
+      process.env.MAIL_FROM ||
+      process.env.EMAIL_FROM ||
+      (process.env.SMTP_USER ? `"OpenShare" <${process.env.SMTP_USER}>` : 'OpenShare <no-reply@openshare.ca>')
+    );
+  }
+
+  private async sendVerificationEmail(
+    to: string,
+    code: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    if (!this.isSmtpConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('SMTP is not configured');
+      }
+
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('📧 DEV VERIFICATION CODE FOR', to);
+      console.log('📧 CODE:', code);
+      console.log('📧 EXPIRES:', expiresAt.toISOString());
+      console.log('═══════════════════════════════════════════════════════════');
+      return;
+    }
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a">
+        <h2>Your OpenShare verification code</h2>
+        <p>Use this 6-digit code to verify your email:</p>
+        <div style="font-size:32px;font-weight:800;letter-spacing:8px;margin:24px 0;color:#7c3aed">
+          ${code}
+        </div>
+        <p>This code expires at ${expiresAt.toISOString()}.</p>
+        <p style="color:#64748b;font-size:13px">If you did not create an OpenShare account, you can ignore this email.</p>
+      </div>
+    `;
+
+    await this.mailer.sendMail({
+      from: this.getMailFrom(),
+      to,
+      subject: 'Your OpenShare verification code',
+      html,
+      text: `Your OpenShare verification code is ${code}. It expires at ${expiresAt.toISOString()}.`,
+    });
+
+    console.log('🟢 Verification email sent to', to);
+  }
+
+  private async sendPasswordResetEmail(
+    to: string,
+    resetUrl: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    if (!this.isSmtpConfigured()) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🔑 DEV PASSWORD RESET FOR', to);
+        console.log('🔑 RESET URL:', resetUrl);
+        console.log('🔑 EXPIRES:', expiresAt.toISOString());
+        console.log('═══════════════════════════════════════════════════════════');
+      }
+      return;
+    }
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a">
+        <h2>Reset your OpenShare password</h2>
+        <p>Click the button below to reset your password:</p>
+        <p>
+          <a href="${resetUrl}" style="display:inline-block;background:#7c3aed;color:white;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">
+            Reset password
+          </a>
+        </p>
+        <p>This link expires at ${expiresAt.toISOString()}.</p>
+        <p style="color:#64748b;font-size:13px">If you did not request a password reset, you can ignore this email.</p>
+      </div>
+    `;
+
+    await this.mailer.sendMail({
+      from: this.getMailFrom(),
+      to,
+      subject: 'Reset your OpenShare password',
+      html,
+      text: `Reset your OpenShare password here: ${resetUrl}. This link expires at ${expiresAt.toISOString()}.`,
+    });
+
+    console.log('🟢 Password reset email sent to', to);
   }
 
   private maskEmail(email: string): string {
