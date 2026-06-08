@@ -47,7 +47,6 @@ export default function GoogleCallback() {
       }
 
       console.log("✅ Google OAuth token stored.");
-      console.log(JSON.parse(atob(token.split(".")[1])));
 
       setMessage("Google sign-in successful. Redirecting...");
       setTimeout(() => navigate("/home", { replace: true }), 350);
