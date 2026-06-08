@@ -21,6 +21,8 @@ import { MailerModule } from '@nestjs-modules/mailer';
             host,
             port,
             secure,
+            family: 4,
+            requireTLS: true,
             auth: user && pass ? { user, pass } : undefined,
           },
           defaults: {
