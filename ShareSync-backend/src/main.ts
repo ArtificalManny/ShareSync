@@ -37,69 +37,51 @@ async function bootstrap() {
     }),
   );
 
-  const isProd = process.env.NODE_ENV === 'production';
+  // ✅ CORS: allow production OpenShare domains + localhost dev ports
+  const configuredCorsOrigins = configService.get<string>('CORS_ORIGINS', '');
 
-  const normalizeOrigin = (value?: string | null) =>
-    value ? value.trim().replace(/\/+$/, '') : '';
-
-  const defaultCorsOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:54693',
-    'https://openshare-frontend.onrender.com',
-    'https://openshare.ca',
-    'https://www.openshare.ca',
-  ];
-
-  const configuredCorsOrigins =
-    configService.get<string>('CORS_ORIGINS') ||
-    process.env.CORS_ORIGINS ||
-    defaultCorsOrigins.join(',');
-
-  const allowedList = configuredCorsOrigins
-    .split(',')
-    .map(normalizeOrigin)
-    .filter(Boolean);
-
-  logger.log(`CORS allowed origins: ${allowedList.join(', ')}`);
+  const allowedList = Array.from(
+    new Set(
+      [
+        'https://openshare.ca',
+        'https://www.openshare.ca',
+        'https://openshare-frontend.onrender.com',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:54693',
+        ...configuredCorsOrigins
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ].filter(Boolean),
+    ),
+  );
 
   app.enableCors({
     origin: (origin, callback) => {
-      const normalizedOrigin = normalizeOrigin(origin);
-
-      if (!normalizedOrigin) {
-        return callback(null, true);
-      }
+      if (!origin) return callback(null, true);
 
       const isLocalhost =
-        /^http:\/\/localhost:\d+$/.test(normalizedOrigin) ||
-        /^http:\/\/127\.0\.0\.1:\d+$/.test(normalizedOrigin);
+        /^http:\/\/localhost:\d+$/.test(origin) ||
+        /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
 
-      if (!isProd && isLocalhost) {
+      if (isLocalhost || allowedList.includes(origin)) {
         return callback(null, true);
       }
 
-      if (allowedList.includes(normalizedOrigin)) {
-        return callback(null, true);
-      }
-
-      logger.warn(`CORS blocked for origin: ${normalizedOrigin}`);
-
-      // Important: do not throw here. Throwing causes Render preflight requests to return HTTP 500.
+      console.warn(`[CORS] Blocked origin: ${origin}`);
       return callback(null, false);
     },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',
       'Authorization',
-      'X-Requested-With',
       'Accept',
       'Origin',
+      'X-Requested-With',
     ],
     credentials: true,
     maxAge: 86400,
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
   });
 
   app.use(compression());
