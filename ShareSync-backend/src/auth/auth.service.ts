@@ -632,19 +632,6 @@ export class AuthService {
     code: string,
     expiresAt: Date,
   ): Promise<void> {
-    if (!this.isSmtpConfigured()) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('SMTP is not configured');
-      }
-
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('📧 DEV VERIFICATION CODE FOR', to);
-      console.log('📧 CODE:', code);
-      console.log('📧 EXPIRES:', expiresAt.toISOString());
-      console.log('═══════════════════════════════════════════════════════════');
-      return;
-    }
-
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a">
         <h2>Your OpenShare verification code</h2>
@@ -657,16 +644,71 @@ export class AuthService {
       </div>
     `;
 
+    const text = `Your OpenShare verification code is ${code}. It expires at ${expiresAt.toISOString()}.`;
+
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const resendFrom = process.env.RESEND_FROM;
+
+    if (resendApiKey && resendFrom) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: resendFrom,
+            to,
+            subject: 'Your OpenShare verification code',
+            html,
+            text,
+          }),
+        });
+
+        const body = await response.text();
+
+        if (!response.ok) {
+          throw new Error(`Resend API failed with ${response.status}: ${body}`);
+        }
+
+        console.log('🟢 Verification email sent via Resend to', to);
+        return;
+      } catch (error: any) {
+        console.error('❌ Resend verification email failed:', {
+          message: error?.message,
+          code: error?.code,
+          response: error?.response,
+          responseCode: error?.responseCode,
+        });
+
+        throw error;
+      }
+    }
+
+    if (!this.isSmtpConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Email is not configured: missing RESEND_API_KEY/RESEND_FROM or SMTP settings');
+      }
+
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('📧 DEV VERIFICATION CODE FOR', to);
+      console.log('📧 CODE:', code);
+      console.log('📧 EXPIRES:', expiresAt.toISOString());
+      console.log('═══════════════════════════════════════════════════════════');
+      return;
+    }
+
     try {
       await this.mailer.sendMail({
         from: this.getMailFrom(),
         to,
         subject: 'Your OpenShare verification code',
         html,
-        text: `Your OpenShare verification code is ${code}. It expires at ${expiresAt.toISOString()}.`,
+        text,
       });
 
-      console.log('🟢 Verification email sent to', to);
+      console.log('🟢 Verification email sent via SMTP to', to);
     } catch (error: any) {
       console.error('❌ SMTP verification email failed:', {
         message: error?.message,
