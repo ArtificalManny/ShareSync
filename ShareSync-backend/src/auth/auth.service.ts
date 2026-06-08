@@ -296,7 +296,22 @@ export class AuthService {
     user.verificationCode = hashedCode;
     user.verificationCodeExpiry = codeExpiry;
     await user.save();
-    await this.sendVerificationEmail(user.email, verificationCode, codeExpiry);
+    try {
+      await this.sendVerificationEmail(user.email, verificationCode, codeExpiry);
+    } catch (error: any) {
+      console.error('❌ Could not send verification email on resend:', {
+        message: error?.message,
+        code: error?.code,
+        command: error?.command,
+        response: error?.response,
+        responseCode: error?.responseCode,
+      });
+
+      // IMPORTANT:
+      // Do not let SMTP failure turn login into a 500.
+      // The account remains unverified, and the frontend should still redirect
+      // the user to /verify-email.
+    }
 
   }
 
