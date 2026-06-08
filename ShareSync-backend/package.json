@@ -47,7 +47,7 @@
     "dotenv": "^17.4.2",
     "helmet": "^7.1.0",
     "mongoose": "^8.0.3",
-    "nodemailer": "^8.0.1",
+    "nodemailer": "^8.0.10",
     "openai": "^6.26.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
