@@ -634,15 +634,27 @@ export class AuthService {
       </div>
     `;
 
-    await this.mailer.sendMail({
-      from: this.getMailFrom(),
-      to,
-      subject: 'Your OpenShare verification code',
-      html,
-      text: `Your OpenShare verification code is ${code}. It expires at ${expiresAt.toISOString()}.`,
-    });
+    try {
+      await this.mailer.sendMail({
+        from: this.getMailFrom(),
+        to,
+        subject: 'Your OpenShare verification code',
+        html,
+        text: `Your OpenShare verification code is ${code}. It expires at ${expiresAt.toISOString()}.`,
+      });
 
-    console.log('🟢 Verification email sent to', to);
+      console.log('🟢 Verification email sent to', to);
+    } catch (error: any) {
+      console.error('❌ SMTP verification email failed:', {
+        message: error?.message,
+        code: error?.code,
+        command: error?.command,
+        response: error?.response,
+        responseCode: error?.responseCode,
+      });
+
+      throw error;
+    }
   }
 
   private async sendPasswordResetEmail(
