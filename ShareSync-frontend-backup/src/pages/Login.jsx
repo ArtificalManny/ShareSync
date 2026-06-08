@@ -64,13 +64,17 @@ export default function Login() {
         return;
       }
 
-      if (result.needsVerification && result.userId) {
+      if (
+        result.needsVerification ||
+        String(result.error || result.message || "").toLowerCase().includes("verify your email")
+      ) {
         try {
           localStorage.setItem(
             "openshare.pendingVerification",
             JSON.stringify({
-              userId: result.userId,
+              userId: result.userId || null,
               email,
+              createdAt: Date.now(),
             }),
           );
         } catch {
@@ -80,7 +84,7 @@ export default function Login() {
         navigate("/verify-email", {
           replace: true,
           state: {
-            userId: result.userId,
+            userId: result.userId || null,
             email,
           },
         });
