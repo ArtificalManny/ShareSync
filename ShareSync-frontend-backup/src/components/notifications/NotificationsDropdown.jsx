@@ -277,6 +277,12 @@ export default function NotificationsDropdown({
       title.includes("xp") ||
       body.includes("xp for completing");
 
+    const isInviteNotification =
+      type.includes("invite") ||
+      type.includes("project_invite") ||
+      title.includes("project invitation") ||
+      body.includes("invited to join");
+
     const extractInviteAcceptRoute = () => {
       const directToken =
         data.inviteToken ||
@@ -329,6 +335,16 @@ export default function NotificationsDropdown({
 
     if (inviteAcceptRoute) {
       return inviteAcceptRoute;
+    }
+
+    // Important: do NOT send invite notifications straight to a private project.
+    // The invited user has no access until /invite/accept?token=... succeeds.
+    if (isInviteNotification) {
+      console.warn(
+        "[NotificationsDropdown] Invite notification has no accept token; refusing direct project route",
+        notification
+      );
+      return null;
     }
 
     if (projectId && taskId) {
