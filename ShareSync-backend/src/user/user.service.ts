@@ -28,6 +28,11 @@ import { StreakService } from '../gamification/services/streak.service';
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
+
+function escapeRegex(value: string): string {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function deepMergePreferences(existing: any, incoming: any) {
   const e = existing ?? {};
   const i = incoming ?? {};
@@ -553,282 +558,151 @@ export class UserService {
     return result as any;
   }
 
-  async searchUsers(query: string, limit = 10): Promise<any[]> {
-    const q = String(query || '').trim();
-
-    if (!q || q.length < 2) {
-      return [];
-    }
-
-    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const escapeRegex = (value: string) =>
-      value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    const tokens = q
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter((token) => token.length >= 2)
-      .slice(0, 5);
-
-    const phraseRegex = new RegExp(escapeRegex(q), 'i');
-    const tokenRegexes = tokens.map((token) => new RegExp(escapeRegex(token), 'i'));
-
-    const candidateClauses: any[] = [
-      { username: phraseRegex },
-      { firstName: phraseRegex },
-      { lastName: phraseRegex },
-      { displayName: phraseRegex },
-      { name: phraseRegex },
-      { email: phraseRegex },
-    ];
-
-    for (const tokenRegex of tokenRegexes) {
-      candidateClauses.push(
-        { username: tokenRegex },
-        { firstName: tokenRegex },
-        { lastName: tokenRegex },
-        { displayName: tokenRegex },
-        { name: tokenRegex },
-        { email: tokenRegex },
-      );
-    }
-
-    const candidates = await this.userModel
-      .find({
-        publicProfile: { $ne: false },
-        $or: candidateClauses,
-      })
-      .select(
-        '_id username firstName lastName displayName name email profilePicture avatarUrl avatar bio publicProfile createdAt',
-      )
-      .limit(Math.max(safeLimit * 4, 50))
-      .lean()
-      .exec();
-
-    const phraseNeedle = q.toLowerCase();
-    const tokenNeedles = tokens.map((token) => token.toLowerCase());
-
-    const normalized = (candidates || []).map((user: any) => {
-      const firstName = user.firstName || '';
-      const lastName = user.lastName || '';
-      const displayName =
-        user.displayName ||
-        user.name ||
-        `${firstName} ${lastName}`.trim() ||
-        user.username ||
-        'User';
-
-      const searchableText = [
-        displayName,
-        firstName,
-        lastName,
-        `${firstName} ${lastName}`.trim(),
-        user.username,
-        user.email,
-        user.bio,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return {
-        _id: user._id?.toString?.() || user._id,
-        id: user._id?.toString?.() || user._id,
-        username: user.username || '',
-        firstName,
-        lastName,
-        displayName,
-        name: displayName,
-        profilePicture: user.profilePicture || null,
-        avatarUrl: user.avatarUrl || user.profilePicture || user.avatar || null,
-        avatar: user.avatar || null,
-        bio: user.bio || '',
-        publicProfile: user.publicProfile ?? true,
-        createdAt: user.createdAt,
-        __searchableText: searchableText,
-      };
-    });
-
-    let filtered = normalized.filter((user: any) => {
-      if (user.__searchableText.includes(phraseNeedle)) return true;
-      return tokenNeedles.every((token) => user.__searchableText.includes(token));
-    });
-
-    // Fallback: if the full phrase produces no results, search by the first token.
-    // This protects names like "Manny Rivas" where "Manny" works but the phrase does not.
-    if (filtered.length === 0 && tokenNeedles.length > 1) {
-      const firstTokenRegex = new RegExp(escapeRegex(tokens[0]), 'i');
-
-      const fallbackCandidates = await this.userModel
-        .find({
-          publicProfile: { $ne: false },
-          $or: [
-            { username: firstTokenRegex },
-            { firstName: firstTokenRegex },
-            { lastName: firstTokenRegex },
-            { displayName: firstTokenRegex },
-            { name: firstTokenRegex },
-            { email: firstTokenRegex },
-          ],
-        })
-        .select(
-          '_id username firstName lastName displayName name email profilePicture avatarUrl avatar bio publicProfile createdAt',
-        )
-        .limit(Math.max(safeLimit * 4, 50))
-        .lean()
-        .exec();
-
-      filtered = (fallbackCandidates || [])
-        .map((user: any) => {
-          const firstName = user.firstName || '';
-          const lastName = user.lastName || '';
-          const displayName =
-            user.displayName ||
-            user.name ||
-            `${firstName} ${lastName}`.trim() ||
-            user.username ||
-            'User';
-
-          const searchableText = [
-            displayName,
-            firstName,
-            lastName,
-            `${firstName} ${lastName}`.trim(),
-            user.username,
-            user.email,
-            user.bio,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-
-          return {
-            _id: user._id?.toString?.() || user._id,
-            id: user._id?.toString?.() || user._id,
-            username: user.username || '',
-            firstName,
-            lastName,
-            displayName,
-            name: displayName,
-            profilePicture: user.profilePicture || null,
-            avatarUrl: user.avatarUrl || user.profilePicture || user.avatar || null,
-            avatar: user.avatar || null,
-            bio: user.bio || '',
-            publicProfile: user.publicProfile ?? true,
-            createdAt: user.createdAt,
-            __searchableText: searchableText,
-          };
-        })
-        .filter((user: any) =>
-          tokenNeedles.every((token) => user.__searchableText.includes(token)),
-        );
-    }
-
-    return filtered
-      .sort((a: any, b: any) => {
-        const aName = String(a.displayName || a.name || '').toLowerCase();
-        const bName = String(b.displayName || b.name || '').toLowerCase();
-
-        const aExact = aName === phraseNeedle ? 1 : 0;
-        const bExact = bName === phraseNeedle ? 1 : 0;
-
-        if (aExact !== bExact) return bExact - aExact;
-        return aName.localeCompare(bName);
-      })
-      .slice(0, safeLimit)
-      .map(({ __searchableText, ...user }: any) => user);
-  }
 
   async getStreakProtectionStatus(userId: string): Promise<any> {
     const user = await this.userModel
       .findById(userId)
-      .select('preferences streakDays lastLogin')
+      .select('streakDays currentStreak longestStreak freezeCount streakFreezeCount lastLogin lastActivityAt updatedAt')
       .lean()
       .exec();
 
     if (!user) throw new NotFoundException('User not found');
 
-    const preferences = (user as any).preferences || {};
-    const focus = preferences.focus || {};
-    const momentum = preferences.momentum || {};
-
-    const emergencyBreaksLeft = Number(
-      focus.emergencyBreaksLeft ??
-        momentum.freezeCount ??
-        momentum.freezesLeft ??
-        1,
+    const streakDays = Number(
+      (user as any).streakDays ??
+      (user as any).currentStreak ??
+      0
     );
 
-    const allowFreeze = Boolean(momentum.allowFreeze ?? true);
-    const canUseFreeze = allowFreeze && emergencyBreaksLeft > 0;
+    const freezeCount = Number(
+      (user as any).streakFreezeCount ??
+      (user as any).freezeCount ??
+      0
+    );
+
+    const lastActivityAt =
+      (user as any).lastActivityAt ||
+      (user as any).lastLogin ||
+      (user as any).updatedAt ||
+      null;
+
+    const daysSinceActivity = lastActivityAt
+      ? Math.floor((Date.now() - new Date(lastActivityAt).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
 
     return {
-      success: true,
-      allowFreeze,
-      canUseFreeze,
-      freezeCount: Math.max(0, emergencyBreaksLeft),
-      emergencyBreaksLeft: Math.max(0, emergencyBreaksLeft),
-      streakDays: (user as any).streakDays ?? 0,
-      lastLogin: (user as any).lastLogin ?? null,
+      streakDays,
+      currentStreak: streakDays,
+      longestStreak: Number((user as any).longestStreak ?? streakDays),
+      freezeCount,
+      streakFreezeCount: freezeCount,
+      canUseFreeze: freezeCount > 0,
+      isAtRisk: typeof daysSinceActivity === 'number' ? daysSinceActivity >= 1 : false,
+      lastActivityAt,
+      daysSinceActivity,
     };
   }
 
   async useStreakFreeze(userId: string): Promise<any> {
     const user = await this.userModel.findById(userId).exec();
-
     if (!user) throw new NotFoundException('User not found');
 
-    const currentPreferences = (user as any).preferences || {};
-    const currentFocus = currentPreferences.focus || {};
-    const currentMomentum = currentPreferences.momentum || {};
-
-    const currentCount = Number(
-      currentFocus.emergencyBreaksLeft ??
-        currentMomentum.freezeCount ??
-        currentMomentum.freezesLeft ??
-        1,
+    const currentFreezeCount = Number(
+      (user as any).streakFreezeCount ??
+      (user as any).freezeCount ??
+      0
     );
 
-    if (currentCount <= 0) {
-      return {
-        success: false,
-        used: false,
-        allowFreeze: Boolean(currentMomentum.allowFreeze ?? true),
-        canUseFreeze: false,
-        freezeCount: 0,
-        emergencyBreaksLeft: 0,
-        message: 'No streak freezes available.',
-      };
+    if (currentFreezeCount <= 0) {
+      throw new BadRequestException('No streak freezes available.');
     }
 
-    const nextCount = Math.max(0, currentCount - 1);
+    const nextFreezeCount = currentFreezeCount - 1;
+    const streakDays = Number(
+      (user as any).streakDays ??
+      (user as any).currentStreak ??
+      0
+    );
 
-    (user as any).preferences = {
-      ...currentPreferences,
-      focus: {
-        ...currentFocus,
-        emergencyBreaksLeft: nextCount,
-      },
-      momentum: {
-        ...currentMomentum,
-        allowFreeze: currentMomentum.allowFreeze ?? true,
-        freezeCount: nextCount,
-        lastFreezeUsedAt: new Date(),
-      },
-    };
+    (user as any).streakFreezeCount = nextFreezeCount;
+    (user as any).freezeCount = nextFreezeCount;
+    (user as any).lastStreakFreezeUsedAt = new Date();
 
-    user.markModified('preferences');
     await user.save();
 
     return {
-      success: true,
+      streakDays,
+      currentStreak: streakDays,
+      longestStreak: Number((user as any).longestStreak ?? streakDays),
+      freezeCount: nextFreezeCount,
+      streakFreezeCount: nextFreezeCount,
+      canUseFreeze: nextFreezeCount > 0,
+      isAtRisk: false,
       used: true,
-      allowFreeze: true,
-      canUseFreeze: nextCount > 0,
-      freezeCount: nextCount,
-      emergencyBreaksLeft: nextCount,
-      message: 'Streak freeze used.',
     };
+  }
+
+  async searchUsers(query: string, limit = 10): Promise<any[]> {
+    const q = String(query || '').trim();
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 25);
+
+    if (q.length < 2) return [];
+
+    const escaped = escapeRegex(q);
+    const regex = new RegExp(escaped, 'i');
+
+    const users = await this.userModel
+      .find({
+        $or: [
+          { username: regex },
+          { firstName: regex },
+          { lastName: regex },
+          { displayName: regex },
+          { email: regex },
+
+          // Allows "Sam Ghost" to match firstName + lastName.
+          {
+            $expr: {
+              $regexMatch: {
+                input: {
+                  $trim: {
+                    input: {
+                      $concat: [
+                        { $ifNull: ['$firstName', ''] },
+                        ' ',
+                        { $ifNull: ['$lastName', ''] },
+                      ],
+                    },
+                  },
+                },
+                regex: escaped,
+                options: 'i',
+              },
+            },
+          },
+        ],
+      })
+      .select('_id username firstName lastName displayName email profilePicture avatarUrl bio publicProfile')
+      .limit(safeLimit)
+      .lean()
+      .exec();
+
+    return users.map((u: any) => ({
+      id: String(u._id),
+      _id: String(u._id),
+      username: u.username || '',
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
+      displayName:
+        u.displayName ||
+        [u.firstName, u.lastName].filter(Boolean).join(' ') ||
+        u.username ||
+        u.email,
+      email: u.email || '',
+      profilePicture: u.profilePicture || u.avatarUrl || null,
+      avatarUrl: u.avatarUrl || u.profilePicture || null,
+      bio: u.bio || '',
+    }));
   }
 
   async getActivitySummary(userId: string): Promise<any> {
