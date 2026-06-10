@@ -277,6 +277,60 @@ export default function NotificationsDropdown({
       title.includes("xp") ||
       body.includes("xp for completing");
 
+    const extractInviteAcceptRoute = () => {
+      const directToken =
+        data.inviteToken ||
+        data.token ||
+        meta.inviteToken ||
+        meta.token ||
+        notification?.inviteToken ||
+        notification?.token;
+
+      if (directToken) {
+        return `/invite/accept?token=${encodeURIComponent(String(directToken).trim())}`;
+      }
+
+      const urls = [];
+
+      if (typeof rawActionUrl === "string") urls.push(rawActionUrl);
+
+      const actionLists = [
+        notification?.actions,
+        data.actions,
+        meta.actions,
+      ].filter(Array.isArray);
+
+      for (const list of actionLists) {
+        for (const action of list) {
+          const url = action?.url || action?.href || action?.link || action?.targetUrl;
+          if (typeof url === "string") urls.push(url);
+        }
+      }
+
+      for (const url of urls) {
+        const trimmed = String(url || "").trim();
+        if (!trimmed) continue;
+
+        const queryMatch = trimmed.match(/[?&]token=([^&#]+)/);
+        if (queryMatch?.[1]) {
+          return `/invite/accept?token=${encodeURIComponent(decodeURIComponent(queryMatch[1]).trim())}`;
+        }
+
+        const pathToken = trimmed.split("/invite/")[1]?.split("?")[0]?.split("#")[0];
+        if (pathToken && pathToken !== "accept") {
+          return `/invite/accept?token=${encodeURIComponent(decodeURIComponent(pathToken).trim())}`;
+        }
+      }
+
+      return null;
+    };
+
+    const inviteAcceptRoute = extractInviteAcceptRoute();
+
+    if (inviteAcceptRoute) {
+      return inviteAcceptRoute;
+    }
+
     if (projectId && taskId) {
       return `/projects/${projectId}/tasks/${taskId}`;
     }
