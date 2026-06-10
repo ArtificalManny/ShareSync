@@ -739,7 +739,7 @@ export class NotificationsService {
       icon: '👋',
       triggeredBy: payload.addedBy,
       data: { projectId: payload.projectId, projectName: payload.projectName },
-      actions: [{ label: 'View Project', url: `/projects/${payload.projectId}` }],
+      actions: [{ label: 'Accept Invite', url: `/invite/accept?token=${encodeURIComponent(String((payload as any).token || (payload as any).inviteToken || ''))}` }],
     });
   }
 

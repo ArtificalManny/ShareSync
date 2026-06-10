@@ -184,6 +184,13 @@ export default function NotificationItem({
   };
 
   const handleCardClick = () => {
+    // Invite notifications must accept the invite before opening the project.
+    // Otherwise the invited user gets "You do not have access to this project."
+    if (isInvite && inviteToken && !responding && !responded) {
+      window.location.href = `/invite/accept?token=${encodeURIComponent(inviteToken)}`;
+      return;
+    }
+
     if (onClick) {
       onClick(n);
       return;
