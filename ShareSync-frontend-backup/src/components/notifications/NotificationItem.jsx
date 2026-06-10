@@ -22,7 +22,7 @@ function getInviteToken(notification) {
     meta.inviteToken ||
     meta.token;
 
-  if (directToken) return directToken;
+  if (directToken) return String(directToken).trim();
 
   const actions = Array.isArray(notification?.actions) ? notification.actions : [];
   const inviteAction = actions.find((action) => {
@@ -30,10 +30,34 @@ function getInviteToken(notification) {
     return url.includes("/invite/");
   });
 
-  const url = String(inviteAction?.url || "");
-  if (!url.includes("/invite/")) return "";
+  const rawUrl = String(inviteAction?.url || "");
+  if (!rawUrl.includes("/invite/")) return "";
 
-  return url.split("/invite/")[1]?.split("?")[0]?.split("#")[0] || "";
+  try {
+    const parsed = new URL(rawUrl, window.location.origin);
+
+    // Handles /invite/accept?token=abc123
+    const queryToken = parsed.searchParams.get("token");
+    if (queryToken) return queryToken.trim();
+
+    // Handles /invite/abc123
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const inviteIndex = parts.indexOf("invite");
+    const pathToken = inviteIndex >= 0 ? parts[inviteIndex + 1] : "";
+
+    if (pathToken && pathToken !== "accept") {
+      return decodeURIComponent(pathToken).trim();
+    }
+  } catch {
+    // Fallback for weird relative URLs
+    const queryMatch = rawUrl.match(/[?&]token=([^&#]+)/);
+    if (queryMatch?.[1]) return decodeURIComponent(queryMatch[1]).trim();
+
+    const pathPart = rawUrl.split("/invite/")[1]?.split("?")[0]?.split("#")[0] || "";
+    if (pathPart && pathPart !== "accept") return decodeURIComponent(pathPart).trim();
+  }
+
+  return "";
 }
 
 function getProjectIdFromNotification(notification) {
