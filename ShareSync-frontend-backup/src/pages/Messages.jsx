@@ -1025,7 +1025,7 @@ export default function Messages() {
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full min-h-0">
 
         {/* LEFT: Conversation List */}
-        <aside className={`${selectedConversation ? 'max-[900px]:hidden' : 'flex'} md:flex rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex-col shadow-sm dark:shadow-none transition-colors duration-300 min-h-0`}>
+        <aside className={`messages-mobile-list ${selectedConversation ? 'messages-hide-on-mobile' : ''} flex rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex-col shadow-sm dark:shadow-none transition-colors duration-300 min-h-0`}>
           <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23]">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -1126,7 +1126,7 @@ export default function Messages() {
         </aside>
 
         {/* RIGHT: Message Thread */}
-        <section className={`${selectedConversation ? 'flex' : 'max-[900px]:hidden md:flex'} rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] shadow-sm dark:shadow-none h-full flex-col overflow-hidden transition-colors duration-300 min-h-0`}>
+        <section className={`messages-mobile-thread ${selectedConversation ? '' : 'messages-hide-on-mobile'} flex rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] shadow-sm dark:shadow-none h-full flex-col overflow-hidden transition-colors duration-300 min-h-0`}>
           {selectedConversation ? (
             <>
               {/* Header */}
@@ -1135,7 +1135,7 @@ export default function Messages() {
                   <button
                     type="button"
                     onClick={() => setSelectedConversationId(null)}
-                    className="hidden max-[900px]:inline-flex p-2 -ml-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-500 dark:text-zinc-400 transition-colors"
+                    className="messages-mobile-back hidden p-2 -ml-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-500 dark:text-zinc-400 transition-colors"
                     aria-label="Back to conversations"
                   >
                     <ArrowLeft className="w-5 h-5" />
