@@ -1025,7 +1025,7 @@ export default function Messages() {
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full min-h-0">
 
         {/* LEFT: Conversation List */}
-        <aside className={`${isMobileView && selectedConversation ? 'hidden' : 'flex'} rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex-col shadow-sm dark:shadow-none transition-colors duration-300 min-h-0`}>
+        <aside className={`${selectedConversation ? 'max-[900px]:hidden' : 'flex'} md:flex rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex-col shadow-sm dark:shadow-none transition-colors duration-300 min-h-0`}>
           <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23]">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -1126,22 +1126,20 @@ export default function Messages() {
         </aside>
 
         {/* RIGHT: Message Thread */}
-        <section className={`${isMobileView && !selectedConversation ? 'hidden' : 'flex'} rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] shadow-sm dark:shadow-none h-full flex-col overflow-hidden transition-colors duration-300 min-h-0`}>
+        <section className={`${selectedConversation ? 'flex' : 'max-[900px]:hidden md:flex'} rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] shadow-sm dark:shadow-none h-full flex-col overflow-hidden transition-colors duration-300 min-h-0`}>
           {selectedConversation ? (
             <>
               {/* Header */}
               <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23] flex items-center justify-between bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
                 <div className="flex items-center gap-3 min-w-0">
-                  {isMobileView && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedConversationId(null)}
-                      className="p-2 -ml-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-500 dark:text-zinc-400 transition-colors"
-                      aria-label="Back to conversations"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedConversationId(null)}
+                    className="hidden max-[900px]:inline-flex p-2 -ml-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-500 dark:text-zinc-400 transition-colors"
+                    aria-label="Back to conversations"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
                   <Avatar user={selectedOtherUser} size="md" />
                   <div className="min-w-0">
                     <h3 className="text-sm font-medium text-slate-900 dark:text-white truncate">
@@ -1161,9 +1159,9 @@ export default function Messages() {
                   </button>
                   {!isMobileView && (
                     <>
-                      <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Phone className="w-4 h-4" /></button>
-                      <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Video className="w-4 h-4" /></button>
-                      <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+                      <button className="max-[900px]:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Phone className="w-4 h-4" /></button>
+                      <button className="max-[900px]:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Video className="w-4 h-4" /></button>
+                      <button className="max-[900px]:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
                     </>
                   )}
                 </div>
