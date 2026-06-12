@@ -242,3 +242,35 @@ body,
     bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Messages mobile single-panel behavior
+   On phones, show either the conversation list OR the thread, never both.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .messages-hide-on-mobile {
+    display: none !important;
+  }
+
+  .messages-mobile-list,
+  .messages-mobile-thread {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .messages-mobile-thread {
+    min-height: calc(100dvh - 9rem) !important;
+  }
+
+  .messages-mobile-back {
+    display: inline-flex !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .messages-mobile-back {
+    display: none !important;
+  }
+}
