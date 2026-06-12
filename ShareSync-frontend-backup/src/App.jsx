@@ -528,7 +528,7 @@ function useIsPhoneViewport() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const query = window.matchMedia("(max-width: 767px)");
+    const query = window.matchMedia("(max-width: 900px)");
 
     const update = () => setIsPhone(query.matches);
     update();
