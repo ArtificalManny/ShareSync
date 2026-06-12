@@ -18,6 +18,7 @@ import {
 
 // ⭐ PERFORMANCE: Only load heavy contexts AFTER authentication
 import Navbar from "./components/Navbar";
+import ResponsiveLayout from "./components/layout/ResponsiveLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider as OldToastProvider } from "./context/ToastContext";
 import ToastProvider, { ToastHost } from "./components/ui/toast.jsx";
@@ -520,6 +521,30 @@ function UserProfileAlias() {
   return <Navigate to={`/profile/${safeUsername}`} replace />;
 }
 
+
+function useIsPhoneViewport() {
+  const [isPhone, setIsPhone] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const query = window.matchMedia("(max-width: 767px)");
+
+    const update = () => setIsPhone(query.matches);
+    update();
+
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }
+
+    query.addListener(update);
+    return () => query.removeListener(update);
+  }, []);
+
+  return isPhone;
+}
+
 function AppRoutes() {
   const { user: authUser, logout, loading } = useAuth();
   const location = useLocation();
@@ -538,6 +563,9 @@ function AppRoutes() {
     ].includes(location.pathname) ||
     location.pathname.startsWith("/reset-password/");
   const showAppChrome = authUser && !isAuthPage;
+  const isPhone = useIsPhoneViewport();
+  const showDesktopChrome = showAppChrome && !isPhone;
+  const showMobileChrome = showAppChrome && isPhone;
 
   useEffect(() => {
     const handleOpenCreateProject = () => {
@@ -556,7 +584,7 @@ function AppRoutes() {
 
   return (
     <>
-      {showAppChrome && (
+      {showDesktopChrome && (
         <>
           <SidebarToggle
             sidebarOpen={sidebarOpen}
@@ -590,6 +618,34 @@ function AppRoutes() {
         </>
       )}
 
+      <ResponsiveLayout
+        enabled={showMobileChrome}
+        forceMobile={isPhone}
+        userName={
+          authUser?.firstName ||
+          authUser?.displayName ||
+          authUser?.username ||
+          "User"
+        }
+        userStatus="online"
+        unreadCount={authUser?.unreadCount || 0}
+        onLogout={logout}
+        onCreatePress={() => setShowCreateProjectModal(true)}
+        onSearchPress={() => {
+          try {
+            window.dispatchEvent(new CustomEvent("shortcut-action", {
+              detail: { action: "COMMAND_PALETTE_OPEN" },
+            }));
+          } catch {}
+        }}
+        onNotificationPress={() => {
+          try {
+            window.dispatchEvent(new CustomEvent("shortcut-action", {
+              detail: { action: "NOTIFICATIONS_OPEN" },
+            }));
+          } catch {}
+        }}
+      >
       {/* ⭐ WEDGE FIX: Forcing explicit rounded-none, m-0, p-0, and full bleed on these wrappers */}
       <div className="main-content border-none outline-none ring-0 !rounded-none !m-0 !p-0">
         <div className="content-wrapper border-none shadow-none !rounded-none !m-0 !p-0">
@@ -850,6 +906,7 @@ function AppRoutes() {
           </Suspense>
         </div>
       </div>
+      </ResponsiveLayout>
 
       {showAppChrome && (
         <Suspense fallback={null}>

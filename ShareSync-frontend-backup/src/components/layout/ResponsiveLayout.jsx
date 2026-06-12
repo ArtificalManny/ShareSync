@@ -22,9 +22,11 @@ export default function ResponsiveLayout({
   onSearchPress,
   onNotificationPress,
   onCreatePress,
+  enabled = true,
+  forceMobile = false,
 }) {
   const { isMobile, isTablet } = useMediaQuery();
-  const showMobileUI = isMobile || isTablet;
+  const showMobileUI = forceMobile || isMobile; // Tablet stays desktop unless explicitly forced.
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleMenuPress = useCallback(() => {
@@ -45,13 +47,13 @@ export default function ResponsiveLayout({
     } catch { /* non-fatal */ }
   }, [onSearchPress]);
 
-  if (!showMobileUI) {
+  if (!enabled || !showMobileUI) {
     // Desktop layout — just render children, desktop sidebar is handled by App.jsx
     return <>{children}</>;
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#0f1014]">
       {/* Mobile header */}
       <MobileHeader
         onMenuPress={handleMenuPress}
@@ -61,7 +63,7 @@ export default function ResponsiveLayout({
       />
 
       {/* Page content — add bottom padding for nav bar */}
-      <main className="flex-1 pb-20">
+      <main className="flex-1 w-full max-w-full min-w-0 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
         {children}
       </main>
 

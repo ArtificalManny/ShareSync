@@ -6,7 +6,7 @@ export default function Page({ className = "", children, ...props }) {
     <main id="main" role="main" tabIndex={-1} {...props}>
       <div
         className={[
-          "max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 py-6",
+          "w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-6 overflow-x-hidden",
           className,
         ].join(" ")}
       >
