@@ -21,6 +21,7 @@ import {
   X,
   Loader2,
   User,
+  ArrowLeft,
 } from 'lucide-react';
 
 // API (Removed getUserInitials and getOtherParticipant - we use local pure functions now)
@@ -610,8 +611,8 @@ const NewMessageModal = ({ isOpen, onClose, onConversationCreated, currentUserId
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#111113] rounded-2xl border border-slate-200 dark:border-[#1f1f23] shadow-2xl w-full max-w-lg overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white dark:bg-[#111113] rounded-t-3xl sm:rounded-2xl border border-slate-200 dark:border-[#1f1f23] shadow-2xl w-full sm:max-w-lg max-h-[92dvh] overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-[#1f1f23]">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">New Message</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1f1f23] text-slate-500 dark:text-zinc-400 transition-colors">
@@ -718,6 +719,24 @@ export default function Messages() {
   useDocumentTitle("Messages");
   const queryClient = useQueryClient();
   const messagesEndRef = useRef(null);
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const query = window.matchMedia('(max-width: 900px)');
+    const update = () => setIsMobileView(query.matches);
+
+    update();
+
+    if (typeof query.addEventListener === 'function') {
+      query.addEventListener('change', update);
+      return () => query.removeEventListener('change', update);
+    }
+
+    query.addListener(update);
+    return () => query.removeListener(update);
+  }, []);
 
   // Auth
   const { user: authUser } = useAuth?.() || { user: null };
@@ -984,11 +1003,11 @@ export default function Messages() {
   const hasUnreadMessages = conversations.some(c => (c.unreadCount || 0) > 0);
 
   return (
-    <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8 py-4 bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
-      <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full">
+    <div className="h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] px-3 sm:px-6 lg:px-8 py-3 sm:py-4 bg-slate-50 dark:bg-[#09090B] transition-colors duration-300 overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full min-h-0">
 
         {/* LEFT: Conversation List */}
-        <aside className="rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex flex-col shadow-sm dark:shadow-none transition-colors duration-300">
+        <aside className={`${isMobileView && selectedConversation ? 'hidden' : 'flex'} rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] overflow-hidden flex-col shadow-sm dark:shadow-none transition-colors duration-300 min-h-0`}>
           <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23]">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -1089,15 +1108,25 @@ export default function Messages() {
         </aside>
 
         {/* RIGHT: Message Thread */}
-        <section className="rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] shadow-sm dark:shadow-none h-full flex flex-col overflow-hidden transition-colors duration-300">
+        <section className={`${isMobileView && !selectedConversation ? 'hidden' : 'flex'} rounded-2xl border border-slate-200 dark:border-[#1f1f23] bg-white dark:bg-[#111113] shadow-sm dark:shadow-none h-full flex-col overflow-hidden transition-colors duration-300 min-h-0`}>
           {selectedConversation ? (
             <>
               {/* Header */}
               <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23] flex items-center justify-between bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {isMobileView && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedConversationId(null)}
+                      className="p-2 -ml-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-500 dark:text-zinc-400 transition-colors"
+                      aria-label="Back to conversations"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                  )}
                   <Avatar user={selectedOtherUser} size="md" />
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-slate-900 dark:text-white truncate">
                       {getSafeDisplayName(selectedConversation, currentUser)}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-zinc-500">
@@ -1112,9 +1141,13 @@ export default function Messages() {
                   >
                     <Star className={`w-4 h-4 ${selectedConversation.isPinned ? 'fill-amber-500' : ''}`} />
                   </button>
-                  <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Phone className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Video className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+                  {!isMobileView && (
+                    <>
+                      <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Phone className="w-4 h-4" /></button>
+                      <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Video className="w-4 h-4" /></button>
+                      <button className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -1152,8 +1185,8 @@ export default function Messages() {
               <TypingIndicator users={typingUsers} />
 
               {/* Input */}
-              <div className="p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
-                <div className="flex items-center gap-3">
+              <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#1f1f23] rounded-lg transition-colors">
                     <Paperclip className="w-5 h-5 text-slate-500 dark:text-zinc-500" />
                   </button>
