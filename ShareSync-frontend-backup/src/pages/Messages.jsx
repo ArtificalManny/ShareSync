@@ -724,18 +724,36 @@ export default function Messages() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const query = window.matchMedia('(max-width: 900px)');
-    const update = () => setIsMobileView(query.matches);
+    const detectMobile = () => {
+      const layoutWidth = window.innerWidth || 9999;
+      const visualWidth = window.visualViewport?.width || layoutWidth;
+      const screenWidth = window.screen?.width || layoutWidth;
+      const narrowestWidth = Math.min(layoutWidth, visualWidth, screenWidth);
+
+      const ua = navigator.userAgent || '';
+      const isTouchPhone =
+        navigator.maxTouchPoints > 0 &&
+        /iPhone|iPod|Android|Mobile/i.test(ua);
+
+      return narrowestWidth <= 900 || isTouchPhone;
+    };
+
+    const update = () => setIsMobileView(detectMobile());
 
     update();
 
-    if (typeof query.addEventListener === 'function') {
-      query.addEventListener('change', update);
-      return () => query.removeEventListener('change', update);
-    }
+    const query = window.matchMedia('(max-width: 900px)');
+    query.addEventListener?.('change', update);
+    window.visualViewport?.addEventListener?.('resize', update);
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
 
-    query.addListener(update);
-    return () => query.removeListener(update);
+    return () => {
+      query.removeEventListener?.('change', update);
+      window.visualViewport?.removeEventListener?.('resize', update);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
   }, []);
 
   // Auth
