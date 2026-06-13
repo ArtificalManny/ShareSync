@@ -1008,6 +1008,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
   return (
     <nav
       className="
+        project-home-view-nav
         px-10
         border-b border-slate-200/90 dark:border-white/10
         bg-white/82 dark:bg-[#07111f]/88
