@@ -274,3 +274,192 @@ body,
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ProjectHome mobile shell
+   Scope: header, project tab rail, and active-view containment only.
+   Do not try to redesign every project sub-view here.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .project-home-page {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .project-home-debug {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .project-home-header {
+    padding: 1rem !important;
+    overflow-x: hidden !important;
+  }
+
+  .project-home-banner {
+    height: 7rem !important;
+    border-radius: 1.25rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .project-home-breadcrumb {
+    margin-bottom: 0.85rem !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    font-size: 0.82rem !important;
+  }
+
+  .project-home-breadcrumb span:last-child {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .project-home-header-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+
+  .project-home-identity {
+    width: 100% !important;
+    gap: 0.85rem !important;
+    align-items: flex-start !important;
+  }
+
+  .project-home-avatar {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    min-width: 3.25rem !important;
+  }
+
+  .project-home-title-row {
+    gap: 0.5rem !important;
+    margin-bottom: 0.55rem !important;
+  }
+
+  .project-home-title {
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: clamp(1.55rem, 7vw, 2.15rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .project-home-meta {
+    gap: 0.45rem 0.8rem !important;
+    font-size: 0.86rem !important;
+  }
+
+  .project-home-meta > div {
+    min-width: 0 !important;
+  }
+
+  .project-home-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 44px 44px !important;
+    gap: 0.55rem !important;
+    align-items: center !important;
+  }
+
+  .project-home-primary-action {
+    grid-column: 1 / -1 !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    order: 2 !important;
+  }
+
+  .project-home-members-action {
+    width: 100% !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+  }
+
+  .project-home-action-divider {
+    display: none !important;
+  }
+
+  .project-home-icon-action {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .project-home-view-nav {
+    top: 3rem !important;
+    z-index: 60 !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    overflow-x: hidden !important;
+  }
+
+  .project-home-view-tabs {
+    gap: 0.25rem !important;
+    padding-top: 0.25rem !important;
+    scroll-padding-left: 0.75rem !important;
+  }
+
+  .project-home-view-tab {
+    min-height: 44px !important;
+    padding: 0.8rem 0.9rem !important;
+    border-radius: 0.95rem 0.95rem 0 0 !important;
+    font-size: 0.86rem !important;
+    flex: 0 0 auto !important;
+  }
+
+  .project-home-view-tab svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .project-home-view-shell {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .project-home-content-wrap {
+    padding: 1rem !important;
+    max-width: 100% !important;
+  }
+
+  .project-home-page .mx-10 {
+    margin-left: 1rem !important;
+    margin-right: 1rem !important;
+  }
+
+  .project-home-page .px-10 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .project-home-page .p-10 {
+    padding: 1rem !important;
+  }
+
+  .project-home-page .gap-8 {
+    gap: 1rem !important;
+  }
+
+  .project-home-page .mb-8 {
+    margin-bottom: 1rem !important;
+  }
+
+  .project-home-view-shell > * {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+}

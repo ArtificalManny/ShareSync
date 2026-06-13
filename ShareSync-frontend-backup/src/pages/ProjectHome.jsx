@@ -817,7 +817,7 @@ function ProjectHeader({
       <div className="pointer-events-none absolute -top-28 right-16 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-400/10" />
       <div className="pointer-events-none absolute -bottom-32 left-32 h-64 w-64 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/10" />
       {getProjectBannerUrl(project) ? (
-        <div className="mb-6 h-36 md:h-44 overflow-hidden rounded-[28px] border border-slate-200/80 bg-slate-100 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
+        <div className="project-home-banner mb-6 h-36 md:h-44 overflow-hidden rounded-[28px] border border-slate-200/80 bg-slate-100 shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03]">
           <img
             src={getProjectBannerUrl(project)}
             alt={`${project?.name || "Project"} banner`}
@@ -826,7 +826,7 @@ function ProjectHeader({
         </div>
       ) : null}
 
-      <nav className="flex items-center gap-2 text-sm text-slate-500 mb-5">
+      <nav className="project-home-breadcrumb flex items-center gap-2 text-sm text-slate-500 mb-5">
         <span
           onClick={onBackToProjects}
           className="hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
@@ -841,17 +841,17 @@ function ProjectHeader({
         </span>
       </nav>
 
-      <div className="flex items-start justify-between gap-8">
-        <div className="flex items-start gap-5 flex-1 min-w-0">
+      <div className="project-home-header-row flex items-start justify-between gap-8">
+        <div className="project-home-identity flex items-start gap-5 flex-1 min-w-0">
           <ProjectAvatar
             project={project}
             size="lg"
-            className="flex-shrink-0"
+            className="project-home-avatar flex-shrink-0"
           />
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <h1 className="text-2xl font-semibold text-slate-900 dark:text-white truncate">
+            <div className="project-home-title-row flex items-center gap-3 mb-2 flex-wrap">
+              <h1 className="project-home-title text-2xl font-semibold text-slate-900 dark:text-white truncate">
                 {project?.name || "Untitled Project"}
               </h1>
 
@@ -876,7 +876,7 @@ function ProjectHeader({
               </button>
             </div>
 
-            <div className="flex items-center gap-5 flex-wrap">
+            <div className="project-home-meta flex items-center gap-5 flex-wrap">
               <div className={`flex items-center gap-2 text-sm font-medium ${lifecycle.text}`}>
                 {lifecycle.pulse ? (
                   <span className="relative flex h-2 w-2">
@@ -905,13 +905,13 @@ function ProjectHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="project-home-actions flex items-center gap-3 flex-shrink-0">
           {canUseMemberActions && (isCompleted || isReadyToClose) ? (
             <button
               onClick={handlePrimaryAction}
               disabled={isLifecycleBusy}
             className={`
-              flex items-center gap-2.5 px-5 py-2.5 rounded-xl
+              project-home-primary-action flex items-center gap-2.5 px-5 py-2.5 rounded-xl
               text-white font-medium text-sm
               transition-all duration-200
               hover:-translate-y-0.5 active:translate-y-0
@@ -934,7 +934,7 @@ function ProjectHeader({
             type="button"
             onClick={onMembersClick}
             className="
-              flex items-center gap-2 px-4 py-2.5 rounded-xl
+              project-home-members-action flex items-center gap-2 px-4 py-2.5 rounded-xl
               bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm
               text-slate-700 dark:text-zinc-300 text-sm font-medium
               hover:bg-slate-50 dark:hover:bg-zinc-800
@@ -973,14 +973,14 @@ function ProjectHeader({
             </button>
           ) : null}
 
-          <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
+          <div className="project-home-action-divider w-px h-6 bg-slate-200 dark:bg-white/10" />
 
           <button
             type="button"
             onClick={onShareInviteClick}
             aria-label="Share invite link"
             title="Share invite link"
-            className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
+            className="project-home-icon-action p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
           >
             <Share2 className="w-4 h-4" />
           </button>
@@ -989,7 +989,7 @@ function ProjectHeader({
             <button
               type="button"
               onClick={onSettings}
-              className="p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
+              className="project-home-icon-action p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -1022,7 +1022,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="flex items-center gap-1 sm:gap-2 -mb-px overflow-x-auto hide-scroll w-full scroll-smooth">
+      <div className="project-home-view-tabs flex items-center gap-1 sm:gap-2 -mb-px overflow-x-auto hide-scroll w-full scroll-smooth">
         {views.map((view) => {
           const Icon = view.icon;
           const isActive = activeView === view.id;
@@ -1032,7 +1032,7 @@ function ViewNavigation({ activeView, onViewChange, views = PROJECT_VIEWS }) {
               key={view.id}
               onClick={() => onViewChange(view.id)}
               className={`
-                relative flex items-center gap-2.5 px-4 py-4 whitespace-nowrap
+                project-home-view-tab relative flex items-center gap-2.5 px-4 py-4 whitespace-nowrap
                 text-sm font-medium transition-all duration-200 rounded-t-lg
                 ${
                   isActive
@@ -3578,8 +3578,8 @@ export default function ProjectHome() {
     console.log("[ProjectHome] mounted id:", id);
   }, [id]);
 
-  const pagePad = isMobile ? "p-6" : "p-10";
-  const pageWrap = `${pagePad} max-w-[1600px] mx-auto`;
+  const pagePad = isMobile ? "p-4" : "p-10";
+  const pageWrap = `project-home-content-wrap ${pagePad} max-w-[1600px] mx-auto`;
 
   useEffect(() => {
     if (!id || id === "undefined" || id === "null") {
@@ -4465,7 +4465,7 @@ export default function ProjectHome() {
       <div className="pointer-events-none fixed -top-32 right-12 z-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-400/10" />
       <div className="pointer-events-none fixed bottom-10 left-20 z-0 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
       {SHOW_DEBUG && (
-        <div className="px-10 py-3 border-b border-slate-200/60 bg-white/40 text-xs text-slate-500 flex flex-wrap gap-3">
+        <div className="project-home-debug px-10 py-3 border-b border-slate-200/60 bg-white/40 text-xs text-slate-500 flex flex-wrap gap-3">
           <span>ProjectHome OK</span>
           <span>· id: {String(id)}</span>
           <span>· view: {String(activeView)}</span>
