@@ -8,16 +8,13 @@ import React, { useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   X, Home, Folder, Trophy, User, Settings, Moon, Sun,
-  MessageSquare, Search, BarChart3, Flame, ShieldCheck, LogOut,
+  ShieldCheck, LogOut,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { path: '/home', icon: Home, label: 'Mission Control' },
+  { path: '/home', icon: Home, label: 'Home' },
   { path: '/projects', icon: Folder, label: 'Projects' },
-  { path: '/discover', icon: Trophy, label: 'Arena' },
-  { path: '/messages', icon: MessageSquare, label: 'Messages' },
-  { path: '/search', icon: Search, label: 'Search' },
-  { path: '/analytics', icon: BarChart3, label: 'Analytics' },
+  { path: '/discover', icon: Trophy, label: 'Discover' },
   { divider: true },
   { path: '/profile', icon: User, label: 'Profile' },
   { path: '/settings', icon: Settings, label: 'Settings' },
@@ -127,7 +124,7 @@ export default function MobileDrawer({
               <span className="text-xs font-bold text-white">S</span>
             </div>
             <span className="text-sm font-semibold text-slate-900 dark:text-white">
-              ShareSync
+              OpenShare
             </span>
           </div>
           <button

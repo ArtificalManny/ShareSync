@@ -10,17 +10,17 @@ import { Menu, Bell, Search } from 'lucide-react';
 
 // Map paths to page titles
 function getPageTitle(pathname) {
-  if (pathname === '/home') return 'Mission Control';
+  if (pathname === '/home') return 'Home';
   if (pathname === '/projects') return 'Projects';
   if (pathname.startsWith('/projects/')) return 'Project';
   if (pathname === '/settings') return 'Settings';
   if (pathname === '/profile' || pathname === '/me') return 'Profile';
-  if (pathname === '/discover') return 'Arena';
+  if (pathname === '/discover') return 'Discover';
   if (pathname === '/messages') return 'Messages';
   if (pathname === '/search') return 'Search';
   if (pathname === '/analytics') return 'Analytics';
   if (pathname === '/community') return 'Community';
-  return 'ShareSync';
+  return 'OpenShare';
 }
 
 export default function MobileHeader({

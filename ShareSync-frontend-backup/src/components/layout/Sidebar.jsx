@@ -177,7 +177,7 @@ export default function Sidebar() {
               <span className="text-[13px] font-black text-white tracking-wider">S</span>
             </div>
             <span className="text-[15px] font-bold text-text-primary tracking-tight">
-              ShareSync
+              OpenShare
             </span>
           </div>
         )}
@@ -201,9 +201,9 @@ export default function Sidebar() {
       <ProgressRing collapsed={collapsed} />
 
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto overflow-x-hidden mt-2">
-        <SidebarItem to="/home" label="Mission Control" icon={LayoutGrid} collapsed={collapsed} />
+        <SidebarItem to="/home" label="Home" icon={LayoutGrid} collapsed={collapsed} />
         <SidebarItem to="/projects" label="Project Deck" icon={Terminal} count={3} collapsed={collapsed} />
-        <SidebarItem to="/discover" label="The Arena" icon={Trophy} collapsed={collapsed} />
+        <SidebarItem to="/discover" label="Discover" icon={Trophy} collapsed={collapsed} />
         
         <div className="py-5">
           <div className="h-px w-full bg-border-default opacity-50" />

@@ -13,7 +13,7 @@ const TABS = [
   { id: 'home', path: '/home', icon: Home, label: 'Home' },
   { id: 'tasks', path: '/projects', icon: Folder, label: 'Projects' },
   { id: 'create', path: null, icon: Plus, label: 'Create', isAction: true },
-  { id: 'discover', path: '/discover', icon: CheckSquare, label: 'Arena' },
+  { id: 'discover', path: '/discover', icon: CheckSquare, label: 'Discover' },
   { id: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
