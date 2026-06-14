@@ -127,14 +127,35 @@ export default function MobileDrawer({
               OpenShare
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => { onLogout(); onClose?.(); }}
+                className="
+                  p-2 rounded-lg
+                  text-red-500 dark:text-red-400
+                  hover:bg-red-50 dark:hover:bg-red-500/10
+                  active:bg-red-100 dark:active:bg-red-500/15
+                  transition-colors
+                "
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              aria-label="Close menu"
+              title="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* User card */}
