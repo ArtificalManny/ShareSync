@@ -523,7 +523,12 @@ function UserProfileAlias() {
 
 
 function useIsPhoneViewport() {
-  const [isPhone, setIsPhone] = useState(false);
+  const [isPhone, setIsPhone] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(max-width: 900px)").matches;
+    }
+    return false;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -646,9 +651,9 @@ function AppRoutes() {
           } catch {}
         }}
       >
-      {/* ⭐ WEDGE FIX: Forcing explicit rounded-none, m-0, p-0, and full bleed on these wrappers */}
-      <div className="main-content border-none outline-none ring-0 !rounded-none !m-0 !p-0">
-        <div className="content-wrapper border-none shadow-none !rounded-none !m-0 !p-0">
+      {/* ⭐ DYNAMIC WEDGE FIX: Strip desktop classes entirely on mobile to kill the ghost gutter */}
+      <div className={isPhone ? "w-full max-w-full m-0 p-0 overflow-x-hidden" : "main-content border-none outline-none ring-0 !rounded-none !m-0 !p-0"}>
+        <div className={isPhone ? "w-full max-w-full m-0 p-0 flex-1 flex flex-col" : "content-wrapper border-none shadow-none !rounded-none !m-0 !p-0"}>
           <Suspense
             fallback={
               <div className="px-6 py-10 text-center text-slate-500">

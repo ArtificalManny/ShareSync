@@ -79,7 +79,7 @@ const StatCard = ({
     <div
       className={`
         card-surface
-        relative p-5 rounded-xl
+        relative p-4 md:p-5 rounded-xl
         bg-white/95 dark:bg-[#121216]/95 border border-slate-200/80 dark:border-white/[0.08]
         hover:border-violet-200 dark:hover:border-violet-500/30
         shadow-sm hover:shadow-lg
@@ -105,7 +105,7 @@ const StatCard = ({
     >
       <div
         className={`
-          text-2xl font-semibold transition-all duration-200
+          text-xl md:text-2xl font-semibold transition-all duration-200
           ${color}
           ${isHovered ? "scale-105" : "scale-100"}
         `}
@@ -590,13 +590,13 @@ export default function Home() {
 
   return (
     <div
-      className="home-page home-dark-polish-v2 home-dark-surface min-h-screen p-6 lg:p-10 max-w-[1600px] mx-auto text-slate-900 dark:text-zinc-100 transition-colors duration-300"
+      className="home-page home-dark-polish-v2 home-dark-surface min-h-screen w-full max-w-full px-4 py-5 md:p-6 lg:p-10 md:max-w-[1600px] md:mx-auto text-slate-900 dark:text-zinc-100 transition-colors duration-300"
       data-momentum={glowLevel}
     >
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER
       ═══════════════════════════════════════════════════════════════════ */}
-      <header className="mb-10 flex justify-between items-end">
+      <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:justify-between items-start md:items-end gap-2 md:gap-0">
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div
@@ -615,7 +615,7 @@ export default function Home() {
             )}
           </div>
 
-          <h1 className="text-4xl font-semibold text-slate-800 dark:text-zinc-100">
+          <h1 className="text-3xl md:text-4xl font-semibold text-slate-800 dark:text-zinc-100">
             {(() => {
               const hour = new Date().getHours();
               if (hour < 12) return "Good morning";
@@ -665,7 +665,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-4 md:gap-6">
         {/* Missions */}
         <div className={hasRightRail ? "col-span-12 xl:col-span-8" : "col-span-12"}>
           <div

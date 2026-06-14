@@ -53,7 +53,7 @@ export default function ResponsiveLayout({
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#0f1014]">
+    <div className="fixed inset-0 z-[100] flex flex-col h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#0f1014]">
       {/* Mobile header */}
       <MobileHeader
         onMenuPress={handleMenuPress}
@@ -63,7 +63,7 @@ export default function ResponsiveLayout({
       />
 
       {/* Page content — add bottom padding for nav bar */}
-      <main className="flex-1 w-full max-w-full min-w-0 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <main className="flex-1 w-full max-w-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
         {children}
       </main>
 

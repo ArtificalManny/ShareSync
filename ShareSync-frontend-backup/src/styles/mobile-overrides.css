@@ -839,3 +839,70 @@ body,
     overflow-x: hidden !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINAL MOBILE SHELL OVERRIDE
+   Purpose: kill any legacy desktop sidebar/rail gutter on real phones.
+   Keep this at the very bottom of mobile-overrides.css.
+═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  #app-sidebar,
+  .sidebar,
+  .sidebar-toggle,
+  .sidebar-overlay,
+  header.navbar,
+  .navbar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    flex-basis: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+  }
+
+  .app-container,
+  .layout-skin,
+  .main-content,
+  .content-wrapper,
+  body.sidebar-collapsed .main-content {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    transform: none !important;
+    overflow-x: hidden !important;
+  }
+
+  .project-home-content-wrap,
+  .home-page,
+  .projects-page,
+  .discover-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    overflow-x: hidden !important;
+  }
+
+  .project-home-view-nav {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .project-home-view-tab {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+}
