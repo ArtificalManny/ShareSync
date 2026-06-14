@@ -1,3 +1,4 @@
+import './utils/clearOldMobileShellCache';
 // src/App.jsx - PERFORMANCE OPTIMIZED + TOAST SYSTEM ENABLED + NOTIFICATION SETTINGS + PWA + COMMUNITY + PUBLIC PROFILES + HALL OF FAME + PROJECT SETTINGS + CONTEXT TRACKING + WELCOME BACK + CONTEXT INDICATOR + FLOW STATE + SOUND SYSTEM + PHASE N: COMMAND & CONTROL + ALIVE AWARE
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE A: Emotional Immediacy + Momentum Heartbeat
