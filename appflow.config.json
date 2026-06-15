@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "appId": "31b20e5f",
+      "root": "ShareSync-frontend-backup",
+      "iosPath": "ios",
+      "webBuildCommand": "npm run build"
+    }
+  ]
+}
