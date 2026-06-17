@@ -3525,3 +3525,68 @@ html[data-theme="dark"] .quick-notes-list-toolbar button[title="Create new note"
 }
 
 /* END FINAL QUICK NOTES PLUS VISIBILITY FIX */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NATIVE IOS APP SHELL POLISH
+   Only applies inside Capacitor/native app. Does not affect normal web.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.native-app,
+.native-app body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.native-ios {
+  background: #f8fafc;
+}
+
+/* Avoid iOS text zoom and weird input behavior */
+.native-ios input,
+.native-ios textarea,
+.native-ios select,
+.native-ios button {
+  font-size: 16px;
+}
+
+/* Smoother native-feeling taps */
+.native-ios button,
+.native-ios a,
+.native-ios [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.native-ios button:active,
+.native-ios a:active,
+.native-ios [role="button"]:active {
+  transform: scale(0.985);
+}
+
+/* Make the app feel less like Safari and more like a native shell */
+.native-ios body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Give fixed mobile navigation breathing room above the iPhone home indicator */
+.native-ios nav.fixed.bottom-0,
+.native-ios .fixed.bottom-0,
+.native-ios [data-bottom-nav] {
+  padding-bottom: max(env(safe-area-inset-bottom), 10px);
+}
+
+/* Prevent page content from getting hidden under the native bottom nav */
+.native-ios main,
+.native-ios .app-main,
+.native-ios .main-content,
+.native-ios .page-shell {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 84px);
+}
+
+/* Keep floating action buttons above the iOS home indicator */
+.native-ios .fixed.bottom-4,
+.native-ios .fixed.bottom-5,
+.native-ios .fixed.bottom-6 {
+  bottom: max(env(safe-area-inset-bottom), 16px);
+}

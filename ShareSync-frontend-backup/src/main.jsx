@@ -7,10 +7,13 @@ import "./index.css";
 import "./theme.css";
 import "./styles/gradients.css";
 import "./styles/motion.css";
+import { initNativeShell } from "./native/nativeShell";
 import "./registerSW.js";
 
 import posthog from "posthog-js"; // ✅ PHASE 2: The Neural Network
 import { forceMovesStartButtonVisibility } from "./utils/forceMovesStartButtonVisibility";
+
+initNativeShell();
 
 forceMovesStartButtonVisibility();
 
