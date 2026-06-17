@@ -3590,3 +3590,53 @@ html[data-theme="dark"] .quick-notes-list-toolbar button[title="Create new note"
 .native-ios .fixed.bottom-6 {
   bottom: max(env(safe-area-inset-bottom), 16px);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NATIVE IOS HEADER POLISH
+   Fixes cramped app header / Dynamic Island spacing in Capacitor only.
+   Does not affect openshare.ca in Safari/Chrome.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.native-ios [data-mobile-header] {
+  padding-top: max(env(safe-area-inset-top), 14px) !important;
+  min-height: calc(56px + max(env(safe-area-inset-top), 14px)) !important;
+  height: auto !important;
+
+  background: rgba(248, 250, 252, 0.92) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18) !important;
+
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+/* Inner header row: give the buttons/title room to breathe */
+.native-ios [data-mobile-header] > div {
+  min-height: 52px !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Header buttons should feel tappable, not tiny web icons */
+.native-ios [data-mobile-header] button {
+  min-width: 38px !important;
+  min-height: 38px !important;
+  border-radius: 14px !important;
+}
+
+/* Center title row polish */
+.native-ios [data-mobile-header] h1 {
+  font-size: 15px !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Push app content slightly below the taller native header */
+.native-ios main,
+.native-ios .app-main,
+.native-ios .main-content,
+.native-ios .page-shell {
+  scroll-padding-top: calc(env(safe-area-inset-top) + 64px);
+}

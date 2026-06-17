@@ -34,7 +34,7 @@ export default function MobileHeader({
   const title = getPageTitle(location.pathname);
 
   return (
-    <header
+    <header data-mobile-header
       className={`
         sticky top-0 z-[70]
         flex items-center justify-between
