@@ -1,7 +1,7 @@
 // src/components/layout/MobileDrawer.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// Priority 5.5: Slide-from-left navigation drawer (replaces sidebar on mobile)
-// Full navigation links, user avatar, theme toggle, close button. Backdrop overlay.
+// Slide-from-left mobile navigation drawer
+// Branded OpenShare header, full navigation links, user avatar, theme toggle.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useCallback } from 'react';
@@ -10,6 +10,7 @@ import {
   X, Home, Folder, Trophy, User, Settings, Moon, Sun,
   ShieldCheck, LogOut,
 } from 'lucide-react';
+import OpenShareLogo from '../ui/OpenShareLogo';
 
 const NAV_ITEMS = [
   { path: '/home', icon: Home, label: 'Home' },
@@ -31,7 +32,6 @@ export default function MobileDrawer({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e) => {
@@ -44,12 +44,13 @@ export default function MobileDrawer({
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  // Lock body scroll
   useEffect(() => {
     if (!isOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [isOpen]);
 
   const handleNavigate = useCallback((path) => {
@@ -62,7 +63,6 @@ export default function MobileDrawer({
     return location.pathname.startsWith(path);
   }, [location.pathname]);
 
-  // Theme toggle
   const [isDark, setIsDark] = React.useState(() => {
     if (typeof document !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -73,6 +73,7 @@ export default function MobileDrawer({
   const toggleTheme = useCallback(() => {
     const newDark = !isDark;
     setIsDark(newDark);
+
     if (newDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -119,14 +120,38 @@ export default function MobileDrawer({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 dark:border-white/5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
-              <span className="text-xs font-bold text-white">S</span>
+          <button
+            type="button"
+            onClick={() => handleNavigate('/home')}
+            className="
+              flex items-center gap-2.5
+              min-w-0
+              rounded-xl
+              active:scale-[0.98]
+              transition-transform
+            "
+            aria-label="Go to Home"
+          >
+            <div
+              className="
+                w-8 h-8 rounded-xl
+                bg-white dark:bg-white/5
+                ring-1 ring-violet-100 dark:ring-violet-400/15
+                shadow-[0_10px_24px_rgba(124,58,237,0.12)]
+                flex items-center justify-center
+              "
+            >
+              <OpenShareLogo
+                className="w-7 h-7"
+                title="OpenShare"
+              />
             </div>
+
             <span className="text-sm font-semibold text-slate-900 dark:text-white">
               OpenShare
             </span>
-          </div>
+          </button>
+
           <div className="flex items-center gap-2">
             {onLogout && (
               <button
@@ -149,7 +174,12 @@ export default function MobileDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              className="
+                p-2 rounded-lg
+                text-slate-400
+                hover:bg-slate-100 dark:hover:bg-white/5
+                transition-colors
+              "
               aria-label="Close menu"
               title="Close menu"
             >
@@ -169,15 +199,18 @@ export default function MobileDrawer({
             "
             onClick={() => handleNavigate('/profile')}
           >
-            <div className="
-              w-10 h-10 rounded-full
-              bg-violet-100 dark:bg-violet-500/15
-              flex items-center justify-center
-            ">
+            <div
+              className="
+                w-10 h-10 rounded-full
+                bg-violet-100 dark:bg-violet-500/15
+                flex items-center justify-center
+              "
+            >
               <span className="text-sm font-bold text-violet-700 dark:text-violet-300">
                 {initial}
               </span>
             </div>
+
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-800 dark:text-white truncate">
                 {userName}
@@ -194,7 +227,12 @@ export default function MobileDrawer({
         <nav className="flex-1 px-3 overflow-y-auto">
           {NAV_ITEMS.map((item, i) => {
             if (item.divider) {
-              return <div key={`div-${i}`} className="h-px bg-slate-100 dark:bg-white/5 my-2 mx-1" />;
+              return (
+                <div
+                  key={`div-${i}`}
+                  className="h-px bg-slate-100 dark:bg-white/5 my-2 mx-1"
+                />
+              );
             }
 
             const active = isActive(item.path);
@@ -217,7 +255,12 @@ export default function MobileDrawer({
                   }
                 `}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}`} />
+                <Icon
+                  className={`
+                    w-5 h-5 flex-shrink-0
+                    ${active ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-500'}
+                  `}
+                />
                 <span className={`text-sm ${active ? 'font-semibold' : 'font-medium'}`}>
                   {item.label}
                 </span>
@@ -228,7 +271,6 @@ export default function MobileDrawer({
 
         {/* Footer */}
         <div className="px-3 py-4 border-t border-slate-100 dark:border-white/5 space-y-2">
-          {/* Theme toggle */}
           <button
             type="button"
             onClick={toggleTheme}
@@ -240,13 +282,16 @@ export default function MobileDrawer({
               transition-colors
             "
           >
-            {isDark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-400" />}
+            {isDark ? (
+              <Sun className="w-5 h-5 text-amber-500" />
+            ) : (
+              <Moon className="w-5 h-5 text-slate-400" />
+            )}
             <span className="text-sm font-medium">
               {isDark ? 'Light Mode' : 'Dark Mode'}
             </span>
           </button>
 
-          {/* Logout */}
           {onLogout && (
             <button
               type="button"

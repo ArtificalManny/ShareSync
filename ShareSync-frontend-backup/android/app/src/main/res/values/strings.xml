@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OpenShare</string>
+    <string name="title_activity_main">OpenShare</string>
+    <string name="package_name">ca.openshare.app</string>
+    <string name="custom_url_scheme">ca.openshare.app</string>
+</resources>
