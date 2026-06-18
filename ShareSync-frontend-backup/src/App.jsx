@@ -300,6 +300,16 @@ function PublicOnlyRoute({ children }) {
   return children;
 }
 
+function RootRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  return <Navigate to={user ? "/home" : "/login"} replace />;
+}
+
 function SidebarToggle({ sidebarOpen, setSidebarOpen }) {
   return (
     <button
@@ -665,7 +675,7 @@ function AppRoutes() {
             <ScrollToHash />
             <PageTitleManager />
       <Routes>
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<RootRedirect />} />
 
               <Route
                 path="/login"
