@@ -135,7 +135,7 @@ export default function Login() {
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to continue shipping">
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-5">
         <AuthError>{error}</AuthError>
 
         {/* ══════════════════════════════════════════════════════════════════
@@ -147,12 +147,12 @@ export default function Login() {
             window.location.href = getGoogleOAuthUrl();
           }}
           className="
-            btn-outline
-            w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
-            bg-white ring-1 ring-slate-200
-            text-slate-700 font-medium text-sm
-            hover:bg-slate-50 hover:ring-slate-300
-            shadow-sm hover:shadow
+            w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl
+            bg-white border border-slate-200
+            text-slate-700 font-semibold text-sm
+            shadow-[0_1px_2px_rgba(15,23,42,0.05)]
+            hover:bg-slate-50 hover:border-slate-300 hover:shadow-[0_6px_20px_rgba(124,58,237,0.10)]
+            active:scale-[0.99]
             transition-all duration-200
           "
         >
@@ -166,18 +166,18 @@ export default function Login() {
         </button>
 
         {/* ── "or" divider ── */}
-        <div className="relative my-2">
+        <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/[0.08]" />
+            <div className="w-full border-t border-slate-200/70" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-transparent text-slate-500 font-medium">or</span>
+            <span className="px-4 bg-white text-slate-400 font-medium">or</span>
           </div>
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
             Email
           </label>
           <div className="relative">
@@ -190,10 +190,10 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="
-                w-full pl-10 pr-4 py-2.5 rounded-xl
-                bg-white/[0.035] ring-1 ring-white/[0.08]
-                text-white placeholder:text-slate-500
-                focus:outline-none focus:ring-2 focus:ring-purple-500/25
+                w-full pl-10 pr-4 py-3 rounded-2xl
+                bg-white border border-slate-200
+                text-slate-900 placeholder:text-slate-400
+                focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 focus:border-[#8B5CF6]/60
                 transition-all duration-200
               "
             />
@@ -203,12 +203,12 @@ export default function Login() {
         {/* Password */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-sm font-medium text-slate-300">
+            <label className="block text-sm font-medium text-slate-700">
               Password
             </label>
             <Link
               to="/forgot-password"
-              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              className="text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] flex items-center gap-1"
             >
               <KeyRound className="w-3 h-3" />
               Forgot password?
@@ -224,10 +224,10 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="
-                w-full pl-10 pr-10 py-2.5 rounded-xl
-                bg-white/[0.035] ring-1 ring-white/[0.08]
-                text-white placeholder:text-slate-500
-                focus:outline-none focus:ring-2 focus:ring-purple-500/25
+                w-full pl-10 pr-10 py-3 rounded-2xl
+                bg-white border border-slate-200
+                text-slate-900 placeholder:text-slate-400
+                focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 focus:border-[#8B5CF6]/60
                 transition-all duration-200
               "
             />
@@ -250,10 +250,10 @@ export default function Login() {
             onChange={(e) => setRememberMe(e.target.checked)}
             className="
               w-4 h-4 rounded
-              ring-1 ring-white/[0.15]
-              bg-white/[0.04]
-              text-purple-500
-              focus:ring-purple-500/25 focus:ring-offset-0
+              border border-slate-300
+              bg-white
+              text-[#8B5CF6]
+              focus:ring-[#8B5CF6]/30 focus:ring-offset-0
             "
           />
           <label htmlFor="remember" className="text-sm text-slate-400">
@@ -270,10 +270,10 @@ export default function Login() {
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/[0.10]" />
+            <div className="w-full border-t border-slate-200/70" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-transparent text-slate-500">
+            <span className="px-4 bg-white text-slate-400">
               New to OpenShare?
             </span>
           </div>
@@ -288,11 +288,11 @@ export default function Login() {
         {/* Terms */}
         <p className="text-center text-xs text-slate-500">
           By continuing, you agree to OpenShare&apos;s{" "}
-          <Link to="#" className="text-purple-400 hover:underline">
+          <Link to="#" className="text-[#7c3aed] hover:underline">
             Terms
           </Link>{" "}
           and{" "}
-          <Link to="#" className="text-purple-400 hover:underline">
+          <Link to="#" className="text-[#7c3aed] hover:underline">
             Privacy Policy
           </Link>
         </p>
