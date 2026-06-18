@@ -51,7 +51,7 @@ function PasswordStrengthMeter({ password }) {
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              i <= score ? colors[score] : 'bg-slate-700'
+              i <= score ? colors[score] : 'bg-slate-200'
             }`}
           />
         ))}
@@ -116,9 +116,9 @@ function OTPInput({ value, onChange, length = 6 }) {
           autoFocus={i === 0}
           className="
             w-12 h-14 text-center text-2xl font-semibold
-            bg-white/[0.035] ring-1 ring-white/[0.10] rounded-xl
-            text-white
-            focus:ring-2 focus:ring-purple-500/25
+            bg-white ring-1 ring-slate-200 rounded-xl
+            text-slate-900
+            focus:ring-2 focus:ring-[#8B5CF6]/30
             focus:outline-none transition-all duration-200
           "
         />
@@ -157,12 +157,12 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 ring-1 ring-purple-500/20 flex items-center justify-center">
-          <Mail className="w-8 h-8 text-purple-400" />
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/20 flex items-center justify-center">
+          <Mail className="w-8 h-8 text-[#7c3aed]" />
         </div>
         <p className="text-sm text-slate-400">
           We sent a 6-digit code to<br />
-          <span className="text-white font-medium">{email}</span>
+          <span className="text-slate-900 font-medium">{email}</span>
         </p>
       </div>
 
@@ -181,7 +181,7 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
           type="button"
           onClick={handleResend}
           disabled={resendCountdown > 0}
-          className={`${resendCountdown > 0 ? 'text-slate-600' : 'text-purple-400 hover:text-purple-300'}`}
+          className={`${resendCountdown > 0 ? 'text-slate-600' : 'text-[#7c3aed] hover:text-[#6d28d9]'}`}
         >
           {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend'}
         </button>
@@ -378,12 +378,12 @@ export default function CreateAccount() {
             window.location.href = `${API_BASE_URL}/auth/google`;
           }}
           className="
-            btn-outline
-            w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl
-            bg-white ring-1 ring-slate-200
-            text-slate-700 font-medium text-sm
-            hover:bg-slate-50 hover:ring-slate-300
-            shadow-sm hover:shadow
+            w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl
+            bg-white border border-slate-200
+            text-slate-700 font-semibold text-sm
+            shadow-[0_1px_2px_rgba(15,23,42,0.05)]
+            hover:bg-slate-50 hover:border-slate-300 hover:shadow-[0_6px_20px_rgba(124,58,237,0.10)]
+            active:scale-[0.99]
             transition-all duration-200
           "
         >
@@ -399,17 +399,17 @@ export default function CreateAccount() {
             {/* ── "or" divider ── */}
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-400/30" />
+                <div className="w-full border-t border-slate-200/70" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 text-slate-400 font-medium" style={{ backgroundColor: 'transparent' }}>or</span>
+                <span className="px-4 bg-white text-slate-400 font-medium">or</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               {/* First name */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   First name
                 </label>
                 <div className="relative">
@@ -422,10 +422,10 @@ export default function CreateAccount() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={`
-                      w-full pl-10 pr-4 py-2.5 rounded-xl
-                      bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
-                      focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
-                      ${fieldErrors.firstName ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                      w-full pl-10 pr-4 py-3 rounded-2xl
+                      bg-white ring-1 text-slate-900 placeholder:text-slate-400
+                      focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 transition-all duration-200
+                      ${fieldErrors.firstName ? 'ring-red-500/30' : 'ring-slate-200'}
                     `}
                   />
                 </div>
@@ -439,7 +439,7 @@ export default function CreateAccount() {
 
               {/* Last name (ALIGNMENT FIX: icon + pl-10 to match) */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Last name
                 </label>
                 <div className="relative">
@@ -452,10 +452,10 @@ export default function CreateAccount() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={`
-                      w-full pl-10 pr-4 py-2.5 rounded-xl
-                      bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
-                      focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
-                      ${fieldErrors.lastName ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                      w-full pl-10 pr-4 py-3 rounded-2xl
+                      bg-white ring-1 text-slate-900 placeholder:text-slate-400
+                      focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 transition-all duration-200
+                      ${fieldErrors.lastName ? 'ring-red-500/30' : 'ring-slate-200'}
                     `}
                   />
                 </div>
@@ -470,7 +470,7 @@ export default function CreateAccount() {
 
             {/* Username */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Username
               </label>
               <div className="relative">
@@ -483,10 +483,10 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-4 py-2.5 rounded-xl
-                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
-                    ${fieldErrors.username ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                    w-full pl-10 pr-4 py-3 rounded-2xl
+                    bg-white ring-1 text-slate-900 placeholder:text-slate-400
+                    focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 transition-all duration-200
+                    ${fieldErrors.username ? 'ring-red-500/30' : 'ring-slate-200'}
                   `}
                 />
               </div>
@@ -504,7 +504,7 @@ export default function CreateAccount() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Email
               </label>
               <div className="relative">
@@ -517,10 +517,10 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-4 py-2.5 rounded-xl
-                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
-                    ${fieldErrors.email ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                    w-full pl-10 pr-4 py-3 rounded-2xl
+                    bg-white ring-1 text-slate-900 placeholder:text-slate-400
+                    focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 transition-all duration-200
+                    ${fieldErrors.email ? 'ring-red-500/30' : 'ring-slate-200'}
                   `}
                 />
               </div>
@@ -534,7 +534,7 @@ export default function CreateAccount() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -547,10 +547,10 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-10 py-2.5 rounded-xl
-                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
-                    ${fieldErrors.password ? 'ring-red-500/30' : 'ring-white/[0.08]'}
+                    w-full pl-10 pr-10 py-3 rounded-2xl
+                    bg-white ring-1 text-slate-900 placeholder:text-slate-400
+                    focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 transition-all duration-200
+                    ${fieldErrors.password ? 'ring-red-500/30' : 'ring-slate-200'}
                   `}
                 />
                 <button
@@ -576,7 +576,7 @@ export default function CreateAccount() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Confirm password
               </label>
               <div className="relative">
@@ -589,14 +589,14 @@ export default function CreateAccount() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   className={`
-                    w-full pl-10 pr-10 py-2.5 rounded-xl
-                    bg-white/[0.035] ring-1 text-white placeholder:text-slate-500
-                    focus:outline-none focus:ring-2 focus:ring-purple-500/25 transition-all duration-200
+                    w-full pl-10 pr-10 py-3 rounded-2xl
+                    bg-white ring-1 text-slate-900 placeholder:text-slate-400
+                    focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/30 transition-all duration-200
                     ${fieldErrors.confirmPassword
                       ? 'ring-red-500/30'
                       : formData.confirmPassword && formData.confirmPassword === formData.password
                         ? 'ring-green-500/30'
-                        : 'ring-white/[0.08]'
+                        : 'ring-slate-200'
                     }
                   `}
                 />
@@ -629,16 +629,16 @@ export default function CreateAccount() {
 
             <p className="text-center text-sm text-slate-400">
               Already have an account?{" "}
-              <Link to="/login" className="text-purple-400 hover:text-purple-300">
+              <Link to="/login" className="text-[#7c3aed] hover:text-[#6d28d9]">
                 Sign in
               </Link>
             </p>
 
             <p className="text-center text-xs text-slate-500">
               By creating an account, you agree to OpenShare&apos;s{" "}
-              <a href="#" className="text-purple-400 hover:underline">Terms</a>{" "}
+              <a href="#" className="text-[#7c3aed] hover:underline">Terms</a>{" "}
               and{" "}
-              <a href="#" className="text-purple-400 hover:underline">Privacy Policy</a>
+              <a href="#" className="text-[#7c3aed] hover:underline">Privacy Policy</a>
             </p>
           </motion.form>
         ) : (
