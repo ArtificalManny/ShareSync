@@ -3,20 +3,29 @@
 // PHASE N: Enhanced Search Bar with Command Palette Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from 'react';
-import { Search, Command } from 'lucide-react';
-import { formatShortcut } from '../../hooks/useKeyboardShortcuts';
+import React, { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 
 export default function SearchBar({ 
   onOpen, 
   placeholder = 'Search everything...',
   className = '' 
 }) {
+  const navigate = useNavigate();
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+  const handleOpen = useCallback(() => {
+    if (typeof onOpen === 'function') {
+      onOpen();
+      return;
+    }
+    navigate('/search');
+  }, [onOpen, navigate]);
 
   return (
     <button
-      onClick={onOpen}
+      onClick={handleOpen}
       className={`
         flex items-center gap-3 px-4 py-2.5
         bg-surface-2/50 border border-white/[0.06]
@@ -65,9 +74,19 @@ export default function SearchBar({
  * Compact version for narrow spaces
  */
 export function SearchBarCompact({ onOpen, className = '' }) {
+  const navigate = useNavigate();
+
+  const handleOpen = useCallback(() => {
+    if (typeof onOpen === 'function') {
+      onOpen();
+      return;
+    }
+    navigate('/search');
+  }, [onOpen, navigate]);
+
   return (
     <button
-      onClick={onOpen}
+      onClick={handleOpen}
       className={`
         flex items-center justify-center
         w-10 h-10 rounded-lg

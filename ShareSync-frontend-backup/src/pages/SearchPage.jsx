@@ -93,6 +93,17 @@ export default function SearchPage() {
 
   // For a11y: count live region
   const liveRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (window.matchMedia?.("(max-width: 768px)")?.matches) {
+        searchInputRef.current?.focus?.();
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Keyboard nav across the flattened result list
   const [activeIdx, setActiveIdx] = useState(0);
@@ -114,16 +125,25 @@ export default function SearchPage() {
 
     const doSearch = async () => {
       // keep URL in sync
+      const trimmedQ = String(q || "").trim();
       const queryTypes = types.join(",");
       const nextParams = new URLSearchParams(location.search);
-      nextParams.set("q", q);
+      if (trimmedQ) nextParams.set("q", trimmedQ);
+      else nextParams.delete("q");
       nextParams.set("sort", sort);
       nextParams.set("types", queryTypes);
       nextParams.set("scope", scope);
       setParams(nextParams, { replace: true });
 
+      if (trimmedQ.length < 2) {
+        setResults({ projects: [], tasks: [], users: [], posts: [], files: [] });
+        if (liveRef.current) liveRef.current.textContent = "0 results";
+        setLoading(false);
+        return;
+      }
+
       const payload = {
-        q,
+        q: trimmedQ,
         types,
         sort,
         scope,
@@ -139,7 +159,7 @@ export default function SearchPage() {
           data = await searchAll(payload);
         } catch {
           // Back-compat with earlier helper: searchAll("text")
-          data = await searchAll(q);
+          data = await searchAll(trimmedQ);
         }
         
         if (!alive) return;
@@ -307,6 +327,7 @@ export default function SearchPage() {
                 <Search className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden="true" />
               </div>
               <input
+                ref={searchInputRef}
                 value={q}
                 onChange={(e) => { setQ(e.target.value); setActiveIdx(0); }}
                 placeholder="Search @users, #projects, and more…"
