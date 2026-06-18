@@ -7,7 +7,9 @@ import "./index.css";
 import "./theme.css";
 import "./styles/gradients.css";
 import "./styles/motion.css";
-import "./registerSW.js";
+// Service worker disabled during active production development to prevent stale cached builds.
+// // Service worker disabled during active production development to prevent stale cached builds.
+// import "./registerSW.js";
 
 import posthog from "posthog-js"; // ✅ PHASE 2: The Neural Network
 import { forceMovesStartButtonVisibility } from "./utils/forceMovesStartButtonVisibility";
