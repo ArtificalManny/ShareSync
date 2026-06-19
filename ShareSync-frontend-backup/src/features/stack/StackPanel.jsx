@@ -479,6 +479,8 @@ export default function StackPanel({
         priority: newPriority,
         projectId,
         ...(effectiveAssigneeId ? { assigneeId: effectiveAssigneeId } : {}),
+        ...(matchedAssignee?.name ? { assigneeName: matchedAssignee.name } : {}),
+        ...(matchedAssignee?.email ? { assigneeEmail: matchedAssignee.email } : {}),
         ...(effectiveMilestoneId ? { milestoneId: effectiveMilestoneId } : {}),
       };
 
@@ -519,6 +521,7 @@ export default function StackPanel({
       newAssigneeId,
       projectId,
       addingTask,
+      memberOptions,
       normalizedPanelAssigneeId,
       normalizedMilestoneId,
       optimisticUpdate,
@@ -1193,11 +1196,23 @@ export default function StackPanel({
               {filteredTasks.map((t) => {
                 const id = getTaskId(t);
                 const rowDisabled = !projectId || actionBusyId === id;
+                const taskAssigneeId = getTaskAssigneeId(t);
+                const matchedAssigneeOption = taskAssigneeId
+                  ? memberOptions.find((member) => normalizeId(member?.id) === taskAssigneeId)
+                  : null;
+
+                const displayTask = matchedAssigneeOption?.name
+                  ? {
+                      ...t,
+                      assigneeName: matchedAssigneeOption.name,
+                      assigneeEmail: matchedAssigneeOption.email || t?.assigneeEmail,
+                    }
+                  : t;
 
                 return (
                   <StackTaskRow
                     key={id || Math.random()}
-                    task={t}
+                    task={displayTask}
                     disabled={rowDisabled}
                     onStart={handleStart}
                     onMoveToReview={handleMoveToReview}
