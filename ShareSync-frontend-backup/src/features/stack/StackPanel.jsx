@@ -266,9 +266,7 @@ export default function StackPanel({
   const [fallbackTeamMembers, setFallbackTeamMembers] = useState([]);
 
   useEffect(() => {
-    const providedMembers = Array.isArray(teamMembers) ? teamMembers : [];
-
-    if (!projectId || providedMembers.length > 0) {
+    if (!projectId) {
       setFallbackTeamMembers([]);
       return;
     }
@@ -320,10 +318,15 @@ export default function StackPanel({
     return () => {
       cancelled = true;
     };
-  }, [projectId, Array.isArray(teamMembers) ? teamMembers.length : 0]);
+  }, [projectId]);
 
-  const effectiveTeamMembers =
-    Array.isArray(teamMembers) && teamMembers.length > 0 ? teamMembers : fallbackTeamMembers;
+  const effectiveTeamMembers = useMemo(
+    () => [
+      ...(Array.isArray(teamMembers) ? teamMembers : []),
+      ...fallbackTeamMembers,
+    ],
+    [teamMembers, fallbackTeamMembers]
+  );
 
   const memberOptions = useMemo(
     () => normalizeMemberOptions(effectiveTeamMembers),
@@ -444,7 +447,28 @@ export default function StackPanel({
       setAddingTask(true);
       setActionError(null);
 
-      const effectiveAssigneeId = normalizeId(newAssigneeId) || normalizedPanelAssigneeId || "";
+      const rawAssigneeValue = String(newAssigneeId || "").trim();
+      const normalizedRawAssigneeId = normalizeId(rawAssigneeValue);
+      const rawAssigneeLookup = rawAssigneeValue.toLowerCase();
+
+      const matchedAssignee = rawAssigneeValue
+        ? memberOptions.find((member) => {
+            const memberId = normalizeId(member?.id);
+            const memberName = String(member?.name || "").trim().toLowerCase();
+            const memberEmail = String(member?.email || "").trim().toLowerCase();
+
+            return (
+              memberId === normalizedRawAssigneeId ||
+              memberName === rawAssigneeLookup ||
+              memberEmail === rawAssigneeLookup
+            );
+          })
+        : null;
+
+      const effectiveAssigneeId =
+        normalizeId(matchedAssignee?.id || normalizedRawAssigneeId) ||
+        normalizedPanelAssigneeId ||
+        "";
       const effectiveMilestoneId = normalizedMilestoneId || "";
 
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
