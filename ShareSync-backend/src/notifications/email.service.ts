@@ -32,9 +32,16 @@ type UserLike = {
 export class EmailService {
   private transporter?: TransporterLike;
   private readonly fromAddress: string;
+  private readonly resendApiKey?: string;
+  private readonly resendFromAddress?: string;
 
   constructor() {
-    this.fromAddress = process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"ShareSync" <${process.env.SMTP_USER}>` : `"ShareSync" <no-reply@sharesync.local>`);
+    this.resendApiKey = process.env.RESEND_API_KEY || undefined;
+    this.resendFromAddress = process.env.RESEND_FROM || process.env.EMAIL_FROM || undefined;
+    this.fromAddress =
+      this.resendFromAddress ||
+      process.env.EMAIL_FROM ||
+      (process.env.SMTP_USER ? `"ShareSync" <${process.env.SMTP_USER}>` : `"ShareSync" <no-reply@sharesync.local>`);
 
     // Optional dependency: do not break build if nodemailer isn't installed
     let nodemailer: any;
@@ -85,12 +92,22 @@ export class EmailService {
     // Gating: no verified+opt-in => do nothing (SAFE)
     if (!to || !this.isEmailAllowed(user)) return;
 
-    if (!this.transporter) {
-      console.warn('Email transporter not configured - Email notification skipped');
+    const emailHtml = this.buildEmailTemplate(notification);
+
+    if (this.resendApiKey && this.resendFromAddress) {
+      await this.sendViaResend({
+        to,
+        subject: notification?.title || 'ShareSync Update',
+        html: emailHtml,
+        text: notification?.message || notification?.body || '',
+      });
       return;
     }
 
-    const emailHtml = this.buildEmailTemplate(notification);
+    if (!this.transporter) {
+      console.warn('Email transport not configured - Email notification skipped');
+      return;
+    }
 
     try {
       await this.transporter.sendMail({
@@ -112,8 +129,8 @@ export class EmailService {
     const to = this.resolveEmail(user);
     if (!to || !this.isEmailAllowed(user)) return;
 
-    if (!this.transporter) {
-      console.warn('Email transporter not configured - Daily digest skipped');
+    if (!this.resendApiKey && !this.transporter) {
+      console.warn('Email transport not configured - Daily digest skipped');
       return;
     }
 
@@ -145,6 +162,20 @@ export class EmailService {
       </html>
     `;
 
+    if (this.resendApiKey && this.resendFromAddress) {
+      await this.sendViaResend({
+        to,
+        subject: `Daily Digest — ${notifications?.length || 0} updates`,
+        html,
+      });
+      return;
+    }
+
+    if (!this.transporter) {
+      console.warn('Email transport not configured - Daily digest skipped');
+      return;
+    }
+
     try {
       await this.transporter.sendMail({
         from: this.fromAddress,
@@ -154,6 +185,49 @@ export class EmailService {
       });
     } catch (error) {
       console.error('Failed to send Daily Digest Email:', error);
+    }
+  }
+
+  private async sendViaResend(args: {
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+  }): Promise<void> {
+    if (!this.resendApiKey || !this.resendFromAddress) {
+      console.warn('Resend env not configured - Email notification skipped');
+      return;
+    }
+
+    const fetchFn = globalThis.fetch;
+
+    if (typeof fetchFn !== 'function') {
+      console.warn('Global fetch unavailable - Resend email notification skipped');
+      return;
+    }
+
+    try {
+      const response = await fetchFn('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: this.resendFromAddress,
+          to: args.to,
+          subject: args.subject,
+          html: args.html,
+          text: args.text,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        console.warn(`Resend email failed (${response.status}): ${body}`);
+      }
+    } catch (error) {
+      console.error('Failed to send Resend Email:', error);
     }
   }
 
