@@ -272,6 +272,7 @@ export class MilestonesService {
 
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
+    const wasCompleted = String((milestone as any)?.status || '').toLowerCase() === 'completed';
     const wasCompleted =
       String((milestone as any)?.status || '').toLowerCase() === 'completed' ||
       Boolean((milestone as any)?.completedAt);
@@ -290,6 +291,19 @@ export class MilestonesService {
     }
 
     const saved = await milestone.save();
+    const isNowCompleted = String((saved as any)?.status || '').toLowerCase() === 'completed';
+
+    // Fire milestone-reached notifications only on the first transition to completed.
+    if (!wasCompleted && isNowCompleted) {
+      const projectIdForNotification = saved.projectId?.toString?.();
+      if (projectIdForNotification) {
+        await this.projectsService.recordMilestoneReached({
+          projectId: projectIdForNotification,
+          userId,
+          milestoneName: String((saved as any)?.title || (saved as any)?.name || 'Milestone'),
+        });
+      }
+    }
 
     const isCompletedNow =
       String((saved as any)?.status || '').toLowerCase() === 'completed' ||
