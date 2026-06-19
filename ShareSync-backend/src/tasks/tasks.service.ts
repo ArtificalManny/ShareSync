@@ -856,11 +856,16 @@ export class TasksService {
 
     const updated = await task.save();
 
+    const commentProject = await this.projectsService.findById(task.projectId.toString());
+
     this.eventEmitter.emit('task.comment.added', {
-      taskId: task._id,
-      projectId: task.projectId,
+      taskId: task._id.toString(),
+      taskTitle: task.title,
+      projectId: task.projectId.toString(),
+      projectName: commentProject?.name || '',
       userId,
-      mentions: (dto as any).mentions,
+      mentions: (dto as any).mentions || [],
+      commentPreview: String((dto as any).content || '').slice(0, 160),
     });
 
     return updated;

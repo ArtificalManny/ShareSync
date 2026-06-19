@@ -975,8 +975,23 @@ export class ProjectsService {
 
     const updated = await project.save();
 
+    const completedProjectMembers = [
+      {
+        userId: updated.ownerId?.toString?.() || String(updated.ownerId || ''),
+        notificationsEnabled: true,
+      },
+      ...(Array.isArray(updated.members)
+        ? updated.members.map((member: any) => ({
+            userId: member?.userId?.toString?.() || String(member?.userId || ''),
+            notificationsEnabled: member?.preferences?.notifications !== false,
+          }))
+        : []),
+    ].filter((member) => Boolean(member.userId));
+
     this.eventEmitter.emit('project.completed', {
-      projectId: updated._id,
+      projectId: updated._id.toString(),
+      projectName: (updated as any).name || (updated as any).title || 'Project',
+      projectMembers: completedProjectMembers,
       userId,
       outcomeStatus: derivedOutcome,
       leftoverDecision,

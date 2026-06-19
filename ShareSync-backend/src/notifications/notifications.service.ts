@@ -543,17 +543,20 @@ export class NotificationsService {
     await this.notify({
       userId: payload.assigneeId,
       type: NotificationType.TASK_ASSIGNED,
-      title: 'New Task Assigned',
+      title: 'New task assigned',
       body: `You've been assigned: ${payload.taskTitle}`,
       icon: '📋',
+      priority: NotificationPriority.HIGH,
       triggeredBy: payload.assignedBy,
       data: {
         taskId: payload.taskId,
         taskTitle: payload.taskTitle,
         projectId: payload.projectId,
         projectName: payload.projectName,
-      },
+        emailFanoutEligible: true,
+      } as any,
       actions: [{ label: 'View Task', url: `/projects/${payload.projectId}/tasks/${payload.taskId}` }],
+      groupKey: `task-assigned-${payload.assigneeId}-${payload.taskId}`,
     });
   }
 
@@ -797,6 +800,105 @@ export class NotificationsService {
       data: { projectId: payload.projectId, projectName: payload.projectName },
       actions: [{ label: 'Accept Invite', url: `/invite/accept?token=${encodeURIComponent(String((payload as any).token || (payload as any).inviteToken || ''))}` }],
     });
+  }
+
+  @OnEvent('task.comment.added')
+  async handleTaskCommentAdded(payload: {
+    taskId: string;
+    taskTitle?: string;
+    projectId: string;
+    projectName?: string;
+    userId: string;
+    mentions?: string[];
+    commentPreview?: string;
+  }) {
+    const mentions = Array.isArray(payload.mentions) ? payload.mentions : [];
+    const actorId = String(payload.userId || '');
+    const seenRecipients = new Set<string>();
+
+    for (const mentionedUserId of mentions) {
+      const recipientId = String(mentionedUserId || '');
+
+      if (!recipientId) continue;
+      if (recipientId === actorId) continue;
+      if (seenRecipients.has(recipientId)) continue;
+
+      seenRecipients.add(recipientId);
+
+      await this.notify({
+        userId: recipientId,
+        type: NotificationType.MESSAGE_MENTION,
+        title: 'You were mentioned in a task comment',
+        body: payload.commentPreview
+          ? `Mentioned on "${payload.taskTitle || 'a task'}": ${payload.commentPreview}`
+          : `You were mentioned on "${payload.taskTitle || 'a task'}".`,
+        icon: '@',
+        priority: NotificationPriority.HIGH,
+        triggeredBy: actorId,
+        data: {
+          taskId: payload.taskId,
+          taskTitle: payload.taskTitle || 'Task',
+          projectId: payload.projectId,
+          projectName: payload.projectName || 'Project',
+          commentPreview: payload.commentPreview || '',
+          emailFanoutEligible: true,
+        } as any,
+        actions: [{ label: 'View Project', url: `/projects/${payload.projectId}` }],
+        groupKey: `task-comment-mention-${recipientId}-${payload.taskId}`,
+      });
+    }
+  }
+
+  @OnEvent('project.completed')
+  async handleProjectCompleted(payload: {
+    projectId: string;
+    projectName?: string;
+    projectMembers?: Array<{
+      userId?: string | null;
+      notificationsEnabled?: boolean;
+    }>;
+    userId: string;
+    outcomeStatus?: string;
+    leftoverDecision?: string;
+    deferredTaskCount?: number;
+    canceledTaskCount?: number;
+  }) {
+    const projectMembers = Array.isArray(payload.projectMembers) ? payload.projectMembers : [];
+    const actorId = String(payload.userId || '');
+    const projectName = payload.projectName || 'Project';
+    const seenRecipients = new Set<string>();
+
+    for (const member of projectMembers) {
+      const recipientId = String(member?.userId || '');
+
+      if (!recipientId) continue;
+      if (recipientId === actorId) continue;
+      if (seenRecipients.has(recipientId)) continue;
+      if (member?.notificationsEnabled === false) continue;
+
+      seenRecipients.add(recipientId);
+
+      await this.notify({
+        userId: recipientId,
+        type: NotificationType.PROJECT_UPDATE,
+        title: 'Project completed',
+        body: `${projectName} was marked complete.`,
+        icon: '🏁',
+        priority: NotificationPriority.HIGH,
+        triggeredBy: actorId,
+        data: {
+          projectId: payload.projectId,
+          projectName,
+          outcomeStatus: payload.outcomeStatus || null,
+          leftoverDecision: payload.leftoverDecision || null,
+          deferredTaskCount: payload.deferredTaskCount || 0,
+          canceledTaskCount: payload.canceledTaskCount || 0,
+          emailFanoutEligible: true,
+        } as any,
+        actions: [{ label: 'View Project', url: `/projects/${payload.projectId}` }],
+        groupKey: `project-completed-${recipientId}-${payload.projectId}`,
+      });
+    }
   }
 
   @OnEvent('message.sent')
