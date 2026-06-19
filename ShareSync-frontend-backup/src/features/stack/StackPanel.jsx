@@ -97,13 +97,35 @@ function isCriticalTask(task) {
 }
 
 function getMemberName(member) {
-  const user = member?.userId || member?.user || member;
-  return (
-    user?.name ||
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
-    user?.username ||
-    user?.email ||
+  const user =
+    member?.userId && typeof member.userId === "object"
+      ? member.userId
+      : member?.user && typeof member.user === "object"
+        ? member.user
+        : member?.memberId && typeof member.memberId === "object"
+          ? member.memberId
+          : member?.member && typeof member.member === "object"
+            ? member.member
+            : member;
+
+  const directName =
     member?.name ||
+    member?.fullName ||
+    member?.displayName ||
+    [member?.firstName, member?.lastName].filter(Boolean).join(" ").trim();
+
+  const userName =
+    user?.name ||
+    user?.fullName ||
+    user?.displayName ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+
+  return (
+    directName ||
+    userName ||
+    user?.username ||
+    member?.username ||
+    user?.email ||
     member?.email ||
     "Team member"
   );
@@ -116,8 +138,28 @@ function normalizeMemberOptions(list) {
   const normalized = [];
 
   for (const member of list) {
-    const user = member?.userId || member?.user || member;
-    const id = normalizeId(user?._id || user?.id || member?.id || member?._id);
+    const user =
+      member?.userId && typeof member.userId === "object"
+        ? member.userId
+        : member?.user && typeof member.user === "object"
+          ? member.user
+          : member?.memberId && typeof member.memberId === "object"
+            ? member.memberId
+            : member?.member && typeof member.member === "object"
+              ? member.member
+              : member;
+
+    const id = normalizeId(
+      member?.userId ||
+        member?.memberId ||
+        member?.user ||
+        member?.member ||
+        user?._id ||
+        user?.id ||
+        member?.id ||
+        member?._id
+    );
+
     if (!id || seen.has(id)) continue;
 
     seen.add(id);
@@ -125,7 +167,7 @@ function normalizeMemberOptions(list) {
       id,
       name: getMemberName(member),
       email: user?.email || member?.email || "",
-      role: member?.role || user?.role || "",
+      role: member?.displayRole || member?.role || user?.role || "",
     });
   }
 
@@ -221,7 +263,72 @@ export default function StackPanel({
   const addInputRef = useRef(null);
 
   const safeTasks = useMemo(() => (Array.isArray(tasks) ? tasks : []), [tasks]);
-  const memberOptions = useMemo(() => normalizeMemberOptions(teamMembers), [teamMembers]);
+  const [fallbackTeamMembers, setFallbackTeamMembers] = useState([]);
+
+  useEffect(() => {
+    const providedMembers = Array.isArray(teamMembers) ? teamMembers : [];
+
+    if (!projectId || providedMembers.length > 0) {
+      setFallbackTeamMembers([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProjectMembersForPicker() {
+      try {
+        const token =
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken") ||
+          localStorage.getItem("accessToken") ||
+          JSON.parse(localStorage.getItem("auth") || "{}")?.token ||
+          JSON.parse(localStorage.getItem("user") || "{}")?.token;
+
+        const apiBase = (
+          import.meta.env.VITE_API_URL ||
+          import.meta.env.VITE_BACKEND_URL ||
+          "https://openshare-backend.onrender.com/api"
+        ).replace(/\/$/, "");
+
+        const res = await fetch(`${apiBase}/projects/${projectId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        if (!res.ok) return;
+
+        const body = await res.json();
+        const projectPayload = body?.data || body?.project || body;
+
+        const members = Array.isArray(projectPayload?.members) ? projectPayload.members : [];
+        const owners = [
+          projectPayload?.owner,
+          projectPayload?.ownerId,
+          projectPayload?.createdBy,
+          projectPayload?.createdById,
+        ].filter(Boolean);
+
+        if (!cancelled) {
+          setFallbackTeamMembers([...members, ...owners]);
+        }
+      } catch {
+        if (!cancelled) setFallbackTeamMembers([]);
+      }
+    }
+
+    loadProjectMembersForPicker();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, Array.isArray(teamMembers) ? teamMembers.length : 0]);
+
+  const effectiveTeamMembers =
+    Array.isArray(teamMembers) && teamMembers.length > 0 ? teamMembers : fallbackTeamMembers;
+
+  const memberOptions = useMemo(
+    () => normalizeMemberOptions(effectiveTeamMembers),
+    [effectiveTeamMembers]
+  );
 
   const normalizedPanelAssigneeId = useMemo(() => normalizeId(assigneeId), [assigneeId]);
   const normalizedMilestoneId = useMemo(() => normalizeId(milestoneIdFilter), [milestoneIdFilter]);
