@@ -4238,6 +4238,7 @@ export default function ProjectHome() {
                 projectId={id}
                 limit={10}
                 milestoneIdFilter={selectedMilestoneId}
+                teamMembers={projectPulseGetProjectMembers(project)}
               />
             </div>
           );
