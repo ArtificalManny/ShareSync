@@ -679,9 +679,81 @@ export class TasksService {
       },
     });
 
+    let taskCompletedProjectName = 'Project';
+    let taskCompletedProjectMembers: Array<{
+      userId?: string | null;
+      memberId?: string | null;
+      notificationsEnabled: boolean;
+    }> = [];
+
+    try {
+      const projectForTaskCompletedNotification = await this.projectsService.findById(
+        task.projectId.toString(),
+      );
+
+      taskCompletedProjectName = String(
+        (projectForTaskCompletedNotification as any)?.name ||
+          (projectForTaskCompletedNotification as any)?.title ||
+          (projectForTaskCompletedNotification as any)?.projectName ||
+          'Project',
+      );
+
+      const seenMemberIds = new Set<string>();
+
+      const addProjectMember = (
+        rawUserId: unknown,
+        rawMemberId: unknown = null,
+        notificationsEnabled = true,
+      ) => {
+        const userIdValue = rawUserId ? String(rawUserId) : '';
+        const memberIdValue = rawMemberId ? String(rawMemberId) : '';
+        const recipientId = userIdValue || memberIdValue;
+
+        if (!recipientId || seenMemberIds.has(recipientId)) return;
+
+        seenMemberIds.add(recipientId);
+        taskCompletedProjectMembers.push({
+          userId: userIdValue || null,
+          memberId: memberIdValue || null,
+          notificationsEnabled,
+        });
+      };
+
+      const members = Array.isArray((projectForTaskCompletedNotification as any)?.members)
+        ? (projectForTaskCompletedNotification as any).members
+        : [];
+
+      for (const member of members) {
+        addProjectMember(
+          member?.userId,
+          member?.memberId,
+          member?.preferences?.notifications !== false,
+        );
+      }
+
+      for (const ownerCandidate of [
+        (projectForTaskCompletedNotification as any)?.ownerId,
+        (projectForTaskCompletedNotification as any)?.owner,
+        (projectForTaskCompletedNotification as any)?.createdBy,
+        (projectForTaskCompletedNotification as any)?.createdById,
+        (projectForTaskCompletedNotification as any)?.userId,
+      ]) {
+        addProjectMember(ownerCandidate, null, true);
+      }
+    } catch (err: any) {
+      this.logger.warn(
+        `Task completed member fan-out enrichment skipped for task ${task._id.toString()}: ${
+          err?.message || err
+        }`,
+      );
+    }
+
     this.eventEmitter.emit('task.completed', {
       taskId: task._id.toString(),
+      taskTitle: task.title,
       projectId: task.projectId.toString(),
+      projectName: taskCompletedProjectName,
+      projectMembers: taskCompletedProjectMembers,
       userId,
       xpAwarded: totalXP,
       isLegendary: variableRewards.isLegendary,

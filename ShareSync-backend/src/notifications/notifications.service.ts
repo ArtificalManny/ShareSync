@@ -560,7 +560,14 @@ export class NotificationsService {
   @OnEvent('task.completed')
   async handleTaskCompleted(payload: {
     taskId: string;
+    taskTitle?: string;
     projectId: string;
+    projectName?: string;
+    projectMembers?: Array<{
+      userId?: string | null;
+      memberId?: string | null;
+      notificationsEnabled?: boolean;
+    }>;
     userId: string;
     xpAwarded: number;
     isLegendary: boolean;
@@ -576,6 +583,55 @@ export class NotificationsService {
       data: { xpAmount: payload.xpAwarded, taskId: payload.taskId, projectId: payload.projectId },
       groupKey: `xp-${payload.userId}-${new Date().toDateString()}`,
     });
+
+    const projectMembers = Array.isArray(payload.projectMembers) ? payload.projectMembers : [];
+    const actorId = String(payload.userId || '');
+    const taskTitle = payload.taskTitle || 'a task';
+    const projectName = payload.projectName || 'this project';
+    const seenRecipients = new Set<string>();
+
+    for (const member of projectMembers) {
+      const recipientId = String(member?.userId || member?.memberId || '');
+
+      if (!recipientId) continue;
+      if (recipientId === actorId) continue;
+      if (seenRecipients.has(recipientId)) continue;
+      if (member?.notificationsEnabled === false) continue;
+
+      seenRecipients.add(recipientId);
+
+      try {
+        await this.notify({
+          userId: recipientId,
+          type: NotificationType.TASK_COMPLETED,
+          title: 'Task completed',
+          body: `A teammate completed "${taskTitle}" in ${projectName}.`,
+          icon: '✅',
+          priority: NotificationPriority.HIGH,
+          triggeredBy: actorId,
+          data: {
+            taskId: payload.taskId,
+            taskTitle,
+            projectId: payload.projectId,
+            projectName,
+            emailFanoutEligible: true,
+          } as any,
+          actions: [
+            {
+              label: 'View Project',
+              url: `/projects/${payload.projectId}`,
+            },
+          ],
+          groupKey: `task-completed-${recipientId}-${payload.taskId}`,
+        });
+      } catch (err: any) {
+        this.logger.warn(
+          `Task completed notification fan-out failed for user ${recipientId}: ${
+            err?.message || err
+          }`,
+        );
+      }
+    }
   }
 
   // ✅ Step 5: task moved to review (status change)
