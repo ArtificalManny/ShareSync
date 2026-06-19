@@ -261,7 +261,51 @@ export class NotificationChannelsService {
   }
 
   private async trySendEmailCode(email: string, code: string): Promise<boolean> {
-    // Optional dependency: if nodemailer isn't installed or SMTP not configured, do not break.
+    const subject = 'Your ShareSync verification code';
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:20px">
+        <h2 style="margin:0 0 12px 0">Verify your email</h2>
+        <p style="margin:0 0 16px 0;color:#334155">Your ShareSync verification code is:</p>
+        <div style="font-size:28px;font-weight:700;letter-spacing:3px;margin:0 0 18px 0">${code}</div>
+        <p style="margin:0;color:#64748b;font-size:12px">This code expires in ${CODE_TTL_MINUTES} minutes.</p>
+      </div>
+    `;
+    const text = `Your code: ${code}`;
+
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM;
+
+    if (resendApiKey && resendFrom && typeof globalThis.fetch === 'function') {
+      try {
+        const response = await globalThis.fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: resendFrom,
+            to: email,
+            subject,
+            html,
+            text,
+          }),
+        });
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '');
+          console.warn(`Resend verification email failed (${response.status}): ${body}`);
+          return false;
+        }
+
+        return true;
+      } catch (err) {
+        console.error('Failed to send Resend verification email:', err);
+        return false;
+      }
+    }
+
+    // Fallback: optional SMTP/nodemailer support.
     let nodemailer: any;
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -277,7 +321,7 @@ export class NotificationChannelsService {
     const pass = process.env.SMTP_PASS;
 
     if (!host || !portRaw || !user || !pass) {
-      console.warn('SMTP env not configured - email verification code not sent');
+      console.warn('Email verification env not configured - code not sent');
       return false;
     }
 
@@ -292,18 +336,9 @@ export class NotificationChannelsService {
     });
 
     const from = process.env.EMAIL_FROM || `"ShareSync" <${user}>`;
-    const subject = 'Your ShareSync verification code';
-    const html = `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:20px">
-        <h2 style="margin:0 0 12px 0">Verify your email</h2>
-        <p style="margin:0 0 16px 0;color:#334155">Your ShareSync verification code is:</p>
-        <div style="font-size:28px;font-weight:700;letter-spacing:3px;margin:0 0 18px 0">${code}</div>
-        <p style="margin:0;color:#64748b;font-size:12px">This code expires in ${CODE_TTL_MINUTES} minutes.</p>
-      </div>
-    `;
 
     try {
-      await transporter.sendMail({ from, to: email, subject, html, text: `Your code: ${code}` });
+      await transporter.sendMail({ from, to: email, subject, html, text });
       return true;
     } catch (err) {
       console.error('Failed to send verification email:', err);
