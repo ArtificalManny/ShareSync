@@ -811,6 +811,73 @@ export class ProjectsService {
       });
     }
 
+    if (this.notifications?.createBulk) {
+      const seenMemberIds = new Set<string>();
+      const memberRecipientIds: string[] = [];
+
+      const addMemberRecipient = (rawUserId: any, rawMemberId: any = null, notificationsEnabled = true) => {
+        const userIdValue = rawUserId
+          ? String(rawUserId?._id || rawUserId?.id || rawUserId)
+          : '';
+        const memberIdValue = rawMemberId
+          ? String(rawMemberId?._id || rawMemberId?.id || rawMemberId)
+          : '';
+
+        const recipientId = userIdValue || memberIdValue;
+
+        if (!recipientId) return;
+        if (recipientId === args.userId) return;
+        if (notificationsEnabled === false) return;
+        if (seenMemberIds.has(recipientId)) return;
+
+        seenMemberIds.add(recipientId);
+        memberRecipientIds.push(recipientId);
+      };
+
+      const members = Array.isArray((project as any)?.members) ? (project as any).members : [];
+
+      for (const member of members) {
+        addMemberRecipient(
+          member?.userId,
+          member?.memberId,
+          member?.preferences?.notifications !== false,
+        );
+      }
+
+      for (const ownerCandidate of [
+        (project as any)?.ownerId,
+        (project as any)?.owner,
+        (project as any)?.createdBy,
+        (project as any)?.createdById,
+        (project as any)?.userId,
+      ]) {
+        addMemberRecipient(ownerCandidate, null, true);
+      }
+
+      if (memberRecipientIds.length > 0) {
+        await this.notifications.createBulk(
+          memberRecipientIds.map((userId) => ({
+            userId,
+            type: 'project_milestone_reached' as any,
+            title: '🏁 Milestone reached',
+            body: `${projectName}: ${args.milestoneName}`,
+            icon: '🏁',
+            priority: 'high' as any,
+            triggeredBy: args.userId,
+            data: {
+              projectId: args.projectId,
+              projectName,
+              milestoneName: args.milestoneName,
+              emailFanoutEligible: true,
+              projectMemberNotification: true,
+            },
+            actions: [{ label: 'View Project', url: `/projects/${args.projectId}` }],
+            groupKey: `project-member-mile-${userId}-${args.projectId}-${args.milestoneName}`,
+          }) as any),
+        );
+      }
+    }
+
     return { success: true };
   }
 
