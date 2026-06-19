@@ -273,11 +273,7 @@ export class MilestonesService {
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
     const wasCompleted = String((milestone as any)?.status || '').toLowerCase() === 'completed';
-    const wasCompleted =
-      String((milestone as any)?.status || '').toLowerCase() === 'completed' ||
-      Boolean((milestone as any)?.completedAt);
-
-    // Update fields
+// Update fields
     Object.assign(milestone, dto);
 
     // Auto-update status based on progress
