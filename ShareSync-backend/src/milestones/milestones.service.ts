@@ -272,6 +272,9 @@ export class MilestonesService {
 
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
+    const wasCompleted =
+      String((milestone as any)?.status || '').toLowerCase() === 'completed' ||
+      Boolean((milestone as any)?.completedAt);
 
     // Update fields
     Object.assign(milestone, dto);
@@ -287,6 +290,27 @@ export class MilestonesService {
     }
 
     const saved = await milestone.save();
+
+    const isCompletedNow =
+      String((saved as any)?.status || '').toLowerCase() === 'completed' ||
+      Number((saved as any)?.progress || 0) >= 100 ||
+      Boolean((saved as any)?.completedAt);
+
+    if (!wasCompleted && isCompletedNow) {
+      try {
+        await this.projectsService.recordMilestoneReached({
+          projectId: saved.projectId.toString(),
+          userId,
+          milestoneName: String((saved as any)?.title || 'Milestone'),
+        });
+      } catch (err: any) {
+        this.logger.warn(
+          `Milestone reached notification skipped for ${saved._id.toString()}: ${
+            err?.message || err
+          }`,
+        );
+      }
+    }
 
     // 👀 Step 6: Public Spectator Stream (milestone updated)
     const projectId = saved.projectId?.toString?.();
