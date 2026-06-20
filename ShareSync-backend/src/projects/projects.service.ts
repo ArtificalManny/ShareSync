@@ -795,11 +795,58 @@ export class ProjectsService {
 
     const projectName = args.projectNameOverride || project.name;
 
+    const milestoneEventRecipientIds = (() => {
+      const seen = new Set<string>();
+      const recipients: string[] = [];
+
+      const addRecipient = (rawUserId: any, rawMemberId: any = null, notificationsEnabled = true) => {
+        const userIdValue = rawUserId
+          ? String(rawUserId?._id || rawUserId?.id || rawUserId)
+          : '';
+        const memberIdValue = rawMemberId
+          ? String(rawMemberId?._id || rawMemberId?.id || rawMemberId)
+          : '';
+
+        const recipientId = userIdValue || memberIdValue;
+
+        if (!recipientId) return;
+        if (recipientId === args.userId) return;
+        if (notificationsEnabled === false) return;
+        if (seen.has(recipientId)) return;
+
+        seen.add(recipientId);
+        recipients.push(recipientId);
+      };
+
+      const members = Array.isArray((project as any)?.members) ? (project as any).members : [];
+
+      for (const member of members) {
+        addRecipient(
+          member?.userId,
+          member?.memberId,
+          member?.preferences?.notifications !== false,
+        );
+      }
+
+      for (const ownerCandidate of [
+        (project as any)?.ownerId,
+        (project as any)?.owner,
+        (project as any)?.createdBy,
+        (project as any)?.createdById,
+        (project as any)?.userId,
+      ]) {
+        addRecipient(ownerCandidate, null, true);
+      }
+
+      return recipients;
+    })();
+
     this.eventEmitter.emit('project.milestone.reached', {
       projectId: args.projectId,
       projectName,
       milestoneName: args.milestoneName,
       triggeredBy: args.userId,
+      memberRecipientIds: milestoneEventRecipientIds,
     });
 
     if (this.notifications?.notifyFollowersMilestoneReached) {

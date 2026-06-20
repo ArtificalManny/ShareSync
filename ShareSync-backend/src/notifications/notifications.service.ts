@@ -285,6 +285,59 @@ export class NotificationsService {
     return { success: true, created: bulk.length };
   }
 
+  @OnEvent('project.milestone.reached')
+  async handleProjectMilestoneReached(payload: {
+    projectId: string;
+    projectName?: string;
+    milestoneName: string;
+    triggeredBy?: string;
+    memberRecipientIds?: string[];
+  }) {
+    const seen = new Set<string>();
+
+    const recipients = Array.isArray(payload.memberRecipientIds)
+      ? payload.memberRecipientIds
+          .map((id) => String(id || '').trim())
+          .filter((id) => {
+            if (!id) return false;
+            if (payload.triggeredBy && id === payload.triggeredBy) return false;
+            if (seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          })
+      : [];
+
+    if (recipients.length === 0) {
+      return { success: true, created: 0 };
+    }
+
+    const projectName = payload.projectName || 'Project';
+    const milestoneName = payload.milestoneName || 'Milestone';
+
+    await this.createBulk(
+      recipients.map((userId) => ({
+        userId,
+        type: NotificationType.PROJECT_MILESTONE_REACHED,
+        title: '🏁 Milestone reached',
+        body: `${projectName}: ${milestoneName}`,
+        icon: '🏁',
+        priority: NotificationPriority.HIGH,
+        triggeredBy: payload.triggeredBy,
+        data: {
+          projectId: payload.projectId,
+          projectName,
+          milestoneName,
+          emailFanoutEligible: true,
+          projectMemberNotification: true,
+        },
+        actions: [{ label: 'View Project', url: `/projects/${payload.projectId}` }],
+        groupKey: `project-member-mile-${userId}-${payload.projectId}-${milestoneName}`,
+      })),
+    );
+
+    return { success: true, created: recipients.length };
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // READ
   // ─────────────────────────────────────────────────────────────────────────────
