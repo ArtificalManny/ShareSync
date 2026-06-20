@@ -1303,16 +1303,77 @@ export default function RoadmapPanel({
                       key={mid}
                       className="group rounded-[1.75rem] bg-gradient-to-br from-violet-500/20 via-cyan-400/15 to-emerald-400/20 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-black/40"
                     >
-                      <div className="rounded-[1.7rem] bg-white/95 dark:bg-[#111113]/95">
+                      <div className="rounded-[1.7rem] bg-white/95 dark:bg-[#111113]/95 overflow-hidden">
                         <MilestoneCard
                           milestone={m}
                           onClick={handleCardClick}
-                          showActions={true}
+                          showActions={false}
                           isSelected={isSelected}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
                           onStatusChange={handleStatusChange}
                         />
+
+                        <div className="roadmap-visible-card-actions-v1 px-5 pb-5 pt-0 flex flex-wrap items-center gap-2 border-t border-slate-100/80 dark:border-white/[0.06]">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(mid, m);
+                            }}
+                            className="inline-flex items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm transition hover:bg-violet-100 dark:border-brand-500/25 dark:bg-brand-500/10 dark:text-brand-200"
+                          >
+                            Edit
+                          </button>
+
+                          {isMilestoneCompleted(m) ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(mid, 'in_progress');
+                              }}
+                              className="inline-flex items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 shadow-sm transition hover:bg-cyan-100 dark:border-cyan-500/25 dark:bg-cyan-500/10 dark:text-cyan-200"
+                            >
+                              Mark In Progress
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(mid, 'completed');
+                              }}
+                              className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200"
+                            >
+                              Mark Completed
+                            </button>
+                          )}
+
+                          {normalizeStatus(m?.status) !== 'planned' ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(mid, 'planned');
+                              }}
+                              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-text-secondary"
+                            >
+                              Plan
+                            </button>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(mid, m);
+                            }}
+                            className="ml-auto inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
