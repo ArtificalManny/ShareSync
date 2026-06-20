@@ -69,6 +69,33 @@ export class MilestonesService {
 
     const saved = await milestone.save();
 
+    const createdAsCompleted =
+      String((saved as any)?.status || dto?.status || '').toLowerCase() === 'completed' ||
+      Number((saved as any)?.progress ?? (dto as any)?.progress ?? 0) >= 100;
+
+    if (createdAsCompleted) {
+      try {
+        const projectId = saved.projectId?.toString?.();
+
+        if (projectId) {
+          const project = await this.projectsService.findById(projectId);
+
+          await this.projectsService.recordMilestoneReached({
+            projectId,
+            userId,
+            milestoneName: (saved as any).title || dto.title || 'Milestone',
+            projectNameOverride: (project as any)?.name,
+          });
+        }
+      } catch (err: any) {
+        this.logger.warn(
+          `Milestone create completion notification skipped for ${saved._id?.toString?.()}: ${
+            err?.message || err
+          }`,
+        );
+      }
+    }
+
     // ⭐ DIRECT REALTIME NOTIFICATIONS & LIVE ROOM OVERRIDE
     try {
       let rtGateway: any = null;
