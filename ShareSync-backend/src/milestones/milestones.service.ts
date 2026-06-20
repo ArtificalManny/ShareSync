@@ -299,58 +299,126 @@ export class MilestonesService {
 
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
-    const wasCompleted = String((milestone as any)?.status || '').toLowerCase() === 'completed';
-// Update fields
+
+    const wasCompleted =
+      String((milestone as any)?.status || '').toLowerCase() === 'completed' ||
+      Number((milestone as any)?.progress || 0) >= 100 ||
+      Boolean((milestone as any)?.completedAt);
+
     Object.assign(milestone, dto);
 
-    // Auto-update status based on progress
-    if (dto.progress !== undefined) {
+    const requestedCompleted =
+      String((dto as any)?.status || '').toLowerCase() === 'completed' ||
+      Number((dto as any)?.progress || 0) >= 100 ||
+      Boolean((dto as any)?.completedAt);
+
+    // Auto-update status based on progress or explicit completed status.
+    if (requestedCompleted) {
+      (milestone as any).status = 'completed';
+      if (!(milestone as any).completedAt) {
+        (milestone as any).completedAt = new Date();
+      }
+    } else if (dto.progress !== undefined) {
       if (dto.progress >= 100) {
-        milestone.status = 'completed';
-        milestone.completedAt = new Date();
-      } else if (dto.progress >= 1 && milestone.status === 'planned') {
-        milestone.status = 'in_progress';
+        (milestone as any).status = 'completed';
+        (milestone as any).completedAt = new Date();
+      } else if (dto.progress >= 1 && (milestone as any).status === 'planned') {
+        (milestone as any).status = 'in_progress';
       }
     }
 
     const saved = await milestone.save();
-    const isNowCompleted = String((saved as any)?.status || '').toLowerCase() === 'completed';
 
-    // Fire milestone-reached notifications only on the first transition to completed.
-    if (!wasCompleted && isNowCompleted) {
-      const projectIdForNotification = saved.projectId?.toString?.();
-      if (projectIdForNotification) {
-        await this.projectsService.recordMilestoneReached({
-          projectId: projectIdForNotification,
-          userId,
-          milestoneName: String((saved as any)?.title || (saved as any)?.name || 'Milestone'),
-        });
-      }
-    }
-
-    const isCompletedNow =
+    const isNowCompleted =
       String((saved as any)?.status || '').toLowerCase() === 'completed' ||
       Number((saved as any)?.progress || 0) >= 100 ||
       Boolean((saved as any)?.completedAt);
 
-    if (!wasCompleted && isCompletedNow) {
+    const projectId = saved.projectId?.toString?.();
+
+    // Fire project-member milestone completion notifications only once:
+    // first transition from not-completed -> completed.
+    if (!wasCompleted && isNowCompleted && projectId) {
       try {
-        await this.projectsService.recordMilestoneReached({
-          projectId: saved.projectId.toString(),
-          userId,
-          milestoneName: String((saved as any)?.title || 'Milestone'),
+        const projectForNotification = await this.projectsService.findById(projectId);
+
+        const projectName =
+          String(
+            (projectForNotification as any)?.name ||
+              (projectForNotification as any)?.title ||
+              'Project',
+          );
+
+        const seen = new Set<string>();
+        const memberRecipientIds: string[] = [];
+
+        const addRecipient = (
+          rawUserId: any,
+          rawMemberId: any = null,
+          notificationsEnabled = true,
+        ) => {
+          const userIdValue = rawUserId
+            ? String(rawUserId?._id || rawUserId?.id || rawUserId)
+            : '';
+
+          const memberIdValue = rawMemberId
+            ? String(rawMemberId?._id || rawMemberId?.id || rawMemberId)
+            : '';
+
+          const recipientId = userIdValue || memberIdValue;
+
+          if (!recipientId) return;
+          if (recipientId === userId) return;
+          if (notificationsEnabled === false) return;
+          if (seen.has(recipientId)) return;
+
+          seen.add(recipientId);
+          memberRecipientIds.push(recipientId);
+        };
+
+        const members = Array.isArray((projectForNotification as any)?.members)
+          ? (projectForNotification as any).members
+          : [];
+
+        for (const member of members) {
+          addRecipient(
+            member?.userId,
+            member?.memberId,
+            member?.preferences?.notifications !== false,
+          );
+        }
+
+        for (const ownerCandidate of [
+          (projectForNotification as any)?.ownerId,
+          (projectForNotification as any)?.owner,
+          (projectForNotification as any)?.createdBy,
+          (projectForNotification as any)?.createdById,
+          (projectForNotification as any)?.userId,
+        ]) {
+          addRecipient(ownerCandidate, null, true);
+        }
+
+        this.eventEmitter.emit('project.milestone.reached', {
+          projectId,
+          projectName,
+          milestoneName: String((saved as any)?.title || (saved as any)?.name || 'Milestone'),
+          triggeredBy: userId,
+          memberRecipientIds,
         });
+
+        this.logger.log(
+          `Milestone completion notification emitted for ${saved._id.toString()} to ${memberRecipientIds.length} project members`,
+        );
       } catch (err: any) {
         this.logger.warn(
-          `Milestone reached notification skipped for ${saved._id.toString()}: ${
+          `Milestone completion notification skipped for ${saved._id.toString()}: ${
             err?.message || err
           }`,
         );
       }
     }
 
-    // 👀 Step 6: Public Spectator Stream (milestone updated)
-    const projectId = saved.projectId?.toString?.();
+    // Public spectator stream: milestone updated.
     if (projectId) {
       const project = await this.projectsService.findById(projectId);
       if ((project as any)?.public === true) {
