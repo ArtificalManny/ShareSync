@@ -14,7 +14,8 @@
 // - Preserves dark-mode token behavior
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Flag,
   Calendar,
@@ -128,6 +129,50 @@ const MilestoneCard = ({
   onStatusChange,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const actionButtonRef = useRef(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+
+  const handleToggleMenu = useCallback((e) => {
+    e.stopPropagation();
+
+    const rect = actionButtonRef.current?.getBoundingClientRect?.();
+
+    if (rect) {
+      const menuWidth = 260;
+      const menuHeight = 310;
+      const gap = 10;
+
+      const left = Math.max(
+        12,
+        Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 12)
+      );
+
+      const topBelow = rect.bottom + gap;
+      const top =
+        topBelow + menuHeight > window.innerHeight
+          ? Math.max(12, rect.top - menuHeight - gap)
+          : topBelow;
+
+      setMenuPosition({ top, left });
+    }
+
+    setShowMenu((open) => !open);
+  }, []);
+
+  useEffect(() => {
+    if (!showMenu) return undefined;
+
+    const close = () => setShowMenu(false);
+
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+
+    return () => {
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [showMenu]);
+
 
   const id = getMilestoneId(milestone);
 
@@ -217,12 +262,10 @@ const MilestoneCard = ({
         {showActions && (
           <div className="relative">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
-              }}
+              ref={actionButtonRef}
+              onClick={handleToggleMenu}
               className="
-                p-1.5 rounded-md opacity-0 group-hover:opacity-100
+                p-1.5 rounded-md opacity-100
                 text-slate-500 dark:text-text-tertiary
                 hover:text-slate-900 dark:hover:text-text-primary
                 hover:bg-slate-100 dark:hover:bg-surface-3
@@ -233,57 +276,71 @@ const MilestoneCard = ({
               <MoreHorizontal className="w-4 h-4" />
             </button>
 
-            {showMenu && (
+            {showMenu && typeof document !== 'undefined' && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-10"
+                  className="fixed inset-0 roadmap-floating-milestone-menu-v2"
+                  style={{ zIndex: 2147483646 }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowMenu(false);
                   }}
                 />
-                <div className="
-                  absolute right-0 top-full mt-1 z-20
-                  w-48 py-1 rounded-lg
-                  bg-white dark:bg-surface-2
-                  border border-slate-200 dark:border-white/[0.08]
-                  shadow-lg shadow-slate-900/10 dark:shadow-black/20
-                ">
+
+                <div
+                  className="
+                    fixed w-64 overflow-hidden rounded-2xl
+                    bg-white dark:bg-surface-2
+                    border border-slate-200 dark:border-white/[0.08]
+                    shadow-[0_24px_80px_rgba(15,23,42,0.30)] dark:shadow-black/40
+                    py-1 roadmap-floating-milestone-menu-v2
+                  "
+                  style={{
+                    top: `${menuPosition.top}px`,
+                    left: `${menuPosition.left}px`,
+                    zIndex: 2147483647,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
+                    type="button"
                     onClick={handleEdit}
                     className="
-                      w-full flex items-center gap-2 px-3 py-2 text-sm text-left
+                      w-full flex items-center gap-2 px-4 py-3 text-sm text-left
                       text-slate-700 dark:text-text-secondary
                       hover:text-slate-900 dark:hover:text-text-primary
                       hover:bg-slate-50 dark:hover:bg-surface-3
                       transition-colors
                     "
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <Edit2 className="w-4 h-4" />
                     Edit
                   </button>
 
                   {onStatusChange && availableTransitions.length > 0 ? (
                     <>
                       <div className="my-1 border-t border-slate-200 dark:border-white/[0.06]" />
-                      <div className="px-3 py-1">
+                      <div className="px-4 py-2">
                         <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
                           Change Status
                         </span>
                       </div>
+
                       {availableTransitions.map((transition) => {
                         const TransIcon = transition.icon;
+
                         return (
                           <button
+                            type="button"
                             key={transition.value}
                             onClick={(e) => handleStatusChange(e, transition.value)}
                             className={`
-                              w-full flex items-center gap-2 px-3 py-2 text-sm text-left
+                              w-full flex items-center gap-2 px-4 py-3 text-sm text-left
                               ${transition.color} hover:bg-slate-50 dark:hover:bg-surface-3
                               transition-colors
                             `}
                           >
-                            <TransIcon className="w-3.5 h-3.5" />
+                            <TransIcon className="w-4 h-4" />
                             {transition.label}
                           </button>
                         );
@@ -295,20 +352,23 @@ const MilestoneCard = ({
                     <>
                       <div className="my-1 border-t border-slate-200 dark:border-white/[0.06]" />
                       <button
+                        type="button"
                         onClick={handleDelete}
                         className="
-                          w-full flex items-center gap-2 px-3 py-2 text-sm text-left
-                          text-red-600 dark:text-error-500 hover:bg-red-50 dark:hover:bg-error-500/10
+                          w-full flex items-center gap-2 px-4 py-3 text-sm text-left
+                          text-red-600 dark:text-error-500
+                          hover:bg-red-50 dark:hover:bg-error-500/10
                           transition-colors
                         "
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                         Delete
                       </button>
                     </>
                   ) : null}
                 </div>
-              </>
+              </>,
+              document.body
             )}
           </div>
         )}
