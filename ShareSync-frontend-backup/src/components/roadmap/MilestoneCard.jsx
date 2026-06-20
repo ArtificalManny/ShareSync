@@ -412,7 +412,129 @@ const MilestoneCard = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-white/[0.06]">
+      {showActions && (
+        <div
+          className="
+            roadmap-milestone-action-tray
+            mt-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08]
+            bg-slate-50/80 dark:bg-white/[0.03]
+            p-2 shadow-inner shadow-white/70 dark:shadow-none
+          "
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="
+                inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
+                text-xs font-semibold
+                bg-white dark:bg-surface-2
+                text-violet-700 dark:text-brand
+                border border-violet-100 dark:border-brand/20
+                hover:bg-violet-50 dark:hover:bg-brand/10
+                transition-colors
+              "
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              Edit
+            </button>
+
+            {onStatusChange && currentApiStatus !== 'completed' ? (
+              <button
+                type="button"
+                onClick={(e) => handleStatusChange(e, 'completed')}
+                className="
+                  inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
+                  text-xs font-semibold
+                  bg-emerald-50 dark:bg-success/10
+                  text-emerald-700 dark:text-success
+                  border border-emerald-200 dark:border-success/20
+                  hover:bg-emerald-100 dark:hover:bg-success/15
+                  transition-colors
+                "
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Mark Completed
+              </button>
+            ) : onStatusChange ? (
+              <button
+                type="button"
+                onClick={(e) => handleStatusChange(e, 'in_progress')}
+                className="
+                  inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
+                  text-xs font-semibold
+                  bg-violet-50 dark:bg-brand/10
+                  text-violet-700 dark:text-brand
+                  border border-violet-200 dark:border-brand/20
+                  hover:bg-violet-100 dark:hover:bg-brand/15
+                  transition-colors
+                "
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Mark In Progress
+              </button>
+            ) : null}
+
+            {onStatusChange && currentApiStatus !== 'planned' ? (
+              <button
+                type="button"
+                onClick={(e) => handleStatusChange(e, 'planned')}
+                className="
+                  inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
+                  text-xs font-semibold
+                  bg-white dark:bg-surface-2
+                  text-slate-700 dark:text-text-secondary
+                  border border-slate-200 dark:border-white/[0.08]
+                  hover:bg-slate-100 dark:hover:bg-surface-3
+                  transition-colors
+                "
+              >
+                <Circle className="w-3.5 h-3.5" />
+                Plan
+              </button>
+            ) : onStatusChange ? (
+              <button
+                type="button"
+                onClick={(e) => handleStatusChange(e, 'in_progress')}
+                className="
+                  inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
+                  text-xs font-semibold
+                  bg-violet-50 dark:bg-brand/10
+                  text-violet-700 dark:text-brand
+                  border border-violet-200 dark:border-brand/20
+                  hover:bg-violet-100 dark:hover:bg-brand/15
+                  transition-colors
+                "
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Start
+              </button>
+            ) : null}
+
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="
+                  inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
+                  text-xs font-semibold
+                  bg-red-50 dark:bg-error-500/10
+                  text-red-700 dark:text-error-500
+                  border border-red-200 dark:border-error-500/20
+                  hover:bg-red-100 dark:hover:bg-error-500/15
+                  transition-colors
+                "
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-200 dark:border-white/[0.06]">
         <div className="flex items-center gap-1.5 text-slate-500 dark:text-text-tertiary">
           <Flag className="w-3.5 h-3.5" />
           <span className="text-xs">
