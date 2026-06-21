@@ -81,8 +81,10 @@ export class VaultService {
     try {
       let rtGateway: any = null;
       let notifGateway: any = null;
+      let notificationsService: any = null;
       try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
       try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+      try { notificationsService = this.moduleRef.get('NotificationsService', { strict: false }); } catch(e) {}
 
       const db = this.fileModel.db;
       const projectObjectId = new Types.ObjectId(projectId);
@@ -107,21 +109,61 @@ export class VaultService {
         const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
         const safeFileName = file.originalname || 'New File';
 
-        // 1. Notify Official DB Members
+        // 1. Notify official DB members through NotificationsService when possible.
+        // This path persists the notification, emits realtime updates, and triggers email fan-out.
         for (const recipientId of uniqueMembers) {
           try {
+            let createdViaNotificationsService = false;
+
+            if (notificationsService?.create) {
+              try {
+                await notificationsService.create({
+                  userId: recipientId,
+                  type: 'file_uploaded',
+                  title: `📁 New File in ${safeProjectName}`,
+                  body: safeFileName,
+                  icon: '📁',
+                  priority: 'high',
+                  triggeredBy: userId,
+                  data: {
+                    projectId,
+                    projectName: safeProjectName,
+                    fileName: safeFileName,
+                    extra: { fileId: saved._id.toString() },
+                    emailFanoutEligible: true,
+                    projectMemberNotification: true,
+                  },
+                  actions: [{ label: 'View Files', url: `/projects/${projectId}?tab=files` }],
+                  groupKey: `project-file-${recipientId}-${projectId}-${saved._id.toString()}`,
+                });
+
+                createdViaNotificationsService = true;
+              } catch (notificationErr) {
+                this.logger.warn(
+                  `NotificationsService file-upload notification failed for user ${recipientId}; falling back to direct insert: ${
+                    (notificationErr as any)?.message || notificationErr
+                  }`,
+                );
+              }
+            }
+
+            if (createdViaNotificationsService) continue;
+
             const notifResult = await db.collection('notifications').insertOne({
               userId: new Types.ObjectId(recipientId as string),
               type: 'file_uploaded',
               title: `📁 New File in ${safeProjectName}`,
               body: safeFileName,
               data: {
-                projectId: projectId,
+                projectId,
                 projectName: safeProjectName,
-                extra: { fileId: saved._id.toString() }
+                fileName: safeFileName,
+                extra: { fileId: saved._id.toString() },
+                emailFanoutEligible: true,
+                projectMemberNotification: true,
               },
               channels: ['in_app'],
-              priority: 'normal',
+              priority: 'high',
               isRead: false,
               isClicked: false,
               isDismissed: false,

@@ -33,6 +33,7 @@ export enum NotificationType {
 
   THREAD_CREATED = 'thread_created',
   THREAD_MESSAGE = 'thread_message',
+  FILE_UPLOADED = 'file_uploaded',
 
   XP_GAINED = 'xp_gained',
   LEVEL_UP = 'level_up',
