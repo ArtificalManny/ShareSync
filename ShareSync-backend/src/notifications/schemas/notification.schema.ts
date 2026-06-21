@@ -31,6 +31,9 @@ export enum NotificationType {
   MESSAGE_MENTION = 'message_mention',
   MESSAGE_REACTION = 'message_reaction',
 
+  THREAD_CREATED = 'thread_created',
+  THREAD_MESSAGE = 'thread_message',
+
   XP_GAINED = 'xp_gained',
   LEVEL_UP = 'level_up',
   BADGE_EARNED = 'badge_earned',
