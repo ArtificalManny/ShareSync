@@ -167,7 +167,7 @@ export class AnnouncementsService {
       typeof input.title === 'string' && input.title.trim() ? input.title.trim() : 'New announcement';
     const safeBody =
       typeof input.message === 'string' && input.message.trim() ? input.message.trim() : safeTitle;
-    const priority = input.pinned ? NotificationPriority.HIGH : NotificationPriority.NORMAL;
+    const priority = NotificationPriority.HIGH;
 
     // Route through NotificationsService so in-app + email fan-out both run.
     try {
