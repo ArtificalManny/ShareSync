@@ -279,7 +279,7 @@ export class EmailService {
 
     const actionUrl = this.buildFrontendUrl(notification?.actionData?.url);
     const button = actionUrl
-      ? `<a href="${this.escapeAttr(actionUrl)}" class="button">View in OpenShare</a>`
+      ? `<a href="${this.escapeAttr(actionUrl)}" class="button">View in ShareSync</a>`
       : '';
 
     const settingsUrl = process.env.FRONTEND_URL
