@@ -6,6 +6,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { Thread, ThreadDocument } from './schemas/thread.schema';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface CreateThreadDto {
   projectId: string;
@@ -235,27 +236,60 @@ export class ThreadsService {
         const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
         const safeProjectName = projectDoc.name || projectDoc.title || 'Project';
 
-        // 1. Save to DB for each recipient and emit
+        // 1. Save through NotificationsService so in-app + email fan-out both run
+        let notificationsService: NotificationsService | null = null;
+        try {
+          notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+        } catch (e) {}
+
         for (const recipientId of uniqueMembers) {
           try {
+            if (notificationsService?.create) {
+              await notificationsService.create({
+                userId: recipientId,
+                type: 'thread_message' as any,
+                title: `💬 New message in ${thread.title}`,
+                body: dto.content || `New message in ${thread.title}`,
+                data: {
+                  projectId: thread.projectId.toString(),
+                  projectName: safeProjectName,
+                  emailFanoutEligible: true,
+                  teamRoomNotification: true,
+                  extra: { threadId: thread._id.toString() },
+                } as any,
+                actions: [
+                  {
+                    label: 'View Team Room',
+                    url: `/projects/${thread.projectId.toString()}?tab=team-room`,
+                  },
+                ],
+                channels: ['in_app'] as any,
+                priority: 'high' as any,
+              } as any);
+              continue;
+            }
+
+            // Fallback keeps the old in-app behavior if NotificationsService is unavailable.
             const notifResult = await db.collection('notifications').insertOne({
               userId: new Types.ObjectId(recipientId),
               type: 'thread_message',
               title: `💬 New message in ${thread.title}`,
               body: dto.content,
-              data: { 
-                projectId: thread.projectId.toString(), 
+              data: {
+                projectId: thread.projectId.toString(),
                 projectName: safeProjectName,
-                extra: { threadId: thread._id.toString() } 
+                emailFanoutEligible: true,
+                teamRoomNotification: true,
+                extra: { threadId: thread._id.toString() },
               },
               channels: ['in_app'],
-              priority: 'normal',
+              priority: 'high',
               isRead: false,
               isClicked: false,
               isDismissed: false,
               groupCount: 1,
               createdAt: new Date(),
-              updatedAt: new Date()
+              updatedAt: new Date(),
             });
 
             const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
@@ -263,7 +297,9 @@ export class ThreadsService {
               notifGateway.server.to(recipientId).emit('new_notification', newNotif);
               notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
             }
-          } catch (e) {}
+          } catch (e) {
+            this.logger.warn(`Thread message notification failed for ${recipientId}: ${e?.message || e}`);
+          }
         }
 
         // 2. Live Room Override (Chat Updates)
