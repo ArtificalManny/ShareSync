@@ -30,6 +30,11 @@ import {
 // ✅ NEW: Import Task and Sprint schemas for the unified Rhythm query
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { Sprint, SprintDocument } from '../sprints/schemas/sprint.schema';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
 
 @Injectable()
 export class CalendarService {
@@ -159,8 +164,10 @@ export class CalendarService {
     try {
       let rtGateway: any = null;
       let notifGateway: any = null;
+      let notificationsService: NotificationsService | null = null;
       try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
       try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
+      try { notificationsService = this.moduleRef.get(NotificationsService, { strict: false }); } catch(e) {}
 
       const db = this.eventModel.db;
       
@@ -185,28 +192,56 @@ export class CalendarService {
 
       const memberIdsToNotify: string[] = allAssociatedIds
         .filter(Boolean)
-        .map(id => id.toString())
-        .filter(id => id !== userId);
+        .map(id => id.toString());
 
       const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
       const safeEventTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Event';
       const notifTitle = dto.projectId ? `📅 New Event in ${safeProjectName}` : `📅 You're invited: ${safeEventTitle}`;
 
-      // 1. Notify Official DB Members & Attendees
+      // 1. Notify official DB members, attendees, and the creator.
+      // Prefer NotificationsService so in-app + email fanout both run.
       for (const recipientId of uniqueMembers) {
         try {
+          const eventData = {
+            projectId: dto.projectId,
+            projectName: safeProjectName,
+            eventId: saved._id.toString(),
+            eventTitle: safeEventTitle,
+            createdBy: userId,
+            emailFanoutEligible: true,
+          };
+
+          if (notificationsService?.notify) {
+            await notificationsService.notify({
+              userId: recipientId,
+              type: NotificationType.EVENT_CREATED,
+              title: notifTitle,
+              body: safeEventTitle,
+              icon: '📅',
+              priority: NotificationPriority.HIGH,
+              triggeredBy: userId,
+              data: eventData as any,
+              actions: dto.projectId
+                ? [{ label: 'View Project', url: `/projects/${dto.projectId}` }]
+                : [{ label: 'View Schedule', url: '/home' }],
+            } as any);
+
+            continue;
+          }
+
+          // Fallback: keep the native insert path if NotificationsService is unavailable.
           const notifResult = await db.collection('notifications').insertOne({
             userId: new Types.ObjectId(recipientId as string),
             type: 'event_created',
             title: notifTitle,
             body: safeEventTitle,
-            data: {
-              projectId: dto.projectId,
-              projectName: safeProjectName,
-              extra: { eventId: saved._id.toString() }
-            },
-            channels: ['in_app'],
-            priority: 'normal',
+            icon: '📅',
+            data: eventData,
+            actions: dto.projectId
+              ? [{ label: 'View Project', url: `/projects/${dto.projectId}` }]
+              : [{ label: 'View Schedule', url: '/home' }],
+            channels: ['in_app', 'email'],
+            priority: 'high',
             isRead: false,
             isClicked: false,
             isDismissed: false,
@@ -228,7 +263,7 @@ export class CalendarService {
 
           this.eventEmitter.emit('notification.created', newNotif);
         } catch (innerErr) {
-          this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
+          this.logger.error(`Failed to notify calendar event user ${recipientId}`, innerErr);
         }
       }
 

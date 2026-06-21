@@ -25,6 +25,8 @@ export enum NotificationType {
   PROJECT_SHIP_UPDATE = 'project_ship_update',
   PROJECT_MILESTONE_REACHED = 'project_milestone_reached',
 
+  EVENT_CREATED = 'event_created',
+
   MESSAGE_NEW = 'message_new',
   MESSAGE_MENTION = 'message_mention',
   MESSAGE_REACTION = 'message_reaction',
