@@ -169,64 +169,46 @@ export class AnnouncementsService {
       typeof input.message === 'string' && input.message.trim() ? input.message.trim() : safeTitle;
     const priority = input.pinned ? NotificationPriority.HIGH : NotificationPriority.NORMAL;
 
-    // ⭐ THE FIX: Native DB Insert + ModuleRef Broadcast (Bypasses missing NotificationsService)
+    // Route through NotificationsService so in-app + email fan-out both run.
     try {
-      const db = this.announcementModel.db;
-      
-      // Attempt to dynamically fetch AppGateway to avoid circular/missing imports
-      let appGateway: any = null;
-      try {
-        appGateway = this.moduleRef.get('AppGateway', { strict: false });
-      } catch (e) {
-        this.logger.warn('AppGateway not found via ModuleRef, websocket broadcast may not reach root listeners');
+      if (!this.notifications?.createBulk) {
+        this.logger.warn(
+          `NotificationsService unavailable; announcement ${doc._id?.toString?.()} created without email fan-out`,
+        );
+        return doc;
       }
 
-      for (const recipientId of recipientIds) {
-        try {
-          // 1. Write the notification directly to the database
-          const notifResult = await db.collection('notifications').insertOne({
-            userId: new Types.ObjectId(recipientId),
-            type: NotificationType.SYSTEM_ANNOUNCEMENT,
-            title: `📢 ${safeProjectName}`,
-            body: safeTitle,
-            data: {
-              projectId: input.projectId,
-              projectName: safeProjectName,
-              extra: {
-                announcementId: doc._id?.toString?.(),
-                announcementType: input.type || 'info',
-                message: safeBody,
-                pinned: Boolean(input.pinned),
-              },
-            },
-            channels: ['in_app'],
-            priority,
-            isRead: false,
-            isClicked: false,
-            isDismissed: false,
-            groupCount: 1,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+      await this.notifications.createBulk(
+        recipientIds.map((recipientId) => ({
+          userId: recipientId,
+          type: NotificationType.SYSTEM_ANNOUNCEMENT,
+          title: `📢 ${safeProjectName}`,
+          body: safeTitle,
+          icon: '📢',
+          priority,
+          triggeredBy: input.authorId,
+          data: {
+            projectId: input.projectId,
+            projectName: safeProjectName,
+            announcementId: doc._id?.toString?.(),
+            announcementType: input.type || 'info',
+            message: safeBody,
+            pinned: Boolean(input.pinned),
+            emailFanoutEligible: true,
+            projectMemberNotification: true,
+          } as any,
+          actions: [{ label: 'View Project', url: `/projects/${input.projectId}` }],
+          groupKey: `announcement-${input.projectId}-${doc._id?.toString?.()}`,
+        })),
+      );
 
-          const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
-
-          // 2. Direct broadcast via WebSocket server (AppGateway)
-          if (appGateway && appGateway.server) {
-            appGateway.server.to(recipientId).emit('new_notification', newNotif);
-            appGateway.server.to(recipientId).emit('notificationCreated', newNotif);
-          }
-
-          // 3. Failsafe internal emit for NotificationsGateway
-          this.eventEmitter.emit('notification.created', newNotif);
-        } catch (innerErr) {
-          this.logger.error(`Failed to natively notify user ${recipientId}:`, innerErr);
-        }
-      }
-
-      this.logger.log(`✅ Announcement ${doc._id?.toString?.()} natively notified ${recipientIds.length} recipient(s) for project ${input.projectId}`);
-    } catch (err) {
-      this.logger.error('⚠️ Failed to process native announcement notifications:', err);
+      this.logger.log(
+        `✅ Announcement ${doc._id?.toString?.()} notified ${recipientIds.length} recipient(s) for project ${input.projectId}`,
+      );
+    } catch (err: any) {
+      this.logger.error(
+        `⚠️ Failed to send announcement notifications for ${doc._id?.toString?.()}: ${err?.message || err}`,
+      );
     }
 
     return doc;

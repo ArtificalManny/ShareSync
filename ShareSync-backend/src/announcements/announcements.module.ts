@@ -6,6 +6,7 @@ import { Announcement, AnnouncementSchema } from './schemas/announcements.schema
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ModerationModule } from '../moderation/moderation.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ModerationModule } from '../moderation/moderation.module';
     ]),
     UploadsModule,
     ModerationModule,
+    NotificationsModule,
   ],
   controllers: [AnnouncementsController],
   providers: [AnnouncementsService],
