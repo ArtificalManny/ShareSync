@@ -7,6 +7,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { VaultFolder, VaultFolderDocument } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileDocument } from './schemas/vault-file.schema';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // Standard Free Tier Limit: 5GB (in bytes)
 const PROJECT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; 
@@ -84,7 +85,7 @@ export class VaultService {
       let notificationsService: any = null;
       try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
       try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
-      try { notificationsService = this.moduleRef.get('NotificationsService', { strict: false }); } catch(e) {}
+      try { notificationsService = this.moduleRef.get(NotificationsService, { strict: false }); } catch(e) {}
 
       const db = this.fileModel.db;
       const projectObjectId = new Types.ObjectId(projectId);

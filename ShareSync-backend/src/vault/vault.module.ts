@@ -5,6 +5,7 @@ import { VaultFolder, VaultFolderSchema } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileSchema } from './schemas/vault-file.schema';
 import { VaultService } from './vault.service';
 import { VaultController } from './vault.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { VaultController } from './vault.controller';
       { name: VaultFile.name, schema: VaultFileSchema },
     ]),
     ModerationModule,
+    NotificationsModule,
   ],
   controllers: [VaultController],
   providers: [VaultService],
