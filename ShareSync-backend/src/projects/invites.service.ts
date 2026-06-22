@@ -95,6 +95,97 @@ export class InvitesService {
     throw new ForbiddenException('Only project owners or admins can manage invites.');
   }
 
+  private escapeHtml(value: unknown): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  private buildInviteUrl(inviteToken?: string): string {
+    const frontendBase = String(process.env.FRONTEND_URL || 'https://openshare.ca').replace(/\/+$/, '');
+    return `${frontendBase}/invite/${inviteToken || ''}`;
+  }
+
+  private async sendProjectInviteEmail(args: {
+    to: string;
+    projectName: string;
+    role: string;
+    inviteToken?: string;
+    message?: string;
+  }): Promise<void> {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM;
+    const to = String(args.to || '').trim().toLowerCase();
+
+    if (!to) return;
+
+    if (!resendApiKey || !resendFrom) {
+      this.logger.warn(`Project invite email skipped for ${to}: Resend env not configured`);
+      return;
+    }
+
+    if (typeof globalThis.fetch !== 'function') {
+      this.logger.warn(`Project invite email skipped for ${to}: global fetch unavailable`);
+      return;
+    }
+
+    const inviteUrl = this.buildInviteUrl(args.inviteToken);
+    const safeProjectName = this.escapeHtml(args.projectName || 'Project');
+    const safeRole = this.escapeHtml(args.role || 'member');
+    const safeMessage = String(args.message || '').trim();
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #9333ea, #c026d3); padding: 30px; border-radius: 12px;">
+              <h1 style="color: white; font-size: 24px; margin: 0;">👋 You're invited to ${safeProjectName}</h1>
+            </div>
+            <div style="background: #f8fafc; padding: 30px; border-radius: 12px; margin-top: 20px;">
+              <p style="color: #334155; line-height: 1.6;">
+                You've been invited to join <strong>${safeProjectName}</strong> as a <strong>${safeRole}</strong>.
+              </p>
+              ${safeMessage ? `<p style="color: #334155; line-height: 1.6;">${this.escapeHtml(safeMessage)}</p>` : ''}
+              <a href="${this.escapeHtml(inviteUrl)}" style="display: inline-block; background: #9333ea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px;">
+                Accept invite
+              </a>
+            </div>
+            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px;">
+              You're receiving this because someone invited this email address to an OpenShare project.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const response = await globalThis.fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: resendFrom,
+        to,
+        subject: `You're invited to ${args.projectName || 'a project'} on OpenShare`,
+        html,
+        text: `You've been invited to join ${args.projectName || 'a project'} on OpenShare as a ${args.role || 'member'}. Accept invite: ${inviteUrl}`,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.warn(`Project invite email failed for ${to} (${response.status}): ${body}`);
+      return;
+    }
+
+    this.logger.log(`Project invite email sent to ${to} for ${args.projectName || 'Project'}`);
+  }
+
   async createInvite(projectId: string, actingUserId: string, dto: CreateInviteDto) {
     const { email, role } = dto || ({} as CreateInviteDto);
     if (!email || !role) throw new BadRequestException('email and role are required');
@@ -150,6 +241,16 @@ export class InvitesService {
       inviteToken,
       role,
       invitedBy: actingUserId,
+    });
+
+    await this.sendProjectInviteEmail({
+      to: normalizedEmail,
+      projectName: String((project as any)?.name || (project as any)?.title || 'Project'),
+      role: String(role || 'member'),
+      inviteToken,
+      message: String((dto as any)?.message || ''),
+    }).catch((err: any) => {
+      this.logger.warn(`Project invite email failed for ${normalizedEmail}: ${err?.message || err}`);
     });
 
     this.logger.log(`Invite sent to ${normalizedEmail} for project ${project.name} (role: ${role})`);
