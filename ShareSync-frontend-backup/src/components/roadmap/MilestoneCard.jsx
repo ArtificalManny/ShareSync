@@ -15,7 +15,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Flag,
   Calendar,
@@ -259,119 +258,7 @@ const MilestoneCard = ({
           <span>{statusConfig.label}</span>
         </div>
 
-        {showActions && (
-          <div className="relative">
-            <button
-              ref={actionButtonRef}
-              onClick={handleToggleMenu}
-              className="
-                p-1.5 rounded-md opacity-100
-                text-slate-500 dark:text-text-tertiary
-                hover:text-slate-900 dark:hover:text-text-primary
-                hover:bg-slate-100 dark:hover:bg-surface-3
-                transition-all duration-200
-              "
-              aria-label="Milestone actions"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
 
-            {showMenu && typeof document !== 'undefined' && createPortal(
-              <>
-                <div
-                  className="fixed inset-0 roadmap-floating-milestone-menu-v2"
-                  style={{ zIndex: 2147483646 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                  }}
-                />
-
-                <div
-                  className="
-                    fixed w-64 overflow-hidden rounded-2xl
-                    bg-white dark:bg-surface-2
-                    border border-slate-200 dark:border-white/[0.08]
-                    shadow-[0_24px_80px_rgba(15,23,42,0.30)] dark:shadow-black/40
-                    py-1 roadmap-floating-milestone-menu-v2
-                  "
-                  style={{
-                    top: `${menuPosition.top}px`,
-                    left: `${menuPosition.left}px`,
-                    zIndex: 2147483647,
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    onClick={handleEdit}
-                    className="
-                      w-full flex items-center gap-2 px-4 py-3 text-sm text-left
-                      text-slate-700 dark:text-text-secondary
-                      hover:text-slate-900 dark:hover:text-text-primary
-                      hover:bg-slate-50 dark:hover:bg-surface-3
-                      transition-colors
-                    "
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </button>
-
-                  {onStatusChange && availableTransitions.length > 0 ? (
-                    <>
-                      <div className="my-1 border-t border-slate-200 dark:border-white/[0.06]" />
-                      <div className="px-4 py-2">
-                        <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
-                          Change Status
-                        </span>
-                      </div>
-
-                      {availableTransitions.map((transition) => {
-                        const TransIcon = transition.icon;
-
-                        return (
-                          <button
-                            type="button"
-                            key={transition.value}
-                            onClick={(e) => handleStatusChange(e, transition.value)}
-                            className={`
-                              w-full flex items-center gap-2 px-4 py-3 text-sm text-left
-                              ${transition.color} hover:bg-slate-50 dark:hover:bg-surface-3
-                              transition-colors
-                            `}
-                          >
-                            <TransIcon className="w-4 h-4" />
-                            {transition.label}
-                          </button>
-                        );
-                      })}
-                    </>
-                  ) : null}
-
-                  {onDelete ? (
-                    <>
-                      <div className="my-1 border-t border-slate-200 dark:border-white/[0.06]" />
-                      <button
-                        type="button"
-                        onClick={handleDelete}
-                        className="
-                          w-full flex items-center gap-2 px-4 py-3 text-sm text-left
-                          text-red-600 dark:text-error-500
-                          hover:bg-red-50 dark:hover:bg-error-500/10
-                          transition-colors
-                        "
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </>,
-              document.body
-            )}
-          </div>
-        )}
       </div>
 
       <h3 className="text-base font-semibold text-slate-900 dark:text-text-primary mb-2 group-hover:text-violet-700 dark:group-hover:text-brand transition-colors line-clamp-2">
