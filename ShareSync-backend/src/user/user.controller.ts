@@ -39,6 +39,60 @@ import { UploadsService } from '../uploads/uploads.service';
 // ✅ Phase 3: follows
 import { ProjectFollowService } from '../follows/project-follow.service';
 
+
+function normalizePublicAvatarUrl(value: any): string | null {
+  const raw = String(value || '').trim();
+  if (!raw || raw === 'null' || raw === 'undefined') return null;
+
+  const backendBase = String(
+    process.env.UPLOADS_BASE_URL ||
+      process.env.PUBLIC_BACKEND_URL ||
+      process.env.API_PUBLIC_URL ||
+      process.env.BACKEND_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      'https://openshare-backend.onrender.com',
+  )
+    .replace(/\/api\/?$/, '')
+    .replace(/\/$/, '');
+
+  if (/^https?:\/\/(localhost|127\.0\.0\.1):5050/i.test(raw)) {
+    return raw.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5050/i, backendBase);
+  }
+
+  if (raw.startsWith('/uploads/')) return `${backendBase}${raw}`;
+  if (raw.startsWith('uploads/')) return `${backendBase}/${raw}`;
+
+  return raw;
+}
+
+function normalizeUserAvatarPayload(userLike: any): any {
+  if (!userLike) return userLike;
+
+  const user =
+    typeof userLike.toObject === 'function'
+      ? userLike.toObject()
+      : { ...userLike };
+
+  const fixed = normalizePublicAvatarUrl(
+    user.avatarUrl ||
+      user.profilePicture ||
+      user.profileImage ||
+      user.avatar ||
+      user.photoUrl ||
+      user.imageUrl ||
+      user.picture,
+  );
+
+  if (fixed) {
+    user.avatarUrl = fixed;
+    user.profilePicture = fixed;
+    user.profileImage = user.profileImage || fixed;
+  }
+
+  return user;
+}
+
+
 @Controller('users')
 export class UserController {
   constructor(
@@ -72,8 +126,39 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: any) {
-    const id = req?.user?.sub || req?.user?.id;
-    return this.users.findById(id);
+    const id = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const user = await this.users.findById(id);
+    const normalized = normalizeUserAvatarPayload(user);
+
+    const currentAvatar =
+      (user as any)?.avatarUrl ||
+      (user as any)?.profilePicture ||
+      (user as any)?.profileImage ||
+      '';
+
+    const fixedAvatar =
+      normalized?.avatarUrl ||
+      normalized?.profilePicture ||
+      normalized?.profileImage ||
+      '';
+
+    if (
+      fixedAvatar &&
+      currentAvatar &&
+      fixedAvatar !== currentAvatar &&
+      (/localhost/i.test(String(currentAvatar)) || /127\.0\.0\.1/.test(String(currentAvatar)))
+    ) {
+      try {
+        await this.users.update(id, {
+          profilePicture: fixedAvatar,
+          avatarUrl: fixedAvatar,
+        } as any);
+      } catch {
+        // Do not break profile loading if the one-time repair fails.
+      }
+    }
+
+    return normalized;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
