@@ -15,6 +15,36 @@ function clean(value) {
   return text;
 }
 
+function getBackendBaseUrl() {
+  const raw =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_BACKEND_URL ||
+    "https://openshare-backend.onrender.com";
+
+  return String(raw).replace(/\/api\/?$/, "").replace(/\/$/, "");
+}
+
+function normalizeAvatarUrl(value) {
+  const raw = clean(value);
+  if (!raw) return "";
+
+  const backendBase = getBackendBaseUrl();
+
+  if (/^https?:\/\/(localhost|127\.0\.0\.1):5050/i.test(raw)) {
+    return raw.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5050/i, backendBase);
+  }
+
+  if (raw.startsWith("/uploads/")) {
+    return `${backendBase}${raw}`;
+  }
+
+  if (raw.startsWith("uploads/")) {
+    return `${backendBase}/${raw}`;
+  }
+
+  return raw;
+}
+
 export function resolveUserAvatar(userLike = {}, explicitAvatarUrl = "") {
   const user = userLike || {};
 
@@ -25,7 +55,7 @@ export function resolveUserAvatar(userLike = {}, explicitAvatarUrl = "") {
     override = "";
   }
 
-  return (
+  const candidate =
     clean(explicitAvatarUrl) ||
     clean(user.avatarUrl) ||
     clean(user.profilePicture) ||
@@ -39,8 +69,9 @@ export function resolveUserAvatar(userLike = {}, explicitAvatarUrl = "") {
     clean(user.profile?.profilePicture) ||
     clean(user.profile?.photoUrl) ||
     override ||
-    ""
-  );
+    "";
+
+  return normalizeAvatarUrl(candidate);
 }
 
 export default function UserAvatar({

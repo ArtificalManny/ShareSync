@@ -17,8 +17,33 @@ export interface StoredFile {
   mime: string;
 }
 
-// Backend base URL for constructing absolute file URLs
-const UPLOADS_BASE_URL = process.env.UPLOADS_BASE_URL || 'http://localhost:5050';
+// Backend base URL for constructing absolute file URLs.
+// In production, never emit localhost URLs because browsers cannot load them.
+function normalizeUploadsBaseUrl(value?: string): string {
+  const fallback =
+    process.env.NODE_ENV === 'production'
+      ? 'https://openshare-backend.onrender.com'
+      : 'http://localhost:5050';
+
+  const raw = String(value || fallback).trim().replace(/\/$/, '');
+
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (/localhost/i.test(raw) || /127\.0\.0\.1/.test(raw))
+  ) {
+    return 'https://openshare-backend.onrender.com';
+  }
+
+  return raw || fallback;
+}
+
+const UPLOADS_BASE_URL = normalizeUploadsBaseUrl(
+  process.env.UPLOADS_BASE_URL ||
+    process.env.PUBLIC_BACKEND_URL ||
+    process.env.API_PUBLIC_URL ||
+    process.env.BACKEND_URL ||
+    process.env.RENDER_EXTERNAL_URL,
+);
 
 // Resolve uploads directory relative to project root (where package.json lives)
 // __dirname at runtime = <project>/dist/uploads
