@@ -37,6 +37,11 @@ import {
 
 // ⭐ PHASE 2A: Import AppGateway for real-time emissions
 import { AppGateway } from '../gateway/app.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
 
 export interface MessagesQueryOptions {
   limit?: number;
@@ -58,6 +63,7 @@ export class MessagesService {
     private readonly conversationModel: Model<ConversationDocument>,
     private readonly eventEmitter: EventEmitter2,
     @Optional() private readonly appGateway?: AppGateway,
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -429,46 +435,46 @@ export class MessagesService {
       }
     }
 
-    // ⭐ THE FIX: Native DB Notification Creation & Direct Socket Broadcast
+    // Route direct-message notifications through NotificationsService so email fan-out runs.
     try {
       const participantIdsToNotify = this.getParticipantIds(conversation, userId);
-      const db = this.messageModel.db;
-      
+      const notificationBody =
+        dto.content.length > 80 ? dto.content.substring(0, 80) + '...' : dto.content;
+
       for (const recipientId of participantIdsToNotify) {
-        
-        // 1. Force exact Schema DB fields (userId, body, message_new)
-        const notifResult = await db.collection('notifications').insertOne({
-          userId: new Types.ObjectId(recipientId),
-          type: 'message_new',
-          title: 'New Message',
-          body: dto.content.length > 50 ? dto.content.substring(0, 50) + '...' : dto.content,
-          data: {
-            conversationId: dto.conversationId,
-            messageId: saved._id.toString()
-          },
-          channels: ['in_app'],
-          priority: 'normal',
-          isRead: false,
-          isClicked: false,
-          isDismissed: false,
-          groupCount: 1,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-        
-        const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
-        
-        // 2. Direct broadcast via WebSocket server using the exact string React is listening for
-        if (this.appGateway && this.appGateway.server) {
-          this.appGateway.server.to(recipientId).emit('new_notification', newNotif);
+        if (this.notifications) {
+          await this.notifications.notify({
+            userId: recipientId,
+            type: NotificationType.MESSAGE_NEW,
+            title: '💬 New message',
+            body: notificationBody || 'You received a new message.',
+            priority: NotificationPriority.HIGH,
+            triggeredBy: userId,
+            data: {
+              conversationId: dto.conversationId,
+              messageId: saved._id.toString(),
+              emailFanoutEligible: true,
+            } as any,
+            actions: [
+              {
+                label: 'View Message',
+                url: '/messages',
+              },
+            ],
+            groupKey: `message-new-${recipientId}-${dto.conversationId}`,
+          });
+        } else {
+          this.logger.warn(
+            `[MessagesService] NotificationsService unavailable; skipping email-capable notification for user ${recipientId}`,
+          );
         }
-        
-        // Failsafe internal emit
-        this.eventEmitter.emit('notification.created', newNotif);
       }
-      this.logger.log(`✅ [MessagesService] Schema-perfect Notifications created for ${participantIdsToNotify.length} users`);
+
+      this.logger.log(
+        `✅ [MessagesService] Email-capable message notifications created for ${participantIdsToNotify.length} users`,
+      );
     } catch (dbErr) {
-      this.logger.error('⚠️ [MessagesService] Failed to create DB notification:', dbErr);
+      this.logger.error('⚠️ [MessagesService] Failed to create message notification:', dbErr);
     }
 
     this.logger.log(`Message sent in conversation ${dto.conversationId}`);

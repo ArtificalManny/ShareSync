@@ -16,10 +16,12 @@ import {
 
 import { Message, MessageSchema } from '../message/message.schema';
 import { ModerationModule } from '../moderation/moderation.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     ModerationModule,
+    NotificationsModule,
     JwtModule,
     MongooseModule.forFeature([
       { name: Conversation.name, schema: ConversationSchema },
