@@ -672,14 +672,27 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         
         {/* Avatar container */}
         <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-white dark:border-[#111113] bg-slate-100 dark:bg-zinc-800 shadow-lg shadow-violet-100 dark:shadow-violet-900/20">
-          <UserAvatar
-            key={displayUrl}
-            size={144}
-            name={user?.name || user?.username || "User"}
-            avatarUrl={displayUrl}
-            className="w-full h-full"
-            ringClassName="ring-0"
-          />
+          {displayUrl && displayUrl !== "/default-profile.png" ? (
+            <img
+              key={displayUrl}
+              src={displayUrl}
+              alt={`${user?.name || user?.username || "User"} avatar`}
+              className="w-full h-full object-cover"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <UserAvatar
+              key={displayUrl}
+              user={user}
+              size={144}
+              name={user?.name || user?.username || "User"}
+              avatarUrl={displayUrl}
+              className="w-full h-full"
+              ringClassName="ring-0"
+            />
+          )}
           {isOwnProfile && (
             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
@@ -1101,8 +1114,31 @@ export default function Profile() {
 
         const storedUser = readStoredUser();
         const storedOverride = readAvatarOverride();
-        const storedAvatar = storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null;
-        const merged = storedAvatar ? { ...userData, avatarUrl: storedAvatar, profilePicture: storedAvatar } : userData;
+
+        const backendAvatar = normalizeProfileAvatarUrl(
+          userData?.avatarUrl ||
+            userData?.profilePicture ||
+            userData?.profileImage ||
+            userData?.avatar ||
+            userData?.photoUrl ||
+            userData?.imageUrl ||
+            null
+        );
+
+        const storedAvatar = normalizeProfileAvatarUrl(
+          storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null
+        );
+
+        const finalAvatar = backendAvatar || storedAvatar;
+
+        const merged = finalAvatar
+          ? {
+              ...userData,
+              avatarUrl: finalAvatar,
+              profilePicture: finalAvatar,
+              profileImage: userData?.profileImage || finalAvatar,
+            }
+          : userData;
         setMe(merged);
 
         try {
