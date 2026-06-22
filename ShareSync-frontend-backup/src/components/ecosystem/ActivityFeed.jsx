@@ -1,3 +1,4 @@
+import UserAvatar from '../ui/UserAvatar';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -57,6 +58,21 @@ export default function ActivityFeed({ activities = [] }) {
 
         const Icon = typeof activity.icon === 'string' ? (iconMap[activity.icon] || Sparkles) : (activity.icon || Sparkles);
         const colorClass = activityColors[activity.color] || activityColors.purple;
+        const activityUser =
+          typeof activity.user === 'object'
+            ? activity.user
+            : {
+                name: activity.user || activity.actorName || activity.username || 'User',
+                avatarUrl:
+                  activity.avatarUrl ||
+                  activity.profilePicture ||
+                  activity.profileImage ||
+                  activity.avatar ||
+                  activity.userAvatar ||
+                  activity.actorAvatar ||
+                  null,
+              };
+        const hasUserIdentity = Boolean(activity.user || activityUser.avatarUrl || activityUser.profilePicture || activityUser.avatar);
         
         return (
           <motion.div
@@ -64,9 +80,25 @@ export default function ActivityFeed({ activities = [] }) {
             key={activity.id}
             className="group flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-surface-1 border border-slate-200 dark:border-white/[0.06] hover:border-violet-300 dark:hover:border-white/[0.12] shadow-sm hover:shadow-md hover:shadow-violet-100/50 dark:hover:shadow-none transition-all duration-300 cursor-pointer hover:-translate-y-0.5"
           >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
-              <Icon className="w-6 h-6" />
-            </div>
+            {hasUserIdentity ? (
+              <UserAvatar
+                user={activityUser}
+                name={activityUser.name || 'User'}
+                avatarUrl={
+                  activityUser.avatarUrl ||
+                  activityUser.profilePicture ||
+                  activityUser.profileImage ||
+                  activityUser.avatar
+                }
+                size={48}
+                ringClassName="ring-0"
+                className="shadow-sm border border-slate-200 dark:border-white/10"
+              />
+            ) : (
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
+                <Icon className="w-6 h-6" />
+              </div>
+            )}
             
             <div className="flex-1 min-w-0 pt-0.5">
               <p className="text-base text-slate-800 dark:text-text-primary leading-snug">

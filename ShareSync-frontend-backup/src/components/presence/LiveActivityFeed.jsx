@@ -1,3 +1,4 @@
+import UserAvatar from '../ui/UserAvatar';
 // src/components/presence/LiveActivityFeed.jsx - Week 8 Day 1-2
 import React, { useState, useEffect } from 'react';
 import { Activity, Circle } from 'lucide-react';
@@ -85,9 +86,27 @@ const LiveActivityFeed = ({ projectId }) => {
             >
               {/* Avatar with online indicator */}
               <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center text-lg">
-                  {activity.avatar}
-                </div>
+                <UserAvatar
+                  user={activity.userData || activity.userObject || activity.userId || activity.actor || activity}
+                  name={
+                    activity.user?.name ||
+                    activity.user ||
+                    activity.actorName ||
+                    activity.username ||
+                    'User'
+                  }
+                  avatarUrl={
+                    activity.avatarUrl ||
+                    activity.profilePicture ||
+                    activity.profileImage ||
+                    activity.userAvatar ||
+                    activity.actorAvatar ||
+                    activity.avatar
+                  }
+                  size={32}
+                  ringClassName="ring-0"
+                  className="bg-purple-500/20"
+                />
                 {activity.isOnline && (
                   <div className="absolute -bottom-0.5 -right-0.5">
                     <OnlineIndicator size="xs" isOnline={true} />

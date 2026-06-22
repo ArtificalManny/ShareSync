@@ -1,3 +1,4 @@
+import UserAvatar from "./ui/UserAvatar";
 import React, { useEffect, useRef } from 'react'
 import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react'
 import { formatRelativeTime } from '../utils/formatters'
@@ -84,10 +85,19 @@ export default function LiveActivityFeed({ feedItems = [] }) {
             >
               {/* Header: Avatar + User Info */}
               <div className="flex items-center gap-3 mb-3">
-                <img
-                  src={item.user.avatarUrl}
-                  alt={`${item.user.name}`}
-                  className="w-10 h-10 rounded-full ring-2 ring-indigo-500 object-cover"
+                <UserAvatar
+                  user={item.user}
+                  name={item.user?.name || "User"}
+                  avatarUrl={
+                    item.user?.avatarUrl ||
+                    item.user?.profilePicture ||
+                    item.user?.profileImage ||
+                    item.user?.avatar ||
+                    item.user?.photoUrl ||
+                    item.user?.imageUrl
+                  }
+                  size={40}
+                  ringClassName="ring-2 ring-indigo-500"
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">

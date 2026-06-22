@@ -1,3 +1,4 @@
+import UserAvatar from '../ui/UserAvatar';
 // src/components/social/ActivityFeedItem.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 3: Social Proof - Activity Feed Item (Shipping Cards)
@@ -21,23 +22,30 @@ const ACTIVITY_CONFIGS = {
 };
 
 const Avatar = ({ user, size = 'md', showOnline = false }) => {
-  const sizes = { sm: 'w-7 h-7 text-[10px]', md: 'w-10 h-10 text-[13px]', lg: 'w-12 h-12 text-[15px]' };
-  const getInitials = (n) => n ? n.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase() : '?';
-  const getColor = (n) => {
-    const c = ['bg-violet-100 text-violet-700', 'bg-teal-100 text-teal-700', 'bg-amber-100 text-amber-700', 'bg-blue-100 text-blue-700'];
-    return c[(n?.charCodeAt(0) || 0) % c.length];
-  };
-  
+  const px = { sm: 28, md: 40, lg: 48 }[size] || 40;
+  const safeUser = user || {};
+  const avatarUrl =
+    safeUser.avatarUrl ||
+    safeUser.profilePicture ||
+    safeUser.profileImage ||
+    safeUser.avatar ||
+    safeUser.photoUrl ||
+    safeUser.imageUrl ||
+    safeUser.image ||
+    safeUser.picture ||
+    null;
+
   return (
     <div className="relative shrink-0">
-      {user.avatar ? (
-        <img src={user.avatar} alt={user.name} className={`${sizes[size]} rounded-full object-cover shadow-sm border border-slate-200 dark:border-white/10`} />
-      ) : (
-        <div className={`${sizes[size]} rounded-full ${getColor(user.name)} flex items-center justify-center font-black shadow-sm border border-black/5`}>
-          {getInitials(user.name)}
-        </div>
-      )}
-      {showOnline && user.isOnline && (
+      <UserAvatar
+        user={safeUser}
+        name={safeUser.name || safeUser.username || safeUser.email || 'User'}
+        avatarUrl={avatarUrl}
+        size={px}
+        ringClassName="ring-0"
+        className="shadow-sm border border-slate-200 dark:border-white/10"
+      />
+      {showOnline && safeUser.isOnline && (
         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#1f1f23] shadow-sm" />
       )}
     </div>

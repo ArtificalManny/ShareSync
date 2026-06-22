@@ -34,6 +34,7 @@ import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 import CompleteProjectModal from "../components/project/CompleteProjectModal";
 import ProjectAvatar from "../components/project/ProjectAvatar";
+import UserAvatar from "../components/ui/UserAvatar";
 import InviteMember from "../components/members/InviteMember";
 import ProjectCaseStudyCard from "../components/project/ProjectCaseStudyCard";
 
@@ -2930,24 +2931,24 @@ function projectPulseFormatTimeAgo(value) {
 }
 
 function ProjectActivityActorAvatar({ activity, actorName, project }) {
-  const [failed, setFailed] = useState(false);
   const avatar = projectPulseGetActorAvatar(activity, project);
-
-  if (avatar && !failed) {
-    return (
-      <img
-        src={avatar}
-        alt={`${actorName} avatar`}
-        onError={() => setFailed(true)}
-        className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm dark:ring-[#111113]"
-      />
-    );
-  }
+  const actor =
+    projectPulseResolveActor(activity, project) ||
+    activity?.actor ||
+    activity?.user ||
+    activity?.userId ||
+    activity?.raw?.userId ||
+    {};
 
   return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-[11px] font-black text-violet-700 ring-2 ring-white shadow-sm dark:bg-violet-500/10 dark:text-violet-200 dark:ring-[#111113]">
-      {projectPulseGetInitials(actorName)}
-    </div>
+    <UserAvatar
+      user={actor}
+      name={actorName || actor?.name || actor?.username || actor?.email || 'User'}
+      avatarUrl={avatar}
+      size={40}
+      ringClassName="ring-2 ring-white dark:ring-[#111113]"
+      className="shadow-sm"
+    />
   );
 }
 
