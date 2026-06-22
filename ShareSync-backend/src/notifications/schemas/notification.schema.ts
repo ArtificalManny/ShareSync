@@ -21,6 +21,8 @@ export enum NotificationType {
   PROJECT_MEMBER_JOINED = 'project_member_joined',
   PROJECT_MEMBER_LEFT = 'project_member_left',
 
+  MILESTONE_CREATED = 'milestone_created',
+
   // ✅ Phase 3: spectator followers / public loop
   PROJECT_SHIP_UPDATE = 'project_ship_update',
   PROJECT_MILESTONE_REACHED = 'project_milestone_reached',

@@ -5,6 +5,11 @@ import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { ProjectsService } from '../projects/projects.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
 import { Milestone, MilestoneDocument } from './schemas/milestone.schema';
 import { CreateMilestoneDto, UpdateMilestoneDto } from './dto';
 
@@ -125,9 +130,47 @@ export class MilestonesService {
         const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
         const safeMilestoneTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Milestone';
 
-        // 1. Notify Official DB Members
+        let notificationsService: NotificationsService | null = null;
+        try {
+          notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+        } catch (serviceErr) {
+          this.logger.warn(
+            'NotificationsService not available for milestone-created email fan-out; falling back to native in-app notification only',
+          );
+        }
+
+        // 1. Notify official DB members through NotificationsService so email fan-out runs.
         for (const recipientId of uniqueMembers) {
           try {
+            if (notificationsService) {
+              await notificationsService.notify({
+                userId: recipientId as string,
+                type: NotificationType.MILESTONE_CREATED,
+                title: `📍 New Milestone in ${safeProjectName}`,
+                body: safeMilestoneTitle,
+                icon: '📍',
+                priority: NotificationPriority.HIGH,
+                triggeredBy: userId,
+                data: {
+                  projectId: dto.projectId,
+                  projectName: safeProjectName,
+                  milestoneId: saved._id.toString(),
+                  milestoneTitle: safeMilestoneTitle,
+                  emailFanoutEligible: true,
+                  extra: { milestoneId: saved._id.toString() },
+                } as any,
+                actions: [
+                  {
+                    label: 'View Roadmap',
+                    url: `/projects/${dto.projectId}?tab=roadmap`,
+                  },
+                ],
+                groupKey: `milestone-created-${recipientId}-${saved._id.toString()}`,
+              });
+
+              continue;
+            }
+
             const notifResult = await db.collection('notifications').insertOne({
               userId: new Types.ObjectId(recipientId as string),
               type: 'milestone_created',
@@ -136,10 +179,13 @@ export class MilestonesService {
               data: {
                 projectId: dto.projectId,
                 projectName: safeProjectName,
+                milestoneId: saved._id.toString(),
+                milestoneTitle: safeMilestoneTitle,
+                emailFanoutEligible: true,
                 extra: { milestoneId: saved._id.toString() }
               },
               channels: ['in_app'],
-              priority: 'normal',
+              priority: 'high',
               isRead: false,
               isClicked: false,
               isDismissed: false,
@@ -161,7 +207,7 @@ export class MilestonesService {
 
             this.eventEmitter.emit('notification.created', newNotif);
           } catch (innerErr) {
-            this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
+            this.logger.error(`Failed to notify user ${recipientId} for created milestone`, innerErr);
           }
         }
 

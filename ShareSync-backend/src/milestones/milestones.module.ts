@@ -5,6 +5,7 @@ import { Milestone, MilestoneSchema } from './schemas/milestone.schema';
 import { MilestonesService } from './milestones.service';
 import { MilestonesController } from './milestones.controller';
 import { ProjectsModule } from '../projects/projects.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 // ✅ NEW: task model access for progress calculation
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
@@ -19,6 +20,7 @@ import { ProjectMilestonesController } from './project-milestones.controller';
       { name: Task.name, schema: TaskSchema },
     ]),
     forwardRef(() => ProjectsModule),
+    NotificationsModule,
   ],
   controllers: [MilestonesController, ProjectMilestonesController],
   providers: [MilestonesService],
