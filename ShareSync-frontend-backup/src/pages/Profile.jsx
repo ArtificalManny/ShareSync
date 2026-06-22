@@ -539,7 +539,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   const displayUrl =
     (isOwnProfile
-      ? previewUrl || localOverride || storedAvatar || backendAvatar
+      ? previewUrl || localOverride || backendAvatar || storedAvatar
       : backendAvatar) || "/default-profile.png";
 
   const handleFileSelect = (e) => {
@@ -673,6 +673,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         {/* Avatar container */}
         <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-white dark:border-[#111113] bg-slate-100 dark:bg-zinc-800 shadow-lg shadow-violet-100 dark:shadow-violet-900/20">
           <UserAvatar
+            key={displayUrl}
             size={144}
             name={user?.name || user?.username || "User"}
             avatarUrl={displayUrl}
@@ -1044,8 +1045,25 @@ export default function Profile() {
 
           const storedUser = readStoredUser();
           const storedOverride = readAvatarOverride();
-          const storedAvatar = storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null;
-          const merged = storedAvatar ? { ...userData, avatarUrl: storedAvatar, profilePicture: storedAvatar } : userData;
+          const backendAvatar = normalizeProfileAvatarUrl(
+            userData?.avatarUrl ||
+              userData?.profilePicture ||
+              userData?.profileImage ||
+              userData?.avatar ||
+              null
+          );
+          const storedAvatar = normalizeProfileAvatarUrl(
+            storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null
+          );
+          const finalAvatar = backendAvatar || storedAvatar;
+          const merged = finalAvatar
+            ? {
+                ...userData,
+                avatarUrl: finalAvatar,
+                profilePicture: finalAvatar,
+                profileImage: userData?.profileImage || finalAvatar,
+              }
+            : userData;
           setMe(merged);
         } catch (e) {
           // Ignore error silently. It just means edit privileges will default to false.

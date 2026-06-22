@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 function initialsFromName(name = "") {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -97,6 +97,11 @@ export default function UserAvatar({
   );
 
   const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [resolvedAvatarUrl]);
+
   const initials = initialsFromName(resolvedName);
   const shouldShowImage = resolvedAvatarUrl && !imageFailed;
 
