@@ -48,7 +48,7 @@ export class InsightsService {
       this.taskModel.find({
         projectId: projectObjId,
         status: { $in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.REVIEW] },
-      }).populate('assigneeId', 'name username').lean(),
+      }).populate('assigneeId', 'name firstName lastName username email profilePicture profileImage avatar avatarUrl photoUrl imageUrl image picture').lean(),
     ]);
 
     const currentVelocity = currentCompleted.reduce((sum, t) => sum + (t.storyPoints || 1), 0);

@@ -50,7 +50,7 @@ export class AnnouncementsService {
   ) {}
 
   private readonly userPopulateFields =
-    'firstName lastName username email profilePicture avatar avatarUrl';
+    'name firstName lastName username email profilePicture profileImage avatar avatarUrl photoUrl imageUrl image picture';
 
   private toObjectId(id: string, label: string): Types.ObjectId {
     if (!Types.ObjectId.isValid(id)) {

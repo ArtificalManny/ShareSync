@@ -135,7 +135,7 @@ function PersonalTelemetryHUD({ user, glowLevel, isFireMode, collapsed }) {
     return (
       <div className="sidebar-telemetry-collapsed flex justify-center mt-2 mb-4 relative" title={statusText}>
         <div className="relative">
-          <UserAvatar size={32} name={user.name} avatarUrl={user.avatarUrl} />
+          <UserAvatar size={32} name={user.name} user={user} avatarUrl={resolveAvatarUrl(user)} />
           <div
             className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#111113] ${
               isFireMode ? "bg-orange-500 animate-pulse" : "bg-emerald-500"
@@ -151,7 +151,7 @@ function PersonalTelemetryHUD({ user, glowLevel, isFireMode, collapsed }) {
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <UserAvatar size={32} name={user.name} avatarUrl={user.avatarUrl} />
+            <UserAvatar size={32} name={user.name} user={user} avatarUrl={resolveAvatarUrl(user)} />
             <div
               className={`absolute inset-0 rounded-full ring-2 ring-offset-2 ring-offset-slate-50 dark:ring-offset-[#1f1f23] ${ringStyle} transition-all duration-300`}
             />
