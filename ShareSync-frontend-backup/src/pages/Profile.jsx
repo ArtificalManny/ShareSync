@@ -489,6 +489,28 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
 /* ─────────────────────────────────────────────────────────────────────────
    PROFILE PHOTO EDITOR - Light theme with Aurora ring
 ───────────────────────────────────────────────────────────────────────── */
+function normalizeProfileAvatarUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw === "null" || raw === "undefined") return null;
+
+  const backendBase = String(
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_BACKEND_URL ||
+    "https://openshare-backend.onrender.com"
+  )
+    .replace(/\/api\/?$/, "")
+    .replace(/\/$/, "");
+
+  if (/^https?:\/\/(localhost|127\.0\.0\.1):5050/i.test(raw)) {
+    return raw.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5050/i, backendBase);
+  }
+
+  if (raw.startsWith("/uploads/")) return `${backendBase}${raw}`;
+  if (raw.startsWith("uploads/")) return `${backendBase}/${raw}`;
+
+  return raw;
+}
+
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -498,16 +520,22 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   const localOverride = readAvatarOverride();
   const storedUser = readStoredUser();
-  const storedAvatar = storedUser?.avatarUrl || storedUser?.profilePicture || null;
+  const storedAvatar = normalizeProfileAvatarUrl(
+    storedUser?.avatarUrl || storedUser?.profilePicture || null
+  );
 
-  const backendAvatar =
+  const backendAvatar = normalizeProfileAvatarUrl(
     user?.avatarUrl ||
-    user?.profilePicture ||
-    user?.avatar ||
-    user?.photoUrl ||
-    user?.profile?.avatarUrl ||
-    user?.profile?.photoUrl ||
-    null;
+      user?.profilePicture ||
+      user?.profileImage ||
+      user?.avatar ||
+      user?.photoUrl ||
+      user?.imageUrl ||
+      user?.profile?.avatarUrl ||
+      user?.profile?.profilePicture ||
+      user?.profile?.photoUrl ||
+      null
+  );
 
   const displayUrl =
     (isOwnProfile
@@ -541,12 +569,43 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("profilePicture", selectedFile);
       formData.append("avatar", selectedFile);
-      const out = await updateProfile(formData);
-      const avatarUrl =
-        out?.avatarUrl || out?.user?.avatarUrl || out?.data?.avatarUrl ||
-        out?.profilePicture || out?.user?.profilePicture || out?.data?.profilePicture || null;
+
+      const apiBase = String(
+        import.meta.env.VITE_API_URL ||
+        import.meta.env.VITE_BACKEND_URL ||
+        "https://openshare-backend.onrender.com/api"
+      ).replace(/\/$/, "");
+
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("authToken");
+
+      const uploadRes = await fetch(`${apiBase}/users/me/avatar`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const out = await uploadRes.json();
+
+      if (!uploadRes.ok) {
+        throw new Error(out?.message || out?.error || "Avatar upload failed");
+      }
+
+      const rawAvatarUrl =
+        out?.data?.avatarUrl ||
+        out?.data?.profilePicture ||
+        out?.avatarUrl ||
+        out?.profilePicture ||
+        out?.url ||
+        out?.user?.avatarUrl ||
+        out?.user?.profilePicture ||
+        null;
+
+      const avatarUrl = normalizeProfileAvatarUrl(rawAvatarUrl);
 
       if (avatarUrl) {
         try { localStorage.removeItem("ss.avatarOverride"); } catch {}
