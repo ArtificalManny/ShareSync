@@ -514,6 +514,7 @@ function normalizeProfileAvatarUrl(value) {
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [uploading, setUploading] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState(null);
+  const fileInputRef = useRef(null);
 
   const storedUser = readStoredUser();
 
@@ -547,11 +548,8 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     for (const key of keys) {
       try {
         const raw = localStorage.getItem(key);
-        if (!raw) continue;
-
-        const current = JSON.parse(raw);
-        const next = { ...current, ...nextFields };
-        localStorage.setItem(key, JSON.stringify(next));
+        const current = raw ? JSON.parse(raw) : {};
+        localStorage.setItem(key, JSON.stringify({ ...current, ...nextFields }));
       } catch {}
     }
 
@@ -602,12 +600,12 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       const formData = new FormData();
       formData.append("avatar", file);
 
+      // Match Navbar behavior exactly: use the shared API client and canonical avatar endpoint.
       const res = await client.post("/users/me/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       console.log("[ProfilePhotoEditor] avatar upload response", res?.data);
-
 
       const avatarUrl = extractAvatarUrl(res?.data);
 
@@ -623,6 +621,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         profileImage: avatarUrl,
       });
 
+      // Match Navbar's secondary profile sync so every user shape stays aligned.
       try {
         await client.put("/users/me", {
           avatarUrl,
@@ -638,12 +637,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       try {
         await onPhotoUpdate?.();
       } catch {}
-
-      setTimeout(() => {
-        try {
-          onPhotoUpdate?.();
-        } catch {}
-      }, 300);
     } catch (error) {
       console.error("[ProfilePhotoEditor] avatar upload failed", error);
 
@@ -668,32 +661,31 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     }
   };
 
-  const openNativeFilePicker = () => {
+  const openFilePicker = () => {
     if (!isOwnProfile || uploading) return;
 
-    console.log("[ProfilePhotoEditor] opening native file picker");
+    const input = fileInputRef.current;
+    if (!input) {
+      console.warn("[ProfilePhotoEditor] file input ref missing");
+      return;
+    }
 
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.style.position = "fixed";
-    input.style.left = "-10000px";
-    input.style.top = "-10000px";
-    input.style.opacity = "0";
+    console.log("[ProfilePhotoEditor] opening stable file input");
 
-    input.onchange = () => {
-      const file = input.files?.[0] || null;
-      console.log("[ProfilePhotoEditor] native picker changed", file?.name || null);
-
-      input.remove();
-
-      if (file) {
-        uploadProfilePhoto(file);
-      }
-    };
-
-    document.body.appendChild(input);
+    // Important: allows picking the same file twice.
+    input.value = "";
     input.click();
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+
+    console.log("[ProfilePhotoEditor] file input changed", file?.name || null);
+
+    if (file) {
+      uploadProfilePhoto(file);
+    }
   };
 
   const auroraGradient =
@@ -729,21 +721,21 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           )}
 
           {isOwnProfile && (
-            <button
-              type="button"
-              onClick={openNativeFilePicker}
-              disabled={uploading}
-              className="absolute inset-0 z-40 cursor-pointer bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:cursor-wait"
-              aria-label="Change profile photo"
-            >
-              <span className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg">
+            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button
+                type="button"
+                onClick={openFilePicker}
+                disabled={uploading}
+                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg disabled:opacity-60"
+                aria-label="Change profile photo"
+              >
                 {uploading ? (
                   <Loader2 className="w-5 h-5 text-white animate-spin" />
                 ) : (
                   <Camera className="w-5 h-5 text-white" />
                 )}
-              </span>
-            </button>
+              </button>
+            </div>
           )}
         </div>
 
@@ -756,11 +748,27 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           </span>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: "-10000px",
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
     </div>
   );
 };
-
-
 
 /* ─────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet shadows
