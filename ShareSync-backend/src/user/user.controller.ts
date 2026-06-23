@@ -24,14 +24,19 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
+import * as path from 'node:path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
+import { ModerationService, ModerationDecision, ModerationCategory } from '../moderation/moderation.service';
+import { ImageModerationService } from '../moderation/image-moderation.service';
+import { policyForUpload } from '../moderation/policy';
 
 // ⚠️ If your UploadService lives somewhere else, update this import path.
 import { UploadsService } from '../uploads/uploads.service';
@@ -93,6 +98,16 @@ function normalizeUserAvatarPayload(userLike: any): any {
 }
 
 
+const avatarModerationDiskStorage = diskStorage({
+  destination: path.join(__dirname, '..', '..', 'uploads'),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+    cb(null, uniqueName);
+  },
+});
+
+
 @Controller('users')
 export class UserController {
   constructor(
@@ -102,6 +117,8 @@ export class UserController {
 
     @Optional() private readonly uploadService?: UploadsService,
     @Optional() private readonly follows?: ProjectFollowService,
+    @Optional() private readonly moderationService?: ModerationService,
+    @Optional() private readonly imageModerationService?: ImageModerationService,
   ) {}
 
   // ✅ Never let activity logging break the real endpoint.
@@ -440,6 +457,76 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+
+  private async assertAvatarImageAllowed(file: Express.Multer.File) {
+    const ext = path.extname(file.originalname || '').slice(1).toLowerCase();
+    const mime = file.mimetype || 'application/octet-stream';
+    const size = Number(file.size || 0);
+    const fsPath = (file as any).path || '';
+
+    if (!mime.startsWith('image/')) {
+      throw new BadRequestException('Avatar must be an image.');
+    }
+
+    if (!this.moderationService || !this.imageModerationService) {
+      throw new BadRequestException(
+        'Image safety moderation is not configured for avatar uploads.',
+      );
+    }
+
+    const virus = await this.moderationService.virusScan(fsPath);
+
+    const imgResult = await this.imageModerationService.moderateImage(fsPath);
+
+    if (imgResult.action === 'block') {
+      throw new BadRequestException(
+        imgResult.reason || 'This profile photo is not allowed.',
+      );
+    }
+
+    const image = {
+      decision: (
+        imgResult.action === 'allow'
+          ? 'ALLOW'
+          : imgResult.action === 'review'
+            ? 'REVIEW'
+            : 'BLOCK'
+      ) as ModerationDecision,
+      reason: imgResult.reason,
+      categories: imgResult.labels.map((label) => label.name) as ModerationCategory[],
+    };
+
+    const decision = policyForUpload({
+      ext,
+      sizeBytes: size,
+      mime,
+      virus,
+      image,
+    });
+
+    await this.moderationService.logDecision({
+      kind: 'avatar',
+      ext,
+      size,
+      mime,
+      decision: decision.decision,
+      reason: decision.reason,
+      ts: Date.now(),
+    });
+
+    if (decision.decision === 'BLOCK') {
+      throw new BadRequestException(
+        decision.reason || 'This profile photo is not allowed.',
+      );
+    }
+
+    if (decision.decision === 'REVIEW') {
+      throw new BadRequestException(
+        decision.reason || 'This profile photo needs review and cannot be used yet.',
+      );
+    }
+  }
+
   // POST /users/me/avatar - Upload avatar
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -457,7 +544,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Post('me/avatar')
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(FileInterceptor('avatar', { storage: avatarModerationDiskStorage }))
   async uploadAvatar(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
     if (!this.uploadService) {
       throw new BadRequestException(
@@ -466,6 +553,8 @@ export class UserController {
     }
 
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    await this.assertAvatarImageAllowed(file);
 
     const avatarUrl = await this.uploadService.uploadAvatar(file);
     const updated = await this.users.updateAvatar(userId, avatarUrl);
