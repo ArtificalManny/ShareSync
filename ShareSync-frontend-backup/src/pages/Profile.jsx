@@ -512,17 +512,32 @@ function normalizeProfileAvatarUrl(value) {
 }
 
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
-  const localOverride = readAvatarOverride();
+  const normalizeProfileAvatarUrl = (url) => {
+    const raw = String(url || "").trim();
+    if (!raw || raw === "/default-profile.png") return raw;
+
+    return raw
+      .replace(/^https?:\/\/(localhost|127\.0\.0\.1):5050/i, "https://openshare-backend.onrender.com")
+      .replace(/^uploads\//i, "https://openshare-backend.onrender.com/uploads/")
+      .replace(/^\/uploads\//i, "https://openshare-backend.onrender.com/uploads/");
+  };
+
+  const applyUserEverywhere = (nextFields = {}) => {
+    try {
+      const raw = localStorage.getItem("ss.user");
+      const current = raw ? JSON.parse(raw) : {};
+      const next = { ...current, ...nextFields };
+      localStorage.setItem("ss.user", JSON.stringify(next));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("user:updated", { detail: nextFields }));
+    } catch {}
+  };
+
   const storedUser = readStoredUser();
-  const storedAvatar = normalizeProfileAvatarUrl(
-    storedUser?.avatarUrl || storedUser?.profilePicture || null
-  );
 
   const backendAvatar = normalizeProfileAvatarUrl(
     user?.avatarUrl ||
@@ -533,147 +548,76 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       user?.imageUrl ||
       user?.profile?.avatarUrl ||
       user?.profile?.profilePicture ||
+      user?.profile?.profileImage ||
       user?.profile?.photoUrl ||
       null
   );
 
+  const storedAvatar = normalizeProfileAvatarUrl(
+    storedUser?.avatarUrl ||
+      storedUser?.profilePicture ||
+      storedUser?.profileImage ||
+      null
+  );
+
   const displayUrl =
-    (isOwnProfile
-      ? previewUrl || localOverride || backendAvatar || storedAvatar
-      : backendAvatar) || "/default-profile.png";
+    previewUrl || backendAvatar || storedAvatar || "/default-profile.png";
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-
-    console.log("[ProfilePhotoEditor] file input changed", {
-      hasFile: Boolean(file),
-      name: file?.name,
-      type: file?.type,
-      size: file?.size,
-    });
-
+  const uploadProfilePhoto = async (file) => {
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
-    setSelectedFile(file);
-    setPreviewUrl(url);
-    setIsEditing(true);
-
-    // Match Navbar behavior: selecting a profile photo should upload immediately.
-    void handleUpload(file);
-
-    // Allow selecting the same file again later.
-    e.target.value = "";
-  };
-
-  const applyUserEverywhere = (nextFields = {}) => {
-    try {
-      const raw = localStorage.getItem("ss.user");
-      const current = raw ? JSON.parse(raw) : {};
-      const next = { ...current, ...nextFields };
-      localStorage.setItem("ss.user", JSON.stringify(next));
-      window.dispatchEvent(new Event("storage"));
-    } catch {}
-  };
-
-  const handleUpload = async (fileOverride = null) => {
-    const fileToUpload = fileOverride || selectedFile;
-
-    console.log("[ProfilePhotoEditor] handleUpload called", {
-      hasFile: Boolean(fileToUpload),
-      name: fileToUpload?.name,
-      type: fileToUpload?.type,
-      size: fileToUpload?.size,
-    });
-
-    if (!fileToUpload) {
-      toast({ title: "No file selected", variant: "error" });
-      return;
-    }
-
+    const optimisticUrl = URL.createObjectURL(file);
+    setPreviewUrl(optimisticUrl);
     setUploading(true);
+
     try {
       const formData = new FormData();
-      formData.append("avatar", fileToUpload);
+      formData.append("avatar", file);
 
-      const apiBase = String(
-        import.meta.env.VITE_API_URL ||
-        import.meta.env.VITE_BACKEND_URL ||
-        "https://openshare-backend.onrender.com/api"
-      ).replace(/\/$/, "");
-
-      const token =
-        localStorage.getItem("token") ||
-        localStorage.getItem("accessToken") ||
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("authToken");
-
-      const uploadRes = await fetch(`${apiBase}/users/me/avatar`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
+      const res = await client.post("/users/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const out = await uploadRes.json();
-
-      if (!uploadRes.ok) {
-        throw new Error(out?.message || out?.error || "Avatar upload failed");
-      }
-
-      const rawAvatarUrl =
+      const out = res?.data || {};
+      const avatarUrl = normalizeProfileAvatarUrl(
         out?.data?.avatarUrl ||
-        out?.data?.profilePicture ||
-        out?.avatarUrl ||
-        out?.profilePicture ||
-        out?.url ||
-        out?.user?.avatarUrl ||
-        out?.user?.profilePicture ||
-        null;
+          out?.data?.profilePicture ||
+          out?.avatarUrl ||
+          out?.profilePicture ||
+          out?.profileImage ||
+          out?.url ||
+          out?.user?.avatarUrl ||
+          out?.user?.profilePicture ||
+          out?.user?.profileImage ||
+          null
+      );
 
-      const avatarUrl = normalizeProfileAvatarUrl(rawAvatarUrl);
-
-      if (avatarUrl) {
-        try { localStorage.removeItem("ss.avatarOverride"); } catch {}
-        applyUserEverywhere({ avatarUrl, profilePicture: avatarUrl });
-        toast({ title: "Photo updated", variant: "success" });
-        setIsEditing(false);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        onPhotoUpdate?.();
-        return;
+      if (!avatarUrl) {
+        throw new Error("Upload succeeded, but no avatar URL came back.");
       }
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = String(reader.result || "");
-        try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
-        applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
-        toast({ title: "Photo updated (local)", variant: "success" });
-        setIsEditing(false);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        onPhotoUpdate?.();
-      };
-      reader.readAsDataURL(fileToUpload);
-    } catch (error) {
       try {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = String(reader.result || "");
-          try { localStorage.setItem("ss.avatarOverride", dataUrl); } catch {}
-          applyUserEverywhere({ avatarUrl: dataUrl, profilePicture: dataUrl });
-          toast({ title: "Photo updated (local)", variant: "success" });
-          setIsEditing(false);
-          setSelectedFile(null);
-          setPreviewUrl(null);
-          onPhotoUpdate?.();
-        };
-        reader.readAsDataURL(fileToUpload);
-        return;
+        localStorage.removeItem("ss.avatarOverride");
       } catch {}
+
+      applyUserEverywhere({
+        avatarUrl,
+        profilePicture: avatarUrl,
+        profileImage: avatarUrl,
+      });
+
+      setPreviewUrl(avatarUrl);
+      toast({ title: "Photo updated", variant: "success" });
+      onPhotoUpdate?.();
+    } catch (error) {
+      console.error("[ProfilePhotoEditor] avatar upload failed:", error);
+      setPreviewUrl(null);
       toast({
         title: "Update failed",
-        description: error?.response?.data?.message || error?.message || "Could not upload photo",
+        description:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Could not upload photo",
         variant: "error",
       });
     } finally {
@@ -681,21 +625,26 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     }
   };
 
-  // Aurora gradient for avatar ring
-  const auroraGradient = 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)';
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    uploadProfilePhoto(file);
+  };
+
+  const auroraGradient =
+    "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)";
 
   return (
     <div className="relative flex flex-col items-center">
       <div className="relative w-40 h-40 group">
-        {/* Aurora gradient ring */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full p-1"
           style={{ background: auroraGradient }}
         >
           <div className="w-full h-full rounded-full bg-white dark:bg-black" />
         </div>
-        
-        {/* Avatar container */}
+
         <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-white dark:border-[#111113] bg-slate-100 dark:bg-zinc-800 shadow-lg shadow-violet-100 dark:shadow-violet-900/20">
           {displayUrl && displayUrl !== "/default-profile.png" ? (
             <img
@@ -703,13 +652,9 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
               src={displayUrl}
               alt={`${user?.name || user?.username || "User"} avatar`}
               className="w-full h-full object-cover"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
             />
           ) : (
             <UserAvatar
-              key={displayUrl}
               user={user}
               size={144}
               name={user?.name || user?.username || "User"}
@@ -718,78 +663,47 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
               ringClassName="ring-0"
             />
           )}
+
           {isOwnProfile && (
             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
                 type="button"
-                onClick={() => {
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                  fileInputRef.current?.click();
-                }}
-                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg disabled:opacity-60"
                 aria-label="Change profile photo"
               >
-                <Camera className="w-5 h-5 text-white" />
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
               </button>
             </div>
           )}
         </div>
-        
-        {/* Rank badge with violet gradient */}
-        <div 
+
+        <div
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg shadow-md"
-          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)' }}
+          style={{ background: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)" }}
         >
-          <span className="text-xs font-medium text-white">Rank {levelForXp(user?.xp)}</span>
+          <span className="text-xs font-medium text-white">
+            Rank {levelForXp(user?.xp)}
+          </span>
         </div>
       </div>
-      
+
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        onClick={(event) => {
-          event.currentTarget.value = "";
-        }}
         onChange={handleFileSelect}
         className="hidden"
       />
-      
-      {/* Upload modal */}
-      {isEditing && (
-        <div className="fixed inset-0 bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
-          <div className="w-full max-w-sm p-6 bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
-            <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-6 text-center">Update Photo?</h3>
-            <div 
-              className="w-28 h-28 rounded-full overflow-hidden mx-auto mb-6 p-0.5 shadow-lg"
-              style={{ background: auroraGradient }}
-            >
-              <img src={previewUrl} className="w-full h-full object-cover rounded-full" alt="Preview" />
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => { setIsEditing(false); setSelectedFile(null); setPreviewUrl(null); }}
-                className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleUpload}
-                disabled={uploading}
-                className="flex-1 py-3 rounded-xl text-white font-medium transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/20"
-                style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
-              >
-                {uploading ? "Uploading..." : "Confirm"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
 
 /* ─────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet shadows
