@@ -545,10 +545,14 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     const url = URL.createObjectURL(file);
     setSelectedFile(file);
     setPreviewUrl(url);
     setIsEditing(true);
+
+    // Match Navbar behavior: selecting a profile photo should upload immediately.
+    handleUpload(file);
   };
 
   const applyUserEverywhere = (nextFields = {}) => {
@@ -561,15 +565,18 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     } catch {}
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
+  const handleUpload = async (fileOverride = null) => {
+    const fileToUpload = fileOverride || selectedFile;
+
+    if (!fileToUpload) {
       toast({ title: "No file selected", variant: "error" });
       return;
     }
+
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("avatar", selectedFile);
+      formData.append("avatar", fileToUpload);
 
       const apiBase = String(
         import.meta.env.VITE_API_URL ||
@@ -629,7 +636,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         setPreviewUrl(null);
         onPhotoUpdate?.();
       };
-      reader.readAsDataURL(selectedFile);
+      reader.readAsDataURL(fileToUpload);
     } catch (error) {
       try {
         const reader = new FileReader();
@@ -643,7 +650,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           setPreviewUrl(null);
           onPhotoUpdate?.();
         };
-        reader.readAsDataURL(selectedFile);
+        reader.readAsDataURL(fileToUpload);
         return;
       } catch {}
       toast({
