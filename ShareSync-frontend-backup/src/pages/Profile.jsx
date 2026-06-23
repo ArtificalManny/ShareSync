@@ -625,10 +625,23 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   };
 
   const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+    const input = e.currentTarget || e.target;
+    const file = input?.files?.[0];
+
+    console.log("[ProfilePhotoEditor] file selected", file ? {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified,
+    } : null);
+
     if (!file) return;
+
     uploadProfilePhoto(file);
+
+    try {
+      input.value = "";
+    } catch {}
   };
 
   const auroraGradient =
@@ -668,6 +681,11 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
               <input
                 type="file"
                 accept="image/*"
+                onClick={(event) => {
+                  try {
+                    event.currentTarget.value = "";
+                  } catch {}
+                }}
                 onChange={handleFileSelect}
                 disabled={uploading}
                 className="absolute inset-0 z-30 h-full w-full cursor-pointer opacity-0"
