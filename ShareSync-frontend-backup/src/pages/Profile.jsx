@@ -544,6 +544,14 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
+
+    console.log("[ProfilePhotoEditor] file input changed", {
+      hasFile: Boolean(file),
+      name: file?.name,
+      type: file?.type,
+      size: file?.size,
+    });
+
     if (!file) return;
 
     const url = URL.createObjectURL(file);
@@ -552,7 +560,10 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     setIsEditing(true);
 
     // Match Navbar behavior: selecting a profile photo should upload immediately.
-    handleUpload(file);
+    void handleUpload(file);
+
+    // Allow selecting the same file again later.
+    e.target.value = "";
   };
 
   const applyUserEverywhere = (nextFields = {}) => {
@@ -567,6 +578,13 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   const handleUpload = async (fileOverride = null) => {
     const fileToUpload = fileOverride || selectedFile;
+
+    console.log("[ProfilePhotoEditor] handleUpload called", {
+      hasFile: Boolean(fileToUpload),
+      name: fileToUpload?.name,
+      type: fileToUpload?.type,
+      size: fileToUpload?.size,
+    });
 
     if (!fileToUpload) {
       toast({ title: "No file selected", variant: "error" });
@@ -704,7 +722,10 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                  fileInputRef.current?.click();
+                }}
                 className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg"
                 aria-label="Change profile photo"
               >
@@ -723,7 +744,16 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         </div>
       </div>
       
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
+        onChange={handleFileSelect}
+        className="hidden"
+      />
       
       {/* Upload modal */}
       {isEditing && (
