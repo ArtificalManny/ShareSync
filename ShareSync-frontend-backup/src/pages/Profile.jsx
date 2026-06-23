@@ -513,28 +513,7 @@ function normalizeProfileAvatarUrl(value) {
 
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
-
-  const normalizeProfileAvatarUrl = (url) => {
-    const raw = String(url || "").trim();
-    if (!raw || raw === "/default-profile.png") return raw;
-
-    return raw
-      .replace(/^https?:\/\/(localhost|127\.0\.0\.1):5050/i, "https://openshare-backend.onrender.com")
-      .replace(/^uploads\//i, "https://openshare-backend.onrender.com/uploads/")
-      .replace(/^\/uploads\//i, "https://openshare-backend.onrender.com/uploads/");
-  };
-
-  const applyUserEverywhere = (nextFields = {}) => {
-    try {
-      const raw = localStorage.getItem("ss.user");
-      const current = raw ? JSON.parse(raw) : {};
-      const next = { ...current, ...nextFields };
-      localStorage.setItem("ss.user", JSON.stringify(next));
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(new CustomEvent("user:updated", { detail: nextFields }));
-    } catch {}
-  };
+  const [localAvatarUrl, setLocalAvatarUrl] = useState(null);
 
   const storedUser = readStoredUser();
 
@@ -560,13 +539,62 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   );
 
   const displayUrl =
-    previewUrl || backendAvatar || storedAvatar || "/default-profile.png";
+    localAvatarUrl || backendAvatar || storedAvatar || "/default-profile.png";
+
+  const applyUserEverywhere = (nextFields = {}) => {
+    const keys = ["ss.user", "sharesync.user.v1", "user"];
+
+    for (const key of keys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+
+        const current = JSON.parse(raw);
+        const next = { ...current, ...nextFields };
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {}
+    }
+
+    try {
+      localStorage.removeItem("ss.avatarOverride");
+    } catch {}
+
+    try {
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(
+        new CustomEvent("openshare:user-updated", { detail: nextFields })
+      );
+    } catch {}
+  };
+
+  const extractAvatarUrl = (payload) => {
+    const out = payload || {};
+    return normalizeProfileAvatarUrl(
+      out?.data?.avatarUrl ||
+        out?.data?.profilePicture ||
+        out?.data?.profileImage ||
+        out?.avatarUrl ||
+        out?.profilePicture ||
+        out?.profileImage ||
+        out?.url ||
+        out?.user?.avatarUrl ||
+        out?.user?.profilePicture ||
+        out?.user?.profileImage ||
+        null
+    );
+  };
 
   const uploadProfilePhoto = async (file) => {
-    if (!file) return;
+    if (!file || uploading) return;
+
+    console.log("[ProfilePhotoEditor] selected file", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
 
     const optimisticUrl = URL.createObjectURL(file);
-    setPreviewUrl(optimisticUrl);
+    setLocalAvatarUrl(optimisticUrl);
     setUploading(true);
 
     try {
@@ -577,27 +605,15 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const out = res?.data || {};
-      const avatarUrl = normalizeProfileAvatarUrl(
-        out?.data?.avatarUrl ||
-          out?.data?.profilePicture ||
-          out?.avatarUrl ||
-          out?.profilePicture ||
-          out?.profileImage ||
-          out?.url ||
-          out?.user?.avatarUrl ||
-          out?.user?.profilePicture ||
-          out?.user?.profileImage ||
-          null
-      );
+      console.log("[ProfilePhotoEditor] upload response", res?.data);
+
+      const avatarUrl = extractAvatarUrl(res?.data);
 
       if (!avatarUrl) {
         throw new Error("Upload succeeded, but no avatar URL came back.");
       }
 
-      try {
-        localStorage.removeItem("ss.avatarOverride");
-      } catch {}
+      setLocalAvatarUrl(avatarUrl);
 
       applyUserEverywhere({
         avatarUrl,
@@ -605,12 +621,33 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         profileImage: avatarUrl,
       });
 
-      setPreviewUrl(avatarUrl);
+      // Match Navbar behavior: also persist the normalized avatar fields.
+      try {
+        await client.put("/users/me", {
+          avatarUrl,
+          profilePicture: avatarUrl,
+          profileImage: avatarUrl,
+        });
+      } catch (error) {
+        console.warn("[ProfilePhotoEditor] secondary profile sync failed", error);
+      }
+
       toast({ title: "Photo updated", variant: "success" });
-      onPhotoUpdate?.();
+
+      try {
+        onPhotoUpdate?.();
+      } catch {}
+
+      setTimeout(() => {
+        try {
+          onPhotoUpdate?.();
+        } catch {}
+      }, 300);
     } catch (error) {
-      console.error("[ProfilePhotoEditor] avatar upload failed:", error);
-      setPreviewUrl(null);
+      console.error("[ProfilePhotoEditor] avatar upload failed", error);
+
+      setLocalAvatarUrl(backendAvatar || storedAvatar || null);
+
       toast({
         title: "Update failed",
         description:
@@ -621,31 +658,30 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       });
     } finally {
       setUploading(false);
+
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(optimisticUrl);
+        } catch {}
+      }, 1000);
     }
   };
 
-  const handleFileSelect = (e) => {
-    const input = e.currentTarget || e.target;
-    const file = input?.files?.[0];
+  const handleFileChange = (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0] || null;
 
-    console.log("[ProfilePhotoEditor] file selected", file ? {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      lastModified: file.lastModified,
-    } : null);
+    // Reset after grabbing the file so selecting the same file later still fires.
+    input.value = "";
 
     if (!file) return;
-
     uploadProfilePhoto(file);
-
-    try {
-      input.value = "";
-    } catch {}
   };
 
   const auroraGradient =
     "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)";
+
+  const inputId = "profile-page-avatar-upload";
 
   return (
     <div className="relative flex flex-col items-center">
@@ -677,31 +713,19 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           )}
 
           {isOwnProfile && (
-            <>
-              <input
-                type="file"
-                accept="image/*"
-                onClick={(event) => {
-                  try {
-                    event.currentTarget.value = "";
-                  } catch {}
-                }}
-                onChange={handleFileSelect}
-                disabled={uploading}
-                className="absolute inset-0 z-30 h-full w-full cursor-pointer opacity-0"
-                aria-label="Change profile photo"
-              />
-
-              <div className="pointer-events-none absolute inset-0 z-20 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="p-3 bg-violet-500 rounded-full shadow-lg">
-                  {uploading ? (
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  ) : (
-                    <Camera className="w-5 h-5 text-white" />
-                  )}
-                </div>
-              </div>
-            </>
+            <label
+              htmlFor={inputId}
+              className="absolute inset-0 z-40 cursor-pointer bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              aria-label="Change profile photo"
+            >
+              <span className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg">
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
+              </span>
+            </label>
           )}
         </div>
 
@@ -715,9 +739,28 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         </div>
       </div>
 
+      <input
+        id={inputId}
+        type="file"
+        accept="image/*"
+        disabled={!isOwnProfile || uploading}
+        onClick={(event) => {
+          event.currentTarget.value = "";
+        }}
+        onChange={handleFileChange}
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: "-10000px",
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+        }}
+      />
     </div>
   );
 };
+
 
 
 /* ─────────────────────────────────────────────────────────────────────────
