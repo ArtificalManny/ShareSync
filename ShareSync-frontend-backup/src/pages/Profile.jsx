@@ -514,7 +514,6 @@ function normalizeProfileAvatarUrl(value) {
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const fileInputRef = useRef(null);
 
   const normalizeProfileAvatarUrl = (url) => {
     const raw = String(url || "").trim();
@@ -665,21 +664,26 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           )}
 
           {isOwnProfile && (
-            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
+            <>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
                 disabled={uploading}
-                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg disabled:opacity-60"
+                className="absolute inset-0 z-30 h-full w-full cursor-pointer opacity-0"
                 aria-label="Change profile photo"
-              >
-                {uploading ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                ) : (
-                  <Camera className="w-5 h-5 text-white" />
-                )}
-              </button>
-            </div>
+              />
+
+              <div className="pointer-events-none absolute inset-0 z-20 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="p-3 bg-violet-500 rounded-full shadow-lg">
+                  {uploading ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5 text-white" />
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </div>
 
@@ -693,13 +697,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         </div>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
     </div>
   );
 };
