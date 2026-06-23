@@ -608,7 +608,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
       console.log("[ProfilePhotoEditor] avatar upload response", res?.data);
 
-      const avatarUrl = extractAvatarUrl(res?.      console.log("[ProfilePhotoEditor] avatar upload response", res?.data);
 
       const avatarUrl = extractAvatarUrl(res?.data);
 
