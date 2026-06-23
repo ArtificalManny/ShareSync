@@ -569,6 +569,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
   const extractAvatarUrl = (payload) => {
     const out = payload || {};
+
     return normalizeProfileAvatarUrl(
       out?.data?.avatarUrl ||
         out?.data?.profilePicture ||
@@ -605,7 +606,9 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log("[ProfilePhotoEditor] upload response", res?.data);
+      console.log("[ProfilePhotoEditor] avatar upload response", res?.data);
+
+      const avatarUrl = extractAvatarUrl(res?.      console.log("[ProfilePhotoEditor] avatar upload response", res?.data);
 
       const avatarUrl = extractAvatarUrl(res?.data);
 
@@ -621,7 +624,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         profileImage: avatarUrl,
       });
 
-      // Match Navbar behavior: also persist the normalized avatar fields.
       try {
         await client.put("/users/me", {
           avatarUrl,
@@ -635,7 +637,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       toast({ title: "Photo updated", variant: "success" });
 
       try {
-        onPhotoUpdate?.();
+        await onPhotoUpdate?.();
       } catch {}
 
       setTimeout(() => {
@@ -667,21 +669,36 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     }
   };
 
-  const handleFileChange = (event) => {
-    const input = event.currentTarget;
-    const file = input.files?.[0] || null;
+  const openNativeFilePicker = () => {
+    if (!isOwnProfile || uploading) return;
 
-    // Reset after grabbing the file so selecting the same file later still fires.
-    input.value = "";
+    console.log("[ProfilePhotoEditor] opening native file picker");
 
-    if (!file) return;
-    uploadProfilePhoto(file);
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.position = "fixed";
+    input.style.left = "-10000px";
+    input.style.top = "-10000px";
+    input.style.opacity = "0";
+
+    input.onchange = () => {
+      const file = input.files?.[0] || null;
+      console.log("[ProfilePhotoEditor] native picker changed", file?.name || null);
+
+      input.remove();
+
+      if (file) {
+        uploadProfilePhoto(file);
+      }
+    };
+
+    document.body.appendChild(input);
+    input.click();
   };
 
   const auroraGradient =
     "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)";
-
-  const inputId = "profile-page-avatar-upload";
 
   return (
     <div className="relative flex flex-col items-center">
@@ -713,9 +730,11 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           )}
 
           {isOwnProfile && (
-            <label
-              htmlFor={inputId}
-              className="absolute inset-0 z-40 cursor-pointer bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+            <button
+              type="button"
+              onClick={openNativeFilePicker}
+              disabled={uploading}
+              className="absolute inset-0 z-40 cursor-pointer bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:cursor-wait"
               aria-label="Change profile photo"
             >
               <span className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg">
@@ -725,7 +744,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
                   <Camera className="w-5 h-5 text-white" />
                 )}
               </span>
-            </label>
+            </button>
           )}
         </div>
 
@@ -738,25 +757,6 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           </span>
         </div>
       </div>
-
-      <input
-        id={inputId}
-        type="file"
-        accept="image/*"
-        disabled={!isOwnProfile || uploading}
-        onClick={(event) => {
-          event.currentTarget.value = "";
-        }}
-        onChange={handleFileChange}
-        style={{
-          position: "fixed",
-          left: "-10000px",
-          top: "-10000px",
-          width: "1px",
-          height: "1px",
-          opacity: 0,
-        }}
-      />
     </div>
   );
 };
