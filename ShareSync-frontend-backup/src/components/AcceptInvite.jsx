@@ -7,6 +7,23 @@ import GradientText from "../components/ui/GradientText.jsx";
 
 const AUTH_TOKEN_KEYS = ["token", "accessToken", "access_token", "authToken"];
 
+const SESSION_KEYS_TO_CLEAR = [
+  "token",
+  "accessToken",
+  "access_token",
+  "authToken",
+  "ss.token",
+  "ss.accessToken",
+  "sharesync.token",
+  "user",
+  "ss.user",
+  "sharesync.user.v1",
+  "auth",
+  "authUser",
+  "currentUser",
+  "openshare.user",
+];
+
 function getStoredAuthToken() {
   try {
     for (const key of AUTH_TOKEN_KEYS) {
@@ -17,7 +34,7 @@ function getStoredAuthToken() {
   return "";
 }
 
-function isUnauthorizedInviteError(error, message) {
+function isInviteAuthProblem(error, message) {
   const status =
     error?.response?.status ||
     error?.status ||
@@ -39,10 +56,24 @@ function isUnauthorizedInviteError(error, message) {
     status === 403 ||
     haystack.includes("unauthorized") ||
     haystack.includes("unauthenticated") ||
-    haystack.includes("jwt") ||
-    haystack.includes("token expired") ||
-    haystack.includes("invalid token")
+    haystack.includes("different email") ||
+    haystack.includes("different email address") ||
+    haystack.includes("sent to a different email") ||
+    haystack.includes("wrong account") ||
+    haystack.includes("email does not match") ||
+    haystack.includes("invite was sent")
   );
+}
+
+function clearOpenShareSessionForInvite() {
+  for (const key of SESSION_KEYS_TO_CLEAR) {
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+    try {
+      sessionStorage.removeItem(key);
+    } catch {}
+  }
 }
 
 export default function AcceptInvite() {
@@ -61,31 +92,27 @@ export default function AcceptInvite() {
   const [message, setMessage] = useState("Please wait while we confirm your invite.");
   const [projectId, setProjectId] = useState(null);
 
-  const redirectToLogin = React.useCallback(
-    (reason = "auth_required") => {
-      const currentInvitePath = `${pathname || "/invite"}${search || ""}`;
+  const forceLoginForInvite = React.useCallback(
+    (reason = "invite_auth_required") => {
+      const invitePath = `${pathname || "/invite"}${search || ""}`;
+
+      clearOpenShareSessionForInvite();
 
       try {
-        sessionStorage.setItem("openshare.pendingInviteRedirect", currentInvitePath);
+        sessionStorage.setItem("openshare.pendingInviteRedirect", invitePath);
         sessionStorage.setItem("openshare.pendingInviteToken", token || "");
-        localStorage.setItem("openshare.pendingInviteRedirect", currentInvitePath);
+        localStorage.setItem("openshare.pendingInviteRedirect", invitePath);
       } catch {}
 
       try {
-        track("invite_login_redirect", { reason, redirectTo: currentInvitePath });
+        track("invite_login_redirect", { reason, redirectTo: invitePath });
       } catch {}
 
-      toast({
-        title: "Please log in to accept invite",
-        description: "After logging in, OpenShare will bring you back to this invite.",
-        variant: "default",
-      });
+      const loginUrl = `/login?redirect=${encodeURIComponent(invitePath)}&invite=1`;
 
-      navigate(`/login?redirect=${encodeURIComponent(currentInvitePath)}&invite=1`, {
-        replace: true,
-      });
+      window.location.replace(loginUrl);
     },
-    [navigate, pathname, search, token]
+    [pathname, search, token]
   );
 
   useEffect(() => {
@@ -111,7 +138,7 @@ export default function AcceptInvite() {
       if (!authToken) {
         setStatus("pending");
         setMessage("Redirecting to login so you can accept this invite…");
-        redirectToLogin("missing_auth_token");
+        forceLoginForInvite("missing_auth_token");
         return;
       }
 
@@ -170,10 +197,10 @@ export default function AcceptInvite() {
           e?.message ||
           "Failed to accept invite.";
 
-        if (isUnauthorizedInviteError(e, msg)) {
+        if (isInviteAuthProblem(e, msg)) {
           setStatus("pending");
           setMessage("Redirecting to login so you can accept this invite…");
-          redirectToLogin("unauthorized_accept_invite");
+          forceLoginForInvite("wrong_or_missing_invite_account");
           return;
         }
 
@@ -197,7 +224,7 @@ export default function AcceptInvite() {
     return () => {
       ignore = true;
     };
-  }, [token, navigate, redirectToLogin]);
+  }, [token, navigate, forceLoginForInvite]);
 
   return (
     <main id="main" role="main" tabIndex={-1}>
