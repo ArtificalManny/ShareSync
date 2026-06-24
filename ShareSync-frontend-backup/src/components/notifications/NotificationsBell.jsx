@@ -31,7 +31,13 @@ function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]", an
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
+    };
   }, []);
 
   const { unreadCount, notifications, markAsRead, markAllAsRead } = useNotificationsHook();
@@ -80,7 +86,13 @@ function NotificationsBellWithPolling({ pollMs = 20000, dropdownWidthClassName =
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
+    };
   }, []);
 
   const refreshUnread = async () => {
