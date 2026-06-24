@@ -514,7 +514,7 @@ function normalizeProfileAvatarUrl(value) {
 const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const [uploading, setUploading] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState(null);
-  const fileInputRef = useRef(null);
+  const [inputKey, setInputKey] = useState(0);
 
   const storedUser = readStoredUser();
 
@@ -542,28 +542,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   const displayUrl =
     localAvatarUrl || backendAvatar || storedAvatar || "/default-profile.png";
 
-  const applyUserEverywhere = (nextFields = {}) => {
-    const keys = ["ss.user", "sharesync.user.v1", "user"];
-
-    for (const key of keys) {
-      try {
-        const raw = localStorage.getItem(key);
-        const current = raw ? JSON.parse(raw) : {};
-        localStorage.setItem(key, JSON.stringify({ ...current, ...nextFields }));
-      } catch {}
-    }
-
-    try {
-      localStorage.removeItem("ss.avatarOverride");
-    } catch {}
-
-    try {
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(
-        new CustomEvent("openshare:user-updated", { detail: nextFields })
-      );
-    } catch {}
-  };
+  const inputId = "profile-avatar-upload-input";
 
   const extractAvatarUrl = (payload) => {
     const out = payload || {};
@@ -583,6 +562,33 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     );
   };
 
+  const applyUserEverywhere = (avatarUrl) => {
+    const nextFields = {
+      avatarUrl,
+      profilePicture: avatarUrl,
+      profileImage: avatarUrl,
+    };
+
+    for (const key of ["ss.user", "sharesync.user.v1", "user"]) {
+      try {
+        const raw = localStorage.getItem(key);
+        const current = raw ? JSON.parse(raw) : {};
+        localStorage.setItem(key, JSON.stringify({ ...current, ...nextFields }));
+      } catch {}
+    }
+
+    try {
+      localStorage.removeItem("ss.avatarOverride");
+    } catch {}
+
+    try {
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(
+        new CustomEvent("openshare:user-updated", { detail: nextFields })
+      );
+    } catch {}
+  };
+
   const uploadProfilePhoto = async (file) => {
     if (!file || uploading) return;
 
@@ -597,46 +603,77 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     setUploading(true);
 
     try {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("authToken");
+
+      if (!token) {
+        throw new Error("You are not logged in.");
+      }
+
+      const apiBase = String(
+        import.meta.env.VITE_API_URL ||
+          import.meta.env.VITE_BACKEND_URL ||
+          "https://openshare-backend.onrender.com/api"
+      ).replace(/\/$/, "");
+
       const formData = new FormData();
       formData.append("avatar", file);
 
-      // Match Navbar behavior exactly: use the shared API client and canonical avatar endpoint.
-      const res = await client.post("/users/me/avatar", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      console.log("[ProfilePhotoEditor] POST", `${apiBase}/users/me/avatar`);
+
+      const response = await fetch(`${apiBase}/users/me/avatar`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
 
-      console.log("[ProfilePhotoEditor] avatar upload response", res?.data);
+      const responseText = await response.text();
 
-      const avatarUrl = extractAvatarUrl(res?.data);
+      let payload = {};
+      try {
+        payload = JSON.parse(responseText);
+      } catch {}
+
+      console.log("[ProfilePhotoEditor] avatar upload response", {
+        status: response.status,
+        payload,
+        responseText,
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.message ||
+            payload?.error ||
+            responseText ||
+            "Avatar upload failed"
+        );
+      }
+
+      const avatarUrl = extractAvatarUrl(payload);
 
       if (!avatarUrl) {
         throw new Error("Upload succeeded, but no avatar URL came back.");
       }
 
+      applyUserEverywhere(avatarUrl);
       setLocalAvatarUrl(avatarUrl);
-
-      applyUserEverywhere({
-        avatarUrl,
-        profilePicture: avatarUrl,
-        profileImage: avatarUrl,
-      });
-
-      // Match Navbar's secondary profile sync so every user shape stays aligned.
-      try {
-        await client.put("/users/me", {
-          avatarUrl,
-          profilePicture: avatarUrl,
-          profileImage: avatarUrl,
-        });
-      } catch (error) {
-        console.warn("[ProfilePhotoEditor] secondary profile sync failed", error);
-      }
 
       toast({ title: "Photo updated", variant: "success" });
 
       try {
         await onPhotoUpdate?.();
       } catch {}
+
+      setTimeout(() => {
+        try {
+          onPhotoUpdate?.();
+        } catch {}
+      }, 300);
     } catch (error) {
       console.error("[ProfilePhotoEditor] avatar upload failed", error);
 
@@ -652,6 +689,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       });
     } finally {
       setUploading(false);
+      setInputKey((key) => key + 1);
 
       setTimeout(() => {
         try {
@@ -661,25 +699,9 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     }
   };
 
-  const openFilePicker = () => {
-    if (!isOwnProfile || uploading) return;
-
-    const input = fileInputRef.current;
-    if (!input) {
-      console.warn("[ProfilePhotoEditor] file input ref missing");
-      return;
-    }
-
-    console.log("[ProfilePhotoEditor] opening stable file input");
-
-    // Important: allows picking the same file twice.
-    input.value = "";
-    input.click();
-  };
-
-  const handleFileSelect = (event) => {
-    const file = event.target.files?.[0] || null;
-    event.target.value = "";
+  const handleFileChange = (event) => {
+    const file = event.currentTarget.files?.[0] || null;
+    event.currentTarget.value = "";
 
     console.log("[ProfilePhotoEditor] file input changed", file?.name || null);
 
@@ -711,6 +733,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
             />
           ) : (
             <UserAvatar
+              key={displayUrl}
               user={user}
               size={144}
               name={user?.name || user?.username || "User"}
@@ -721,54 +744,49 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
           )}
 
           {isOwnProfile && (
-            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button
-                type="button"
-                onClick={openFilePicker}
+            <>
+              <input
+                key={inputKey}
+                id={inputId}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
                 disabled={uploading}
-                className="p-3 bg-violet-500 rounded-full hover:bg-violet-600 transition-colors shadow-lg disabled:opacity-60"
+                className="sr-only"
+              />
+
+              <label
+                htmlFor={inputId}
+                className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center bg-slate-900/60 opacity-0 transition-opacity group-hover:opacity-100"
                 aria-label="Change profile photo"
               >
-                {uploading ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                ) : (
-                  <Camera className="w-5 h-5 text-white" />
-                )}
-              </button>
-            </div>
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-500 shadow-lg transition-colors hover:bg-violet-600">
+                  {uploading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-white" />
+                  )}
+                </span>
+              </label>
+            </>
           )}
         </div>
 
         <div
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg shadow-md"
-          style={{ background: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)" }}
+          style={{
+            background: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
+          }}
         >
           <span className="text-xs font-medium text-white">
             Rank {levelForXp(user?.xp)}
           </span>
         </div>
       </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        style={{
-          position: "fixed",
-          left: "-10000px",
-          top: "-10000px",
-          width: "1px",
-          height: "1px",
-          opacity: 0,
-          pointerEvents: "none",
-        }}
-        tabIndex={-1}
-        aria-hidden="true"
-      />
     </div>
   );
 };
+
 
 /* ─────────────────────────────────────────────────────────────────────────
    STAT CARD - Light theme with violet shadows
