@@ -814,7 +814,7 @@ export class NotificationsService {
       title: 'Project invitation',
       body: `You were invited to join ${projectName} as ${roleLabel}.`,
       icon: '👋',
-      priority: NotificationPriority.HIGH,
+      // In-app only: the actual invite email is sent by InvitesService.
       triggeredBy: payload.invitedBy,
       data: {
         projectId: payload.projectId,
