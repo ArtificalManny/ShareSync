@@ -38,6 +38,26 @@ export default function AcceptInvite() {
         return;
       }
 
+      const authToken =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("authToken");
+
+      if (!authToken) {
+        const redirectTo = `${window.location.pathname}${window.location.search || ""}`;
+
+        try {
+          sessionStorage.setItem("openshare.pendingInviteRedirect", redirectTo);
+          localStorage.setItem("openshare.postLoginRedirect", redirectTo);
+        } catch {}
+
+        navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`, {
+          replace: true,
+        });
+        return;
+      }
+
       try {
         const res = await acceptInvite(token);
 

@@ -49,7 +49,17 @@ export default function GoogleCallback() {
       console.log("✅ Google OAuth token stored.");
 
       setMessage("Google sign-in successful. Redirecting...");
-      setTimeout(() => navigate("/home", { replace: true }), 350);
+      const redirectTo =
+        localStorage.getItem("openshare.postLoginRedirect") ||
+        sessionStorage.getItem("openshare.pendingInviteRedirect") ||
+        "/home";
+
+      try {
+        localStorage.removeItem("openshare.postLoginRedirect");
+        sessionStorage.removeItem("openshare.pendingInviteRedirect");
+      } catch {}
+
+      setTimeout(() => navigate(redirectTo, { replace: true }), 350);
     } catch (err) {
       console.error("[GoogleCallback] Error processing callback:", err);
       setMessage("Google sign-in failed. Redirecting...");

@@ -7,7 +7,7 @@
 // - NO auth logic changed
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -31,6 +31,41 @@ function getGoogleOAuthUrl() {
 export default function Login() {
   useDocumentTitle("OpenShare");
   const navigate = useNavigate();
+
+  const getPostLoginRedirect = () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get("redirect");
+      const fromSession = sessionStorage.getItem("openshare.pendingInviteRedirect");
+      const fromLocal = localStorage.getItem("openshare.postLoginRedirect");
+      const redirectTo = fromUrl || fromSession || fromLocal || "/home";
+
+      if (redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+        return redirectTo;
+      }
+    } catch {}
+
+    return "/home";
+  };
+
+  const clearPostLoginRedirect = () => {
+    try {
+      sessionStorage.removeItem("openshare.pendingInviteRedirect");
+      localStorage.removeItem("openshare.postLoginRedirect");
+    } catch {}
+  };
+
+  useEffect(() => {
+    const redirectTo = getPostLoginRedirect();
+
+    if (redirectTo !== "/home") {
+      try {
+        sessionStorage.setItem("openshare.pendingInviteRedirect", redirectTo);
+        localStorage.setItem("openshare.postLoginRedirect", redirectTo);
+      } catch {}
+    }
+  }, []);
+
   const { login } = useAuth();
 
   // Form state
@@ -60,7 +95,11 @@ export default function Login() {
       const result = await login({ email, password });
 
       if (result.success) {
-        navigate("/home", { replace: true });
+        {
+          const redirectTo = getPostLoginRedirect();
+          clearPostLoginRedirect();
+          navigate(redirectTo, { replace: true });
+        }
         return;
       }
 
