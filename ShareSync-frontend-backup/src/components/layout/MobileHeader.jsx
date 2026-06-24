@@ -6,7 +6,8 @@
 
 import React, { useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
+import NotificationsBell from '../notifications/NotificationsBell';
 
 // Map paths to page titles
 function getPageTitle(pathname) {
@@ -94,33 +95,9 @@ export default function MobileHeader({
           <Search className="w-4.5 h-4.5" />
         </button>
 
-        <button
-          type="button"
-          onClick={onNotificationPress}
-          className="
-            relative flex items-center justify-center
-            w-10 h-10 -mr-2
-            rounded-lg
-            text-slate-500 dark:text-zinc-400
-            active:bg-slate-100 dark:active:bg-white/5
-            transition-colors
-          "
-          aria-label="Notifications"
-        >
-          <Bell className="w-4.5 h-4.5" />
-          {unreadCount > 0 && (
-            <span className="
-              absolute top-1.5 right-1.5
-              min-w-[16px] h-4 px-1
-              rounded-full
-              bg-red-500 text-white
-              text-[9px] font-bold
-              flex items-center justify-center
-            ">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
-          )}
-        </button>
+        <div className="relative flex items-center justify-center w-10 h-10 -mr-2">
+          <NotificationsBell dropdownWidthClassName="w-[calc(100vw-24px)] max-w-[420px]" />
+        </div>
       </div>
     </header>
   );
