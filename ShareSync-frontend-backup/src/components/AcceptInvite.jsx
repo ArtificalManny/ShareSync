@@ -5,6 +5,64 @@ import { toast } from "../components/ui/Toaster.jsx";
 import { track } from "../utils/telemetry";
 import GradientText from "../components/ui/GradientText.jsx";
 
+const INVITE_REDIRECT_SESSION_KEY = "openshare.pendingInviteRedirect";
+const INVITE_REDIRECT_LOCAL_KEY = "openshare.postLoginRedirect";
+
+function getAuthToken() {
+  try {
+    return (
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("authToken") ||
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
+function getCurrentInviteRedirect() {
+  const path = window.location.pathname || "/invite/accept";
+  const search = window.location.search || "";
+  return `${path}${search}`;
+}
+
+function saveInviteRedirect(redirectTo) {
+  try {
+    sessionStorage.setItem(INVITE_REDIRECT_SESSION_KEY, redirectTo);
+    localStorage.setItem(INVITE_REDIRECT_LOCAL_KEY, redirectTo);
+  } catch {}
+}
+
+function clearPossiblyWrongAuthSession() {
+  try {
+    [
+      "token",
+      "accessToken",
+      "access_token",
+      "authToken",
+      "ss.token",
+      "sharesync.token",
+      "ss.user",
+      "sharesync.user.v1",
+      "user",
+    ].forEach((key) => localStorage.removeItem(key));
+  } catch {}
+}
+
+function isAuthInviteError(error, message) {
+  const status = error?.response?.status;
+
+  return (
+    status === 401 ||
+    status === 403 ||
+    /unauthorized|forbidden|different email|different account|not authorized/i.test(
+      String(message || "")
+    )
+  );
+}
+
 export default function AcceptInvite() {
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -23,6 +81,19 @@ export default function AcceptInvite() {
   useEffect(() => {
     let ignore = false;
 
+    async function redirectToLogin(reason = "login_required") {
+      const redirectTo = getCurrentInviteRedirect();
+      saveInviteRedirect(redirectTo);
+
+      try {
+        track("invite_login_redirect", { reason, redirectTo });
+      } catch {}
+
+      navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`, {
+        replace: true,
+      });
+    }
+
     async function run() {
       if (!token) {
         setStatus("error");
@@ -38,23 +109,10 @@ export default function AcceptInvite() {
         return;
       }
 
-      const authToken =
-        localStorage.getItem("token") ||
-        localStorage.getItem("accessToken") ||
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("authToken");
+      const authToken = getAuthToken();
 
       if (!authToken) {
-        const redirectTo = `${window.location.pathname}${window.location.search || ""}`;
-
-        try {
-          sessionStorage.setItem("openshare.pendingInviteRedirect", redirectTo);
-          localStorage.setItem("openshare.postLoginRedirect", redirectTo);
-        } catch {}
-
-        navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`, {
-          replace: true,
-        });
+        await redirectToLogin("missing_auth_token");
         return;
       }
 
@@ -112,6 +170,23 @@ export default function AcceptInvite() {
           e?.response?.data?.message ||
           e?.message ||
           "Failed to accept invite.";
+
+        if (isAuthInviteError(e, msg)) {
+          const redirectTo = getCurrentInviteRedirect();
+          saveInviteRedirect(redirectTo);
+          clearPossiblyWrongAuthSession();
+
+          toast({
+            title: "Please log in to accept invite",
+            description: "Use the account this invite was sent to.",
+            variant: "warning",
+          });
+
+          navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`, {
+            replace: true,
+          });
+          return;
+        }
 
         setStatus("error");
         setMessage(msg);
