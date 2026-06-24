@@ -745,29 +745,29 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
           {isOwnProfile && (
             <>
-              <input
-                key={inputKey}
-                id={inputId}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={uploading}
-                className="sr-only"
-              />
-
-              <label
-                htmlFor={inputId}
-                className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center bg-slate-900/60 opacity-0 transition-opacity group-hover:opacity-100"
-                aria-label="Change profile photo"
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-500 shadow-lg transition-colors hover:bg-violet-600">
+              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-slate-900/60 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-500 shadow-lg transition-colors">
                   {uploading ? (
                     <Loader2 className="h-5 w-5 animate-spin text-white" />
                   ) : (
                     <Camera className="h-5 w-5 text-white" />
                   )}
                 </span>
-              </label>
+              </div>
+
+              <input
+                key={inputKey}
+                type="file"
+                accept="image/*"
+                aria-label="Change profile photo"
+                disabled={uploading}
+                onClick={(event) => {
+                  event.currentTarget.value = "";
+                  console.log("[ProfilePhotoEditor] real file input clicked");
+                }}
+                onChange={handleFileChange}
+                className="absolute inset-0 z-30 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              />
             </>
           )}
         </div>
