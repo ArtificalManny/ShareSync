@@ -19,7 +19,7 @@ function parseUnreadCount(data) {
   return 0;
 }
 
-function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]" }) {
+function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]", anchorClassName = "right-0" }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
   
@@ -57,7 +57,7 @@ function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]" }) 
         open={open} 
         onClose={() => setOpen(false)} 
         widthClassName={dropdownWidthClassName} 
-        anchorClassName="right-0"
+        anchorClassName={anchorClassName}
         notifications={notifications}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
@@ -66,7 +66,7 @@ function NotificationsBellWithContext({ dropdownWidthClassName = "w-[420px]" }) 
   );
 }
 
-function NotificationsBellWithPolling({ pollMs = 20000, dropdownWidthClassName = "w-[420px]" }) {
+function NotificationsBellWithPolling({ pollMs = 20000, dropdownWidthClassName = "w-[420px]", anchorClassName = "right-0" }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [unread, setUnread] = useState(0);
@@ -117,7 +117,7 @@ function NotificationsBellWithPolling({ pollMs = 20000, dropdownWidthClassName =
         )}
       </button>
 
-      <NotificationsDropdown open={open} onClose={() => setOpen(false)} widthClassName={dropdownWidthClassName} anchorClassName="right-0" />
+      <NotificationsDropdown open={open} onClose={() => setOpen(false)} widthClassName={dropdownWidthClassName} anchorClassName={anchorClassName} />
     </div>
   );
 }

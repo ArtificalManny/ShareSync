@@ -96,7 +96,10 @@ export default function MobileHeader({
         </button>
 
         <div className="relative flex items-center justify-center w-10 h-10 -mr-2">
-          <NotificationsBell dropdownWidthClassName="w-[calc(100vw-24px)] max-w-[420px]" />
+          <NotificationsBell
+            dropdownWidthClassName="w-[calc(100vw-24px)] max-w-[420px]"
+            anchorClassName="fixed left-1/2 -translate-x-1/2 right-auto top-14 z-[9999]"
+          />
         </div>
       </div>
     </header>
