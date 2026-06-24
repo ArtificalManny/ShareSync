@@ -5,67 +5,50 @@ import { toast } from "../components/ui/Toaster.jsx";
 import { track } from "../utils/telemetry";
 import GradientText from "../components/ui/GradientText.jsx";
 
-const INVITE_REDIRECT_SESSION_KEY = "openshare.pendingInviteRedirect";
-const INVITE_REDIRECT_LOCAL_KEY = "openshare.postLoginRedirect";
+const AUTH_TOKEN_KEYS = ["token", "accessToken", "access_token", "authToken"];
 
-function getAuthToken() {
+function getStoredAuthToken() {
   try {
-    return (
-      localStorage.getItem("token") ||
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("access_token") ||
-      localStorage.getItem("authToken") ||
-      ""
-    );
-  } catch {
-    return "";
-  }
-}
-
-function getCurrentInviteRedirect() {
-  const path = window.location.pathname || "/invite/accept";
-  const search = window.location.search || "";
-  return `${path}${search}`;
-}
-
-function saveInviteRedirect(redirectTo) {
-  try {
-    sessionStorage.setItem(INVITE_REDIRECT_SESSION_KEY, redirectTo);
-    localStorage.setItem(INVITE_REDIRECT_LOCAL_KEY, redirectTo);
+    for (const key of AUTH_TOKEN_KEYS) {
+      const value = localStorage.getItem(key);
+      if (value && value !== "undefined" && value !== "null") return value;
+    }
   } catch {}
+  return "";
 }
 
-function clearPossiblyWrongAuthSession() {
-  try {
-    [
-      "token",
-      "accessToken",
-      "access_token",
-      "authToken",
-      "ss.token",
-      "sharesync.token",
-      "ss.user",
-      "sharesync.user.v1",
-      "user",
-    ].forEach((key) => localStorage.removeItem(key));
-  } catch {}
-}
+function isUnauthorizedInviteError(error, message) {
+  const status =
+    error?.response?.status ||
+    error?.status ||
+    error?.response?.data?.statusCode;
 
-function isAuthInviteError(error, message) {
-  const status = error?.response?.status;
+  const haystack = [
+    message,
+    error?.message,
+    error?.response?.data?.message,
+    error?.response?.data?.error,
+    error?.response?.data?.code,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 
   return (
     status === 401 ||
     status === 403 ||
-    /unauthorized|forbidden|different email|different account|not authorized/i.test(
-      String(message || "")
-    )
+    haystack.includes("unauthorized") ||
+    haystack.includes("unauthenticated") ||
+    haystack.includes("jwt") ||
+    haystack.includes("token expired") ||
+    haystack.includes("invalid token")
   );
 }
 
 export default function AcceptInvite() {
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const location = useLocation();
+  const { search, pathname } = location;
   const { token: pathToken } = useParams();
 
   const queryToken = useMemo(() => {
@@ -78,21 +61,35 @@ export default function AcceptInvite() {
   const [message, setMessage] = useState("Please wait while we confirm your invite.");
   const [projectId, setProjectId] = useState(null);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function redirectToLogin(reason = "login_required") {
-      const redirectTo = getCurrentInviteRedirect();
-      saveInviteRedirect(redirectTo);
+  const redirectToLogin = React.useCallback(
+    (reason = "auth_required") => {
+      const currentInvitePath = `${pathname || "/invite"}${search || ""}`;
 
       try {
-        track("invite_login_redirect", { reason, redirectTo });
+        sessionStorage.setItem("openshare.pendingInviteRedirect", currentInvitePath);
+        sessionStorage.setItem("openshare.pendingInviteToken", token || "");
+        localStorage.setItem("openshare.pendingInviteRedirect", currentInvitePath);
       } catch {}
 
-      navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`, {
+      try {
+        track("invite_login_redirect", { reason, redirectTo: currentInvitePath });
+      } catch {}
+
+      toast({
+        title: "Please log in to accept invite",
+        description: "After logging in, OpenShare will bring you back to this invite.",
+        variant: "default",
+      });
+
+      navigate(`/login?redirect=${encodeURIComponent(currentInvitePath)}&invite=1`, {
         replace: true,
       });
-    }
+    },
+    [navigate, pathname, search, token]
+  );
+
+  useEffect(() => {
+    let ignore = false;
 
     async function run() {
       if (!token) {
@@ -109,10 +106,12 @@ export default function AcceptInvite() {
         return;
       }
 
-      const authToken = getAuthToken();
+      const authToken = getStoredAuthToken();
 
       if (!authToken) {
-        await redirectToLogin("missing_auth_token");
+        setStatus("pending");
+        setMessage("Redirecting to login so you can accept this invite…");
+        redirectToLogin("missing_auth_token");
         return;
       }
 
@@ -171,20 +170,10 @@ export default function AcceptInvite() {
           e?.message ||
           "Failed to accept invite.";
 
-        if (isAuthInviteError(e, msg)) {
-          const redirectTo = getCurrentInviteRedirect();
-          saveInviteRedirect(redirectTo);
-          clearPossiblyWrongAuthSession();
-
-          toast({
-            title: "Please log in to accept invite",
-            description: "Use the account this invite was sent to.",
-            variant: "warning",
-          });
-
-          navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`, {
-            replace: true,
-          });
+        if (isUnauthorizedInviteError(e, msg)) {
+          setStatus("pending");
+          setMessage("Redirecting to login so you can accept this invite…");
+          redirectToLogin("unauthorized_accept_invite");
           return;
         }
 
@@ -208,7 +197,7 @@ export default function AcceptInvite() {
     return () => {
       ignore = true;
     };
-  }, [token, navigate]);
+  }, [token, navigate, redirectToLogin]);
 
   return (
     <main id="main" role="main" tabIndex={-1}>
