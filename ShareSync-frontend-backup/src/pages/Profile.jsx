@@ -710,6 +710,36 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     }
   };
 
+  const openVerifiedAvatarPicker = () => {
+    if (!isOwnProfile || uploading) return;
+
+    console.log("[ProfilePhotoEditor] opening verified native picker");
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.position = "fixed";
+    input.style.left = "-10000px";
+    input.style.top = "-10000px";
+    input.style.opacity = "0";
+    input.style.pointerEvents = "none";
+
+    input.onchange = () => {
+      const file = input.files?.[0] || null;
+
+      console.log("[ProfilePhotoEditor] verified picker changed", file?.name || null);
+
+      input.remove();
+
+      if (file) {
+        uploadProfilePhoto(file);
+      }
+    };
+
+    document.body.appendChild(input);
+    input.click();
+  };
+
   const auroraGradient =
     "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)";
 
@@ -745,29 +775,21 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
 
           {isOwnProfile && (
             <>
-              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-slate-900/60 opacity-0 transition-opacity group-hover:opacity-100">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-500 shadow-lg transition-colors">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={openVerifiedAvatarPicker}
+                className="absolute inset-0 z-30 flex cursor-pointer items-center justify-center bg-slate-900/60 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                aria-label="Change profile photo"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-500 shadow-lg transition-colors hover:bg-violet-600">
                   {uploading ? (
                     <Loader2 className="h-5 w-5 animate-spin text-white" />
                   ) : (
                     <Camera className="h-5 w-5 text-white" />
                   )}
                 </span>
-              </div>
-
-              <input
-                key={inputKey}
-                type="file"
-                accept="image/*"
-                aria-label="Change profile photo"
-                disabled={uploading}
-                onClick={(event) => {
-                  event.currentTarget.value = "";
-                  console.log("[ProfilePhotoEditor] real file input clicked");
-                }}
-                onChange={handleFileChange}
-                className="absolute inset-0 z-30 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-              />
+              </button>
             </>
           )}
         </div>
