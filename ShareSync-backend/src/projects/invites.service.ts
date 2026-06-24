@@ -5,8 +5,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery, Types } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Model, FilterQuery, Types, Connection } from 'mongoose';
 import { randomBytes } from 'crypto';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
@@ -33,6 +33,8 @@ export class InvitesService {
   private readonly logger = new Logger(InvitesService.name);
 
   constructor(
+    @InjectConnection()
+    private readonly connection: Connection,
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
     private readonly realtime: RealtimeGateway,
@@ -109,12 +111,49 @@ export class InvitesService {
     return `${frontendBase}/invite/${inviteToken || ''}`;
   }
 
+
+  private async getInviterDisplayName(userId: string): Promise<string> {
+    try {
+      if (!userId || !Types.ObjectId.isValid(userId)) return 'Someone';
+
+      const user = await this.connection.collection('users').findOne(
+        { _id: new Types.ObjectId(userId) },
+        {
+          projection: {
+            displayName: 1,
+            firstName: 1,
+            lastName: 1,
+            username: 1,
+            email: 1,
+          },
+        },
+      );
+
+      const firstLast = [user?.firstName, user?.lastName]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      return (
+        String(user?.displayName || '').trim() ||
+        firstLast ||
+        String(user?.username || '').trim() ||
+        String(user?.email || '').trim() ||
+        'Someone'
+      );
+    } catch (err: any) {
+      this.logger.warn(`Could not resolve invite sender name: ${err?.message || err}`);
+      return 'Someone';
+    }
+  }
+
   private async sendProjectInviteEmail(args: {
     to: string;
     projectName: string;
     role: string;
     inviteToken?: string;
     message?: string;
+    invitedByName?: string;
   }): Promise<void> {
     const resendApiKey = process.env.RESEND_API_KEY;
     const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM;
@@ -135,6 +174,7 @@ export class InvitesService {
     const inviteUrl = this.buildInviteUrl(args.inviteToken);
     const safeProjectName = this.escapeHtml(args.projectName || 'Project');
     const safeRole = this.escapeHtml(args.role || 'member');
+    const safeInviterName = this.escapeHtml(args.invitedByName || 'Someone');
     const safeMessage = String(args.message || '').trim();
 
     const html = `
@@ -147,7 +187,7 @@ export class InvitesService {
             </div>
             <div style="background: #f8fafc; padding: 30px; border-radius: 12px; margin-top: 20px;">
               <p style="color: #334155; line-height: 1.6;">
-                You've been invited to join <strong>${safeProjectName}</strong> as a <strong>${safeRole}</strong>.
+                ${safeInviterName} has invited you to join <strong>${safeProjectName}</strong> as a <strong>${safeRole}</strong>.
               </p>
               ${safeMessage ? `<p style="color: #334155; line-height: 1.6;">${this.escapeHtml(safeMessage)}</p>` : ''}
               <a href="${this.escapeHtml(inviteUrl)}" style="display: inline-block; background: #9333ea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px;">
@@ -173,7 +213,7 @@ export class InvitesService {
         to,
         subject: `You're invited to ${args.projectName || 'a project'} on OpenShare`,
         html,
-        text: `You've been invited to join ${args.projectName || 'a project'} on OpenShare as a ${args.role || 'member'}. Accept invite: ${inviteUrl}`,
+        text: `${args.invitedByName || 'Someone'} has invited you to join ${args.projectName || 'a project'} on OpenShare as a ${args.role || 'member'}. Accept invite: ${inviteUrl}`,
       }),
     });
 
@@ -243,11 +283,14 @@ export class InvitesService {
       invitedBy: actingUserId,
     });
 
+    const inviterDisplayName = await this.getInviterDisplayName(actingUserId);
+
     await this.sendProjectInviteEmail({
       to: normalizedEmail,
       projectName: String((project as any)?.name || (project as any)?.title || 'Project'),
       role: String(role || 'member'),
       inviteToken,
+      invitedByName: inviterDisplayName,
       message: String((dto as any)?.message || ''),
     }).catch((err: any) => {
       this.logger.warn(`Project invite email failed for ${normalizedEmail}: ${err?.message || err}`);
