@@ -626,6 +626,88 @@ export class TasksService {
       },
     });
 
+    // ProjectHome Flow email fan-out:
+    // Only notify on real column/status changes, not simple reorder changes.
+    if (previousStatus !== updated.status) {
+      try {
+        let notificationsService: NotificationsService | null = null;
+        try {
+          notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+        } catch (serviceErr) {}
+
+        if (notificationsService?.notify) {
+          const projectDoc: any = await this.projectsService.findById(updated.projectId.toString());
+
+          const rawMembers = [
+            ...(Array.isArray(projectDoc?.members) ? projectDoc.members : []),
+            ...(Array.isArray(projectDoc?.sharedWith) ? projectDoc.sharedWith : []),
+            ...(Array.isArray(projectDoc?.participantIds) ? projectDoc.participantIds : []),
+            ...(Array.isArray(projectDoc?.collaborators) ? projectDoc.collaborators : []),
+          ];
+
+          const allAssociatedIds: any[] = [
+            projectDoc?.ownerId,
+            projectDoc?.owner,
+            projectDoc?.createdBy,
+            ...rawMembers.map((m: any) => m?.userId || m?.memberId || m?.user || m?._id || m),
+          ];
+
+          const recipientIds = [...new Set(
+            allAssociatedIds
+              .filter(Boolean)
+              .map((id: any) => id.toString())
+              .filter((id: string) => id && id !== userId)
+          )];
+
+          const projectName = String(projectDoc?.name || projectDoc?.title || 'Project');
+          const taskTitle = String((updated as any)?.title || 'Task');
+          const fromStatus = String(previousStatus || 'previous stage').replace(/_/g, ' ');
+          const toStatus = String(updated.status || 'new stage').replace(/_/g, ' ');
+
+          for (const recipientId of recipientIds) {
+            try {
+              await notificationsService.notify({
+                userId: recipientId,
+                type: 'task_moved' as any,
+                title: `↔️ Task moved in ${projectName}`,
+                body: `${taskTitle} moved from ${fromStatus} to ${toStatus}.`,
+                icon: '↔️',
+                priority: NotificationPriority.HIGH,
+                triggeredBy: userId,
+                data: {
+                  projectId: updated.projectId.toString(),
+                  projectName,
+                  taskId: updated._id.toString(),
+                  taskTitle,
+                  previousStatus,
+                  newStatus: updated.status,
+                  emailFanoutEligible: true,
+                  projectMemberNotification: true,
+                } as any,
+                actions: [
+                  {
+                    label: 'View Flow',
+                    url: `/projects/${updated.projectId.toString()}?tab=flow`,
+                  },
+                ],
+                groupKey: `task-moved-${recipientId}-${updated._id.toString()}-${updated.status}`,
+              });
+            } catch (recipientErr) {
+              this.logger.warn(
+                `Task moved notification fan-out failed for user ${recipientId}: ${
+                  (recipientErr as any)?.message || recipientErr
+                }`,
+              );
+            }
+          }
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Task moved email notification skipped: ${(err as any)?.message || err}`,
+        );
+      }
+    }
+
     if (previousStatus !== updated.status && updated.status === TaskStatus.REVIEW) {
       const project = await this.projectsService.findById(updated.projectId.toString());
       this.eventEmitter.emit('task.moved_to_review', {
