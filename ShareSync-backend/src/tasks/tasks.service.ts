@@ -41,6 +41,8 @@ import {
 import { TaskEventType } from './events/task-events';
 import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 import { RealtimeService } from '../realtime/realtime.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationPriority } from '../notifications/schemas/notification.schema';
 
 export interface TaskQueryOptions {
   projectId?: string;
@@ -203,9 +205,50 @@ export class TasksService {
         const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
         const safeTaskTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Task';
 
+        let notificationsService: NotificationsService | null = null;
+        try {
+          notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+        } catch (e) {}
+
         // 1. Notify Official DB Members
         for (const recipientId of uniqueMembers) {
           try {
+            let createdViaNotificationsService = false;
+
+            if (notificationsService?.notify) {
+              try {
+                await notificationsService.notify({
+                  userId: recipientId,
+                  type: 'task_created' as any,
+                  title: `📝 New Task in ${safeProjectName}`,
+                  body: safeTaskTitle,
+                  icon: '📝',
+                  priority: NotificationPriority.HIGH,
+                  triggeredBy: userId,
+                  data: {
+                    projectId: dto.projectId,
+                    projectName: safeProjectName,
+                    taskId: saved._id.toString(),
+                    extra: { taskId: saved._id.toString() },
+                    emailFanoutEligible: true,
+                    projectMemberNotification: true,
+                  },
+                  actions: [{ label: 'View Move', url: `/projects/${dto.projectId}?tab=move` }],
+                  groupKey: `project-task-${recipientId}-${dto.projectId}-${saved._id.toString()}`,
+                });
+
+                createdViaNotificationsService = true;
+              } catch (notificationErr) {
+                this.logger.warn(
+                  `NotificationsService task-created notification failed for user ${recipientId}; falling back to direct insert: ${
+                    (notificationErr as any)?.message || notificationErr
+                  }`,
+                );
+              }
+            }
+
+            if (createdViaNotificationsService) continue;
+
             const notifResult = await db.collection('notifications').insertOne({
               userId: new Types.ObjectId(recipientId as string),
               type: 'task_created',
@@ -214,10 +257,12 @@ export class TasksService {
               data: {
                 projectId: dto.projectId,
                 projectName: safeProjectName,
-                extra: { taskId: saved._id.toString() }
+                extra: { taskId: saved._id.toString() },
+                emailFanoutEligible: true,
+                projectMemberNotification: true,
               },
-              channels: ['in_app'],
-              priority: 'normal',
+              channels: ['in_app', 'email'],
+              priority: 'high',
               isRead: false,
               isClicked: false,
               isDismissed: false,

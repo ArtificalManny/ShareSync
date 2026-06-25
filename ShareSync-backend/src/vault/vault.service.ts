@@ -118,7 +118,7 @@ export class VaultService {
 
             if (notificationsService?.create) {
               try {
-                await notificationsService.create({
+                await notificationsService.notify({
                   userId: recipientId,
                   type: 'file_uploaded',
                   title: `📁 New File in ${safeProjectName}`,
