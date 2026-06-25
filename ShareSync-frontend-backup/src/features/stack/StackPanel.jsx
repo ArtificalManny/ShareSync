@@ -35,7 +35,7 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import StackTaskRow from "./StackTaskRow";
 import { useStackTasks } from "./useStackTasks";
-import { completeTask, moveTask } from "../../api/taskApi";
+import { completeTask, moveTask, updateTask, deleteTask } from "../../api/taskApi";
 import { createTask } from "../../api/tasks";
 import {
   Layers,
@@ -408,6 +408,66 @@ export default function StackPanel({
 
       try {
         await completeTask(id, {});
+      } catch (e) {
+        setActionError(e);
+        await refresh();
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [optimisticUpdate, refresh]
+  );
+
+  const handleEditTask = useCallback(
+    async (task, updates = {}) => {
+      setActionError(null);
+      const id = getTaskId(task);
+      if (!id) return;
+
+      const cleanUpdates = {};
+      for (const [key, value] of Object.entries(updates || {})) {
+        if (value !== undefined) cleanUpdates[key] = value;
+      }
+
+      if (!Object.keys(cleanUpdates).length) return;
+
+      setActionBusyId(id);
+
+      optimisticUpdate((prev) =>
+        prev.map((t) => (getTaskId(t) === id ? { ...t, ...cleanUpdates } : t))
+      );
+
+      try {
+        const updated = await updateTask(id, cleanUpdates);
+        optimisticUpdate((prev) =>
+          prev.map((t) => (getTaskId(t) === id ? { ...t, ...(updated || {}) } : t))
+        );
+      } catch (e) {
+        setActionError(e);
+        await refresh();
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [optimisticUpdate, refresh]
+  );
+
+  const handleDeleteTask = useCallback(
+    async (task) => {
+      setActionError(null);
+      const id = getTaskId(task);
+      if (!id) return;
+
+      const taskTitle = task?.title || task?.name || "this task";
+      const confirmed = window.confirm(`Delete "${taskTitle}"? This cannot be undone.`);
+      if (!confirmed) return;
+
+      setActionBusyId(id);
+
+      optimisticUpdate((prev) => prev.filter((t) => getTaskId(t) !== id));
+
+      try {
+        await deleteTask(id);
       } catch (e) {
         setActionError(e);
         await refresh();
@@ -1217,6 +1277,8 @@ export default function StackPanel({
                     onStart={handleStart}
                     onMoveToReview={handleMoveToReview}
                     onComplete={handleComplete}
+                    onEdit={handleEditTask}
+                    onDelete={handleDeleteTask}
                   />
                 );
               })}

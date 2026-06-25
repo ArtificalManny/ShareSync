@@ -138,6 +138,31 @@ export async function completeTask(taskId) {
 }
 
 /**
+ * PATCH /tasks/:id - partial update
+ */
+export async function updateTask(taskId, updates = {}) {
+  if (!taskId) throw new Error("taskId is required");
+
+  const body = {};
+  for (const [key, value] of Object.entries(updates || {})) {
+    if (value !== undefined) body[key] = value;
+  }
+
+  const response = await client.patch(`/tasks/${taskId}`, body);
+  return response.data?.data || response.data;
+}
+
+/**
+ * DELETE /tasks/:id
+ */
+export async function deleteTask(taskId) {
+  if (!taskId) throw new Error("taskId is required");
+
+  await client.delete(`/tasks/${taskId}`);
+  return true;
+}
+
+/**
  * GET /tasks/pulse?projectId=...
  * Phase 2: timestamp-based metrics
  */

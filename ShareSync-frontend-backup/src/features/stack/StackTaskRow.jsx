@@ -202,6 +202,8 @@ export default function StackTaskRow({
   onStart,
   onMoveToReview,
   onComplete,
+  onEdit,
+  onDelete,
 } = {}) {
   const id = getTaskId(task);
 
@@ -224,6 +226,39 @@ export default function StackTaskRow({
   const dueMeta = useMemo(() => getDueMeta(task?.dueDate), [task?.dueDate]);
 
   const [completing, setCompleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(title);
+  const [editPriority, setEditPriority] = useState(String(task?.priority || "medium").toLowerCase());
+
+  const beginEdit = useCallback(() => {
+    if (disabled || completing) return;
+    setEditTitle(title);
+    setEditPriority(String(task?.priority || "medium").toLowerCase());
+    setEditing(true);
+  }, [disabled, completing, title, task?.priority]);
+
+  const cancelEdit = useCallback(() => {
+    setEditTitle(title);
+    setEditPriority(String(task?.priority || "medium").toLowerCase());
+    setEditing(false);
+  }, [title, task?.priority]);
+
+  const saveEdit = useCallback(async () => {
+    const trimmed = String(editTitle || "").trim();
+    if (!trimmed || disabled || completing) return;
+
+    await onEdit?.(task, {
+      title: trimmed,
+      priority: editPriority || "medium",
+    });
+
+    setEditing(false);
+  }, [editTitle, editPriority, disabled, completing, onEdit, task]);
+
+  const handleDeleteClick = useCallback(() => {
+    if (disabled || completing) return;
+    onDelete?.(task);
+  }, [disabled, completing, onDelete, task]);
 
   const handleCheckboxClick = useCallback(() => {
     if (disabled || completing) return;
@@ -300,9 +335,29 @@ export default function StackTaskRow({
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="stack-task-title font-bold text-sm text-slate-900 dark:text-white truncate">
-                    {title}
-                  </div>
+                  {editing ? (
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          saveEdit();
+                        }
+                        if (e.key === "Escape") {
+                          e.preventDefault();
+                          cancelEdit();
+                        }
+                      }}
+                      className="min-w-[220px] flex-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-sm font-bold text-slate-900 outline-none ring-2 ring-transparent transition focus:border-violet-400 focus:ring-violet-100 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:focus:border-violet-300/50 dark:focus:ring-violet-400/10"
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="stack-task-title font-bold text-sm text-slate-900 dark:text-white truncate">
+                      {title}
+                    </div>
+                  )}
 
                   {isBlocking ? (
                     <span
@@ -326,6 +381,39 @@ export default function StackTaskRow({
                     </span>
                   ) : null}
                 </div>
+
+                {editing ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <select
+                      value={editPriority}
+                      onChange={(e) => setEditPriority(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Med</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      disabled={disabled || completing || !String(editTitle || "").trim()}
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Save
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      disabled={disabled || completing}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-white/70 dark:hover:bg-white/[0.06]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {/* Priority badge */}
@@ -374,32 +462,56 @@ export default function StackTaskRow({
                 </div>
               </div>
 
-              {/* ── Primary action ─────────────────────────────────────── */}
-              {primaryAction ? (
+              {/* ── Row actions ─────────────────────────────────────────── */}
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                {!editing ? (
+                  <button
+                    type="button"
+                    disabled={disabled || completing}
+                    onClick={beginEdit}
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-black text-slate-600 transition hover:bg-slate-50 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.08] dark:hover:text-violet-200"
+                    title="Edit task"
+                  >
+                    Edit
+                  </button>
+                ) : null}
+
                 <button
                   type="button"
-                  disabled={disabled}
-                  onClick={primaryAction.onClick}
-                  style={
-                    primaryAction.label === "Start"
-                      ? {
-                          background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 55%, #6d28d9 100%)",
-                          color: "#ffffff",
-                          opacity: 1,
-                          border: "1px solid rgba(124, 58, 237, 0.55)",
-                          boxShadow: "0 12px 28px rgba(124, 58, 237, 0.28)",
-                          WebkitTextFillColor: "#ffffff",
-                        }
-                      : undefined
-                  }
-                  className={`stack-task-action inline-flex items-center justify-center gap-1.5 text-[11px] font-black px-3 py-2 rounded-lg
-                    disabled:cursor-not-allowed transition-colors flex-shrink-0 ${primaryAction.classes}`}
-                  title={primaryAction.title}
+                  disabled={disabled || completing}
+                  onClick={handleDeleteClick}
+                  className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-black text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/15"
+                  title="Delete task"
                 >
-                  <primaryAction.icon className="h-3.5 w-3.5" />
-                  {primaryAction.label}
+                  Delete
                 </button>
-              ) : null}
+
+                {primaryAction ? (
+                  <button
+                    type="button"
+                    disabled={disabled || editing}
+                    onClick={primaryAction.onClick}
+                    style={
+                      primaryAction.label === "Start"
+                        ? {
+                            background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 55%, #6d28d9 100%)",
+                            color: "#ffffff",
+                            opacity: 1,
+                            border: "1px solid rgba(124, 58, 237, 0.55)",
+                            boxShadow: "0 12px 28px rgba(124, 58, 237, 0.28)",
+                            WebkitTextFillColor: "#ffffff",
+                          }
+                        : undefined
+                    }
+                    className={`stack-task-action inline-flex items-center justify-center gap-1.5 text-[11px] font-black px-3 py-2 rounded-lg
+                      disabled:cursor-not-allowed transition-colors flex-shrink-0 ${primaryAction.classes}`}
+                    title={primaryAction.title}
+                  >
+                    <primaryAction.icon className="h-3.5 w-3.5" />
+                    {primaryAction.label}
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
