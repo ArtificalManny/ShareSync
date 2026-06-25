@@ -10,6 +10,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export enum NotificationType {
   TASK_ASSIGNED = 'task_assigned',
   TASK_COMPLETED = 'task_completed',
+  TASK_MOVED = 'task_moved',
   TASK_UPDATED = 'task_updated',
   TASK_COMMENT = 'task_comment',
   TASK_MENTION = 'task_mention',
