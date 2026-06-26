@@ -18,7 +18,7 @@ import TeamBalance from './TeamBalance';
 import ActivityFeed from './ActivityFeed';
 import WeeklyMomentumReport from './WeeklyMomentumReport';
 
-const InsightsTab = ({ projectId }) => {
+const InsightsTab = ({ projectId, refreshKey = 0 }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -363,7 +363,7 @@ const InsightsTab = ({ projectId }) => {
       )}
 
       {/* ✅ Activity Feed — always renders, fetches its own data with task fallback */}
-      <ActivityFeed projectId={projectId} limit={100} />
+      <ActivityFeed projectId={projectId} limit={100} refreshKey={refreshKey} />
     </div>
   );
 };

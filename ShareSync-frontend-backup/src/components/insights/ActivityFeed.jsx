@@ -674,7 +674,7 @@ async function fetchTaskBasedActivity(projectId, limit = 50, fallbackActor = nul
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function ActivityFeed({ projectId, limit = 50, className = '' }) {
+export default function ActivityFeed({ projectId, limit = 50, className = '', refreshKey = 0 }) {
   const [activities, setActivities] = useState([]);
   const [fallbackActor, setFallbackActor] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -727,7 +727,7 @@ export default function ActivityFeed({ projectId, limit = 50, className = '' }) 
         setLoading(false);
       }
     }
-  }, [projectId, limit]);
+  }, [projectId, limit, refreshKey]);
 
   useEffect(() => {
     mountedRef.current = true;

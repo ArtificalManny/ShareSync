@@ -4315,7 +4315,7 @@ export default function ProjectHome() {
         case "insights":
           return (
             <div className={pageWrap}>
-              <InsightsTab projectId={id} />
+              <InsightsTab projectId={id} refreshKey={pulseRefreshKey} />
             </div>
           );
 
