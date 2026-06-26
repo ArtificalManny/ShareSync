@@ -16,6 +16,7 @@ import { ModerationModule } from '../moderation/moderation.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { ActivitiesModule } from '../activities/activities.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     ModerationModule,
     forwardRef(() => RealtimeModule),
     forwardRef(() => NotificationsModule),
-    forwardRef(() => SubscriptionsModule)
+    forwardRef(() => SubscriptionsModule),
+    forwardRef(() => ActivitiesModule)
   ],
   controllers: [
     ProjectsController,

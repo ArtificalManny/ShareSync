@@ -19,6 +19,7 @@ import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationPriority, NotificationType } from '../notifications/schemas/notification.schema';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { ActivitiesService } from '../activities/activities.service';
 
 function safeNumber(value: any, fallback = 0): number {
   const parsed = Number(value);
@@ -95,6 +96,7 @@ export class ProjectsService {
     private readonly eventEmitter: EventEmitter2,
     private readonly subscriptionsService: SubscriptionsService,
     @Optional() private readonly notifications?: NotificationsService,
+    @Optional() private readonly activities?: ActivitiesService,
   ) {}
 
   async findOneForUser(userId: string, projectId: string): Promise<ProjectDocument | null> {
@@ -2062,6 +2064,132 @@ export class ProjectsService {
   }
 
 
+  private normalizeStoredProjectActivity(item: any): any {
+    const payload = item?.payload || {};
+    const details = item?.details || {};
+    const metadata = item?.metadata || {};
+
+    const actorCandidate =
+      item?.actor ||
+      item?.user ||
+      item?.userId ||
+      item?.actorId ||
+      payload?.actor ||
+      payload?.user ||
+      payload?.userId ||
+      payload?.actorId;
+
+    const serializedActor = this.projectOverviewSerializeActivityActor(
+      actorCandidate,
+      item?.actorName || item?.userName || 'Project member',
+    );
+
+    const target =
+      item?.targetTitle ||
+      details?.targetTitle ||
+      details?.taskTitle ||
+      metadata?.taskTitle ||
+      payload?.targetTitle ||
+      payload?.taskTitle ||
+      payload?.snapshot?.title ||
+      details?.milestoneTitle ||
+      metadata?.milestoneTitle ||
+      payload?.milestoneTitle ||
+      details?.eventTitle ||
+      metadata?.eventTitle ||
+      payload?.eventTitle ||
+      details?.fileName ||
+      metadata?.fileName ||
+      payload?.fileName ||
+      details?.folderName ||
+      metadata?.folderName ||
+      payload?.folderName ||
+      details?.announcementTitle ||
+      metadata?.announcementTitle ||
+      payload?.announcementTitle ||
+      item?.title ||
+      item?.name ||
+      '';
+
+    const type = String(item?.type || item?.action || 'project_activity');
+    const action = String(item?.action || type).replace(/\./g, '_');
+    const createdAt = item?.createdAt || item?.updatedAt || new Date().toISOString();
+
+    const message =
+      item?.message ||
+      item?.text ||
+      payload?.message ||
+      details?.message ||
+      (target
+        ? `${serializedActor.name} updated ${target}`
+        : `${serializedActor.name} updated the project`);
+
+    return {
+      ...item,
+      id: item?._id?.toString?.() || item?.id || `${type}-${createdAt}`,
+      _id: item?._id,
+      type,
+      action,
+      target,
+      targetTitle: target,
+      title: target || item?.title || item?.name || 'Project activity',
+      message,
+      text: message,
+      actor: serializedActor,
+      user: serializedActor,
+      actorId: serializedActor.id || serializedActor._id,
+      userId: serializedActor.id || serializedActor._id || item?.userId,
+      actorName: serializedActor.name,
+      userName: serializedActor.name,
+      displayName: serializedActor.name,
+      actorAvatar: serializedActor.avatarUrl,
+      avatarUrl: serializedActor.avatarUrl,
+      profilePicture: serializedActor.profilePicture,
+      profileImage: serializedActor.profileImage,
+      createdAt,
+      updatedAt: item?.updatedAt || createdAt,
+    };
+  }
+
+  private async buildProjectOverviewActivity(
+    projectId: string,
+    userId: string,
+    fallbackActivity: any[],
+  ): Promise<any[]> {
+    if (!this.activities?.listProject) {
+      return fallbackActivity;
+    }
+
+    try {
+      const result = await this.activities.listProject({
+        projectId,
+        userId,
+        limit: 12,
+        cursor: null,
+        type: null,
+        entityId: null,
+      });
+
+      const items = Array.isArray((result as any)?.items)
+        ? (result as any).items
+        : Array.isArray(result)
+          ? result
+          : [];
+
+      const normalized = items
+        .filter(Boolean)
+        .map((item) => this.normalizeStoredProjectActivity(item));
+
+      return normalized.length > 0 ? normalized : fallbackActivity;
+    } catch (err: any) {
+      this.logger.warn(
+        `Project overview activity fallback used for ${projectId}: ${err?.message || err}`,
+      );
+      return fallbackActivity;
+    }
+  }
+
+
   private extractAnyId(value: any): string {
     if (!value) return '';
 
@@ -2531,7 +2659,8 @@ export class ProjectsService {
       completedThisWeek > 0 ? completedThisWeek : storedMetrics.weeklyShips || 0;
 
     const criticalMoves = this.buildCriticalMoves(tasks);
-    const activity = this.buildRecentActivity(tasks, project, userId);
+    const fallbackActivity = this.buildRecentActivity(tasks, project, userId);
+    const activity = await this.buildProjectOverviewActivity(projectId, userId, fallbackActivity);
 
     const normalizedGoals = this.buildGoalSnapshots(project, tasks);
     const activeGoals = normalizedGoals.filter((goal) => goal.status !== 'completed');
