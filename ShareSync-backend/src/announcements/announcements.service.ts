@@ -49,6 +49,58 @@ export class AnnouncementsService {
     @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
+  private async recordProjectActivity(data: {
+    userId: string;
+    projectId?: string;
+    type: string;
+    entityType?: string;
+    entityId?: string;
+    action?: string;
+    details?: Record<string, any>;
+    metadata?: Record<string, any>;
+    payload?: Record<string, any>;
+  }): Promise<void> {
+    try {
+      if (!data?.userId || !Types.ObjectId.isValid(data.userId)) return;
+      if (!data?.projectId || !Types.ObjectId.isValid(data.projectId)) return;
+
+      const now = new Date();
+      const userObjectId = new Types.ObjectId(data.userId);
+      const projectObjectId = new Types.ObjectId(data.projectId);
+
+      const doc: any = {
+        userId: userObjectId,
+        actorId: userObjectId,
+        projectId: projectObjectId,
+        type: data.type,
+        entityType: data.entityType || null,
+        action: data.action || data.type,
+        details: data.details || {},
+        metadata: data.metadata || {},
+        payload: data.payload || {},
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      if (data.entityId) {
+        if (Types.ObjectId.isValid(data.entityId)) {
+          doc.entityId = new Types.ObjectId(data.entityId);
+        }
+        doc.entityKey = data.entityId;
+      }
+
+      const result = await this.announcementModel.db.collection('activities').insertOne(doc);
+      const savedActivity = { ...doc, _id: result.insertedId };
+
+      this.eventEmitter.emit('activityCreated', savedActivity);
+      this.eventEmitter.emit('activity:created', savedActivity);
+      this.eventEmitter.emit('activity.created', savedActivity);
+    } catch (err: any) {
+      this.logger.warn(`Project activity logging failed (${data?.type}): ${err?.message || err}`);
+    }
+  }
+
+
   private readonly userPopulateFields =
     'name firstName lastName username email profilePicture profileImage avatar avatarUrl photoUrl imageUrl image picture';
 
@@ -144,6 +196,30 @@ export class AnnouncementsService {
     if (!project) {
       throw new NotFoundException('Project not found');
     }
+
+    await this.recordProjectActivity({
+      userId: input.authorId,
+      projectId: input.projectId,
+      type: 'announcement_created',
+      entityType: 'announcement',
+      entityId: doc._id?.toString?.(),
+      action: 'created',
+      details: {
+        announcementTitle: input.title || 'Announcement',
+        title: input.title || 'Announcement',
+        message: input.message || '',
+        announcementType: input.type || 'info',
+        pinned: Boolean(input.pinned),
+      },
+      metadata: {
+        source: 'announcements',
+        announcementId: doc._id?.toString?.(),
+      },
+      payload: {
+        announcementTitle: input.title || 'Announcement',
+        announcementId: doc._id?.toString?.(),
+      },
+    });
 
     const projectNotificationsEnabled = project?.settings?.notificationsEnabled !== false;
     if (!projectNotificationsEnabled) {

@@ -52,6 +52,58 @@ export class CalendarService {
     private readonly moduleRef: ModuleRef,
   ) {}
 
+  private async recordProjectActivity(data: {
+    userId: string;
+    projectId?: string;
+    type: string;
+    entityType?: string;
+    entityId?: string;
+    action?: string;
+    details?: Record<string, any>;
+    metadata?: Record<string, any>;
+    payload?: Record<string, any>;
+  }): Promise<void> {
+    try {
+      if (!data?.userId || !Types.ObjectId.isValid(data.userId)) return;
+      if (!data?.projectId || !Types.ObjectId.isValid(data.projectId)) return;
+
+      const now = new Date();
+      const userObjectId = new Types.ObjectId(data.userId);
+      const projectObjectId = new Types.ObjectId(data.projectId);
+
+      const doc: any = {
+        userId: userObjectId,
+        actorId: userObjectId,
+        projectId: projectObjectId,
+        type: data.type,
+        entityType: data.entityType || null,
+        action: data.action || data.type,
+        details: data.details || {},
+        metadata: data.metadata || {},
+        payload: data.payload || {},
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      if (data.entityId) {
+        if (Types.ObjectId.isValid(data.entityId)) {
+          doc.entityId = new Types.ObjectId(data.entityId);
+        }
+        doc.entityKey = data.entityId;
+      }
+
+      const result = await this.eventModel.db.collection('activities').insertOne(doc);
+      const savedActivity = { ...doc, _id: result.insertedId };
+
+      this.eventEmitter.emit('activityCreated', savedActivity);
+      this.eventEmitter.emit('activity:created', savedActivity);
+      this.eventEmitter.emit('activity.created', savedActivity);
+    } catch (err: any) {
+      this.logger.warn(`Project activity logging failed (${data?.type}): ${err?.message || err}`);
+    }
+  }
+
+
   // ─────────────────────────────────────────────────────────────────────────────
   // NEW: RHYTHM AGGREGATOR
   // ─────────────────────────────────────────────────────────────────────────────
@@ -147,6 +199,31 @@ export class CalendarService {
     });
 
     const saved = await event.save();
+
+    if (dto.projectId) {
+      await this.recordProjectActivity({
+        userId,
+        projectId: dto.projectId,
+        type: 'event_created',
+        entityType: 'calendar_event',
+        entityId: (saved as any)?._id?.toString?.(),
+        action: 'created',
+        details: {
+          eventTitle: (dto as any)?.title || (saved as any)?.title || 'Scheduled session',
+          title: (dto as any)?.title || (saved as any)?.title || 'Scheduled session',
+          startTime: (saved as any)?.startTime || (saved as any)?.start || (dto as any)?.startTime || null,
+          endTime: (saved as any)?.endTime || (saved as any)?.end || (dto as any)?.endTime || null,
+        },
+        metadata: {
+          source: 'schedule',
+          eventId: (saved as any)?._id?.toString?.(),
+        },
+        payload: {
+          eventTitle: (dto as any)?.title || (saved as any)?.title || 'Scheduled session',
+          eventId: (saved as any)?._id?.toString?.(),
+        },
+      });
+    }
 
     this.eventEmitter.emit('calendar.event.created', {
       eventId: saved._id,
