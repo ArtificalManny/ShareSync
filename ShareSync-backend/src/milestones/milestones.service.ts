@@ -157,7 +157,7 @@ export class MilestonesService {
       try {
         const projectId = saved.projectId?.toString?.();
 
-    if (!wasCompleted && isNowCompleted && projectId) {
+    if (createdAsCompleted && projectId) {
       await this.recordProjectActivity({
         userId,
         projectId,
@@ -482,6 +482,37 @@ export class MilestonesService {
       Boolean((saved as any)?.completedAt);
 
     const projectId = saved.projectId?.toString?.();
+
+    // ProjectHome Activity Feed: milestone completed
+    if (!wasCompleted && isNowCompleted && projectId) {
+      await this.recordProjectActivity({
+        userId,
+        projectId,
+        type: 'milestone_completed',
+        entityType: 'milestone',
+        entityId: saved._id?.toString?.(),
+        action: 'completed',
+        detailsHome Activity Feed: milestone completed
+    if (!wasCompleted && isNowCompleted && projectId) {
+      await this.recordProjectActivity({
+        userId,
+       : {
+          milestoneTitle: (saved as any)?.title || (saved as any)?.name || 'Milestone',
+          title: (saved as any)?.title || (saved as any)?.name || 'Milestone',
+          status: (saved as any)?.status || 'completed',
+          progress: (saved as any)?.progress ?? 100,
+          completedAt: (saved as any)?.completedAt || new Date(),
+        },
+        metadata: {
+          source: 'roadmap',
+          milestoneId: saved._id?.toString?.(),
+        },
+        payload: {
+          milestoneTitle: (saved as any)?.title || (saved as any)?.name || 'Milestone',
+          milestoneId: saved._id?.toString?.(),
+        },
+      });
+    }
 
     // Fire project-member milestone completion notifications only once:
     // first transition from not-completed -> completed.
