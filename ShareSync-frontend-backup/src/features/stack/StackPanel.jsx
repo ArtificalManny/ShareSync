@@ -1286,11 +1286,21 @@ export default function StackPanel({
               {!hasFilter && projectId && !showAddForm ? (
                 <button
                   type="button"
+                  data-openshare-empty-cta="moves-first-task-v3"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleOpenAddForm();
                   }}
-                  className="stack-first-task-button stack-first-task-button-force-purple inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-black text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+                  className="inline-flex min-h-[52px] min-w-[220px] items-center justify-center gap-2 rounded-2xl border !border-violet-500 !bg-violet-600 px-7 py-3.5 text-sm font-black !text-white shadow-xl shadow-violet-500/40 transition-all duration-200 hover:-translate-y-0.5 hover:!bg-violet-700 hover:shadow-violet-500/55 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:!border-violet-300 dark:!bg-violet-500 dark:!text-white dark:shadow-violet-500/45 dark:hover:!bg-violet-400 dark:focus-visible:ring-offset-slate-950"
+                  style={{
+                    backgroundColor: "#7c3aed",
+                    backgroundImage:
+                      "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 100%)",
+                    color: "#ffffff",
+                    borderColor: "#8b5cf6",
+                    boxShadow:
+                      "0 20px 48px rgba(109,40,217,0.46), inset 0 1px 0 rgba(255,255,255,0.34)",
+                  }}
                 >
                   <Plus className="h-4 w-4 text-white" />
                   <span className="whitespace-nowrap text-white">
