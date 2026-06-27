@@ -370,11 +370,11 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
               </div>
             </div>
 
-            <button data-openshare-finish-readiness-cta="amber-safe-v1"
+            <button
+              data-openshare-finish-readiness-cta="amber-safe-v2"
               type="button"
-              onClick={() =
+              onClick={() => onPrimaryAction?.(finishLine)}
               className="finish-readiness-cta inline-flex min-h-[48px] min-w-[225px] items-center justify-center gap-2 rounded-2xl border px-6 py-3 text-sm font-black shadow-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
-            
               style={{
                 backgroundColor: "#f59e0b",
                 backgroundImage:
@@ -384,11 +384,9 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
                 boxShadow:
                   "0 18px 44px rgba(245,158,11,0.38), inset 0 1px 0 rgba(255,255,255,0.42)",
               }}
-            > onPrimaryAction?.(finishLine)}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:scale-[1.01] hover:shadow-xl"
             >
-              <span>{primaryActionLabel}</span>
-              <ArrowRight className="h-4 w-4" />
+              <span style={{ color: "#111827" }}>{primaryActionLabel}</span>
+              <ArrowRight className="h-4 w-4" style={{ color: "#111827", stroke: "#111827" }} />
             </button>
           </div>
         </div>
