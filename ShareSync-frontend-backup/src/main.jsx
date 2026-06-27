@@ -14,6 +14,28 @@ import "./styles/motion.css";
 import posthog from "posthog-js"; // ✅ PHASE 2: The Neural Network
 import { forceMovesStartButtonVisibility } from "./utils/forceMovesStartButtonVisibility";
 
+// OPENSHARE_LEGACY_CACHE_CLEANUP_V1
+// Remove old service workers/caches from earlier production builds.
+// This prevents soft-refresh from loading stale app bundles.
+if (typeof window !== "undefined") {
+  (async () => {
+    try {
+      if ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+    } catch (error) {
+      console.warn("OpenShare cache cleanup skipped:", error);
+    }
+  })();
+}
+
+
 forceMovesStartButtonVisibility();
 
 if (import.meta.env.MODE !== "production") {
