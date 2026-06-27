@@ -16,6 +16,7 @@ import { UploadsModule } from '../uploads/uploads.module';
     ]),
     ModerationModule,
     NotificationsModule,
+    UploadsModule,
   ],
   controllers: [VaultController],
   providers: [VaultService],
