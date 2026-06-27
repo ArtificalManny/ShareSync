@@ -1242,10 +1242,34 @@ export default function StackPanel({
               {!hasFilter && projectId && !showAddForm ? (
                 <button
                   type="button"
-                  className="stack-first-task-button inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/20 transition-all group-hover:-translate-y-0.5 group-hover:bg-violet-700 active:translate-y-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenAddForm();
+                  }}
+                  className="stack-first-task-button stack-first-task-button-strong-purple relative isolate inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-violet-500/45 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
                 >
-                  <Plus className="h-4 w-4" />
-                  Add Your First Task
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-2xl"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.30), 0 18px 40px rgba(109,40,217,0.42)",
+                    }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/80 dark:border-violet-300/70"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-3 top-0 h-px bg-white/70"
+                  />
+                  <Plus className="relative z-10 h-4 w-4 text-white drop-shadow-sm" />
+                  <span className="relative z-10 whitespace-nowrap text-white drop-shadow-sm">
+                    Add Your First Task
+                  </span>
                 </button>
               ) : null}
             </div>
