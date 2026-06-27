@@ -278,10 +278,33 @@ export default function VerifyEmail() {
 
         <OTPInput value={code} onChange={setCode} />
 
-        <AuthButton type="submit" loading={submitting} disabled={code.length !== 6}>
+        <button
+          type="submit"
+          data-openshare-verify-email-submit="visible-v1"
+          disabled={submitting || code.length !== 6}
+          className="w-full inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: code.length === 6 ? "#7c3aed" : "#ede9fe",
+            backgroundImage:
+              code.length === 6
+                ? "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 100%)"
+                : "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+            color: code.length === 6 ? "#ffffff" : "#6d28d9",
+            border: "1px solid rgba(139,92,246,0.35)",
+            boxShadow:
+              code.length === 6
+                ? "0 18px 44px rgba(124,58,237,0.32), inset 0 1px 0 rgba(255,255,255,0.34)"
+                : "0 8px 20px rgba(124,58,237,0.12)",
+            opacity: 1,
+          }}
+        >
           <Check className="w-5 h-5" />
-          Verify Email
-        </AuthButton>
+          {submitting
+            ? "Verifying..."
+            : code.length === 6
+              ? "Verify Email"
+              : "Enter 6 digits to verify"}
+        </button>
 
         <p className="text-center text-sm text-slate-500">
           Didn&apos;t receive the code?{" "}
