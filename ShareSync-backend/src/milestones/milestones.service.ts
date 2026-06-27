@@ -43,6 +43,66 @@ export class MilestonesService {
     return new Types.ObjectId(value);
   }
 
+  // Roadmap Activity Feed writer.
+  private async recordProjectActivity(data: {
+    userId: string;
+    projectId: string;
+    type: string;
+    entityType: string;
+    entityId: string;
+    action: string;
+    details?: Record<string, any>;
+    metadata?: Record<string, any>;
+    payload?: Record<string, any>;
+  }): Promise<void> {
+    try {
+      const now = new Date();
+      const projectObjectId = this.toObjectIdOrNull(data.projectId);
+      const actorObjectId = this.toObjectIdOrNull(data.userId);
+
+      const doc = {
+        projectId: projectObjectId || data.projectId,
+        userId: actorObjectId || data.userId,
+        actorId: actorObjectId || data.userId,
+        actorUserId: actorObjectId || data.userId,
+        type: data.type,
+        entityType: data.entityType,
+        entityId: data.entityId,
+        action: data.action,
+        details: data.details || {},
+        metadata: data.metadata || {},
+        payload: data.payload || {},
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const db = this.milestoneModel.db;
+      const result = await db.collection('activities').insertOne(doc);
+
+      if (projectObjectId) {
+        await db.collection('projects').updateOne(
+          { _id: projectObjectId },
+          {
+            $set: {
+              lastActivityAt: now,
+              'metrics.lastActivityAt': now,
+            },
+          },
+        );
+      }
+
+      const savedActivity = { ...doc, _id: result.insertedId };
+
+      this.eventEmitter.emit('activityCreated', savedActivity);
+      this.eventEmitter.emit('activity:created', savedActivity);
+      this.eventEmitter.emit('activity.created', savedActivity);
+    } catch (err: any) {
+      this.logger.warn(
+        `Roadmap project activity skipped: ${err?.message || err}`,
+      );
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // CRUD OPERATIONS
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -73,6 +133,30 @@ export class MilestonesService {
     });
 
     const saved = await milestone.save();
+
+    await this.recordProjectActivity({
+      userId,
+      projectId: dto.projectId,
+      type: 'milestone_created',
+      entityType: 'milestone',
+      entityId: String(saved._id),
+      action: 'created',
+      details: {
+        milestoneTitle: (saved as any).title || dto.title || 'Milestone',
+        title: (saved as any).title || dto.title || 'Milestone',
+        status: (saved as any).status || dto.status || 'planned',
+        progress: (saved as any).progress ?? 0,
+        targetDate: (saved as any).targetDate || dto.targetDate || null,
+      },
+      metadata: {
+        source: 'roadmap',
+        milestoneId: String(saved._id),
+      },
+      payload: {
+        milestoneTitle: (saved as any).title || dto.title || 'Milestone',
+        milestoneId: String(saved._id),
+      },
+    });
 
     const createdAsCompleted =
       String((saved as any)?.status || dto?.status || '').toLowerCase() === 'completed' ||
@@ -381,6 +465,37 @@ export class MilestonesService {
       Boolean((saved as any)?.completedAt);
 
     const projectId = saved.projectId?.toString?.();
+
+    if (projectId) {
+      const completedNow = !wasCompleted && isNowCompleted;
+      const activityType = completedNow ? 'milestone_completed' : 'milestone_updated';
+      const activityAction = completedNow ? 'completed' : 'updated';
+
+      await this.recordProjectActivity({
+        userId,
+        projectId,
+        type: activityType,
+        entityType: 'milestone',
+        entityId: String(saved._id),
+        action: activityAction,
+        details: {
+          milestoneTitle: (saved as any).title || (saved as any).name || 'Milestone',
+          title: (saved as any).title || (saved as any).name || 'Milestone',
+          status: (saved as any).status || 'planned',
+          progress: (saved as any).progress ?? 0,
+          targetDate: (saved as any).targetDate || null,
+          completedAt: (saved as any).completedAt || null,
+        },
+        metadata: {
+          source: 'roadmap',
+          milestoneId: String(saved._id),
+        },
+        payload: {
+          milestoneTitle: (saved as any).title || (saved as any).name || 'Milestone',
+          milestoneId: String(saved._id),
+        },
+      });
+    }
 
     // Fire project-member milestone completion notifications only once:
     // first transition from not-completed -> completed.
