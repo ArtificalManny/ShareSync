@@ -6,6 +6,7 @@ import { VaultFile, VaultFileSchema } from './schemas/vault-file.schema';
 import { VaultService } from './vault.service';
 import { VaultController } from './vault.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
   imports: [

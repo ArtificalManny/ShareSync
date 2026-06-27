@@ -8,6 +8,7 @@ import { ModuleRef } from '@nestjs/core';
 import { VaultFolder, VaultFolderDocument } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileDocument } from './schemas/vault-file.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 // Standard Free Tier Limit: 5GB (in bytes)
 const PROJECT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; 
@@ -21,7 +22,8 @@ export class VaultService {
     @InjectModel(VaultFile.name) private fileModel: Model<VaultFileDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
-  ) {}
+  
+    private readonly uploadsService: UploadsService,) {}
 
   private async recordProjectActivity(data: {
     userId: string;
@@ -108,14 +110,27 @@ export class VaultService {
     // 1. Verify Quota
     await this.checkStorageQuota(projectId, file.size);
 
-    // 2. Mock Cloud Upload (In a real app, you'd push file.buffer to AWS S3 here)
-    // For now, we simulate the S3 URL generation
-    // IMPORTANT:
-    // Multer already saved the uploaded file to /uploads using file.filename.
-    // Do not store a fake external storage domain here. The frontend can resolve
-    // this relative URL against the backend origin for preview/download.
-    const storedFilename = file.filename || file.originalname;
-    const fileUrl = `/uploads/${storedFilename}`;
+    // 2. Persist file through the shared uploads pipeline.
+    // In production this stores to Cloudflare R2 when R2 env vars are configured.
+    // It falls back to local disk only when R2 is not configured.
+    const stored = await this.uploadsService.uploadFile(file);
+
+    const storedFilename =
+      stored.name ||
+      file.originalname ||
+      file.filename ||
+      'New File';
+
+    const fileUrl = String(stored.url || '');
+    const storedSize = Number(stored.size ?? file.size ?? 0);
+    const storedMime = stored.mime || file.mimetype || 'application/octet-stream';
+
+    if (!fileUrl) {
+      throw new HttpException(
+        { message: 'File upload failed: no file URL was returned.' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
 
     // 3. Save Metadata
     const newFile = new this.fileModel({
@@ -123,8 +138,8 @@ export class VaultService {
       folderId: folderId ? new Types.ObjectId(folderId) : null,
       originalName: file.originalname,
       fileUrl,
-      sizeInBytes: file.size,
-      mimeType: file.mimetype,
+      sizeInBytes: storedSize,
+      mimeType: storedMime,
       uploadedBy: new Types.ObjectId(userId),
     });
 
