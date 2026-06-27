@@ -714,6 +714,50 @@ export default function StackPanel({
             stroke: #ffffff !important;
           }
 
+
+          /* FORCE VISIBLE EMPTY-STATE CTA */
+          .stack-first-task-button-force-purple {
+            min-width: 210px !important;
+            min-height: 52px !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 32%, #7c3aed 66%, #6d28d9 100%) !important;
+            border: 1px solid rgba(221, 214, 254, 0.95) !important;
+            box-shadow:
+              0 18px 42px rgba(109, 40, 217, 0.42),
+              0 0 0 1px rgba(255, 255, 255, 0.18) inset,
+              inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+            opacity: 1 !important;
+            text-shadow: 0 1px 2px rgba(49, 17, 101, 0.42) !important;
+          }
+
+          .stack-first-task-button-force-purple:hover {
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 34%, #7c3aed 68%, #5b21b6 100%) !important;
+            border-color: rgba(237, 233, 254, 1) !important;
+            box-shadow:
+              0 24px 54px rgba(109, 40, 217, 0.52),
+              0 0 0 1px rgba(255, 255, 255, 0.22) inset,
+              inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+          }
+
+          .dark .stack-first-task-button-force-purple {
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 35%, #7c3aed 70%, #6d28d9 100%) !important;
+            border-color: rgba(196, 181, 253, 0.92) !important;
+            box-shadow:
+              0 20px 56px rgba(139, 92, 246, 0.42),
+              0 0 28px rgba(139, 92, 246, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+          }
+
+          .stack-first-task-button-force-purple span,
+          .stack-first-task-button-force-purple svg {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+            fill: none !important;
+            opacity: 1 !important;
+          }
+
           .stack-refresh-button {
             background: rgba(255, 255, 255, 0.82) !important;
             border: 1px solid rgba(148, 163, 184, 0.30) !important;
@@ -1246,28 +1290,10 @@ export default function StackPanel({
                     e.stopPropagation();
                     handleOpenAddForm();
                   }}
-                  className="stack-first-task-button stack-first-task-button-strong-purple relative isolate inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-violet-500/45 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+                  className="stack-first-task-button stack-first-task-button-force-purple inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-black text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
                 >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 rounded-2xl"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 100%)",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.30), 0 18px 40px rgba(109,40,217,0.42)",
-                    }}
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 rounded-2xl border border-violet-200/80 dark:border-violet-300/70"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-3 top-0 h-px bg-white/70"
-                  />
-                  <Plus className="relative z-10 h-4 w-4 text-white drop-shadow-sm" />
-                  <span className="relative z-10 whitespace-nowrap text-white drop-shadow-sm">
+                  <Plus className="h-4 w-4 text-white" />
+                  <span className="whitespace-nowrap text-white">
                     Add Your First Task
                   </span>
                 </button>
