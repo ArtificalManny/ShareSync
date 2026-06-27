@@ -370,9 +370,21 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
               </div>
             </div>
 
-            <button
+            <button data-openshare-finish-readiness-cta="amber-safe-v1"
               type="button"
-              onClick={() => onPrimaryAction?.(finishLine)}
+              onClick={() =
+              className="finish-readiness-cta inline-flex min-h-[48px] min-w-[225px] items-center justify-center gap-2 rounded-2xl border px-6 py-3 text-sm font-black shadow-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+            
+              style={{
+                backgroundColor: "#f59e0b",
+                backgroundImage:
+                  "linear-gradient(135deg, #fde68a 0%, #fbbf24 28%, #f59e0b 62%, #ea580c 100%)",
+                color: "#111827",
+                borderColor: "#f59e0b",
+                boxShadow:
+                  "0 18px 44px rgba(245,158,11,0.38), inset 0 1px 0 rgba(255,255,255,0.42)",
+              }}
+            > onPrimaryAction?.(finishLine)}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:scale-[1.01] hover:shadow-xl"
             >
               <span>{primaryActionLabel}</span>
