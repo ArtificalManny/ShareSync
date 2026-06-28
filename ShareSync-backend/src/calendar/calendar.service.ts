@@ -537,7 +537,11 @@ export class CalendarService {
     userId: string,
     dto: UpdateEventDto,
   ): Promise<CalendarEventDocument> {
-    const event = await this.findById(eventId);
+    const event = await this.eventModel.findById(eventId);
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
 
     const toIdString = (value: any): string => {
       if (!value) return '';
@@ -617,7 +621,7 @@ export class CalendarService {
       eventId: saved._id,
       title: saved.title,
       updatedBy: userId,
-      attendees: event.attendees.map((a) => a.userId.toString()),
+      attendees: event.attendees.map((a: any) => toIdString(a.userId)).filter(Boolean),
     });
 
     return saved;
