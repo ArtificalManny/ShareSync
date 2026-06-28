@@ -190,11 +190,32 @@ function isTaskBlocked(task) {
       ""
   ).toLowerCase();
 
+  const unresolvedBlockers = [
+    ...toArray(task?.blockers),
+    ...toArray(task?.blockedBy),
+    ...toArray(task?.blockerIds),
+    ...toArray(task?.blocking),
+  ].some((blocker) => {
+    if (!blocker) return false;
+    if (typeof blocker === "string") return blocker.trim().length > 0;
+
+    return (
+      blocker.resolved !== true &&
+      blocker.done !== true &&
+      blocker.completed !== true &&
+      !blocker.resolvedAt &&
+      !blocker.completedAt
+    );
+  });
+
   return (
     task?.blocked === true ||
     task?.isBlocked === true ||
+    task?.is_blocked === true ||
+    Boolean(task?.blockedReason) ||
+    Boolean(task?.blockerReason) ||
     status.includes("block") ||
-    toArray(task?.blockers).some((blocker) => !blocker?.resolved && blocker?.done !== true)
+    unresolvedBlockers
   );
 }
 
@@ -202,23 +223,38 @@ function getTaskAssigneeIds(task) {
   const rawCandidates = [
     task?.assignee,
     task?.assigneeId,
-    task?.assignedTo,
     task?.assignedUser,
+    task?.assignedUserId,
     task?.owner,
     task?.ownerId,
     task?.user,
     task?.userId,
     task?.member,
     task?.memberId,
+    task?.createdBy,
+    task?.createdById,
+    ...toArray(task?.assignedTo),
+    ...toArray(task?.assignedToIds),
+    ...toArray(task?.assigneeIds),
     ...toArray(task?.assignees),
     ...toArray(task?.owners),
     ...toArray(task?.assignedUsers),
+    ...toArray(task?.members),
   ];
 
   return [
     ...new Set(
       rawCandidates
-        .map(normalizeId)
+        .map((candidate) => {
+          const unwrapped =
+            candidate?.userId ||
+            candidate?.user ||
+            candidate?.member ||
+            candidate?.profile ||
+            candidate;
+
+          return normalizeId(unwrapped) || normalizeId(candidate);
+        })
         .filter(Boolean)
     ),
   ];
