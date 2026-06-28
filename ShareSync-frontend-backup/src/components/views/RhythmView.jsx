@@ -374,6 +374,7 @@ function EnergySidebar() {
 export default function RhythmView({ projectId }) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [realEvents, setRealEvents] = useState([]);
+  const [agendaEvents, setAgendaEvents] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -412,6 +413,61 @@ export default function RhythmView({ projectId }) {
     });
   }, [currentWeek]);
 
+  const mapRhythmItems = (items = [], { restrictToWorkWeek = true } = {}) =>
+    items
+      .map((item) => {
+        const startDate = new Date(item.startAt);
+        const endDate = new Date(item.endAt);
+
+        if (Number.isNaN(startDate.getTime())) return null;
+
+        const safeEndDate = Number.isNaN(endDate.getTime())
+          ? new Date(startDate.getTime() + 60 * 60000)
+          : endDate;
+
+        const dayIndex = startDate.getDay() - 1;
+
+        let duration = Math.round((safeEndDate.getTime() - startDate.getTime()) / 60000);
+        if (isNaN(duration) || duration <= 0) duration = 60;
+
+        const itemKind = String(item.type || '').toLowerCase();
+        const rawType = String(item.sourceType || item.type || '').toLowerCase();
+        const itemTitle = String(item.title || 'Scheduled session');
+        const editableTypes = ['event', 'meeting', 'focus', 'custom', 'deep_work', 'standup', 'reminder'];
+
+        let uiType = 'task';
+        if (itemKind === 'event' || rawType === 'meeting' || rawType === 'standup') uiType = 'meeting';
+        if (
+          rawType === 'focus' ||
+          rawType === 'deep_work' ||
+          rawType === 'custom' ||
+          itemTitle.toLowerCase().includes('focus')
+        ) {
+          uiType = 'focus';
+        }
+
+        return {
+          id: item.id || item._id,
+          title: itemTitle,
+          description: item.description || item.originalData?.description || '',
+          notes: item.notes || item.description || item.originalData?.notes || item.originalData?.description || '',
+          color: item.color || item.originalData?.color || '#8B5CF6',
+          kind: itemKind,
+          sourceType: rawType,
+          editable: itemKind === 'event' || editableTypes.includes(rawType),
+          type: uiType,
+          startAt: item.startAt,
+          endAt: item.endAt,
+          startHour: startDate.getHours(),
+          startMinute: startDate.getMinutes(),
+          duration,
+          day: dayIndex,
+          originalData: item.originalData || item,
+        };
+      })
+      .filter(Boolean)
+      .filter((event) => !restrictToWorkWeek || (event.day >= 0 && event.day <= 4));
+
   const loadRhythmData = async () => {
     if (!projectId) return;
 
@@ -432,46 +488,42 @@ export default function RhythmView({ projectId }) {
 
       console.log('📅 Loaded Rhythm Payload:', payload);
 
-      if (payload?.data) {
-        const mapped = payload.data
-          .map((item) => {
-            const startDate = new Date(item.startAt);
-            const endDate = new Date(item.endAt);
-            const dayIndex = startDate.getDay() - 1;
+      const weekEvents = payload?.data
+        ? mapRhythmItems(payload.data, { restrictToWorkWeek: true })
+        : [];
 
-            let duration = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
-            if (isNaN(duration) || duration <= 0) duration = 60;
+      setRealEvents(weekEvents);
 
-            const rawType = String(item.type || '').toLowerCase();
-            const itemTitle = String(item.title || 'Scheduled session');
-            const editableTypes = ['event', 'meeting', 'focus', 'custom', 'deep_work', 'standup', 'reminder'];
+      const historyStart = new Date();
+      historyStart.setFullYear(historyStart.getFullYear() - 5);
+      historyStart.setHours(0, 0, 0, 0);
 
-            let uiType = 'task';
-            if (rawType === 'event' || rawType === 'meeting' || rawType === 'standup') uiType = 'meeting';
-            if (rawType === 'focus' || rawType === 'deep_work' || rawType === 'custom' || itemTitle.toLowerCase().includes('focus')) uiType = 'focus';
+      const historyEnd = new Date();
+      historyEnd.setFullYear(historyEnd.getFullYear() + 5);
+      historyEnd.setHours(23, 59, 59, 999);
 
-            return {
-              id: item.id || item._id,
-              title: itemTitle,
-              description: item.description || '',
-              color: item.color || item.originalData?.color || '#8B5CF6',
-              sourceType: rawType,
-              editable: editableTypes.includes(rawType),
-              type: uiType,
-              startAt: item.startAt,
-              endAt: item.endAt,
-              startHour: startDate.getHours(),
-              startMinute: startDate.getMinutes(),
-              duration,
-              day: dayIndex,
-            };
-          })
-          .filter((event) => event.day >= 0 && event.day <= 4);
+      try {
+        const historyPayload = await getProjectRhythm(
+          projectId,
+          historyStart.toISOString(),
+          historyEnd.toISOString()
+        );
 
-        setRealEvents(mapped);
+        const allScheduledEvents = historyPayload?.data
+          ? mapRhythmItems(historyPayload.data, { restrictToWorkWeek: false }).filter(
+              (event) => event.editable
+            )
+          : [];
+
+        setAgendaEvents(allScheduledEvents);
+      } catch (historyError) {
+        console.warn('Unable to load full schedule history:', historyError);
+        setAgendaEvents(weekEvents.filter((event) => event.editable));
       }
-    } catch (err) {
-      console.error('Failed to load Rhythm timeline', err);
+    } catch (error) {
+      console.error('Failed to load project rhythm:', error);
+      setRealEvents([]);
+      setAgendaEvents([]);
     } finally {
       setLoading(false);
     }
@@ -968,110 +1020,170 @@ export default function RhythmView({ projectId }) {
             </div>
           </div>
 
-          {!loading && realEvents.length > 0 && (
-              <div className="rhythm-agenda mt-6 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/30">
-                <div className="flex flex-col gap-3 border-b border-slate-200/70 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.08]">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-200">
-                      Schedule
-                    </p>
-                    <h3 className="mt-1 text-xl font-black text-slate-950 dark:text-white">
-                      Sessions This Week
-                    </h3>
-                  </div>
+          {!loading && agendaEvents.length > 0 && (
+              <div className="rhythm-agenda mt-7 overflow-hidden rounded-[2.25rem] border border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-cyan-50 shadow-[0_24px_90px_rgba(124,58,237,0.18)] backdrop-blur-xl dark:border-violet-400/20 dark:from-violet-950/30 dark:via-[#111113] dark:to-cyan-950/20 dark:shadow-black/40">
+                <div className="relative overflow-hidden border-b border-white/70 p-6 dark:border-white/[0.08]">
+                  <div className="absolute right-8 top-6 h-24 w-24 rounded-full bg-violet-400/20 blur-3xl" />
+                  <div className="absolute bottom-0 left-1/3 h-20 w-20 rounded-full bg-cyan-400/20 blur-3xl" />
 
-                  <span className="inline-flex w-fit items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
-                    {realEvents.length} {realEvents.length === 1 ? 'session' : 'sessions'}
-                  </span>
+                  <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-violet-600 dark:text-violet-200">
+                        Project Timeline
+                      </p>
+                      <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                        Schedule History
+                      </h3>
+                      <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600 dark:text-zinc-300">
+                        Upcoming sessions and past schedule blocks for this project, not just the week currently visible above.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                      <span className="rounded-2xl border border-violet-200 bg-white/80 px-4 py-2 text-center text-xs font-black text-violet-700 shadow-sm dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-200">
+                        {agendaEvents.length} total
+                      </span>
+                      <span className="rounded-2xl border border-emerald-200 bg-white/80 px-4 py-2 text-center text-xs font-black text-emerald-700 shadow-sm dark:border-emerald-400/20 dark:bg-white/[0.06] dark:text-emerald-200">
+                        {agendaEvents.filter((event) => new Date(event.startAt || 0).getTime() >= Date.now()).length} upcoming
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="divide-y divide-slate-200/70 dark:divide-white/[0.08]">
-                  {realEvents
-                    .slice()
-                    .sort(
-                      (a, b) =>
-                        new Date(a.startAt || 0).getTime() -
-                        new Date(b.startAt || 0).getTime()
-                    )
-                    .map((event) => {
-                      const eventColor =
-                        event.color || event.originalData?.color || '#8B5CF6';
+                <div className="relative p-5">
+                  <div className="absolute bottom-6 left-8 top-6 hidden w-px bg-gradient-to-b from-violet-300 via-cyan-300 to-slate-200 sm:block dark:from-violet-500/60 dark:via-cyan-500/40 dark:to-white/10" />
 
-                      const startDate = event.startAt ? new Date(event.startAt) : null;
-                      const endDate = event.endAt ? new Date(event.endAt) : null;
+                  <div className="space-y-4">
+                    {agendaEvents
+                      .slice()
+                      .sort((a, b) => {
+                        const now = Date.now();
+                        const aTime = new Date(a.startAt || 0).getTime();
+                        const bTime = new Date(b.startAt || 0).getTime();
 
-                      const dayLabel = startDate
-                        ? startDate.toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                          })
-                        : 'Unscheduled';
+                        const aPast = aTime < now;
+                        const bPast = bTime < now;
 
-                      const timeLabel =
-                        startDate && endDate
-                          ? `${startDate.toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })} – ${endDate.toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })}`
-                          : 'Time TBD';
+                        if (aPast !== bPast) return aPast ? 1 : -1;
+                        return aPast ? bTime - aTime : aTime - bTime;
+                      })
+                      .map((event, index) => {
+                        const eventColor =
+                          event.color || event.originalData?.color || '#8B5CF6';
 
-                      const notes =
-                        event.notes ||
-                        event.description ||
-                        event.originalData?.notes ||
-                        event.originalData?.description ||
-                        '';
+                        const startDate = event.startAt ? new Date(event.startAt) : null;
+                        const endDate = event.endAt ? new Date(event.endAt) : null;
+                        const isPast = startDate ? startDate.getTime() < Date.now() : false;
 
-                      const eventType = String(
-                        event.sourceType || event.type || 'session'
-                      ).replace(/_/g, ' ');
+                        const dayLabel = startDate
+                          ? startDate.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })
+                          : 'Unscheduled';
 
-                      return (
-                        <button
-                          key={event.id || `${event.title}-${event.startAt}`}
-                          type="button"
-                          onClick={() => handleEditEventClick(event)}
-                          className="group flex w-full gap-4 p-5 text-left transition-all hover:bg-slate-50/90 dark:hover:bg-white/[0.04]"
-                        >
-                          <span
-                            className="mt-1 h-14 w-2 shrink-0 rounded-full shadow-sm"
-                            style={{ backgroundColor: eventColor }}
-                          />
+                        const timeLabel =
+                          startDate && endDate
+                            ? `${startDate.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })} – ${endDate.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })}`
+                            : 'Time TBD';
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0">
-                                <p className="truncate text-base font-black text-slate-950 dark:text-white">
-                                  {event.title || 'Scheduled session'}
-                                </p>
+                        const notes =
+                          event.notes ||
+                          event.description ||
+                          event.originalData?.notes ||
+                          event.originalData?.description ||
+                          '';
 
-                                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
-                                  {dayLabel} · {timeLabel}
-                                </p>
+                        const eventType = String(
+                          event.sourceType || event.type || 'session'
+                        ).replace(/_/g, ' ');
+
+                        return (
+                          <button
+                            key={event.id || `${event.title}-${event.startAt}-${index}`}
+                            type="button"
+                            onClick={() => handleEditEventClick(event)}
+                            className="group relative flex w-full gap-4 rounded-[1.75rem] border border-white/80 bg-white/80 p-4 text-left shadow-[0_14px_45px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_60px_rgba(124,58,237,0.16)] dark:border-white/[0.08] dark:bg-white/[0.05] dark:shadow-black/20"
+                          >
+                            <span
+                              className="absolute left-0 top-5 h-16 w-1.5 rounded-r-full"
+                              style={{ backgroundColor: eventColor }}
+                            />
+
+                            <span
+                              className="relative z-[1] mt-1 hidden h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-lg sm:flex dark:border-white/[0.08] dark:bg-[#111113]"
+                              style={{
+                                color: eventColor,
+                                boxShadow: `0 12px 30px ${eventColor}22`,
+                              }}
+                            >
+                              <Clock className="h-5 w-5" />
+                            </span>
+
+                            <div className="min-w-0 flex-1 pl-2 sm:pl-0">
+                              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span
+                                      className="h-2.5 w-2.5 rounded-full"
+                                      style={{ backgroundColor: eventColor }}
+                                    />
+
+                                    <p className="truncate text-base font-black text-slate-950 dark:text-white">
+                                      {event.title || 'Scheduled session'}
+                                    </p>
+                                  </div>
+
+                                  <p className="mt-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                    {dayLabel} · {timeLabel}
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                  <span
+                                    className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] shadow-sm ${
+                                      isPast
+                                        ? 'border-slate-200 bg-slate-50 text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-400'
+                                        : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200'
+                                    }`}
+                                  >
+                                    {isPast ? 'History' : 'Upcoming'}
+                                  </span>
+
+                                  <span className="inline-flex w-fit shrink-0 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                                    {eventType}
+                                  </span>
+                                </div>
                               </div>
 
-                              <span className="inline-flex w-fit shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-300">
-                                {eventType}
-                              </span>
+                              {notes && (
+                                <p className="mt-3 line-clamp-2 text-sm font-medium leading-6 text-slate-600 dark:text-zinc-300">
+                                  {notes}
+                                </p>
+                              )}
+
+                              <div className="mt-4 flex items-center justify-between gap-3">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+                                  #{index + 1} schedule entry
+                                </span>
+
+                                <span className="text-xs font-black uppercase tracking-[0.18em] text-violet-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-violet-200">
+                                  Edit session
+                                </span>
+                              </div>
                             </div>
-
-                            {notes && (
-                              <p className="mt-3 line-clamp-2 text-sm font-medium leading-6 text-slate-600 dark:text-zinc-300">
-                                {notes}
-                              </p>
-                            )}
-
-                            <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-violet-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-violet-200">
-                              Edit session
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
             )}
