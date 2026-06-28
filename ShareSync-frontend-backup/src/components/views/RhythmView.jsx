@@ -968,29 +968,113 @@ export default function RhythmView({ projectId }) {
             </div>
           </div>
 
-          {!loading && realEvents.length === 0 && (
-            <div className="rhythm-empty-state mt-6 overflow-hidden rounded-[2rem] border border-dashed border-violet-200 bg-white/75 p-10 text-center shadow-sm backdrop-blur-xl dark:border-violet-400/20 dark:bg-white/[0.04]">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-violet-200 bg-violet-50 text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
-                <Clock className="h-7 w-7" />
+          {!loading && realEvents.length > 0 && (
+              <div className="rhythm-agenda mt-6 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/30">
+                <div className="flex flex-col gap-3 border-b border-slate-200/70 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.08]">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-violet-600 dark:text-violet-200">
+                      Schedule
+                    </p>
+                    <h3 className="mt-1 text-xl font-black text-slate-950 dark:text-white">
+                      Sessions This Week
+                    </h3>
+                  </div>
+
+                  <span className="inline-flex w-fit items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                    {realEvents.length} {realEvents.length === 1 ? 'session' : 'sessions'}
+                  </span>
+                </div>
+
+                <div className="divide-y divide-slate-200/70 dark:divide-white/[0.08]">
+                  {realEvents
+                    .slice()
+                    .sort(
+                      (a, b) =>
+                        new Date(a.startAt || 0).getTime() -
+                        new Date(b.startAt || 0).getTime()
+                    )
+                    .map((event) => {
+                      const eventColor =
+                        event.color || event.originalData?.color || '#8B5CF6';
+
+                      const startDate = event.startAt ? new Date(event.startAt) : null;
+                      const endDate = event.endAt ? new Date(event.endAt) : null;
+
+                      const dayLabel = startDate
+                        ? startDate.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'Unscheduled';
+
+                      const timeLabel =
+                        startDate && endDate
+                          ? `${startDate.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })} – ${endDate.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}`
+                          : 'Time TBD';
+
+                      const notes =
+                        event.notes ||
+                        event.description ||
+                        event.originalData?.notes ||
+                        event.originalData?.description ||
+                        '';
+
+                      const eventType = String(
+                        event.sourceType || event.type || 'session'
+                      ).replace(/_/g, ' ');
+
+                      return (
+                        <button
+                          key={event.id || `${event.title}-${event.startAt}`}
+                          type="button"
+                          onClick={() => handleEditEventClick(event)}
+                          className="group flex w-full gap-4 p-5 text-left transition-all hover:bg-slate-50/90 dark:hover:bg-white/[0.04]"
+                        >
+                          <span
+                            className="mt-1 h-14 w-2 shrink-0 rounded-full shadow-sm"
+                            style={{ backgroundColor: eventColor }}
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="truncate text-base font-black text-slate-950 dark:text-white">
+                                  {event.title || 'Scheduled session'}
+                                </p>
+
+                                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                  {dayLabel} · {timeLabel}
+                                </p>
+                              </div>
+
+                              <span className="inline-flex w-fit shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-300">
+                                {eventType}
+                              </span>
+                            </div>
+
+                            {notes && (
+                              <p className="mt-3 line-clamp-2 text-sm font-medium leading-6 text-slate-600 dark:text-zinc-300">
+                                {notes}
+                              </p>
+                            )}
+
+                            <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-violet-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-violet-200">
+                              Edit session
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
               </div>
-
-              <p className="text-base font-black text-slate-900 dark:text-white">
-                No sessions scheduled this week
-              </p>
-
-              <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500 dark:text-zinc-400">
-                Click any time slot or schedule your first focus block to protect deep work, meetings, and execution windows.
-              </p>
-
-              <button
-                onClick={() => handleAddEventClick(new Date(), 9)}
-                className="rhythm-primary-action mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
-              >
-                <Plus className="h-4 w-4" />
-                Schedule Your First Session
-              </button>
-            </div>
-          )}
+            )}
         </div>
       </div>
 
