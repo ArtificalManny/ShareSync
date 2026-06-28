@@ -561,11 +561,11 @@ export class CalendarService {
     const actorId = toIdString(userId);
     const creatorId = toIdString((event as any).createdBy);
 
-    const isCreator = creatorId === actorId;
-
     const attendees = Array.isArray((event as any).attendees)
       ? (event as any).attendees
       : [];
+
+    const isCreator = creatorId === actorId;
 
     const isOrganizerAttendee = attendees.some((attendee: any) => {
       return (
@@ -592,13 +592,11 @@ export class CalendarService {
           { ownerId: { $in: actorValues } },
           { createdBy: { $in: actorValues } },
           { userId: { $in: actorValues } },
-
           { members: { $in: actorValues } },
           { memberIds: { $in: actorValues } },
           { sharedWith: { $in: actorValues } },
           { participantIds: { $in: actorValues } },
           { collaborators: { $in: actorValues } },
-
           { 'members.userId': { $in: actorValues } },
           { 'members.user': { $in: actorValues } },
           { 'members.memberId': { $in: actorValues } },
@@ -614,57 +612,138 @@ export class CalendarService {
       throw new BadRequestException('Only organizer or project member can update event');
     }
 
-    const {
-      type: _type,
-      projectId: _projectId,
-      createdBy: _createdBy,
-      attendees: _attendees,
-      id: _id,
-      _id: __id,
-      createdAt: _createdAt,
-      updatedAt: _updatedAt,
-      ...safeDto
-    } = (dto || {}) as any;
+    const raw = (dto || {}) as any;
+    const schemaPaths = (this.eventModel as any).schema?.paths || {};
 
-    let saved: CalendarEventDocument | null;
+    const startField = schemaPaths.startTime
+      ? 'startTime'
+      : schemaPaths.startDate
+        ? 'startDate'
+        : '';
+
+    const endField = schemaPaths.endTime
+      ? 'endTime'
+      : schemaPaths.endDate
+        ? 'endDate'
+        : '';
+
+    const update: Record<string, any> = {};
+
+    const put = (key: string, value: any) => {
+      if (!key || !schemaPaths[key] || value === undefined) return;
+      update[key] = value;
+    };
+
+    const putString = (key: string, value: any) => {
+      if (typeof value === 'string') put(key, value);
+    };
+
+    const putBoolean = (key: string, value: any) => {
+      if (typeof value === 'boolean') put(key, value);
+    };
+
+    const putDate = (key: string, value: any) => {
+      if (!key || value === undefined || value === null || value === '') return;
+
+      const date = value instanceof Date ? value : new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        throw new BadRequestException(`${key} must be a valid date`);
+      }
+
+      put(key, date);
+    };
+
+    const putObjectId = (key: string, value: any) => {
+      if (value === undefined || value === null || value === '') return;
+
+      const id = toIdString(value);
+
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException(`${key} must be a valid Mongo ID`);
+      }
+
+      put(key, new Types.ObjectId(id));
+    };
+
+    putObjectId('sprintId', raw.sprintId);
+    putObjectId('linkedTaskId', raw.linkedTaskId);
+
+    putString('title', raw.title);
+
+    // Schedule modal notes should save into the calendar schema's description field.
+    putString('description', raw.description ?? raw.notes);
+
+    putDate(startField, raw.startTime ?? raw.startDate);
+    putDate(endField, raw.endTime ?? raw.endDate);
+
+    putBoolean('isAllDay', raw.isAllDay);
+    putString('timezone', raw.timezone);
+    putString('location', raw.location);
+    putString('color', raw.color);
+    putBoolean('isRecurring', raw.isRecurring);
+
+    if (raw.recurrence !== undefined) put('recurrence', raw.recurrence);
+    if (raw.reminders !== undefined) put('reminders', raw.reminders);
+
+    if (raw.xpReward !== undefined) {
+      const xpReward = Number(raw.xpReward);
+      if (!Number.isFinite(xpReward)) {
+        throw new BadRequestException('xpReward must be a number');
+      }
+      put('xpReward', xpReward);
+    }
+
+    putString('status', raw.status);
+    putDate('completedAt', raw.completedAt);
+
+    if (Object.keys(update).length === 0) {
+      return event;
+    }
+
+    let saved: CalendarEventDocument | null = null;
 
     try {
       saved = await this.eventModel.findByIdAndUpdate(
         eventId,
-        { $set: safeDto },
-        { new: true, runValidators: true },
+        { $set: update },
+        {
+          new: true,
+          runValidators: true,
+          context: 'query',
+        },
       );
-
-      if (!saved) {
-        throw new NotFoundException('Event not found');
-      }
     } catch (err: any) {
       console.error('[CalendarService.update] failed', {
         eventId,
         userId,
-        safeDto,
+        rawDto: raw,
+        update,
         message: err?.message,
         stack: err?.stack,
       });
 
-      if (err instanceof NotFoundException) {
-        throw err;
-      }
-
-      throw new BadRequestException(
-        err?.message || 'Failed to update calendar event',
-      );
+      throw new BadRequestException(err?.message || 'Could not update event');
     }
 
-    this.eventEmitter.emit('calendar.event.updated', {
-      eventId: saved._id,
-      title: saved.title,
-      updatedBy: userId,
-      attendees: event.attendees.map((a: any) => toIdString(a.userId)).filter(Boolean),
-    });
+    if (!saved) {
+      throw new NotFoundException('Event not found');
+    }
+
+    try {
+      this.eventEmitter.emit('calendar.event.updated', {
+        eventId: saved._id,
+        title: saved.title,
+        updatedBy: userId,
+        attendees: attendees.map((attendee: any) => toIdString(attendee?.userId)).filter(Boolean),
+      });
+    } catch (err: any) {
+      console.warn('[CalendarService.update] event emitter failed', err?.message || err);
+    }
 
     return saved;
   }
+
 
   async respondToEvent(
     eventId: string,
