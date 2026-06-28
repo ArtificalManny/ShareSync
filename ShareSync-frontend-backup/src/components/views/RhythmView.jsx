@@ -477,18 +477,23 @@ export default function RhythmView({ projectId }) {
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
 
     setSelectedSlot(null);
+    const sessionNotes =
+      session.notes ||
+      session.description ||
+      session.originalData?.notes ||
+      session.originalData?.description ||
+      '';
+
     setEditingSession({
       ...session,
-      description: session.description ?? session.notes ?? session.originalData?.description ?? session.originalData?.notes ?? '',
-      notes: session.notes ?? session.description ?? session.originalData?.notes ?? session.originalData?.description ?? '',
       mode: 'edit',
       date: startDate,
       startDate,
       endDate,
       hour: startDate.getHours(),
       minute: startDate.getMinutes(),
-      notes: session.notes ?? session.description ?? '',
-      description: session.description ?? session.notes ?? '',
+      notes: sessionNotes,
+      description: sessionNotes,
     });
     setIsModalOpen(true);
   };
