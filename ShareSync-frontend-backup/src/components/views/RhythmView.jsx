@@ -160,11 +160,11 @@ function CalendarEvent({ event, onEdit }) {
         shadow-lg backdrop-blur-xl transition-all duration-200
         hover:-translate-y-0.5 hover:shadow-xl ${meta.shell}
       `}
-      style={{
+      style={getSessionCardStyle(event, {
         top: `${((startHour - 7) + startMinute / 60) * 64}px`,
         height: `${Math.max(height, 52)}px`,
         zIndex: 5,
-      }}
+      })}
       title={canEdit ? 'Click to edit this scheduled session' : undefined}
     >
       <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${meta.rail}`} />
@@ -364,6 +364,20 @@ export default function RhythmView({ projectId }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
 
+  const getSessionColor = (session) =>
+    session?.color || session?.originalData?.color || '#8B5CF6';
+
+  const getSessionCardStyle = (session, extraStyle = {}) => {
+    const sessionColor = getSessionColor(session);
+
+    return {
+      ...extraStyle,
+      borderLeft: `6px solid ${sessionColor}`,
+      background: `linear-gradient(135deg, ${sessionColor}26, rgba(255,255,255,0.72))`,
+    };
+  };
+
+
   const weekDays = useMemo(() => {
     const start = new Date(currentWeek);
     start.setHours(0, 0, 0, 0);
@@ -424,6 +438,7 @@ export default function RhythmView({ projectId }) {
               id: item.id || item._id,
               title: itemTitle,
               description: item.description || '',
+              color: item.color || item.originalData?.color || '#8B5CF6',
               sourceType: rawType,
               editable: editableTypes.includes(rawType),
               type: uiType,
@@ -494,7 +509,8 @@ export default function RhythmView({ projectId }) {
       minute: startDate.getMinutes(),
       notes: sessionNotes,
       description: sessionNotes,
-    });
+    
+        color: session.color ?? session.originalData?.color ?? '#8B5CF6',});
     setIsModalOpen(true);
   };
 

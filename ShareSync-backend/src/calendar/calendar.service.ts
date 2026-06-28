@@ -119,26 +119,30 @@ export class CalendarService {
 
     const events = await this.eventModel.find(eventFilter).lean();
     events.forEach((e: any) => {
-      const eventDescription = typeof e.description === 'string' ? e.description : '';
+      const description = e.description || '';
+      const color = e.color || '#8B5CF6';
 
       rhythmItems.push({
         id: e._id,
         title: e.title,
         type: 'event',
+        sourceType: e.type,
         startAt: e.startTime,
         endAt: e.endTime,
         status: e.status,
-        description: eventDescription,
-        notes: eventDescription,
+        description,
+        notes: description,
+        color,
         originalData: {
           ...e,
-          description: eventDescription,
-          notes: eventDescription,
+          description,
+          notes: description,
+          color,
         },
       });
     });
 
-    // 2. Get Tasks with Due Dates
+// 2. Get Tasks with Due Dates
     const taskFilter: any = { projectId: pId, dueDate: { $exists: true, $ne: null } };
     if (startDate) taskFilter.dueDate = { $gte: startDate };
     if (endDate) taskFilter.dueDate = { ...taskFilter.dueDate, $lte: endDate };

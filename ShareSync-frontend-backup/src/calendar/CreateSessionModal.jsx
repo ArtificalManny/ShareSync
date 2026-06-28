@@ -39,6 +39,21 @@ function cleanEditableTitle(value, type) {
   return title;
 }
 
+
+const SESSION_COLORS = [
+  { name: 'Grape', value: '#8B5CF6' },
+  { name: 'Tomato', value: '#EF4444' },
+  { name: 'Tangerine', value: '#F97316' },
+  { name: 'Banana', value: '#EAB308' },
+  { name: 'Sage', value: '#22C55E' },
+  { name: 'Peacock', value: '#06B6D4' },
+  { name: 'Blueberry', value: '#3B82F6' },
+  { name: 'Lavender', value: '#A855F7' },
+  { name: 'Graphite', value: '#64748B' },
+];
+
+const DEFAULT_SESSION_COLOR = '#8B5CF6';
+
 export default function CreateSessionModal({ isOpen, onClose, onSave, initialData, projectId }) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('focus'); // 'focus', 'meeting', 'break'
@@ -46,6 +61,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
   const [startTimeStr, setStartTimeStr] = useState('09:00');
   const [endTimeStr, setEndTimeStr] = useState('10:00');
   const [description, setDescription] = useState('');
+  const [color, setColor] = useState(DEFAULT_SESSION_COLOR);
 
   // Populate local states when the modal opens with grid data or an existing session
   useEffect(() => {
@@ -73,6 +89,12 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
         initialData.originalData?.notes ??
         ''
       )
+
+      setColor(
+        initialData.color ??
+        initialData.originalData?.color ??
+        DEFAULT_SESSION_COLOR
+      );
       setType(normalizedType);
       return;
     }
@@ -89,6 +111,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
 
       setTitle('');
       setDescription('');
+      setColor(DEFAULT_SESSION_COLOR);
       setType('focus');
     }
   }, [isOpen, initialData]);
@@ -129,6 +152,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
       endTime: endObj.toISOString(),
       description: sessionDescription,
       notes: sessionDescription,
+      color,
       projectId: projectId,
     });
 
@@ -324,6 +348,36 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
                   Notes
                 </label>
+
+                <div className="space-y-2">
+                  <div className="rounded-2xl bg-white/90 px-4 py-3 text-xs font-bold uppercase tracking-[0.28em] text-slate-700 shadow-sm">
+                    Session Color
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 rounded-3xl bg-white/35 p-3">
+                    {SESSION_COLORS.map((option) => {
+                      const isSelected = color === option.value;
+
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setColor(option.value)}
+                          aria-label={`Use ${option.name}`}
+                          title={option.name}
+                          className="h-9 w-9 rounded-full border border-white/70 transition hover:scale-105"
+                          style={{
+                            backgroundColor: option.value,
+                            boxShadow: isSelected
+                              ? `0 0 0 3px rgba(255,255,255,0.95), 0 0 0 6px ${option.value}`
+                              : '0 8px 18px rgba(15,23,42,0.18)',
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <textarea
                   rows="3"
                   value={description}
