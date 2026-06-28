@@ -495,12 +495,43 @@ export default function RhythmView({ projectId }) {
     setEditingSession(null);
   };
 
+
+  function buildScheduleUpdatePayload(eventData) {
+    const {
+      // Backend UpdateEventDto rejects these on edit.
+      projectId: _projectId,
+      type: _type,
+
+      // Avoid sending frontend/read-only fields if present.
+      id: _id,
+      _id: __id,
+      originalData: _originalData,
+      createdBy: _createdBy,
+      attendees: _attendees,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      mode: _mode,
+      editable: _editable,
+      day: _day,
+      hour: _hour,
+      minute: _minute,
+      startHour: _startHour,
+      startMinute: _startMinute,
+      duration: _duration,
+
+      ...allowedUpdatePayload
+    } = eventData || {};
+
+    return allowedUpdatePayload;
+  }
+
   const handleSaveSession = async (eventData) => {
     const isEditing = Boolean(editingSession?.id);
 
     try {
       if (isEditing) {
-        await updateEvent(editingSession.id, eventData);
+        const updatePayload = buildScheduleUpdatePayload(eventData);
+        await updateEvent(editingSession.id, updatePayload);
         console.log('✅ Successfully updated event');
       } else {
         await createEvent(eventData);
