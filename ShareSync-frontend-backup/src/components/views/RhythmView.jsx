@@ -18,7 +18,7 @@ import {
   Brain,
   Shield,
 } from 'lucide-react';
-import { getProjectRhythm, createEvent } from '../../api/calendar';
+import { getProjectRhythm, createEvent, updateEvent } from '../../api/calendar';
 import CreateSessionModal from '../../calendar/CreateSessionModal';
 
 const TIME_SLOTS = [
@@ -123,19 +123,41 @@ function getEventMeta(type) {
 
 // ─── CalendarEvent ──────────────────────────────────────────────────────────
 
-function CalendarEvent({ event }) {
+function CalendarEvent({ event, onEdit }) {
   const meta = getEventMeta(event.type);
   const Icon = meta.icon;
 
   const height = (event.duration / 60) * 64;
   const startHour = Number.isFinite(Number(event.startHour)) ? Number(event.startHour) : 7;
   const startMinute = Number.isFinite(Number(event.startMinute)) ? Number(event.startMinute) : 0;
+  const canEdit = Boolean(event.editable && typeof onEdit === 'function');
+
+  const handleEdit = () => {
+    if (!canEdit) return;
+    onEdit(event);
+  };
+
+  const handleKeyDown = (keyEvent) => {
+    if (!canEdit) return;
+
+    if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+      keyEvent.preventDefault();
+      handleEdit();
+    }
+  };
 
   return (
     <div
+      role={canEdit ? 'button' : undefined}
+      tabIndex={canEdit ? 0 : undefined}
+      onClick={handleEdit}
+      onKeyDown={handleKeyDown}
+      data-openshare-schedule-session-edit={canEdit ? 'enabled-v1' : undefined}
+      aria-label={canEdit ? `Edit scheduled session ${event.title || ''}`.trim() : undefined}
       className={`
         rhythm-calendar-event absolute left-2 right-2 overflow-hidden rounded-2xl border px-3 py-2.5
-        cursor-pointer shadow-lg backdrop-blur-xl transition-all duration-200
+        ${canEdit ? 'cursor-pointer focus:outline-none focus:ring-4 focus:ring-violet-300/35' : 'cursor-default'}
+        shadow-lg backdrop-blur-xl transition-all duration-200
         hover:-translate-y-0.5 hover:shadow-xl ${meta.shell}
       `}
       style={{
@@ -143,6 +165,7 @@ function CalendarEvent({ event }) {
         height: `${Math.max(height, 52)}px`,
         zIndex: 5,
       }}
+      title={canEdit ? 'Click to edit this scheduled session' : undefined}
     >
       <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${meta.rail}`} />
 
@@ -164,6 +187,11 @@ function CalendarEvent({ event }) {
               <span className="text-[10px] font-bold opacity-70">
                 {formatSessionTime(startHour, startMinute)}
               </span>
+              {canEdit ? (
+                <span className="ml-auto rounded-full border border-white/40 bg-white/75 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-violet-700 shadow-sm dark:border-white/[0.10] dark:bg-white/[0.08] dark:text-violet-200">
+                  Edit
+                </span>
+              ) : null}
             </div>
           )}
         </div>
@@ -174,7 +202,7 @@ function CalendarEvent({ event }) {
 
 // ─── DayColumn ──────────────────────────────────────────────────────────────
 
-function DayColumn({ day, events, isToday, workload, onAddEvent }) {
+function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent }) {
   const getWorkloadTone = () => {
     if (workload > 100) return 'from-rose-500 to-orange-400';
     if (workload > 80) return 'from-amber-500 to-orange-400';
@@ -273,7 +301,7 @@ function DayColumn({ day, events, isToday, workload, onAddEvent }) {
         })}
 
         {events.map((event) => (
-          <CalendarEvent key={event.id} event={event} />
+          <CalendarEvent key={event.id} event={event} onEdit={onEditEvent} />
         ))}
       </div>
     </div>
@@ -334,6 +362,7 @@ export default function RhythmView({ projectId }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [editingSession, setEditingSession] = useState(null);
 
   const weekDays = useMemo(() => {
     const start = new Date(currentWeek);
@@ -383,14 +412,23 @@ export default function RhythmView({ projectId }) {
             let duration = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
             if (isNaN(duration) || duration <= 0) duration = 60;
 
+            const rawType = String(item.type || '').toLowerCase();
+            const itemTitle = String(item.title || 'Scheduled session');
+            const editableTypes = ['event', 'meeting', 'focus', 'custom', 'deep_work', 'standup', 'reminder'];
+
             let uiType = 'task';
-            if (item.type === 'event' || item.type === 'meeting') uiType = 'meeting';
-            if (item.title.toLowerCase().includes('focus')) uiType = 'focus';
+            if (rawType === 'event' || rawType === 'meeting' || rawType === 'standup') uiType = 'meeting';
+            if (rawType === 'focus' || rawType === 'deep_work' || rawType === 'custom' || itemTitle.toLowerCase().includes('focus')) uiType = 'focus';
 
             return {
-              id: item.id,
-              title: item.title,
+              id: item.id || item._id,
+              title: itemTitle,
+              description: item.description || '',
+              sourceType: rawType,
+              editable: editableTypes.includes(rawType),
               type: uiType,
+              startAt: item.startAt,
+              endAt: item.endAt,
               startHour: startDate.getHours(),
               startMinute: startDate.getMinutes(),
               duration,
@@ -413,18 +451,66 @@ export default function RhythmView({ projectId }) {
   }, [projectId, currentWeek]);
 
   const handleAddEventClick = (date, hour) => {
+    setEditingSession(null);
     setSelectedSlot({ date, hour });
     setIsModalOpen(true);
   };
 
+  const handleEditEventClick = (session) => {
+    if (!session?.editable) return;
+
+    const startDate = weekDays[session.day]?.fullDate
+      ? new Date(weekDays[session.day].fullDate)
+      : new Date();
+
+    startDate.setHours(
+      Number.isFinite(Number(session.startHour)) ? Number(session.startHour) : 9,
+      Number.isFinite(Number(session.startMinute)) ? Number(session.startMinute) : 0,
+      0,
+      0
+    );
+
+    const durationMinutes = Number.isFinite(Number(session.duration)) && Number(session.duration) > 0
+      ? Number(session.duration)
+      : 60;
+
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+
+    setSelectedSlot(null);
+    setEditingSession({
+      ...session,
+      mode: 'edit',
+      date: startDate,
+      startDate,
+      endDate,
+      hour: startDate.getHours(),
+      minute: startDate.getMinutes(),
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeSessionModal = () => {
+    setIsModalOpen(false);
+    setSelectedSlot(null);
+    setEditingSession(null);
+  };
+
   const handleSaveSession = async (eventData) => {
+    const isEditing = Boolean(editingSession?.id);
+
     try {
-      await createEvent(eventData);
-      console.log('✅ Successfully created event');
+      if (isEditing) {
+        await updateEvent(editingSession.id, eventData);
+        console.log('✅ Successfully updated event');
+      } else {
+        await createEvent(eventData);
+        console.log('✅ Successfully created event');
+      }
+
       await loadRhythmData();
     } catch (err) {
-      console.error('Failed to save event', err);
-      alert('Failed to save session! Check the console.');
+      console.error(isEditing ? 'Failed to update event' : 'Failed to save event', err);
+      alert(isEditing ? 'Failed to update session! Check the console.' : 'Failed to save session! Check the console.');
     }
   };
 
@@ -782,6 +868,7 @@ export default function RhythmView({ projectId }) {
                       isToday={day.isToday}
                       workload={workloads[idx]}
                       onAddEvent={handleAddEventClick}
+                      onEditEvent={handleEditEventClick}
                     />
                   ))}
                 </div>
@@ -817,8 +904,8 @@ export default function RhythmView({ projectId }) {
 
       <CreateSessionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialData={selectedSlot}
+        onClose={closeSessionModal}
+        initialData={editingSession || selectedSlot}
         onSave={handleSaveSession}
         projectId={projectId}
       />

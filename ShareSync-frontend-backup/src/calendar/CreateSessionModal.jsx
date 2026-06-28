@@ -1,6 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, AlignLeft, Calendar as CalIcon, Zap, Users, Coffee } from 'lucide-react';
 
+
+function toDateInputValue(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function toTimeInputValue(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '09:00';
+
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function normalizeInitialType(value) {
+  const type = String(value || '').toLowerCase();
+
+  if (type === 'meeting' || type === 'standup') return 'meeting';
+  if (type === 'break') return 'break';
+
+  return 'focus';
+}
+
+function cleanEditableTitle(value, type) {
+  const title = String(value || '');
+
+  if (type === 'focus') {
+    return title.replace(/^focus:\s*/i, '');
+  }
+
+  return title;
+}
+
 export default function CreateSessionModal({ isOpen, onClose, onSave, initialData, projectId }) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('focus'); // 'focus', 'meeting', 'break'
@@ -9,21 +47,37 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
   const [endTimeStr, setEndTimeStr] = useState('10:00');
   const [description, setDescription] = useState('');
 
-  // Populate local states when the modal opens with grid data
+  // Populate local states when the modal opens with grid data or an existing session
   useEffect(() => {
-    if (isOpen && initialData?.date) {
-      const d = initialData.date;
-      // Format Date for HTML5 date input (YYYY-MM-DD)
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      setDateStr(`${year}-${month}-${day}`);
+    if (!isOpen) return;
 
-      // Format Time for HTML5 time input (HH:MM)
+    if (initialData?.mode === 'edit') {
+      const start = initialData.startDate instanceof Date
+        ? initialData.startDate
+        : new Date(initialData.startDate || initialData.date);
+
+      const end = initialData.endDate instanceof Date
+        ? initialData.endDate
+        : new Date(initialData.endDate || start.getTime() + Number(initialData.duration || 60) * 60000);
+
+      const normalizedType = normalizeInitialType(initialData.type || initialData.sourceType);
+
+      setDateStr(toDateInputValue(start));
+      setStartTimeStr(toTimeInputValue(start));
+      setEndTimeStr(toTimeInputValue(end));
+      setTitle(cleanEditableTitle(initialData.title, normalizedType));
+      setDescription(initialData.description || '');
+      setType(normalizedType);
+      return;
+    }
+
+    if (initialData?.date) {
+      const d = initialData.date;
+      setDateStr(toDateInputValue(d));
+
       const sh = String(initialData.hour).padStart(2, '0');
       setStartTimeStr(`${sh}:00`);
 
-      // Default to 1 hour later
       const eh = String(initialData.hour + 1).padStart(2, '0');
       setEndTimeStr(`${eh}:00`);
 

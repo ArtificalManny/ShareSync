@@ -45,4 +45,13 @@ export async function createEvent(payload) {
   return data;
 }
 
-export default { linkCalendar, unlinkCalendar, getIcsUrl, getProjectRhythm, createEvent };
+/**
+ * Update an existing calendar event / work session
+ */
+export async function updateEvent(eventId, payload) {
+  if (!eventId) throw new Error('eventId is required');
+  const { data } = await client.put(`/calendar/events/${eventId}`, payload);
+  return data;
+}
+
+export default { linkCalendar, unlinkCalendar, getIcsUrl, getProjectRhythm, createEvent, updateEvent };
