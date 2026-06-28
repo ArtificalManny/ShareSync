@@ -3459,6 +3459,134 @@ function mergeCommandActiveGoals(items = []) {
   });
 }
 
+function isSameCommandDay(a, b = new Date()) {
+  if (!a) return false;
+
+  const date = new Date(a);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return (
+    date.getFullYear() === b.getFullYear() &&
+    date.getMonth() === b.getMonth() &&
+    date.getDate() === b.getDate()
+  );
+}
+
+function getRoadmapPulseStatus(item) {
+  return String(
+    item?.status ||
+      item?.state ||
+      item?.lifecycle ||
+      item?.phase ||
+      ""
+  ).toLowerCase();
+}
+
+function isRoadmapPulseCompleted(item) {
+  const status = getRoadmapPulseStatus(item);
+
+  return (
+    item?.completed === true ||
+    item?.done === true ||
+    Boolean(item?.completedAt) ||
+    status.includes("completed") ||
+    status.includes("complete") ||
+    status.includes("done") ||
+    status.includes("shipped") ||
+    commandReadProgress(item) >= 100
+  );
+}
+
+function isRoadmapPulseBlocked(item) {
+  const status = getRoadmapPulseStatus(item);
+  const dueDate = item?.dueDate || item?.targetDate || item?.endDate;
+
+  const overdue =
+    dueDate &&
+    !Number.isNaN(new Date(dueDate).getTime()) &&
+    new Date(dueDate).getTime() < Date.now() &&
+    !isRoadmapPulseCompleted(item);
+
+  return (
+    item?.blocked === true ||
+    item?.isBlocked === true ||
+    item?.is_blocked === true ||
+    Boolean(item?.blockedReason) ||
+    Boolean(item?.blockerReason) ||
+    status.includes("blocked") ||
+    status.includes("risk") ||
+    status.includes("stuck") ||
+    overdue
+  );
+}
+
+function isRoadmapPulseInMotion(item) {
+  const status = getRoadmapPulseStatus(item);
+
+  return (
+    status.includes("progress") ||
+    status.includes("active") ||
+    status.includes("doing") ||
+    status.includes("started") ||
+    status.includes("execution") ||
+    commandReadProgress(item) > 0
+  );
+}
+
+function isRoadmapPulseReady(item) {
+  const status = getRoadmapPulseStatus(item);
+
+  return (
+    status.includes("ready") ||
+    status.includes("planned") ||
+    status.includes("todo") ||
+    status.includes("backlog") ||
+    status.includes("next")
+  );
+}
+
+function buildRoadmapPulseForCommand(milestones = []) {
+  const items = commandValueToArray(milestones).filter(Boolean);
+
+  return items.reduce(
+    (pulse, item) => {
+      const completed = isRoadmapPulseCompleted(item);
+      const completedAt =
+        item?.completedAt ||
+        item?.finishedAt ||
+        item?.shippedAt ||
+        item?.updatedAt;
+
+      if (completed && isSameCommandDay(completedAt)) {
+        pulse.today += 1;
+      }
+
+      if (!completed && isRoadmapPulseBlocked(item)) {
+        pulse.blocked += 1;
+        return pulse;
+      }
+
+      if (!completed && isRoadmapPulseInMotion(item)) {
+        pulse.inMotion += 1;
+        return pulse;
+      }
+
+      if (!completed && isRoadmapPulseReady(item)) {
+        pulse.ready += 1;
+      }
+
+      return pulse;
+    },
+    {
+      today: 0,
+      inMotion: 0,
+      blocked: 0,
+      ready: 0,
+    }
+  );
+}
+
+
 function OverviewView({
   project,
   overview,
@@ -3491,21 +3619,35 @@ function OverviewView({
   }, [project, overview?.project, tasks, blockers]);
 
   const pulse = useMemo(() => {
-    const finishLineBlocked = readNumber(
-      overview?.finishLine?.blockerCount ??
-        overview?.finishLine?.blockersCount ??
-        overview?.finishLine?.unresolvedBlockers ??
-        overview?.finishLine?.unresolvedBlockerCount ??
-        (Array.isArray(overview?.finishLine?.blockers)
-          ? overview.finishLine.blockers.length
-          : 0),
+    const derivedPulse = overview?.pulse || metrics?.pulse || {};
+
+    const finishLineBlocked = Math.max(
+      readNumber(overview?.finishLine?.blockedCount, 0),
+      (Array.isArray(overview?.finishLine?.blockers)
+        ? overview.finishLine.blockers.length
+        : 0),
       0
     );
 
-    const today = readNumber(derivedPulse?.today, 0);
-    const inMotion = readNumber(derivedPulse?.inMotion, 0);
-    const blocked = Math.max(readNumber(derivedPulse?.blocked, 0), finishLineBlocked);
-    const ready = readNumber(derivedPulse?.ready, 0);
+    const roadmapPulse = buildRoadmapPulseForCommand(milestones);
+
+    const today =
+      readNumber(derivedPulse?.today, 0) +
+      readNumber(roadmapPulse?.today, 0);
+
+    const inMotion =
+      readNumber(derivedPulse?.inMotion, 0) +
+      readNumber(roadmapPulse?.inMotion, 0);
+
+    const blocked = Math.max(
+      readNumber(derivedPulse?.blocked, 0) +
+        readNumber(roadmapPulse?.blocked, 0),
+      finishLineBlocked
+    );
+
+    const ready =
+      readNumber(derivedPulse?.ready, 0) +
+      readNumber(roadmapPulse?.ready, 0);
 
     return {
       todayCompleted: today,
@@ -3515,8 +3657,12 @@ function OverviewView({
       inMotion,
       blocked,
       ready,
+      roadmapToday: readNumber(roadmapPulse?.today, 0),
+      roadmapInMotion: readNumber(roadmapPulse?.inMotion, 0),
+      roadmapBlocked: readNumber(roadmapPulse?.blocked, 0),
+      roadmapReady: readNumber(roadmapPulse?.ready, 0),
     };
-  }, [derivedPulse, overview?.finishLine]);
+  }, [overview?.pulse, metrics?.pulse, overview?.finishLine, milestones]);
 
   const serverMomentum = overview?.momentum || {};
   const momentum = projectMomentum || serverMomentum;
