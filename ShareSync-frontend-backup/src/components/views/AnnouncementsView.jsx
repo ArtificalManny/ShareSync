@@ -649,21 +649,28 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
             <Avatar author={item.authorId} size="lg" currentUser={currentUser} />
 
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="block truncate text-sm font-black leading-tight text-slate-950">
-                  {authorName}
-                </span>
-
-                {isMe && (
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-violet-700">
-                    You
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="relative inline-flex max-w-full pb-1">
+                    <span className="truncate bg-gradient-to-r from-slate-950 via-violet-800 to-slate-700 bg-clip-text text-xl font-black leading-none tracking-[-0.035em] text-transparent dark:from-white dark:via-violet-100 dark:to-cyan-100">
+                      {authorName}
+                    </span>
+                    <span className="absolute bottom-0 left-0 h-[3px] w-12 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 shadow-sm shadow-violet-500/30" />
                   </span>
-                )}
+                </div>
 
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                  {style.label}
-                </span>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {isMe && (
+                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-500/10 dark:text-violet-200 dark:ring-violet-400/20">
+                      You
+                    </span>
+                  )}
+
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                    {style.label}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
