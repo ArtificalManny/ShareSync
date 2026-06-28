@@ -118,15 +118,25 @@ export class CalendarService {
     if (endDate) eventFilter.endTime = { ...eventFilter.endTime, $lte: endDate };
 
     const events = await this.eventModel.find(eventFilter).lean();
-    events.forEach(e => rhythmItems.push({
-      id: e._id,
-      title: e.title,
-      type: 'event',
-      startAt: e.startTime,
-      endAt: e.endTime,
-      status: e.status,
-      originalData: e
-    }));
+    events.forEach((e: any) => {
+      const eventDescription = typeof e.description === 'string' ? e.description : '';
+
+      rhythmItems.push({
+        id: e._id,
+        title: e.title,
+        type: 'event',
+        startAt: e.startTime,
+        endAt: e.endTime,
+        status: e.status,
+        description: eventDescription,
+        notes: eventDescription,
+        originalData: {
+          ...e,
+          description: eventDescription,
+          notes: eventDescription,
+        },
+      });
+    });
 
     // 2. Get Tasks with Due Dates
     const taskFilter: any = { projectId: pId, dueDate: { $exists: true, $ne: null } };
