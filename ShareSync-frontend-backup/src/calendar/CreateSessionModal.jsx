@@ -66,7 +66,13 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
       setStartTimeStr(toTimeInputValue(start));
       setEndTimeStr(toTimeInputValue(end));
       setTitle(cleanEditableTitle(initialData.title, normalizedType));
-      setDescription(initialData.description || '');
+      setDescription(
+        initialData.description ??
+        initialData.notes ??
+        initialData.originalData?.description ??
+        initialData.originalData?.notes ??
+        ''
+      )
       setType(normalizedType);
       return;
     }
@@ -114,12 +120,15 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
       ? `Focus: ${title || 'Deep Work'}`
       : title || 'Untitled Session';
 
+    const sessionDescription = description ?? '';
+
     onSave({
       title: finalTitle,
       type: backendType,
       startTime: startObj.toISOString(), // Send as UTC
       endTime: endObj.toISOString(),
-      description,
+      description: sessionDescription,
+      notes: sessionDescription,
       projectId: projectId,
     });
 
@@ -344,7 +353,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/35 focus:outline-none focus:ring-4 focus:ring-violet-200 dark:border-violet-400/30 dark:focus:ring-violet-500/20"
               >
                 <Zap className="h-4 w-4" />
-                Add Session
+                {initialData?.mode === 'edit' ? 'Update Session' : 'Add Session'}
               </button>
             </div>
           </div>
