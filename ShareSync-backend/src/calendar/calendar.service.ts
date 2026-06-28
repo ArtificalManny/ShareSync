@@ -614,8 +614,47 @@ export class CalendarService {
       throw new BadRequestException('Only organizer or project member can update event');
     }
 
-    Object.assign(event, dto);
-    const saved = await event.save();
+    const {
+      type: _type,
+      projectId: _projectId,
+      createdBy: _createdBy,
+      attendees: _attendees,
+      id: _id,
+      _id: __id,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      ...safeDto
+    } = (dto || {}) as any;
+
+    let saved: CalendarEventDocument | null;
+
+    try {
+      saved = await this.eventModel.findByIdAndUpdate(
+        eventId,
+        { $set: safeDto },
+        { new: true, runValidators: true },
+      );
+
+      if (!saved) {
+        throw new NotFoundException('Event not found');
+      }
+    } catch (err: any) {
+      console.error('[CalendarService.update] failed', {
+        eventId,
+        userId,
+        safeDto,
+        message: err?.message,
+        stack: err?.stack,
+      });
+
+      if (err instanceof NotFoundException) {
+        throw err;
+      }
+
+      throw new BadRequestException(
+        err?.message || 'Failed to update calendar event',
+      );
+    }
 
     this.eventEmitter.emit('calendar.event.updated', {
       eventId: saved._id,
