@@ -479,6 +479,8 @@ export default function RhythmView({ projectId }) {
     setSelectedSlot(null);
     setEditingSession({
       ...session,
+      description: session.description ?? session.notes ?? session.originalData?.description ?? session.originalData?.notes ?? '',
+      notes: session.notes ?? session.description ?? session.originalData?.notes ?? session.originalData?.description ?? '',
       mode: 'edit',
       date: startDate,
       startDate,
