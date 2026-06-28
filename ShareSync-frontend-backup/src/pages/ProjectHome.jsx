@@ -3261,6 +3261,172 @@ function ProjectActiveGoalsCard({ goals = [], loading = false, onGoalClick }) {
 }
 
 
+
+function commandValueToArray(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.milestones)) return value.milestones;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.results)) return value.results;
+  return [];
+}
+
+function commandReadProgress(value) {
+  const direct = Number(
+    value?.progress ??
+      value?.completion ??
+      value?.completionRate ??
+      value?.percentComplete ??
+      value?.percentage
+  );
+
+  if (Number.isFinite(direct)) {
+    return Math.max(0, Math.min(100, Math.round(direct)));
+  }
+
+  const completed = Number(value?.completedTasks ?? value?.tasksCompleted ?? 0);
+  const total = Number(value?.totalTasks ?? value?.taskCount ?? value?.tasksTotal ?? 0);
+
+  if (Number.isFinite(completed) && Number.isFinite(total) && total > 0) {
+    return Math.max(0, Math.min(100, Math.round((completed / total) * 100)));
+  }
+
+  return 0;
+}
+
+function isRoadmapCommandItemComplete(item) {
+  const status = String(
+    item?.status ||
+      item?.state ||
+      item?.lifecycle ||
+      item?.phase ||
+      ""
+  ).toLowerCase();
+
+  return (
+    item?.completed === true ||
+    item?.done === true ||
+    Boolean(item?.completedAt) ||
+    status.includes("completed") ||
+    status.includes("complete") ||
+    status.includes("done") ||
+    status.includes("shipped") ||
+    commandReadProgress(item) >= 100
+  );
+}
+
+function normalizeRoadmapCommandGoal(item, index = 0) {
+  if (!item || isRoadmapCommandItemComplete(item)) return null;
+
+  const rawStatus = String(item?.status || item?.state || "planned")
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .trim();
+
+  const progress = commandReadProgress(item);
+  const dueDate = item?.dueDate || item?.targetDate || item?.endDate;
+  const isOverdue =
+    dueDate &&
+    !Number.isNaN(new Date(dueDate).getTime()) &&
+    new Date(dueDate).getTime() < Date.now();
+
+  const title =
+    item?.title ||
+    item?.name ||
+    item?.label ||
+    item?.milestone?.title ||
+    `Roadmap milestone ${index + 1}`;
+
+  const subtitle =
+    item?.description ||
+    item?.summary ||
+    item?.details ||
+    (dueDate
+      ? `Roadmap target due ${new Date(dueDate).toLocaleDateString()}`
+      : "Uncompleted roadmap item still shaping this project.");
+
+  const id =
+    item?._id ||
+    item?.id ||
+    item?.milestoneId ||
+    item?.slug ||
+    `roadmap-${String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`;
+
+  return {
+    id: `roadmap-${id}`,
+    title,
+    subtitle,
+    status: isOverdue ? "At Risk" : rawStatus || "Roadmap",
+    source: "Roadmap",
+    progress,
+    blocked:
+      item?.blocked === true ||
+      item?.isBlocked === true ||
+      String(rawStatus).toLowerCase().includes("risk") ||
+      String(rawStatus).toLowerCase().includes("block"),
+    done: false,
+    ownerName:
+      item?.ownerName ||
+      item?.owner?.name ||
+      item?.assignee?.name ||
+      item?.assignedTo?.name ||
+      "",
+    raw: {
+      ...item,
+      source: "roadmap",
+      __commandSource: "roadmap",
+    },
+  };
+}
+
+function buildRoadmapActiveGoalsForCommand({ project, overview, milestones = [] } = {}) {
+  const sources = [
+    milestones,
+    overview?.milestones,
+    overview?.roadmap,
+    overview?.roadmap?.milestones,
+    overview?.roadmap?.items,
+    overview?.timeline,
+    overview?.timeline?.milestones,
+    project?.milestones,
+    project?.roadmap,
+    project?.roadmap?.milestones,
+    project?.roadmap?.items,
+    project?.timeline,
+  ];
+
+  const seen = new Set();
+
+  return sources
+    .flatMap(commandValueToArray)
+    .map((item, index) => normalizeRoadmapCommandGoal(item, index))
+    .filter(Boolean)
+    .filter((goal) => {
+      const key = String(goal.id || goal.title || "").toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function mergeCommandActiveGoals(items = []) {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    if (!item) return false;
+
+    const key = String(
+      item.id ||
+        item._id ||
+        `${item.source || "goal"}-${item.title || item.name || ""}`
+    ).toLowerCase();
+
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function OverviewView({
   project,
   overview,
@@ -3277,6 +3443,7 @@ function OverviewView({
   isStartingSprint = false,
   projectOnlineCount = 0,
   liveTasks = [],
+    milestones = [],
   tasks = [],
   blockers = [],
   projectMomentum = null,
@@ -3335,7 +3502,17 @@ function OverviewView({
       foresight: overview?.foresight || metrics?.foresight,
     });
 
-    return built.length > 0 ? built : rawActiveGoals;
+    const roadmapGoals = buildRoadmapActiveGoalsForCommand({
+      project,
+      overview,
+      milestones,
+    });
+
+    return mergeCommandActiveGoals([
+      ...built,
+      ...rawActiveGoals,
+      ...roadmapGoals,
+    ]);
   }, [
     project,
     liveTasks,
@@ -3343,6 +3520,7 @@ function OverviewView({
     priorityStack,
     metrics?.foresight,
     rawActiveGoals,
+    milestones,
   ]);
   const rawTeamCapacity =
     Array.isArray(overview?.teamCapacity) || typeof overview?.teamCapacity === "object"
@@ -4194,6 +4372,7 @@ export default function ProjectHome() {
               isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
               liveTasks={liveTasks}
+              milestones={milestones}
               projectMomentum={projectMomentum}
               tasks={liveTasks}
               blockers={overview?.blockers || overview?.blockingReasons || overview?.finishLine?.blockers || []}
