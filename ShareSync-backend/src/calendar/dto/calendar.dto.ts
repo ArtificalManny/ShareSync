@@ -1,11 +1,5 @@
-// src/calendar/dto/calendar.dto.ts
-// ═══════════════════════════════════════════════════════════════════════════════
-// CALENDAR DTOs
-// ═══════════════════════════════════════════════════════════════════════════════
-
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  ApiProperty,
-  ApiPropertyOptional } from '@nestjs/swagger'; import {   IsString,
   IsArray,
   IsBoolean,
   IsDate,
@@ -15,10 +9,14 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
+// src/calendar/dto/calendar.dto.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+// CALENDAR DTOs
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import { Type } from 'class-transformer';
 import { EventType, RecurrenceFrequency } from '../schemas/event.schema';
 
@@ -219,6 +217,12 @@ export class UpdateEventDto {
   @MaxLength(2000)
   @IsOptional()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+
 
   @ApiPropertyOptional()
   @Type(() => Date)
