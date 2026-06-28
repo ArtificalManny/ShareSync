@@ -18,6 +18,15 @@ export const createAnnouncement = async (projectId, data) => {
   return unwrap(response);
 };
 
+export const updateAnnouncement = async (projectId, announcementId, data) => {
+  const response = await client.patch(
+    `/projects/${projectId}/announcements/${announcementId}`,
+    data
+  );
+  return unwrap(response);
+};
+
+
 export const markAnnouncementAsRead = async (projectId, announcementId) => {
   const response = await client.patch(`/projects/${projectId}/announcements/${announcementId}/read`);
   return unwrap(response);

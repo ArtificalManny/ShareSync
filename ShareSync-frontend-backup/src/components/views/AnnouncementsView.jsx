@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Megaphone, Plus, Pin, Trash2, Clock, Send, X,
+  Megaphone, Plus, Pin, PencilLine, Trash2, Clock, Send, X,
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
 } from 'lucide-react';
@@ -15,7 +15,7 @@ import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import {
-  getAnnouncements, createAnnouncement,
+  getAnnouncements, createAnnouncement, updateAnnouncement,
   toggleAnnouncementPin, deleteAnnouncement, markAnnouncementAsRead,
   toggleLike, addComment, deleteComment,
 } from '../../api/announcements';
@@ -539,7 +539,7 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
 
 // ─── Announcement Card ──────────────────────────────────────────────────────
 
-function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpdate }) {
+function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdit, onUpdate }) {
   const rawType = String(item.type || 'info').toLowerCase();
   const style = TYPE_STYLES[rawType] || TYPE_STYLES.info;
   const isPinned = item.pinned;
@@ -717,6 +717,14 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
               <Pin className="h-4 w-4" />
             </button>
 
+              <button
+                onClick={() => onEdit(item)}
+                className="rounded-xl p-2.5 text-slate-400 transition-all hover:bg-violet-50 hover:text-violet-700"
+                title="Edit announcement"
+              >
+                <PencilLine className="h-4 w-4" />
+              </button>
+
             <button
               onClick={() => onDelete(getId(item))}
               className="rounded-xl p-2.5 text-slate-400 transition-all hover:bg-rose-50 hover:text-rose-600"
@@ -832,6 +840,7 @@ export default function AnnouncementsView({ projectId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [type, setType] = useState('info');
@@ -841,6 +850,42 @@ export default function AnnouncementsView({ projectId }) {
   const mountedRef = useRef(true);
 
   const anyUploading = uploadedFiles.some((a) => a.uploading);
+  const resetAnnouncementForm = () => {
+    setTitle('');
+    setMessage('');
+    setType('info');
+    setPinned(false);
+    setUploadedFiles([]);
+  };
+
+  const openCreateModal = () => {
+    setEditingAnnouncement(null);
+    resetAnnouncementForm();
+    setShowCreate(true);
+  };
+
+  const openEditModal = (announcement) => {
+    setEditingAnnouncement(announcement);
+    setTitle(announcement?.title || announcement?.subject || announcement?.name || '');
+    setMessage(
+      announcement?.message ||
+      announcement?.content ||
+      announcement?.text ||
+      announcement?.description ||
+      ''
+    );
+    setType(String(announcement?.type || 'info').toLowerCase());
+    setPinned(Boolean(announcement?.pinned));
+    setUploadedFiles([]);
+    setShowCreate(true);
+  };
+
+  const closeAnnouncementModal = () => {
+    setShowCreate(false);
+    setEditingAnnouncement(null);
+    resetAnnouncementForm();
+  };
+
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -867,27 +912,100 @@ export default function AnnouncementsView({ projectId }) {
 
   const handleCreate = async () => {
     if (!title.trim() || !message.trim() || posting) return;
-    if (anyUploading) { toast({ title: 'Please wait for uploads to finish', variant: 'error' }); return; }
+
+    if (!editingAnnouncement && anyUploading) {
+      toast({ title: 'Please wait for uploads to finish', variant: 'error' });
+      return;
+    }
 
     setPosting(true);
+
     try {
-      const attachmentUrls = uploadedFiles.filter((a) => a.url && !a.error).map((a) => a.url);
-      const created = await createAnnouncement(projectId, { title: title.trim(), message: message.trim(), type, pinned, attachments: attachmentUrls });
+      if (editingAnnouncement) {
+        const announcementId = getId(editingAnnouncement);
+
+        if (!announcementId) {
+          toast({ title: 'Could not find announcement ID', variant: 'error' });
+          return;
+        }
+
+        const response = await updateAnnouncement(projectId, announcementId, {
+          title: title.trim(),
+          message: message.trim(),
+          type,
+          pinned,
+        });
+
+        const updated = unwrapAnnouncementPayload(response);
+
+        setAnnouncements((prev) =>
+          prev.map((announcement) =>
+            getId(announcement) === announcementId
+              ? normalizeAnnouncementLikeState(
+                  {
+                    ...announcement,
+                    ...updated,
+                    title: updated?.title || title.trim(),
+                    message:
+                      updated?.message ||
+                      updated?.content ||
+                      updated?.text ||
+                      message.trim(),
+                    type: updated?.type || type,
+                    pinned:
+                      typeof updated?.pinned === 'boolean'
+                        ? updated.pinned
+                        : pinned,
+                  },
+                  user
+                )
+              : announcement
+          )
+        );
+
+        closeAnnouncementModal();
+        toast({ title: 'Announcement updated!', variant: 'success' });
+        return;
+      }
+
+      const attachmentUrls = uploadedFiles
+        .filter((a) => a.url && !a.error)
+        .map((a) => a.url);
+
+      const created = await createAnnouncement(projectId, {
+        title: title.trim(),
+        message: message.trim(),
+        type,
+        pinned,
+        attachments: attachmentUrls,
+      });
 
       const optimisticAnnouncement = {
         ...created,
-        authorId: user, // Inject live user context immediately
+        authorId: user,
         title: created.title || title.trim(),
         message: created.message || created.content || message.trim(),
-        attachments: created.attachments || attachmentUrls
+        attachments: created.attachments || attachmentUrls,
       };
 
-      setAnnouncements(prev => [normalizeAnnouncementLikeState(optimisticAnnouncement, user), ...prev]);
-      setTitle(''); setMessage(''); setType('info'); setPinned(false); setUploadedFiles([]); setShowCreate(false);
+      setAnnouncements((prev) => [
+        normalizeAnnouncementLikeState(optimisticAnnouncement, user),
+        ...prev,
+      ]);
+
+      closeAnnouncementModal();
       toast({ title: 'Announcement posted!', variant: 'success' });
     } catch (e) {
-      toast({ title: e?.response?.data?.message || e?.message || 'Failed to post', variant: 'error' });
-    } finally { setPosting(false); }
+      toast({
+        title:
+          e?.response?.data?.message ||
+          e?.message ||
+          (editingAnnouncement ? 'Failed to update announcement' : 'Failed to post'),
+        variant: 'error',
+      });
+    } finally {
+      setPosting(false);
+    }
   };
 
   const handlePin = async (id) => {
@@ -1287,7 +1405,7 @@ export default function AnnouncementsView({ projectId }) {
             </button>
 
             <button
-              onClick={() => setShowCreate(true)}
+              onClick={openCreateModal}
               className="announcements-hero-cta announcements-primary-button relative isolate inline-flex items-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40"
             >
               <span
@@ -1328,13 +1446,14 @@ export default function AnnouncementsView({ projectId }) {
             <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Megaphone className="w-10 h-10 text-slate-400" /></div>
             <p className="text-xl font-black text-slate-900 mb-2">No announcements yet</p>
             <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm mx-auto">No broadcasts yet. Post the first high-signal update so the team knows what changed, what matters, and what happens next.</p>
-            <button onClick={() => setShowCreate(true)} className="px-6 py-3 text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
+            <button onClick={openCreateModal} className="px-6 py-3 text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
               <Plus className="w-4 h-4" /> Post First Announcement
             </button>
           </div>
         ) : (
           sorted.map(item => (
-            <AnnouncementCard key={getId(item)} item={item} projectId={projectId} currentUser={user} onPin={handlePin} onDelete={handleDelete} onUpdate={handleUpdate} />
+            <AnnouncementCard key={getId(item)} item={item} projectId={projectId} currentUser={user} onPin={handlePin} onDelete={handleDelete} onUpdate={handleUpdate} 
+                onEdit={openEditModal}/>
           ))
         )}
       </div>
@@ -1344,7 +1463,7 @@ export default function AnnouncementsView({ projectId }) {
           <button
             type="button"
             className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px] pointer-events-auto"
-            onClick={() => setShowCreate(false)}
+            onClick={closeAnnouncementModal}
             aria-label="Close post announcement modal backdrop"
           />
 
@@ -1361,14 +1480,14 @@ export default function AnnouncementsView({ projectId }) {
                       Team Broadcast
                     </p>
                     <h2 className="mt-1 text-2xl font-black leading-none tracking-tight text-slate-950">
-                      Post Announcement
+                      {editingAnnouncement ? 'Save Changes' : 'Post Announcement'}
                     </h2>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setShowCreate(false)}
+                  onClick={closeAnnouncementModal}
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700"
                   aria-label="Close post announcement modal"
                 >
@@ -1462,7 +1581,7 @@ export default function AnnouncementsView({ projectId }) {
 
             <div className="flex items-center justify-end gap-4 border-t border-slate-200 bg-slate-50 px-6 py-5">
               <button
-                onClick={() => setShowCreate(false)}
+                onClick={closeAnnouncementModal}
                 className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
               >
                 Cancel

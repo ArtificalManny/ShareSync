@@ -36,6 +36,17 @@ export type CreateAnnouncementInput = {
 };
 
 @Injectable()
+
+export type UpdateAnnouncementInput = {
+  projectId: string;
+  userId?: string;
+  title?: string;
+  message?: string;
+  type?: string;
+  pinned?: boolean;
+  attachments?: string[];
+};
+
 export class AnnouncementsService {
   private readonly logger = new Logger(AnnouncementsService.name);
 
@@ -288,6 +299,57 @@ export class AnnouncementsService {
     }
 
     return doc;
+  }
+
+  public async update(announcementId: string, input: UpdateAnnouncementInput) {
+    const annId = this.toObjectId(announcementId, 'announcementId');
+    const projectObjectId = this.toObjectId(input.projectId, 'projectId');
+
+    const existing = await this.announcementModel
+      .findOne({ _id: annId, projectId: projectObjectId })
+      .exec();
+
+    if (!existing) {
+      throw new NotFoundException('Announcement not found');
+    }
+
+    const update: Record<string, any> = {
+      updatedAt: new Date(),
+    };
+
+    if (typeof input.title === 'string') {
+      const title = input.title.trim();
+      if (title) update.title = title;
+    }
+
+    if (typeof input.message === 'string') {
+      const message = input.message.trim();
+      if (message) update.message = message;
+    }
+
+    if (typeof input.type === 'string') {
+      const type = input.type.trim().toLowerCase();
+      if (type) update.type = type;
+    }
+
+    if (typeof input.pinned === 'boolean') {
+      update.pinned = input.pinned;
+    }
+
+    if (Array.isArray(input.attachments)) {
+      update.attachments = input.attachments;
+    }
+
+    const updated = await this.announcementModel
+      .findByIdAndUpdate(annId, { $set: update }, { new: true })
+      .populate('authorId', this.userPopulateFields)
+      .exec();
+
+    if (!updated) {
+      throw new NotFoundException('Announcement not found');
+    }
+
+    return updated;
   }
 
   public async markAsRead(announcementId: string, userId: string) {

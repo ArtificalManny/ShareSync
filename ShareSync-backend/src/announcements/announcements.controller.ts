@@ -1,12 +1,13 @@
 // src/announcements/announcements.controller.ts
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Patch,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  Patch,
+  Post,
+  Req,
   UseGuards,
   UseInterceptors,
   Request,
@@ -61,6 +62,40 @@ export class AnnouncementsController {
       projectId,
       authorId,
       ...body,
+    });
+  }
+
+  @Patch(':id')
+  async updateAnnouncement(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      title?: string;
+      message?: string;
+      content?: string;
+      text?: string;
+      type?: string;
+      pinned?: boolean;
+      attachments?: string[];
+    },
+    @Req() req: any,
+  ) {
+    const rawUserId =
+      req?.user?._id ||
+      req?.user?.userId ||
+      req?.user?.id ||
+      req?.user?.sub ||
+      req?.user;
+
+    return this.announcementsService.update(id, {
+      projectId,
+      userId: rawUserId ? String(rawUserId) : undefined,
+      title: body.title,
+      message: body.message ?? body.content ?? body.text,
+      type: body.type,
+      pinned: body.pinned,
+      attachments: body.attachments,
     });
   }
 
