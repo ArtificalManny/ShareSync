@@ -1,4 +1,3 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
@@ -9,8 +8,11 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   ValidateNested,
+  ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';,
+  import {,
 } from 'class-validator';
 // src/calendar/dto/calendar.dto.ts
 // ═══════════════════════════════════════════════════════════════════════════════
