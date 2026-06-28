@@ -1,7 +1,7 @@
 import client from './client';
 
 /**
- * Link a calendar provider (Phase 2 OAuth).
+ * Link a calendar provider.
  */
 export async function linkCalendar(provider, payload = {}) {
   if (!provider) throw new Error('provider is required');
@@ -27,7 +27,7 @@ export function getIcsUrl(projectId) {
 }
 
 /**
- * Fetch the unified Rhythm timeline (Events + Tasks + Sprints)
+ * Fetch the unified Rhythm timeline.
  */
 export async function getProjectRhythm(projectId, startDate, endDate) {
   const params = new URLSearchParams();
@@ -41,62 +41,58 @@ export async function getProjectRhythm(projectId, startDate, endDate) {
   return data;
 }
 
-/**
- * CalendarEvent schema uses `description`, while the Schedule UI may use `notes`.
- * Normalize before sending to the backend so notes persist.
- */
 function normalizeCalendarPayload(payload = {}, { forUpdate = false } = {}) {
+  const source = payload || {};
+
   const {
+    id: _id,
+    _id: __id,
     notes,
-    note,
-    type,
-    projectId,
-    id,
-    _id,
-    createdAt,
-    updatedAt,
-    createdBy,
-    attendees,
-    originalData,
-    mode,
-    editable,
-    day,
-    hour,
-    minute,
-    startHour,
-    startMinute,
-    duration,
-    ...rest
-  } = payload || {};
+    originalData: _originalData,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    mode: _mode,
+    editable: _editable,
+    day: _day,
+    hour: _hour,
+    minute: _minute,
+    startHour: _startHour,
+    startMinute: _startMinute,
+    duration: _duration,
+    ...cleanPayload
+  } = source;
 
-  const cleanPayload = { ...rest };
-
-  if (notes !== undefined) {
-    cleanPayload.description = notes;
-  } else if (note !== undefined) {
-    cleanPayload.description = note;
+  // Backend stores Schedule notes as `description`.
+  // Prefer live textarea value `notes` when present.
+  if (Object.prototype.hasOwnProperty.call(source, 'notes')) {
+    cleanPayload.description = notes ?? '';
+  } else if (Object.prototype.hasOwnProperty.call(source, 'description')) {
+    cleanPayload.description = source.description ?? '';
   }
 
-  // Create needs projectId/type. Update does not.
-  if (!forUpdate) {
-    if (projectId !== undefined) cleanPayload.projectId = projectId;
-    if (type !== undefined) cleanPayload.type = type;
+  if (forUpdate) {
+    // These are creation-only / ownership fields. Do not send them during PUT.
+    delete cleanPayload.projectId;
+    delete cleanPayload.type;
+    delete cleanPayload.userId;
+    delete cleanPayload.createdBy;
+    delete cleanPayload.attendees;
   }
 
   return cleanPayload;
 }
 
 /**
- * Create a new calendar event / work session.
+ * Create a new calendar event / Schedule session.
  */
-export async function createEvent(payload) {
+export async function createEvent(payload = {}) {
   const cleanPayload = normalizeCalendarPayload(payload, { forUpdate: false });
   const { data } = await client.post('/calendar/events', cleanPayload);
   return data;
 }
 
 /**
- * Update an existing calendar event / work session.
+ * Update an existing calendar event / Schedule session.
  */
 export async function updateEvent(eventId, payload = {}) {
   if (!eventId) throw new Error('eventId is required');
