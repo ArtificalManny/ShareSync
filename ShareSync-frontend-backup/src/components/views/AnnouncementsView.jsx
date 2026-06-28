@@ -208,6 +208,21 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function formatAnnouncementTimestamp(ts) {
+  if (!ts) return 'Date unavailable';
+
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return 'Date unavailable';
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 const TYPE_STYLES = {
   info: {
     label: 'Info',
@@ -676,7 +691,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {timeAgo(item.createdAt)}
+                  Posted {formatAnnouncementTimestamp(item.createdAt)}
                 </span>
 
                 {engagementCount > 0 && (
