@@ -3,17 +3,18 @@
 // CALENDAR DTOs
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsEnum,
+  ApiProperty,
+  ApiPropertyOptional } from '@nestjs/swagger'; import {   IsString,
   IsArray,
-  IsMongoId,
-  IsDate,
-  IsNumber,
   IsBoolean,
+  IsDate,
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
   MaxLength,
   Min,
   ValidateNested,
