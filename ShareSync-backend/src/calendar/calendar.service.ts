@@ -539,13 +539,75 @@ export class CalendarService {
   ): Promise<CalendarEventDocument> {
     const event = await this.findById(eventId);
 
-    if (event.createdBy.toString() !== userId) {
-      const isAttendee = event.attendees.some(
-        (a) => a.userId.toString() === userId && a.isOrganizer,
-      );
-      if (!isAttendee) {
-        throw new BadRequestException('Only organizer can update event');
+    const toIdString = (value: any): string => {
+      if (!value) return '';
+      if (typeof value === 'string') return value;
+
+      if (value._id) return toIdString(value._id);
+      if (value.id) return toIdString(value.id);
+
+      if (typeof value.toString === 'function') {
+        const str = value.toString();
+        return str === '[object Object]' ? '' : str;
       }
+
+      return '';
+    };
+
+    const actorId = toIdString(userId);
+    const creatorId = toIdString((event as any).createdBy);
+
+    const isCreator = creatorId === actorId;
+
+    const attendees = Array.isArray((event as any).attendees)
+      ? (event as any).attendees
+      : [];
+
+    const isOrganizerAttendee = attendees.some((attendee: any) => {
+      return (
+        toIdString(attendee?.userId) === actorId &&
+        Boolean(attendee?.isOrganizer)
+      );
+    });
+
+    let isProjectMember = false;
+
+    const projectId = toIdString((event as any).projectId);
+
+    if (!isCreator && !isOrganizerAttendee && projectId && Types.ObjectId.isValid(projectId)) {
+      const actorValues: any[] = [actorId];
+
+      if (Types.ObjectId.isValid(actorId)) {
+        actorValues.push(new Types.ObjectId(actorId));
+      }
+
+      const project = await this.eventModel.db.collection('projects').findOne({
+        _id: new Types.ObjectId(projectId),
+        $or: [
+          { owner: { $in: actorValues } },
+          { ownerId: { $in: actorValues } },
+          { createdBy: { $in: actorValues } },
+          { userId: { $in: actorValues } },
+
+          { members: { $in: actorValues } },
+          { memberIds: { $in: actorValues } },
+          { sharedWith: { $in: actorValues } },
+          { participantIds: { $in: actorValues } },
+          { collaborators: { $in: actorValues } },
+
+          { 'members.userId': { $in: actorValues } },
+          { 'members.user': { $in: actorValues } },
+          { 'members.memberId': { $in: actorValues } },
+          { 'sharedWith.userId': { $in: actorValues } },
+          { 'collaborators.userId': { $in: actorValues } },
+        ],
+      });
+
+      isProjectMember = Boolean(project);
+    }
+
+    if (!isCreator && !isOrganizerAttendee && !isProjectMember) {
+      throw new BadRequestException('Only organizer or project member can update event');
     }
 
     Object.assign(event, dto);
