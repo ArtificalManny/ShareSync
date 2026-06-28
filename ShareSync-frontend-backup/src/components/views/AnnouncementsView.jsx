@@ -727,16 +727,40 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onUpd
           </div>
         </div>
 
-        <div className={`announcement-message-panel mt-5 rounded-2xl border ${style.border} ${style.soft} p-5 ring-1 ${style.ring}`}>
-          <h3 className="mb-2 text-xl font-black leading-tight tracking-tight text-slate-950">
-            {displayTitle}
-          </h3>
+        <div className="relative mt-7 overflow-visible pl-5 sm:pl-7">
+          <span
+            className={`absolute left-0 top-1 h-[calc(100%-0.25rem)] w-1 rounded-full ${style.accent} shadow-[0_0_28px_rgba(124,58,237,0.34)]`}
+          />
 
-          <p className="whitespace-pre-line text-[15px] font-medium leading-7 text-slate-700">
-            {displayMessage}
-          </p>
+          <div className="pointer-events-none absolute -left-8 top-0 h-24 w-24 rounded-full bg-violet-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute right-0 top-4 h-20 w-20 rounded-full bg-cyan-400/10 blur-3xl" />
 
-          <AttachmentGallery attachments={item.attachments} />
+          <div className="relative">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                Broadcast
+              </span>
+
+              {isPinned && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                  Pinned
+                </span>
+              )}
+            </div>
+
+            <h3 className="max-w-4xl text-2xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 sm:text-3xl">
+              {displayTitle}
+            </h3>
+
+            <div className="mt-4 h-px w-full max-w-3xl bg-gradient-to-r from-violet-300 via-cyan-200 to-transparent" />
+
+            <p className="mt-5 whitespace-pre-line text-[16px] font-medium leading-8 text-slate-700">
+              {displayMessage}
+            </p>
+
+            <AttachmentGallery attachments={item.attachments} />
+          </div>
         </div>
       </div>
 
