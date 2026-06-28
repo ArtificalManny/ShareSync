@@ -887,7 +887,6 @@ export class CalendarService {
         instances.push({
           title: event.title,
         description: (event as any).description || '',
-        notes: (event as any).description || '',
           description: event.description,
           type: event.type,
           startTime: instanceStart,
@@ -974,7 +973,6 @@ export class CalendarService {
             eventId: event._id,
             title: event.title,
         description: (event as any).description || '',
-        notes: (event as any).description || '',
             startTime: event.startTime,
             attendees: event.attendees.map((a) => a.userId.toString()),
             method: reminder.method,
