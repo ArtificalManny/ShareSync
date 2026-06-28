@@ -35,8 +35,6 @@ export type CreateAnnouncementInput = {
   attachments?: string[];
 };
 
-@Injectable()
-
 export type UpdateAnnouncementInput = {
   projectId: string;
   userId?: string;
@@ -47,6 +45,7 @@ export type UpdateAnnouncementInput = {
   attachments?: string[];
 };
 
+@Injectable()
 export class AnnouncementsService {
   private readonly logger = new Logger(AnnouncementsService.name);
 
