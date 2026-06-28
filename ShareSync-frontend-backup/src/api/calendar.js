@@ -5,7 +5,7 @@ import client from './client';
  */
 export async function linkCalendar(provider, payload = {}) {
   if (!provider) throw new Error('provider is required');
-  const { data } = await client.post('/calendar/link', { provider, ...payload });
+  const { data } = await client.post(`/calendar/link`, { provider, ...payload });
   return data;
 }
 
@@ -14,7 +14,7 @@ export async function linkCalendar(provider, payload = {}) {
  */
 export async function unlinkCalendar(provider) {
   if (!provider) throw new Error('provider is required');
-  const { data } = await client.post('/calendar/unlink', { provider });
+  const { data } = await client.post(`/calendar/unlink`, { provider });
   return data;
 }
 
@@ -42,31 +42,66 @@ export async function getProjectRhythm(projectId, startDate, endDate) {
 }
 
 /**
+ * CalendarEvent schema uses `description`, while the Schedule UI may use `notes`.
+ * Normalize before sending to the backend so notes persist.
+ */
+function normalizeCalendarPayload(payload = {}, { forUpdate = false } = {}) {
+  const {
+    notes,
+    note,
+    type,
+    projectId,
+    id,
+    _id,
+    createdAt,
+    updatedAt,
+    createdBy,
+    attendees,
+    originalData,
+    mode,
+    editable,
+    day,
+    hour,
+    minute,
+    startHour,
+    startMinute,
+    duration,
+    ...rest
+  } = payload || {};
+
+  const cleanPayload = { ...rest };
+
+  if (notes !== undefined) {
+    cleanPayload.description = notes;
+  } else if (note !== undefined) {
+    cleanPayload.description = note;
+  }
+
+  // Create needs projectId/type. Update does not.
+  if (!forUpdate) {
+    if (projectId !== undefined) cleanPayload.projectId = projectId;
+    if (type !== undefined) cleanPayload.type = type;
+  }
+
+  return cleanPayload;
+}
+
+/**
  * Create a new calendar event / work session.
- *
- * Create still sends the full payload because the backend needs projectId/type
- * when a new Schedule session is created.
  */
 export async function createEvent(payload) {
-  const { data } = await client.post('/calendar/events', payload);
+  const cleanPayload = normalizeCalendarPayload(payload, { forUpdate: false });
+  const { data } = await client.post('/calendar/events', cleanPayload);
   return data;
 }
 
 /**
  * Update an existing calendar event / work session.
- *
- * The backend update DTO rejects projectId/type, so strip only those fields
- * before PUT /calendar/events/:id.
  */
 export async function updateEvent(eventId, payload = {}) {
   if (!eventId) throw new Error('eventId is required');
 
-  const {
-    type: _type,
-    projectId: _projectId,
-    ...cleanPayload
-  } = payload || {};
-
+  const cleanPayload = normalizeCalendarPayload(payload, { forUpdate: true });
   const { data } = await client.put(`/calendar/events/${eventId}`, cleanPayload);
   return data;
 }

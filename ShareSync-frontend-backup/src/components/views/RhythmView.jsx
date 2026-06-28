@@ -485,6 +485,8 @@ export default function RhythmView({ projectId }) {
       endDate,
       hour: startDate.getHours(),
       minute: startDate.getMinutes(),
+      notes: session.notes ?? session.description ?? '',
+      description: session.description ?? session.notes ?? '',
     });
     setIsModalOpen(true);
   };
