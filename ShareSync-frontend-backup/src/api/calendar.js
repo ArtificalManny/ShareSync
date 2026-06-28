@@ -1,36 +1,11 @@
 import client from './client';
 
-function sanitizeCalendarUpdatePayload(payload = {}) {
-  const {
-    type: _type,
-    projectId: _projectId,
-    id: _id,
-    _id: __id,
-    createdAt: _createdAt,
-    updatedAt: _updatedAt,
-    createdBy: _createdBy,
-    editable: _editable,
-    mode: _mode,
-    day: _day,
-    hour: _hour,
-    minute: _minute,
-    startHour: _startHour,
-    startMinute: _startMinute,
-    duration: _duration,
-    originalData: _originalData,
-    ...clean
-  } = payload || {};
-
-  return clean;
-}
-
-
 /**
  * Link a calendar provider (Phase 2 OAuth).
  */
 export async function linkCalendar(provider, payload = {}) {
   if (!provider) throw new Error('provider is required');
-  const { data } = await client.post(`/calendar/link`, { provider, ...payload });
+  const { data } = await client.post('/calendar/link', { provider, ...payload });
   return data;
 }
 
@@ -39,7 +14,7 @@ export async function linkCalendar(provider, payload = {}) {
  */
 export async function unlinkCalendar(provider) {
   if (!provider) throw new Error('provider is required');
-  const { data } = await client.post(`/calendar/unlink`, { provider });
+  const { data } = await client.post('/calendar/unlink', { provider });
   return data;
 }
 
@@ -58,29 +33,49 @@ export async function getProjectRhythm(projectId, startDate, endDate) {
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
-  const { data } = await client.get(`/calendar/project/${projectId}/rhythm?${params.toString()}`);
+
+  const { data } = await client.get(
+    `/calendar/project/${projectId}/rhythm?${params.toString()}`
+  );
+
   return data;
 }
 
 /**
- * Create a new calendar event / work session
+ * Create a new calendar event / work session.
+ *
+ * Create still sends the full payload because the backend needs projectId/type
+ * when a new Schedule session is created.
  */
 export async function createEvent(payload) {
-  const { data } = await client.post('/calendar/events', cleanPayload);
+  const { data } = await client.post('/calendar/events', payload);
   return data;
 }
 
 /**
- * Update an existing calendar event / work session
+ * Update an existing calendar event / work session.
+ *
+ * The backend update DTO rejects projectId/type, so strip only those fields
+ * before PUT /calendar/events/:id.
  */
-export async function updateEvent(eventId, cleanPayload) {
-  
-  
-  const cleanPayload = sanitizeCalendarUpdatePayload(payload);
-const cleanPayload = sanitizeCalendarUpdatePayload(payload);
-if (!eventId) throw new Error('eventId is required');
-  const { data } = await client.put(`/calendar/events/${eventId}`, payload);
+export async function updateEvent(eventId, payload = {}) {
+  if (!eventId) throw new Error('eventId is required');
+
+  const {
+    type: _type,
+    projectId: _projectId,
+    ...cleanPayload
+  } = payload || {};
+
+  const { data } = await client.put(`/calendar/events/${eventId}`, cleanPayload);
   return data;
 }
 
-export default { linkCalendar, unlinkCalendar, getIcsUrl, getProjectRhythm, createEvent, updateEvent };
+export default {
+  linkCalendar,
+  unlinkCalendar,
+  getIcsUrl,
+  getProjectRhythm,
+  createEvent,
+  updateEvent,
+};
