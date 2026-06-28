@@ -887,7 +887,6 @@ export class CalendarService {
         instances.push({
           title: event.title,
         description: (event as any).description || '',
-          description: event.description,
           type: event.type,
           startTime: instanceStart,
           endTime: instanceEnd,
