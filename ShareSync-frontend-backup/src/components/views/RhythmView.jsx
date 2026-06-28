@@ -22,6 +22,7 @@ import { getProjectRhythm, createEvent } from '../../api/calendar';
 import CreateSessionModal from '../../calendar/CreateSessionModal';
 
 const TIME_SLOTS = [
+  { hour: 7, label: '7 AM' },
   { hour: 8, label: '8 AM' },
   { hour: 9, label: '9 AM' },
   { hour: 10, label: '10 AM' },
@@ -33,6 +34,7 @@ const TIME_SLOTS = [
   { hour: 16, label: '4 PM' },
   { hour: 17, label: '5 PM' },
   { hour: 18, label: '6 PM' },
+  { hour: 19, label: '7 PM' },
 ];
 
 const ENERGY_ZONES = [
@@ -126,7 +128,7 @@ function CalendarEvent({ event }) {
   const Icon = meta.icon;
 
   const height = (event.duration / 60) * 64;
-  const startHour = Number.isFinite(Number(event.startHour)) ? Number(event.startHour) : 8;
+  const startHour = Number.isFinite(Number(event.startHour)) ? Number(event.startHour) : 7;
   const startMinute = Number.isFinite(Number(event.startMinute)) ? Number(event.startMinute) : 0;
 
   return (
@@ -137,7 +139,7 @@ function CalendarEvent({ event }) {
         hover:-translate-y-0.5 hover:shadow-xl ${meta.shell}
       `}
       style={{
-        top: `${((startHour - 8) + startMinute / 60) * 64}px`,
+        top: `${((startHour - 7) + startMinute / 60) * 64}px`,
         height: `${Math.max(height, 52)}px`,
         zIndex: 5,
       }}
