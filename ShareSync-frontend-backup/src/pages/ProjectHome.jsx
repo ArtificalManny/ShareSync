@@ -130,6 +130,7 @@ import MembersPanel from "../components/members/MembersPanel";
 import { completeProject, reopenProject } from "../api/projects";
 import { getFollowStatus } from "../api/follows";
 import useFollow from "../hooks/useFollow";
+import commandRoadmapClient from "../api/client";
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3262,6 +3263,37 @@ function ProjectActiveGoalsCard({ goals = [], loading = false, onGoalClick }) {
 
 
 
+
+async function fetchCommandRoadmapMilestones(projectId) {
+  if (!projectId) return [];
+
+  const endpoints = [
+    `/milestones?projectId=${projectId}`,
+    `/projects/${projectId}/milestones`,
+    `/milestones/project/${projectId}`,
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await commandRoadmapClient.get(endpoint);
+      const data = response?.data ?? response;
+
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.milestones)) return data.milestones;
+      if (Array.isArray(data?.data)) return data.data;
+      if (Array.isArray(data?.items)) return data.items;
+      if (Array.isArray(data?.results)) return data.results;
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status !== 404) {
+        console.warn("[Command] Roadmap milestone endpoint failed:", endpoint, err?.message || err);
+      }
+    }
+  }
+
+  return [];
+}
+
 function commandValueToArray(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.milestones)) return value.milestones;
@@ -3798,6 +3830,30 @@ export default function ProjectHome() {
   const refreshOverviewTimerRef = useRef(null);
 
   const [liveTasks, setLiveTasks] = useState([]);
+  const [commandMilestones, setCommandMilestones] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCommandRoadmapMilestonesForActiveGoals() {
+      if (!id) {
+        setCommandMilestones([]);
+        return;
+      }
+
+      const items = await fetchCommandRoadmapMilestones(id);
+
+      if (!cancelled) {
+        setCommandMilestones(Array.isArray(items) ? items : []);
+      }
+    }
+
+    loadCommandRoadmapMilestonesForActiveGoals();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [showCompleteProjectModal, setShowCompleteProjectModal] = useState(false);
@@ -4372,7 +4428,7 @@ export default function ProjectHome() {
               isStartingSprint={isStartingSprint}
               projectOnlineCount={projectOnlineCount}
               liveTasks={liveTasks}
-              milestones={milestones}
+              milestones={commandMilestones.length > 0 ? commandMilestones : milestones}
               projectMomentum={projectMomentum}
               tasks={liveTasks}
               blockers={overview?.blockers || overview?.blockingReasons || overview?.finishLine?.blockers || []}
