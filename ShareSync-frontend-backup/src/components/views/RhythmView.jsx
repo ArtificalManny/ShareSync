@@ -21,6 +21,22 @@ import {
 import { getProjectRhythm, createEvent, updateEvent } from '../../api/calendar';
 import CreateSessionModal from '../../calendar/CreateSessionModal';
 
+const DEFAULT_SESSION_COLOR = '#8B5CF6';
+
+const getSessionColor = (session) =>
+  session?.color || session?.originalData?.color || DEFAULT_SESSION_COLOR;
+
+const getSessionCardStyle = (session, extraStyle = {}) => {
+  const sessionColor = getSessionColor(session);
+
+  return {
+    ...extraStyle,
+    borderLeft: `6px solid ${sessionColor}`,
+    background: `linear-gradient(135deg, ${sessionColor}26, rgba(255,255,255,0.72))`,
+  };
+};
+
+
 const TIME_SLOTS = [
   { hour: 7, label: '7 AM' },
   { hour: 8, label: '8 AM' },
