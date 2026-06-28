@@ -509,8 +509,28 @@ export default function RhythmView({ projectId }) {
 
       await loadRhythmData();
     } catch (err) {
-      console.error(isEditing ? 'Failed to update event' : 'Failed to save event', err);
-      alert(isEditing ? 'Failed to update session! Check the console.' : 'Failed to save session! Check the console.');
+      const status = err?.response?.status;
+      const backendData = err?.response?.data;
+      const backendMessage =
+        backendData?.message ||
+        backendData?.error ||
+        err?.message ||
+        'Unknown error';
+
+      console.error(isEditing ? 'Failed to update event' : 'Failed to save event', {
+        status,
+        backendData,
+        message: backendMessage,
+        rawError: err,
+        editingSession,
+        eventData,
+      });
+
+      alert(
+        isEditing
+          ? `Failed to update session: ${backendMessage}`
+          : `Failed to save session: ${backendMessage}`
+      );
     }
   };
 
