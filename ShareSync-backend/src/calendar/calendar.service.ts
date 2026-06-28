@@ -547,8 +547,20 @@ export class CalendarService {
       if (!value) return '';
       if (typeof value === 'string') return value;
 
-      if (value._id) return toIdString(value._id);
-      if (value.id) return toIdString(value.id);
+      // Mongoose ObjectIds can expose _id as themselves.
+      // Check ObjectId/toHexString before checking _id/id to avoid recursion.
+      if (value instanceof Types.ObjectId) {
+        return value.toHexString();
+      }
+
+      if (typeof value?.toHexString === 'function') {
+        return value.toHexString();
+      }
+
+      if (typeof value === 'object') {
+        if (value._id && value._id !== value) return toIdString(value._id);
+        if (value.id && value.id !== value) return toIdString(value.id);
+      }
 
       if (typeof value.toString === 'function') {
         const str = value.toString();
