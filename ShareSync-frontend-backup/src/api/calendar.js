@@ -1,5 +1,30 @@
 import client from './client';
 
+function sanitizeCalendarUpdatePayload(payload = {}) {
+  const {
+    type: _type,
+    projectId: _projectId,
+    id: _id,
+    _id: __id,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    createdBy: _createdBy,
+    editable: _editable,
+    mode: _mode,
+    day: _day,
+    hour: _hour,
+    minute: _minute,
+    startHour: _startHour,
+    startMinute: _startMinute,
+    duration: _duration,
+    originalData: _originalData,
+    ...clean
+  } = payload || {};
+
+  return clean;
+}
+
+
 /**
  * Link a calendar provider (Phase 2 OAuth).
  */
@@ -41,15 +66,19 @@ export async function getProjectRhythm(projectId, startDate, endDate) {
  * Create a new calendar event / work session
  */
 export async function createEvent(payload) {
-  const { data } = await client.post('/calendar/events', payload);
+  const { data } = await client.post('/calendar/events', cleanPayload);
   return data;
 }
 
 /**
  * Update an existing calendar event / work session
  */
-export async function updateEvent(eventId, payload) {
-  if (!eventId) throw new Error('eventId is required');
+export async function updateEvent(eventId, cleanPayload) {
+  
+  
+  const cleanPayload = sanitizeCalendarUpdatePayload(payload);
+const cleanPayload = sanitizeCalendarUpdatePayload(payload);
+if (!eventId) throw new Error('eventId is required');
   const { data } = await client.put(`/calendar/events/${eventId}`, payload);
   return data;
 }
