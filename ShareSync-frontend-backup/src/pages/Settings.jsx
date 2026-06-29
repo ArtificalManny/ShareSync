@@ -22,7 +22,18 @@ import {
   Beaker,
   Target, Brain, Users as UsersIcon, Shield, Heart, Sparkles,
   Play, Zap, Clock, Film, Star, Moon, Sun, Eye, Settings as SettingsIcon,
-  AlertTriangle, Trash2, CreditCard, Phone, CheckCircle
+  AlertTriangle, Trash2, CreditCard, Phone, CheckCircle,
+  UserCircle,
+  SlidersHorizontal,
+  BellRing,
+  ShieldCheck,
+  Palette,
+  Flame,
+  PanelTop,
+  BrainCircuit,
+  Globe2,
+  MousePointer2,
+  WandSparkles,
 } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
 import PrivacyCard from "../components/settings/PrivacyCard";
@@ -178,6 +189,113 @@ function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = 
   );
 }
 
+
+const SETTINGS_SECTIONS = [
+  {
+    id: 'account',
+    label: 'Account',
+    description: 'Profile, email, visibility',
+    icon: UserCircle,
+  },
+  {
+    id: 'preferences',
+    label: 'Preferences',
+    description: 'Appearance, momentum, workspace feel',
+    icon: SlidersHorizontal,
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    description: 'Email, invites, mentions, digests',
+    icon: BellRing,
+  },
+  {
+    id: 'privacy',
+    label: 'Privacy & Security',
+    description: 'Privacy, presence, account safety',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'billing',
+    label: 'Billing',
+    description: 'Plan, usage, invoices',
+    icon: CreditCard,
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    description: 'AI mentor, persona, power controls',
+    icon: BrainCircuit,
+  },
+];
+
+function SettingsNav({ activeSection, onChange }) {
+  return (
+    <nav className="settings-section-nav lg:sticky lg:top-24">
+      <div className="mb-3 hidden px-1 text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500 lg:block">
+        Settings
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+        {SETTINGS_SECTIONS.map((section) => {
+          const Icon = section.icon;
+          const active = activeSection === section.id;
+
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => onChange(section.id)}
+              className={`group flex min-w-[190px] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all lg:min-w-0 ${
+                active
+                  ? 'border-violet-300 bg-white shadow-lg shadow-violet-500/10 ring-1 ring-violet-100 dark:border-violet-400/30 dark:bg-white/[0.07] dark:ring-violet-400/10'
+                  : 'border-slate-200/80 bg-white/70 hover:border-violet-200 hover:bg-white dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-violet-400/20 dark:hover:bg-white/[0.06]'
+              }`}
+            >
+              <span
+                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                  active
+                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200'
+                    : 'bg-slate-100 text-slate-500 group-hover:text-violet-600 dark:bg-white/[0.05] dark:text-zinc-400 dark:group-hover:text-violet-300'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
+
+              <span className="min-w-0">
+                <span className={`block text-sm font-black ${active ? 'text-slate-950 dark:text-white' : 'text-slate-700 dark:text-zinc-200'}`}>
+                  {section.label}
+                </span>
+                <span className="mt-0.5 hidden text-xs leading-snug text-slate-500 dark:text-zinc-500 sm:block">
+                  {section.description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function ComingSoonRow({ label, description }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 opacity-75 dark:border-white/[0.08] dark:bg-white/[0.03]">
+      <div>
+        <div className="text-sm font-bold text-slate-700 dark:text-zinc-200">{label}</div>
+        {description && (
+          <div className="mt-0.5 text-xs text-slate-500 dark:text-zinc-500">{description}</div>
+        )}
+      </div>
+
+      <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-500">
+        Soon
+      </span>
+    </div>
+  );
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN SETTINGS PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -187,6 +305,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [ok, setOk] = useState('');
+  const [activeSection, setActiveSection] = useState('preferences');
 
   // LAYER 1: Momentum Engine
   const [dailyShipsGoal, setDailyShipsGoal] = useState(5);
@@ -603,7 +722,7 @@ export default function Settings() {
 
   return (
     <main className="settings-page-surface min-h-screen px-6 py-12 text-slate-900 transition-colors duration-300 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_100%)] dark:text-white">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
 
         {/* Header */}
         <div className="text-center mb-12">
@@ -612,9 +731,9 @@ export default function Settings() {
             <span className="text-xs text-slate-500 dark:text-zinc-500 uppercase tracking-wider">System</span>
           </div>
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-3">
-            Design Your Momentum
+            Settings
           </h1>
-          <p className="text-slate-500 dark:text-zinc-400 text-lg">Who do you want to become?</p>
+          <p className="text-slate-500 dark:text-zinc-400 text-lg">Manage your account, workspace preferences, privacy, and billing.</p>
         </div>
 
         {/* Alerts */}
@@ -629,13 +748,99 @@ export default function Settings() {
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+          <SettingsNav activeSection={activeSection} onChange={setActiveSection} />
+
+          <form onSubmit={handleSave} className="space-y-6">
+          {activeSection === 'account' && (
+            <>
+              <SectionCard
+                icon={UserCircle}
+                iconBg="bg-sky-100 dark:bg-sky-500/10"
+                iconColor="text-sky-600 dark:text-sky-300"
+                title="Profile & Account"
+              >
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.08] dark:bg-[#0B0B0F]">
+                  <div className="flex items-start gap-3">
+                    <Globe2 className="mt-0.5 h-5 w-5 text-sky-500" />
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-white">Public identity</h3>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                        Profile editing stays on your Profile page. These controls decide how visible you are across OpenShare.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Toggle
+                  label="Public Profile"
+                  checked={publicProfile}
+                  onChange={setPublicProfile}
+                  description="Allow others to view your profile"
+                />
+
+                <Toggle
+                  label="Discoverable in OpenShare"
+                  checked={discoverable}
+                  onChange={(next) => {
+                    setDiscoverable(next);
+                    trackProfileDiscoverToggle({ enabled: next, source: 'settings_account' });
+                  }}
+                  description="Allow your profile and public work to appear in discovery surfaces"
+                />
+
+                <Toggle
+                  label="Celebrate my ships publicly"
+                  checked={celebratePublicly}
+                  onChange={setCelebratePublicly}
+                  description="Let others see when you ship something meaningful"
+                />
+
+                <Toggle
+                  label="Share live activity with teammates"
+                  checked={shareLiveActivity}
+                  onChange={setShareLiveActivity}
+                  description="Let teammates see when you're shipping in real time"
+                />
+              </SectionCard>
+            </>
+          )}
+
+
+          {activeSection === 'preferences' && (
+            <>
+          {/* Appearance */}
+          <SectionCard
+            icon={Palette}
+            iconBg="bg-slate-100 dark:bg-white/[0.06]"
+            iconColor="text-slate-600 dark:text-zinc-300"
+            title="Appearance"
+          >
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.08] dark:bg-[#0B0B0F]">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-300">Theme</label>
+              <select
+                value={theme}
+                onChange={(e) => {
+                  const nextTheme = normalizeThemeMode(e.target.value, 'system');
+                  setTheme(nextTheme);
+                  applyTheme(nextTheme);
+                }}
+                style={{ colorScheme: theme === "dark" ? "dark" : "light" }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-white/[0.10] dark:bg-[#111116] dark:text-white dark:shadow-none dark:focus:border-violet-400"
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+          </SectionCard>
+
 
           {/* LAYER 1: Momentum Engine */}
           <SectionCard
-            icon={Target}
-            iconBg="bg-violet-100 dark:bg-violet-500/10"
-            iconColor="text-violet-600 dark:text-violet-400"
+            icon={Flame}
+            iconBg="bg-orange-100 dark:bg-orange-500/10"
+            iconColor="text-orange-600 dark:text-orange-400"
             title="Momentum Engine"
           >
             <Slider
@@ -660,205 +865,115 @@ export default function Settings() {
             />
           </SectionCard>
 
-          {/* Advanced Settings Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#121216] shadow-sm dark:shadow-[0_18px_55px_rgba(0,0,0,0.22)] hover:bg-slate-50 dark:hover:bg-white/[0.045] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Advanced Settings</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400">Persona, celebrations, focus, social, AI mentor</p>
-              </div>
-            </div>
-            <span className={`text-sm font-medium text-violet-600 dark:text-violet-400 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>▶</span>
-          </button>
 
-          {showAdvanced && (
-          <>
-          {/* ⭐ Priority 4.1: Persona / Experience Mode */}
-          <SectionCard
-            icon={Sparkles}
-            iconBg="bg-fuchsia-100 dark:bg-fuchsia-500/10"
-            iconColor="text-fuchsia-600 dark:text-fuchsia-400"
-            title="Experience Persona"
-          >
-            <div className="picker-settings-wrapper">
-              <PersonaPicker />
-            </div>
-          </SectionCard>
-
-          {/* ⭐ Priority 4.2: Celebration Style */}
-          <SectionCard
-            icon={Play}
-            iconBg="bg-orange-100 dark:bg-orange-500/10"
-            iconColor="text-orange-600 dark:text-orange-400"
-            title="Celebration Style"
-          >
-            <div className="picker-settings-wrapper">
-              <CelebrationStylePicker />
-            </div>
-          </SectionCard>
-
-          {/* LAYER 2: Focus DNA */}
-          <SectionCard
-            icon={Brain}
-            iconBg="bg-blue-100 dark:bg-blue-500/10"
-            iconColor="text-blue-600 dark:text-blue-400"
-            title="Focus DNA"
-          >
-            <Slider
-              label="Deep Work Target"
-              value={deepWorkTarget}
-              onChange={setDeepWorkTarget}
-              min={1}
-              max={8}
-              unit="h"
-              icon={Clock}
-            />
-            <Toggle
-              label="Auto-start Focus Mode at 9:00 AM weekdays"
-              checked={autoStartFocus}
-              onChange={setAutoStartFocus}
-              description="Turn intention into automatic behavior"
-            />
-          </SectionCard>
-
-          {/* LAYER 3: Social Proof */}
-          <SectionCard
-            icon={UsersIcon}
-            iconBg="bg-cyan-100 dark:bg-cyan-500/10"
-            iconColor="text-cyan-600 dark:text-cyan-400"
-            title="Social Proof"
-          >
-            <RadioGroup
-              label="Show my streak to"
-              options={[
-                { value: 'nobody', label: 'Nobody', description: 'Private' },
-                { value: 'friends', label: 'Friends', description: 'Shared' },
-                { value: 'everyone', label: 'Everyone', description: 'Public' },
-              ]}
-              value={showStreakTo}
-              onChange={setShowStreakTo}
-            />
-            <Toggle
-              label="Celebrate my ships publicly"
-              checked={celebratePublicly}
-              onChange={setCelebratePublicly}
-              description="Let others see when you ship something great"
-            />
-            <Toggle
-              label="Public Profile"
-              checked={publicProfile}
-              onChange={setPublicProfile}
-              description="Allow others to view your profile"
-            />
-            <Toggle
-              label="Share live activity with teammates"
-              checked={shareLiveActivity}
-              onChange={setShareLiveActivity}
-              description="Let teammates see when you're shipping in real time"
-            />
-          </SectionCard>
-
-          {/* LAYER 4: AI Mentor Personality */}
-          <SectionCard
-            icon={Sparkles}
-            iconBg="bg-amber-100 dark:bg-amber-500/10"
-            iconColor="text-amber-600 dark:text-amber-400"
-            title="AI Mentor Personality"
-          >
-            <Toggle
-              label="Enable AI Mentor"
-              checked={mentorEnabled}
-              onChange={setMentorEnabled}
-              description="Get real-time coaching and insights"
-            />
-            {mentorEnabled && (
-              <>
-                <RadioGroup
-                  label="Tone"
-                  options={[
-                    { value: 'kind', label: 'Kind Coach', description: 'Gentle & supportive' },
-                    { value: 'wise', label: 'Wise Sage', description: 'Calm & insightful' },
-                    { value: 'drill', label: 'Drill Sergeant', description: 'Direct & tough' },
-                  ]}
-                  value={mentorTone}
-                  onChange={setMentorTone}
-                />
+              <SectionCard
+                icon={Brain}
+                iconBg="bg-blue-100 dark:bg-blue-500/10"
+                iconColor="text-blue-600 dark:text-blue-400"
+                title="Focus DNA"
+              >
                 <Slider
-                  label="Intensity"
-                  value={mentorIntensity}
-                  onChange={setMentorIntensity}
+                  label="Deep Work Target"
+                  value={deepWorkTarget}
+                  onChange={setDeepWorkTarget}
                   min={1}
-                  max={5}
+                  max={8}
+                  unit="h"
+                  icon={Clock}
                 />
-              </>
-            )}
-          </SectionCard>
+                <Toggle
+                  label="Auto-start Focus Mode at 9:00 AM weekdays"
+                  checked={autoStartFocus}
+                  onChange={setAutoStartFocus}
+                  description="Turn intention into automatic behavior"
+                />
+              </SectionCard>
 
-          </>
+              <SectionCard
+                icon={PanelTop}
+                iconBg="bg-indigo-100 dark:bg-indigo-500/10"
+                iconColor="text-indigo-600 dark:text-indigo-400"
+                title="Interface Density"
+              >
+                <RadioGroup
+                  label="Workspace density"
+                  options={[
+                    { value: 'comfortable', label: 'Comfortable', description: 'More breathing room' },
+                    { value: 'compact', label: 'Compact', description: 'More data on screen' },
+                    { value: 'focused', label: 'Focused', description: 'Minimal visual noise' },
+                  ]}
+                  value={userMode === 'kid' || userMode === 'pro' ? 'comfortable' : userMode}
+                  onChange={setUserMode}
+                />
+              </SectionCard>
+            </>
           )}
 
-          {/* Power User Settings Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowPowerUser(!showPowerUser)}
-            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#121216] shadow-sm dark:shadow-[0_18px_55px_rgba(0,0,0,0.22)] hover:bg-slate-50 dark:hover:bg-white/[0.045] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
-                <Beaker className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Power User</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400">Cursor privacy, legacy mode, experiments</p>
-              </div>
-            </div>
-            <span className={`text-sm font-medium text-amber-600 dark:text-amber-400 transition-transform ${showPowerUser ? 'rotate-90' : ''}`}>▶</span>
-          </button>
 
-          {showPowerUser && (
-          <>
-          {/* Cursor Presence Settings */}
-          <SectionCard
-            icon={Eye}
-            iconBg="bg-emerald-100 dark:bg-emerald-500/10"
-            iconColor="text-emerald-600 dark:text-emerald-400"
-            title="Live Cursor Privacy"
-          >
-            <PresenceSettings />
-          </SectionCard>
+          {activeSection === 'notifications' && (
+            <>
+              <SectionCard
+                icon={BellRing}
+                iconBg="bg-amber-100 dark:bg-amber-500/10"
+                iconColor="text-amber-600 dark:text-amber-300"
+                title="Notifications"
+              >
+                <Toggle
+                  label="Email activity updates"
+                  checked={emailActivity}
+                  onChange={setEmailActivity}
+                  description="Receive important activity updates by email"
+                />
 
-          {/* Interface Density */}
-          <SectionCard
-            icon={Star}
-            iconBg="bg-indigo-100 dark:bg-indigo-500/10"
-            iconColor="text-indigo-600 dark:text-indigo-400"
-            title="Interface Density"
-          >
-            <RadioGroup
-              label="Workspace density"
-              options={[
-                { value: 'comfortable', label: 'Comfortable', description: 'More breathing room' },
-                { value: 'compact', label: 'Compact', description: 'More data on screen' },
-                { value: 'focused', label: 'Focused', description: 'Minimal visual noise' },
-              ]}
-              value={userMode === 'kid' || userMode === 'pro' ? 'comfortable' : userMode}
-              onChange={setUserMode}
-            />
-          </SectionCard>
+                <Toggle
+                  label="Weekly digest"
+                  checked={emailDigest}
+                  onChange={setEmailDigest}
+                  description="Get a weekly summary of projects, ships, and momentum"
+                />
 
-          </>
+                <ComingSoonRow
+                  label="Project invites"
+                  description="Control notifications for project invitations"
+                />
+
+                <ComingSoonRow
+                  label="Task assignments"
+                  description="Control notifications when work is assigned to you"
+                />
+
+                <ComingSoonRow
+                  label="Mentions"
+                  description="Control notifications when someone mentions you"
+                />
+
+                <ComingSoonRow
+                  label="Billing alerts"
+                  description="Control receipts, plan changes, and usage alerts"
+                />
+              </SectionCard>
+            </>
           )}
 
-          {/* PHASE 4: PRIVACY TRANSPARENCY */}
-          <PrivacyCard />
 
+          {activeSection === 'privacy' && (
+            <>
+              <SectionCard
+                icon={MousePointer2}
+                iconBg="bg-emerald-100 dark:bg-emerald-500/10"
+                iconColor="text-emerald-600 dark:text-emerald-300"
+                title="Live Cursor Privacy"
+              >
+                <PresenceSettings />
+              </SectionCard>
+
+              <PrivacyCard />
+            </>
+          )}
+
+
+          {activeSection === 'billing' && (
+            <>
           {/* SUBSCRIPTION & BILLING */}
           <SectionCard
             icon={CreditCard}
@@ -871,31 +986,74 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* Appearance */}
-          <SectionCard
-            icon={SettingsIcon}
-            iconBg="bg-slate-100 dark:bg-white/[0.06]"
-            iconColor="text-slate-600 dark:text-zinc-300"
-            title="Appearance"
-          >
-            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.08] dark:bg-[#0B0B0F]">
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-300">Theme</label>
-              <select
-                value={theme}
-                onChange={(e) => {
-                  const nextTheme = normalizeThemeMode(e.target.value, 'system');
-                  setTheme(nextTheme);
-                  applyTheme(nextTheme);
-                }}
-                style={{ colorScheme: theme === "dark" ? "dark" : "light" }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-white/[0.10] dark:bg-[#111116] dark:text-white dark:shadow-none dark:focus:border-violet-400"
+
+            </>
+          )}
+
+
+          {activeSection === 'advanced' && (
+            <>
+              <SectionCard
+                icon={WandSparkles}
+                iconBg="bg-fuchsia-100 dark:bg-fuchsia-500/10"
+                iconColor="text-fuchsia-600 dark:text-fuchsia-300"
+                title="Experience Persona"
               >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </div>
-          </SectionCard>
+                <div className="picker-settings-wrapper">
+                  <PersonaPicker />
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                icon={Sparkles}
+                iconBg="bg-orange-100 dark:bg-orange-500/10"
+                iconColor="text-orange-600 dark:text-orange-300"
+                title="Celebration Style"
+              >
+                <div className="picker-settings-wrapper">
+                  <CelebrationStylePicker />
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                icon={BrainCircuit}
+                iconBg="bg-amber-100 dark:bg-amber-500/10"
+                iconColor="text-amber-600 dark:text-amber-300"
+                title="AI Mentor Personality"
+              >
+                <Toggle
+                  label="Enable AI Mentor"
+                  checked={mentorEnabled}
+                  onChange={setMentorEnabled}
+                  description="Get real-time coaching and insights"
+                />
+
+                {mentorEnabled && (
+                  <>
+                    <RadioGroup
+                      label="Tone"
+                      options={[
+                        { value: 'kind', label: 'Kind Coach', description: 'Gentle & supportive' },
+                        { value: 'wise', label: 'Wise Sage', description: 'Calm & insightful' },
+                        { value: 'drill', label: 'Drill Sergeant', description: 'Direct & tough' },
+                      ]}
+                      value={mentorTone}
+                      onChange={setMentorTone}
+                    />
+                    <Slider
+                      label="Intensity"
+                      value={mentorIntensity}
+                      onChange={setMentorIntensity}
+                      min={1}
+                      max={5}
+                    />
+                  </>
+                )}
+              </SectionCard>
+            </>
+          )}
+
+
 
           {/* Save Button */}
           <div className="flex justify-center pt-4">
@@ -914,8 +1072,9 @@ export default function Settings() {
               </span>
             </button>
           </div>
-        </form>
-</div>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }
