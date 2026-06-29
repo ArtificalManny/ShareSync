@@ -192,23 +192,43 @@ function unwrapPayload(payload) {
   return payload?.data?.data ?? payload?.data ?? payload ?? null;
 }
 
+function getWeeklyApiBase() {
+  const raw = String(import.meta.env.VITE_API_URL || "http://localhost:5050")
+    .replace(/\/+$/, "");
+
+  return /\/api$/.test(raw) ? raw : `${raw}/api`;
+}
+
 async function apiGet(endpoint) {
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const token =
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("ss.jwt");
 
   try {
-    const response = await client.get(cleanEndpoint, {
-      params: { _t: Date.now() },
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      },
-    });
+    const response = await fetch(
+      `${getWeeklyApiBase()}${cleanEndpoint}?_t=${Date.now()}`,
+      {
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      }
+    );
 
-    return unwrapPayload(response);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+
+    return unwrapPayload(await response.json());
   } catch (error) {
     console.warn(
       `[WeekInMotion] API request failed: ${cleanEndpoint}`,
-      error?.response?.data || error?.message || error
+      error?.message || error
     );
     return null;
   }
