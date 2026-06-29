@@ -25,8 +25,6 @@ import {
   AlertTriangle, Trash2, CreditCard, Phone, CheckCircle
 } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
-import ExperimentHistory from "../components/settings/ExperimentHistory";
-import WhatWorksAnalyzer from "../components/settings/WhatWorksAnalyzer";
 import PrivacyCard from "../components/settings/PrivacyCard";
 import BillingSettings from "../components/settings/BillingSettings";
 import PersonaPicker from "../components/settings/PersonaPicker";
@@ -203,6 +201,7 @@ export default function Settings() {
   // LAYER 3: Social Proof
   const [showStreakTo, setShowStreakTo] = useState('friends');
   const [celebratePublicly, setCelebratePublicly] = useState(true);
+  const [shareLiveActivity, setShareLiveActivity] = useState(true);
   const [publicProfile, setPublicProfile] = useState(true);
   const [discoverable, setDiscoverable] = useState(false);
 
@@ -229,13 +228,6 @@ export default function Settings() {
   const [emailActivity, setEmailActivity] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
   const [twoFA, setTwoFA] = useState(false);
-
-  // ✅ PHONE VERIFICATION STATE (Item 13)
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneStatus, setPhoneStatus] = useState('idle'); // 'idle' | 'pending' | 'verified'
-  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [phoneLoading, setPhoneLoading] = useState(false);
-  const otpRefs = useRef([]);
 
   const mqlRef = useRef(null);
 
@@ -438,6 +430,7 @@ export default function Settings() {
         const social = settings.social || {};
         setShowStreakTo(social.showStreakTo || 'friends');
         setCelebratePublicly(Boolean(social.celebrate ?? true));
+        setShareLiveActivity(Boolean(social.shareLiveActivity ?? true));
 
         const resolvedPublicProfile =
           social.publicProfile ??
@@ -549,6 +542,7 @@ export default function Settings() {
         social: {
           showStreakTo,
           celebrate: celebratePublicly,
+          shareLiveActivity: Boolean(shareLiveActivity),
           publicProfile,
           discoverable: Boolean(discoverable),
         },
@@ -594,70 +588,6 @@ export default function Settings() {
       setSaving(false);
       setTimeout(() => setOk(''), 3000);
     }
-  };
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ✅ PHONE VERIFICATION HANDLERS (Item 13)
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  const handleRequestPhoneCode = async () => {
-    if (!phoneNumber.trim()) {
-      toast({ title: "Phone number required", variant: "error" });
-      return;
-    }
-    setPhoneLoading(true);
-    setErrorMsg('');
-    try {
-      const { sendPhoneVerificationCode } = await import('../api/users');
-      await sendPhoneVerificationCode(phoneNumber);
-      setPhoneStatus('pending');
-      toast({ title: "Code sent!", description: "Check your messages.", variant: "success" });
-    } catch (e) {
-      const msg = e?.response?.data?.message || e.message || "Failed to send verification code.";
-      toast({ title: "Verification Failed", description: msg, variant: "error" });
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-
-  const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otpCode];
-    newOtp[index] = value.substring(value.length - 1);
-    setOtpCode(newOtp);
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerifyPhoneCode = async () => {
-    const code = otpCode.join('');
-    if (code.length < 6) return;
-    setPhoneLoading(true);
-    try {
-      const { verifyPhoneCode } = await import('../api/users');
-      await verifyPhoneCode(code);
-      setPhoneStatus('verified');
-      toast({ title: "Phone verified successfully!", variant: "success" });
-    } catch (e) {
-      const msg = e?.response?.data?.message || e.message || "Invalid code.";
-      toast({ title: "Verification Failed", description: msg, variant: "error" });
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-
-  const handleGenerateYearMontage = () => {
-    toast({
-      title: 'Year in Ships video coming soon!',
-      description: 'This will generate a cinematic montage of everything you shipped this year.'
-    });
   };
 
   if (loading) {
@@ -774,29 +704,6 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          {/* LAYER 1.5: Daily Pulse Check (Priority 3.4) */}
-          <SectionCard
-            icon={Heart}
-            iconBg="bg-rose-100 dark:bg-rose-500/10"
-            iconColor="text-rose-600 dark:text-rose-400"
-            title="Daily Pulse Check"
-          >
-            <Toggle
-              label="Enable daily pulse prompt"
-              checked={emailActivity}
-              onChange={setEmailActivity}
-              description="Get a 30-second daily check-in for energy, focus, and blockers (+15 XP)"
-            />
-            <Toggle
-              label="Show burnout alerts"
-              checked={emailDigest}
-              onChange={setEmailDigest}
-              description="Alert you if 3+ consecutive low-energy days are detected"
-            />
-          </SectionCard>
-
-      
-
           {/* LAYER 2: Focus DNA */}
           <SectionCard
             icon={Brain}
@@ -852,9 +759,9 @@ export default function Settings() {
             />
             <Toggle
               label="Share live activity with teammates"
-              checked={celebratePublicly}
-              onChange={setCelebratePublicly}
-              description="Let teammates see when you're shipping in real time (Momentum Contagion)"
+              checked={shareLiveActivity}
+              onChange={setShareLiveActivity}
+              description="Let teammates see when you're shipping in real time"
             />
           </SectionCard>
 
@@ -927,86 +834,23 @@ export default function Settings() {
             <PresenceSettings />
           </SectionCard>
 
-          {/* LAYER 6: Legacy Mode */}
-          <SectionCard
-            icon={Heart}
-            iconBg="bg-pink-100 dark:bg-pink-500/10"
-            iconColor="text-pink-600 dark:text-pink-400"
-            title="Legacy Mode"
-          >
-            <Toggle
-              label="Show Legacy Counter everywhere"
-              checked={showLegacyEverywhere}
-              onChange={setShowLegacyEverywhere}
-              description="See your lifetime ship count on every page"
-            />
-            <Toggle
-              label="Send me a yearly 'Year in Ships' video"
-              checked={yearlyMontage}
-              onChange={setYearlyMontage}
-              description="Cinematic montage of everything you shipped this year"
-            />
-            <button
-              type="button"
-              onClick={handleGenerateYearMontage}
-              className="w-full text-slate-800 dark:text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3 border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10"
-            >
-              <Film className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-              Generate My 2025 Montage
-            </button>
-          </SectionCard>
-
-          {/* LAYER 7: Experience Mode */}
+          {/* Interface Density */}
           <SectionCard
             icon={Star}
             iconBg="bg-indigo-100 dark:bg-indigo-500/10"
             iconColor="text-indigo-600 dark:text-indigo-400"
-            title="Experience Mode"
+            title="Interface Density"
           >
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setUserMode('kid')}
-                className={`px-6 py-8 rounded-xl border transition-all ${
-                  userMode === 'kid'
-                    ? 'border-violet-500/50 bg-violet-50 dark:bg-violet-500/10'
-                    : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-violet-300 dark:hover:border-violet-500/30'
-                }`}
-              >
-                <Moon className="w-8 h-8 text-violet-500 dark:text-violet-400 mx-auto mb-3" />
-                <div className={`text-lg font-bold ${userMode === 'kid' ? 'text-violet-800 dark:text-white' : 'text-slate-900 dark:text-white'}`}>Kid Mode</div>
-                <div className="text-xs text-slate-500 dark:text-zinc-500 mt-2">
-                  Bigger rings, confetti, private data
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setUserMode('pro')}
-                className={`px-6 py-8 rounded-xl border transition-all ${
-                  userMode === 'pro'
-                    ? 'border-blue-500/50 bg-blue-50 dark:bg-blue-500/10'
-                    : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-blue-300 dark:hover:border-blue-500/30'
-                }`}
-              >
-                <Sun className="w-8 h-8 text-blue-500 dark:text-blue-400 mx-auto mb-3" />
-                <div className={`text-lg font-bold ${userMode === 'pro' ? 'text-blue-800 dark:text-white' : 'text-slate-900 dark:text-white'}`}>Pro Mode</div>
-                <div className="text-xs text-slate-500 dark:text-zinc-500 mt-2">
-                  Minimal, data-heavy, analytics
-                </div>
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* PHASE 4: SETTINGS LAB */}
-          <SectionCard
-            icon={Beaker}
-            iconBg="bg-teal-100 dark:bg-teal-500/10"
-            iconColor="text-teal-600 dark:text-teal-400"
-            title="Settings Lab"
-          >
-            <ExperimentHistory />
-            <WhatWorksAnalyzer />
+            <RadioGroup
+              label="Workspace density"
+              options={[
+                { value: 'comfortable', label: 'Comfortable', description: 'More breathing room' },
+                { value: 'compact', label: 'Compact', description: 'More data on screen' },
+                { value: 'focused', label: 'Focused', description: 'Minimal visual noise' },
+              ]}
+              value={userMode === 'kid' || userMode === 'pro' ? 'comfortable' : userMode}
+              onChange={setUserMode}
+            />
           </SectionCard>
 
           </>
@@ -1025,96 +869,6 @@ export default function Settings() {
             <div className="settings-billing-contrast-fix">
               <BillingSettings />
             </div>
-          </SectionCard>
-
-          {/* ✅ PHONE VERIFICATION (Item 13) */}
-          <SectionCard
-            icon={Phone}
-            iconBg="bg-green-100 dark:bg-green-500/10"
-            iconColor="text-green-600 dark:text-green-400"
-            title="Phone Verification"
-          >
-            <p className="text-sm text-slate-500 dark:text-zinc-400 mb-4">
-              Add your phone number for SMS notifications and account security. Your number is never shown publicly.
-            </p>
-
-            {phoneStatus === 'verified' ? (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30">
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
-                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  Phone verified: ***-***-{phoneNumber.slice(-4)}
-                </span>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Phone input + Send Code */}
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
-                    <input
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      disabled={phoneStatus === 'pending'}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B0B0F] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
-                    />
-                  </div>
-                  {phoneStatus !== 'pending' && (
-                    <button
-                      type="button"
-                      onClick={handleRequestPhoneCode}
-                      disabled={phoneLoading || !phoneNumber.trim()}
-                      className="px-5 py-3 rounded-xl font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-violet-500/50 whitespace-nowrap"
-                      style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
-                    >
-                      {phoneLoading ? 'Sending...' : 'Send Code'}
-                    </button>
-                  )}
-                </div>
-
-                {/* OTP input (shown after code sent) */}
-                {phoneStatus === 'pending' && (
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-500 dark:text-zinc-400">
-                      Enter the 6-digit code sent to {phoneNumber}
-                    </p>
-                    <div className="flex gap-2 justify-center">
-                      {otpCode.map((digit, i) => (
-                        <input
-                          key={i}
-                          ref={(el) => (otpRefs.current[i] = el)}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={1}
-                          value={digit}
-                          onChange={(e) => handleOtpChange(i, e.target.value)}
-                          onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                          className="w-12 h-14 text-center text-2xl font-semibold rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B0B0F] text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => { setPhoneStatus('idle'); setOtpCode(['', '', '', '', '', '']); }}
-                        className="text-sm text-slate-500 dark:text-zinc-400 hover:text-violet-500 transition-colors"
-                      >
-                        Change number
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRequestPhoneCode}
-                        disabled={phoneLoading}
-                        className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-500 transition-colors disabled:opacity-50"
-                      >
-                        {phoneLoading ? 'Sending...' : 'Resend code'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </SectionCard>
 
           {/* Appearance */}
@@ -1140,36 +894,6 @@ export default function Settings() {
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
               </select>
-            </div>
-          </SectionCard>
-
-          {/* DANGER ZONE */}
-          <SectionCard
-            icon={AlertTriangle}
-            iconBg="bg-red-100 dark:bg-red-500/20"
-            iconColor="text-red-600 dark:text-red-500"
-            title="Danger Zone"
-            danger
-          >
-            <div className="space-y-4">
-              <p className="text-sm text-red-600 dark:text-red-400">
-                These actions are permanent and cannot be undone.
-              </p>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-white/90 dark:bg-[#120B0D] border border-red-200/90 dark:border-red-500/25 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium shadow-sm dark:shadow-none"
-                onClick={() => toast({ title: 'Export started', description: 'Your data will be emailed to you.' })}
-              >
-                Export all my data
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-red-50/90 dark:bg-red-500/10 border border-red-200/90 dark:border-red-500/25 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors font-medium"
-                onClick={() => toast({ title: 'Contact support', description: 'Email support@sharesync.io to delete your account.', variant: 'error' })}
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete my account
-              </button>
             </div>
           </SectionCard>
 
