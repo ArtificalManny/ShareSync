@@ -509,12 +509,29 @@ function normalizeWeeklyRhythmPayload(rhythmPayload, statsPayload) {
 }
 
 async function fetchWeeklyRhythm() {
-  const [rhythmPayload, statsPayload] = await Promise.all([
-    apiGet("/users/me/weekly-rhythm"),
-    apiGet("/users/me/stats"),
-  ]);
+  try {
+    const [rhythmRes, statsRes] = await Promise.all([
+      client.get("/users/me/weekly-rhythm", {
+        params: { _t: Date.now() },
+        headers: { "Cache-Control": "no-store" },
+      }).catch(() => null),
+      client.get("/users/me/stats", {
+        params: { _t: Date.now() },
+        headers: { "Cache-Control": "no-store" },
+      }).catch(() => null),
+    ]);
 
-  return normalizeWeeklyRhythmPayload(rhythmPayload, statsPayload);
+    const rhythmPayload = rhythmRes?.data?.data || rhythmRes?.data || {};
+    const statsPayload = statsRes?.data?.data || statsRes?.data || {};
+
+    console.log("[WeekInMotion] weekly-rhythm payload", rhythmPayload);
+    console.log("[WeekInMotion] stats payload", statsPayload);
+
+    return normalizeWeeklyRhythmPayload(rhythmPayload, statsPayload);
+  } catch (error) {
+    console.error("[WeekInMotion] Axios request failed:", error);
+    return normalizeWeeklyRhythmPayload(null, null);
+  }
 }
 
 function getBarTone({ isEmpty, isToday, isPeak }) {
