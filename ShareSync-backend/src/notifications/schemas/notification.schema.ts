@@ -14,7 +14,7 @@ export enum NotificationType {
   TASK_UPDATED = 'task_updated',
   TASK_COMMENT = 'task_comment',
   TASK_MENTION = 'task_mention',
-  TASK_DUE_SOON = 'task_due_soom',
+  TASK_DUE_SOON = 'task_due_soon',
   TASK_OVERDUE = 'task_overdue',
 
   PROJECT_INVITE = 'project_invite',
@@ -126,6 +126,15 @@ export class NotificationData {
 
   @Prop()
   milestoneName?: string;
+
+  @Prop({ type: Boolean, default: false })
+  emailFanoutEligible?: boolean;
+
+  @Prop({ type: Date })
+  dueDate?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'Announcement' })
+  announcementId?: Types.ObjectId;
 
   @Prop({ type: Object })
   extra?: Record<string, any>;

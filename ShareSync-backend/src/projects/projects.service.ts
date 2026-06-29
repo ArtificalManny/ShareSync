@@ -21,6 +21,23 @@ import { NotificationPriority, NotificationType } from '../notifications/schemas
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { ActivitiesService } from '../activities/activities.service';
 
+export const DEFAULT_PROJECT_NOTIFICATION_PREFERENCES = {
+  taskAssigned: true,
+  taskCompleted: true,
+  announcements: true,
+  mentions: true,
+  deadlines: true,
+  weeklyDigest: false,
+} as const;
+
+export type ProjectNotificationPreferences = {
+  -readonly [K in keyof typeof DEFAULT_PROJECT_NOTIFICATION_PREFERENCES]: boolean;
+};
+
+const PROJECT_NOTIFICATION_PREFERENCE_KEYS = Object.keys(
+  DEFAULT_PROJECT_NOTIFICATION_PREFERENCES,
+) as Array<keyof ProjectNotificationPreferences>;
+
 function safeNumber(value: any, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -1578,31 +1595,95 @@ export class ProjectsService {
     });
   }
 
-  async updateMemberPreferences(projectId: string, userId: string, preferences: any): Promise<ProjectDocument> {
-    const project = await this.findByIdWithAccess(projectId, userId);
+  private normalizeProjectNotificationPreferences(
+    preferences: any,
+  ): ProjectNotificationPreferences {
+    const normalized: ProjectNotificationPreferences = {
+      ...DEFAULT_PROJECT_NOTIFICATION_PREFERENCES,
+    };
 
-    let memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
+    for (const key of PROJECT_NOTIFICATION_PREFERENCE_KEYS) {
+      if (typeof preferences?.[key] === 'boolean') {
+        normalized[key] = preferences[key];
+      }
+    }
+
+    return normalized;
+  }
+
+  private getProjectPreferenceMemberIndex(project: ProjectDocument, userId: string): number {
+    const normalizedUserId = String(userId || '');
+    const members = Array.isArray(project?.members) ? project.members : [];
+
+    return members.findIndex((member: any) => {
+      const memberUserId = member?.userId?._id || member?.userId || member?.user?._id || member?.user;
+      return String(memberUserId || '') === normalizedUserId;
+    });
+  }
+
+  async getMemberPreferences(
+    projectId: string,
+    userId: string,
+  ): Promise<ProjectNotificationPreferences> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+    const memberIndex = this.getProjectPreferenceMemberIndex(project, userId);
+
+    if (memberIndex >= 0) {
+      return this.normalizeProjectNotificationPreferences(
+        project.members[memberIndex]?.preferences,
+      );
+    }
+
+    const ownerId = project?.ownerId?._id || project?.ownerId || (project as any)?.owner?._id || (project as any)?.owner;
+    if (String(ownerId || '') !== String(userId)) {
+      throw new BadRequestException('You are not a member of this project');
+    }
+
+    return this.normalizeProjectNotificationPreferences(null);
+  }
+
+  async updateMemberPreferences(
+    projectId: string,
+    userId: string,
+    preferences: Partial<ProjectNotificationPreferences>,
+  ): Promise<ProjectNotificationPreferences> {
+    const project = await this.findByIdWithAccess(projectId, userId);
+    let memberIndex = this.getProjectPreferenceMemberIndex(project, userId);
 
     if (memberIndex === -1) {
-      const isOwner = (project.ownerId || (project as any).owner)?.toString() === userId;
-      if (!isOwner) throw new BadRequestException('You are not a member of this project');
+      const ownerId = project?.ownerId?._id || project?.ownerId || (project as any)?.owner?._id || (project as any)?.owner;
+      if (String(ownerId || '') !== String(userId)) {
+        throw new BadRequestException('You are not a member of this project');
+      }
 
       project.members.push({
         userId: new Types.ObjectId(userId),
-        role: MemberRole.OWNER || 'owner',
+        role: MemberRole.OWNER,
         joinedAt: project.createdAt || new Date(),
+        preferences: {},
       } as ProjectMember);
-
       memberIndex = project.members.length - 1;
     }
 
+    const currentPreferences = this.normalizeProjectNotificationPreferences(
+      project.members[memberIndex]?.preferences,
+    );
+    const nextPreferences = { ...currentPreferences };
+
+    for (const key of PROJECT_NOTIFICATION_PREFERENCE_KEYS) {
+      if (typeof preferences?.[key] === 'boolean') {
+        nextPreferences[key] = preferences[key] as boolean;
+      }
+    }
+
     project.members[memberIndex].preferences = {
-      ...project.members[memberIndex].preferences,
-      ...preferences,
+      ...(project.members[memberIndex].preferences || {}),
+      ...nextPreferences,
     };
 
     project.markModified(`members.${memberIndex}.preferences`);
-    return project.save();
+    await project.save();
+    return nextPreferences;
   }
 
   async leaveProject(projectId: string, userId: string): Promise<void> {

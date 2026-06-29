@@ -96,9 +96,18 @@ export class ProjectMember {
 
   @Prop({ type: Object, default: {} })
   preferences?: {
+    // Legacy project notification controls.
     notifications?: boolean;
     emailDigest?: 'none' | 'daily' | 'weekly';
     mentionsOnly?: boolean;
+
+    // Per-user, per-project email controls used by Project Settings.
+    taskAssigned?: boolean;
+    taskCompleted?: boolean;
+    announcements?: boolean;
+    mentions?: boolean;
+    deadlines?: boolean;
+    weeklyDigest?: boolean;
   };
 }
 

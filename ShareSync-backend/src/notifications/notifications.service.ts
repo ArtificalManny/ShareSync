@@ -32,6 +32,7 @@ import {
 import { EmailService } from './email.service';
 import { SmsService } from './sms.service';
 import { User, UserDocument } from '../user/schemas/user.schema';
+import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 
 export interface NotificationPayload {
   userId: string;
@@ -47,6 +48,25 @@ export interface NotificationPayload {
 }
 
 type DigestWindow = '1d' | '7d' | '30d';
+type ProjectEmailPreferenceKey =
+  | 'taskAssigned'
+  | 'taskCompleted'
+  | 'announcements'
+  | 'mentions'
+  | 'deadlines';
+
+type ProjectEmailPreferences = Record<ProjectEmailPreferenceKey, boolean> & {
+  weeklyDigest: boolean;
+};
+
+const DEFAULT_PROJECT_EMAIL_PREFERENCES: ProjectEmailPreferences = {
+  taskAssigned: true,
+  taskCompleted: true,
+  announcements: true,
+  mentions: true,
+  deadlines: true,
+  weeklyDigest: false,
+};
 
 @Injectable()
 export class NotificationsService {
@@ -77,6 +97,9 @@ export class NotificationsService {
     @Optional()
     @InjectModel(User.name)
     private readonly userModel?: Model<UserDocument>,
+    @Optional()
+    @InjectModel(Project.name)
+    private readonly projectModel?: Model<ProjectDocument>,
   ) {}
 
   async create(dto: CreateNotificationDto): Promise<NotificationDocument> {
@@ -502,9 +525,138 @@ export class NotificationsService {
     });
   }
 
+  private getProjectIdFromNotification(notification: any): string {
+    const rawProjectId =
+      notification?.data?.projectId?._id ||
+      notification?.data?.projectId ||
+      notification?.projectId?._id ||
+      notification?.projectId;
+
+    return rawProjectId ? String(rawProjectId) : '';
+  }
+
+  private getProjectEmailPreferenceKey(type: any): ProjectEmailPreferenceKey | null {
+    const normalized = String(type || '').toLowerCase();
+
+    if (normalized.includes('task_assigned') || normalized.includes('task assigned')) {
+      return 'taskAssigned';
+    }
+    if (
+      normalized.includes('task_completed') ||
+      normalized.includes('task completed') ||
+      normalized === 'xp_gained'
+    ) {
+      return 'taskCompleted';
+    }
+    if (normalized.includes('announcement')) return 'announcements';
+    if (normalized.includes('mention')) return 'mentions';
+    if (
+      normalized.includes('deadline') ||
+      normalized.includes('due_soon') ||
+      normalized.includes('due_soom') ||
+      normalized.includes('overdue')
+    ) {
+      return 'deadlines';
+    }
+
+    return null;
+  }
+
+  private normalizeProjectEmailPreferences(value: any): ProjectEmailPreferences {
+    const normalized = { ...DEFAULT_PROJECT_EMAIL_PREFERENCES };
+
+    for (const key of Object.keys(normalized) as Array<keyof ProjectEmailPreferences>) {
+      if (typeof value?.[key] === 'boolean') normalized[key] = value[key];
+    }
+
+    return normalized;
+  }
+
+  private async getProjectEmailPreferences(
+    projectId: string,
+    userId: string,
+  ): Promise<ProjectEmailPreferences | null> {
+    if (!this.projectModel || !projectId || !Types.ObjectId.isValid(projectId)) return null;
+
+    try {
+      const project: any = await this.projectModel
+        .findById(projectId)
+        .select({ ownerId: 1, owner: 1, members: 1 })
+        .lean();
+
+      if (!project) return null;
+
+      const member = (Array.isArray(project.members) ? project.members : []).find((candidate: any) => {
+        const candidateId = candidate?.userId?._id || candidate?.userId || candidate?.user?._id || candidate?.user;
+        return String(candidateId || '') === String(userId);
+      });
+
+      if (member) return this.normalizeProjectEmailPreferences(member.preferences);
+
+      const ownerId = project?.ownerId?._id || project?.ownerId || project?.owner?._id || project?.owner;
+      if (String(ownerId || '') === String(userId)) {
+        return this.normalizeProjectEmailPreferences(null);
+      }
+    } catch (error: any) {
+      this.logger.warn(
+        `Project email preference lookup failed: project=${projectId} user=${userId} ${error?.message || error}`,
+      );
+    }
+
+    return null;
+  }
+
+  private async projectAllowsImmediateEmail(
+    notification: NotificationDocument,
+    userId: string,
+  ): Promise<boolean> {
+    const projectId = this.getProjectIdFromNotification(notification);
+    const preferenceKey = this.getProjectEmailPreferenceKey(notification?.type);
+
+    if (!projectId || !preferenceKey) return true;
+
+    const preferences = await this.getProjectEmailPreferences(projectId, userId);
+    return !preferences || preferences[preferenceKey] !== false;
+  }
+
+  async filterEmailDigestByProjectPreferences(
+    userId: string,
+    notifications: any[],
+    frequency: 'daily' | 'weekly',
+  ): Promise<any[]> {
+    const cache = new Map<string, ProjectEmailPreferences | null>();
+    const filtered: any[] = [];
+
+    for (const notification of notifications || []) {
+      const projectId = this.getProjectIdFromNotification(notification);
+      if (!projectId) {
+        filtered.push(notification);
+        continue;
+      }
+
+      if (!cache.has(projectId)) {
+        cache.set(projectId, await this.getProjectEmailPreferences(projectId, userId));
+      }
+
+      const preferences = cache.get(projectId);
+      if (!preferences) {
+        filtered.push(notification);
+        continue;
+      }
+
+      const preferenceKey = this.getProjectEmailPreferenceKey(notification?.type);
+      if (preferenceKey && preferences[preferenceKey] === false) continue;
+      if (frequency === 'weekly' && preferences.weeklyDigest !== true) continue;
+
+      filtered.push(notification);
+    }
+
+    return filtered;
+  }
+
   /**
    * ✅ Phase 12: Fan-out notification to email and SMS channels
-   * Respects user preferences. Non-blocking — failures are logged, not thrown.
+   * Respects global channel settings and per-user project email preferences.
    */
   private async fanOutToChannels(notification: NotificationDocument): Promise<void> {
     if (!this.userModel) return;
@@ -524,15 +676,19 @@ export class NotificationsService {
     const priority = notification.priority;
 
     // ── EMAIL ──────────────────────────────────────────────────────────────
-    // Send email only when EmailService + user preferences allow it.
-    // Follower public-loop notifications are explicitly marked through
-    // data.emailFanoutEligible so this path is intentional and auditable.
+    // Preserve the existing fan-out eligibility rules, then apply the current
+    // member's project-specific preference before EmailService's global gate.
     const isFollowerEmailEligible =
       notification.type === NotificationType.PROJECT_SHIP_UPDATE ||
       notification.type === NotificationType.PROJECT_MILESTONE_REACHED ||
       (notification as any)?.data?.emailFanoutEligible === true;
+    const isEmailFanoutEligible =
+      isFollowerEmailEligible ||
+      notification.priority === NotificationPriority.HIGH ||
+      notification.priority === NotificationPriority.URGENT;
+    const projectAllowsEmail = await this.projectAllowsImmediateEmail(notification, userId);
 
-    if (this.emailService && (isFollowerEmailEligible || notification.priority === NotificationPriority.HIGH || notification.priority === NotificationPriority.URGENT)) {
+    if (this.emailService && isEmailFanoutEligible && projectAllowsEmail) {
       try {
         await this.emailService.sendNotification(user, {
           type: notifType,

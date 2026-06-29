@@ -696,6 +696,22 @@ export class ProjectsController {
     };
   }
 
+  @Get(':id/preferences')
+  @ApiOperation({ summary: 'Get the current user notification preferences for a project' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  async getPreferences(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const preferences = await this.projectsService.getMemberPreferences(id, userId);
+
+    return {
+      success: true,
+      data: preferences,
+    };
+  }
+
   @Patch(':id/preferences')
   @ApiOperation({ summary: 'Update user-specific notification preferences for a project' })
   @ApiParam({ name: 'id', description: 'Project ID' })

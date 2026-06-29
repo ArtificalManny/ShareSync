@@ -33,6 +33,9 @@ import {
 
 // User schema (for channel verification)
 import { User, UserSchema } from '../user/schemas/user.schema';
+import { Project, ProjectSchema } from '../projects/schemas/project.schema';
+import { Task, TaskSchema } from '../tasks/schemas/task.schema';
+import { DigestScheduler } from './digest.scheduler';
 
 // Optional: Project Follow schema (for follower notifications)
 // Import conditionally to avoid circular dependency issues
@@ -54,6 +57,8 @@ try {
       { name: Notification.name, schema: NotificationSchema },
       { name: NotificationVerification.name, schema: NotificationVerificationSchema },
       { name: User.name, schema: UserSchema },
+      { name: Project.name, schema: ProjectSchema },
+      { name: Task.name, schema: TaskSchema },
       // Conditionally include ProjectFollow if available
       ...(ProjectFollowImport ? [ProjectFollowImport] : []),
     ]),
@@ -92,6 +97,7 @@ try {
     EmailService,
     SmsService,
     NotificationPolicy,
+    DigestScheduler,
   ],
   exports: [
     NotificationsService,

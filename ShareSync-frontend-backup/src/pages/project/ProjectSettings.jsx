@@ -43,6 +43,25 @@ function resolveProjectAssetUrl(value) {
   return trimmed;
 }
 
+const DEFAULT_NOTIFICATION_SETTINGS = {
+  taskAssigned: true,
+  taskCompleted: true,
+  announcements: true,
+  mentions: true,
+  deadlines: true,
+  weeklyDigest: false,
+};
+
+function normalizeNotificationSettings(value) {
+  const normalized = { ...DEFAULT_NOTIFICATION_SETTINGS };
+
+  for (const key of Object.keys(normalized)) {
+    if (typeof value?.[key] === 'boolean') normalized[key] = value[key];
+  }
+
+  return normalized;
+}
+
 
 /**
  * ProjectSettings - Project-specific settings page
@@ -67,14 +86,11 @@ const ProjectSettings = () => {
     description: ''
   });
 
-  const [notificationSettings, setNotificationSettings] = useState({
-    taskAssigned: true,
-    taskCompleted: true,
-    announcements: true,
-    mentions: true,
-    deadlines: true,
-    weeklyDigest: false
-  });
+  const [notificationSettings, setNotificationSettings] = useState(
+    DEFAULT_NOTIFICATION_SETTINGS
+  );
+  const [notificationLoading, setNotificationLoading] = useState(true);
+  const [notificationSaving, setNotificationSaving] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [uploadingBranding, setUploadingBranding] = useState(false);
@@ -84,7 +100,7 @@ const ProjectSettings = () => {
   const bannerFileInputRef = useRef(null);
 
   // 1. DETERMINE ROLE & PERMISSIONS
-  const currentUserId = user?.id ? String(user.id) : '';
+  const currentUserId = user?.id || user?._id ? String(user.id || user._id) : '';
   const rawOwnerId =
     project?.ownerId?._id ||
     project?.ownerId ||
@@ -114,17 +130,45 @@ const ProjectSettings = () => {
         description: project.description || ''
       });
 
-      setNotificationSettings({
-        taskAssigned: true,
-        taskCompleted: true,
-        announcements: true,
-        mentions: true,
-        deadlines: true,
-        weeklyDigest: false,
-        ...(currentMember?.preferences || {})
-      });
     }
-  }, [project, currentMember]);
+  }, [project]);
+
+  useEffect(() => {
+    if (!id || !currentUserId) return;
+
+    let cancelled = false;
+
+    const loadNotificationPreferences = async () => {
+      setNotificationLoading(true);
+
+      try {
+        const response = await client.get(`/projects/${id}/preferences`);
+        const savedPreferences = response?.data?.data ?? response?.data ?? {};
+
+        if (!cancelled) {
+          setNotificationSettings(normalizeNotificationSettings(savedPreferences));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('[ProjectSettings] Failed to load notification preferences:', error);
+          setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
+          toast({
+            title: 'Could not load notification preferences',
+            description: error?.response?.data?.message || error?.message,
+            variant: 'error',
+          });
+        }
+      } finally {
+        if (!cancelled) setNotificationLoading(false);
+      }
+    };
+
+    loadNotificationPreferences();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, currentUserId]);
 
   // 3. API ACTIONS
   const handleSaveProject = async () => {
@@ -180,20 +224,51 @@ const ProjectSettings = () => {
     }
   };
 
-  const handleSaveNotifications = async () => {
-    setSaving(true);
+  const saveNotificationPreferences = async (nextSettings, previousSettings = null) => {
+    setNotificationSaving(true);
+
     try {
-      await client.patch(`/projects/${id}/preferences`, notificationSettings);
-      toast({ title: '🔔 Preferences saved!', variant: 'success' });
-      refresh(); // Reload data via hook
+      const response = await client.patch(
+        `/projects/${id}/preferences`,
+        normalizeNotificationSettings(nextSettings),
+      );
+      const savedPreferences = response?.data?.data ?? response?.data ?? nextSettings;
+      setNotificationSettings(normalizeNotificationSettings(savedPreferences));
+      return true;
     } catch (error) {
+      if (previousSettings) {
+        setNotificationSettings(previousSettings);
+      }
+
       toast({
         title: 'Failed to save preferences',
-        description: error.response?.data?.message || error.message,
-        variant: 'error'
+        description: error?.response?.data?.message || error?.message,
+        variant: 'error',
       });
+      return false;
     } finally {
-      setSaving(false);
+      setNotificationSaving(false);
+    }
+  };
+
+  const handleNotificationToggle = async (key, checked) => {
+    if (notificationLoading || notificationSaving) return;
+
+    const previousSettings = notificationSettings;
+    const nextSettings = {
+      ...notificationSettings,
+      [key]: checked,
+    };
+
+    setNotificationSettings(nextSettings);
+    await saveNotificationPreferences(nextSettings, previousSettings);
+  };
+
+  const handleSaveNotifications = async () => {
+    const saved = await saveNotificationPreferences(notificationSettings);
+
+    if (saved) {
+      toast({ title: 'Notification preferences saved', variant: 'success' });
     }
   };
 
@@ -497,8 +572,9 @@ const ProjectSettings = () => {
                   <input
                     type="checkbox"
                     checked={value}
-                    onChange={(e) => setNotificationSettings({ ...notificationSettings, [key]: e.target.checked })}
-                    className="sr-only peer"
+                    disabled={notificationLoading || notificationSaving}
+                    onChange={(e) => handleNotificationToggle(key, e.target.checked)}
+                    className="sr-only peer disabled:cursor-not-allowed"
                   />
                   <div className="w-12 h-6 bg-slate-700 rounded-full peer-checked:bg-blue-500 transition-all" />
                   <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6" />
@@ -509,11 +585,15 @@ const ProjectSettings = () => {
 
           <button
             onClick={handleSaveNotifications}
-            disabled={saving}
+            disabled={notificationLoading || notificationSaving}
             className="project-notification-save-btn w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
           >
             <Save className="w-5 h-5" />
-            {saving ? 'Saving...' : 'Save Preferences'}
+            {notificationLoading
+              ? 'Loading preferences...'
+              : notificationSaving
+                ? 'Saving...'
+                : 'Save Preferences'}
           </button>
         </div>
 
