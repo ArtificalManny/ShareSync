@@ -10,6 +10,7 @@ import { DailyFocusService } from './daily-focus.service';
 
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
+import { Milestone, MilestoneSchema } from '../milestones/schemas/milestone.schema';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Task, TaskSchema } from '../tasks/schemas/task.schema';
       { name: DailyFocusPlan.name, schema: DailyFocusPlanSchema },
       { name: Project.name, schema: ProjectSchema },
       { name: Task.name, schema: TaskSchema },
+      { name: Milestone.name, schema: MilestoneSchema },
     ]),
   ],
   controllers: [DailyFocusController],

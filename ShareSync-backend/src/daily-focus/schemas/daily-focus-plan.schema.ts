@@ -5,7 +5,7 @@ export type DailyFocusPlanDocument = HydratedDocument<DailyFocusPlan>;
 
 export type DailyFocusPlanStatus = 'suggested' | 'accepted' | 'completed';
 export type DailyFocusMoveStatus = 'todo' | 'done' | 'dismissed';
-export type DailyFocusSourceType = 'task' | 'project' | 'custom' | 'system';
+export type DailyFocusSourceType = 'task' | 'milestone' | 'project' | 'custom' | 'system';
 
 @Schema({ _id: false })
 export class DailyFocusMove {
@@ -14,7 +14,7 @@ export class DailyFocusMove {
 
   @Prop({
     type: String,
-    enum: ['task', 'project', 'custom', 'system'],
+    enum: ['task', 'milestone', 'project', 'custom', 'system'],
     default: 'task',
   })
   sourceType: DailyFocusSourceType;
@@ -42,6 +42,15 @@ export class DailyFocusMove {
 
   @Prop({ type: Number, default: 0 })
   estimatedMomentum?: number;
+
+  @Prop({ type: Date })
+  deadline?: Date;
+
+  @Prop({ type: Number, min: 0, max: 100 })
+  progress?: number;
+
+  @Prop({ type: String, default: '' })
+  projectColor?: string;
 
   @Prop({
     type: String,

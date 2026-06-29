@@ -10,7 +10,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getUserFocusMoves, completeFocusMove, snoozeFocusMove } from '../api/focusEngine';
-import { calculateImpactSummary, getTopMoves } from '../utils/focusRanking';
+import { calculateImpactSummary } from '../utils/focusRanking';
 
 const FocusEngineContext = createContext(null);
 
@@ -83,12 +83,16 @@ export function FocusEngineProvider({ children, autoRefreshInterval = 30000 }) {
   }, [fetchMoves]);
 
   // Complete a move
-  const completeMove = useCallback(async (moveId) => {
+  const completeMove = useCallback(async (moveId, move) => {
     try {
-      await completeFocusMove(moveId);
+      await completeFocusMove(move || moveId);
       
       // Optimistic update
-      setMoves(prev => prev.filter(m => m.id !== moveId));
+      setMoves(prev => prev.filter(m =>
+        String(m.id) !== String(move?.id || moveId) &&
+        String(m.sourceId || '') !== String(move?.sourceId || moveId) &&
+        String(m.taskId || '') !== String(move?.taskId || moveId)
+      ));
       
       // Dispatch event for other components
       window.dispatchEvent(new CustomEvent('focus-move-complete', { 
@@ -106,12 +110,16 @@ export function FocusEngineProvider({ children, autoRefreshInterval = 30000 }) {
   }, [fetchMoves]);
 
   // Snooze a move
-  const snoozeMove = useCallback(async (moveId, hours = 4) => {
+  const snoozeMove = useCallback(async (moveId, hours = 4, move) => {
     try {
-      await snoozeFocusMove(moveId, hours);
+      await snoozeFocusMove(move || moveId, hours);
       
       // Optimistic update - remove from current list
-      setMoves(prev => prev.filter(m => m.id !== moveId));
+      setMoves(prev => prev.filter(m =>
+        String(m.id) !== String(move?.id || moveId) &&
+        String(m.sourceId || '') !== String(move?.sourceId || moveId) &&
+        String(m.taskId || '') !== String(move?.taskId || moveId)
+      ));
       
       // Refresh to get updated list
       setTimeout(() => fetchMoves(true), 500);
@@ -125,7 +133,7 @@ export function FocusEngineProvider({ children, autoRefreshInterval = 30000 }) {
 
   // Get top N moves
   const getTopNMoves = useCallback((count = 3) => {
-    return getTopMoves(moves, count);
+    return moves.slice(0, count);
   }, [moves]);
 
   // Computed values

@@ -10,21 +10,30 @@ import {
   completeFocusMove,
   snoozeFocusMove 
 } from '../api/focusEngine';
-import { rankMoves, calculateImpactSummary, getUrgencyLevel } from '../utils/focusRanking';
+import { calculateImpactSummary, getUrgencyLevel } from '../utils/focusRanking';
 
 const normalizeTaskToMove = (task) => {
   if (!task) return null;
-  const validId = task._id || task.id || task.taskId;
+  const sourceType = String(task.sourceType || '').toLowerCase();
+  const validId = task.id || task._id || task.taskId || task.sourceId;
+  const sourceId = task.sourceId || task.taskId || task._id || validId;
+  const projectId = task.projectId || task.project?.id || task.project?._id;
+
   return {
     ...task,
     id: validId,
-    taskId: validId,
+    sourceId,
+    taskId: sourceType === 'milestone' ? undefined : (task.taskId || sourceId),
     title: task.title || 'Untitled Move',
     deadline: task.dueDate || task.deadline,
-    momentum: task.xpValue || task.momentum || task.storyPoints * 10 || 25,
+    momentum: task.xpValue || task.momentum || task.estimatedMomentum || task.storyPoints * 10 || 25,
     unblocks: task.blockingCount || task.unblocks || (task.blocks ? task.blocks.length : 0),
-    type: task.type || 'default',
-    project: task.projectId || task.project,
+    type: sourceType === 'milestone' ? 'ship' : (task.type || 'default'),
+    project: task.project && typeof task.project === 'object'
+      ? task.project
+      : projectId
+        ? { id: projectId, name: task.projectName || 'Project', color: task.projectColor || '#8B5CF6' }
+        : undefined,
   };
 };
 
@@ -41,7 +50,7 @@ export function useUserFocusMoves(options = {}) {
       const data = await getUserFocusMoves(count);
       const rawArray = Array.isArray(data) ? data : (data?.tasks || data?.data || []);
       const normalizedMoves = rawArray.map(normalizeTaskToMove).filter(Boolean);
-      setMoves(rankMoves(normalizedMoves).slice(0, count));
+      setMoves(normalizedMoves.slice(0, count));
     } catch (err) {
       setError(err.message || 'Failed to load focus moves');
     } finally {
@@ -49,16 +58,19 @@ export function useUserFocusMoves(options = {}) {
     }
   }, [count]);
 
-  const completeMove = useCallback(async (moveId) => {
+  const completeMove = useCallback(async (moveId, move) => {
     if (!moveId) return;
 
-    // 1. Instantly remove from UI for the dopamine hit
-    setMoves(prev => prev.filter(m => m.id !== moveId && m.taskId !== moveId));
+    // 1. Instantly remove from UI.
+    setMoves(prev => prev.filter(m =>
+      String(m.id) !== String(move?.id || moveId) &&
+      String(m.sourceId || '') !== String(move?.sourceId || moveId) &&
+      String(m.taskId || '') !== String(move?.taskId || moveId)
+    ));
     
-    // 2. Background sync with server
+    // 2. Background sync with the correct source.
     try {
-      const cleanId = typeof moveId === 'object' ? (moveId._id || moveId.id) : moveId.toString();
-      await completeFocusMove(cleanId);
+      await completeFocusMove(move || moveId);
       
       // We ONLY refresh if the server successfully processed the XP/Gamification
       await fetchMoves(true); 
@@ -69,13 +81,16 @@ export function useUserFocusMoves(options = {}) {
     }
   }, [fetchMoves]);
 
-  const snoozeMove = useCallback(async (moveId, hours) => {
+  const snoozeMove = useCallback(async (moveId, hours, move) => {
     if (!moveId) return;
-    setMoves(prev => prev.filter(m => m.id !== moveId && m.taskId !== moveId));
+    setMoves(prev => prev.filter(m =>
+      String(m.id) !== String(move?.id || moveId) &&
+      String(m.sourceId || '') !== String(move?.sourceId || moveId) &&
+      String(m.taskId || '') !== String(move?.taskId || moveId)
+    ));
     
     try {
-      const cleanId = typeof moveId === 'object' ? (moveId._id || moveId.id) : moveId.toString();
-      await snoozeFocusMove(cleanId, hours);
+      await snoozeFocusMove(move || moveId, hours);
       await fetchMoves(true);
     } catch (err) {
       console.warn("Server snooze failed, but UI state preserved.", err);

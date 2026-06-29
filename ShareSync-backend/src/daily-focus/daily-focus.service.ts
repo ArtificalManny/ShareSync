@@ -15,6 +15,7 @@ import {
 } from './schemas/daily-focus-plan.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
+import { Milestone, MilestoneDocument } from '../milestones/schemas/milestone.schema';
 
 type DailyFocusResponse = {
   dateKey: string;
@@ -37,6 +38,9 @@ export class DailyFocusService {
 
     @InjectModel(Task.name)
     private readonly taskModel: Model<TaskDocument>,
+
+    @InjectModel(Milestone.name)
+    private readonly milestoneModel: Model<MilestoneDocument>,
   ) {}
 
   async getToday(
@@ -248,25 +252,15 @@ export class DailyFocusService {
     const userObjectId = this.toObjectId(userId, 'Invalid userId');
     const dateKey = this.getDateKey(timezone);
 
-    const plan = await this.dailyFocusPlanModel
-      .findOne({ userId: userObjectId, dateKey })
-      .exec();
-
-    if (!plan) {
-      throw new NotFoundException('Daily focus plan not found');
-    }
-
-    const before = plan.selectedMoves.length;
+    const plan = await this.getOrCreatePlan(userObjectId, dateKey, timezone);
 
     plan.selectedMoves = (plan.selectedMoves || []).filter(
       (item) => item.id !== moveId,
     );
 
-    if (plan.selectedMoves.length === before) {
-      plan.dismissedSuggestionIds = Array.from(
-        new Set([...(plan.dismissedSuggestionIds || []), moveId]),
-      );
-    }
+    plan.dismissedSuggestionIds = Array.from(
+      new Set([...(plan.dismissedSuggestionIds || []), moveId]),
+    );
 
     if (!plan.selectedMoves.length) {
       plan.status = 'suggested';
@@ -360,7 +354,7 @@ export class DailyFocusService {
   ): Promise<DailyFocusMove[]> {
     const projects = await this.projectModel
       .find(this.buildUserProjectQuery(userObjectId))
-      .select('_id title name status updatedAt createdAt owner ownerId members')
+      .select('_id title name color status updatedAt createdAt owner ownerId members')
       .sort({ updatedAt: -1 })
       .limit(50)
       .lean()
@@ -376,6 +370,13 @@ export class DailyFocusService {
       projects.map((project: any) => [
         String(project._id),
         String(project.title || project.name || 'Untitled Project'),
+      ]),
+    );
+
+    const projectColorMap = new Map(
+      projects.map((project: any) => [
+        String(project._id),
+        String(project.color || '#8B5CF6'),
       ]),
     );
 
@@ -405,13 +406,54 @@ export class DailyFocusService {
       .lean()
       .exec();
 
+    const milestones = await this.milestoneModel
+      .find({
+        projectId: { $in: projectIds },
+        status: {
+          $nin: ['completed', 'complete', 'done', 'COMPLETED', 'COMPLETE', 'DONE'],
+        },
+        $and: [
+          {
+            $or: [
+              { completedAt: { $exists: false } },
+              { completedAt: null },
+            ],
+          },
+          {
+            $or: [
+              { progress: { $exists: false } },
+              { progress: null },
+              { progress: { $lt: 100 } },
+            ],
+          },
+        ],
+      })
+      .select(
+        '_id title description projectId targetDate status progress blockedBy dependsOn createdBy updatedAt createdAt',
+      )
+      .sort({ targetDate: 1, updatedAt: -1 })
+      .limit(100)
+      .lean()
+      .exec();
+
     const dismissed = new Set(dismissedSuggestionIds || []);
 
     const taskSuggestions = tasks
-      .map((task: any) => this.taskToSuggestion(task, userObjectId, projectMap))
+      .map((task: any) => this.taskToSuggestion(task, userObjectId, projectMap, projectColorMap))
       .filter((move) => move.title && !dismissed.has(move.id));
 
-    const ranked = taskSuggestions.sort((a, b) => {
+    const milestoneSuggestions = milestones
+      .map((milestone: any) =>
+        this.milestoneToSuggestion(
+          milestone,
+          userObjectId,
+          projectMap,
+          projectColorMap,
+        ),
+      )
+      .filter((move) => move.title && !dismissed.has(move.id));
+
+    const ranked = [...taskSuggestions, ...milestoneSuggestions].sort((a, b) => {
       return (b.score || 0) - (a.score || 0);
     });
 
@@ -436,6 +478,7 @@ export class DailyFocusService {
     task: any,
     userObjectId: Types.ObjectId,
     projectMap: Map<string, string>,
+    projectColorMap: Map<string, string>,
   ): DailyFocusMove {
     const taskId = String(task._id);
     const projectId = task.projectId ? String(task.projectId) : '';
@@ -514,6 +557,97 @@ export class DailyFocusService {
       priority,
       score,
       estimatedMomentum: Math.max(10, Math.min(40, Math.round(score / 2))),
+      deadline: dueAt || undefined,
+      projectColor: projectColorMap.get(projectId) || '#8B5CF6',
+      status: 'todo',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  private milestoneToSuggestion(
+    milestone: any,
+    userObjectId: Types.ObjectId,
+    projectMap: Map<string, string>,
+    projectColorMap: Map<string, string>,
+  ): DailyFocusMove {
+    const milestoneId = String(milestone._id);
+    const projectId = milestone.projectId ? String(milestone.projectId) : '';
+    const status = String(milestone.status || 'planned').toLowerCase();
+    const progressValue = Number(milestone.progress || 0);
+    const progress = Number.isFinite(progressValue)
+      ? Math.max(0, Math.min(99, progressValue))
+      : 0;
+
+    let score = 18;
+    const reasons: string[] = [];
+
+    if (status === 'at_risk') {
+      score += 35;
+      reasons.push('at risk');
+    } else if (status === 'in_progress') {
+      score += 22;
+      reasons.push('already in progress');
+    }
+
+    if (progress > 0) {
+      score += Math.min(15, Math.round(progress / 10));
+      reasons.push(`${progress}% complete`);
+    }
+
+    const blockedCount = Array.isArray(milestone.blockedBy)
+      ? milestone.blockedBy.length
+      : 0;
+
+    if (blockedCount > 0) {
+      score += 15;
+      reasons.push('waiting on dependencies');
+    }
+
+    const deadline = milestone.targetDate;
+
+    if (deadline) {
+      const msUntilDue = new Date(deadline).getTime() - Date.now();
+      const daysUntilDue = msUntilDue / (1000 * 60 * 60 * 24);
+
+      if (daysUntilDue < 0) {
+        score += 35;
+        reasons.push('past its target date');
+      } else if (daysUntilDue <= 1) {
+        score += 30;
+        reasons.push('due within a day');
+      } else if (daysUntilDue <= 3) {
+        score += 20;
+        reasons.push('due within three days');
+      } else if (daysUntilDue <= 7) {
+        score += 10;
+        reasons.push('due this week');
+      }
+    }
+
+    if (this.sameObjectId(milestone.createdBy, userObjectId)) {
+      score += 5;
+    }
+
+    const reason =
+      reasons.length > 0
+        ? `Roadmap milestone recommended because it is ${reasons.join(', ')}.`
+        : 'Unfinished Roadmap milestone from one of your active projects.';
+
+    return {
+      id: `milestone_${milestoneId}`,
+      sourceType: 'milestone',
+      sourceId: new Types.ObjectId(milestoneId),
+      projectId: milestone.projectId,
+      projectName: projectMap.get(projectId) || '',
+      projectColor: projectColorMap.get(projectId) || '#8B5CF6',
+      title: String(milestone.title || 'Untitled milestone'),
+      reason,
+      priority: status === 'at_risk' ? 'high' : 'normal',
+      score,
+      estimatedMomentum: Math.max(10, Math.min(40, Math.round(score / 2))),
+      deadline: deadline || undefined,
+      progress,
       status: 'todo',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -550,6 +684,11 @@ export class DailyFocusService {
             { owner: userObjectId },
             { createdBy: userObjectId },
             { createdById: userObjectId },
+            { userId: userObjectId },
+            { members: userObjectId },
+            { memberIds: userObjectId },
+            { collaborators: userObjectId },
+            { sharedWith: userObjectId },
             { 'members.userId': userObjectId },
             { 'members.user': userObjectId },
             { 'members.memberId': userObjectId },

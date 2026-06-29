@@ -10,6 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import client from './client';
+import { updateMilestone } from './milestones';
 
 /**
  * Safely unwrap API responses like:
@@ -76,6 +77,39 @@ const normalizeDailyFocusPlan = (plan) => {
   };
 };
 
+const normalizeRecommendedMove = (move) => {
+  if (!move) return null;
+
+  const sourceType = String(move.sourceType || '').toLowerCase();
+  const sourceId = move.sourceId?._id || move.sourceId || move.taskId || move._id || '';
+  const id = String(move.id || `${sourceType || 'move'}_${sourceId}`);
+  const projectId = move.projectId?._id || move.projectId || move.project?.id || move.project?._id || '';
+  const projectName = move.projectName || move.project?.name || move.project?.title || '';
+  const projectColor = move.projectColor || move.project?.color || '#8B5CF6';
+
+  return {
+    ...move,
+    id,
+    sourceId: sourceId ? String(sourceId) : '',
+    taskId: sourceType === 'task' && sourceId ? String(sourceId) : move.taskId,
+    sourceType,
+    title: move.title || 'Untitled move',
+    deadline: move.deadline || move.targetDate || move.dueDate,
+    momentum: Number(move.momentum ?? move.estimatedMomentum ?? 0),
+    impact: move.impact || move.reason || '',
+    type: sourceType === 'milestone' ? 'ship' : (move.type || 'default'),
+    projectId: projectId ? String(projectId) : '',
+    project: projectId
+      ? { id: String(projectId), name: projectName || 'Project', color: projectColor }
+      : move.project,
+  };
+};
+
+const isOpenRecommendedMove = (move) => {
+  const status = String(move?.status || '').toLowerCase();
+  return status !== 'done' && status !== 'completed' && status !== 'complete' && status !== 'dismissed';
+};
+
 /**
  * Get the logged-in user's top focus moves.
  *
@@ -86,19 +120,34 @@ const normalizeDailyFocusPlan = (plan) => {
  */
 export async function getUserFocusMoves(count = 3) {
   try {
+    const plan = await getTodayDailyFocus();
+    const selected = Array.isArray(plan?.selectedMoves) ? plan.selectedMoves : [];
+    const suggestions = Array.isArray(plan?.suggestions) ? plan.suggestions : [];
+    const source = selected.length > 0 ? selected : suggestions;
+
+    const recommendations = source
+      .filter(isOpenRecommendedMove)
+      .filter((move) => ['task', 'milestone'].includes(String(move?.sourceType || '').toLowerCase()))
+      .map(normalizeRecommendedMove)
+      .filter(Boolean)
+      .slice(0, count);
+
+    if (recommendations.length > 0) {
+      return recommendations;
+    }
+  } catch (error) {
+    console.warn('[FocusEngine API] Daily Focus recommendations unavailable:', error?.message || error);
+  }
+
+  try {
     const res = await client.get('/tasks/priorities', {
       params: { limit: count },
     });
 
     const tasks = extractArray(res.data || res).filter(isOpenTask);
-
-    return tasks.slice(0, count);
+    return tasks.map(normalizeRecommendedMove).filter(Boolean).slice(0, count);
   } catch (error) {
     console.warn('[FocusEngine API] User focus unavailable:', error?.message || error);
-
-    // Do not return mock data here.
-    // Do not fetch broad /tasks here.
-    // A fresh user should see "All caught up" / empty state.
     return [];
   }
 }
@@ -140,9 +189,24 @@ export async function getProjectFocusMoves(projectId, count = 3) {
  * - This expects a real task ID.
  * - Daily Focus moves should use completeDailyFocusMove(moveId).
  */
-export async function completeFocusMove(moveId) {
+export async function completeFocusMove(moveOrId) {
+  const move = moveOrId && typeof moveOrId === 'object' ? moveOrId : null;
+  const sourceType = String(move?.sourceType || '').toLowerCase();
+  const sourceId = move?.sourceId || move?.taskId || move?._id || move?.id || moveOrId;
+
+  if (!sourceId) {
+    throw new Error('completeFocusMove requires a source id.');
+  }
+
   try {
-    const response = await client.patch(`/tasks/${moveId}/complete`, {});
+    if (sourceType === 'milestone') {
+      return await updateMilestone(String(sourceId), {
+        status: 'completed',
+        progress: 100,
+      });
+    }
+
+    const response = await client.patch(`/tasks/${String(sourceId)}/complete`, {});
     return response.data;
   } catch (error) {
     console.error('[FocusEngine API] Error completing move:', error);
@@ -153,9 +217,17 @@ export async function completeFocusMove(moveId) {
 /**
  * Snooze a move.
  */
-export async function snoozeFocusMove(moveId, hours = 4) {
+export async function snoozeFocusMove(moveOrId, hours = 4) {
+  const move = moveOrId && typeof moveOrId === 'object' ? moveOrId : null;
+  const recommendationId = move?.id || moveOrId;
+  const sourceType = String(move?.sourceType || '').toLowerCase();
+
   try {
-    const response = await client.post(`/focus/moves/${moveId}/snooze`, { hours });
+    if (recommendationId && ['task', 'milestone'].includes(sourceType)) {
+      return await deleteDailyFocusMove(String(recommendationId));
+    }
+
+    const response = await client.post(`/focus/moves/${String(recommendationId)}/snooze`, { hours });
     return response.data;
   } catch (error) {
     console.error('[FocusEngine API] Error snoozing move:', error);

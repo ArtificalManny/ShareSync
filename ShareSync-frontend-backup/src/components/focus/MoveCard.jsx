@@ -46,13 +46,17 @@ function isDailyFocusMove(move) {
   return Boolean(
     move?.isDailyFocusMove ||
       id.startsWith('task_') ||
+      id.startsWith('milestone_') ||
       id.startsWith('project_') ||
       id.startsWith('custom_')
   );
 }
 
 function getMoveTargetId(move) {
-  return move?.taskId || move?._id || move?.id || move?.sourceId || '';
+  if (String(move?.sourceType || '').toLowerCase() === 'milestone') {
+    return move?.sourceId || move?._id || move?.id || '';
+  }
+  return move?.taskId || move?.sourceId || move?._id || move?.id || '';
 }
 
 function getMomentumValue(move) {
@@ -121,14 +125,14 @@ export default function MoveCard({
     if (!targetId || !onComplete) return;
 
     if (dailyFocusMove) {
-      await onComplete(targetId);
+      await onComplete(targetId, move);
       return;
     }
 
     setIsExiting(true);
 
     setTimeout(async () => {
-      await onComplete(targetId);
+      await onComplete(targetId, move);
     }, 300);
   }, [move, onComplete, isExiting, moveDone, dailyFocusMove]);
 
@@ -137,7 +141,7 @@ export default function MoveCard({
     setIsExiting(true);
     setTimeout(() => {
       const targetId = getMoveTargetId(move);
-      if (targetId && onSnooze) onSnooze(targetId, 4);
+      if (targetId && onSnooze) onSnooze(targetId, 4, move);
     }, 300);
     setShowMenu(false);
   }, [move, onSnooze]);
@@ -294,11 +298,11 @@ export default function MoveCard({
                       <Play className="w-4 h-4 text-brand" /> Start working
                     </button>
                     <button onClick={handleSnooze} className="w-full px-4 py-2.5 text-left text-[13px] font-medium text-gray-200 hover:bg-gray-800 hover:text-white flex items-center gap-3 transition-colors">
-                      <SkipForward className="w-4 h-4 text-warning" /> Snooze 4 hours
+                      <SkipForward className="w-4 h-4 text-warning" /> {dailyFocusMove ? 'Hide for today' : 'Snooze 4 hours'}
                     </button>
                     <div className="mx-3 my-1.5 border-t border-gray-700/50" />
                     <button onClick={handleFallbackClick} className="w-full px-4 py-2.5 text-left text-[13px] font-medium text-gray-200 hover:bg-gray-800 hover:text-white flex items-center gap-3 transition-colors">
-                      <ArrowUpRight className="w-4 h-4 text-cyan-400" /> View task details
+                      <ArrowUpRight className="w-4 h-4 text-cyan-400" /> {move?.sourceType === 'milestone' ? 'View milestone' : 'View task details'}
                     </button>
                   </div>,
                   document.body

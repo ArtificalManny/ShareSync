@@ -135,12 +135,12 @@ export default function YourMovesToday({
     setTimeout(() => setIsManualRefreshing(false), 500);
   }, [refresh]);
 
-  const handleComplete = useCallback(async (moveId) => {
-    if (completeMove) await completeMove(moveId);
+  const handleComplete = useCallback(async (moveId, move) => {
+    if (completeMove) await completeMove(moveId, move);
   }, [completeMove]);
 
-  const handleSnooze = useCallback(async (moveId, hours) => {
-    if (snoozeMove) await snoozeMove(moveId, hours);
+  const handleSnooze = useCallback(async (moveId, hours, move) => {
+    if (snoozeMove) await snoozeMove(moveId, hours, move);
   }, [snoozeMove]);
 
   const isCompact = variant === 'compact' || variant === 'sidebar';
