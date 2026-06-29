@@ -101,6 +101,12 @@ export class SubscriptionsController {
     };
 
     const realProjectIds = await this.projectModel.distinct('_id', projectAccessQuery);
+    const realProjects = realProjectIds.length
+      ? await this.projectModel
+          .find({ _id: { $in: realProjectIds } })
+          .select('_id owner ownerId createdBy members')
+          .lean()
+      : [];
     const realProjectCount = realProjectIds.length;
 
     const storageRows = realProjectIds.length
@@ -120,6 +126,59 @@ export class SubscriptionsController {
       : [];
 
     const realStorageBytes = storageRows?.[0]?.totalBytes || 0;
+
+    const normalizeMemberIdentity = (value: any): string | null => {
+      if (!value) return null;
+
+      if (typeof value === 'string') {
+        return value.includes('@') ? value.toLowerCase() : value;
+      }
+
+      if (value instanceof Types.ObjectId) {
+        return value.toString();
+      }
+
+      if (value._id) return normalizeMemberIdentity(value._id);
+      if (value.userId) return normalizeMemberIdentity(value.userId);
+      if (value.user) return normalizeMemberIdentity(value.user);
+      if (value.email) return String(value.email).toLowerCase();
+
+      if (typeof value.toString === 'function') {
+        const rendered = value.toString();
+        return rendered && rendered !== '[object Object]' ? rendered : null;
+      }
+
+      return null;
+    };
+
+    const getProjectMemberCount = (project: any): number => {
+      const ids = new Set<string>();
+
+      const ownerId = normalizeMemberIdentity(
+        project.ownerId ?? project.owner ?? project.createdBy,
+      );
+
+      if (ownerId) ids.add(ownerId);
+
+      for (const member of project.members || []) {
+        const memberId = normalizeMemberIdentity(
+          member?.userId ??
+            member?.user ??
+            member?._id ??
+            member?.email ??
+            member,
+        );
+
+        if (memberId) ids.add(memberId);
+      }
+
+      return ids.size;
+    };
+
+    const realMaxMembersInProject = realProjects.length
+      ? Math.max(...realProjects.map(getProjectMemberCount))
+      : 0;
+
     const baseUsage = JSON.parse(JSON.stringify(subscription.usage || {}));
 
     return {
@@ -132,8 +191,13 @@ export class SubscriptionsController {
           ...baseUsage,
           projects: realProjectCount,
           storage: realStorageBytes,
+          storageBytes: realStorageBytes,
+          storageUsedBytes: realStorageBytes,
           aiCalls: baseUsage.aiCalls || 0,
           aiCallsThisMonth: baseUsage.aiCallsThisMonth || 0,
+          membersPerProject: realMaxMembersInProject,
+          maxMembersInProject: realMaxMembersInProject,
+          activeMembers: realMaxMembersInProject,
         },
         limits: subscription.limits,
         currentPeriodStart: subscription.currentPeriodStart,

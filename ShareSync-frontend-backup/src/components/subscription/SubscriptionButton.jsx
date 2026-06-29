@@ -28,6 +28,9 @@ const FALLBACK_SUBSCRIPTION = {
     storage: 0,
     storageBytes: 0,
     storageUsedBytes: 0,
+    membersPerProject: 0,
+    maxMembersInProject: 0,
+    activeMembers: 0,
   },
   limits: {
     projects: 10,
@@ -518,7 +521,7 @@ export default function SubscriptionButton() {
   const storageLimit = toNumber(limits.storageBytes, 1024 * 1024 * 1024);
 
   const membersUsed = toNumber(
-    usage.membersPerProject ?? usage.maxMembersInProject ?? subscription?.activeMembers,
+    usage.maxMembersInProject ?? usage.membersPerProject ?? usage.activeMembers ?? subscription?.activeMembers,
     0
   );
   const membersLimit = toNumber(limits.membersPerProject, 5);

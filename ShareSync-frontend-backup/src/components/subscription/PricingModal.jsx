@@ -461,7 +461,9 @@ export default function PricingModal({
 
                     <UsageMeter
                       label="Storage"
-                      current={Math.round((usage.storage || 0) / 1024 / 1024)}
+                      current={Math.round(
+                        (usage.storageBytes ?? usage.storageUsedBytes ?? usage.storage ?? 0) / 1024 / 1024
+                      )}
                       limit={Math.round((limits.storageBytes || 0) / 1024 / 1024)}
                       unit="MB"
                       icon={HardDrive}
@@ -476,7 +478,12 @@ export default function PricingModal({
 
                     <UsageMeter
                       label="Members/Project"
-                      current={usage.membersPerProject || usage.activeMembers || 1}
+                      current={
+                        usage.maxMembersInProject ??
+                        usage.membersPerProject ??
+                        usage.activeMembers ??
+                        0
+                      }
                       limit={limits.membersPerProject}
                       icon={Users}
                     />
