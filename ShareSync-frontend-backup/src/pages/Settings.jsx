@@ -232,7 +232,7 @@ const SETTINGS_SECTIONS = [
 function SettingsNav({ activeSection, onChange }) {
   return (
     <nav className="settings-section-nav lg:sticky lg:top-24">
-      <div className="rounded-[30px] border border-slate-200/80 bg-white/70 p-3 shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04]">
+      <div className="rounded-[30px] border border-slate-200/70 bg-white/70 p-3 shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04]">
         <div className="mb-4 hidden lg:block">
           <div className="relative overflow-hidden rounded-3xl border border-violet-200/70 bg-gradient-to-br from-white via-violet-50 to-fuchsia-50 p-4 shadow-sm dark:border-violet-400/20 dark:from-[#181821] dark:via-[#1d1830] dark:to-[#22162a]">
             <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full bg-violet-400/20 blur-2xl" />
@@ -255,11 +255,11 @@ function SettingsNav({ activeSection, onChange }) {
                   Settings
                 </h2>
 
-                <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
+                <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-zinc-300">
                   Preferences, privacy, notifications, and billing.
                 </p>
 
-                <div className="mt-3 inline-flex items-center rounded-full border border-violet-200/70 bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-violet-600 shadow-sm dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300">
+                <div className="mt-3 inline-flex items-center rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700 shadow-sm ring-1 ring-violet-200/70 dark:bg-white/[0.08] dark:text-violet-200 dark:ring-violet-400/20">
                   6 sections
                 </div>
               </div>
@@ -274,7 +274,7 @@ function SettingsNav({ activeSection, onChange }) {
 
           <div>
             <div className="text-sm font-black text-slate-950 dark:text-white">Settings</div>
-            <div className="text-xs text-slate-500 dark:text-zinc-500">Control center</div>
+            <div className="text-xs text-slate-600 dark:text-zinc-300">Control center</div>
           </div>
         </div>
 
@@ -288,10 +288,10 @@ function SettingsNav({ activeSection, onChange }) {
                 key={section.id}
                 type="button"
                 onClick={() => onChange(section.id)}
-                className={`group relative flex min-w-[205px] items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all duration-200 lg:min-w-0 ${
+                className={`group relative flex min-w-[205px] items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left transition-all duration-200 lg:min-w-0 ${
                   active
-                    ? 'border-violet-300 bg-gradient-to-r from-white via-violet-50 to-fuchsia-50 shadow-md shadow-violet-500/10 ring-1 ring-violet-100 dark:border-violet-400/30 dark:bg-gradient-to-r dark:from-white/[0.08] dark:via-violet-500/10 dark:to-fuchsia-500/10 dark:ring-violet-400/10'
-                    : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-slate-50/80 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]'
+                    ? 'bg-gradient-to-r from-violet-50 via-white to-fuchsia-50 shadow-md shadow-violet-500/10 ring-1 ring-violet-200/70 dark:from-violet-500/15 dark:via-white/[0.08] dark:to-fuchsia-500/10 dark:ring-violet-400/20'
+                    : 'bg-transparent hover:bg-white/75 hover:shadow-sm dark:hover:bg-white/[0.06]'
                 }`}
               >
                 {active && (
@@ -304,8 +304,8 @@ function SettingsNav({ activeSection, onChange }) {
                 <span
                   className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition-all ${
                     active
-                      ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/20'
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.05] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-300'
+                      ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/25'
+                      : 'bg-slate-100 text-slate-500 group-hover:bg-violet-50 group-hover:text-violet-700 dark:bg-white/[0.07] dark:text-zinc-300 dark:group-hover:bg-violet-500/12 dark:group-hover:text-violet-200'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -313,16 +313,22 @@ function SettingsNav({ activeSection, onChange }) {
 
                 <span className="relative min-w-0">
                   <span
-                    className={`block text-sm font-black ${
+                    className={`block text-sm font-black leading-tight ${
                       active
                         ? 'text-slate-950 dark:text-white'
-                        : 'text-slate-700 dark:text-zinc-200'
+                        : 'text-slate-800 dark:text-zinc-100'
                     }`}
                   >
                     {section.label}
                   </span>
 
-                  <span className="mt-0.5 hidden text-xs leading-snug text-slate-500 dark:text-zinc-500 sm:block">
+                  <span
+                    className={`mt-1 hidden text-xs leading-snug sm:block ${
+                      active
+                        ? 'text-slate-600 dark:text-zinc-300'
+                        : 'text-slate-500 dark:text-zinc-400'
+                    }`}
+                  >
                     {section.description}
                   </span>
                 </span>
