@@ -232,47 +232,104 @@ const SETTINGS_SECTIONS = [
 function SettingsNav({ activeSection, onChange }) {
   return (
     <nav className="settings-section-nav lg:sticky lg:top-24">
-      <div className="mb-3 hidden px-1 text-xs font-black uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500 lg:block">
-        Settings
-      </div>
+      <div className="rounded-[30px] border border-slate-200/80 bg-white/70 p-3 shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04]">
+        <div className="mb-4 hidden lg:block">
+          <div className="relative overflow-hidden rounded-3xl border border-violet-200/70 bg-gradient-to-br from-white via-violet-50 to-fuchsia-50 p-4 shadow-sm dark:border-violet-400/20 dark:from-[#181821] dark:via-[#1d1830] dark:to-[#22162a]">
+            <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full bg-violet-400/20 blur-2xl" />
+            <div className="absolute -bottom-9 -left-7 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
 
-      <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
-        {SETTINGS_SECTIONS.map((section) => {
-          const Icon = section.icon;
-          const active = activeSection === section.id;
+            <div className="relative flex items-start gap-3">
+              <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-lg shadow-violet-500/25">
+                <SlidersHorizontal className="h-6 w-6" />
+                <div className="absolute inset-0 rounded-2xl ring-1 ring-white/25" />
+                <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-300 ring-2 ring-white dark:ring-[#1d1830]" />
+              </div>
 
-          return (
-            <button
-              key={section.id}
-              type="button"
-              onClick={() => onChange(section.id)}
-              className={`group flex min-w-[190px] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all lg:min-w-0 ${
-                active
-                  ? 'border-violet-300 bg-white shadow-lg shadow-violet-500/10 ring-1 ring-violet-100 dark:border-violet-400/30 dark:bg-white/[0.07] dark:ring-violet-400/10'
-                  : 'border-slate-200/80 bg-white/70 hover:border-violet-200 hover:bg-white dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-violet-400/20 dark:hover:bg-white/[0.06]'
-              }`}
-            >
-              <span
-                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+              <div className="min-w-0">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-500 dark:text-violet-300">
+                  Control Center
+                </div>
+
+                <h2 className="mt-1 text-lg font-black leading-tight text-slate-950 dark:text-white">
+                  Settings
+                </h2>
+
+                <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
+                  Preferences, privacy, notifications, and billing.
+                </p>
+
+                <div className="mt-3 inline-flex items-center rounded-full border border-violet-200/70 bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-violet-600 shadow-sm dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300">
+                  6 sections
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-3 flex items-center gap-2 px-1 lg:hidden">
+          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-md shadow-violet-500/20">
+            <SlidersHorizontal className="h-5 w-5" />
+          </div>
+
+          <div>
+            <div className="text-sm font-black text-slate-950 dark:text-white">Settings</div>
+            <div className="text-xs text-slate-500 dark:text-zinc-500">Control center</div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+          {SETTINGS_SECTIONS.map((section) => {
+            const Icon = section.icon;
+            const active = activeSection === section.id;
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => onChange(section.id)}
+                className={`group relative flex min-w-[205px] items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all duration-200 lg:min-w-0 ${
                   active
-                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200'
-                    : 'bg-slate-100 text-slate-500 group-hover:text-violet-600 dark:bg-white/[0.05] dark:text-zinc-400 dark:group-hover:text-violet-300'
+                    ? 'border-violet-300 bg-gradient-to-r from-white via-violet-50 to-fuchsia-50 shadow-md shadow-violet-500/10 ring-1 ring-violet-100 dark:border-violet-400/30 dark:bg-gradient-to-r dark:from-white/[0.08] dark:via-violet-500/10 dark:to-fuchsia-500/10 dark:ring-violet-400/10'
+                    : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-slate-50/80 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className="h-5 w-5" />
-              </span>
+                {active && (
+                  <>
+                    <span className="absolute bottom-3 left-0 top-3 w-1 rounded-full bg-gradient-to-b from-violet-500 via-fuchsia-500 to-cyan-400" />
+                    <span className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-violet-400/10 blur-2xl" />
+                  </>
+                )}
 
-              <span className="min-w-0">
-                <span className={`block text-sm font-black ${active ? 'text-slate-950 dark:text-white' : 'text-slate-700 dark:text-zinc-200'}`}>
-                  {section.label}
+                <span
+                  className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition-all ${
+                    active
+                      ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/20'
+                      : 'bg-slate-100 text-slate-500 group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.05] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-300'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
                 </span>
-                <span className="mt-0.5 hidden text-xs leading-snug text-slate-500 dark:text-zinc-500 sm:block">
-                  {section.description}
+
+                <span className="relative min-w-0">
+                  <span
+                    className={`block text-sm font-black ${
+                      active
+                        ? 'text-slate-950 dark:text-white'
+                        : 'text-slate-700 dark:text-zinc-200'
+                    }`}
+                  >
+                    {section.label}
+                  </span>
+
+                  <span className="mt-0.5 hidden text-xs leading-snug text-slate-500 dark:text-zinc-500 sm:block">
+                    {section.description}
+                  </span>
                 </span>
-              </span>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
