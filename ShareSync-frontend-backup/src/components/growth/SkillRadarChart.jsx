@@ -1,19 +1,74 @@
 // src/components/growth/SkillRadarChart.jsx
 // ═══════════════════════════════════════════════════════════════════════════════
-// PHASE K: Full Skill Radar Chart
+// PHASE K: Skill Radar Chart  (data-driven)
+//
+// FIX: previously this expected an ARRAY of { name, score } and hardcoded a fixed
+// set of 6 axis names (execution/leadership/technical/...). The growth hook hands
+// it an OBJECT of the 4 signals the backend actually computes
+// ({ velocity, quality, collaboration, reliability }). The shape mismatch made
+// .forEach a no-op, and the name mismatch meant the axes had no source key — so
+// every axis read 0 (the all-zeros radar).
+//
+// Now it derives its axes from whatever it's given:
+//   - accepts an OBJECT { key: number } or { key: { score } }  (current payload)
+//   - still accepts the legacy ARRAY [{ name, score, trend, change }]  (back-compat)
+//   - spaces axes evenly starting at the top; reproduces the original 6-axis
+//     angles exactly when given 6 keys.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const SKILL_CONFIG = {
-  execution: { label: 'Execution', angle: -90 },
-  leadership: { label: 'Leadership', angle: -30 },
-  technical: { label: 'Technical', angle: 30 },
-  collaboration: { label: 'Collaboration', angle: 90 },
-  communication: { label: 'Communication', angle: 150 },
-  strategy: { label: 'Strategy', angle: 210 },
+// Pretty labels for known signal keys; anything else is title-cased automatically.
+const SKILL_LABELS = {
+  velocity: 'Velocity',
+  quality: 'Quality',
+  collaboration: 'Collaboration',
+  reliability: 'Reliability',
+  // legacy / future axes still render correctly if the backend ever sends them
+  execution: 'Execution',
+  leadership: 'Leadership',
+  technical: 'Technical',
+  communication: 'Communication',
+  strategy: 'Strategy',
 };
+
+function titleCase(key = '') {
+  return String(key)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Normalize either an object or an array into a consistent axis list.
+function toAxisList(skills) {
+  if (!skills) return [];
+
+  let entries = [];
+  if (Array.isArray(skills)) {
+    entries = skills.map((s) => [s?.name ?? s?.key, s]);
+  } else if (typeof skills === 'object') {
+    entries = Object.entries(skills);
+  }
+
+  return entries
+    .filter(([key]) => key != null)
+    .map(([key, raw]) => {
+      const rawScore =
+        typeof raw === 'number' ? raw : Number(raw?.score ?? raw?.value ?? 0);
+      const score = Number.isFinite(rawScore)
+        ? Math.max(0, Math.min(100, rawScore))
+        : 0;
+
+      return {
+        key,
+        label: SKILL_LABELS[key] || titleCase(key),
+        score,
+        normalized: score / 100,
+        trend: typeof raw === 'object' && raw ? raw.trend : undefined,
+        change: typeof raw === 'object' && raw ? Number(raw.change || 0) : 0,
+      };
+    });
+}
 
 export default function SkillRadarChart({
   skills = [],
@@ -27,44 +82,30 @@ export default function SkillRadarChart({
   const center = size / 2;
   const radius = (size - 80) / 2;
 
-  // Convert skills array to normalized values
-  const normalizedSkills = useMemo(() => {
-    const skillMap = {};
-    skills.forEach(skill => {
-      skillMap[skill.name] = {
-        ...skill,
-        normalized: skill.score / 100,
-      };
-    });
-    return skillMap;
-  }, [skills]);
+  const axes = useMemo(() => toAxisList(skills), [skills]);
 
-  // Calculate points for the radar polygon
+  // Even angular spacing, starting at the top (-90°) and going clockwise.
+  // For 6 axes this yields -90,-30,30,90,150,210 — identical to the old layout.
   const points = useMemo(() => {
-    return Object.entries(SKILL_CONFIG).map(([key, config]) => {
-      const skill = normalizedSkills[key] || { normalized: 0, score: 0 };
-      const angleRad = (config.angle * Math.PI) / 180;
-      const r = radius * skill.normalized;
+    const n = axes.length || 1;
+    return axes.map((axis, i) => {
+      const angle = -90 + (360 / n) * i;
+      const angleRad = (angle * Math.PI) / 180;
+      const r = radius * axis.normalized;
       return {
-        key,
+        ...axis,
+        angle,
         x: center + r * Math.cos(angleRad),
         y: center + r * Math.sin(angleRad),
-        label: config.label,
-        score: skill.score || 0,
-        trend: skill.trend,
-        change: skill.change || 0,
-        angle: config.angle,
-        normalized: skill.normalized,
       };
     });
-  }, [normalizedSkills, center, radius]);
+  }, [axes, center, radius]);
 
-  // Create polygon path
-  const polygonPath = points.map((p, i) =>
-    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-  ).join(' ') + ' Z';
+  const polygonPath =
+    points.length > 0
+      ? points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
+      : '';
 
-  // Grid rings
   const rings = [0.25, 0.5, 0.75, 1];
 
   const TrendIcon = ({ trend }) => {
@@ -90,7 +131,6 @@ export default function SkillRadarChart({
               stroke="rgba(255,255,255,0.06)"
               strokeWidth="1"
             />
-            {/* Ring label */}
             <text
               x={center + 5}
               y={center - radius * ring + 4}
@@ -102,31 +142,20 @@ export default function SkillRadarChart({
         ))}
 
         {/* Axis Lines */}
-        {Object.entries(SKILL_CONFIG).map(([key, config]) => {
-          const angleRad = (config.angle * Math.PI) / 180;
-          const x2 = center + radius * Math.cos(angleRad);
-          const y2 = center + radius * Math.sin(angleRad);
+        {points.map((point) => {
+          const angleRad = (point.angle * Math.PI) / 180;
           return (
             <line
-              key={key}
+              key={`axis-${point.key}`}
               x1={center}
               y1={center}
-              x2={x2}
-              y2={y2}
+              x2={center + radius * Math.cos(angleRad)}
+              y2={center + radius * Math.sin(angleRad)}
               stroke="rgba(255,255,255,0.08)"
               strokeWidth="1"
             />
           );
         })}
-
-        {/* Data Polygon */}
-        <path
-          d={polygonPath}
-          fill="url(#skillGradient)"
-          stroke="#7C3AED"
-          strokeWidth="2"
-          className={animated ? 'transition-all duration-500' : ''}
-        />
 
         {/* Gradient Definition */}
         <defs>
@@ -135,6 +164,17 @@ export default function SkillRadarChart({
             <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1" />
           </linearGradient>
         </defs>
+
+        {/* Data Polygon */}
+        {polygonPath && (
+          <path
+            d={polygonPath}
+            fill="url(#skillGradient)"
+            stroke="#7C3AED"
+            strokeWidth="2"
+            className={animated ? 'transition-all duration-500' : ''}
+          />
+        )}
 
         {/* Data Points */}
         {points.map((point) => (
@@ -148,7 +188,6 @@ export default function SkillRadarChart({
               strokeWidth="2"
               className={animated ? 'transition-all duration-500' : ''}
             />
-            {/* Glow effect for high scores */}
             {point.normalized > 0.8 && (
               <circle
                 cx={point.x}
@@ -164,55 +203,60 @@ export default function SkillRadarChart({
         ))}
 
         {/* Labels */}
-        {showLabels && points.map((point) => {
-          const angleRad = (point.angle * Math.PI) / 180;
-          const labelRadius = radius + 35;
-          const x = center + labelRadius * Math.cos(angleRad);
-          const y = center + labelRadius * Math.sin(angleRad);
+        {showLabels &&
+          points.map((point) => {
+            const angleRad = (point.angle * Math.PI) / 180;
+            const labelRadius = radius + 35;
+            const x = center + labelRadius * Math.cos(angleRad);
+            const y = center + labelRadius * Math.sin(angleRad);
 
-          // Adjust text anchor based on position
-          let textAnchor = 'middle';
-          if (point.angle > 45 && point.angle < 135) textAnchor = 'start';
-          if (point.angle > 225 && point.angle < 315) textAnchor = 'end';
-          if (point.angle < -45 || point.angle > 135) textAnchor = 'start';
+            // Anchor based on horizontal position (works for any axis count).
+            const cos = Math.cos(angleRad);
+            let textAnchor = 'middle';
+            if (cos > 0.25) textAnchor = 'start';
+            else if (cos < -0.25) textAnchor = 'end';
 
-          return (
-            <g key={`label-${point.key}`}>
-              <text
-                x={x}
-                y={y - 6}
-                textAnchor={textAnchor}
-                className="fill-text-secondary text-[11px] font-medium"
-              >
-                {point.label}
-              </text>
-              {showValues && (
+            return (
+              <g key={`label-${point.key}`}>
                 <text
                   x={x}
-                  y={y + 8}
+                  y={y - 6}
                   textAnchor={textAnchor}
-                  className="fill-brand text-[13px] font-bold"
+                  className="fill-text-secondary text-[11px] font-medium"
                 >
-                  {point.score}
+                  {point.label}
                 </text>
-              )}
-            </g>
-          );
-        })}
+                {showValues && (
+                  <text
+                    x={x}
+                    y={y + 8}
+                    textAnchor={textAnchor}
+                    className="fill-brand text-[13px] font-bold"
+                  >
+                    {point.score}
+                  </text>
+                )}
+              </g>
+            );
+          })}
       </svg>
 
-      {/* Trend Legend */}
-      {showTrends && (
+      {/* Trend Legend (only when per-axis change data is present) */}
+      {showTrends && points.some((p) => p.change !== 0) && (
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-4">
-          {points.filter(p => p.change !== 0).slice(0, 3).map(point => (
-            <div key={point.key} className="flex items-center gap-1 text-xs">
-              <TrendIcon trend={point.trend} />
-              <span className="text-text-tertiary">{point.label}</span>
-              <span className={point.change > 0 ? 'text-success' : 'text-error-500'}>
-                {point.change > 0 ? '+' : ''}{point.change}
-              </span>
-            </div>
-          ))}
+          {points
+            .filter((p) => p.change !== 0)
+            .slice(0, 3)
+            .map((point) => (
+              <div key={point.key} className="flex items-center gap-1 text-xs">
+                <TrendIcon trend={point.trend} />
+                <span className="text-text-tertiary">{point.label}</span>
+                <span className={point.change > 0 ? 'text-success' : 'text-error-500'}>
+                  {point.change > 0 ? '+' : ''}
+                  {point.change}
+                </span>
+              </div>
+            ))}
         </div>
       )}
     </div>
