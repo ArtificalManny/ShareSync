@@ -649,6 +649,7 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('me/weekly-rhythm')
   async getMyWeeklyRhythm(@Req() req: any) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
