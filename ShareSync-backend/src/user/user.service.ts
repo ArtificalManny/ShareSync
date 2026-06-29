@@ -721,95 +721,182 @@ export class UserService {
     const now = new Date();
 
     const startOfDay = (input: Date) => {
-      const d = new Date(input);
-      d.setHours(0, 0, 0, 0);
-      return d;
+      const date = new Date(input);
+      date.setHours(0, 0, 0, 0);
+      return date;
     };
 
     const addDays = (input: Date, days: number) => {
-      const d = new Date(input);
-      d.setDate(d.getDate() + days);
-      return d;
+      const date = new Date(input);
+      date.setDate(date.getDate() + days);
+      return date;
     };
 
     const toISODate = (input: Date) => input.toISOString().slice(0, 10);
-
-    // Monday-start week. JS Sunday is 0, so convert Sunday to 6.
     const today = startOfDay(now);
     const mondayOffset = (today.getDay() + 6) % 7;
     const weekStart = addDays(today, -mondayOffset);
     const weekEndExclusive = addDays(weekStart, 7);
     const lastWeekStart = addDays(weekStart, -7);
 
-    const isShipLikeActivity = (activity: any) => {
-      const rawType = String(activity?.type || activity?.eventType || '').toUpperCase();
-      const rawAction = String(activity?.action || activity?.verb || '').toUpperCase();
-      const rawStatus = String(activity?.status || activity?.payload?.status || activity?.meta?.status || '').toUpperCase();
-      const rawTitle = String(activity?.title || activity?.message || activity?.label || '').toUpperCase();
+    const activities = await this.activities.listUserActivityForRange({
+      userId,
+      since: lastWeekStart,
+      until: weekEndExclusive,
+      limit: 5000,
+    });
 
-      return (
-        rawType === 'TASK_COMPLETED' ||
-        rawType === 'TASK_COMPLETE' ||
-        rawType === 'TASK_DONE' ||
-        rawType === 'TASK_SHIPPED' ||
-        rawType === 'SHIP' ||
-        rawType === 'SHIPPED' ||
-        rawAction.includes('COMPLETE') ||
-        rawAction.includes('SHIP') ||
-        rawStatus === 'DONE' ||
-        rawStatus === 'COMPLETED' ||
-        rawTitle.includes('COMPLETED') ||
-        rawTitle.includes('SHIPPED')
-      );
-    };
+    const readText = (activity: any) =>
+      [
+        activity?.type,
+        activity?.eventType,
+        activity?.action,
+        activity?.verb,
+        activity?.entityType,
+        activity?.message,
+        activity?.payload?.type,
+        activity?.payload?.action,
+        activity?.payload?.status,
+        activity?.details?.type,
+        activity?.details?.action,
+        activity?.details?.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-    const getTimestamp = (activity: any) => {
+    const getTimestamp = (activity: any): Date | null => {
       const value =
-        activity?.completedAt ||
         activity?.createdAt ||
+        activity?.completedAt ||
         activity?.updatedAt ||
         activity?.ts ||
         activity?.timestamp;
-
-      const d = value ? new Date(value) : null;
-      return d && !Number.isNaN(d.getTime()) ? d : null;
+      const date = value ? new Date(value) : null;
+      return date && !Number.isNaN(date.getTime()) ? date : null;
     };
 
-    // Reuse the existing activity pipeline instead of adding new Mongoose model wiring.
-    const { items } = await this.activities.list({
-      scope: 'user',
-      userId,
-      range: '30d',
-      cursor: null,
-      limit: 1000,
-    });
+    const passiveTokens = [
+      'viewed',
+      'view_count',
+      'read',
+      'presence',
+      'cursor',
+      'heartbeat',
+      'typing',
+      'login',
+      'logout',
+      'notification',
+      'download_count',
+    ];
+
+    const mutationTokens = [
+      'created',
+      'added',
+      'uploaded',
+      'updated',
+      'edited',
+      'moved',
+      'completed',
+      'done',
+      'shipped',
+      'deleted',
+      'removed',
+      'archived',
+      'restored',
+      'linked',
+      'unlinked',
+      'assigned',
+      'comment',
+      'version',
+      'milestone',
+      'announcement',
+      'file_uploaded',
+      'task_',
+      'project_',
+    ];
+
+    const isMeaningfulProjectActivity = (activity: any) => {
+      const textValue = readText(activity);
+      if (!textValue) return false;
+      if (passiveTokens.some((token) => textValue.includes(token))) return false;
+
+      const hasProjectContext = Boolean(
+        activity?.projectId ||
+          activity?.payload?.projectId ||
+          activity?.details?.projectId,
+      );
+      const knownDomain = [
+        'task',
+        'milestone',
+        'roadmap',
+        'file',
+        'announcement',
+        'comment',
+        'project',
+        'folder',
+        'event',
+        'schedule',
+        'thread',
+      ].some((token) => textValue.includes(token));
+
+      return (
+        (hasProjectContext || knownDomain) &&
+        mutationTokens.some((token) => textValue.includes(token))
+      );
+    };
+
+    const getDomain = (activity: any) => {
+      const textValue = readText(activity);
+      if (textValue.includes('milestone') || textValue.includes('roadmap')) return 'roadmap';
+      if (textValue.includes('announcement')) return 'announcements';
+      if (textValue.includes('file') || textValue.includes('folder')) return 'files';
+      if (textValue.includes('task')) return 'tasks';
+      if (textValue.includes('comment')) return 'comments';
+      if (textValue.includes('thread') || textValue.includes('message')) return 'teamRoom';
+      if (textValue.includes('event') || textValue.includes('schedule')) return 'schedule';
+      return 'projects';
+    };
 
     const weekCounts = new Map<string, number>();
     const lastWeekCounts = new Map<string, number>();
+    const breakdown: Record<string, number> = {};
+    const seen = new Set<string>();
 
-    for (const activity of items || []) {
-      if (!isShipLikeActivity(activity)) continue;
+    for (const activity of activities || []) {
+      if (!isMeaningfulProjectActivity(activity)) continue;
 
-      const ts = getTimestamp(activity);
-      if (!ts) continue;
+      const timestamp = getTimestamp(activity);
+      if (!timestamp) continue;
 
-      if (ts >= weekStart && ts < weekEndExclusive) {
-        const key = toISODate(ts);
+      const semanticKey = [
+        String(activity?.projectId || activity?.payload?.projectId || ''),
+        String(activity?.entityType || ''),
+        String(activity?.entityId || activity?.entityKey || ''),
+        String(activity?.type || activity?.eventType || ''),
+        String(activity?.action || activity?.verb || ''),
+        Math.floor(timestamp.getTime() / 2000),
+      ].join('|');
+
+      if (seen.has(semanticKey)) continue;
+      seen.add(semanticKey);
+
+      if (timestamp >= weekStart && timestamp < weekEndExclusive) {
+        const key = toISODate(timestamp);
         weekCounts.set(key, (weekCounts.get(key) || 0) + 1);
-      }
 
-      if (ts >= lastWeekStart && ts < weekStart) {
-        const key = toISODate(ts);
+        const domain = getDomain(activity);
+        breakdown[domain] = (breakdown[domain] || 0) + 1;
+      } else if (timestamp >= lastWeekStart && timestamp < weekStart) {
+        const key = toISODate(timestamp);
         lastWeekCounts.set(key, (lastWeekCounts.get(key) || 0) + 1);
       }
     }
 
     const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
     const days = Array.from({ length: 7 }).map((_, index) => {
       const date = addDays(weekStart, index);
       const key = toISODate(date);
-
       return {
         date: key,
         day: dayLabels[index],
@@ -832,10 +919,7 @@ export class UserService {
     let momentum = 'warming';
     let momentumLabel = 'Warming up';
 
-    if (thisWeekTotal > 0 && lastWeekTotal === 0) {
-      momentum = 'rising';
-      momentumLabel = 'Rising';
-    } else if (thisWeekTotal > lastWeekTotal) {
+    if (thisWeekTotal > lastWeekTotal) {
       momentum = 'rising';
       momentumLabel = 'Rising';
     } else if (thisWeekTotal === lastWeekTotal && thisWeekTotal > 0) {
@@ -848,8 +932,8 @@ export class UserService {
 
     const insight =
       thisWeekTotal > 0
-        ? `You shipped ${thisWeekTotal} item${thisWeekTotal === 1 ? '' : 's'} across ${activeDays} active day${activeDays === 1 ? '' : 's'} this week.`
-        : 'Your weekly rhythm will appear here once you start shipping activity this week.';
+        ? `You made ${thisWeekTotal} project update${thisWeekTotal === 1 ? '' : 's'} across ${activeDays} active day${activeDays === 1 ? '' : 's'} this week.`
+        : 'Your weekly rhythm will appear here once you make project updates this week.';
 
     return {
       days,
@@ -861,7 +945,9 @@ export class UserService {
       totalDays: 7,
       lastWeekTotal,
       insight,
-      source: 'backend',
+      breakdown,
+      source: 'project-activity',
+      updatedAt: new Date().toISOString(),
     };
   }
 

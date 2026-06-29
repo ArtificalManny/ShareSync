@@ -32,6 +32,16 @@ const REFRESH_EVENTS = [
   "task:deleted",
   "activity.created",
   "activity:created",
+  "file.uploaded",
+  "file.version.uploaded",
+  "file:uploaded",
+  "announcement.created",
+  "announcement:created",
+  "milestone.created",
+  "milestone.updated",
+  "milestone.completed",
+  "roadmap:updated",
+  "project:activity",
   "local-ship",
   "openshare:ship",
   "projectCompleted",
@@ -209,6 +219,7 @@ async function apiGet(endpoint) {
       method: "GET",
       headers: getAuthHeaders(),
       credentials: "include",
+      cache: "no-store",
     });
 
     if (response.ok) {
@@ -484,9 +495,10 @@ function normalizeWeeklyRhythmPayload(rhythmPayload, statsPayload) {
         : "Warming up");
 
   const insight =
-    weeklyShips > 0
-      ? `You shipped ${weeklyShips} item${weeklyShips === 1 ? "" : "s"} across ${activeDays} active day${activeDays === 1 ? "" : "s"} this week.`
-      : "Your weekly rhythm will appear here once you start shipping activity this week.";
+    rhythm.insight ||
+    (weeklyShips > 0
+      ? `You made ${weeklyShips} project update${weeklyShips === 1 ? "" : "s"} across ${activeDays} active day${activeDays === 1 ? "" : "s"} this week.`
+      : "Your weekly rhythm will appear here once you make project updates this week.");
 
   const normalized = {
     days,
@@ -599,7 +611,7 @@ function RhythmBar({ day, count, maxCount, isToday, isPeak }) {
             minHeight: "12px",
             maxHeight: "84px",
           }}
-          title={`${day}: ${safeCount} shipped`}
+          title={`${day}: ${safeCount} project updates`}
         >
           {!isEmpty && (
             <>
@@ -885,7 +897,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
             </div>
 
             <p className="mt-1 text-xs font-medium text-slate-500 dark:text-white/50">
-              Weekly shipping rhythm, active days, and execution trend.
+              Weekly project activity, active days, and execution trend.
             </p>
           </div>
         </div>
@@ -938,7 +950,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
             <StatChip
               icon={Zap}
               label="This week"
-              value={`${displayData.thisWeekTotal || 0} shipped`}
+              value={`${displayData.thisWeekTotal || 0} updates`}
               tone="violet"
             />
 
@@ -952,7 +964,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
             <StatChip
               icon={Activity}
               label="Last week"
-              value={`${displayData.lastWeekTotal || 0} shipped`}
+              value={`${displayData.lastWeekTotal || 0} updates`}
               tone="amber"
             />
           </div>
@@ -963,7 +975,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
             type="button"
             onClick={handleRhythmAction}
             className="group inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-300/70 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_38px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-95 dark:border-cyan-300/35 dark:from-violet-500 dark:via-fuchsia-500 dark:to-cyan-400 dark:text-white dark:shadow-[0_0_28px_rgba(34,211,238,0.22),0_18px_42px_rgba(139,92,246,0.30)]"
-            title="Open your projects to choose the next task to ship"
+            title="Open your projects to choose your next update"
           >
             <Sparkles className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-12 group-hover:scale-110" />
             <span>Open Projects</span>

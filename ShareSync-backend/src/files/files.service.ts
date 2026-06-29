@@ -22,6 +22,7 @@ import {
   FileQueryDto,
   UploadNewVersionDto,
 } from './dto/file.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -37,7 +38,54 @@ export class FilesService {
     @InjectModel(Folder.name)
     private readonly folderModel: Model<FolderDocument>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly activities: ActivitiesService,
   ) {}
+
+  private async recordFileActivity(data: {
+    userId: string;
+    projectId: string;
+    type: string;
+    entityId: string;
+    action: string;
+    fileName: string;
+    fileSize?: number;
+    version?: number;
+  }): Promise<void> {
+    try {
+      const activity = await this.activities.record({
+        userId: data.userId,
+        projectId: data.projectId,
+        type: data.type,
+        entityType: 'file',
+        entityId: data.entityId,
+        action: data.action,
+        details: {
+          fileName: data.fileName,
+          fileSize: data.fileSize ?? 0,
+          version: data.version,
+        },
+        metadata: {
+          fileName: data.fileName,
+          fileSize: data.fileSize ?? 0,
+        },
+        payload: {
+          source: 'files',
+          projectId: data.projectId,
+          fileId: data.entityId,
+          version: data.version,
+        },
+      });
+
+      const event = (activity as any)?.toObject?.() || activity;
+      this.eventEmitter.emit('activityCreated', event);
+      this.eventEmitter.emit('activity:created', event);
+      this.eventEmitter.emit('activity.created', event);
+    } catch (error: any) {
+      this.logger.warn(
+        `File activity logging failed (${data.type}): ${error?.message || error}`,
+      );
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // FILE CRUD
@@ -87,6 +135,17 @@ export class FilesService {
       uploadedBy: userId,
       fileName: saved.name,
       fileSize: saved.size,
+    });
+
+    await this.recordFileActivity({
+      userId,
+      projectId: dto.projectId,
+      type: 'file_uploaded',
+      entityId: String(saved._id),
+      action: 'file_uploaded',
+      fileName: String(saved.name || dto.originalName || 'File'),
+      fileSize: Number(saved.size || dto.size || 0),
+      version: 1,
     });
 
     this.logger.log(`File uploaded: ${saved.name}`);
@@ -261,6 +320,17 @@ export class FilesService {
       fileId: saved._id,
       version: newVersion,
       uploadedBy: userId,
+    });
+
+    await this.recordFileActivity({
+      userId,
+      projectId: String(saved.projectId),
+      type: 'file_version_uploaded',
+      entityId: String(saved._id),
+      action: 'file_uploaded',
+      fileName: String(saved.name || 'File'),
+      fileSize: Number(saved.size || dto.size || 0),
+      version: newVersion,
     });
 
     return saved;

@@ -295,6 +295,37 @@ export class ActivitiesService {
     }
   }
 
+  async listUserActivityForRange(args: {
+    userId: string;
+    since: Date;
+    until: Date;
+    limit?: number;
+  }): Promise<AnyObj[]> {
+    if (!Types.ObjectId.isValid(args.userId)) return [];
+
+    const userObjectId = new Types.ObjectId(args.userId);
+    const limit = Math.max(1, Math.min(5000, Number(args.limit ?? 2500)));
+
+    return this.activityModel
+      .find({
+        $or: [
+          { userId: userObjectId },
+          { actorId: userObjectId },
+        ],
+        createdAt: {
+          $gte: args.since,
+          $lt: args.until,
+        },
+      })
+      .select(
+        '_id projectId type actorId entityType entityId entityKey message payload userId action details metadata createdAt updatedAt',
+      )
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .lean()
+      .exec();
+  }
+
   async list(args: {
     scope: 'user' | 'project' | 'global';
     userId?: string;
