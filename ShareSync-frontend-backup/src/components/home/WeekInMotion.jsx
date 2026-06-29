@@ -513,12 +513,10 @@ async function fetchWeeklyRhythm() {
     const [rhythmRes, statsRes] = await Promise.all([
       client.get("/users/me/weekly-rhythm", {
         params: { _t: Date.now() },
-        headers: { "Cache-Control": "no-store" },
-      }).catch(() => null),
+      }).catch((e) => { console.error("[rhythm] FAILED", e?.response?.status, e?.message); return null; }),
       client.get("/users/me/stats", {
         params: { _t: Date.now() },
-        headers: { "Cache-Control": "no-store" },
-      }).catch(() => null),
+      }).catch((e) => { console.error("[stats] FAILED", e?.response?.status, e?.message); return null; }),
     ]);
 
     const rhythmPayload = rhythmRes?.data?.data || rhythmRes?.data || {};
