@@ -192,45 +192,8 @@ function unwrapPayload(payload) {
   return payload?.data?.data ?? payload?.data ?? payload ?? null;
 }
 
-function getAuthHeaders() {
-  const token =
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("authToken");
-
-  return token
-    ? {
-        Authorization: `Bearer ${token}`,
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      }
-    : {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      };
-}
-
 async function apiGet(endpoint) {
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  const explicitApiUrl = `/api${cleanEndpoint}?_t=${Date.now()}`;
-
-  try {
-    const response = await fetch(explicitApiUrl, {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    if (response.ok) {
-      const json = await response.json();
-      return unwrapPayload(json);
-    }
-
-    console.warn(`[WeekInMotion] Direct fetch failed: ${explicitApiUrl}`, response.status);
-  } catch (error) {
-    console.warn(`[WeekInMotion] Direct fetch error: ${explicitApiUrl}`, error?.message || error);
-  }
 
   try {
     const response = await client.get(cleanEndpoint, {
@@ -243,7 +206,10 @@ async function apiGet(endpoint) {
 
     return unwrapPayload(response);
   } catch (error) {
-    console.warn(`[WeekInMotion] client.get failed: ${cleanEndpoint}`, error?.message || error);
+    console.warn(
+      `[WeekInMotion] API request failed: ${cleanEndpoint}`,
+      error?.response?.data || error?.message || error
+    );
     return null;
   }
 }
