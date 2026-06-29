@@ -193,6 +193,71 @@ function extractMembers(project) {
   return members;
 }
 
+function getThreadParticipants(thread, projectMembers = [], currentUserId = null) {
+  const sources = [
+    thread?.participants,
+    thread?.participantIds,
+    thread?.members,
+    thread?.memberIds,
+    thread?.recipients,
+    thread?.recipientIds,
+    thread?.selectedParticipants,
+  ].filter(Array.isArray);
+  const memberById = new Map(projectMembers.map(member => [String(member.id), member]));
+  const seen = new Set();
+
+  return sources.flat().map(record => {
+    const entity = record?.userId || record?.user || record?.member || record?.recipient || record;
+    const rawId = getEntityId(entity) || getEntityId(record) ||
+      (typeof record === 'string' ? record : null);
+    const id = rawId ? String(rawId) : '';
+    const projectMember = id ? memberById.get(id) : null;
+    const name = projectMember?.name || getEntityName(entity, '') || getEntityName(record, '');
+
+    if (!name || (currentUserId && id === String(currentUserId))) return null;
+
+    return {
+      id: id || name,
+      name,
+      avatarUrl: projectMember?.avatarUrl || getEntityAvatar(entity) || getEntityAvatar(record),
+      initials: projectMember?.initials || getInitials(name),
+    };
+  }).filter(Boolean).filter(participant => {
+    const key = String(participant.id || participant.name).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function ParticipantAvatar({ participant }) {
+  return (
+    <span
+      className="relative inline-flex h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-white bg-slate-100 shadow-sm ring-1 ring-slate-200 dark:border-[#17171b] dark:bg-white/[0.08] dark:ring-white/[0.10]"
+      title={participant.name}
+    >
+      {participant.avatarUrl ? (
+        <img
+          src={participant.avatarUrl}
+          alt={participant.name}
+          className="h-full w-full object-cover"
+          onError={event => {
+            event.currentTarget.style.display = 'none';
+            const fallback = event.currentTarget.nextElementSibling;
+            if (fallback) fallback.style.display = 'flex';
+          }}
+        />
+      ) : null}
+      <span
+        style={{ display: participant.avatarUrl ? 'none' : 'flex' }}
+        className="absolute inset-0 items-center justify-center text-[10px] font-black text-slate-600 dark:text-white/70"
+      >
+        {participant.initials}
+      </span>
+    </span>
+  );
+}
+
 function ThreadItem({ thread, isActive, onClick }) {
   return (
     <button
@@ -289,7 +354,7 @@ function MessageBubble({ msg, isOwn }) {
   );
 }
 
-function ConversationPanel({ thread, currentUserId, onBack }) {
+function ConversationPanel({ thread, currentUserId, participants = [], onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMsg, setNewMsg] = useState('');
@@ -332,6 +397,9 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
 
   if (!thread) return null;
 
+  const participantCount = participants.length ||
+    Number(thread.participantCount || thread.participants?.length || 0);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 px-5 py-3.5 border-b border-slate-100 dark:border-white/[0.06] flex items-center gap-3">
@@ -339,9 +407,21 @@ function ConversationPanel({ thread, currentUserId, onBack }) {
           <ChevronLeft className="w-4 h-4 text-slate-500" />
         </button>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-white truncate">{thread.title}</h3>
+          <div className="flex min-w-0 items-center gap-2">
+            <h3 className="shrink-0 text-sm font-semibold text-slate-800 dark:text-white">
+              {thread.title}
+            </h3>
+            {participants.length > 0 ? (
+              <>
+                <span className="text-slate-300 dark:text-white/20">•</span>
+                <span className="truncate text-sm font-semibold text-violet-700 dark:text-violet-300">
+                  {participants.map(participant => participant.name).join(', ')}
+                </span>
+              </>
+            ) : null}
+          </div>
           <p className="text-[11px] text-slate-400 dark:text-white/30">
-            {thread.participantCount || thread.participants?.length || 0} members
+            {participantCount} member{participantCount === 1 ? '' : 's'}
           </p>
         </div>
       </div>
@@ -423,8 +503,17 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
     if (!title.trim() || creating) return;
     setCreating(true);
     try {
-      const created = await createThread({ projectId, title: title.trim(), category });
-      onCreated?.(created);
+      const participantIds = selectedMembers.map(member => member.id);
+      const created = await createThread({
+        projectId,
+        title: title.trim(),
+        category,
+        participantIds,
+      });
+      onCreated?.({
+        ...created,
+        selectedParticipants: selectedMembers,
+      });
       onClose();
       toast({ title: 'Thread created', variant: 'success' });
     } catch (err) {
@@ -633,11 +722,11 @@ function getThreadCategory(thread) {
   return String(thread?.category || thread?.channel || "general");
 }
 
-function ThreadListItem({ thread, active = false, onClick }) {
+function ThreadListItem({ thread, participants = [], active = false, onClick }) {
   const title = getThreadTitle(thread);
   const preview = getThreadPreview(thread);
   const category = getThreadCategory(thread);
-  const participantCount = Number(thread?.participantCount || thread?.participants?.length || 0);
+  const participantCount = participants.length || Number(thread?.participantCount || thread?.participants?.length || 0);
   const replyCount = Number(thread?.replyCount || thread?.replies?.length || thread?.messages?.length || 0);
   const isPinned = Boolean(thread?.pinned || thread?.isPinned);
   const dateLabel = formatThreadListDate(thread?.updatedAt || thread?.lastActivityAt || thread?.createdAt);
@@ -702,18 +791,33 @@ function ThreadListItem({ thread, active = false, onClick }) {
               {dateLabel}
             </span>
 
-            <span
-              className={`
-                flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black shadow-sm
-                ${
-                  active
-                    ? "border-violet-200 bg-white text-violet-700 dark:border-violet-400/20 dark:bg-white/[0.08] dark:text-violet-200"
-                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-400"
-                }
-              `}
-            >
-              {String(title).slice(0, 1).toUpperCase()}
-            </span>
+            {participants.length > 0 ? (
+              <div className="flex max-w-[150px] items-center gap-2">
+                <div className="flex -space-x-2">
+                  {participants.slice(0, 3).map(participant => (
+                    <ParticipantAvatar key={participant.id} participant={participant} />
+                  ))}
+                </div>
+                <span
+                  className={`truncate text-[11px] font-black ${
+                    active
+                      ? 'text-violet-700 dark:text-violet-200'
+                      : 'text-slate-600 dark:text-zinc-300'
+                  }`}
+                  title={participants.map(participant => participant.name).join(', ')}
+                >
+                  {participants.map(participant => participant.name).join(', ')}
+                </span>
+              </div>
+            ) : (
+              <span className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black shadow-sm ${
+                active
+                  ? 'border-violet-200 bg-white text-violet-700 dark:border-violet-400/20 dark:bg-white/[0.08] dark:text-violet-200'
+                  : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-400'
+              }`}>
+                {String(title).slice(0, 1).toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -1399,6 +1503,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                         <div className="rounded-[1.35rem] bg-white/95 dark:bg-[#111113]/95">
                           <ThreadListItem
                             thread={thread}
+                            participants={getThreadParticipants(thread, projectMembers, currentUserId)}
                             active={(activeThread?._id || activeThread?.id) === (thread._id || thread.id)}
                             onClick={setActiveThread}
                           />
@@ -1419,6 +1524,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                       >
                         <ThreadListItem
                           thread={thread}
+                          participants={getThreadParticipants(thread, projectMembers, currentUserId)}
                           active={(activeThread?._id || activeThread?.id) === (thread._id || thread.id)}
                           onClick={setActiveThread}
                         />
@@ -1436,6 +1542,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                   <ConversationPanel
                     thread={activeThread}
                     currentUserId={currentUserId}
+                    participants={getThreadParticipants(activeThread, projectMembers, currentUserId)}
                     onBack={() => setActiveThread(null)}
                   />
                 </div>
@@ -1488,7 +1595,11 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               ...thread,
               id: thread?._id || thread?.id,
               category: thread?.category || 'general',
-              participantCount: thread?.participantCount || 0,
+              participantCount:
+                thread?.participantCount ||
+                thread?.participants?.length ||
+                thread?.selectedParticipants?.length ||
+                0,
               replyCount: thread?.replyCount || 0,
               lastMessage: thread?.lastMessage || 'No thread activity yet',
               createdAt: thread?.createdAt || new Date().toISOString(),
