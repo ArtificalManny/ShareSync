@@ -991,19 +991,28 @@ export default function Settings() {
                   <div className="flex items-start gap-3">
                     <Globe2 className="mt-0.5 h-5 w-5 text-sky-500" />
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-white">Public identity</h3>
+                      <h3 className="font-bold text-slate-900 dark:text-white">Account overview</h3>
                       <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                        Profile editing stays on your Profile page. These controls decide how visible you are across OpenShare.
+                        Manage who you are on OpenShare. Profile details live on your Profile page; visibility controls stay here.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <Toggle
-                  label="Public Profile"
+                  label="Manage Public Profile
+Open or edit your profile page, update your photo, name, bio, and public handle.
+
+View Public Profile
+Preview what other people can see before making your profile discoverable.
+
+Account Identity
+Your display name, email, avatar, and handle should be edited from your Profile page.
+
+Public Profile"
                   checked={publicProfile}
                   onChange={setPublicProfile}
-                  description="Allow others to view your profile"
+                  description="Allow others to view your public profile"
                 />
 
                 <Toggle
@@ -1013,21 +1022,21 @@ export default function Settings() {
                     setDiscoverable(next);
                     trackProfileDiscoverToggle({ enabled: next, source: 'settings_account' });
                   }}
-                  description="Allow your profile and public work to appear in discovery surfaces"
+                  description="Allow your profile and public projects to appear in discovery"
                 />
 
                 <Toggle
                   label="Celebrate my ships publicly"
                   checked={celebratePublicly}
                   onChange={setCelebratePublicly}
-                  description="Let others see when you ship something meaningful"
+                  description="Let others see selected ship milestones"
                 />
 
                 <Toggle
                   label="Share live activity with teammates"
                   checked={shareLiveActivity}
                   onChange={setShareLiveActivity}
-                  description="Let teammates see when you're shipping in real time"
+                  description="Let teammates see selected real-time activity"
                 />
               </SectionCard>
             </>
