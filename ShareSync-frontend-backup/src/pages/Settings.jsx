@@ -1000,16 +1000,7 @@ export default function Settings() {
                 </div>
 
                 <Toggle
-                  label="Manage Public Profile
-Open or edit your profile page, update your photo, name, bio, and public handle.
-
-View Public Profile
-Preview what other people can see before making your profile discoverable.
-
-Account Identity
-Your display name, email, avatar, and handle should be edited from your Profile page.
-
-Public Profile"
+                  label="Public Profile"
                   checked={publicProfile}
                   onChange={setPublicProfile}
                   description="Allow others to view your public profile"
