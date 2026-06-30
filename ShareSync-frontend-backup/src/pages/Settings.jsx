@@ -413,19 +413,53 @@ export default function Settings() {
 
   const mqlRef = useRef(null);
 
-  // SETTINGS THEME HYDRATION FIX
-  // Settings.jsx should display the actual user-selected theme, not a stale
-  // backend fallback. The local theme is the immediate source of truth because
-  // applyTheme() writes it as soon as the user changes the dropdown.
+  // SETTINGS THEME SYNC BRIDGE
+  // Settings, the header theme button, localStorage, and the DOM should agree.
+  // This keeps the Appearance dropdown synchronized even when theme changes
+  // happen outside Settings.jsx.
+  const THEME_STORAGE_KEY = "ss.theme";
+  const LEGACY_THEME_STORAGE_KEYS = ["theme", "openshare.theme", "sharesync.theme"];
+
   const normalizeThemeMode = (value, fallback = 'system') => {
     return value === 'light' || value === 'dark' || value === 'system'
       ? value
       : fallback;
   };
 
+  const getSystemResolvedTheme = () => {
+    if (typeof window === 'undefined') return 'light';
+
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
+      ? 'dark'
+      : 'light';
+  };
+
+  const getResolvedThemeFromPreference = (mode) => {
+    const safeMode = normalizeThemeMode(mode, 'system');
+
+    if (safeMode === 'system') {
+      return getSystemResolvedTheme();
+    }
+
+    return safeMode;
+  };
+
   const readSavedThemePreference = () => {
     if (typeof window === 'undefined') return null;
-    return normalizeThemeMode(window.localStorage.getItem('ss.theme'), null);
+
+    const primary = normalizeThemeMode(
+      window.localStorage.getItem(THEME_STORAGE_KEY),
+      null
+    );
+
+    if (primary) return primary;
+
+    for (const key of LEGACY_THEME_STORAGE_KEYS) {
+      const legacy = normalizeThemeMode(window.localStorage.getItem(key), null);
+      if (legacy) return legacy;
+    }
+
+    return null;
   };
 
   const readResolvedDocumentTheme = () => {
@@ -444,7 +478,41 @@ export default function Settings() {
     return null;
   };
 
+  const writeThemePreference = (mode) => {
+    if (typeof window === 'undefined') return;
+
+    const safeMode = normalizeThemeMode(mode, 'system');
+
+    window.localStorage.setItem(THEME_STORAGE_KEY, safeMode);
+
+    // Keep common legacy keys aligned so older header/theme code does not drift.
+    for (const key of LEGACY_THEME_STORAGE_KEYS) {
+      window.localStorage.setItem(key, safeMode);
+    }
+  };
+
+  const broadcastThemePreference = (mode) => {
+    if (typeof window === 'undefined') return;
+
+    const safeMode = normalizeThemeMode(mode, 'system');
+    const resolvedTheme = getResolvedThemeFromPreference(safeMode);
+
+    window.dispatchEvent(
+      new CustomEvent("openshare:theme-change", {
+        detail: {
+          theme: safeMode,
+          resolvedTheme,
+          source: "settings",
+        },
+      })
+    );
+
+    // Existing app code already uses a generic storage event in places.
+    window.dispatchEvent(new Event("storage"));
+  };
+
   const applyTheme = (mode) => {
+    const safeMode = normalizeThemeMode(mode, 'system');
     const root = document.documentElement;
     const media = window.matchMedia
       ? window.matchMedia("(prefers-color-scheme: dark)")
@@ -468,8 +536,11 @@ export default function Settings() {
       mqlRef.current = null;
     }
 
-    if (mode === "system" && media) {
-      const handler = () => applyResolvedTheme("system");
+    if (safeMode === "system" && media) {
+      const handler = () => {
+        applyResolvedTheme("system");
+        broadcastThemePreference("system");
+      };
 
       if (media.addEventListener) {
         media.addEventListener("change", handler);
@@ -481,9 +552,102 @@ export default function Settings() {
       mqlRef.current = media;
     }
 
-    localStorage.setItem("ss.theme", mode);
-    applyResolvedTheme(mode);
+    writeThemePreference(safeMode);
+    applyResolvedTheme(safeMode);
+    broadcastThemePreference(safeMode);
   };
+
+  const syncThemeStateFromEnvironment = (source = "environment") => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const storedPreference = readSavedThemePreference();
+    const domTheme = readResolvedDocumentTheme();
+
+    const storedResolved = storedPreference
+      ? getResolvedThemeFromPreference(storedPreference)
+      : null;
+
+    // If another part of the app toggled the DOM without updating ss.theme,
+    // trust the visible DOM and repair localStorage.
+    if (
+      source === "dom" &&
+      domTheme &&
+      storedPreference &&
+      storedPreference !== "system" &&
+      storedResolved !== domTheme
+    ) {
+      writeThemePreference(domTheme);
+      setTheme((current) => (current === domTheme ? current : domTheme));
+      return;
+    }
+
+    const nextTheme = storedPreference || domTheme || 'system';
+
+    setTheme((current) => (current === nextTheme ? current : nextTheme));
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+
+    const handleThemeEvent = (event) => {
+      const incomingTheme = normalizeThemeMode(event?.detail?.theme, null);
+
+      if (incomingTheme) {
+        setTheme((current) => (current === incomingTheme ? current : incomingTheme));
+        return;
+      }
+
+      syncThemeStateFromEnvironment("event");
+    };
+
+    const handleStorageSync = () => {
+      syncThemeStateFromEnvironment("storage");
+    };
+
+    const observer = new MutationObserver(() => {
+      syncThemeStateFromEnvironment("dom");
+    });
+
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
+
+    const media = window.matchMedia
+      ? window.matchMedia("(prefers-color-scheme: dark)")
+      : null;
+
+    const handleSystemThemeChange = () => {
+      syncThemeStateFromEnvironment("system");
+    };
+
+    if (media?.addEventListener) {
+      media.addEventListener("change", handleSystemThemeChange);
+    } else if (media?.addListener) {
+      media.addListener(handleSystemThemeChange);
+    }
+
+    window.addEventListener("openshare:theme-change", handleThemeEvent);
+    window.addEventListener("storage", handleStorageSync);
+
+    syncThemeStateFromEnvironment("mount");
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("openshare:theme-change", handleThemeEvent);
+      window.removeEventListener("storage", handleStorageSync);
+
+      if (media?.removeEventListener) {
+        media.removeEventListener("change", handleSystemThemeChange);
+      } else if (media?.removeListener) {
+        media.removeListener(handleSystemThemeChange);
+      }
+    };
+  }, []);
 
   // SETTINGS SAVE PERSISTENCE BRIDGE
   // Backend remains the primary source, but this local snapshot prevents
