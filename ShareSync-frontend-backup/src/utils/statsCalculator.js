@@ -155,7 +155,7 @@ export function calculateProductivityScore(metrics) {
     collaborationTarget = 3,
   } = metrics;
 
-  // Calculate individual scores (capped at 100%)
+  // Calculate individual scores (capped at Available)
   const taskScore = Math.min((tasksCompleted / tasksTarget) * 100, 100);
   const focusScore = Math.min((focusMinutes / focusTarget) * 100, 100);
   const streakScore = Math.min((streakDays / streakTarget) * 100, 100);

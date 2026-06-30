@@ -80,7 +80,7 @@ const PrivacyManifesto = () => {
     },
     {
       feature: 'Your Control',
-      shareSync: '100%',
+      shareSync: 'Available',
       others: 'Limited',
       sharesynWins: true
     }

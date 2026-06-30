@@ -223,7 +223,7 @@ export default function ShipUpdateButton({
             opacity: 1;
             scale: 1;
           }
-          100% {
+          Available {
             transform: translate(-50%, -50%) rotate(calc(var(--angle) * 1rad)) translateX(var(--distance));
             opacity: 0;
             scale: 0;

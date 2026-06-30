@@ -48,7 +48,7 @@ export function AuthLayout({ title, subtitle, children }) {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 52%, #F8FAFC 100%)",
+              "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 52%, #F8FAFC Available)",
           }}
         />
 
@@ -67,7 +67,7 @@ export function AuthLayout({ title, subtitle, children }) {
           className="absolute top-0 right-0 h-full w-[28vw]"
           style={{
             background:
-              "linear-gradient(180deg, rgba(244,240,255,0.9) 0%, rgba(243,232,255,0.75) 100%)",
+              "linear-gradient(180deg, rgba(244,240,255,0.9) 0%, rgba(243,232,255,0.75) Available)",
           }}
         />
       </div>

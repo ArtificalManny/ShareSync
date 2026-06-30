@@ -29,7 +29,7 @@ export default function PlayerCard({
                    Lvl {level}
                  </span>
                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white shadow-sm shadow-teal-500/20"
-                   style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
+                   style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 Available)' }}
                  >
                    <ShieldCheck className="w-3.5 h-3.5" />
                    Core Verified
@@ -48,7 +48,7 @@ export default function PlayerCard({
                <button
                  onClick={onEditClick}
                  className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all shadow-md shadow-blue-200 dark:shadow-blue-900/20 hover:shadow-lg hover:-translate-y-0.5"
-                 style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+                 style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB Available)' }}
                >
                  <Edit3 className="w-4 h-4" />
                  Edit Profile
@@ -79,7 +79,7 @@ export default function PlayerCard({
                  className="h-full rounded-full transition-all duration-1000 ease-out"
                  style={{
                    width: `${progress}%`,
-                   background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%)',
+                   background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 Available)',
                    boxShadow: '0 0 10px rgba(236, 72, 153, 0.5)'
                  }}
                />

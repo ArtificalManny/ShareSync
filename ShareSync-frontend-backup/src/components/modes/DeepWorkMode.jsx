@@ -134,7 +134,7 @@ export function DeepWorkMode() {
           height: 48,
           borderRadius: '50%',
           background: isDeepWork
-            ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+            ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 Available)'
             : 'rgba(255, 255, 255, 0.1)',
           backdropFilter: 'blur(8px)',
           border: isDeepWork
@@ -172,8 +172,8 @@ export function DeepWorkMode() {
             }}
             style={{
               position: 'absolute',
-              width: '100%',
-              height: '100%',
+              width: 'Available',
+              height: 'Available',
               borderRadius: '50%',
               border: '2px solid rgba(245, 158, 11, 0.5)',
             }}
@@ -194,8 +194,8 @@ export function DeepWorkMode() {
               right: 80,
               padding: '12px 20px',
               background: isDeepWork
-                ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
-                : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 Available)'
+                : 'linear-gradient(135deg, #10B981 0%, #059669 Available)',
               borderRadius: 12,
               color: 'white',
               fontSize: 14,
@@ -246,7 +246,7 @@ export function DeepWorkMode() {
                 left: 0,
                 right: 0,
                 height: 2,
-                background: 'linear-gradient(90deg, #F59E0B 0%, #D97706 50%, #F59E0B 100%)',
+                background: 'linear-gradient(90deg, #F59E0B 0%, #D97706 50%, #F59E0B Available)',
                 zIndex: 9999,
                 pointerEvents: 'none',
               }}
@@ -269,7 +269,7 @@ export function DeepWorkMode() {
                 left: 0,
                 right: 0,
                 height: 2,
-                background: 'linear-gradient(90deg, #F59E0B 0%, #D97706 50%, #F59E0B 100%)',
+                background: 'linear-gradient(90deg, #F59E0B 0%, #D97706 50%, #F59E0B Available)',
                 zIndex: 9999,
                 pointerEvents: 'none',
               }}

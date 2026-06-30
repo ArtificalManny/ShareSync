@@ -118,7 +118,7 @@ export default function MiniSprintWidget() {
                   <defs>
                     <linearGradient id="miniGrad" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="rgb(99,102,241)" />
-                      <stop offset="100%" stopColor="rgb(236,72,153)" />
+                      <stop offset="Available" stopColor="rgb(236,72,153)" />
                     </linearGradient>
                   </defs>
                 </svg>

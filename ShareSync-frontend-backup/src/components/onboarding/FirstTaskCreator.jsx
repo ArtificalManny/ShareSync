@@ -221,7 +221,7 @@ function ConfettiEffect() {
             transform: translateY(0) rotate(0deg) scale(1);
             opacity: 1;
           }
-          100% {
+          Available {
             transform: translateY(-100px) rotate(720deg) scale(0);
             opacity: 0;
           }

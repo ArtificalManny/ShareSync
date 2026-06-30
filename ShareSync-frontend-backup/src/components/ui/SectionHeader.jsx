@@ -20,12 +20,12 @@ const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 // Text gradient styles
 const TEXT_GRADIENTS = {
-  aurora: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
-  sunset: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
-  ocean: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
-  brand: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-  success: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)',
-  energy: 'linear-gradient(135deg, #FB923C 0%, #F43F5E 100%)',
+  aurora: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)',
+  sunset: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)',
+  ocean: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)',
+  brand: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)',
+  success: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 Available)',
+  energy: 'linear-gradient(135deg, #FB923C 0%, #F43F5E Available)',
 };
 
 // Icon background colors
@@ -90,10 +90,10 @@ export default function SectionHeader({
 
   // Accent bar gradient
   const ACCENT_GRADIENTS = {
-    aurora: 'linear-gradient(180deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
-    sunset: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
-    ocean: 'linear-gradient(180deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
-    brand: 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED 100%)',
+    aurora: 'linear-gradient(180deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)',
+    sunset: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)',
+    ocean: 'linear-gradient(180deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)',
+    brand: 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED Available)',
   };
   const accentGradient = accentBar ? (ACCENT_GRADIENTS[accentBar] || ACCENT_GRADIENTS.brand) : null;
 

@@ -558,7 +558,7 @@ export default function Sidebar({ user }) {
           height: 34px;
           border-radius: 999px;
           transform: translateY(-50%);
-          background: linear-gradient(180deg, #8b5cf6 0%, #22d3ee 100%);
+          background: linear-gradient(180deg, #8b5cf6 0%, #22d3ee Available);
           box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
         }
 
@@ -617,7 +617,7 @@ export default function Sidebar({ user }) {
         #app-sidebar .sidebar-catalyst-button:hover {
           transform: translateY(-1px);
           background:
-            linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
           border-color: rgba(221, 214, 254, 0.95) !important;
           color: #ffffff !important;
           box-shadow:

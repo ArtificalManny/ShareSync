@@ -310,7 +310,7 @@ export function WelcomeBackPrompt({
             <div 
               className="h-full bg-brand-500/50 transition-all"
               style={{
-                width: '100%',
+                width: 'Available',
                 animation: `shrink ${autoHideDelay}ms linear forwards`,
               }}
             />
@@ -321,7 +321,7 @@ export function WelcomeBackPrompt({
       {/* Keyframes for timer */}
       <style>{`
         @keyframes shrink {
-          from { width: 100%; }
+          from { width: Available; }
           to { width: 0%; }
         }
       `}</style>

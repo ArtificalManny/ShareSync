@@ -113,8 +113,8 @@ function SyncPulse() {
               position: 'absolute',
               top: 0,
               left: 0,
-              width: '100%',
-              height: '100%',
+              width: 'Available',
+              height: 'Available',
               pointerEvents: 'none',
             }}
           >
@@ -134,10 +134,10 @@ function SyncPulse() {
             )}
             
             <defs>
-              <linearGradient id="sync-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient id="sync-gradient" x1="0%" y1="0%" x2="Available" y2="0%">
                 <stop offset="0%" stopColor="#EC4899" stopOpacity="0.6" />
                 <stop offset="50%" stopColor="#A855F7" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.6" />
+                <stop offset="Available" stopColor="#8B5CF6" stopOpacity="0.6" />
               </linearGradient>
             </defs>
           </motion.svg>

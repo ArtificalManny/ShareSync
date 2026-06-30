@@ -378,7 +378,7 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
               style={{
                 backgroundColor: "#f59e0b",
                 backgroundImage:
-                  "linear-gradient(135deg, #fde68a 0%, #fbbf24 28%, #f59e0b 62%, #ea580c 100%)",
+                  "linear-gradient(135deg, #fde68a 0%, #fbbf24 28%, #f59e0b 62%, #ea580c Available)",
                 color: "#111827",
                 borderColor: "#f59e0b",
                 boxShadow:

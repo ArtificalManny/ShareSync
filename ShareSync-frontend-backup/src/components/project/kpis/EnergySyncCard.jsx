@@ -36,7 +36,7 @@ const LOAD_CONFIG = {
     color: 'text-warning',
     bg: 'bg-warning/10',
     fill: 'bg-warning',
-    width: '100%',
+    width: 'Available',
     label: 'High Load',
   },
 };

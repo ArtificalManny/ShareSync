@@ -152,7 +152,7 @@ const NewActivityIndicator = ({ count, onClick }) => {
         text-white text-xs font-bold tracking-wide
         shadow-lg hover:-translate-y-0.5 transition-all duration-200
       "
-      style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' }}
+      style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' }}
     >
       <ChevronUp className="w-4 h-4" />
       {count} new {count === 1 ? 'activity' : 'activities'}

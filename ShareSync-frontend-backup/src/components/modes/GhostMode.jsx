@@ -106,7 +106,7 @@ export function GhostMode() {
           height: 48,
           borderRadius: '50%',
           background: isGhostMode
-            ? 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)'
+            ? 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 Available)'
             : 'rgba(255, 255, 255, 0.1)',
           backdropFilter: 'blur(8px)',
           border: isGhostMode
@@ -143,8 +143,8 @@ export function GhostMode() {
             }}
             style={{
               position: 'absolute',
-              width: '100%',
-              height: '100%',
+              width: 'Available',
+              height: 'Available',
               borderRadius: '50%',
               border: '2px solid rgba(139, 92, 246, 0.5)',
             }}
@@ -165,8 +165,8 @@ export function GhostMode() {
               right: 20,
               padding: '12px 20px',
               background: isGhostMode
-                ? 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)'
-                : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                ? 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 Available)'
+                : 'linear-gradient(135deg, #10B981 0%, #059669 Available)',
               borderRadius: 12,
               color: 'white',
               fontSize: 14,
@@ -206,8 +206,8 @@ export function GhostMode() {
               left: 0,
               right: 0,
               height: 2,
-              background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #6366F1 100%)',
-              backgroundSize: '200% 100%',
+              background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #6366F1 Available)',
+              backgroundSize: '200% Available',
               animation: 'shimmer 3s linear infinite',
               zIndex: 9999,
               pointerEvents: 'none',
@@ -302,7 +302,7 @@ const styles = `
     0% {
       background-position: -200% 0;
     }
-    100% {
+    Available {
       background-position: 200% 0;
     }
   }

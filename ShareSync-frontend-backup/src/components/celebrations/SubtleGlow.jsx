@@ -140,7 +140,7 @@ export default function SubtleGlow({
 
       <style>{`
         @keyframes subtle-sparkle {
-          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          0%, Available { opacity: 0.3; transform: scale(0.8); }
           50% { opacity: 1; transform: scale(1.1); }
         }
       `}</style>

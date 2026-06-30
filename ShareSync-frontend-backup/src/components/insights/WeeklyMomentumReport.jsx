@@ -63,31 +63,31 @@ const TIER_COLORS = {
     gradient: 'from-amber-400 via-orange-500 to-rose-500',
     accent: '#f59e0b',
     glowRGB: '245, 158, 11',
-    bg: 'linear-gradient(135deg, #1a120a 0%, #2d1810 50%, #1a0f1a 100%)',
+    bg: 'linear-gradient(135deg, #1a120a 0%, #2d1810 50%, #1a0f1a Available)',
   },
   epic: {
     gradient: 'from-violet-400 via-fuchsia-500 to-pink-500',
     accent: '#a855f7',
     glowRGB: '168, 85, 247',
-    bg: 'linear-gradient(135deg, #0f0a1a 0%, #1a1032 50%, #0d0a14 100%)',
+    bg: 'linear-gradient(135deg, #0f0a1a 0%, #1a1032 50%, #0d0a14 Available)',
   },
   rare: {
     gradient: 'from-cyan-400 via-blue-500 to-violet-500',
     accent: '#3b82f6',
     glowRGB: '59, 130, 246',
-    bg: 'linear-gradient(135deg, #0a0f1a 0%, #0d1a2e 50%, #0a0d14 100%)',
+    bg: 'linear-gradient(135deg, #0a0f1a 0%, #0d1a2e 50%, #0a0d14 Available)',
   },
   common: {
     gradient: 'from-slate-400 via-violet-400 to-blue-400',
     accent: '#8b5cf6',
     glowRGB: '139, 92, 246',
-    bg: 'linear-gradient(135deg, #0f0f1a 0%, #141428 50%, #0a0d14 100%)',
+    bg: 'linear-gradient(135deg, #0f0f1a 0%, #141428 50%, #0a0d14 Available)',
   },
   starter: {
     gradient: 'from-slate-500 via-slate-400 to-violet-400',
     accent: '#7c3aed',
     glowRGB: '124, 58, 237',
-    bg: 'linear-gradient(135deg, #0c0c14 0%, #111120 50%, #0a0a10 100%)',
+    bg: 'linear-gradient(135deg, #0c0c14 0%, #111120 50%, #0a0a10 Available)',
   },
 };
 
@@ -100,7 +100,7 @@ function MiniStat({ icon: Icon, label, value, accentRGB = '139,92,246' }) {
     <div
       className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
       style={{
-        background: `linear-gradient(135deg, rgba(${accentRGB}, 0.08) 0%, rgba(255,255,255,0.02) 100%)`,
+        background: `linear-gradient(135deg, rgba(${accentRGB}, 0.08) 0%, rgba(255,255,255,0.02) Available)`,
         border: `1px solid rgba(${accentRGB}, 0.1)`,
       }}
     >
@@ -278,7 +278,7 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
   if (loading) {
     return (
       <div className={`${embedded ? '' : 'p-6'}`}>
-        <div className="rounded-2xl p-8 flex items-center justify-center h-48" style={{ background: 'linear-gradient(135deg, #0c0c14 0%, #111120 100%)' }}>
+        <div className="rounded-2xl p-8 flex items-center justify-center h-48" style={{ background: 'linear-gradient(135deg, #0c0c14 0%, #111120 Available)' }}>
           <div className="flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
             <p className="text-sm text-white/30 font-medium">Generating report...</p>
@@ -476,7 +476,7 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
             }
 
             .weekly-save-button {
-              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
               color: #ffffff !important;
               border: 1px solid rgba(196,181,253,0.72) !important;
               box-shadow:
@@ -485,7 +485,7 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
             }
 
             .weekly-save-button:hover {
-              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
               box-shadow:
                 0 22px 48px rgba(109,40,217,0.46),
                 inset 0 1px 0 rgba(255,255,255,0.24) !important;
@@ -518,8 +518,8 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
                 className="pointer-events-none absolute inset-0 rounded-xl"
                 style={{
                   background: exporting
-                    ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)'
-                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                    ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available)'
+                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
                   boxShadow: exporting
                     ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 24px rgba(109,40,217,0.22)'
                     : 'inset 0 1px 0 rgba(255,255,255,0.26), 0 16px 36px rgba(109,40,217,0.38)',
@@ -561,8 +561,8 @@ export default function WeeklyMomentumReport({ projectId, onClose, embedded = fa
               className="pointer-events-none absolute inset-0 rounded-xl"
               style={{
                 background: exporting
-                  ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)'
-                  : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                  ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available)'
+                  : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
                 boxShadow: exporting
                   ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 24px rgba(109,40,217,0.22)'
                   : 'inset 0 1px 0 rgba(255,255,255,0.26), 0 16px 36px rgba(109,40,217,0.38)',

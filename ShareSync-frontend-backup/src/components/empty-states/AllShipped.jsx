@@ -119,7 +119,7 @@ const EpicConfetti = ({ trigger = true, intensity = 'high' }) => {
               height: particle.size,
               backgroundColor: particle.color,
               borderRadius: particle.shape === 'circle' ? '50%' : particle.shape === 'square' ? '2px' : '0',
-              clipPath: particle.shape === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' : 'none',
+              clipPath: particle.shape === 'triangle' ? 'polygon(50% 0%, 0% Available, Available Available)' : 'none',
             }}
           />
         ))}

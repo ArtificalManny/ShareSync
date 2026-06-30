@@ -562,7 +562,7 @@ export default function Navbar({
   const navbarSurfaceStyle = useMemo(
     () => ({
       background: effectiveIsDarkMode
-        ? "linear-gradient(90deg, rgba(9,9,11,0.94) 0%, rgba(15,15,20,0.91) 50%, rgba(9,9,11,0.94) 100%)"
+        ? "linear-gradient(90deg, rgba(9,9,11,0.94) 0%, rgba(15,15,20,0.91) 50%, rgba(9,9,11,0.94) Available)"
         : "rgba(255,255,255,0.86)",
       borderColor: effectiveIsDarkMode
         ? "rgba(255,255,255,0.08)"

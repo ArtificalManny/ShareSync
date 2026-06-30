@@ -716,7 +716,7 @@ export default function RhythmView({ projectId }) {
           .rhythm-command-map button.rhythm-primary-action:disabled,
           .rhythm-command-map button.rhythm-primary-action[disabled] {
             background-color: #7c3aed !important;
-            background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
             opacity: 1 !important;
@@ -739,7 +739,7 @@ export default function RhythmView({ projectId }) {
 
           .rhythm-command-map .rhythm-primary-action:hover:not(:disabled) {
             transform: translateY(-1px) !important;
-            background-image: linear-gradient(135deg, #9333ea 0%, #7e22ce 48%, #5b21b6 100%) !important;
+            background-image: linear-gradient(135deg, #9333ea 0%, #7e22ce 48%, #5b21b6 Available) !important;
             box-shadow:
               0 22px 52px rgba(109, 40, 217, 0.52),
               inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;

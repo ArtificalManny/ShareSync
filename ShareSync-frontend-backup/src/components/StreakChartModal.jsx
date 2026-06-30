@@ -31,7 +31,7 @@ export default function StreakChartModal({ isOpen, onClose, weeklyData, monthlyD
             <div className="space-y-6">
               <div>
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Weekly Activity</p>
-                <ResponsiveContainer width="100%" height={150}>
+                <ResponsiveContainer width="Available" height={150}>
                   <BarChart data={weeklyChart}>
                     <XAxis dataKey="name" stroke="#ccc" />
                     <YAxis stroke="#ccc" />
@@ -43,7 +43,7 @@ export default function StreakChartModal({ isOpen, onClose, weeklyData, monthlyD
 
               <div>
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Monthly Overview</p>
-                <ResponsiveContainer width="100%" height={150}>
+                <ResponsiveContainer width="Available" height={150}>
                   <BarChart data={monthlyChart}>
                     <XAxis dataKey="name" stroke="#ccc" />
                     <YAxis stroke="#ccc" />

@@ -81,9 +81,9 @@ function FocusTimer({
             className="transition-all duration-1000"
           />
           <defs>
-            <linearGradient id="focusGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id="focusGradient" x1="0%" y1="0%" x2="Available" y2="0%">
               <stop offset="0%" stopColor="#7C3AED" />
-              <stop offset="100%" stopColor="#06B6D4" />
+              <stop offset="Available" stopColor="#06B6D4" />
             </linearGradient>
           </defs>
         </svg>

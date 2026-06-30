@@ -27,7 +27,7 @@ export default function AppLayout({ user }) {
         <div 
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)'
+            background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)'
           }}
         />
         

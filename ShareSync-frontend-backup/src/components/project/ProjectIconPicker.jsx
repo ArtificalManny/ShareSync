@@ -86,7 +86,7 @@ export default function ProjectIconPicker({ open, onClose, onSelect }) {
       <div className="fixed inset-0 z-50 bg-black/30 dark:bg-black/50" onClick={onClose} aria-hidden="true" />
       <div
         ref={containerRef}
-        className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(520px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
+        className="fixed z-50 inset-x-4 top-24 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(520px,calc(Available-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="icon-picker-title"

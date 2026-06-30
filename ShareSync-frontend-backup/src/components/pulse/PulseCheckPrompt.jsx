@@ -100,7 +100,7 @@ export default function PulseCheckPrompt({
                     text-white text-xs font-semibold
                     shadow-sm hover:shadow-md transition-all
                   "
-                  style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' }}
+                  style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 Available)' }}
                 >
                   Start
                   <ChevronRight className="w-3 h-3" />

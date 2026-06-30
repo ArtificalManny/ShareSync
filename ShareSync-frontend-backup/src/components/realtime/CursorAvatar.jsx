@@ -92,8 +92,8 @@ function CursorAvatar({ userName, userAvatar, activity, isFlashing }) {
             src={userAvatar}
             alt={userName}
             style={{
-              width: '100%',
-              height: '100%',
+              width: 'Available',
+              height: 'Available',
               objectFit: 'cover',
             }}
           />

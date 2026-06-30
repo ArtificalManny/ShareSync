@@ -177,7 +177,7 @@ const InsightsTab = ({ projectId, refreshKey = 0 }) => {
             border-color: rgba(148,163,184,0.36) !important;
             background:
               radial-gradient(circle at 12% 0%, rgba(139,92,246,0.10), transparent 32%),
-              radial-gradient(circle at 100% 0%, rgba(34,211,238,0.08), transparent 30%),
+              radial-gradient(circle at Available 0%, rgba(34,211,238,0.08), transparent 30%),
               linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.88)) !important;
             box-shadow:
               0 20px 58px rgba(15,23,42,0.10),
@@ -203,7 +203,7 @@ const InsightsTab = ({ projectId, refreshKey = 0 }) => {
             border-color: rgba(255,255,255,0.10) !important;
             background:
               radial-gradient(circle at 12% 0%, rgba(139,92,246,0.16), transparent 32%),
-              radial-gradient(circle at 100% 0%, rgba(34,211,238,0.10), transparent 30%),
+              radial-gradient(circle at Available 0%, rgba(34,211,238,0.10), transparent 30%),
               linear-gradient(180deg, rgba(15,23,42,0.86), rgba(2,6,23,0.78)) !important;
             box-shadow:
               0 28px 90px rgba(0,0,0,0.42),

@@ -146,7 +146,7 @@ const InstallPrompt = () => {
       <style jsx>{`
         @keyframes slide-up {
           from {
-            transform: translateY(100%);
+            transform: translateY(Available);
             opacity: 0;
           }
           to {

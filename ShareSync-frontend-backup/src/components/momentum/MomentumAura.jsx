@@ -76,7 +76,7 @@ export default function MomentumAura() {
             rgba(${COLORS.fire.energy500}, ${baseOpacity * 1.2}) 0%, 
             transparent 40%
           ),
-          radial-gradient(ellipse 100% 60% at center, 
+          radial-gradient(ellipse Available 60% at center, 
             rgba(${COLORS.live.cyan500}, ${baseOpacity * 0.6}) 0%, 
             transparent 50%
           )
@@ -93,7 +93,7 @@ export default function MomentumAura() {
             rgba(${COLORS.brand.violet500}, ${baseOpacity * 1.5}) 0%, 
             transparent 50%
           ),
-          radial-gradient(ellipse 100% 60% at bottom left, 
+          radial-gradient(ellipse Available 60% at bottom left, 
             rgba(${COLORS.live.cyan500}, ${baseOpacity * 0.8}) 0%, 
             transparent 40%
           )
@@ -107,7 +107,7 @@ export default function MomentumAura() {
       low: {
         // Cool blue tint - calm, slightly muted
         gradient: `
-          radial-gradient(ellipse 100% 70% at top left, 
+          radial-gradient(ellipse Available 70% at top left, 
             rgba(${COLORS.cool.blue400}, ${baseOpacity * 0.8}) 0%, 
             transparent 50%
           ),
@@ -121,7 +121,7 @@ export default function MomentumAura() {
       neutral: {
         // Very subtle Deep Violet brand tint
         gradient: `
-          radial-gradient(ellipse 100% 70% at top right, 
+          radial-gradient(ellipse Available 70% at top right, 
             rgba(${COLORS.brand.violet600}, ${baseOpacity}) 0%, 
             transparent 50%
           )
@@ -142,21 +142,21 @@ export default function MomentumAura() {
       {/* Inject keyframes */}
       <style>{`
         @keyframes momentum-breathe {
-          0%, 100% { opacity: 1; transform: scale(1); }
+          0%, Available { opacity: 1; transform: scale(1); }
           50% { opacity: 0.7; transform: scale(1.02); }
         }
         @keyframes momentum-subtle {
-          0%, 100% { opacity: 1; }
+          0%, Available { opacity: 1; }
           50% { opacity: 0.85; }
         }
         @keyframes momentum-glow-pulse {
-          0%, 100% { filter: brightness(1); }
+          0%, Available { filter: brightness(1); }
           50% { filter: brightness(1.1); }
         }
         
         /* ⭐ PHASE C: Fire mode breathing */
         @keyframes momentum-fire-breathe {
-          0%, 100% { 
+          0%, Available { 
             opacity: 1; 
             transform: scale(1);
             filter: brightness(1);
@@ -178,7 +178,7 @@ export default function MomentumAura() {
             opacity: 0.8;
             transform: scale(1.2);
           }
-          100% {
+          Available {
             opacity: 0;
             transform: scale(1.5);
           }
@@ -422,7 +422,7 @@ export function FireModeParticles({ count = 8 }) {
           90% {
             opacity: 0.8;
           }
-          100% {
+          Available {
             transform: translateY(-100px) rotate(360deg);
             opacity: 0;
           }

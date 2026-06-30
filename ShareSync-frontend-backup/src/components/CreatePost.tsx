@@ -14,7 +14,7 @@ const PostFormContainer = styled.div`
 `;
 
 const TextArea = styled.textarea`
-  width: 100%;
+  width: Available;
   padding: 10px;
   margin: 10px 0;
   border: 1px solid ${({ theme }: { theme: any }) => theme.border};

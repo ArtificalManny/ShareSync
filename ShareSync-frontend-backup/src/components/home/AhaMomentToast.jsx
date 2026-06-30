@@ -180,8 +180,8 @@ export function InsightUnlockedBanner({ insight, onView, onDismiss }) {
       
       <style>{`
         @keyframes shimmer {
-          100% {
-            transform: translateX(100%);
+          Available {
+            transform: translateX(Available);
           }
         }
         .animate-shimmer {

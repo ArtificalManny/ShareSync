@@ -62,7 +62,7 @@ export default function ChartModal({ xpHistory = {}, streakData = [], xpTierColo
 
           {/* XP Line Chart */}
           <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="Available" height="Available">
               <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
                 <XAxis dataKey="day" stroke="#8884d8" fontSize={12} />

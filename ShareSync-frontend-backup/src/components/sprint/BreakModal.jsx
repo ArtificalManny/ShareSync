@@ -98,7 +98,7 @@ export default function BreakModal({
         aria-hidden="true"
       />
       <div
-        className="fixed z-50 inset-x-4 top-20 md:left-1/2 md:-translate-x-1/2 md:inset-x-auto w-[min(560px,calc(100%-2rem))] rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
+        className="fixed z-50 inset-x-4 top-20 md:left-1/2 md:-translate-x-1/2 md:inset-x-auto w-[min(560px,calc(Available-2rem))] rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-label="Take a short break"

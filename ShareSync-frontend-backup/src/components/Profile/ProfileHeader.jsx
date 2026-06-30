@@ -72,7 +72,7 @@ export default function ProfileHeader({
         <div 
           className="p-0.5 rounded-full"
           style={{
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)'
+            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)'
           }}
         >
           <div className="bg-white rounded-full p-0.5">
@@ -83,7 +83,7 @@ export default function ProfileHeader({
         {isOwner && !isPublic && typeof onAvatarUploaded === "function" && (
           <button
             className="absolute -bottom-2 left-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB Available)' }}
             onClick={() => onAvatarUploaded(null)}
           >
             Change
@@ -122,7 +122,7 @@ export default function ProfileHeader({
             <Link 
               to="/settings" 
               className="px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all"
-              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+              style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB Available)' }}
             >
               Edit profile
             </Link>

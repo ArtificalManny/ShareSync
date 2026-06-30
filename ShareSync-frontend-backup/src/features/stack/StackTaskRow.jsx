@@ -494,7 +494,7 @@ export default function StackTaskRow({
                     style={
                       primaryAction.label === "Start"
                         ? {
-                            background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 55%, #6d28d9 100%)",
+                            background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 55%, #6d28d9 Available)",
                             color: "#ffffff",
                             opacity: 1,
                             border: "1px solid rgba(124, 58, 237, 0.55)",

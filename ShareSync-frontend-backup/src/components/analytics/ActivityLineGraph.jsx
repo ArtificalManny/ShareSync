@@ -34,7 +34,7 @@ export default function ActivityLineGraph({ data = [], title = 'Activity Over Ti
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
       </div>
 
-      <div style={{ width: '100%', height: 260 }}>
+      <div style={{ width: 'Available', height: 260 }}>
         <ResponsiveContainer>
           <LineChart data={safe} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />

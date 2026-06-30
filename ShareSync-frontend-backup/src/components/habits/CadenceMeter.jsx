@@ -48,7 +48,7 @@ export default function CadenceMeter({ activeDays = 0, range = 14 }) {
                 style={{
                   width: `${percentLabel}%`,
                   background:
-                    "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) 100%)",
+                    "linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--info)) Available)",
                 }}
                 aria-label={`Cadence ${percentLabel}%`}
               />

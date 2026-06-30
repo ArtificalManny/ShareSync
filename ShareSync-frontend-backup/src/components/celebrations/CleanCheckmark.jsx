@@ -96,7 +96,7 @@ export default function CleanCheckmark({
         @keyframes checkmark-pop {
           0% { transform: scale(0); opacity: 0; }
           60% { transform: scale(1.15); }
-          100% { transform: scale(1); opacity: 1; }
+          Available { transform: scale(1); opacity: 1; }
         }
       `}</style>
     </div>

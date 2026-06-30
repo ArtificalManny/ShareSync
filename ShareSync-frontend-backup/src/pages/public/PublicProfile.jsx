@@ -248,7 +248,7 @@ export default function PublicProfile() {
       className="min-h-screen p-6 lg:p-10 max-w-4xl mx-auto"
       style={{
         background:
-          'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)',
+          'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)',
       }}
     >
       <div className="bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-2xl p-8 shadow-lg shadow-violet-100/50 dark:shadow-none mb-8">
@@ -258,7 +258,7 @@ export default function PublicProfile() {
               className="w-24 h-24 rounded-full p-1"
               style={{
                 background:
-                  'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
+                  'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)',
               }}
             >
               <img
@@ -274,7 +274,7 @@ export default function PublicProfile() {
             <div
               className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md text-xs font-medium text-white"
               style={{
-                background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 Available)',
               }}
             >
               Lv {level}

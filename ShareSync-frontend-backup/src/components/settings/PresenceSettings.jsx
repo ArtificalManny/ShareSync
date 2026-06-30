@@ -434,7 +434,7 @@ function ToggleOption({ icon: Icon, label, description, checked, onChange }) {
         }`}
         style={
           checked 
-            ? { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' } 
+            ? { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)' } 
             : {}
         }
       >

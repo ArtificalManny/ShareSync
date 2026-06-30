@@ -272,7 +272,7 @@ export function CompletionForecast({
         {forecast.projectedCompletion < 100 && (
           <div className="p-4 rounded-xl bg-brand-500/5 border border-brand-500/20">
             <div className="text-sm text-text-primary mb-2">
-              To finish 100% by deadline:
+              To finish Available by deadline:
             </div>
             <div className="text-lg font-semibold text-brand-400">
               Need {forecast.requiredVelocity} ships/day 

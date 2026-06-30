@@ -39,7 +39,7 @@ export default function MobileTabBar({ user }) {
           <button
             onClick={handleQuickAdd}
             className="flex items-center justify-center w-14 h-14 rounded-full text-white shadow-xl shadow-violet-500/30 active:scale-95 transition-all outline-none"
-            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
           >
             <Plus className="w-7 h-7" />
           </button>

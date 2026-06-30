@@ -961,7 +961,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         .team room-modal-create-button {
           opacity: 1 !important;
           color: #fff !important;
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #06b6d4 100%) !important;
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #06b6d4 Available) !important;
           border: 1px solid rgba(255,255,255,0.42) !important;
           box-shadow:
             0 16px 34px rgba(124, 58, 237, 0.34),
@@ -987,7 +987,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         .team room-modal-create-button:disabled {
           opacity: 0.72 !important;
           cursor: not-allowed !important;
-          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available) !important;
         }
 
         .team room-stat-card {
@@ -1099,7 +1099,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               isolation: isolate !important;
               overflow: hidden !important;
               border: 1px solid rgba(216, 180, 254, 0.96) !important;
-              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
               box-shadow:
                 0 18px 40px rgba(124, 58, 237, 0.42),
                 0 0 0 1px rgba(255, 255, 255, 0.38) inset !important;
@@ -1139,7 +1139,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
 
             .team room-primary-button:hover:not(:disabled),
             .team room-modal-create-button:hover:not(:disabled) {
-              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
               box-shadow:
                 0 22px 48px rgba(124, 58, 237, 0.52),
                 0 0 0 1px rgba(255, 255, 255, 0.44) inset !important;
@@ -1148,7 +1148,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
 
             .team room-primary-button:disabled,
             .team room-modal-create-button:disabled {
-              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%) !important;
+              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed Available) !important;
               border-color: rgba(221, 214, 254, 0.98) !important;
               opacity: 0.92 !important;
               cursor: not-allowed !important;
@@ -1167,7 +1167,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         /* FINAL visibility override: Team Room buttons only */
         .team room-primary-button,
         .team room-modal-create-button {
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
           color: #ffffff !important;
           opacity: 1 !important;
           border: 1px solid rgba(196, 181, 253, 0.95) !important;
@@ -1196,7 +1196,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
 
         .team room-primary-button:hover:not(:disabled),
         .team room-modal-create-button:hover:not(:disabled) {
-          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
           box-shadow:
             0 22px 54px rgba(124, 58, 237, 0.52),
             inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
@@ -1205,7 +1205,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
 
         .team room-primary-button:disabled,
         .team room-modal-create-button:disabled {
-          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 48%, #7c3aed 100%) !important;
+          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 48%, #7c3aed Available) !important;
           color: #ffffff !important;
           opacity: 0.92 !important;
           cursor: not-allowed !important;
@@ -1234,7 +1234,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
           position: relative !important;
           isolation: isolate !important;
           background-color: #7c3aed !important;
-          background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+          background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           opacity: 1 !important;
@@ -1287,7 +1287,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         .team room-primary-button[disabled],
         .team room-modal-create-button[disabled] {
           background-color: #7c3aed !important;
-          background-image: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #7c3aed 100%) !important;
+          background-image: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #7c3aed Available) !important;
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           opacity: 1 !important;
@@ -1303,7 +1303,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         .team room-primary-button:hover:not(:disabled),
         .team room-modal-create-button:hover:not(:disabled) {
           background-color: #6d28d9 !important;
-          background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%) !important;
+          background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 Available) !important;
           box-shadow:
             0 22px 52px rgba(124, 58, 237, 0.54),
             0 0 0 1px rgba(255, 255, 255, 0.34) inset,

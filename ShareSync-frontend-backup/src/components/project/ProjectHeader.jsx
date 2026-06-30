@@ -22,9 +22,9 @@ function DNAPulse({ velocity = 50, size = 60 }) {
       <div className="absolute inset-0 flex items-center justify-center">
         <svg width={size} height={size} viewBox="0 0 60 60" className="animate-spin-slow">
           <defs>
-            <linearGradient id="dna-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="dna-gradient" x1="0%" y1="0%" x2="Available" y2="Available">
               <stop offset="0%" stopColor="#8B5CF6" />
-              <stop offset="100%" stopColor="#EC4899" />
+              <stop offset="Available" stopColor="#EC4899" />
             </linearGradient>
           </defs>
           <path
@@ -103,9 +103,9 @@ function MomentumScore({ score = 0, streak = 0, velocity = 0 }) {
           transform="rotate(-90 60 60)" className="transition-all duration-1000"
         />
         <defs>
-          <linearGradient id="momentum-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id="momentum-gradient" x1="0%" y1="0%" x2="Available" y2="Available">
             <stop offset="0%" stopColor="#8B5CF6" />
-            <stop offset="100%" stopColor="#EC4899" />
+            <stop offset="Available" stopColor="#EC4899" />
           </linearGradient>
         </defs>
       </svg>

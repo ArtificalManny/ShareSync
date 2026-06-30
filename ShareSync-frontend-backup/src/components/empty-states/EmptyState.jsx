@@ -418,7 +418,7 @@ export default function EmptyState({
       {/* Inline styles for animations */}
       <style>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0); }
+          0%, Available { transform: translateY(0); }
           50% { transform: translateY(-8px); }
         }
         

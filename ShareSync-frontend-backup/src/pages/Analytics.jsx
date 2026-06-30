@@ -222,7 +222,7 @@ function InsightItem({ emoji, text, type }) {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+    background: 'linear-gradient(135deg, #0F172A 0%, #1E293B Available)',
     padding: 24,
   },
   header: {
@@ -380,7 +380,7 @@ const styles = {
     alignItems: 'center',
     gap: 8,
     padding: '10px 20px',
-    background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+    background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)',
     border: 'none',
     borderRadius: 8,
     color: 'white',

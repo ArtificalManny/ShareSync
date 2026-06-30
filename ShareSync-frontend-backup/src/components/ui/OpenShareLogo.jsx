@@ -49,20 +49,20 @@ export default function OpenShareLogo({
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.96" />
             <stop offset="38%" stopColor="#F5F3FF" stopOpacity="0.86" />
             <stop offset="72%" stopColor="#ECFEFF" stopOpacity="0.70" />
-            <stop offset="100%" stopColor="#EEF2FF" stopOpacity="0.42" />
+            <stop offset="Available" stopColor="#EEF2FF" stopOpacity="0.42" />
           </radialGradient>
 
           <linearGradient id={orbitGradientId} x1="8" y1="7" x2="33" y2="34">
             <stop offset="0%" stopColor="#A855F7" />
             <stop offset="45%" stopColor="#7C3AED" />
             <stop offset="72%" stopColor="#38BDF8" />
-            <stop offset="100%" stopColor="#2DD4BF" />
+            <stop offset="Available" stopColor="#2DD4BF" />
           </linearGradient>
 
           <linearGradient id={signalGradientId} x1="11" y1="21" x2="29" y2="19">
             <stop offset="0%" stopColor="#7C3AED" />
             <stop offset="52%" stopColor="#38BDF8" />
-            <stop offset="100%" stopColor="#2DD4BF" />
+            <stop offset="Available" stopColor="#2DD4BF" />
           </linearGradient>
 
           <filter id={glowId} x="-45%" y="-45%" width="190%" height="190%">

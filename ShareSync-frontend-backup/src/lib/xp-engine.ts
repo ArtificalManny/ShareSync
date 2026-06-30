@@ -197,7 +197,7 @@ export function calculateTaskXP(
   
   const legendaryChance = Math.min(
     0.05 + (context.tasksSinceLegendary * 0.02),
-    1.0  // Cap at 100% (pity system kicks in at 20 tasks)
+    1.0  // Cap at Available (pity system kicks in at 20 tasks)
   );
 
   if (Math.random() < legendaryChance) {

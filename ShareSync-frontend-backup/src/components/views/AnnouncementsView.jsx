@@ -737,7 +737,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
 
         <div className="relative mt-7 overflow-visible pl-5 sm:pl-7">
           <span
-            className={`absolute left-0 top-1 h-[calc(100%-0.25rem)] w-1 rounded-full ${style.accent} shadow-[0_0_28px_rgba(124,58,237,0.34)]`}
+            className={`absolute left-0 top-1 h-[calc(Available-0.25rem)] w-1 rounded-full ${style.accent} shadow-[0_0_28px_rgba(124,58,237,0.34)]`}
           />
 
           <div className="pointer-events-none absolute -left-8 top-0 h-24 w-24 rounded-full bg-violet-500/10 blur-3xl" />
@@ -1073,7 +1073,7 @@ export default function AnnouncementsView({ projectId }) {
           }
 
           .announcements-primary-button {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
             box-shadow:
               0 18px 44px rgba(109, 40, 217, 0.34),
               inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
@@ -1081,7 +1081,7 @@ export default function AnnouncementsView({ projectId }) {
           }
 
           .announcements-primary-button:hover {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
             box-shadow:
               0 24px 58px rgba(109, 40, 217, 0.46),
               inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
@@ -1181,7 +1181,7 @@ export default function AnnouncementsView({ projectId }) {
             inset: 0 0 auto 0;
             height: 5px;
             z-index: 2;
-            background: linear-gradient(90deg, #8b5cf6 0%, #22d3ee 45%, #10b981 72%, #f59e0b 100%);
+            background: linear-gradient(90deg, #8b5cf6 0%, #22d3ee 45%, #10b981 72%, #f59e0b Available);
             box-shadow:
               0 0 32px rgba(34, 211, 238, 0.42),
               0 0 48px rgba(139, 92, 246, 0.28);
@@ -1198,7 +1198,7 @@ export default function AnnouncementsView({ projectId }) {
               linear-gradient(90deg, rgba(148, 163, 184, 0.085) 1px, transparent 1px),
               radial-gradient(circle at 76% 38%, rgba(245, 158, 11, 0.12), transparent 28%);
             background-size: 34px 34px, 34px 34px, auto;
-            mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent Available);
             opacity: 0.82;
           }
 
@@ -1237,7 +1237,7 @@ export default function AnnouncementsView({ projectId }) {
           }
 
           @keyframes announcementPulse {
-            0%, 100% {
+            0%, Available {
               opacity: 0.55;
               transform: scale(0.98);
             }
@@ -1270,7 +1270,7 @@ export default function AnnouncementsView({ projectId }) {
             font-size: clamp(2rem, 3.8vw, 3.6rem) !important;
             line-height: 0.95 !important;
             letter-spacing: -0.055em !important;
-            background: linear-gradient(135deg, #0f172a 0%, #111827 34%, #7c3aed 72%, #0891b2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #111827 34%, #7c3aed 72%, #0891b2 Available);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent !important;
@@ -1278,7 +1278,7 @@ export default function AnnouncementsView({ projectId }) {
           }
 
           .dark .announcements-hero-title {
-            background: linear-gradient(135deg, #ffffff 0%, #ddd6fe 36%, #a78bfa 70%, #67e8f9 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #ddd6fe 36%, #a78bfa 70%, #67e8f9 Available);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent !important;
@@ -1412,7 +1412,7 @@ export default function AnnouncementsView({ projectId }) {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 rounded-2xl"
                 style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
                   boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.26)',
                 }}
               />
@@ -1598,8 +1598,8 @@ export default function AnnouncementsView({ projectId }) {
                   style={{
                     background:
                       title.trim() && message.trim() && !posting && !anyUploading
-                        ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
-                        : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
+                        ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)'
+                        : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available)',
                     boxShadow:
                       title.trim() && message.trim() && !posting && !anyUploading
                         ? 'inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 16px 36px rgba(109, 40, 217, 0.34)'

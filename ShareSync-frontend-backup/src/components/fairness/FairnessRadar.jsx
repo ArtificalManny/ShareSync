@@ -70,7 +70,7 @@ export default function FairnessRadar({
     `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
   ).join(' ') + ' Z';
 
-  // Grid rings (25%, 50%, 75%, 100%)
+  // Grid rings (25%, 50%, 75%, Available)
   const rings = [0.25, 0.5, 0.75, 1];
 
   return (

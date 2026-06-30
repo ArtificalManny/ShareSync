@@ -249,12 +249,12 @@ export function TaskCompleteCelebration({
         @keyframes celebrate-pop {
           0% { transform: scale(0); opacity: 0; }
           50% { transform: scale(var(--scale, 1.1)); }
-          100% { transform: scale(1); opacity: 1; }
+          Available { transform: scale(1); opacity: 1; }
         }
         
         @keyframes glow-ring {
           0% { transform: scale(0.5); opacity: 1; }
-          100% { transform: scale(2); opacity: 0; }
+          Available { transform: scale(2); opacity: 0; }
         }
         
         @keyframes confetti-burst {
@@ -262,7 +262,7 @@ export function TaskCompleteCelebration({
             transform: translate(0, 0) rotate(0deg); 
             opacity: 1; 
           }
-          100% { 
+          Available { 
             transform: 
               translate(
                 calc(cos(var(--angle)) * var(--distance)),
@@ -281,7 +281,7 @@ export function TaskCompleteCelebration({
           20% { 
             opacity: 1; 
           }
-          100% { 
+          Available { 
             transform: translateY(-40px); 
             opacity: 0; 
           }
@@ -296,7 +296,7 @@ export function TaskCompleteCelebration({
             transform: scale(1.5) rotate(180deg); 
             opacity: 1; 
           }
-          100% { 
+          Available { 
             transform: scale(0) rotate(360deg); 
             opacity: 0; 
           }
@@ -305,7 +305,7 @@ export function TaskCompleteCelebration({
         @keyframes screen-flash {
           0% { opacity: 0; }
           30% { opacity: 1; }
-          100% { opacity: 0; }
+          Available { opacity: 0; }
         }
       `}</style>
     </>

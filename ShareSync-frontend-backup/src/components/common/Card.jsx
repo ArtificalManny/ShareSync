@@ -11,23 +11,23 @@ const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 const GRADIENT_BACKGROUNDS = {
   none: '',
-  softGlow: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)',
-  softViolet: 'linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%)',
-  softBlue: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%)',
-  softTeal: 'linear-gradient(180deg, #FFFFFF 0%, #F0FDFA 100%)',
-  softAmber: 'linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 100%)',
-  softRose: 'linear-gradient(180deg, #FFFFFF 0%, #FFF1F2 100%)',
+  softGlow: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)',
+  softViolet: 'linear-gradient(180deg, #FFFFFF 0%, #F5F3FF Available)',
+  softBlue: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF Available)',
+  softTeal: 'linear-gradient(180deg, #FFFFFF 0%, #F0FDFA Available)',
+  softAmber: 'linear-gradient(180deg, #FFFFFF 0%, #FFFBEB Available)',
+  softRose: 'linear-gradient(180deg, #FFFFFF 0%, #FFF1F2 Available)',
 };
 
 const ACCENT_GRADIENTS = {
-  aurora: 'linear-gradient(180deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
-  sunset: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
-  ocean: 'linear-gradient(180deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
-  brand: 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED 100%)',
-  success: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)',
-  warning: 'linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%)',
-  energy: 'linear-gradient(180deg, #FB923C 0%, #F43F5E 100%)',
-  danger: 'linear-gradient(180deg, #F87171 0%, #EF4444 100%)',
+  aurora: 'linear-gradient(180deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)',
+  sunset: 'linear-gradient(180deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)',
+  ocean: 'linear-gradient(180deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)',
+  brand: 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED Available)',
+  success: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 Available)',
+  warning: 'linear-gradient(180deg, #FBBF24 0%, #F59E0B Available)',
+  energy: 'linear-gradient(180deg, #FB923C 0%, #F43F5E Available)',
+  danger: 'linear-gradient(180deg, #F87171 0%, #EF4444 Available)',
 };
 
 export default function Card({
@@ -247,10 +247,10 @@ export function CardProgress({
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   
   const gradients = {
-    ocean: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
-    brand: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
-    success: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)',
-    energy: 'linear-gradient(90deg, #FB923C 0%, #F43F5E 100%)',
+    ocean: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)',
+    brand: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED Available)',
+    success: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 Available)',
+    energy: 'linear-gradient(90deg, #FB923C 0%, #F43F5E Available)',
   };
 
   return (

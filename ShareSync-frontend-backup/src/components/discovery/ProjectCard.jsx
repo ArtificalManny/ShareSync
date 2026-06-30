@@ -200,7 +200,7 @@ export default function ProjectCard({ project, onOpen, onPrefetch, isHovered, on
             animation: pulse var(--pulse, 2s) infinite;
           }
           @keyframes pulse {
-            0%, 100% { transform: scale(1); }
+            0%, Available { transform: scale(1); }
             50% { transform: scale(1.2); }
           }
         `}</style>

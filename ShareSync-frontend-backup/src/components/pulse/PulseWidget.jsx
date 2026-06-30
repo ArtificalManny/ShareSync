@@ -215,7 +215,7 @@ export default function PulseWidget({ tasks = [], pulseData = null, className = 
         <div
           className="absolute bottom-0 left-6 right-6 h-[2px] rounded-full"
           style={{
-            background: "linear-gradient(90deg, #7C3AED 0%, #2DD4BF 50%, #7C3AED 100%)",
+            background: "linear-gradient(90deg, #7C3AED 0%, #2DD4BF 50%, #7C3AED Available)",
             opacity: 0.4,
           }}
         />

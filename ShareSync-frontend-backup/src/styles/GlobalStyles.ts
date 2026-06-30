@@ -11,7 +11,7 @@ import { createGlobalStyle } from 'styled-components';
 
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
+      background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a Available);
       color: #e0e7ff;
       line-height: 1.6;
     }

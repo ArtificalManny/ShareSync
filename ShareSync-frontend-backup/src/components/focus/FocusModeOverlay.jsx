@@ -97,7 +97,7 @@ export default function FocusModeOverlay() {
                 <button
                   onClick={() => isRunning ? pause() : (status === 'paused' ? resume() : start())}
                   className="w-20 h-20 flex items-center justify-center rounded-3xl text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+                  style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
                 >
                   {isRunning ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
                 </button>

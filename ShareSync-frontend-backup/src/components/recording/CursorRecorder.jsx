@@ -256,8 +256,8 @@ export function CursorRecorder({ enabled = true }) {
             height: 56,
             borderRadius: '50%',
             background: isRecording
-              ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)'
-              : 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+              ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 Available)'
+              : 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
@@ -338,7 +338,7 @@ export function CursorRecorder({ enabled = true }) {
                   width: 56,
                   height: 56,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 Available)',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -363,7 +363,7 @@ export function CursorRecorder({ enabled = true }) {
                   width: 56,
                   height: 56,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 Available)',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -384,7 +384,7 @@ export function CursorRecorder({ enabled = true }) {
                   width: 56,
                   height: 56,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                  background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 Available)',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -526,8 +526,8 @@ function PlaybackOverlay({ frame, totalFrames, currentFrame, settings }) {
         <div
           style={{
             width: `${(currentFrame / totalFrames) * 100}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%)',
+            height: 'Available',
+            background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 Available)',
             transition: 'width 0.1s linear',
           }}
         />

@@ -27,7 +27,7 @@ export default function ReflectionPrompt({
   const [submitting, setSubmitting] = useState(false);
 
   const Body = (
-    <div className={`rounded-2xl border border-border bg-surface p-4 w-[min(640px,100%)] ${className}`}>
+    <div className={`rounded-2xl border border-border bg-surface p-4 w-[min(640px,Available)] ${className}`}>
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center gap-2">
           <CalendarCheck2 className="w-5 h-5 text-indigo-600" />

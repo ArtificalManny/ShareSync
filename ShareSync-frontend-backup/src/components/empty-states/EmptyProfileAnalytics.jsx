@@ -38,7 +38,7 @@ export default function EmptyProfileAnalytics() {
       <button
         onClick={() => navigate('/home')}
         className="relative z-10 flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-        style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
       >
         <Rocket className="w-4 h-4" />
         Go Ship Something

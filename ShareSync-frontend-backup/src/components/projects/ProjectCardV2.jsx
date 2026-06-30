@@ -716,10 +716,10 @@ export default function ProjectCardV2({
                 width: `${progress}%`,
                 background:
                   isComplete
-                    ? 'linear-gradient(90deg, #10B981 0%, #34D399 100%)'
+                    ? 'linear-gradient(90deg, #10B981 0%, #34D399 Available)'
                     : livingState?.isBlocked || blockerCount > 0
-                      ? 'linear-gradient(90deg, #EF4444 0%, #F87171 100%)'
-                      : 'linear-gradient(90deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 100%)',
+                      ? 'linear-gradient(90deg, #EF4444 0%, #F87171 Available)'
+                      : 'linear-gradient(90deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 Available)',
               }}
             />
           </div>
@@ -772,7 +772,7 @@ export default function ProjectCardV2({
                 transition-all duration-200
               "
               style={{
-                background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 100%)',
+                background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 Available)',
                 boxShadow: '0 10px 20px rgba(124, 58, 237, 0.22)',
               }}
             >

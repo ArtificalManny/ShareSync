@@ -129,7 +129,7 @@ const ACHIEVEMENT_CONFIG = {
   // Special
   perfectionist: { 
     name: 'Perfectionist', 
-    description: '100% completion rate this week', 
+    description: 'Available completion rate this week', 
     icon: Target, 
     rarity: 'rare',
     color: 'success',
@@ -230,7 +230,7 @@ const DismissProgress = ({ duration, onComplete, paused = false }) => {
   return (
     <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-2 overflow-hidden rounded-b-xl">
       <motion.div
-        initial={{ width: '100%' }}
+        initial={{ width: 'Available' }}
         animate={{ width: paused ? undefined : '0%' }}
         transition={{ duration: duration / 1000, ease: 'linear' }}
         onAnimationComplete={onComplete}

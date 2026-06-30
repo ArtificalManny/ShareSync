@@ -108,7 +108,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
           .roadmap-create-milestone-modal-v2 button.roadmap-create-button:disabled,
           .roadmap-create-milestone-modal-v2 button.roadmap-create-button[disabled] {
             background-color: #7c3aed !important;
-            background-image: linear-gradient(135deg, #a855f7 0%, #7c3aed 46%, #5b21b6 100%) !important;
+            background-image: linear-gradient(135deg, #a855f7 0%, #7c3aed 46%, #5b21b6 Available) !important;
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
             opacity: 1 !important;
@@ -139,7 +139,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
           .roadmap-create-milestone-modal-v2 button.roadmap-create-force-visible-button-v2:hover:not(:disabled),
           .roadmap-create-milestone-modal-v2 button.roadmap-create-button:hover:not(:disabled) {
             transform: translateY(-1px) !important;
-            background-image: linear-gradient(135deg, #9333ea 0%, #6d28d9 48%, #4c1d95 100%) !important;
+            background-image: linear-gradient(135deg, #9333ea 0%, #6d28d9 48%, #4c1d95 Available) !important;
             box-shadow:
               0 22px 50px rgba(109, 40, 217, 0.54),
               inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
@@ -174,7 +174,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             position: relative !important;
             isolation: isolate !important;
             overflow: hidden !important;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
             color: #ffffff !important;
             opacity: 1 !important;
             border: 1px solid rgba(221, 214, 254, 0.92) !important;
@@ -186,14 +186,14 @@ export default function AddMilestoneModal({ projectId, onClose }) {
 
           .roadmap-create-force-visible-button-v2:hover:not(:disabled) {
             transform: translateY(-1px) !important;
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
             box-shadow:
               0 20px 44px rgba(109, 40, 217, 0.48),
               inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
           }
 
           .roadmap-create-force-visible-button-v2:disabled {
-            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available) !important;
             color: #ffffff !important;
             opacity: 0.88 !important;
             cursor: not-allowed !important;
@@ -246,7 +246,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             position: relative;
             isolation: isolate;
             overflow: hidden;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
             color: #ffffff !important;
             border-color: rgba(221, 214, 254, 0.88) !important;
             box-shadow:
@@ -257,14 +257,14 @@ export default function AddMilestoneModal({ projectId, onClose }) {
 
           .roadmap-create-button:hover:not(:disabled) {
             transform: translateY(-1px);
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
             box-shadow:
               0 20px 44px rgba(109, 40, 217, 0.44),
               inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
           }
 
           .roadmap-create-button:disabled {
-            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available) !important;
             color: #ffffff !important;
             opacity: 0.82 !important;
             cursor: not-allowed !important;
@@ -292,7 +292,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
       {/* Modal */}
       <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-white/[0.08] dark:bg-[#101827]">
         {/* Soft surface atmosphere */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.95),rgba(255,255,255,0.78)_35%,rgba(139,92,246,0.045)_100%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.12),rgba(15,23,42,0)_58%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.95),rgba(255,255,255,0.78)_35%,rgba(139,92,246,0.045)_Available)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.12),rgba(15,23,42,0)_58%)]" />
         <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-violet-300/10 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-cyan-300/10 blur-3xl dark:bg-cyan-500/10" />
 
@@ -433,7 +433,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
               
                 style={{
                   background:
-                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)",
+                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)",
                   color: "#ffffff",
                   opacity: 1,
                   border: "1px solid rgba(221, 214, 254, 0.92)",

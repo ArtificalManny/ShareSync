@@ -9,18 +9,18 @@ const cn = (...classes) => classes.filter(Boolean).join(' ');
 
 // Gradient fill styles for progress bar
 const GRADIENT_FILLS = {
-  ocean: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
-  brand: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
-  aurora: 'linear-gradient(90deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
-  sunset: 'linear-gradient(90deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
-  success: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)',
-  energy: 'linear-gradient(90deg, #FB923C 0%, #F43F5E 100%)',
-  warning: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)',
-  danger: 'linear-gradient(90deg, #F87171 0%, #EF4444 100%)',
+  ocean: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)',
+  brand: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED Available)',
+  aurora: 'linear-gradient(90deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)',
+  sunset: 'linear-gradient(90deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)',
+  success: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 Available)',
+  energy: 'linear-gradient(90deg, #FB923C 0%, #F43F5E Available)',
+  warning: 'linear-gradient(90deg, #FBBF24 0%, #F59E0B Available)',
+  danger: 'linear-gradient(90deg, #F87171 0%, #EF4444 Available)',
   // Legacy solid colors (backward compatibility)
-  violet: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
-  blue: 'linear-gradient(90deg, #3B82F6 0%, #2563EB 100%)',
-  teal: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)',
+  violet: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED Available)',
+  blue: 'linear-gradient(90deg, #3B82F6 0%, #2563EB Available)',
+  teal: 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 Available)',
 };
 
 // Pulse colors for each variant
@@ -75,7 +75,7 @@ export default function ProgressBar({
       setIsPulsing(true);
       const timer = setTimeout(() => setIsPulsing(false), 600);
       
-      // At 100%, also trigger shine
+      // At Available, also trigger shine
       if (currentPct >= 100 && prevPct < 100) {
         setIsShining(true);
         setTimeout(() => setIsShining(false), 1200);
@@ -197,16 +197,16 @@ export default function ProgressBar({
         
         @keyframes progress-pulse {
           0% { box-shadow: 0 0 0 0 var(--pulse-color, rgba(6, 182, 212, 0.4)); }
-          100% { box-shadow: 0 0 0 8px transparent; }
+          Available { box-shadow: 0 0 0 8px transparent; }
         }
         
         .progress-shine::after {
           content: '';
           position: absolute;
           top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
+          left: -Available;
+          width: Available;
+          height: Available;
           background: linear-gradient(
             90deg,
             transparent,
@@ -217,7 +217,7 @@ export default function ProgressBar({
         }
         
         @keyframes shine {
-          to { left: 100%; }
+          to { left: Available; }
         }
         
         .animate-bounce-subtle {
@@ -225,7 +225,7 @@ export default function ProgressBar({
         }
         
         @keyframes bounce-subtle {
-          0%, 100% { transform: scale(1); }
+          0%, Available { transform: scale(1); }
           50% { transform: scale(1.1); }
         }
       `}</style>
@@ -317,7 +317,7 @@ export function ProgressRing({
         )}
       >
         <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="Available" y2="0%">
             {gradientColors.map((color, index) => (
               <stop 
                 key={index}
@@ -365,7 +365,7 @@ export function ProgressRing({
       <style>{`
         @keyframes ring-pulse {
           0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
-          100% { box-shadow: 0 0 0 12px rgba(6, 182, 212, 0); }
+          Available { box-shadow: 0 0 0 12px rgba(6, 182, 212, 0); }
         }
       `}</style>
     </div>

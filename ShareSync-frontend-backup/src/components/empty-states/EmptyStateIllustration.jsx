@@ -41,14 +41,14 @@ export function RocketIllustration({ glowLevel = 2, accentColor = 'brand', isFir
   return (
     <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="rocketGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="rocketGradient" x1="0%" y1="0%" x2="Available" y2="Available">
           <stop offset="0%" stopColor={primaryColor} />
-          <stop offset="100%" stopColor={secondaryColor} />
+          <stop offset="Available" stopColor={secondaryColor} />
         </linearGradient>
-        <linearGradient id="flameGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient id="flameGradient" x1="0%" y1="0%" x2="0%" y2="Available">
           <stop offset="0%" stopColor="#F59E0B" />
           <stop offset="50%" stopColor="#F43F5E" />
-          <stop offset="100%" stopColor="#8B5CF6" />
+          <stop offset="Available" stopColor="#8B5CF6" />
         </linearGradient>
       </defs>
       
@@ -138,9 +138,9 @@ export function CanvasIllustration({ glowLevel = 2, accentColor = 'brand', isFir
   return (
     <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="canvasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="canvasGradient" x1="0%" y1="0%" x2="Available" y2="Available">
           <stop offset="0%" stopColor={primaryColor} />
-          <stop offset="100%" stopColor={secondaryColor} />
+          <stop offset="Available" stopColor={secondaryColor} />
         </linearGradient>
       </defs>
       
@@ -245,9 +245,9 @@ export function InboxZeroIllustration({ glowLevel = 2, accentColor = 'brand', is
   return (
     <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="inboxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="inboxGradient" x1="0%" y1="0%" x2="Available" y2="Available">
           <stop offset="0%" stopColor={primaryColor} />
-          <stop offset="100%" stopColor={secondaryColor} />
+          <stop offset="Available" stopColor={secondaryColor} />
         </linearGradient>
       </defs>
       
@@ -374,9 +374,9 @@ export function SearchIllustration({ glowLevel = 2, accentColor = 'brand', isFir
   return (
     <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="searchGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="searchGradient" x1="0%" y1="0%" x2="Available" y2="Available">
           <stop offset="0%" stopColor={primaryColor} />
-          <stop offset="100%" stopColor="#06B6D4" />
+          <stop offset="Available" stopColor="#06B6D4" />
         </linearGradient>
       </defs>
       
@@ -450,9 +450,9 @@ export function TrophyIllustration({ glowLevel = 2, accentColor = 'brand', isFir
   return (
     <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="trophyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient id="trophyGradient" x1="0%" y1="0%" x2="0%" y2="Available">
           <stop offset="0%" stopColor={secondaryColor} />
-          <stop offset="100%" stopColor={primaryColor} />
+          <stop offset="Available" stopColor={primaryColor} />
         </linearGradient>
       </defs>
       

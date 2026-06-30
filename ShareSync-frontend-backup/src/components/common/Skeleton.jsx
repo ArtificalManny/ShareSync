@@ -59,7 +59,7 @@ const Skeleton = ({
 
   // Custom sizing if provided
   const customStyle = {
-    width: width || '100%',
+    width: width || 'Available',
     height: height || 'auto',
   };
 
@@ -73,7 +73,7 @@ const Skeleton = ({
           className={`
             ${variants[variant]}
             bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800
-            bg-[length:200%_100%]
+            bg-[length:200%_Available]
             ${className}
           `}
           aria-hidden="true"

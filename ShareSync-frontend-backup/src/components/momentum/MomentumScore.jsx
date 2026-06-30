@@ -50,9 +50,9 @@ export default function MomentumScore({ size = "lg" }) {
           transition={{ duration: 1, ease: "easeOut" }}
         />
         <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="Available" y2="Available">
             <stop offset="0%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#ec4899" />
+            <stop offset="Available" stopColor="#ec4899" />
           </linearGradient>
         </defs>
       </svg>

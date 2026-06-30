@@ -576,7 +576,7 @@ export default function VaultView({ projectId }) {
       <style>
         {`
           .vault-upload-button {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
             color: #ffffff !important;
             border: 1px solid rgba(124, 58, 237, 0.95) !important;
             box-shadow: 0 16px 36px rgba(109, 40, 217, 0.38) !important;
@@ -587,7 +587,7 @@ export default function VaultView({ projectId }) {
           }
 
           .vault-upload-button:hover {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
             box-shadow: 0 20px 44px rgba(109, 40, 217, 0.5) !important;
           }
 
@@ -625,7 +625,7 @@ export default function VaultView({ projectId }) {
             position: relative;
             background:
               radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.10), transparent 30%),
-              radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.10), transparent 32%),
+              radial-gradient(circle at Available 0%, rgba(34, 211, 238, 0.10), transparent 32%),
               linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.62)) !important;
             border-color: rgba(148, 163, 184, 0.36) !important;
             box-shadow:
@@ -637,7 +637,7 @@ export default function VaultView({ projectId }) {
           .dark .vault-folder-section {
             background:
               radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.12), transparent 30%),
-              radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.10), transparent 32%),
+              radial-gradient(circle at Available 0%, rgba(34, 211, 238, 0.10), transparent 32%),
               linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.72)) !important;
             border-color: rgba(255, 255, 255, 0.09) !important;
             box-shadow:
@@ -817,7 +817,7 @@ export default function VaultView({ projectId }) {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 rounded-2xl"
                 style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
                   boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.26)',
                 }}
               />

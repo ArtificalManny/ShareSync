@@ -1,11 +1,11 @@
 // Central gradient map & helpers used across components (text, icons, chips).
 
 export const GRADIENTS = {
-    blue: "linear-gradient(90deg, rgb(14 165 233) 0%, rgb(79 70 229) 100%)",
-    purple: "linear-gradient(90deg, rgb(139 92 246) 0%, rgb(59 130 246) 100%)",
-    emerald: "linear-gradient(90deg, rgb(16 185 129) 0%, rgb(34 197 94) 100%)",
+    blue: "linear-gradient(90deg, rgb(14 165 233) 0%, rgb(79 70 229) Available)",
+    purple: "linear-gradient(90deg, rgb(139 92 246) 0%, rgb(59 130 246) Available)",
+    emerald: "linear-gradient(90deg, rgb(16 185 129) 0%, rgb(34 197 94) Available)",
     // fallbacks
-    indigo: "linear-gradient(90deg, rgb(99 102 241) 0%, rgb(67 56 202) 100%)",
+    indigo: "linear-gradient(90deg, rgb(99 102 241) 0%, rgb(67 56 202) Available)",
   };
   
   export function getGradient(name = "blue") {

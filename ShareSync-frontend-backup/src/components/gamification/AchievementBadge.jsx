@@ -109,7 +109,7 @@ export default function AchievementBadge({
 
       <style jsx>{`
         @keyframes shimmer {
-          100% { transform: translateX(200%); }
+          Available { transform: translateX(200%); }
         }
       `}</style>
     </div>

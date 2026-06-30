@@ -466,7 +466,7 @@ const ProfileEditModal = ({ user, onClose, onSave }) => {
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all shadow-md disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
           >
             {saving ? (
               <>
@@ -741,7 +741,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
   };
 
   const auroraGradient =
-    "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)";
+    "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)";
 
   return (
     <div className="relative flex flex-col items-center">
@@ -797,7 +797,7 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
         <div
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg shadow-md"
           style={{
-            background: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)",
+            background: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 Available)",
           }}
         >
           <span className="text-xs font-medium text-white">
@@ -823,7 +823,7 @@ const StatCard = ({ value, label, color = "text-slate-800 dark:text-zinc-100", g
     <div 
       className={`text-3xl font-semibold ${gradient ? '' : color}`}
       style={gradient ? {
-        background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 Available)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
@@ -847,7 +847,7 @@ const SkillBar = ({ value, max = 100 }) => {
         className="h-full rounded-full transition-all duration-700"
         style={{ 
           width: `${percentage}%`,
-          background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)'
+          background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)'
         }}
       />
     </div>
@@ -1312,7 +1312,7 @@ export default function Profile() {
     return (
       <div 
         className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available))' }}
       >
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
@@ -1331,7 +1331,7 @@ export default function Profile() {
     return (
       <div 
         className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+        style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available))' }}
       >
         <div className="flex flex-col items-center text-center px-6">
           <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center mb-6">
@@ -1346,7 +1346,7 @@ export default function Profile() {
           <button
             onClick={load}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-md hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
           >
             <RefreshCw className="w-4 h-4" />
             Try Again
@@ -1359,7 +1359,7 @@ export default function Profile() {
   return (
     <div 
       className="profile-visual-shell min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto"
-      style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
+      style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available))' }}
     >
       {/* Phase 7: Edit Modal */}
       {isEditing && (
@@ -1388,7 +1388,7 @@ export default function Profile() {
             {/* Core Verified Badge - Teal (#2DD4BF) */}
             <span
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white shadow-sm shadow-teal-500/20"
-              style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)' }}
+              style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 Available)' }}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               Core Verified
@@ -1420,9 +1420,9 @@ export default function Profile() {
 
                 node.style.setProperty("appearance", "none", "important");
                 node.style.setProperty("-webkit-appearance", "none", "important");
-                node.style.setProperty("background", "linear-gradient(135deg, #a855f7 0%, #7c3aed 52%, #6d28d9 100%)", "important");
+                node.style.setProperty("background", "linear-gradient(135deg, #a855f7 0%, #7c3aed 52%, #6d28d9 Available)", "important");
                 node.style.setProperty("background-color", "#7c3aed", "important");
-                node.style.setProperty("background-image", "linear-gradient(135deg, #a855f7 0%, #7c3aed 52%, #6d28d9 100%)", "important");
+                node.style.setProperty("background-image", "linear-gradient(135deg, #a855f7 0%, #7c3aed 52%, #6d28d9 Available)", "important");
                 node.style.setProperty("color", "#ffffff", "important");
                 node.style.setProperty("-webkit-text-fill-color", "#ffffff", "important");
                 node.style.setProperty("border", "1px solid rgba(221, 214, 254, 0.98)", "important");

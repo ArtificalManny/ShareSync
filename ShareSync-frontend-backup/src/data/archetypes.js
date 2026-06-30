@@ -46,7 +46,7 @@ export const ARCHETYPES = [
     name: 'The Finisher',
     emoji: '🎯',
     tagline: 'You close the loop',
-    description: 'You hate loose ends. Your superpower is taking things from 90% to 100% when others have moved on.',
+    description: 'You hate loose ends. Your superpower is taking things from 90% to Available when others have moved on.',
     traits: ['Detail-oriented', 'Persistent', 'Reliable'],
     color: 'success',
     gradient: 'from-success-500 to-success-600',

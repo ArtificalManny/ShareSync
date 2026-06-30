@@ -85,14 +85,14 @@ const PrivacyCard = () => {
         })}
       </div>
 
-      {/* Privacy Score Badge */}
+      {/* Privacy Controls Badge */}
       <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-emerald-300 mb-1">Privacy Score</div>
-            <div className="text-xs text-slate-400">Your data is secure</div>
+            <div className="text-sm font-semibold text-emerald-300 mb-1">Privacy Controls</div>
+            <div className="text-xs text-slate-400">Review your settings</div>
           </div>
-          <div className="text-3xl font-bold text-emerald-400">100%</div>
+          <div className="text-3xl font-bold text-emerald-400">Available</div>
         </div>
       </div>
 
@@ -108,7 +108,7 @@ const PrivacyCard = () => {
       {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-3 gap-3 text-center">
         <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
-          <div className="text-xs text-slate-500 mb-1">Zero-knowledge</div>
+          <div className="text-xs text-slate-500 mb-1">Privacy defaults</div>
           <div className="text-sm font-bold text-slate-900 dark:text-white">✓</div>
         </div>
         <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
@@ -116,8 +116,8 @@ const PrivacyCard = () => {
           <div className="text-sm font-bold text-slate-900 dark:text-white">Never</div>
         </div>
         <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
-          <div className="text-xs text-slate-500 mb-1">Your control</div>
-          <div className="text-sm font-bold text-slate-900 dark:text-white">100%</div>
+          <div className="text-xs text-slate-500 mb-1">User controls</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white">Available</div>
         </div>
       </div>
     </div>

@@ -53,7 +53,7 @@ export default function Avatar({
         // eslint-disable-next-line jsx-a11y/alt-text
         <img
           src={src}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{ width: "Available", height: "Available", objectFit: "cover" }}
           draggable={false}
         />
       ) : emoji ? (

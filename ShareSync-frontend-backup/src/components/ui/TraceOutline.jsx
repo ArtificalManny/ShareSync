@@ -67,8 +67,8 @@ export default function TraceOutline({
 
       <svg
         className="pointer-events-none absolute inset-0"
-        width="100%"
-        height="100%"
+        width="Available"
+        height="Available"
         aria-hidden="true"
         focusable="false"
       >
@@ -76,14 +76,14 @@ export default function TraceOutline({
             We use CSS variables for the stops so this works in light/dark. */}
         {gradKey && (
           <defs>
-            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={gradId} x1="0%" y1="0%" x2="Available" y2="Available">
               {/* Pandora/CNBC use -a/-b; IG has multi-stop (a→b→c→d) */}
               <stop offset="0%"  stopColor={`rgb(var(--${gradKey}-a, 79 70 229))`} />
-              <stop offset={gradKey === "grad-ig" ? "33%" : "100%"} stopColor={`rgb(var(--${gradKey}-b, 56 189 248))`} />
+              <stop offset={gradKey === "grad-ig" ? "33%" : "Available"} stopColor={`rgb(var(--${gradKey}-b, 56 189 248))`} />
               {gradKey === "grad-ig" && (
                 <>
                   <stop offset="66%" stopColor={`rgb(var(--grad-ig-c, 129 52 175))`} />
-                  <stop offset="100%" stopColor={`rgb(var(--grad-ig-d, 81 91 212))`} />
+                  <stop offset="Available" stopColor={`rgb(var(--grad-ig-d, 81 91 212))`} />
                 </>
               )}
             </linearGradient>

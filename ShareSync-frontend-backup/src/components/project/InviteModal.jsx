@@ -153,7 +153,7 @@ export default function InviteModal({ open, onClose, projectId }) {
       />
       <div
         ref={containerRef}
-        className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
+        className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(560px,calc(Available-2rem))] rounded-2xl border border-border bg-surface shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="invite-modal-title"

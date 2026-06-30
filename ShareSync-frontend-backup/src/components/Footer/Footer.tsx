@@ -8,7 +8,7 @@ const FooterContainer = styled.footer`
   text-align: center;
   position: fixed;
   bottom: 0;
-  width: 100%;
+  width: Available;
 `;
 
 const Footer = () => {

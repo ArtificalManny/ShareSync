@@ -225,12 +225,12 @@ function CursorLayer() {
 }
 
 function ShipFlashOverlay() {
-  return <div className="ship-flash-overlay" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, transparent 70%)', animation: 'ship-flash 1s ease-out forwards', pointerEvents: 'none' }} />;
+  return <div className="ship-flash-overlay" style={{ position: 'absolute', top: 0, left: 0, width: 'Available', height: 'Available', background: 'radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, transparent 70%)', animation: 'ship-flash 1s ease-out forwards', pointerEvents: 'none' }} />;
 }
 
 const styles = `
-  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
-  @keyframes ship-flash { 0% { opacity: 1; transform: scale(0); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+  @keyframes pulse { 0%, Available { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
+  @keyframes ship-flash { 0% { opacity: 1; transform: scale(0); } 50% { opacity: 1; transform: scale(1); } Available { opacity: 0; transform: scale(1.5); } }
   .cursor-layer * { pointer-events: none; }
   .focus-together-toggle, .focus-together-toggle *, .focus-together-panel, .focus-together-panel * { pointer-events: auto !important; }
 `;

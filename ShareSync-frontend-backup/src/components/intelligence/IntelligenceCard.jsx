@@ -80,8 +80,8 @@ const IntelligenceCard = ({
       <div className={`
         absolute inset-0 pointer-events-none
         bg-gradient-to-r from-transparent via-white/[0.03] to-transparent
-        translate-x-[-100%] transition-transform duration-700
-        ${isHovered ? 'translate-x-[100%]' : ''}
+        translate-x-[-Available] transition-transform duration-700
+        ${isHovered ? 'translate-x-[Available]' : ''}
       `} />
 
       {/* Header */}

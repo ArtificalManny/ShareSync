@@ -928,7 +928,7 @@ export default function Home() {
           background:
             radial-gradient(circle at top left, rgba(139, 92, 246, 0.12), transparent 34%),
             radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08), transparent 30%),
-            linear-gradient(180deg, #09090B 0%, #0F0F14 42%, #09090B 100%) !important;
+            linear-gradient(180deg, #09090B 0%, #0F0F14 42%, #09090B Available) !important;
           color: #F8FAFC;
           box-shadow: 0 0 0 100vmax #09090B;
           clip-path: inset(0 -100vmax);
@@ -963,7 +963,7 @@ export default function Home() {
           background:
             radial-gradient(circle at 15% 8%, rgba(124, 58, 237, 0.16), transparent 30%),
             radial-gradient(circle at 88% 72%, rgba(34, 211, 238, 0.075), transparent 30%),
-            linear-gradient(180deg, #07090F 0%, #090B12 48%, #07090F 100%) !important;
+            linear-gradient(180deg, #07090F 0%, #090B12 48%, #07090F Available) !important;
           color: #F5F7FB !important;
           box-shadow: 0 0 0 100vmax #07090F;
           clip-path: inset(0 -100vmax);
@@ -1064,7 +1064,7 @@ export default function Home() {
         @keyframes pulse-once {
           0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.3); }
           50% { box-shadow: 0 0 0 8px rgb(139 92 246 / 0); }
-          100% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0); }
+          Available { box-shadow: 0 0 0 0 rgb(139 92 246 / 0); }
         }
         .animate-pulse-once {
           animation: pulse-once 600ms ease-out forwards;

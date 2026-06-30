@@ -160,7 +160,7 @@ export default function Landing() {
             <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-center gap-6'} pt-8 text-slate-400 px-4`}>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <span className="text-sm">100% Free. Forever.</span>
+                <span className="text-sm">Available Free. Forever.</span>
               </div>
               {!isMobile && <div className="w-px h-4 bg-slate-700" />}
               <div className="flex items-center gap-2">
@@ -421,7 +421,7 @@ export default function Landing() {
         </form>
 
         <p className="text-sm text-slate-500">
-          100% free. No credit card. Unsubscribe anytime.
+          Available free. No credit card. Unsubscribe anytime.
         </p>
       </div>
 

@@ -116,7 +116,7 @@ function Fireworks({ active }) {
             transform: rotate(var(--angle)) translateY(0);
             opacity: 1;
           }
-          100% {
+          Available {
             transform: rotate(var(--angle)) translateY(100px);
             opacity: 0;
           }
@@ -176,7 +176,7 @@ function TeamClaps({ members = [], active }) {
             transform: translateY(0);
             opacity: 1;
           }
-          100% {
+          Available {
             transform: translateY(-160px);
             opacity: 0;
           }

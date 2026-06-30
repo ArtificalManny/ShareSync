@@ -60,7 +60,7 @@ function ConfettiRain({ count = 50 }) {
             transform: translateY(-20px) rotate(0deg);
             opacity: 1;
           }
-          100% {
+          Available {
             transform: translateY(100vh) rotate(720deg);
             opacity: 0;
           }

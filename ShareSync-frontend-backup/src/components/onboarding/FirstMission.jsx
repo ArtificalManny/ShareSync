@@ -102,7 +102,7 @@ export default function FirstMission({ onMissionCreated, projectId }) {
         <button
           onClick={() => navigate(projectId ? `/projects/${projectId}` : '/projects')}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium shadow-md transition-all hover:shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
         >
           Go to project
           <ArrowRight className="w-4 h-4" />

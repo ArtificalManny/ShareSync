@@ -379,7 +379,7 @@ export default function IntelligencePanel({
 
       <style>{`
         @keyframes insight-breathing {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+          0%, Available { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
           50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15); }
         }
         .insight-breathing { animation: insight-breathing 3s ease-in-out infinite; }
@@ -387,14 +387,14 @@ export default function IntelligencePanel({
         @keyframes peak-window-entered {
           0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
           50% { transform: scale(1.02); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
-          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+          Available { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .peak-window-entered { animation: peak-window-entered 0.6s ease-out; }
 
         @keyframes peak-window-fill {
           0% { opacity: 0.7; }
           50% { opacity: 1; }
-          100% { opacity: 0.7; }
+          Available { opacity: 0.7; }
         }
         .peak-window-fill { animation: peak-window-fill 2s ease-in-out infinite; }
       `}</style>

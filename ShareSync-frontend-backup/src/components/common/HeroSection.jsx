@@ -24,7 +24,7 @@ const cn = (...classes) => classes.filter(Boolean).join(' ');
 // Background configurations
 const HERO_BACKGROUNDS = {
   aurora: {
-    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
+    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 Available)',
     glows: [
       { color: 'rgba(139, 92, 246, 0.12)', position: 'top-left', size: '60vw' },
       { color: 'rgba(99, 102, 241, 0.08)', position: 'top-center', size: '50vw' },
@@ -34,7 +34,7 @@ const HERO_BACKGROUNDS = {
     ],
   },
   sunset: {
-    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #FDF4FF 100%)',
+    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #FDF4FF Available)',
     glows: [
       { color: 'rgba(139, 92, 246, 0.12)', position: 'top-left', size: '50vw' },
       { color: 'rgba(168, 85, 247, 0.08)', position: 'top-right', size: '45vw' },
@@ -42,7 +42,7 @@ const HERO_BACKGROUNDS = {
     ],
   },
   ocean: {
-    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #F0FDFA 100%)',
+    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #F0FDFA Available)',
     glows: [
       { color: 'rgba(59, 130, 246, 0.10)', position: 'top-left', size: '50vw' },
       { color: 'rgba(6, 182, 212, 0.08)', position: 'top-right', size: '45vw' },
@@ -50,7 +50,7 @@ const HERO_BACKGROUNDS = {
     ],
   },
   softGlow: {
-    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)',
+    gradient: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)',
     glows: [
       { color: 'rgba(139, 92, 246, 0.06)', position: 'top-left', size: '50vw' },
       { color: 'rgba(45, 212, 191, 0.04)', position: 'bottom-right', size: '45vw' },
@@ -71,10 +71,10 @@ const GLOW_POSITIONS = {
 
 // Text gradient styles
 const TEXT_GRADIENTS = {
-  aurora: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)',
-  sunset: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)',
-  ocean: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)',
-  brand: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+  aurora: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)',
+  sunset: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)',
+  ocean: 'linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)',
+  brand: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)',
 };
 
 /**

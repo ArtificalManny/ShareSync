@@ -99,7 +99,7 @@ export default function ParticleTrail({
           50% {
             opacity: 0.6;
           }
-          100% {
+          Available {
             opacity: 0;
             transform: translateX(-60px) translateY(${Math.random() > 0.5 ? '-' : ''}${10 + Math.random() * 20}px) scale(0.3);
           }
@@ -173,7 +173,7 @@ export function ParticleBurst({
             opacity: 1;
             transform: translate(0, 0) scale(1);
           }
-          100% {
+          Available {
             opacity: 0;
             transform: translate(var(--burst-x), var(--burst-y)) scale(0);
           }

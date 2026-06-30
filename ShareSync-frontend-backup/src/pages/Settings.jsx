@@ -66,7 +66,7 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
             className="h-full transition-all duration-300"
             style={{
               width: `${percentage}%`,
-              background: 'linear-gradient(90deg, #7C3AED 0%, #3B82F6 50%, #06B6D4 100%)'
+              background: 'linear-gradient(90deg, #7C3AED 0%, #3B82F6 50%, #06B6D4 Available)'
             }}
           />
         </div>
@@ -105,7 +105,7 @@ function Toggle({ label, checked, onChange, description }) {
         <div
           className={`w-11 h-6 rounded-full transition-all border ${checked ? 'border-transparent' : 'border-slate-300 dark:border-[#27272a] bg-slate-200 dark:bg-[#1f1f23]'}`}
           style={{
-            background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' : undefined
+            background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 Available)' : undefined
           }}
         />
         {/* Toggle thumb */}
@@ -948,7 +948,7 @@ export default function Settings() {
   }
 
   return (
-    <main className="settings-page-surface min-h-screen px-6 py-12 text-slate-900 transition-colors duration-300 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_100%)] dark:text-white">
+    <main className="settings-page-surface min-h-screen px-6 py-12 text-slate-900 transition-colors duration-300 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_Available)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_Available)] dark:text-white">
       <div className="max-w-6xl mx-auto space-y-8">
 
         {/* Header */}
