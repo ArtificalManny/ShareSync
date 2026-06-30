@@ -9,22 +9,22 @@ const PrivacyCard = () => {
   const privacyFeatures = [
     {
       icon: Lock,
-      title: 'Messages and conversations',
-      description: 'Encrypted in transit',
+      title: '1:1 & group chat',
+      description: 'End-to-end encrypted',
       status: 'active',
       color: 'emerald'
     },
     {
       icon: FileText,
-      title: 'Project files',
-      description: 'Stored securely',
+      title: 'Files in projects',
+      description: 'Encrypted on servers',
       status: 'active',
       color: 'blue'
     },
     {
       icon: BarChart3,
-      title: 'Stats and streaks',
-      description: 'Private activity counts',
+      title: 'Stats & streaks',
+      description: 'Anonymous counts only',
       status: 'active',
       color: 'purple'
     }

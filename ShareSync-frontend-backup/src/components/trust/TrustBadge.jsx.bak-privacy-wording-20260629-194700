@@ -14,7 +14,7 @@ const TrustBadge = ({
   const configs = {
     encrypted: {
       icon: Lock,
-      text: 'Encrypted in transit',
+      text: 'End-to-end encrypted',
       description: 'Messages are encrypted on your device. Not even we can read them.',
       color: 'emerald',
       emoji: '🔐'

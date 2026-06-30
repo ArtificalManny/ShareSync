@@ -25,14 +25,14 @@ const PrivacyManifesto = () => {
     {
       icon: Cloud,
       title: 'Server-Side Encryption',
-      description: 'Project files are encrypted on our servers using AES-256. Your data is protected at rest.',
+      description: 'Files in projects are encrypted on our servers using AES-256. Your data is protected at rest.',
       status: 'Active',
       color: 'blue'
     },
     {
       icon: BarChart3,
       title: 'Anonymous Analytics',
-      description: 'Stats and streaks show private activity counts. We never sell or share individual user data.',
+      description: 'Stats and streaks show anonymous counts only. We never sell or share individual user data.',
       status: 'Active',
       color: 'purple'
     },
@@ -237,7 +237,7 @@ const PrivacyManifesto = () => {
               <div>
                 <h3 className="font-bold text-white mb-2 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-emerald-400" />
-                  Chat Encryption (encrypted in transit)
+                  Chat Encryption (E2EE)
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">
                   We use the Signal Protocol for end-to-end encryption in all 1:1 and group chats. 
