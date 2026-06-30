@@ -12,7 +12,7 @@
 // - Keeps ALL UI + layout identical.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 // OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { getSettings, updateSettings } from '../api/settings';
 import { toast } from '../components/ui/Toaster.jsx';
