@@ -231,9 +231,9 @@ const SETTINGS_SECTIONS = [
 
 function SettingsNav({ activeSection, onChange }) {
   return (
-    <nav className="settings-section-nav lg:sticky lg:top-24">
-      <div className="rounded-[30px] border border-slate-200/70 bg-white/70 p-3 shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04]">
-        <div className="mb-4 hidden lg:block">
+    <nav className="settings-section-nav lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)]">
+      <div className="flex max-h-none min-h-0 flex-col rounded-[30px] border border-slate-200/70 bg-white/70 p-3 shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04] lg:max-h-[calc(100vh-7rem)]">
+        <div className="mb-4 hidden shrink-0 lg:block">
           <div className="relative overflow-hidden rounded-3xl border border-violet-200/70 bg-gradient-to-br from-white via-violet-50 to-fuchsia-50 p-4 shadow-sm dark:border-violet-400/20 dark:from-[#181821] dark:via-[#1d1830] dark:to-[#22162a]">
             <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full bg-violet-400/20 blur-2xl" />
             <div className="absolute -bottom-9 -left-7 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
@@ -267,7 +267,7 @@ function SettingsNav({ activeSection, onChange }) {
           </div>
         </div>
 
-        <div className="mb-3 flex items-center gap-2 px-1 lg:hidden">
+        <div className="mb-3 flex shrink-0 items-center gap-2 px-1 lg:hidden">
           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-md shadow-violet-500/20">
             <SlidersHorizontal className="h-5 w-5" />
           </div>
@@ -278,7 +278,7 @@ function SettingsNav({ activeSection, onChange }) {
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+        <div className="settings-rail-scroll flex min-h-0 gap-2 overflow-x-auto pb-2 lg:flex-1 lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto lg:pb-0 lg:pr-1 [scrollbar-gutter:stable] [scrollbar-width:thin]">
           {SETTINGS_SECTIONS.map((section) => {
             const Icon = section.icon;
             const active = activeSection === section.id;
@@ -288,7 +288,7 @@ function SettingsNav({ activeSection, onChange }) {
                 key={section.id}
                 type="button"
                 onClick={() => onChange(section.id)}
-                className={`group relative flex min-w-[220px] w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left transition-all duration-200 lg:min-w-0 ${
+                className={`group relative flex min-w-[220px] w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left transition-all duration-200 lg:min-w-0 lg:shrink ${
                   active
                     ? 'bg-gradient-to-r from-violet-50 via-white/90 to-fuchsia-50 shadow-md shadow-violet-500/10 ring-1 ring-violet-200/70 dark:from-violet-500/15 dark:via-white/[0.07] dark:to-fuchsia-500/10 dark:ring-violet-400/20'
                     : 'bg-transparent hover:bg-white/65 dark:hover:bg-white/[0.055]'
