@@ -12,7 +12,7 @@
 // - Keeps ALL UI + layout identical.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef, useState } from 'react';
 // OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { getSettings, updateSettings } from '../api/settings';
 import { toast } from '../components/ui/Toaster.jsx';
@@ -228,6 +228,176 @@ const SETTINGS_SECTIONS = [
     icon: BrainCircuit,
   },
 ];
+
+
+function AccountIdentityPanel() {
+  const [accountUser, setAccountUser] = useState(null);
+  const [accountLoading, setAccountLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const readToken = () => {
+      if (typeof window === "undefined") return "";
+      return (
+        window.localStorage.getItem("token") ||
+        window.localStorage.getItem("accessToken") ||
+        window.localStorage.getItem("authToken") ||
+        window.localStorage.getItem("ss.token") ||
+        ""
+      );
+    };
+
+    const normalizeUser = (payload) => {
+      if (!payload) return null;
+      return payload.user || payload.data?.user || payload.data || payload;
+    };
+
+    const loadUser = async () => {
+      const token = readToken();
+      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || "";
+
+      const endpoints = [
+        `${baseUrl}/users/me`,
+        `${baseUrl}/auth/me`,
+        `${baseUrl}/api/users/me`,
+        `${baseUrl}/api/auth/me`,
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            credentials: "include",
+          });
+
+          if (!res.ok) continue;
+
+          const json = await res.json();
+          const nextUser = normalizeUser(json);
+
+          if (!cancelled && nextUser) {
+            setAccountUser(nextUser);
+            return;
+          }
+        } catch {
+          // Try the next endpoint.
+        }
+      }
+
+      if (!cancelled) setAccountUser(null);
+    };
+
+    loadUser().finally(() => {
+      if (!cancelled) setAccountLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const displayName =
+    accountUser?.displayName ||
+    accountUser?.name ||
+    accountUser?.fullName ||
+    accountUser?.username ||
+    "OpenShare account";
+
+  const email = accountUser?.email || "Email not available";
+  const handle = accountUser?.username || accountUser?.handle || accountUser?.slug || "Handle not set";
+  const avatar =
+    accountUser?.avatar ||
+    accountUser?.avatarUrl ||
+    accountUser?.profilePicture ||
+    accountUser?.photoURL ||
+    accountUser?.picture ||
+    "";
+
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "OS";
+
+  const emailVerified = Boolean(
+    accountUser?.emailVerified ||
+    accountUser?.isEmailVerified ||
+    accountUser?.verified
+  );
+
+  return (
+    <div
+      data-account-identity-panel
+      className="grid gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04] md:grid-cols-[auto_1fr]"
+    >
+      <div className="flex items-center gap-4">
+        {avatar ? (
+          <img
+            src={avatar}
+            alt={displayName}
+            className="h-16 w-16 shrink-0 rounded-3xl object-cover shadow-lg shadow-violet-500/20"
+          />
+        ) : (
+          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-xl font-black text-white shadow-lg shadow-violet-500/20">
+            {accountLoading ? "..." : initials}
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 space-y-4">
+        <div>
+          <div className="text-base font-black text-slate-950 dark:text-white">
+            Your OpenShare identity
+          </div>
+          <div className="text-sm text-slate-500 dark:text-zinc-400">
+            Profile details come from your account. Settings controls visibility.
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Profile photo</div>
+            <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">{avatar ? "Uploaded" : "No photo set"}</div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Display name</div>
+            <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-zinc-100">{displayName}</div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Email</div>
+            <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-zinc-100">{email}</div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Username / handle</div>
+            <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-zinc-100">{handle}</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <a href="/profile" className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white">
+            Open public profile
+          </a>
+          <a href="/profile?edit=1" className="inline-flex items-center justify-center rounded-2xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-black text-violet-700">
+            Manage profile
+          </a>
+          <div className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700">
+            Account status: Active
+          </div>
+          <div className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-600">
+            {emailVerified ? "Email verified" : "Email not verified"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function SettingsNav({ activeSection, onChange }) {
   return (
@@ -1000,100 +1170,8 @@ export default function Settings() {
                 </div>
 
 
-              <div
-                data-account-identity-panel
-                className="grid gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04] md:grid-cols-[auto_1fr]"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-xl font-black text-white shadow-lg shadow-violet-500/20">
-                    You
-                  </div>
+                            <AccountIdentityPanel />
 
-                  <div className="min-w-0 md:hidden">
-                    <div className="text-base font-black text-slate-950 dark:text-white">
-                      Your OpenShare identity
-                    </div>
-                    <div className="text-sm text-slate-500 dark:text-zinc-400">
-                      Profile photo, name, email, and handle.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="min-w-0 space-y-4">
-                  <div className="hidden md:block">
-                    <div className="text-base font-black text-slate-950 dark:text-white">
-                      Your OpenShare identity
-                    </div>
-                    <div className="text-sm text-slate-500 dark:text-zinc-400">
-                      Profile details are managed from your Profile page. Settings controls visibility.
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
-                        Profile photo
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        Managed on Profile
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
-                        Display name
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        Shown across projects
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
-                        Email
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        Login and notifications
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
-                        Username / handle
-                      </div>
-                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        Public OpenShare address
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <a
-                      href="/profile"
-                      className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-200"
-                    >
-                      Open public profile
-                    </a>
-
-                    <a
-                      href="/profile?edit=1"
-                      className="inline-flex items-center justify-center rounded-2xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-50 dark:border-violet-400/25 dark:bg-white/[0.05] dark:text-violet-200 dark:hover:bg-violet-500/10"
-                    >
-                      Manage profile
-                    </a>
-
-                    <div className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
-                      Account status: Active
-                    </div>
-
-                    <div className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300">
-                      Email verification: Check profile
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-                <Toggle
                   label="Public Profile"
                   checked={publicProfile}
                   onChange={setPublicProfile}
