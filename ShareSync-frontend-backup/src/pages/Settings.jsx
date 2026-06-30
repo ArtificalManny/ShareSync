@@ -48,76 +48,6 @@ import useDocumentTitle from "../hooks/useDocumentTitle";
 function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Icon }) {
   const percentage = ((value - min) / (max - min)) * 100;
 
-
-  const readAccountUser = () => {
-    if (typeof window === "undefined") return null;
-
-    const keys = [
-      "user",
-      "authUser",
-      "currentUser",
-      "openshare.user",
-      "sharesync.user",
-      "ss.user",
-    ];
-
-    for (const key of keys) {
-      try {
-        const raw = window.localStorage.getItem(key);
-        if (!raw) continue;
-
-        const parsed = JSON.parse(raw);
-        if (parsed?.user) return parsed.user;
-        if (parsed?.data?.user) return parsed.data.user;
-        if (parsed?.email || parsed?.name || parsed?.username || parsed?.displayName) {
-          return parsed;
-        }
-      } catch {
-        // Ignore malformed legacy storage entries.
-      }
-    }
-
-    return null;
-  };
-
-  const accountUser = readAccountUser();
-  const accountDisplayName =
-    accountUser?.displayName ||
-    accountUser?.name ||
-    accountUser?.fullName ||
-    accountUser?.username ||
-    "Your OpenShare account";
-
-  const accountEmail = accountUser?.email || "Email not available";
-  const accountHandle =
-    accountUser?.username ||
-    accountUser?.handle ||
-    accountUser?.slug ||
-    "Handle not set";
-
-  const accountAvatar =
-    accountUser?.avatar ||
-    accountUser?.avatarUrl ||
-    accountUser?.profilePicture ||
-    accountUser?.photoURL ||
-    accountUser?.picture ||
-    "";
-
-  const accountInitials = accountDisplayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "OS";
-
-  const accountEmailVerified = Boolean(
-    accountUser?.emailVerified ||
-    accountUser?.isEmailVerified ||
-    accountUser?.verified
-  );
-
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -1075,17 +1005,9 @@ export default function Settings() {
                 className="grid gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04] md:grid-cols-[auto_1fr]"
               >
                 <div className="flex items-center gap-4">
-                  {accountAvatar ? (
-                    <img
-                      src={accountAvatar}
-                      alt={accountDisplayName}
-                      className="h-16 w-16 shrink-0 rounded-3xl object-cover shadow-lg shadow-violet-500/20"
-                    />
-                  ) : (
-                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-xl font-black text-white shadow-lg shadow-violet-500/20">
-                      {accountInitials}
-                    </div>
-                  )}
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-xl font-black text-white shadow-lg shadow-violet-500/20">
+                    You
+                  </div>
 
                   <div className="min-w-0 md:hidden">
                     <div className="text-base font-black text-slate-950 dark:text-white">
@@ -1113,7 +1035,7 @@ export default function Settings() {
                         Profile photo
                       </div>
                       <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        {accountAvatar ? 'Uploaded' : 'No photo set'}
+                        Managed on Profile
                       </div>
                     </div>
 
@@ -1122,7 +1044,7 @@ export default function Settings() {
                         Display name
                       </div>
                       <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        {accountDisplayName}
+                        Shown across projects
                       </div>
                     </div>
 
@@ -1131,7 +1053,7 @@ export default function Settings() {
                         Email
                       </div>
                       <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        {accountEmail}
+                        Login and notifications
                       </div>
                     </div>
 
@@ -1140,7 +1062,7 @@ export default function Settings() {
                         Username / handle
                       </div>
                       <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
-                        {accountHandle}
+                        Public OpenShare address
                       </div>
                     </div>
                   </div>
@@ -1165,7 +1087,7 @@ export default function Settings() {
                     </div>
 
                     <div className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300">
-                      {accountEmailVerified ? 'Email verified' : 'Email not verified'}
+                      Email verification: Check profile
                     </div>
                   </div>
                 </div>
