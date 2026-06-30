@@ -999,6 +999,100 @@ export default function Settings() {
                   </div>
                 </div>
 
+
+              <div
+                data-account-identity-panel
+                className="grid gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04] md:grid-cols-[auto_1fr]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-xl font-black text-white shadow-lg shadow-violet-500/20">
+                    You
+                  </div>
+
+                  <div className="min-w-0 md:hidden">
+                    <div className="text-base font-black text-slate-950 dark:text-white">
+                      Your OpenShare identity
+                    </div>
+                    <div className="text-sm text-slate-500 dark:text-zinc-400">
+                      Profile photo, name, email, and handle.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="min-w-0 space-y-4">
+                  <div className="hidden md:block">
+                    <div className="text-base font-black text-slate-950 dark:text-white">
+                      Your OpenShare identity
+                    </div>
+                    <div className="text-sm text-slate-500 dark:text-zinc-400">
+                      Profile details are managed from your Profile page. Settings controls visibility.
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                        Profile photo
+                      </div>
+                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
+                        Managed on Profile
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                        Display name
+                      </div>
+                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
+                        Shown across projects
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                        Email
+                      </div>
+                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
+                        Login and notifications
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                        Username / handle
+                      </div>
+                      <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">
+                        Public OpenShare address
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="/profile"
+                      className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-zinc-200"
+                    >
+                      Open public profile
+                    </a>
+
+                    <a
+                      href="/profile?edit=1"
+                      className="inline-flex items-center justify-center rounded-2xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-50 dark:border-violet-400/25 dark:bg-white/[0.05] dark:text-violet-200 dark:hover:bg-violet-500/10"
+                    >
+                      Manage profile
+                    </a>
+
+                    <div className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
+                      Account status: Active
+                    </div>
+
+                    <div className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300">
+                      Email verification: Check profile
+                    </div>
+                  </div>
+                </div>
+              </div>
+
                 <Toggle
                   label="Public Profile"
                   checked={publicProfile}
