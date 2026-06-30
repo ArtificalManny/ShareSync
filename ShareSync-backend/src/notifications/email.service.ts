@@ -224,7 +224,7 @@ export class EmailService {
             <tr>
               <td style="padding: 30px 40px; background-color: #F8FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
                 <p style="margin: 0; font-size: 13px; color: #64748B;">
-                  <a href="${process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/settings` : '#'}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a> in ShareSync settings.
+                  <a href="${process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/settings` : '#'}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a> in OpenShare settings.
                 </p>
               </td>
             </tr>
@@ -397,7 +397,7 @@ export class EmailService {
             <tr>
               <td style="padding: 30px 40px; background-color: #F8FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
                 <p style="margin: 0 0 12px; color: #64748B; font-size: 13px; line-height: 1.5;">
-                  You're receiving this because you opted in to email updates in ShareSync.
+                  You're receiving this because you opted in to email updates in OpenShare.
                 </p>
                 <p style="margin: 0; font-size: 13px;">
                   <a href="${this.escapeAttr(settingsUrl)}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a>
