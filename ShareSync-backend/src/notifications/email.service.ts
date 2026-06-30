@@ -81,6 +81,43 @@ export class EmailService {
     });
   }
 
+  async sendDirectEmail(args: {
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+  }): Promise<void> {
+    const to = String(args?.to || '').trim().toLowerCase();
+    if (!to) return;
+
+    if (this.resendApiKey && this.resendFromAddress) {
+      await this.sendViaResend({
+        to,
+        subject: args.subject,
+        html: args.html,
+        text: args.text,
+      });
+      return;
+    }
+
+    if (!this.transporter) {
+      console.warn('Email transport not configured - direct email skipped');
+      return;
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: this.fromAddress,
+        to,
+        subject: args.subject,
+        html: args.html,
+        text: args.text,
+      });
+    } catch (error) {
+      console.error('Failed to send direct Email:', error);
+    }
+  }
+
   /**
    * PHASE 4 RULE:
    * - No email until user has verified + opted in
@@ -143,22 +180,57 @@ export class EmailService {
 
     const html = `
       <!DOCTYPE html>
-      <html>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-          <h1>Your Daily Digest — ${new Date().toLocaleDateString()}</h1>
-          <p>${notifications?.length || 0} updates</p>
-          ${Object.entries(byProject)
-            .map(([projectId, notifs]: [string, any]) => `
-              <h2 style="margin-top: 18px;">${projectId === 'general' ? 'General' : 'Project Updates'}</h2>
-              <ul>
-                ${(notifs || []).map((n: any) => `<li>${this.escapeHtml(n?.title || 'Update')}: ${this.escapeHtml(n?.message || '')}</li>`).join('')}
-              </ul>
-            `)
-            .join('')}
-          <p style="margin-top: 24px; color: #64748b; font-size: 12px;">
-            Manage preferences in ShareSync settings.
-          </p>
-        </body>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, sans-serif;">
+        <center style="width: 100%; table-layout: fixed; background-color: #f4f4f5; padding: 40px 0;">
+          <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
+                <img src="https://via.placeholder.com/180x40/0F172A/06B6D4?text=OPENSHARE" alt="OpenShare" width="180" style="display: block; margin: 0 auto;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 40px 40px 30px; background-color: #1E1B4B; border-bottom: 3px solid #06B6D4; text-align: center;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;">Your Daily Digest</h1>
+                <p style="margin: 10px 0 0; color: #94A3B8; font-size: 15px;">${new Date().toLocaleDateString()} &bull; ${notifications?.length || 0} updates</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 40px;">
+                ${Object.entries(byProject)
+                  .map(([projectId, notifs]: [string, any]) => `
+                    <div style="margin-bottom: 32px;">
+                      <h2 style="margin: 0 0 16px; color: #0F172A; font-size: 14px; border-bottom: 2px solid #F1F5F9; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">${projectId === 'general' ? 'General' : 'Project Updates'}</h2>
+                      <ul style="margin: 0; padding: 0; list-style-type: none;">
+                        ${(notifs || []).map((n: any) => `
+                          <li style="margin-bottom: 16px; padding-left: 16px; border-left: 3px solid #7C3AED;">
+                            <strong style="color: #1E293B; display: block; font-size: 15px; margin-bottom: 4px;">${this.escapeHtml(n?.title || 'Update')}</strong>
+                            <span style="color: #64748B; font-size: 14px; line-height: 1.5;">${this.escapeHtml(n?.message || '')}</span>
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                  `)
+                  .join('')}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px 40px; background-color: #F8FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
+                <p style="margin: 0; font-size: 13px; color: #64748B;">
+                  <a href="${process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/settings` : '#'}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a> in ShareSync settings.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </center>
+      </body>
       </html>
     `;
 
@@ -279,7 +351,7 @@ export class EmailService {
 
     const actionUrl = this.buildFrontendUrl(notification?.actionData?.url);
     const button = actionUrl
-      ? `<a href="${this.escapeAttr(actionUrl)}" class="button">View in OpenShare</a>`
+      ? `<table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td align="center"><a href="${this.escapeAttr(actionUrl)}" style="background-color: #7C3AED; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">View in OpenShare</a></td></tr></table>`
       : '';
 
     const settingsUrl = process.env.FRONTEND_URL
@@ -288,35 +360,53 @@ export class EmailService {
 
     return `
       <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #9333ea, #c026d3); padding: 30px; border-radius: 12px; }
-            .title { color: white; font-size: 24px; margin: 0; }
-            .content { background: #f8fafc; padding: 30px; border-radius: 12px; margin-top: 20px; }
-            .message { color: #334155; line-height: 1.6; }
-            .button { display: inline-block; background: #9333ea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px; }
-            .footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 class="title">${emoji} ${title}</h1>
-            </div>
-            <div class="content">
-              <p class="message">${msg}</p>
-              ${button}
-            </div>
-            <div class="footer">
-              <p>You're receiving this because you opted in to email updates in ShareSync.</p>
-              <p><a href="${this.escapeAttr(settingsUrl)}">Manage preferences</a></p>
-            </div>
-          </div>
-        </body>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; }
+          table { border-spacing: 0; }
+          td { padding: 0; }
+          img { border: 0; }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <center style="width: 100%; table-layout: fixed; background-color: #f4f4f5; padding: 40px 0;">
+          <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);">
+            <tr>
+              <td style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
+                <img src="https://via.placeholder.com/180x40/0F172A/06B6D4?text=OPENSHARE" alt="OpenShare" width="180" style="display: block; margin: 0 auto; max-width: 100%;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 40px 40px 30px; text-align: center; background-color: #1E1B4B; border-bottom: 3px solid #06B6D4;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.5px;">
+                  <span style="font-size: 26px;">${emoji}</span> &nbsp; ${title}
+                </h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 40px;">
+                <p style="margin: 0 0 32px; color: #334155; font-size: 16px; line-height: 1.6; text-align: center;">
+                  ${msg}
+                </p>
+                ${button}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px 40px; background-color: #F8FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
+                <p style="margin: 0 0 12px; color: #64748B; font-size: 13px; line-height: 1.5;">
+                  You're receiving this because you opted in to email updates in ShareSync.
+                </p>
+                <p style="margin: 0; font-size: 13px;">
+                  <a href="${this.escapeAttr(settingsUrl)}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </center>
+      </body>
       </html>
     `;
   }
