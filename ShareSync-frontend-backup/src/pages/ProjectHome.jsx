@@ -4705,6 +4705,8 @@ export default function ProjectHome() {
                     roadmapItems={commandMilestones}
                     scheduleEvents={events || []}
                     announcements={announcements || []}
+                    scheduleCount={Array.isArray(events) ? events.length : 0}
+                    announcementCount={Array.isArray(announcements) ? announcements.length : 0}
                   />
             </div>
           );

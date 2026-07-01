@@ -68,6 +68,8 @@ const InsightsTab = ({
   roadmapItems = [],
   scheduleEvents = [],
   announcements = [],
+  scheduleCount = 0,
+  announcementCount = 0,
 }) => {
   const [range, setRange] = useState('7d');
 
@@ -255,13 +257,13 @@ const InsightsTab = ({
     },
     {
       label: "Schedule",
-      count: signalsScheduleEvents.length,
+      count: signalsScheduleEvents.length || scheduleCount,
       caption: `${overdueScheduleEvents.length} past due`,
       barClass: "bg-amber-500",
     },
     {
       label: "Updates",
-      count: signalsAnnouncements.length,
+      count: signalsAnnouncements.length || announcementCount,
       caption: "announcements posted",
       barClass: "bg-emerald-500",
     },
