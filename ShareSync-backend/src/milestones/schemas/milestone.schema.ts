@@ -44,6 +44,26 @@ export class Milestone {
   @Prop({ default: 0, index: true })
   order: number;
 
+  @Prop({
+    type: [
+      {
+        id: { type: String, required: true },
+        title: { type: String, required: true, trim: true },
+        completed: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
+        completedAt: { type: Date, required: false },
+      },
+    ],
+    default: [],
+  })
+  checkpoints: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt?: Date;
+    completedAt?: Date;
+  }>;
+
   @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
   taskIds: Types.ObjectId[];
 

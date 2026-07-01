@@ -69,6 +69,21 @@ export class UpdateMilestoneDto {
   taskIds?: string[];
 
   @ApiPropertyOptional({
+    description: 'Replace milestone checklist/checkpoints',
+    type: [Object],
+  })
+  @IsOptional()
+  @IsArray()
+  checkpoints?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt?: string;
+    completedAt?: string;
+  }>;
+
+
+  @ApiPropertyOptional({
     description: 'Replace dependencies list',
     type: [String],
   })

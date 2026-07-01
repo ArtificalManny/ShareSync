@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsMongoId } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsMongoId, IsArray } from 'class-validator';
 
 export enum MilestoneStatus {
   PLANNED = 'planned',
@@ -28,4 +28,14 @@ export class CreateMilestoneDto {
   @IsOptional()
   @IsEnum(MilestoneStatus)
   status?: MilestoneStatus;
+
+  @IsOptional()
+  @IsArray()
+  checkpoints?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt?: string;
+    completedAt?: string;
+  }>;
 }
