@@ -6,17 +6,58 @@
 // ✅ Includes ActivityFeed showing all project member activity
 // ✅ Resilient: Weekly Report + Activity Feed always render even if metrics fail
 // ✅ Proper light/dark mode
-// ✅ Preserves MetricCard, SprintHealth, TeamBalance sub-components
+// ✅ Preserves MetricCard, SprintHealth, Signal Breakdown, and Activity Feed
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
-import { Gauge, Clock3, Target, Users2, Activity, Scale, BarChart3, AlertTriangle, CalendarClock } from 'lucide-react';
+import { Gauge, Clock3, Target, Users2, Activity, BarChart3, AlertTriangle, CalendarClock } from 'lucide-react';
 import { getProjectInsights } from '../../api/insights';
 import MetricCard from './MetricCard';
 import SprintHealth from './SprintHealth';
-import TeamBalance from './TeamBalance';
 import ActivityFeed from './ActivityFeed';
 import WeeklyMomentumReport from './WeeklyMomentumReport';
+
+function SignalBreakdown({ sources }) {
+  const total = sources.reduce((sum, source) => sum + Number(source.count || 0), 0);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-[#27272a] dark:bg-[#18181b]">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-200/80 bg-cyan-500/10 text-cyan-600 dark:border-cyan-400/20 dark:bg-cyan-500/15 dark:text-cyan-300">
+          <BarChart3 className="h-4 w-4" strokeWidth={2.15} />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Signal Breakdown</h3>
+          <p className="text-sm text-slate-500 dark:text-zinc-400">Where this project's movement is coming from.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {sources.map((source) => {
+          const percent = total ? Math.round((Number(source.count || 0) / total) * 100) : 0;
+
+          return (
+            <div key={source.label} className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-400 dark:text-zinc-500">
+                  {source.label}
+                </span>
+                <span className="text-lg font-black text-slate-900 dark:text-zinc-100">{source.count}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/[0.08]">
+                <div
+                  className={`h-full rounded-full ${source.barClass}`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs font-medium text-slate-500 dark:text-zinc-400">{source.caption}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const InsightsTab = ({
   projectId,
@@ -198,6 +239,33 @@ const InsightsTab = ({
     completionRate,
     completedTrend,
   };
+
+  const signalBreakdownSources = [
+    {
+      label: "Tasks",
+      count: signalsTasks.length,
+      caption: `${openTasks.length} open, ${completedTasks.length} complete`,
+      barClass: "bg-violet-500",
+    },
+    {
+      label: "Roadmap",
+      count: signalsRoadmapItems.length,
+      caption: `${completedRoadmapItems.length} complete, ${blockedRoadmapItems.length} blocked`,
+      barClass: "bg-cyan-500",
+    },
+    {
+      label: "Schedule",
+      count: signalsScheduleEvents.length,
+      caption: `${overdueScheduleEvents.length} past due`,
+      barClass: "bg-amber-500",
+    },
+    {
+      label: "Updates",
+      count: signalsAnnouncements.length,
+      caption: "announcements posted",
+      barClass: "bg-emerald-500",
+    },
+  ];
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -252,7 +320,6 @@ const InsightsTab = ({
     },
   };
 
-  const teamBalance = data?.teamBalance;
   const aiInsights = data?.aiInsights;
 
   return (
@@ -550,10 +617,7 @@ const InsightsTab = ({
               />
             </div>
             <div className="lg:col-span-2">
-              <TeamBalance
-                icon={Scale}
-                teamData={teamBalance}
-              />
+              <SignalBreakdown sources={signalBreakdownSources} />
             </div>
           </div>
         </>
