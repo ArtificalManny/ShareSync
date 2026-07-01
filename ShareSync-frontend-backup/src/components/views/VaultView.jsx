@@ -576,7 +576,7 @@ export default function VaultView({ projectId }) {
       <style>
         {`
           .vault-upload-button {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
             color: #ffffff !important;
             border: 1px solid rgba(124, 58, 237, 0.95) !important;
             box-shadow: 0 16px 36px rgba(109, 40, 217, 0.38) !important;
@@ -587,7 +587,7 @@ export default function VaultView({ projectId }) {
           }
 
           .vault-upload-button:hover {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
             box-shadow: 0 20px 44px rgba(109, 40, 217, 0.5) !important;
           }
 
@@ -817,7 +817,7 @@ export default function VaultView({ projectId }) {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 rounded-2xl"
                 style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
                   boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.26)',
                 }}
               />

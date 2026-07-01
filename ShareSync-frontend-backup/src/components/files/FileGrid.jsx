@@ -147,7 +147,7 @@ export default function FileGrid({
         @keyframes ss-pulse-ring {
           0% { transform: scale(0.9); opacity: 0.7; }
           70% { transform: scale(1.2); opacity: 0.15; }
-          Available { transform: scale(1.2); opacity: 0; }
+          100% { transform: scale(1.2); opacity: 0; }
         }
         .ss-pulse-ring {
           position: absolute;
