@@ -80,9 +80,23 @@ const ALL_STATUS_TRANSITIONS = [
   { value: 'at_risk', label: 'Mark At Risk', icon: AlertTriangle, color: 'text-red-700 dark:text-error-500' },
 ];
 
+const parseDateOnlyLocal = (value) => {
+  if (!value) return null;
+
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const formatDate = (date) => {
   if (!date) return null;
-  const d = new Date(date);
+  const d = parseDateOnlyLocal(date);
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
@@ -98,7 +112,7 @@ const normalizeToCardStatus = (rawStatus, dueDate) => {
   if (s === 'inprogress' || s === 'in-progress' || s === 'in_progress' || s === 'active') return 'in-progress';
   if (s === 'at_risk' || s === 'at-risk') return 'at_risk';
 
-  const d = dueDate ? new Date(dueDate) : null;
+  const d = parseDateOnlyLocal(dueDate);
   const overdue =
     d && !Number.isNaN(d.getTime()) && d.getTime() < Date.now() && s !== 'completed' && s !== 'done' && s !== 'complete';
 
