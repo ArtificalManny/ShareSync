@@ -120,6 +120,23 @@ export class AppearanceSettings {
 export const AppearanceSettingsSchema = SchemaFactory.createForClass(AppearanceSettings);
 
 @Schema({ _id: false })
+export class ProjectDefaultSettings {
+  @Prop({ type: String, enum: ['private', 'team', 'public'], default: 'private' })
+  visibility: string;
+
+  @Prop({ type: String, enum: ['viewer', 'member', 'admin'], default: 'member' })
+  inviteRole: string;
+
+  @Prop({ type: Boolean, default: true })
+  requireApproval: boolean;
+
+  @Prop({ type: String, enum: ['all', 'mentions', 'none'], default: 'mentions' })
+  notificationLevel: string;
+}
+
+export const ProjectDefaultSettingsSchema = SchemaFactory.createForClass(ProjectDefaultSettings);
+
+@Schema({ _id: false })
 export class NotificationSettings {
   @Prop({ type: Boolean, default: true })
   emailActivity: boolean;
@@ -249,6 +266,9 @@ export class Settings {
 
   @Prop({ type: AppearanceSettingsSchema, default: () => ({}) })
   appearance: AppearanceSettings;
+
+  @Prop({ type: ProjectDefaultSettingsSchema, default: () => ({}) })
+  projectDefaults: ProjectDefaultSettings;
 
   @Prop({ type: NotificationSettingsSchema, default: () => ({}) })
   notifications: NotificationSettings;

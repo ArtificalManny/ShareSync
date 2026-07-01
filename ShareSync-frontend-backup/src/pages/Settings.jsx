@@ -583,6 +583,10 @@ export default function Settings() {
   const [taskAssignments, setTaskAssignments] = useState(true);
   const [mentions, setMentions] = useState(true);
   const [billingAlerts, setBillingAlerts] = useState(true);
+  const [defaultProjectVisibility, setDefaultProjectVisibility] = useState('private');
+  const [defaultInviteRole, setDefaultInviteRole] = useState('member');
+  const [requireJoinApproval, setRequireJoinApproval] = useState(true);
+  const [defaultProjectNotificationLevel, setDefaultProjectNotificationLevel] = useState('mentions');
   const [twoFA, setTwoFA] = useState(false);
 
   const mqlRef = useRef(null);
@@ -1004,6 +1008,11 @@ export default function Settings() {
         setTaskAssignments(Boolean(notifications.taskAssignments ?? true));
         setMentions(Boolean(notifications.mentionAlerts ?? notifications.mentions ?? true));
         setBillingAlerts(Boolean(notifications.billingAlerts ?? true));
+        const projectDefaults = data.projectDefaults || {};
+        setDefaultProjectVisibility(projectDefaults.visibility || 'private');
+        setDefaultInviteRole(projectDefaults.inviteRole || 'member');
+        setRequireJoinApproval(Boolean(projectDefaults.requireApproval ?? true));
+        setDefaultProjectNotificationLevel(projectDefaults.notificationLevel || 'mentions');
 
         // Security
         const security = settings.security || {};
@@ -1081,6 +1090,12 @@ export default function Settings() {
           taskAssignments,
           mentionAlerts: mentions,
           billingAlerts,
+        },
+        projectDefaults: {
+          visibility: defaultProjectVisibility,
+          inviteRole: defaultInviteRole,
+          requireApproval: requireJoinApproval,
+          notificationLevel: defaultProjectNotificationLevel,
         },
         security: {
           twoFA,
@@ -1329,6 +1344,66 @@ export default function Settings() {
               </SectionCard>
             </>
           )}
+
+
+            {activeSection === 'preferences' && (
+              <SectionCard
+                icon={SlidersHorizontal}
+                iconBg="bg-cyan-100 dark:bg-cyan-500/10"
+                iconColor="text-cyan-600 dark:text-cyan-300"
+                title="Project Defaults"
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2">
+                    <div className="text-sm font-bold text-slate-800 dark:text-zinc-100">Default project visibility</div>
+                    <select
+                      value={defaultProjectVisibility}
+                      onChange={(event) => setDefaultProjectVisibility(event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white"
+                    >
+                      <option value="private">Private</option>
+                      <option value="team">Team only</option>
+                      <option value="public">Public</option>
+                    </select>
+                  </label>
+
+                  <label className="space-y-2">
+                    <div className="text-sm font-bold text-slate-800 dark:text-zinc-100">Default invite role</div>
+                    <select
+                      value={defaultInviteRole}
+                      onChange={(event) => setDefaultInviteRole(event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white"
+                    >
+                      <option value="viewer">Viewer</option>
+                      <option value="member">Member</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </label>
+
+                  <label className="space-y-2">
+                    <div className="text-sm font-bold text-slate-800 dark:text-zinc-100">Default notification level</div>
+                    <select
+                      value={defaultProjectNotificationLevel}
+                      onChange={(event) => setDefaultProjectNotificationLevel(event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white"
+                    >
+                      <option value="all">All activity</option>
+                      <option value="mentions">Mentions only</option>
+                      <option value="none">Muted</option>
+                    </select>
+                  </label>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                    <Toggle
+                      label="Require approval before members join"
+                      checked={requireJoinApproval}
+                      onChange={setRequireJoinApproval}
+                      description="New members need approval before they can access new projects"
+                    />
+                  </div>
+                </div>
+              </SectionCard>
+            )}
 
 
           {activeSection === 'notifications' && (
