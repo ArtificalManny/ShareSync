@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
-import { Gauge, Clock3, Target, Users2, Activity, Scale, BarChart3, AlertTriangle } from 'lucide-react';
+import { Gauge, Clock3, Target, Users2, Activity, Scale, BarChart3, AlertTriangle, CalendarClock } from 'lucide-react';
 import { getProjectInsights } from '../../api/insights';
 import MetricCard from './MetricCard';
 import SprintHealth from './SprintHealth';
@@ -177,14 +177,17 @@ const InsightsTab = ({
     },
     open: {
       value: signalsSnapshot.openTasks,
+      trend: null,
       unit: "open",
     },
     overdue: {
       value: signalsSnapshot.overdueTasks,
+      trend: null,
       unit: "past due",
     },
     blocked: {
       value: signalsSnapshot.blockedTasks,
+      trend: null,
       unit: "blocked",
     },
   };
@@ -464,7 +467,7 @@ const InsightsTab = ({
             />
             <MetricCard
               title="Overdue"
-              icon={Target}
+              icon={CalendarClock}
               iconTone="emerald"
               value={metrics.overdue.value}
                 unit={metrics.overdue.unit}
