@@ -1198,18 +1198,7 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
-
-
-                  label="Discoverable in OpenShare"
-                  checked={discoverable}
-                  onChange={(next) => {
-                    setDiscoverable(next);
-                    trackProfileDiscoverToggle({ enabled: next, source: 'settings_account' });
-                  }}
-                  description="Allow your profile and public projects to appear in discovery"
-                />
-
-                <Toggle
+<Toggle
                   label="Celebrate my ships publicly"
                   checked={celebratePublicly}
                   onChange={setCelebratePublicly}
