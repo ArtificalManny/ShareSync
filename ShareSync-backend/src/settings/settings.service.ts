@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
   mentor: { enabled: true, tone: 'wise', intensity: 3 },
   legacy: { showEverywhere: true, yearlyVideo: false },
   appearance: { theme: 'system', mode: 'pro', animations: true, sounds: true },
-  notifications: { emailActivity: true, emailDigest: true, pushNotifications: true, mentionAlerts: true, weeklyReport: true, shipCelebrations: true, streakReminders: true, digestFrequency: 'daily' },
+  notifications: { emailActivity: true, emailDigest: true, projectInvites: true, taskAssignments: true, billingAlerts: true, pushNotifications: true, mentionAlerts: true, weeklyReport: true, shipCelebrations: true, streakReminders: true, digestFrequency: 'daily' },
   security: { twoFA: false, trustedDevices: [], loginHistory: [] },
   privacy: { profilePublic: true, showActivity: true, allowDMs: true, hideFromSearch: false, anonymousMode: false },
   presence: { showCursor: true, showOnlineStatus: true, showTypingIndicator: true, cursorColor: '#7C3AED' },

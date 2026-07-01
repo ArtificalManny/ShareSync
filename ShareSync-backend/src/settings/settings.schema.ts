@@ -128,6 +128,15 @@ export class NotificationSettings {
   emailDigest: boolean;
 
   @Prop({ type: Boolean, default: true })
+  projectInvites: boolean;
+
+  @Prop({ type: Boolean, default: true })
+  taskAssignments: boolean;
+
+  @Prop({ type: Boolean, default: true })
+  billingAlerts: boolean;
+
+  @Prop({ type: Boolean, default: true })
   pushNotifications: boolean;
 
   @Prop({ type: Boolean, default: true })

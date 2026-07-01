@@ -579,6 +579,10 @@ export default function Settings() {
   const [showPowerUser, setShowPowerUser] = useState(false);
   const [emailActivity, setEmailActivity] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
+  const [projectInvites, setProjectInvites] = useState(true);
+  const [taskAssignments, setTaskAssignments] = useState(true);
+  const [mentions, setMentions] = useState(true);
+  const [billingAlerts, setBillingAlerts] = useState(true);
   const [twoFA, setTwoFA] = useState(false);
 
   const mqlRef = useRef(null);
@@ -996,6 +1000,10 @@ export default function Settings() {
         const notifications = settings.notifications || {};
         setEmailActivity(Boolean(notifications.emailActivity ?? true));
         setEmailDigest(Boolean(notifications.emailDigest ?? true));
+        setProjectInvites(Boolean(notifications.projectInvites ?? true));
+        setTaskAssignments(Boolean(notifications.taskAssignments ?? true));
+        setMentions(Boolean(notifications.mentionAlerts ?? notifications.mentions ?? true));
+        setBillingAlerts(Boolean(notifications.billingAlerts ?? true));
 
         // Security
         const security = settings.security || {};
@@ -1069,6 +1077,10 @@ export default function Settings() {
         notifications: {
           emailActivity,
           emailDigest,
+          projectInvites,
+          taskAssignments,
+          mentionAlerts: mentions,
+          billingAlerts,
         },
         security: {
           twoFA,
