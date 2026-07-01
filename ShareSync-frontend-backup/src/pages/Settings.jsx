@@ -93,421 +93,44 @@ function Slider({ label, value, onChange, min = 0, max = 10, unit = '', icon: Ic
 // ═══════════════════════════════════════════════════════════════════════════════
 function Toggle({ label, checked, onChange, description }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <div className="relative flex-shrink-0">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          className="sr-only peer"
+    <div className="flex items-start gap-4 py-2">
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950 ${
+          checked
+            ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-fuchsia-600 shadow-md shadow-violet-500/20'
+            : 'border-slate-300 bg-slate-200 shadow-inner shadow-slate-400/20 hover:border-slate-400 dark:border-white/20 dark:bg-white/15 dark:shadow-black/20'
+        }`}
+        aria-pressed={checked}
+        aria-label={label}
+      >
+        <span
+          className={`inline-block h-5 w-5 rounded-full border bg-white shadow-md transition-transform duration-200 ${
+            checked
+              ? 'translate-x-6 border-white/80'
+              : 'translate-x-1 border-slate-300 dark:border-white/30'
+          }`}
         />
-        {/* Toggle track */}
+      </button>
+
+      <div className="min-w-0">
         <div
-          className={`w-11 h-6 rounded-full transition-all border ${checked ? 'border-transparent' : 'border-slate-300 dark:border-[#27272a] bg-slate-200 dark:bg-[#1f1f23]'}`}
-          style={{
-            background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 Available)' : undefined
-          }}
-        />
-        {/* Toggle thumb */}
-        <div
-          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all"
-          style={{ left: checked ? '24px' : '4px' }}
-        />
-      </div>
-      <div className="flex-1">
-        <div className="text-sm font-medium text-slate-700 dark:text-zinc-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+          className={`text-sm font-bold transition-colors ${
+            checked
+              ? 'text-violet-700 dark:text-violet-200'
+              : 'text-slate-800 dark:text-zinc-100'
+          }`}
+        >
           {label}
         </div>
         {description && (
-          <div className="text-xs text-slate-500 dark:text-zinc-500 mt-0.5">{description}</div>
-        )}
-      </div>
-    </label>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// RADIO GROUP COMPONENT - Adaptive
-// ═══════════════════════════════════════════════════════════════════════════════
-function RadioGroup({ label, options, value, onChange, icon: Icon }) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className="w-5 h-5 text-violet-500 dark:text-violet-400" />}
-        <label className="text-sm font-medium text-slate-700 dark:text-zinc-300">{label}</label>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={`px-4 py-3 rounded-xl border transition-all text-left ${
-              value === option.value
-                ? 'border-violet-500/50 bg-violet-50 dark:bg-violet-500/10'
-                : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-violet-300 dark:hover:border-violet-500/30 hover:bg-slate-100 dark:hover:bg-white/10'
-            }`}
-          >
-            <div className={`text-sm font-medium ${value === option.value ? 'text-violet-800 dark:text-white' : 'text-slate-800 dark:text-white'}`}>
-              {option.label}
-            </div>
-            {option.description && (
-              <div className="text-xs text-slate-500 dark:text-zinc-500 mt-1">{option.description}</div>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SECTION CARD COMPONENT - Adaptive
-// ═══════════════════════════════════════════════════════════════════════════════
-function SectionCard({ icon: Icon, iconBg, iconColor, title, children, danger = false }) {
-  return (
-    <div
-      className={`rounded-2xl border p-6 ${
-        danger
-          ? 'bg-red-50/90 dark:bg-[#1A0B0D] border-red-200/90 dark:border-red-500/25 shadow-sm dark:shadow-[0_18px_50px_rgba(127,29,29,0.18)]'
-          : 'bg-white/95 dark:bg-[#121216] border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_18px_55px_rgba(0,0,0,0.25)]'
-      }`}
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <Icon className={`w-5 h-5 ${iconColor}`} />
-        </div>
-        <h2 className={`text-xl font-bold ${danger ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
-          {title}
-        </h2>
-      </div>
-      <div className="space-y-6">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-
-const SETTINGS_SECTIONS = [
-  {
-    id: 'account',
-    label: 'Account',
-    description: 'Profile, email, visibility',
-    icon: UserCircle,
-  },
-  {
-    id: 'preferences',
-    label: 'Preferences',
-    description: 'Appearance, momentum, workspace feel',
-    icon: SlidersHorizontal,
-  },
-  {
-    id: 'notifications',
-    label: 'Notifications',
-    description: 'Email, invites, mentions, digests',
-    icon: BellRing,
-  },
-  {
-    id: 'privacy',
-    label: 'Privacy & Security',
-    description: 'Privacy, presence, account safety',
-    icon: ShieldCheck,
-  },
-  {
-    id: 'billing',
-    label: 'Billing',
-    description: 'Plan, usage, invoices',
-    icon: CreditCard,
-  },
-  {
-    id: 'advanced',
-    label: 'Advanced',
-    description: 'AI mentor, persona, power controls',
-    icon: BrainCircuit,
-  },
-];
-
-
-function AccountIdentityPanel() {
-  const [accountUser, setAccountUser] = useState(null);
-  const [accountLoading, setAccountLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const readToken = () => {
-      if (typeof window === "undefined") return "";
-      return (
-        window.localStorage.getItem("token") ||
-        window.localStorage.getItem("accessToken") ||
-        window.localStorage.getItem("authToken") ||
-        window.localStorage.getItem("ss.token") ||
-        ""
-      );
-    };
-
-    const normalizeUser = (payload) => {
-      if (!payload) return null;
-      return payload.user || payload.data?.user || payload.data || payload;
-    };
-
-    const loadUser = async () => {
-      const token = readToken();
-      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || "";
-
-      const endpoints = [
-        `${baseUrl}/users/me`,
-        `${baseUrl}/auth/me`,
-        `${baseUrl}/api/users/me`,
-        `${baseUrl}/api/auth/me`,
-      ];
-
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            credentials: "include",
-          });
-
-          if (!res.ok) continue;
-
-          const json = await res.json();
-          const nextUser = normalizeUser(json);
-
-          if (!cancelled && nextUser) {
-            setAccountUser(nextUser);
-            return;
-          }
-        } catch {
-          // Try the next endpoint.
-        }
-      }
-
-      if (!cancelled) setAccountUser(null);
-    };
-
-    loadUser().finally(() => {
-      if (!cancelled) setAccountLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const displayName =
-    accountUser?.displayName ||
-    accountUser?.name ||
-    accountUser?.fullName ||
-    accountUser?.username ||
-    "OpenShare account";
-
-  const email = accountUser?.email || "Email not available";
-  const handle = accountUser?.username || accountUser?.handle || accountUser?.slug || "Handle not set";
-  const avatar =
-    accountUser?.avatar ||
-    accountUser?.avatarUrl ||
-    accountUser?.profilePicture ||
-    accountUser?.photoURL ||
-    accountUser?.picture ||
-    "";
-
-  const initials = displayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "OS";
-
-  const emailVerified = Boolean(
-    accountUser?.emailVerified ||
-    accountUser?.isEmailVerified ||
-    accountUser?.verified
-  );
-
-  return (
-    <div
-      data-account-identity-panel
-      className="grid gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04] md:grid-cols-[auto_1fr]"
-    >
-      <div className="flex items-center gap-4">
-        {avatar ? (
-          <img
-            src={avatar}
-            alt={displayName}
-            className="h-16 w-16 shrink-0 rounded-3xl object-cover shadow-lg shadow-violet-500/20"
-          />
-        ) : (
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-xl font-black text-white shadow-lg shadow-violet-500/20">
-            {accountLoading ? "..." : initials}
+          <div className="mt-1 text-sm leading-snug text-slate-500 dark:text-zinc-400">
+            {description}
           </div>
         )}
       </div>
-
-      <div className="min-w-0 space-y-4">
-        <div>
-          <div className="text-base font-black text-slate-950 dark:text-white">
-            Your OpenShare identity
-          </div>
-          <div className="text-sm text-slate-500 dark:text-zinc-400">
-            Profile details come from your account. Settings controls visibility.
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Profile photo</div>
-            <div className="mt-1 text-sm font-bold text-slate-800 dark:text-zinc-100">{avatar ? "Uploaded" : "No photo set"}</div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Display name</div>
-            <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-zinc-100">{displayName}</div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Email</div>
-            <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-zinc-100">{email}</div>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200/70 dark:bg-white/[0.035] dark:ring-white/[0.08]">
-            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">Username / handle</div>
-            <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-zinc-100">{handle}</div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <a href="/profile" className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white">
-            Open public profile
-          </a>
-          <a href="/profile?edit=1" className="inline-flex items-center justify-center rounded-2xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-black text-violet-700">
-            Manage profile
-          </a>
-          <div className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700">
-            Account status: Active
-          </div>
-          <div className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-600">
-            {emailVerified ? "Email verified" : "Email not verified"}
-          </div>
-        </div>
-      </div>
     </div>
-  );
-}
-
-
-function SettingsNav({ activeSection, onChange }) {
-  return (
-    <nav className="settings-section-nav lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)]">
-      <div className="flex max-h-none min-h-0 flex-col rounded-[30px] border border-slate-200/70 bg-white/70 p-3 shadow-sm backdrop-blur-md dark:border-white/[0.08] dark:bg-white/[0.04] lg:max-h-[calc(100vh-7rem)]">
-        <div className="mb-4 hidden shrink-0 lg:block">
-          <div className="relative overflow-hidden rounded-3xl border border-violet-200/70 bg-gradient-to-br from-white via-violet-50 to-fuchsia-50 p-4 shadow-sm dark:border-violet-400/20 dark:from-[#181821] dark:via-[#1d1830] dark:to-[#22162a]">
-            <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full bg-violet-400/20 blur-2xl" />
-            <div className="absolute -bottom-9 -left-7 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
-
-            <div className="relative flex items-start gap-3">
-              <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-lg shadow-violet-500/25">
-                <SlidersHorizontal className="h-6 w-6" />
-                <div className="absolute inset-0 rounded-2xl ring-1 ring-white/25" />
-                <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-300 ring-2 ring-white dark:ring-[#1d1830]" />
-              </div>
-
-              <div className="min-w-0">
-                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-500 dark:text-violet-300">
-                  Control Center
-                </div>
-
-                <h2 className="mt-1 text-lg font-black leading-tight text-slate-950 dark:text-white">
-                  Settings
-                </h2>
-
-                <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-zinc-300">
-                  Preferences, privacy, notifications, and billing.
-                </p>
-
-                <div className="mt-3 inline-flex items-center rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-violet-700 shadow-sm ring-1 ring-violet-200/70 dark:bg-white/[0.08] dark:text-violet-200 dark:ring-violet-400/20">
-                  6 sections
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-3 flex shrink-0 items-center gap-2 px-1 lg:hidden">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-md shadow-violet-500/20">
-            <SlidersHorizontal className="h-5 w-5" />
-          </div>
-
-          <div>
-            <div className="text-sm font-black text-slate-950 dark:text-white">Settings</div>
-            <div className="text-xs text-slate-600 dark:text-zinc-300">Control center</div>
-          </div>
-        </div>
-
-        <div className="settings-rail-scroll flex min-h-0 gap-2 overflow-x-auto pb-2 lg:flex-1 lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto lg:pb-0 lg:pr-1 [scrollbar-gutter:stable] [scrollbar-width:thin]">
-          {SETTINGS_SECTIONS.map((section) => {
-            const Icon = section.icon;
-            const active = activeSection === section.id;
-
-            return (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => onChange(section.id)}
-                className={`group relative flex min-w-[220px] w-full shrink-0 items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left transition-all duration-200 lg:min-w-0 lg:shrink ${
-                  active
-                    ? 'bg-gradient-to-r from-violet-50 via-white/90 to-fuchsia-50 shadow-md shadow-violet-500/10 ring-1 ring-violet-200/70 dark:from-violet-500/15 dark:via-white/[0.07] dark:to-fuchsia-500/10 dark:ring-violet-400/20'
-                    : 'bg-transparent hover:bg-white/65 dark:hover:bg-white/[0.055]'
-                }`}
-              >
-                {active && (
-                  <>
-                    <div className="absolute bottom-3 left-0 top-3 w-1 rounded-full bg-gradient-to-b from-violet-500 via-fuchsia-500 to-cyan-400" />
-                    <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-violet-400/10 blur-2xl" />
-                  </>
-                )}
-
-                <div
-                  className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition-all ${
-                    active
-                      ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/25'
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-violet-50 group-hover:text-violet-700 dark:bg-white/[0.07] dark:text-zinc-300 dark:group-hover:bg-violet-500/12 dark:group-hover:text-violet-200'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-
-                <div className="relative min-w-0 flex-1 !border-0 !bg-transparent !p-0 !shadow-none !ring-0">
-                  <div
-                    className={`!border-0 !bg-transparent !p-0 !shadow-none !ring-0 text-sm font-black leading-tight ${
-                      active
-                        ? 'text-slate-950 dark:text-white'
-                        : 'text-slate-800 dark:text-zinc-100'
-                    }`}
-                  >
-                    {section.label}
-                  </div>
-
-                  <div
-                    className={`mt-1 hidden !border-0 !bg-transparent !p-0 !shadow-none !ring-0 text-xs leading-snug sm:block ${
-                      active
-                        ? 'text-slate-600 dark:text-zinc-300'
-                        : 'text-slate-500 dark:text-zinc-400'
-                    }`}
-                  >
-                    {section.description}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </nav>
   );
 }
 
@@ -1187,10 +810,10 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={() => setPublicProfile((current) => !current)}
-                  className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
+                  className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-200 ${
                     publicProfile
                       ? "bg-violet-600"
-                      : "bg-slate-200 dark:bg-white/[0.10]"
+                      : "border border-slate-300 bg-slate-200 shadow-inner shadow-slate-400/20 dark:border-white/20 dark:bg-white/15"
                   }`}
                   aria-pressed={publicProfile}
                 >
