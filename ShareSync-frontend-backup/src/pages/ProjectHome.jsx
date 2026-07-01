@@ -4702,7 +4702,10 @@ export default function ProjectHome() {
                   project={project}
                   tasks={liveTasks}
                   activity={activity}
-                />
+                    roadmapItems={commandMilestones}
+                    scheduleEvents={events || []}
+                    announcements={announcements || []}
+                  />
             </div>
           );
 

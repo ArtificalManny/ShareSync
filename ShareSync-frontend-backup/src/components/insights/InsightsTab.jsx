@@ -24,6 +24,9 @@ const InsightsTab = ({
   project = null,
   tasks = [],
   activity = [],
+  roadmapItems = [],
+  scheduleEvents = [],
+  announcements = [],
 }) => {
   const [range, setRange] = useState('7d');
 
@@ -40,6 +43,24 @@ const InsightsTab = ({
       : [];
 
   const signalsMembers = Array.isArray(project?.members) ? project.members : [];
+
+  const signalsRoadmapItems = Array.isArray(roadmapItems)
+    ? roadmapItems
+    : Array.isArray(roadmapItems?.items)
+      ? roadmapItems.items
+      : [];
+
+  const signalsScheduleEvents = Array.isArray(scheduleEvents)
+    ? scheduleEvents
+    : Array.isArray(scheduleEvents?.items)
+      ? scheduleEvents.items
+      : [];
+
+  const signalsAnnouncements = Array.isArray(announcements)
+    ? announcements
+    : Array.isArray(announcements?.items)
+      ? announcements.items
+      : [];
 
   const getTaskStatus = (task) =>
     String(task?.status || task?.state || task?.stage || "").toLowerCase();
