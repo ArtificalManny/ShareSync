@@ -1171,14 +1171,36 @@ export default function Settings() {
 
 
                             <AccountIdentityPanel />
+<Toggle
+              <div className="flex items-start gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPublicProfile((current) => !current)}
+                  className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
+                    publicProfile
+                      ? "bg-violet-600"
+                      : "bg-slate-200 dark:bg-white/[0.10]"
+                  }`}
+                  aria-pressed={publicProfile}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      publicProfile ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
 
-                  label="Public Profile"
-                  checked={publicProfile}
-                  onChange={setPublicProfile}
-                  description="Allow others to view your public profile"
-                />
+                <div>
+                  <div className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                    Public Profile
+                  </div>
+                  <div className="text-sm text-slate-500 dark:text-zinc-400">
+                    Allow others to view your public profile
+                  </div>
+                </div>
+              </div>
 
-                <Toggle
+
                   label="Discoverable in OpenShare"
                   checked={discoverable}
                   onChange={(next) => {
