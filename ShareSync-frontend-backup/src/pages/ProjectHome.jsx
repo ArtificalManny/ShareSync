@@ -1178,7 +1178,7 @@ function MomentumCard({ momentum = 0, weeklyShips = 0, trend }) {
                 <linearGradient id="momentumGradient" x1="0" y1="0" x2="120" y2="120">
                   <stop offset="0%" stopColor="#8b5cf6" />
                   <stop offset="55%" stopColor="#22d3ee" />
-                  <stop offset="Available" stopColor="#34d399" />
+                  <stop offset="100%" stopColor="#34d399" />
                 </linearGradient>
               </defs>
             </svg>

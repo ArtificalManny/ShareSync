@@ -645,7 +645,7 @@ export default function StackPanel({
 
           .stack-command-rail {
             height: 5px !important;
-            background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 42%, #34d399 Available) !important;
+            background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 42%, #34d399 100%) !important;
             box-shadow:
               0 0 22px rgba(139, 92, 246, 0.42),
               0 0 26px rgba(34, 211, 238, 0.30);
@@ -691,7 +691,7 @@ export default function StackPanel({
           .stack-composer-add-button,
           .stack-first-task-button {
             color: #ffffff !important;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
             border: 1px solid rgba(221, 214, 254, 0.78) !important;
             box-shadow:
               0 16px 34px rgba(109, 40, 217, 0.34),
@@ -701,7 +701,7 @@ export default function StackPanel({
           .stack-primary-button:hover,
           .stack-composer-add-button:hover,
           .stack-first-task-button:hover {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 Available) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%) !important;
             box-shadow:
               0 20px 44px rgba(109, 40, 217, 0.42),
               inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
@@ -720,7 +720,7 @@ export default function StackPanel({
             min-width: 210px !important;
             min-height: 52px !important;
             color: #ffffff !important;
-            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 32%, #7c3aed 66%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 32%, #7c3aed 66%, #6d28d9 100%) !important;
             border: 1px solid rgba(221, 214, 254, 0.95) !important;
             box-shadow:
               0 18px 42px rgba(109, 40, 217, 0.42),
@@ -732,7 +732,7 @@ export default function StackPanel({
 
           .stack-first-task-button-force-purple:hover {
             color: #ffffff !important;
-            background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 34%, #7c3aed 68%, #5b21b6 Available) !important;
+            background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 34%, #7c3aed 68%, #5b21b6 100%) !important;
             border-color: rgba(237, 233, 254, 1) !important;
             box-shadow:
               0 24px 54px rgba(109, 40, 217, 0.52),
@@ -742,7 +742,7 @@ export default function StackPanel({
 
           .dark .stack-first-task-button-force-purple {
             color: #ffffff !important;
-            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 35%, #7c3aed 70%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 35%, #7c3aed 70%, #6d28d9 100%) !important;
             border-color: rgba(196, 181, 253, 0.92) !important;
             box-shadow:
               0 20px 56px rgba(139, 92, 246, 0.42),
@@ -958,11 +958,11 @@ export default function StackPanel({
           }
 
           .stack-start-action {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
           }
 
           .stack-review-action {
-            background: linear-gradient(135deg, #38bdf8 0%, #2563eb 52%, #1d4ed8 Available) !important;
+            background: linear-gradient(135deg, #38bdf8 0%, #2563eb 52%, #1d4ed8 100%) !important;
           }
 
           .stack-task-action,
@@ -1026,7 +1026,7 @@ export default function StackPanel({
                   className="pointer-events-none absolute inset-0 rounded-2xl"
                   style={{
                     background:
-                      'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
+                      'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
                     boxShadow:
                       'inset 0 1px 0 rgba(255,255,255,0.28), 0 16px 36px rgba(109,40,217,0.38)',
                   }}
@@ -1203,8 +1203,8 @@ export default function StackPanel({
                   style={{
                     background:
                       addingTask || !newTitle.trim()
-                        ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available)'
-                        : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)',
+                        ? 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)'
+                        : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)',
                     boxShadow:
                       addingTask || !newTitle.trim()
                         ? 'inset 0 1px 0 rgba(255,255,255,0.24), 0 10px 24px rgba(109,40,217,0.20)'
@@ -1295,7 +1295,7 @@ export default function StackPanel({
                   style={{
                     backgroundColor: "#7c3aed",
                     backgroundImage:
-                      "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 Available)",
+                      "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 100%)",
                     color: "#ffffff",
                     borderColor: "#8b5cf6",
                     boxShadow:
