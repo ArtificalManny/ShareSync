@@ -313,7 +313,76 @@ const MilestoneCard = ({
         </div>
       </div>
 
-      {showActions && (
+        <div
+          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-white/[0.08] dark:bg-white/[0.03]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
+              Checkpoints
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-text-tertiary">
+              {checkpointSummary}
+            </span>
+          </div>
+
+          {checkpoints.length > 0 && (
+            <div className="mb-3 space-y-1.5">
+              {checkpoints.slice(0, 4).map((checkpoint) => (
+                <div
+                  key={checkpoint.id}
+                  className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs text-slate-700 dark:bg-surface-2/70 dark:text-text-secondary"
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleCheckpoint(e, checkpoint.id)}
+                    className="shrink-0 text-violet-600 dark:text-brand"
+                  >
+                    {checkpoint.completed ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <Circle className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+
+                  <span className={`min-w-0 flex-1 truncate ${checkpoint.completed ? "text-slate-400 line-through dark:text-text-tertiary" : ""}`}>
+                    {checkpoint.title}
+                  </span>
+
+                  {onUpdate && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteCheckpoint(e, checkpoint.id)}
+                      className="shrink-0 text-slate-400 hover:text-red-500"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {onUpdate && (
+            <form onSubmit={handleAddCheckpoint} className="flex items-center gap-2">
+              <input
+                value={newCheckpointTitle}
+                onChange={(e) => setNewCheckpointTitle(e.target.value)}
+                placeholder="Add checkpoint..."
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 dark:border-white/[0.08] dark:bg-surface-2 dark:text-text-primary"
+              />
+              <button
+                type="submit"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </form>
+          )}
+        </div>
+
+
+        {showActions && (
         <div
           className="
             roadmap-milestone-action-tray

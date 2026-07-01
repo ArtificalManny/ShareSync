@@ -642,6 +642,29 @@ export default function RoadmapPanel({
     }
   }, [deletingMilestone, items]);
 
+
+  const handleMilestoneUpdate = useCallback(
+    async (milestoneId, updates) => {
+      if (!milestoneId || !updates) return;
+
+      const prevItems = items;
+      setItems((prev) =>
+        prev.map((m) =>
+          getMilestoneId(m) === milestoneId ? { ...m, ...updates } : m
+        )
+      );
+
+      try {
+        await updateMilestoneApi(milestoneId, updates);
+        await fetchData();
+      } catch (e) {
+        setItems(prevItems);
+        console.error("[RoadmapPanel] Milestone update failed:", e?.message);
+      }
+    },
+    [items, fetchData]
+  );
+
   const handleStatusChange = useCallback(
     async (milestoneId, newStatus) => {
       if (!milestoneId || !newStatus) return;
@@ -1312,6 +1335,7 @@ export default function RoadmapPanel({
                           onEdit={handleEdit}
                           onDelete={handleDelete}
                           onStatusChange={handleStatusChange}
+                          onUpdate={handleMilestoneUpdate}
                         />
 
                         <div className="roadmap-visible-card-actions-v1 px-5 pb-5 pt-0 flex flex-wrap items-center gap-2 border-t border-slate-100/80 dark:border-white/[0.06]">
