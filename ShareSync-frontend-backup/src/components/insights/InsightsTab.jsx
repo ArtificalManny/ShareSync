@@ -246,9 +246,9 @@ const InsightsTab = ({
   };
 
   const resolvedScheduleCount =
-    sourceCounts.schedule ?? signalsScheduleEvents.length || scheduleCount || 0;
+    sourceCounts.schedule ?? (signalsScheduleEvents.length || scheduleCount || 0);
   const resolvedAnnouncementCount =
-    sourceCounts.announcements ?? signalsAnnouncements.length || announcementCount || 0;
+    sourceCounts.announcements ?? (signalsAnnouncements.length || announcementCount || 0);
 
   const signalBreakdownSources = [
     {
