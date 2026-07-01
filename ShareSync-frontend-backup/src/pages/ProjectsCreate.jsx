@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { createProject } from "../api/projects";
 import { sendInvite } from "../api/invites";
 import { getCurrentSubscription } from "../api/subscriptions";
+import { getSettings } from "../api/settings";
 import { toast } from "../components/ui/toast";
 import SmartStart from "../components/projects/SmartStart";
 import "./ProjectsCreate.css";
@@ -30,6 +31,21 @@ function isValidEmail(email) {
 }
 
 const PHASE0_PREFS_KEY = "ss:createProject:phase0";
+
+function toCreatePrivacy(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "public") return "Public";
+  if (normalized === "private") return "Private";
+  return null;
+}
+
+function toCreateMemberRole(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "admin" || normalized === "manager") return "Manager";
+  if (normalized === "viewer") return "Viewer";
+  if (normalized === "member") return "Member";
+  return null;
+}
 
 function loadPhase0Prefs() {
   try {
@@ -82,6 +98,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
   const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState("Member");
+  const [defaultMemberRole, setDefaultMemberRole] = useState("Member");
   const [members, setMembers] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
@@ -107,14 +124,54 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const isAtLimit = !isUnlimited && projectsUsed >= projectsLimit;
 
   useEffect(() => {
-    const prefs = loadPhase0Prefs();
-    if (!prefs) return;
+    let cancelled = false;
 
-    if (typeof prefs.privacy === "string") setPrivacy(prefs.privacy);
-    if (typeof prefs.isListed === "boolean") setIsListed(prefs.isListed);
-    if (prefs.spectatorMode === "view" || prefs.spectatorMode === "suggest") {
-      setSpectatorMode(prefs.spectatorMode);
+    async function applyProjectDefaults() {
+      const prefs = loadPhase0Prefs();
+
+      let nextPrivacy = "Private";
+      let nextMemberRole = "Member";
+
+      try {
+        const settings = await getSettings();
+        const defaults = settings?.projectDefaults || {};
+
+        const settingsPrivacy = toCreatePrivacy(defaults.visibility || defaults.defaultVisibility);
+        const settingsMemberRole = toCreateMemberRole(defaults.inviteRole || defaults.defaultInviteRole);
+
+        if (settingsPrivacy) nextPrivacy = settingsPrivacy;
+        if (settingsMemberRole) nextMemberRole = settingsMemberRole;
+      } catch (err) {
+        console.warn("Failed to load project defaults", err);
+      }
+
+      if (prefs) {
+        const savedPrivacy = toCreatePrivacy(prefs.privacy);
+        const savedMemberRole = toCreateMemberRole(prefs.memberRole);
+
+        if (savedPrivacy) nextPrivacy = savedPrivacy;
+        if (savedMemberRole) nextMemberRole = savedMemberRole;
+      }
+
+      if (cancelled) return;
+
+      setPrivacy(nextPrivacy);
+      setMemberRole(nextMemberRole);
+      setDefaultMemberRole(nextMemberRole);
+
+      if (prefs) {
+        if (typeof prefs.isListed === "boolean") setIsListed(prefs.isListed);
+        if (prefs.spectatorMode === "view" || prefs.spectatorMode === "suggest") {
+          setSpectatorMode(prefs.spectatorMode);
+        }
+      }
     }
+
+    applyProjectDefaults();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const canSubmit = useMemo(() => {
@@ -144,7 +201,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
     setMembers((prev) => [...prev, { email, role: memberRole }]);
     setMemberEmail("");
-    setMemberRole("Member");
+    setMemberRole(defaultMemberRole);
   };
 
   const removeMember = (email) => {
@@ -194,6 +251,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
         privacy,
         isListed,
         spectatorMode,
+        memberRole,
         updatedAt: new Date().toISOString(),
       });
 
