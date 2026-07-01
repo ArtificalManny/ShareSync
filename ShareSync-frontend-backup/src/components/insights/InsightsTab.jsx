@@ -18,7 +18,27 @@ import TeamBalance from './TeamBalance';
 import ActivityFeed from './ActivityFeed';
 import WeeklyMomentumReport from './WeeklyMomentumReport';
 
-const InsightsTab = ({ projectId, refreshKey = 0 }) => {
+const InsightsTab = ({
+  projectId,
+  refreshKey = 0,
+  project = null,
+  tasks = [],
+  activity = [],
+}) => {
+
+  const signalsTasks = Array.isArray(tasks)
+    ? tasks
+    : Array.isArray(tasks?.items)
+      ? tasks.items
+      : [];
+
+  const signalsActivity = Array.isArray(activity)
+    ? activity
+    : Array.isArray(activity?.items)
+      ? activity.items
+      : [];
+
+  const signalsMembers = Array.isArray(project?.members) ? project.members : [];
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
