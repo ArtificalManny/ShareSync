@@ -1352,26 +1352,30 @@ export default function Settings() {
                   onChange={setEmailDigest}
                   description="Get a weekly summary of projects, ships, and momentum"
                 />
-
-                <ComingSoonRow
-                  label="Project invites"
-                  description="Control notifications for project invitations"
-                />
-
-                <ComingSoonRow
-                  label="Task assignments"
-                  description="Control notifications when work is assigned to you"
-                />
-
-                <ComingSoonRow
-                  label="Mentions"
-                  description="Control notifications when someone mentions you"
-                />
-
-                <ComingSoonRow
-                  label="Billing alerts"
-                  description="Control receipts, plan changes, and usage alerts"
-                />
+                  <Toggle
+                    label="Project invites"
+                    checked={projectInvites}
+                    onChange={setProjectInvites}
+                    description="Control notifications for project invitations"
+                  />
+                  <Toggle
+                    label="Task assignments"
+                    checked={taskAssignments}
+                    onChange={setTaskAssignments}
+                    description="Control notifications when work is assigned to you"
+                  />
+                  <Toggle
+                    label="Mentions"
+                    checked={mentions}
+                    onChange={setMentions}
+                    description="Control notifications when someone mentions you"
+                  />
+                  <Toggle
+                    label="Billing alerts"
+                    checked={billingAlerts}
+                    onChange={setBillingAlerts}
+                    description="Control receipts, plan changes, and usage alerts"
+                  />
               </SectionCard>
             </>
           )}
