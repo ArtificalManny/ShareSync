@@ -12,6 +12,8 @@
 import React, { useState, useEffect } from 'react';
 import { Gauge, Clock3, Target, Users2, Activity, BarChart3, AlertTriangle, CalendarClock } from 'lucide-react';
 import { getProjectInsights } from '../../api/insights';
+import { getAnnouncements } from '../../api/announcements';
+import { getProjectRhythm } from '../../api/calendar';
 import MetricCard from './MetricCard';
 import SprintHealth from './SprintHealth';
 import ActivityFeed from './ActivityFeed';
@@ -72,6 +74,7 @@ const InsightsTab = ({
   announcementCount = 0,
 }) => {
   const [range, setRange] = useState('7d');
+  const [sourceCounts, setSourceCounts] = useState({ schedule: null, announcements: null });
 
   const signalsTasks = Array.isArray(tasks)
     ? tasks
@@ -242,6 +245,11 @@ const InsightsTab = ({
     completedTrend,
   };
 
+  const resolvedScheduleCount =
+    sourceCounts.schedule ?? signalsScheduleEvents.length || scheduleCount || 0;
+  const resolvedAnnouncementCount =
+    sourceCounts.announcements ?? signalsAnnouncements.length || announcementCount || 0;
+
   const signalBreakdownSources = [
     {
       label: "Tasks",
@@ -257,13 +265,13 @@ const InsightsTab = ({
     },
     {
       label: "Schedule",
-      count: signalsScheduleEvents.length || scheduleCount,
+      count: resolvedScheduleCount,
       caption: `${overdueScheduleEvents.length} past due`,
       barClass: "bg-amber-500",
     },
     {
       label: "Updates",
-      count: signalsAnnouncements.length || announcementCount,
+      count: resolvedAnnouncementCount,
       caption: "announcements posted",
       barClass: "bg-emerald-500",
     },
@@ -271,6 +279,87 @@ const InsightsTab = ({
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const unwrapList = (payload, keys = []) => {
+      if (Array.isArray(payload)) return payload;
+
+      for (const key of keys) {
+        if (Array.isArray(payload?.[key])) return payload[key];
+        if (Array.isArray(payload?.data?.[key])) return payload.data[key];
+      }
+
+      if (Array.isArray(payload?.items)) return payload.items;
+      if (Array.isArray(payload?.data)) return payload.data;
+      if (Array.isArray(payload?.data?.items)) return payload.data.items;
+
+      return [];
+    };
+
+    async function fetchSourceCounts() {
+      if (!projectId) return;
+
+      const historyStart = new Date();
+      historyStart.setFullYear(historyStart.getFullYear() - 5);
+      historyStart.setHours(0, 0, 0, 0);
+
+      const historyEnd = new Date();
+      historyEnd.setFullYear(historyEnd.getFullYear() + 5);
+      historyEnd.setHours(23, 59, 59, 999);
+
+      const [announcementsResult, scheduleResult] = await Promise.allSettled([
+        getAnnouncements(projectId),
+        getProjectRhythm(projectId, historyStart.toISOString(), historyEnd.toISOString()),
+      ]);
+
+      if (!isMounted) return;
+
+      setSourceCounts((previous) => {
+        const next = { ...previous };
+
+        if (announcementsResult.status === "fulfilled") {
+          next.announcements = unwrapList(announcementsResult.value, [
+            "announcements",
+            "updates",
+            "results",
+          ]).length;
+        }
+
+        if (scheduleResult.status === "fulfilled") {
+          const scheduleItems = unwrapList(scheduleResult.value, [
+            "events",
+            "sessions",
+            "rhythm",
+            "calendar",
+            "entries",
+          ]);
+
+          next.schedule = scheduleItems.filter((item) =>
+            item?.editable !== false &&
+            item?.isGenerated !== true &&
+            item?.source !== "task"
+          ).length;
+        }
+
+        return next;
+      });
+    }
+
+    fetchSourceCounts().catch(() => {
+      if (isMounted) {
+        setSourceCounts((previous) => ({
+          schedule: previous.schedule,
+          announcements: previous.announcements,
+        }));
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [projectId, refreshKey]);
 
   useEffect(() => {
     let isMounted = true;
