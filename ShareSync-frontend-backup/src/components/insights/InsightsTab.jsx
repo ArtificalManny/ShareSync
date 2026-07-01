@@ -25,6 +25,7 @@ const InsightsTab = ({
   tasks = [],
   activity = [],
 }) => {
+  const [range, setRange] = useState('7d');
 
   const signalsTasks = Array.isArray(tasks)
     ? tasks
@@ -140,7 +141,6 @@ const InsightsTab = ({
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [range, setRange] = useState('7d');
 
   useEffect(() => {
     let isMounted = true;
@@ -447,37 +447,34 @@ const InsightsTab = ({
           {/* Top Metrics Grid */}
           <div className="insights-metrics-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
-              title="Velocity"
+              title="Completed"
               icon={Gauge}
               iconTone="violet"
-              value={metrics.velocity.value}
-              trend={metrics.velocity.trend}
-              unit={metrics.velocity.unit}
+              value={metrics.completed.value}
+              trend={metrics.completed.trend}
+              unit={metrics.completed.unit}
             />
             <MetricCard
-              title="Avg Cycle Time"
+              title="Open Tasks"
               icon={Clock3}
               iconTone="blue"
-              value={metrics.cycleTime.value}
-              trend={metrics.cycleTime.trend}
-              unit={metrics.cycleTime.unit}
-              invertTrendColors={true}
+              value={metrics.open.value}
+                unit={metrics.open.unit}
+              
             />
             <MetricCard
-              title="Completion Rate"
+              title="Overdue"
               icon={Target}
               iconTone="emerald"
-              value={metrics.completionRate.value}
-              trend={metrics.completionRate.trend}
-              unit={metrics.completionRate.unit}
+              value={metrics.overdue.value}
+                unit={metrics.overdue.unit}
             />
             <MetricCard
-              title="Collaboration"
+              title="Blocked"
               icon={Users2}
               iconTone="cyan"
-              value={metrics.collaboration.value}
-              trend={metrics.collaboration.trend}
-              unit={metrics.collaboration.unit}
+              value={metrics.blocked.value}
+                unit={metrics.blocked.unit}
             />
           </div>
 
@@ -486,7 +483,7 @@ const InsightsTab = ({
             <div className="lg:col-span-1">
               <SprintHealth
                 icon={Activity}
-                completionRate={metrics.completionRate.value}
+                completionRate={signalsSnapshot.completionRate}
               />
             </div>
             <div className="lg:col-span-2">
