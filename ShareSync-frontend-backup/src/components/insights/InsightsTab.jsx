@@ -10,7 +10,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from 'react';
-import { Gauge, Clock3, Target, Users2, Activity, Scale, BarChart3 } from 'lucide-react';
+import { Gauge, Clock3, Target, Users2, Activity, Scale, BarChart3, AlertTriangle } from 'lucide-react';
 import { getProjectInsights } from '../../api/insights';
 import MetricCard from './MetricCard';
 import SprintHealth from './SprintHealth';
@@ -39,6 +39,104 @@ const InsightsTab = ({
       : [];
 
   const signalsMembers = Array.isArray(project?.members) ? project.members : [];
+
+  const getTaskStatus = (task) =>
+    String(task?.status || task?.state || task?.stage || "").toLowerCase();
+
+  const getTaskCompletedAt = (task) =>
+    task?.completedAt || task?.completed_at || task?.finishedAt || task?.shippedAt || null;
+
+  const getTaskDueAt = (task) =>
+    task?.dueDate || task?.dueAt || task?.deadline || task?.targetDate || task?.endDate || null;
+
+  const isTaskCompleted = (task) => {
+    const status = getTaskStatus(task);
+    return Boolean(getTaskCompletedAt(task)) ||
+      status.includes("complete") ||
+      status.includes("done") ||
+      status.includes("shipped");
+  };
+
+  const isTaskBlocked = (task) => {
+    const status = getTaskStatus(task);
+    return status.includes("block") ||
+      status.includes("risk") ||
+      status.includes("stuck") ||
+      Boolean(task?.blocked || task?.isBlocked);
+  };
+
+  const now = new Date();
+  const rangeDays = Number.parseInt(range, 10) || 7;
+  const rangeStart = new Date(now);
+  rangeStart.setDate(now.getDate() - rangeDays);
+
+  const previousRangeStart = new Date(rangeStart);
+  previousRangeStart.setDate(rangeStart.getDate() - rangeDays);
+
+  const completedTasks = signalsTasks.filter(isTaskCompleted);
+  const openTasks = signalsTasks.filter((task) => !isTaskCompleted(task));
+  const blockedTasks = openTasks.filter(isTaskBlocked);
+  const overdueTasks = openTasks.filter((task) => {
+    const dueAt = getTaskDueAt(task);
+    if (!dueAt) return false;
+    const dueDate = new Date(dueAt);
+    return !Number.isNaN(dueDate.getTime()) && dueDate < now;
+  });
+
+  const completedInRange = completedTasks.filter((task) => {
+    const completedAt = getTaskCompletedAt(task);
+    if (!completedAt) return false;
+    const completedDate = new Date(completedAt);
+    return !Number.isNaN(completedDate.getTime()) && completedDate >= rangeStart;
+  });
+
+  const completedPreviousRange = completedTasks.filter((task) => {
+    const completedAt = getTaskCompletedAt(task);
+    if (!completedAt) return false;
+    const completedDate = new Date(completedAt);
+    return !Number.isNaN(completedDate.getTime()) &&
+      completedDate >= previousRangeStart &&
+      completedDate < rangeStart;
+  });
+
+  const activeMemberNames = new Set(
+    signalsActivity
+      .filter((item) => {
+        const createdAt = item?.createdAt || item?.updatedAt || item?.timestamp || item?.time;
+        if (!createdAt) return false;
+        const date = new Date(createdAt);
+        return !Number.isNaN(date.getTime()) && date >= rangeStart;
+      })
+      .map((item) =>
+        item?.actorName ||
+        item?.userName ||
+        item?.createdByName ||
+        item?.actor?.name ||
+        item?.user?.name ||
+        item?.createdBy?.name
+      )
+      .filter(Boolean)
+  );
+
+  const completedTrend = completedPreviousRange.length
+    ? Math.round(((completedInRange.length - completedPreviousRange.length) / completedPreviousRange.length) * 100)
+    : completedInRange.length > 0
+      ? 100
+      : 0;
+
+  const completionRate = signalsTasks.length
+    ? Math.round((completedTasks.length / signalsTasks.length) * 100)
+    : 0;
+
+  const signalsSnapshot = {
+    completedInRange: completedInRange.length,
+    openTasks: openTasks.length,
+    overdueTasks: overdueTasks.length,
+    blockedTasks: blockedTasks.length,
+    activeMembers: activeMemberNames.size || signalsMembers.length,
+    completionRate,
+    completedTrend,
+  };
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,7 +169,26 @@ const InsightsTab = ({
   // Metrics section shows loading/error/data states independently.
   // ═════════════════════════════════════════════════════════════════════════════
 
-  const metrics = data?.metrics;
+  const metrics = {
+    completed: {
+      value: signalsSnapshot.completedInRange,
+      trend: signalsSnapshot.completedTrend,
+      unit: `${range.toUpperCase()} done`,
+    },
+    open: {
+      value: signalsSnapshot.openTasks,
+      unit: "open",
+    },
+    overdue: {
+      value: signalsSnapshot.overdueTasks,
+      unit: "past due",
+    },
+    blocked: {
+      value: signalsSnapshot.blockedTasks,
+      unit: "blocked",
+    },
+  };
+
   const teamBalance = data?.teamBalance;
   const aiInsights = data?.aiInsights;
 
@@ -197,7 +314,7 @@ const InsightsTab = ({
             border-color: rgba(148,163,184,0.36) !important;
             background:
               radial-gradient(circle at 12% 0%, rgba(139,92,246,0.10), transparent 32%),
-              radial-gradient(circle at Available 0%, rgba(34,211,238,0.08), transparent 30%),
+              radial-gradient(circle at 88% 0%, rgba(34,211,238,0.08), transparent 30%),
               linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.88)) !important;
             box-shadow:
               0 20px 58px rgba(15,23,42,0.10),
@@ -223,7 +340,7 @@ const InsightsTab = ({
             border-color: rgba(255,255,255,0.10) !important;
             background:
               radial-gradient(circle at 12% 0%, rgba(139,92,246,0.16), transparent 32%),
-              radial-gradient(circle at Available 0%, rgba(34,211,238,0.10), transparent 30%),
+              radial-gradient(circle at 88% 0%, rgba(34,211,238,0.10), transparent 30%),
               linear-gradient(180deg, rgba(15,23,42,0.86), rgba(2,6,23,0.78)) !important;
             box-shadow:
               0 28px 90px rgba(0,0,0,0.42),
