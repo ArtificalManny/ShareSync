@@ -9,6 +9,8 @@ const ICON_TONE_CLASSES = {
     'border-emerald-200/80 bg-emerald-500/10 text-emerald-600 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-300',
   cyan:
     'border-cyan-200/80 bg-cyan-500/10 text-cyan-600 dark:border-cyan-400/20 dark:bg-cyan-500/15 dark:text-cyan-300',
+  amber:
+    'border-amber-200/80 bg-amber-500/10 text-amber-600 dark:border-amber-400/20 dark:bg-amber-500/15 dark:text-amber-300',
 };
 
 const MetricCard = ({
@@ -20,10 +22,12 @@ const MetricCard = ({
   unit,
   invertTrendColors = false,
 }) => {
-  // If invertTrendColors is true (like for Cycle Time), a negative trend is GOOD (green)
-  const isPositiveTrend = invertTrendColors ? trend <= 0 : trend >= 0;
+  const numericTrend = Number(trend);
+  const hasTrend = trend !== null && trend !== undefined && Number.isFinite(numericTrend);
 
-  // Neon color classes
+  // If invertTrendColors is true, a negative trend is GOOD.
+  const isPositiveTrend = invertTrendColors ? numericTrend <= 0 : numericTrend >= 0;
+
   const trendColorClass = isPositiveTrend ? 'text-emerald-400' : 'text-rose-400';
   const trendBgClass = isPositiveTrend ? 'bg-emerald-400/10' : 'bg-rose-400/10';
   const iconToneClass = ICON_TONE_CLASSES[iconTone] || ICON_TONE_CLASSES.violet;
@@ -51,16 +55,18 @@ const MetricCard = ({
           {unit && <span className="text-slate-400 dark:text-zinc-500 text-sm font-medium">{unit}</span>}
         </div>
 
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold ${trendColorClass} ${trendBgClass}`}>
-          {trend > 0 ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-          ) : trend < 0 ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-          ) : (
-            <span className="px-1">-</span>
-          )}
-          {trend !== 0 && <span>{Math.abs(trend)}%</span>}
-        </div>
+        {hasTrend && (
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold ${trendColorClass} ${trendBgClass}`}>
+            {numericTrend > 0 ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            ) : numericTrend < 0 ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            ) : (
+              <span className="px-1">-</span>
+            )}
+            {numericTrend !== 0 && <span>{Math.abs(numericTrend)}%</span>}
+          </div>
+        )}
       </div>
     </div>
   );
