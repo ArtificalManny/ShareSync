@@ -95,25 +95,63 @@ const InsightsTab = ({
   const previousRangeStart = new Date(rangeStart);
   previousRangeStart.setDate(rangeStart.getDate() - rangeDays);
 
-  const completedTasks = signalsTasks.filter(isTaskCompleted);
-  const openTasks = signalsTasks.filter((task) => !isTaskCompleted(task));
-  const blockedTasks = openTasks.filter(isTaskBlocked);
-  const overdueTasks = openTasks.filter((task) => {
-    const dueAt = getTaskDueAt(task);
+  const isOpenOverdue = (item) => {
+    if (isTaskCompleted(item)) return false;
+    const dueAt = getTaskDueAt(item);
     if (!dueAt) return false;
     const dueDate = new Date(dueAt);
     return !Number.isNaN(dueDate.getTime()) && dueDate < now;
-  });
+  };
 
-  const completedInRange = completedTasks.filter((task) => {
-    const completedAt = getTaskCompletedAt(task);
+  const getScheduleDate = (event) =>
+    event?.start ||
+    event?.startDate ||
+    event?.startsAt ||
+    event?.date ||
+    event?.scheduledAt ||
+    event?.dueDate ||
+    null;
+
+  const isPastScheduleEvent = (event) => {
+    const status = getTaskStatus(event);
+    if (
+      status.includes("cancel") ||
+      status.includes("complete") ||
+      status.includes("done")
+    ) {
+      return false;
+    }
+
+    const scheduledAt = getScheduleDate(event);
+    if (!scheduledAt) return false;
+    const scheduledDate = new Date(scheduledAt);
+    return !Number.isNaN(scheduledDate.getTime()) && scheduledDate < now;
+  };
+
+  const completedTasks = signalsTasks.filter(isTaskCompleted);
+  const completedRoadmapItems = signalsRoadmapItems.filter(isTaskCompleted);
+
+  const openTasks = signalsTasks.filter((task) => !isTaskCompleted(task));
+  const blockedTasks = openTasks.filter(isTaskBlocked);
+  const blockedRoadmapItems = signalsRoadmapItems
+    .filter((item) => !isTaskCompleted(item))
+    .filter(isTaskBlocked);
+
+  const overdueTasks = openTasks.filter(isOpenOverdue);
+  const overdueRoadmapItems = signalsRoadmapItems.filter(isOpenOverdue);
+  const overdueScheduleEvents = signalsScheduleEvents.filter(isPastScheduleEvent);
+
+  const completedSignalItems = [...completedTasks, ...completedRoadmapItems];
+
+  const completedInRange = completedSignalItems.filter((item) => {
+    const completedAt = getTaskCompletedAt(item);
     if (!completedAt) return false;
     const completedDate = new Date(completedAt);
     return !Number.isNaN(completedDate.getTime()) && completedDate >= rangeStart;
   });
 
-  const completedPreviousRange = completedTasks.filter((task) => {
-    const completedAt = getTaskCompletedAt(task);
+  const completedPreviousRange = completedSignalItems.filter((item) => {
+    const completedAt = getTaskCompletedAt(item);
     if (!completedAt) return false;
     const completedDate = new Date(completedAt);
     return !Number.isNaN(completedDate.getTime()) &&
@@ -146,15 +184,16 @@ const InsightsTab = ({
       ? 100
       : 0;
 
-  const completionRate = signalsTasks.length
-    ? Math.round((completedTasks.length / signalsTasks.length) * 100)
+  const completableSignalsTotal = signalsTasks.length + signalsRoadmapItems.length;
+  const completionRate = completableSignalsTotal
+    ? Math.round((completedSignalItems.length / completableSignalsTotal) * 100)
     : 0;
 
   const signalsSnapshot = {
     completedInRange: completedInRange.length,
     openTasks: openTasks.length,
-    overdueTasks: overdueTasks.length,
-    blockedTasks: blockedTasks.length,
+    overdueTasks: overdueTasks.length + overdueRoadmapItems.length + overdueScheduleEvents.length,
+    blockedTasks: blockedTasks.length + blockedRoadmapItems.length,
     activeMembers: activeMemberNames.size || signalsMembers.length,
     completionRate,
     completedTrend,
