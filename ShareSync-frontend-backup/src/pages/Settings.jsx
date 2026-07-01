@@ -1008,7 +1008,7 @@ export default function Settings() {
         setTaskAssignments(Boolean(notifications.taskAssignments ?? true));
         setMentions(Boolean(notifications.mentionAlerts ?? notifications.mentions ?? true));
         setBillingAlerts(Boolean(notifications.billingAlerts ?? true));
-        const projectDefaults = data.projectDefaults || {};
+        const projectDefaults = settings.projectDefaults || {};
         setDefaultProjectVisibility(projectDefaults.visibility || 'private');
         setDefaultInviteRole(projectDefaults.inviteRole || 'member');
         setRequireJoinApproval(Boolean(projectDefaults.requireApproval ?? true));
