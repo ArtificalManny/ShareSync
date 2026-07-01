@@ -103,14 +103,14 @@ function Toggle({ label, checked, onChange, description }) {
         />
         {/* Toggle track */}
         <div
-          className={`w-11 h-6 rounded-full transition-all border ${checked ? 'border-transparent' : 'border-slate-300 dark:border-[#27272a] bg-slate-200 dark:bg-[#1f1f23]'}`}
+          className={`w-11 h-6 rounded-full transition-all border shadow-sm ${checked ? 'border-violet-500 bg-violet-600' : 'border-slate-400 bg-slate-200 shadow-inner dark:border-zinc-500 dark:bg-zinc-700'}`}
           style={{
-            background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 Available)' : undefined
+            background: checked ? 'linear-gradient(135deg, #7C3AED 0%, #C026D3 100%)' : undefined
           }}
         />
         {/* Toggle thumb */}
         <div
-          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all"
+          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-md ring-1 ring-black/10 transition-all"
           style={{ left: checked ? '24px' : '4px' }}
         />
       </div>
