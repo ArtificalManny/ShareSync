@@ -25,7 +25,7 @@ import {
   MoreHorizontal,
   Edit2,
   Trash2,
-  ChevronRight,,
+  ChevronRight,
   Plus,
   X,
 } from 'lucide-react';
