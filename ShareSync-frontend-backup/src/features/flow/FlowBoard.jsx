@@ -184,7 +184,63 @@ export default function FlowBoard({
   }
 
   return (
-    <section className={`flow-command-board relative ${className}`} aria-label="Project flow">
+    <section className={`flow-command-board relative ${className}`} aria-label="Project flow" data-flow-board="true">
+      <style className="flow-board-soften-style">
+        {`
+          [data-flow-board="true"] {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.10), transparent 34%),
+              radial-gradient(circle at 88% 8%, rgba(34, 211, 238, 0.11), transparent 38%),
+              linear-gradient(135deg, rgba(248, 250, 252, 0.80), rgba(226, 232, 240, 0.44)) !important;
+            border-color: rgba(148, 163, 184, 0.32) !important;
+            box-shadow:
+              0 22px 60px rgba(15, 23, 42, 0.09),
+              inset 0 1px 0 rgba(255, 255, 255, 0.76) !important;
+          }
+
+          [data-flow-board="true"] :where(
+            [class*="bg-slate-400"],
+            [class*="bg-slate-500"],
+            [class*="bg-slate-600"],
+            [class*="bg-slate-700"],
+            [class*="bg-slate-800"],
+            [class*="bg-slate-900"],
+            [class*="from-slate-400"],
+            [class*="from-slate-500"],
+            [class*="from-slate-600"],
+            [class*="from-slate-700"],
+            [class*="from-slate-800"],
+            [class*="from-slate-900"],
+            [class*="to-slate-400"],
+            [class*="to-slate-500"],
+            [class*="to-slate-600"],
+            [class*="to-slate-700"],
+            [class*="to-slate-800"],
+            [class*="to-slate-900"]
+          ) {
+            background:
+              linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(226, 232, 240, 0.32)) !important;
+            border-color: rgba(203, 213, 225, 0.58) !important;
+          }
+
+          [data-flow-board="true"] :where(
+            [class*="border-slate-700"],
+            [class*="border-slate-800"],
+            [class*="border-slate-900"]
+          ) {
+            border-color: rgba(148, 163, 184, 0.42) !important;
+          }
+
+          .dark [data-flow-board="true"] {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.14), transparent 34%),
+              radial-gradient(circle at 88% 8%, rgba(34, 211, 238, 0.10), transparent 38%),
+              linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.76)) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+          }
+        `}
+      </style>
+
       <style className="flow-board-visual-style">
         {`
           .flow-board-shell {
