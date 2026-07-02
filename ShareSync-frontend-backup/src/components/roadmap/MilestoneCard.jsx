@@ -25,7 +25,9 @@ import {
   MoreHorizontal,
   Edit2,
   Trash2,
-  ChevronRight,
+  ChevronRight,,
+  Plus,
+  X,
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -140,7 +142,10 @@ const MilestoneCard = ({
   isSelected = false,
   showActions = true,
   onStatusChange,
+  onUpdate,
 }) => {
+  const [newCheckpointTitle, setNewCheckpointTitle] = useState("");
+
   const [showMenu, setShowMenu] = useState(false);
   const actionButtonRef = useRef(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -179,6 +184,65 @@ const MilestoneCard = ({
 
     window.addEventListener('resize', close);
     window.addEventListener('scroll', close, true);
+
+  const checkpoints = useMemo(
+    () => (Array.isArray(milestone?.checkpoints) ? milestone.checkpoints : []),
+    [milestone?.checkpoints]
+  );
+  const completedCheckpoints = checkpoints.filter((checkpoint) => checkpoint?.completed).length;
+  const checkpointSummary = checkpoints.length
+    ? `${completedCheckpoints}/${checkpoints.length} checkpoints`
+    : "No checkpoints yet";
+
+  const persistCheckpoints = useCallback(
+    (nextCheckpoints) => {
+      if (!onUpdate || !id) return;
+      onUpdate(id, { checkpoints: nextCheckpoints });
+    },
+    [id, onUpdate]
+  );
+
+  const handleAddCheckpoint = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const title = newCheckpointTitle.trim();
+    if (!title) return;
+
+    persistCheckpoints([
+      ...checkpoints,
+      {
+        id: `checkpoint-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title,
+        completed: false,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
+    setNewCheckpointTitle("");
+  };
+
+  const handleToggleCheckpoint = (e, checkpointId) => {
+    e.stopPropagation();
+
+    persistCheckpoints(
+      checkpoints.map((checkpoint) => {
+        if (checkpoint.id !== checkpointId) return checkpoint;
+        const completed = !checkpoint.completed;
+        return {
+          ...checkpoint,
+          completed,
+          completedAt: completed ? new Date().toISOString() : undefined,
+        };
+      })
+    );
+  };
+
+  const handleDeleteCheckpoint = (e, checkpointId) => {
+    e.stopPropagation();
+    persistCheckpoints(checkpoints.filter((checkpoint) => checkpoint.id !== checkpointId));
+  };
+
 
     return () => {
       window.removeEventListener('resize', close);
