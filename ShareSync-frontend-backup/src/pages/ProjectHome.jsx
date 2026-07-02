@@ -4763,7 +4763,55 @@ export default function ProjectHome() {
 `}
         </style>
 
-              <section className="relative mb-4 overflow-hidden rounded-[24px] border border-violet-200/70 bg-white/80 p-4 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-none">
+              <style className="moves-hero-backdrop-fix">
+                {`
+                  section[data-moves-hero="true"] {
+                    background:
+                      radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.13), transparent 34%),
+                      radial-gradient(circle at 88% 12%, rgba(34, 211, 238, 0.14), transparent 38%),
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.68)) !important;
+                    border-color: rgba(196, 181, 253, 0.48) !important;
+                    box-shadow:
+                      0 22px 60px rgba(15, 23, 42, 0.08),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+                  }
+
+                  section[data-moves-hero="true"] :where(
+                    [class*="bg-slate-400"],
+                    [class*="bg-slate-500"],
+                    [class*="bg-slate-600"],
+                    [class*="bg-slate-700"],
+                    [class*="bg-slate-800"],
+                    [class*="bg-slate-900"],
+                    [class*="from-slate-400"],
+                    [class*="from-slate-500"],
+                    [class*="from-slate-600"],
+                    [class*="from-slate-700"],
+                    [class*="from-slate-800"],
+                    [class*="from-slate-900"],
+                    [class*="to-slate-400"],
+                    [class*="to-slate-500"],
+                    [class*="to-slate-600"],
+                    [class*="to-slate-700"],
+                    [class*="to-slate-800"],
+                    [class*="to-slate-900"]
+                  ) {
+                    background:
+                      linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(226, 232, 240, 0.28)) !important;
+                    border-color: rgba(203, 213, 225, 0.58) !important;
+                  }
+
+                  .dark section[data-moves-hero="true"] {
+                    background:
+                      radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
+                      radial-gradient(circle at 88% 12%, rgba(34, 211, 238, 0.13), transparent 38%),
+                      linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.90)) !important;
+                    border-color: rgba(255, 255, 255, 0.08) !important;
+                  }
+                `}
+              </style>
+
+              <section className="relative mb-4 overflow-hidden rounded-[24px] border border-violet-200/70 bg-white/80 p-4 shadow-sm backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-none" data-moves-hero="true">
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
                 <div className="pointer-events-none absolute -left-14 -top-16 h-32 w-32 rounded-full bg-violet-400/12 blur-3xl" />
                 <div className="pointer-events-none absolute -right-14 -bottom-16 h-32 w-32 rounded-full bg-cyan-400/12 blur-3xl" />
