@@ -1314,6 +1314,130 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         </style>
 
 
+      
+        <style className="team-room-communication-polish-style">
+          {`
+            /*
+              Team Room polish:
+              Make the empty thread area feel like a clean communication room,
+              not a disabled gray panel. Supports both team-room-* and older
+              room-* class names.
+            */
+
+            .team-room-thread-stage,
+            .room-thread-stage {
+              background:
+                radial-gradient(circle at 18% 8%, rgba(139, 92, 246, 0.10), transparent 34%),
+                radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.10), transparent 32%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(248, 250, 252, 0.78)) !important;
+              border-color: rgba(203, 213, 225, 0.72) !important;
+              box-shadow:
+                0 24px 72px rgba(15, 23, 42, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+            }
+
+            .team-room-thread-rail,
+            .room-thread-rail {
+              background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(248, 250, 252, 0.82)) !important;
+              border-color: rgba(203, 213, 225, 0.78) !important;
+              box-shadow:
+                inset -1px 0 0 rgba(148, 163, 184, 0.20),
+                10px 0 34px rgba(15, 23, 42, 0.06) !important;
+            }
+
+            .team-room-conversation-canvas,
+            .room-conversation-canvas {
+              position: relative;
+              isolation: isolate;
+              overflow: hidden;
+              background:
+                radial-gradient(circle at 50% 34%, rgba(139, 92, 246, 0.11), transparent 28%),
+                radial-gradient(circle at 82% 20%, rgba(34, 211, 238, 0.13), transparent 30%),
+                radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.07), transparent 38%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.74)) !important;
+            }
+
+            .team-room-conversation-canvas::before,
+            .room-conversation-canvas::before {
+              content: "";
+              position: absolute;
+              inset: 22px;
+              z-index: -1;
+              border-radius: 2rem;
+              border: 1px solid rgba(203, 213, 225, 0.58);
+              background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18));
+              box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.78),
+                0 18px 54px rgba(15, 23, 42, 0.06);
+              pointer-events: none;
+            }
+
+            .team-room-empty-orb,
+            .room-empty-orb {
+              background:
+                radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.98), transparent 36%),
+                linear-gradient(135deg, rgba(245, 243, 255, 0.98), rgba(236, 254, 255, 0.92)) !important;
+              border-color: rgba(196, 181, 253, 0.72) !important;
+              box-shadow:
+                0 18px 44px rgba(124, 58, 237, 0.18),
+                0 0 0 10px rgba(139, 92, 246, 0.07),
+                inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+            }
+
+            .team-room-thread-list-card,
+            .room-thread-list-card {
+              background-color: rgba(255, 255, 255, 0.86) !important;
+              border-color: rgba(203, 213, 225, 0.70) !important;
+              box-shadow:
+                0 12px 34px rgba(15, 23, 42, 0.07),
+                inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+            }
+
+            .dark .team-room-thread-stage,
+            .dark .room-thread-stage {
+              background:
+                radial-gradient(circle at 18% 8%, rgba(139, 92, 246, 0.15), transparent 34%),
+                radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.12), transparent 32%),
+                linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(9, 9, 11, 0.88)) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
+              box-shadow:
+                0 26px 90px rgba(0, 0, 0, 0.36),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .dark .team-room-thread-rail,
+            .dark .room-thread-rail {
+              background:
+                linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(9, 9, 11, 0.88)) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
+              box-shadow:
+                inset -1px 0 0 rgba(255, 255, 255, 0.07),
+                10px 0 34px rgba(0, 0, 0, 0.24) !important;
+            }
+
+            .dark .team-room-conversation-canvas,
+            .dark .room-conversation-canvas {
+              background:
+                radial-gradient(circle at 50% 34%, rgba(139, 92, 246, 0.14), transparent 30%),
+                radial-gradient(circle at 82% 20%, rgba(34, 211, 238, 0.10), transparent 32%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94)) !important;
+            }
+
+            .dark .team-room-conversation-canvas::before,
+            .dark .room-conversation-canvas::before {
+              border-color: rgba(255, 255, 255, 0.07);
+              background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
+              box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.07),
+                0 18px 54px rgba(0, 0, 0, 0.22);
+            }
+          `}
+        </style>
+
+
       <div className="team room-holo-shell relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
