@@ -16,7 +16,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Flag,
   Calendar,
   CheckCircle2,
   Circle,
@@ -25,7 +24,6 @@ import {
   MoreHorizontal,
   Edit2,
   Trash2,
-  ChevronRight,
   Plus,
   X,
 } from 'lucide-react';
@@ -128,11 +126,6 @@ const normalizeToApiStatus = (cardStatus) => {
   return cardStatus;
 };
 
-const clampPercent = (n) => {
-  const x = Number(n);
-  if (Number.isNaN(x)) return 0;
-  return Math.max(0, Math.min(100, Math.round(x)));
-};
 
 const MilestoneCard = ({
   milestone,
@@ -184,8 +177,6 @@ const MilestoneCard = ({
 
     window.addEventListener('resize', close);
     window.addEventListener('scroll', close, true);
-
-
 
 
     return () => {
@@ -262,27 +253,6 @@ const MilestoneCard = ({
 
   const dueDate = milestone?.dueDate || milestone?.targetDate || milestone?.endDate;
 
-  const completedTasks =
-    milestone?.tasksDone ??
-    milestone?.completedTasks ??
-    milestone?.tasksCompleted ??
-    0;
-
-  const totalTasks =
-    milestone?.tasksTotal ??
-    milestone?.totalTasks ??
-    milestone?.taskCount ??
-    0;
-
-  const computedProgress = useMemo(() => {
-    if (milestone?.progress !== undefined && milestone?.progress !== null) {
-      return clampPercent(milestone.progress);
-    }
-    const total = Number(totalTasks) || 0;
-    const done = Number(completedTasks) || 0;
-    if (total <= 0) return 0;
-    return clampPercent((done / total) * 100);
-  }, [milestone?.progress, totalTasks, completedTasks]);
 
   const statusRaw = milestone?.status || 'planned';
   const status = normalizeToCardStatus(statusRaw, dueDate);
@@ -360,29 +330,8 @@ const MilestoneCard = ({
         </div>
       )}
 
-      <div className="mb-3">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider">
-            Progress
-          </span>
-          <span className={`text-xs font-medium ${computedProgress >= 100 ? 'text-emerald-600 dark:text-success' : 'text-slate-900 dark:text-text-primary'}`}>
-            {computedProgress}%
-          </span>
-        </div>
-
-        <div className="h-1.5 bg-slate-200 dark:bg-surface-3 rounded-full overflow-hidden">
-          <div
-            className={`
-              h-full rounded-full transition-all duration-500
-              ${computedProgress >= 100 ? 'bg-emerald-500 dark:bg-success' : computedProgress >= 50 ? 'bg-violet-500 dark:bg-brand' : 'bg-violet-600 dark:bg-brand-700'}
-            `}
-            style={{ width: `${Math.min(computedProgress, 100)}%` }}
-          />
-        </div>
-      </div>
-
         <div
-          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-white/[0.08] dark:bg-white/[0.03]"
+          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 shadow-sm shadow-violet-100/40 dark:border-white/[0.08] dark:bg-white/[0.03] dark:shadow-none"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -572,16 +521,6 @@ const MilestoneCard = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-200 dark:border-white/[0.06]">
-        <div className="flex items-center gap-1.5 text-slate-500 dark:text-text-tertiary">
-          <Flag className="w-3.5 h-3.5" />
-          <span className="text-xs">
-            {Number(completedTasks) || 0}/{Number(totalTasks) || 0} tasks
-          </span>
-        </div>
-
-        <ChevronRight className="w-4 h-4 text-slate-400 dark:text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
     </div>
   );
 };
