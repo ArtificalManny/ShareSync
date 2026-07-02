@@ -189,6 +189,7 @@ const MilestoneCard = ({
     () => (Array.isArray(milestone?.checkpoints) ? milestone.checkpoints : []),
     [milestone?.checkpoints]
   );
+
   const completedCheckpoints = checkpoints.filter((checkpoint) => checkpoint?.completed).length;
   const checkpointSummary = checkpoints.length
     ? `${completedCheckpoints}/${checkpoints.length} checkpoints`
@@ -242,6 +243,8 @@ const MilestoneCard = ({
     e.stopPropagation();
     persistCheckpoints(checkpoints.filter((checkpoint) => checkpoint.id !== checkpointId));
   };
+
+
 
 
     return () => {
