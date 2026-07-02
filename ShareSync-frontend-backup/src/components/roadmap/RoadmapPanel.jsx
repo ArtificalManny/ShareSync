@@ -697,62 +697,47 @@ export default function RoadmapPanel({
             }
 
             /*
-              Roadmap workspace shell:
-              Replaces the heavy gray slab with a lighter glass/tinted workspace.
-              Kept scoped to Roadmap only.
+              Safer Roadmap glass shell:
+              Targets the actual Roadmap workspace instead of every direct child div.
+              This prevents the giant top spacer issue.
             */
-            section.roadmap-command-map > div:not([role="dialog"]) {
-              position: relative;
-              overflow: hidden;
+            section.roadmap-command-map > div:has(.roadmap-add-milestone-button) {
               background:
-                radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.13), transparent 34%),
-                radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.12), transparent 32%),
-                radial-gradient(circle at 70% 100%, rgba(16, 185, 129, 0.08), transparent 34%),
-                linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.78)) !important;
-              border-color: rgba(203, 213, 225, 0.76) !important;
+                radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.12), transparent 32%),
+                radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.11), transparent 32%),
+                radial-gradient(circle at 80% 100%, rgba(16, 185, 129, 0.07), transparent 34%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.80)) !important;
+              border-color: rgba(203, 213, 225, 0.74) !important;
               box-shadow:
-                0 26px 80px rgba(15, 23, 42, 0.10),
-                inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+                0 24px 70px rgba(15, 23, 42, 0.09),
+                inset 0 1px 0 rgba(255, 255, 255, 0.76) !important;
               backdrop-filter: blur(18px);
               -webkit-backdrop-filter: blur(18px);
+              padding-top: clamp(1.5rem, 2vw, 2.25rem) !important;
             }
 
-            section.roadmap-command-map > div:not([role="dialog"])::before {
-              content: "";
-              position: absolute;
-              inset: 0;
-              z-index: 0;
-              pointer-events: none;
-              background-image:
-                linear-gradient(rgba(148, 163, 184, 0.075) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(148, 163, 184, 0.075) 1px, transparent 1px);
-              background-size: 64px 64px;
-              mask-image: linear-gradient(180deg, rgba(0,0,0,0.58), transparent 72%);
-              -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.58), transparent 72%);
-            }
-
-            section.roadmap-command-map > div:not([role="dialog"]) > * {
-              position: relative;
-              z-index: 1;
+            section.roadmap-command-map > div:has(.roadmap-add-milestone-button)::before {
+              content: none !important;
+              display: none !important;
             }
 
             /*
-              Keep the filter bar distinct, but make it less heavy than the current dark gray.
+              Keep the filter bar readable, but less heavy than the old gray slab.
             */
             section.roadmap-command-map [class*="bg-slate-700"],
             section.roadmap-command-map [class*="bg-slate-800"],
             section.roadmap-command-map [class*="bg-slate-900"] {
               background:
-                linear-gradient(180deg, rgba(51, 65, 85, 0.82), rgba(30, 41, 59, 0.78)) !important;
-              border-color: rgba(255, 255, 255, 0.20) !important;
+                linear-gradient(180deg, rgba(71, 85, 105, 0.72), rgba(51, 65, 85, 0.68)) !important;
+              border-color: rgba(255, 255, 255, 0.22) !important;
               box-shadow:
-                0 16px 44px rgba(15, 23, 42, 0.16),
+                0 14px 38px rgba(15, 23, 42, 0.14),
                 inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
-              backdrop-filter: blur(16px);
-              -webkit-backdrop-filter: blur(16px);
+              backdrop-filter: blur(14px);
+              -webkit-backdrop-filter: blur(14px);
             }
 
-            .dark section.roadmap-command-map > div:not([role="dialog"]) {
+            .dark section.roadmap-command-map > div:has(.roadmap-add-milestone-button) {
               background:
                 radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
                 radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.13), transparent 32%),
@@ -765,6 +750,7 @@ export default function RoadmapPanel({
             }
           `}
         </style>
+
 
         <style className="roadmap-final-button-visibility-style">
           {`
