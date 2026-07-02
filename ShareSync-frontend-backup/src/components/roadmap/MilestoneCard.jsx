@@ -185,6 +185,18 @@ const MilestoneCard = ({
     window.addEventListener('resize', close);
     window.addEventListener('scroll', close, true);
 
+
+
+
+    return () => {
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [showMenu]);
+
+
+  const id = getMilestoneId(milestone);
+
   const checkpoints = useMemo(
     () => (Array.isArray(milestone?.checkpoints) ? milestone.checkpoints : []),
     [milestone?.checkpoints]
@@ -244,17 +256,6 @@ const MilestoneCard = ({
     persistCheckpoints(checkpoints.filter((checkpoint) => checkpoint.id !== checkpointId));
   };
 
-
-
-
-    return () => {
-      window.removeEventListener('resize', close);
-      window.removeEventListener('scroll', close, true);
-    };
-  }, [showMenu]);
-
-
-  const id = getMilestoneId(milestone);
 
   const title = milestone?.title || milestone?.name || 'Untitled Milestone';
   const description = milestone?.description || '';
