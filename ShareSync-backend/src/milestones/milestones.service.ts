@@ -103,7 +103,107 @@ export class MilestonesService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  private getCheckpointNotificationSnapshot(rawCheckpoints: any): Array<{ key: string; title: string; completed: boolean }> {
+    const checkpoints = Array.isArray(rawCheckpoints) ? rawCheckpoints : [];
+
+    return checkpoints
+      .map((checkpoint: any, index: number) => {
+        const title = String(checkpoint?.title || checkpoint?.name || 'Checkpoint').trim() || 'Checkpoint';
+        const key = String(checkpoint?.id || checkpoint?._id || checkpoint?.key || title.toLowerCase() || index).trim();
+
+        return {
+          key,
+          title,
+          completed: Boolean(checkpoint?.completed || checkpoint?.done || checkpoint?.completedAt),
+        };
+      })
+      .filter((checkpoint) => Boolean(checkpoint.key));
+  }
+
+  private async notifyProjectMembersAboutCheckpointChange(args: {
+    projectId: string;
+    triggeredBy: string;
+    milestoneId: string;
+    milestoneTitle: string;
+    checkpointTitle: string;
+    action: 'added' | 'completed';
+  }): Promise<void> {
+    try {
+      const notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+      if (!notificationsService) return;
+
+      const project = await this.projectsService.findById(args.projectId);
+      const projectName = String((project as any)?.name || (project as any)?.title || 'Project').trim() || 'Project';
+
+      const recipientIds = new Set<string>();
+      const addRecipient = (value: any, notificationsEnabled = true) => {
+        const id = String(value?._id || value?.id || value || '').trim();
+        if (!id || notificationsEnabled === false) return;
+        recipientIds.add(id);
+      };
+
+      addRecipient((project as any)?.ownerId);
+      addRecipient((project as any)?.owner);
+      addRecipient((project as any)?.createdBy);
+      addRecipient((project as any)?.createdById);
+
+      const members = Array.isArray((project as any)?.members) ? (project as any).members : [];
+      for (const member of members) {
+        addRecipient(
+          member?.userId || member?.memberId || member?._id || member,
+          member?.preferences?.notifications !== false,
+        );
+      }
+
+      const actionLabel = args.action === 'completed' ? 'completed' : 'added';
+      const title =
+        args.action === 'completed'
+          ? `Checkpoint completed in ${projectName}`
+          : `New checkpoint in ${projectName}`;
+
+      const body =
+        args.action === 'completed'
+          ? `A checkpoint was completed on "${args.milestoneTitle}": ${args.checkpointTitle}`
+          : `A checkpoint was added to "${args.milestoneTitle}": ${args.checkpointTitle}`;
+
+      await Promise.all(
+        [...recipientIds].map((recipientId) =>
+          notificationsService.notify({
+            userId: recipientId,
+            type: NotificationType.PROJECT_UPDATE,
+            title,
+            body,
+            priority: NotificationPriority.HIGH,
+            data: {
+              projectId: args.projectId,
+              milestoneId: args.milestoneId,
+              milestoneTitle: args.milestoneTitle,
+              checkpointTitle: args.checkpointTitle,
+              checkpointAction: actionLabel,
+              kind: 'milestone_checkpoint',
+              emailFanoutEligible: true,
+            },
+            actions: [
+              {
+                label: 'Open Roadmap',
+                url: `/projects/${args.projectId}?tab=roadmap`,
+              },
+            ],
+          }),
+        ),
+      );
+
+      this.logger.log(
+        `Checkpoint ${actionLabel} notification sent for milestone ${args.milestoneId} to ${recipientIds.size} recipients`,
+      );
+    } catch (err: any) {
+      this.logger.warn(`Checkpoint notification skipped: ${err?.message || err}`);
+    }
+  }
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
   // CRUD OPERATIONS
   // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -435,7 +535,9 @@ export class MilestonesService {
       Number((milestone as any)?.progress || 0) >= 100 ||
       Boolean((milestone as any)?.completedAt);
 
-    Object.assign(milestone, dto);
+      const beforeCheckpointSnapshot = this.getCheckpointNotificationSnapshot((milestone as any)?.checkpoints);
+
+Object.assign(milestone, dto);
 
     const requestedCompleted =
       String((dto as any)?.status || '').toLowerCase() === 'completed' ||
@@ -466,7 +568,46 @@ export class MilestonesService {
 
     const projectId = saved.projectId?.toString?.();
 
-    if (projectId) {
+    
+  const afterCheckpointSnapshot = this.getCheckpointNotificationSnapshot((saved as any)?.checkpoints);
+  const beforeCheckpointsByKey = new Map(beforeCheckpointSnapshot.map((checkpoint) => [checkpoint.key, checkpoint]));
+
+  const addedCheckpoints = afterCheckpointSnapshot.filter(
+    (checkpoint) => !beforeCheckpointsByKey.has(checkpoint.key),
+  );
+
+  const completedCheckpoints = afterCheckpointSnapshot.filter((checkpoint) => {
+    const before = beforeCheckpointsByKey.get(checkpoint.key);
+    return Boolean(before && !before.completed && checkpoint.completed);
+  });
+
+  if (projectId && (addedCheckpoints.length > 0 || completedCheckpoints.length > 0)) {
+    const milestoneTitle = String((saved as any)?.title || (saved as any)?.name || 'Milestone');
+
+    for (const checkpoint of addedCheckpoints) {
+      await this.notifyProjectMembersAboutCheckpointChange({
+        projectId,
+        triggeredBy: userId,
+        milestoneId: String(saved._id),
+        milestoneTitle,
+        checkpointTitle: checkpoint.title,
+        action: 'added',
+      });
+    }
+
+    for (const checkpoint of completedCheckpoints) {
+      await this.notifyProjectMembersAboutCheckpointChange({
+        projectId,
+        triggeredBy: userId,
+        milestoneId: String(saved._id),
+        milestoneTitle,
+        checkpointTitle: checkpoint.title,
+        action: 'completed',
+      });
+    }
+  }
+
+if (projectId) {
       const completedNow = !wasCompleted && isNowCompleted;
       const activityType = completedNow ? 'milestone_completed' : 'milestone_updated';
       const activityAction = completedNow ? 'completed' : 'updated';
