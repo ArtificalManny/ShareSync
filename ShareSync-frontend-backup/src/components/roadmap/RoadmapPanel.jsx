@@ -689,6 +689,83 @@ export default function RoadmapPanel({
 
   return (
     <section className={`roadmap-command-map px-4 py-8 sm:px-6 lg:px-10 max-w-[1600px] mx-auto ${className}`}>
+
+        <style className="roadmap-glass-backdrop-style">
+          {`
+            section.roadmap-command-map {
+              isolation: isolate;
+            }
+
+            /*
+              Roadmap workspace shell:
+              Replaces the heavy gray slab with a lighter glass/tinted workspace.
+              Kept scoped to Roadmap only.
+            */
+            section.roadmap-command-map > div:not([role="dialog"]) {
+              position: relative;
+              overflow: hidden;
+              background:
+                radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.13), transparent 34%),
+                radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.12), transparent 32%),
+                radial-gradient(circle at 70% 100%, rgba(16, 185, 129, 0.08), transparent 34%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.78)) !important;
+              border-color: rgba(203, 213, 225, 0.76) !important;
+              box-shadow:
+                0 26px 80px rgba(15, 23, 42, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+              backdrop-filter: blur(18px);
+              -webkit-backdrop-filter: blur(18px);
+            }
+
+            section.roadmap-command-map > div:not([role="dialog"])::before {
+              content: "";
+              position: absolute;
+              inset: 0;
+              z-index: 0;
+              pointer-events: none;
+              background-image:
+                linear-gradient(rgba(148, 163, 184, 0.075) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.075) 1px, transparent 1px);
+              background-size: 64px 64px;
+              mask-image: linear-gradient(180deg, rgba(0,0,0,0.58), transparent 72%);
+              -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.58), transparent 72%);
+            }
+
+            section.roadmap-command-map > div:not([role="dialog"]) > * {
+              position: relative;
+              z-index: 1;
+            }
+
+            /*
+              Keep the filter bar distinct, but make it less heavy than the current dark gray.
+            */
+            section.roadmap-command-map [class*="bg-slate-700"],
+            section.roadmap-command-map [class*="bg-slate-800"],
+            section.roadmap-command-map [class*="bg-slate-900"] {
+              background:
+                linear-gradient(180deg, rgba(51, 65, 85, 0.82), rgba(30, 41, 59, 0.78)) !important;
+              border-color: rgba(255, 255, 255, 0.20) !important;
+              box-shadow:
+                0 16px 44px rgba(15, 23, 42, 0.16),
+                inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+              backdrop-filter: blur(16px);
+              -webkit-backdrop-filter: blur(16px);
+            }
+
+            .dark section.roadmap-command-map > div:not([role="dialog"]) {
+              background:
+                radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
+                radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.13), transparent 32%),
+                radial-gradient(circle at 70% 100%, rgba(16, 185, 129, 0.08), transparent 34%),
+                linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(9, 9, 11, 0.88)) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
+              box-shadow:
+                0 26px 90px rgba(0, 0, 0, 0.36),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+          `}
+        </style>
+
         <style className="roadmap-final-button-visibility-style">
           {`
             section.roadmap-command-map button.roadmap-hard-purple-button,
