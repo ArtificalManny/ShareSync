@@ -1315,163 +1315,40 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
 
 
       
-        <style className="team-room-communication-polish-style">
+        <style className="team-room-clean-workspace-style">
           {`
             /*
-              Team Room polish:
-              Make the empty thread area feel like a clean communication room,
-              not a disabled gray panel. Supports both team-room-* and older
-              room-* class names.
+              Team Room clean workspace:
+              - Removes gray slab behind the header/subtitle
+              - Removes the floating transparent box
+              - Keeps the thread list readable
+              - Keeps the conversation area clean and intentional
             */
 
-            .team-room-thread-stage,
-            .room-thread-stage {
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"]) {
               background:
-                radial-gradient(circle at 18% 8%, rgba(139, 92, 246, 0.10), transparent 34%),
-                radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.10), transparent 32%),
-                linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(248, 250, 252, 0.78)) !important;
-              border-color: rgba(203, 213, 225, 0.72) !important;
-              box-shadow:
-                0 24px 72px rgba(15, 23, 42, 0.10),
-                inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
-            }
-
-            .team-room-thread-rail,
-            .room-thread-rail {
-              background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(248, 250, 252, 0.82)) !important;
-              border-color: rgba(203, 213, 225, 0.78) !important;
-              box-shadow:
-                inset -1px 0 0 rgba(148, 163, 184, 0.20),
-                10px 0 34px rgba(15, 23, 42, 0.06) !important;
-            }
-
-            .team-room-conversation-canvas,
-            .room-conversation-canvas {
-              position: relative;
-              isolation: isolate;
-              overflow: hidden;
-              background:
-                radial-gradient(circle at 50% 34%, rgba(139, 92, 246, 0.11), transparent 28%),
-                radial-gradient(circle at 82% 20%, rgba(34, 211, 238, 0.13), transparent 30%),
-                radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.07), transparent 38%),
-                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.74)) !important;
-            }
-
-            .team-room-conversation-canvas::before,
-            .room-conversation-canvas::before {
-              content: "";
-              position: absolute;
-              inset: 22px;
-              z-index: -1;
-              border-radius: 2rem;
-              border: 1px solid rgba(203, 213, 225, 0.58);
-              background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18));
-              box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.78),
-                0 18px 54px rgba(15, 23, 42, 0.06);
-              pointer-events: none;
-            }
-
-            .team-room-empty-orb,
-            .room-empty-orb {
-              background:
-                radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.98), transparent 36%),
-                linear-gradient(135deg, rgba(245, 243, 255, 0.98), rgba(236, 254, 255, 0.92)) !important;
-              border-color: rgba(196, 181, 253, 0.72) !important;
-              box-shadow:
-                0 18px 44px rgba(124, 58, 237, 0.18),
-                0 0 0 10px rgba(139, 92, 246, 0.07),
-                inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
-            }
-
-            .team-room-thread-list-card,
-            .room-thread-list-card {
-              background-color: rgba(255, 255, 255, 0.86) !important;
-              border-color: rgba(203, 213, 225, 0.70) !important;
-              box-shadow:
-                0 12px 34px rgba(15, 23, 42, 0.07),
-                inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
-            }
-
-            .dark .team-room-thread-stage,
-            .dark .room-thread-stage {
-              background:
-                radial-gradient(circle at 18% 8%, rgba(139, 92, 246, 0.15), transparent 34%),
-                radial-gradient(circle at 82% 10%, rgba(34, 211, 238, 0.12), transparent 32%),
-                linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(9, 9, 11, 0.88)) !important;
-              border-color: rgba(255, 255, 255, 0.08) !important;
-              box-shadow:
-                0 26px 90px rgba(0, 0, 0, 0.36),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-            }
-
-            .dark .team-room-thread-rail,
-            .dark .room-thread-rail {
-              background:
-                linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(9, 9, 11, 0.88)) !important;
-              border-color: rgba(255, 255, 255, 0.08) !important;
-              box-shadow:
-                inset -1px 0 0 rgba(255, 255, 255, 0.07),
-                10px 0 34px rgba(0, 0, 0, 0.24) !important;
-            }
-
-            .dark .team-room-conversation-canvas,
-            .dark .room-conversation-canvas {
-              background:
-                radial-gradient(circle at 50% 34%, rgba(139, 92, 246, 0.14), transparent 30%),
-                radial-gradient(circle at 82% 20%, rgba(34, 211, 238, 0.10), transparent 32%),
-                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94)) !important;
-            }
-
-            .dark .team-room-conversation-canvas::before,
-            .dark .room-conversation-canvas::before {
-              border-color: rgba(255, 255, 255, 0.07);
-              background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
-              box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.07),
-                0 18px 54px rgba(0, 0, 0, 0.22);
-            }
-          `}
-        </style>
-
-
-      
-        <style className="team-room-final-clarity-style">
-          {`
-            /*
-              Final Team Room clarity pass:
-              - Removes the heavy gray slab feeling
-              - Restores contrast in the thread rail
-              - Keeps the clean communication-room glass look
-            */
-
-            .room-holo-shell,
-            .team-room-holo-shell {
-              background:
-                radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.10), transparent 30%),
-                radial-gradient(circle at 88% 8%, rgba(34, 211, 238, 0.12), transparent 32%),
-                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.90)) !important;
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.11), transparent 30%),
+                radial-gradient(circle at 92% 8%, rgba(34, 211, 238, 0.12), transparent 34%),
+                radial-gradient(circle at 78% 100%, rgba(16, 185, 129, 0.07), transparent 36%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.88)) !important;
               border-color: rgba(203, 213, 225, 0.72) !important;
               box-shadow:
                 0 24px 72px rgba(15, 23, 42, 0.10),
                 inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
             }
 
-            .room-thread-stage,
-            .team-room-thread-stage {
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-thread-stage, .team-room-thread-stage, [class*="thread-stage"]) {
               background:
-                linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.70)) !important;
-              border-color: rgba(203, 213, 225, 0.76) !important;
+                linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.72)) !important;
+              border-color: rgba(203, 213, 225, 0.78) !important;
               box-shadow:
-                0 20px 58px rgba(15, 23, 42, 0.08),
-                inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+                0 18px 54px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
             }
 
-            .room-thread-rail,
-            .team-room-thread-rail {
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-thread-rail, .team-room-thread-rail, [class*="thread-rail"]) {
               background:
                 linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)) !important;
               opacity: 1 !important;
@@ -1481,18 +1358,26 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                 10px 0 28px rgba(15, 23, 42, 0.04) !important;
             }
 
-            .room-thread-rail input,
-            .team-room-thread-rail input {
-              background: rgba(255, 255, 255, 0.98) !important;
-              color: rgb(30, 41, 59) !important;
-              border-color: rgba(203, 213, 225, 0.86) !important;
-              box-shadow:
-                0 10px 24px rgba(15, 23, 42, 0.06),
-                inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-conversation-canvas, .team-room-conversation-canvas, [class*="conversation-canvas"]) {
+              background:
+                radial-gradient(circle at 52% 24%, rgba(139, 92, 246, 0.08), transparent 32%),
+                radial-gradient(circle at 86% 18%, rgba(34, 211, 238, 0.10), transparent 34%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.86)) !important;
+              opacity: 1 !important;
             }
 
-            .room-thread-list-card,
-            .team-room-thread-list-card {
+            /*
+              This removes the random floating transparent box.
+            */
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-conversation-canvas, .team-room-conversation-canvas, [class*="conversation-canvas"])::before {
+              content: none !important;
+              display: none !important;
+            }
+
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-thread-list-card, .team-room-thread-list-card, [class*="thread-list-card"]) {
               background: rgba(255, 255, 255, 0.96) !important;
               opacity: 1 !important;
               border-color: rgba(203, 213, 225, 0.80) !important;
@@ -1501,51 +1386,30 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                 inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
             }
 
-            .room-conversation-canvas,
-            .team-room-conversation-canvas {
-              background:
-                radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.10), transparent 30%),
-                radial-gradient(circle at 84% 18%, rgba(34, 211, 238, 0.12), transparent 32%),
-                linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.82)) !important;
+            :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            input {
+              background: rgba(255, 255, 255, 0.98) !important;
+              color: rgb(30, 41, 59) !important;
+              border-color: rgba(203, 213, 225, 0.86) !important;
             }
 
-            .room-conversation-canvas::before,
-            .team-room-conversation-canvas::before {
+            .dark :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"]) {
               background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12)) !important;
-              border-color: rgba(203, 213, 225, 0.48) !important;
-              box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.74),
-                0 14px 44px rgba(15, 23, 42, 0.04) !important;
-            }
-
-            .room-stat-card,
-            .team-room-stat-card {
-              background:
-                linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.82)) !important;
-              border-color: rgba(203, 213, 225, 0.76) !important;
-              box-shadow:
-                0 12px 30px rgba(15, 23, 42, 0.07),
-                inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
-            }
-
-            .dark .room-holo-shell,
-            .dark .team-room-holo-shell,
-            .dark .room-thread-stage,
-            .dark .team-room-thread-stage {
-              background:
-                radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.14), transparent 32%),
-                radial-gradient(circle at 88% 8%, rgba(34, 211, 238, 0.10), transparent 34%),
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.15), transparent 32%),
+                radial-gradient(circle at 92% 8%, rgba(34, 211, 238, 0.12), transparent 34%),
                 linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94)) !important;
               border-color: rgba(255, 255, 255, 0.08) !important;
             }
 
-            .dark .room-thread-rail,
-            .dark .team-room-thread-rail,
-            .dark .room-conversation-canvas,
-            .dark .team-room-conversation-canvas {
+            .dark :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-thread-stage, .team-room-thread-stage, [class*="thread-stage"]),
+            .dark :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-thread-rail, .team-room-thread-rail, [class*="thread-rail"]),
+            .dark :where(.room-holo-shell, .team-room-holo-shell, [class*="room-holo-shell"])
+            :where(.room-conversation-canvas, .team-room-conversation-canvas, [class*="conversation-canvas"]) {
               background:
                 linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.92)) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
             }
           `}
         </style>
