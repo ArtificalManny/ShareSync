@@ -782,9 +782,18 @@ function ProjectHeader({
   };
 
   const state = getMomentumState();
-  const rawMemberCount = Array.isArray(project?.members)
-    ? project.members.length
-    : Number(project?.memberCount || project?.membersCount || metrics?.members || 0);
+  const projectMembers = Array.isArray(project?.members) ? project.members : [];
+  const ownerId = String(project?.ownerId || project?.owner?._id || project?.owner?.id || "").trim();
+  const membersIncludeOwner = ownerId
+    ? projectMembers.some((member) => {
+        const memberId = String(member?.userId?._id || member?.userId || member?.id || member?._id || "").trim();
+        return memberId === ownerId;
+      })
+    : false;
+  const fallbackMemberCount = Number(project?.memberCount || project?.membersCount || metrics?.members || 0);
+  const rawMemberCount = projectMembers.length
+    ? projectMembers.length + (ownerId && !membersIncludeOwner ? 1 : 0)
+    : fallbackMemberCount;
   const memberCount = Number.isFinite(Number(rawMemberCount)) ? Number(rawMemberCount) : 0;
   const onlineCount = Number.isFinite(Number(activeUsers)) ? Number(activeUsers) : 0;
   const memberLabel = `${memberCount} member${memberCount === 1 ? "" : "s"}`;
