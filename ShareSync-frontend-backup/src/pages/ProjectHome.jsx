@@ -782,6 +782,14 @@ function ProjectHeader({
   };
 
   const state = getMomentumState();
+  const rawMemberCount = Array.isArray(project?.members)
+    ? project.members.length
+    : Number(project?.memberCount || project?.membersCount || metrics?.members || 0);
+  const memberCount = Number.isFinite(Number(rawMemberCount)) ? Number(rawMemberCount) : 0;
+  const onlineCount = Number.isFinite(Number(activeUsers)) ? Number(activeUsers) : 0;
+  const memberLabel = `${memberCount} member${memberCount === 1 ? "" : "s"}`;
+  const onlineLabel = `${onlineCount} online`;
+
   const canUseMemberActions = viewerAccess?.canUseMemberActions !== false;
   const showFollowButton = viewerAccess?.showFollowButton === true;
   const lifecycle = getLifecycleMeta(project?.status);
@@ -878,31 +886,40 @@ function ProjectHeader({
               </button>
             </div>
 
-            <div className="project-home-meta flex items-center gap-5 flex-wrap">
-              <div className={`flex items-center gap-2 text-sm font-medium ${lifecycle.text}`}>
-                {lifecycle.pulse ? (
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                ) : (
-                  <span className={`inline-flex rounded-full h-2 w-2 ${lifecycle.dot}`} />
-                )}
-                <span>{lifecycle.label}</span>
-              </div>
+            <div className="project-home-meta flex items-center gap-4 flex-wrap text-sm text-slate-500 dark:text-zinc-400">
 
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-zinc-400">
+
+              <div className="flex items-center gap-2">
+
+
                 <Users className="w-4 h-4" />
-                <span>{activeUsers || 0} online</span>
+
+
+                <span>{memberLabel}</span>
+
+
+                <span className="text-slate-300 dark:text-zinc-600">·</span>
+
+
+                <span>{onlineLabel}</span>
+
+
               </div>
 
-              <div className={`flex items-center gap-2 text-sm font-medium ${state.color}`}>
+
+
+              <div className={`flex items-center gap-2 font-medium ${state.color}`}>
+
+
                 <Zap className="w-4 h-4" />
-                <span>{momentum}</span>
-                <span className="text-slate-500 dark:text-zinc-400 font-normal">
-                  · {state.label}
-                </span>
+
+
+                <span>{state.label}</span>
+
+
               </div>
+
+
             </div>
           </div>
         </div>
