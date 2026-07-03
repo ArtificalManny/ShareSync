@@ -194,6 +194,117 @@ function setLocalAnnouncementLike(announcement, currentUser, shouldLike) {
   };
 }
 
+
+const ANNOUNCEMENT_ALLOWED_TAGS = new Set(['P','BR','STRONG','B','EM','I','U','SPAN','DIV','UL','OL','LI']);
+const ANNOUNCEMENT_BLOCKED_TAGS = ['script','style','iframe','object','embed','link','meta','form','input','button','textarea','select','option'];
+const ANNOUNCEMENT_FONT_SIZE_MAP = { 1:'12px', 2:'14px', 3:'16px', 4:'18px', 5:'20px', 6:'24px', 7:'32px' };
+
+function isSafeAnnouncementColor(value) {
+  const color = String(value || '').trim();
+  return /^#[0-9a-f]{3,8}$/i.test(color) || /^(rgb|rgba|hsl|hsla)\([0-9%.,\s]+\)$/i.test(color) || /^(black|white|gray|grey|slate|red|orange|amber|yellow|green|emerald|teal|cyan|blue|indigo|violet|purple|pink|rose)$/i.test(color);
+}
+
+function isSafeAnnouncementFontFamily(value) {
+  const family = String(value || '').trim();
+  return !!family && family.length <= 80 && !/url|expression|javascript|data:/i.test(family) && /^[a-z0-9\s"',-]+$/i.test(family);
+}
+
+function isSafeAnnouncementFontSize(value) {
+  return /^(12|13|14|15|16|18|20|24|28|32)px$/i.test(String(value || '').trim());
+}
+
+function isSafeAnnouncementLineHeight(value) {
+  return /^(1|1\.15|1\.3|1\.5|1\.75|2)$/.test(String(value || '').trim());
+}
+
+function sanitizeAnnouncementStyle(style) {
+  const safe = [];
+  if (isSafeAnnouncementColor(style.color)) safe.push(`color: ${style.color}`);
+  if (isSafeAnnouncementFontFamily(style.fontFamily)) safe.push(`font-family: ${style.fontFamily}`);
+  if (isSafeAnnouncementFontSize(style.fontSize)) safe.push(`font-size: ${style.fontSize}`);
+  if (isSafeAnnouncementLineHeight(style.lineHeight)) safe.push(`line-height: ${style.lineHeight}`);
+  return safe.join('; ');
+}
+
+function sanitizeAnnouncementHtml(html = '') {
+  const raw = String(html || '');
+  if (!raw.trim()) return '';
+
+  if (typeof DOMParser === 'undefined' || typeof document === 'undefined') {
+    return raw.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '').replace(/\son\w+="[^"]*"/gi, '').replace(/\son\w+='[^']*'/gi, '').replace(/javascript:/gi, '');
+  }
+
+  const doc = new DOMParser().parseFromString(`<div>${raw}</div>`, 'text/html');
+  const root = doc.body.firstElementChild || doc.body;
+
+  root.querySelectorAll(ANNOUNCEMENT_BLOCKED_TAGS.join(',')).forEach((node) => node.remove());
+
+  root.querySelectorAll('font').forEach((font) => {
+    const span = doc.createElement('span');
+    const face = font.getAttribute('face');
+    const color = font.getAttribute('color');
+    const size = ANNOUNCEMENT_FONT_SIZE_MAP[font.getAttribute('size')];
+    if (isSafeAnnouncementFontFamily(face)) span.style.fontFamily = face;
+    if (isSafeAnnouncementColor(color)) span.style.color = color;
+    if (isSafeAnnouncementFontSize(size)) span.style.fontSize = size;
+    while (font.firstChild) span.appendChild(font.firstChild);
+    font.replaceWith(span);
+  });
+
+  const walk = (node) => {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType === 8) return child.remove();
+      if (child.nodeType === 3) return;
+      if (child.nodeType !== 1) return child.remove();
+
+      walk(child);
+
+      if (!ANNOUNCEMENT_ALLOWED_TAGS.has(child.tagName.toUpperCase())) {
+        while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
+        child.remove();
+        return;
+      }
+
+      const safeStyle = sanitizeAnnouncementStyle(child.style);
+      Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
+      if (safeStyle) child.setAttribute('style', safeStyle);
+    });
+  };
+
+  walk(root);
+  return root.innerHTML.trim();
+}
+
+function escapeAnnouncementHtml(text = '') {
+  const div = document.createElement('div');
+  div.textContent = String(text || '');
+  return div.innerHTML;
+}
+
+function announcementTextToHtml(text = '') {
+  const raw = String(text || '');
+  if (!raw.trim()) return '';
+  if (typeof document === 'undefined') return raw;
+  return sanitizeAnnouncementHtml(
+    raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${escapeAnnouncementHtml(p).replace(/\n/g, '<br />')}</p>`).join('')
+  );
+}
+
+function getAnnouncementBodyHtml(announcement) {
+  const raw = announcement?.message || announcement?.content || announcement?.text || announcement?.description || '';
+  const body = String(raw || '');
+  if (!body.trim()) return '';
+  return /<\/?[a-z][\s\S]*>/i.test(body) ? sanitizeAnnouncementHtml(body) : announcementTextToHtml(body);
+}
+
+function getAnnouncementPlainText(html = '') {
+  const safe = sanitizeAnnouncementHtml(html);
+  if (typeof document === 'undefined') return safe.replace(/<[^>]*>/g, ' ');
+  const div = document.createElement('div');
+  div.innerHTML = safe;
+  return div.textContent || div.innerText || '';
+}
+
 // ─── Time Helper ────────────────────────────────────────────────────────────
 
 function timeAgo(ts) {
@@ -422,6 +533,144 @@ function AttachmentInput({ uploadedFiles, onFilesChange }) {
       </button>
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
+    </div>
+  );
+}
+
+
+function RichAnnouncementBodyEditor({ value, onChange }) {
+  const initialHtml = getAnnouncementBodyHtml({ message: value });
+  const editorRef = useRef(null);
+  const lastHtmlRef = useRef(initialHtml);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const nextHtml = getAnnouncementBodyHtml({ message: value });
+    if (nextHtml !== lastHtmlRef.current && editor.innerHTML !== nextHtml) {
+      editor.innerHTML = nextHtml;
+      lastHtmlRef.current = nextHtml;
+    }
+  }, [value]);
+
+  const emitChange = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const cleanHtml = sanitizeAnnouncementHtml(editor.innerHTML);
+    lastHtmlRef.current = cleanHtml;
+    onChange(cleanHtml);
+  }, [onChange]);
+
+  const runCommand = (command, commandValue = null) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, commandValue);
+    emitChange();
+  };
+
+  const applyInlineStyle = (styles) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+
+    const selection = window.getSelection();
+    const span = document.createElement('span');
+    Object.entries(styles).forEach(([key, styleValue]) => {
+      if (styleValue) span.style[key] = styleValue;
+    });
+
+    if (!selection || selection.rangeCount === 0 || !editor.contains(selection.anchorNode)) {
+      span.innerHTML = '&#8203;';
+      editor.appendChild(span);
+      emitChange();
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) {
+      span.innerHTML = '&#8203;';
+      range.insertNode(span);
+    } else {
+      try {
+        range.surroundContents(span);
+      } catch {
+        const contents = range.extractContents();
+        span.appendChild(contents);
+        range.insertNode(span);
+      }
+    }
+
+    selection.removeAllRanges();
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(span);
+    nextRange.collapse(false);
+    selection.addRange(nextRange);
+    emitChange();
+  };
+
+  const handlePaste = (event) => {
+    event.preventDefault();
+    const html = event.clipboardData?.getData('text/html');
+    const text = event.clipboardData?.getData('text/plain');
+    document.execCommand('insertHTML', false, html ? sanitizeAnnouncementHtml(html) : announcementTextToHtml(text || ''));
+    emitChange();
+  };
+
+  const toolbarButtonClass = 'rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-700 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700';
+  const toolbarSelectClass = 'rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10';
+
+  return (
+    <div className="mt-2 overflow-hidden rounded-2xl border-2 border-slate-200 bg-slate-50 transition-all focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-500/10">
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/80 px-3 py-2">
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); runCommand('bold'); }} className={toolbarButtonClass} title="Bold">B</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); runCommand('italic'); }} className={`${toolbarButtonClass} italic`} title="Italic">I</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); runCommand('underline'); }} className={`${toolbarButtonClass} underline`} title="Underline">U</button>
+        <span className="mx-1 h-6 w-px bg-slate-200" />
+
+        <select className={toolbarSelectClass} defaultValue="" onChange={(e) => { applyInlineStyle({ fontFamily: e.target.value }); e.target.value = ''; }} title="Font family">
+          <option value="" disabled>Font</option>
+          <option value="Inter, sans-serif">Inter</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Times New Roman', serif">Times</option>
+          <option value="'Courier New', monospace">Mono</option>
+        </select>
+
+        <select className={toolbarSelectClass} defaultValue="" onChange={(e) => { applyInlineStyle({ fontSize: e.target.value }); e.target.value = ''; }} title="Font size">
+          <option value="" disabled>Size</option>
+          <option value="14px">14</option>
+          <option value="16px">16</option>
+          <option value="18px">18</option>
+          <option value="20px">20</option>
+          <option value="24px">24</option>
+        </select>
+
+        <select className={toolbarSelectClass} defaultValue="" onChange={(e) => { applyInlineStyle({ lineHeight: e.target.value }); e.target.value = ''; }} title="Line spacing">
+          <option value="" disabled>Spacing</option>
+          <option value="1">Tight</option>
+          <option value="1.3">Normal</option>
+          <option value="1.5">Relaxed</option>
+          <option value="1.75">Loose</option>
+          <option value="2">Double</option>
+        </select>
+
+        <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-700 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700">
+          Color
+          <input type="color" defaultValue="#334155" className="h-5 w-7 cursor-pointer rounded border-0 bg-transparent p-0" onChange={(e) => applyInlineStyle({ color: e.target.value })} title="Font color" />
+        </label>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        aria-label="Announcement details"
+        role="textbox"
+        onInput={emitChange}
+        onBlur={emitChange}
+        onPaste={handlePaste}
+        className="min-h-[170px] w-full px-5 py-4 text-base font-medium leading-7 text-slate-900 focus:outline-none [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
+        dangerouslySetInnerHTML={{ __html: initialHtml }}
+      />
     </div>
   );
 }
@@ -763,9 +1012,10 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
 
             <div className="mt-4 h-px w-full max-w-3xl bg-gradient-to-r from-violet-300 via-cyan-200 to-transparent" />
 
-            <p className="mt-5 whitespace-pre-line text-[16px] font-medium leading-8 text-slate-700">
-              {displayMessage}
-            </p>
+            <div
+              className="announcement-rich-body mt-5 text-[16px] font-medium leading-8 text-slate-700 [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_strong]:font-black [&_b]:font-black [&_em]:italic [&_i]:italic [&_u]:underline"
+              dangerouslySetInnerHTML={{ __html: getAnnouncementBodyHtml(item) }}
+            />
 
             <AttachmentGallery attachments={item.attachments} />
           </div>
@@ -911,7 +1161,8 @@ export default function AnnouncementsView({ projectId }) {
   useEffect(() => { mountedRef.current = true; load(); return () => { mountedRef.current = false; }; }, [load]);
 
   const handleCreate = async () => {
-    if (!title.trim() || !message.trim() || posting) return;
+    const cleanMessage = sanitizeAnnouncementHtml(message);
+    if (!title.trim() || !getAnnouncementPlainText(cleanMessage).trim() || posting) return;
 
     if (!editingAnnouncement && anyUploading) {
       toast({ title: 'Please wait for uploads to finish', variant: 'error' });
@@ -931,7 +1182,7 @@ export default function AnnouncementsView({ projectId }) {
 
         const response = await updateAnnouncement(projectId, announcementId, {
           title: title.trim(),
-          message: message.trim(),
+          message: cleanMessage,
           type,
           pinned,
         });
@@ -950,7 +1201,7 @@ export default function AnnouncementsView({ projectId }) {
                       updated?.message ||
                       updated?.content ||
                       updated?.text ||
-                      message.trim(),
+                      cleanMessage,
                     type: updated?.type || type,
                     pinned:
                       typeof updated?.pinned === 'boolean'
@@ -974,7 +1225,7 @@ export default function AnnouncementsView({ projectId }) {
 
       const created = await createAnnouncement(projectId, {
         title: title.trim(),
-        message: message.trim(),
+        message: cleanMessage,
         type,
         pinned,
         attachments: attachmentUrls,
@@ -984,7 +1235,7 @@ export default function AnnouncementsView({ projectId }) {
         ...created,
         authorId: user,
         title: created.title || title.trim(),
-        message: created.message || created.content || message.trim(),
+        message: created.message || created.content || cleanMessage,
         attachments: created.attachments || attachmentUrls,
       };
 
@@ -1045,6 +1296,8 @@ export default function AnnouncementsView({ projectId }) {
     if (!a.pinned && b.pinned) return 1;
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
+
+  const hasAnnouncementBody = getAnnouncementPlainText(message).trim().length > 0;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
@@ -1542,14 +1795,7 @@ export default function AnnouncementsView({ projectId }) {
                   Details <span className="text-rose-500">*</span>
                 </label>
 
-                <textarea
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  placeholder="Expand on the context here..."
-                  rows={6}
-                  maxLength={5000}
-                  className="mt-2 w-full resize-none rounded-2xl border-2 border-slate-200 bg-slate-50 px-5 py-4 text-base font-medium leading-7 text-slate-900 placeholder-slate-400 transition-all focus:border-violet-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-                />
+                <RichAnnouncementBodyEditor value={message} onChange={setMessage} />
               </div>
 
               <AttachmentInput uploadedFiles={uploadedFiles} onFilesChange={setUploadedFiles} />
@@ -1589,7 +1835,7 @@ export default function AnnouncementsView({ projectId }) {
 
               <button
                 onClick={handleCreate}
-                disabled={!title.trim() || !message.trim() || posting || anyUploading}
+                disabled={!title.trim() || !hasAnnouncementBody || posting || anyUploading}
                 className="announcements-primary-button relative isolate flex items-center gap-2 overflow-hidden rounded-2xl px-8 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-100"
               >
                 <span
@@ -1597,11 +1843,11 @@ export default function AnnouncementsView({ projectId }) {
                   className="pointer-events-none absolute inset-0 rounded-2xl"
                   style={{
                     background:
-                      title.trim() && message.trim() && !posting && !anyUploading
+                      title.trim() && hasAnnouncementBody && !posting && !anyUploading
                         ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
                         : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
                     boxShadow:
-                      title.trim() && message.trim() && !posting && !anyUploading
+                      title.trim() && hasAnnouncementBody && !posting && !anyUploading
                         ? 'inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 16px 36px rgba(109, 40, 217, 0.34)'
                         : 'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 24px rgba(109, 40, 217, 0.20)',
                   }}
