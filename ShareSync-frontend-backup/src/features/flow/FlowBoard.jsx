@@ -274,11 +274,16 @@ export default function FlowBoard({
               opacity: 0.72;
               z-index: 0;
             }
-
-            .flow-board-shell > * {
+            .flow-board-shell > :not([class*="absolute"]) {
               position: relative;
               z-index: 1;
             }
+
+            .flow-board-shell > [class*="absolute"] {
+              position: absolute !important;
+              z-index: 0;
+            }
+
 
             .flow-board-rail {
               z-index: 2;
