@@ -539,14 +539,23 @@ function AttachmentInput({ uploadedFiles, onFilesChange }) {
 
 
 function RichAnnouncementBodyEditor({ value, onChange }) {
-  const initialHtml = getAnnouncementBodyHtml({ message: value });
   const editorRef = useRef(null);
-  const lastHtmlRef = useRef(initialHtml);
+  const lastHtmlRef = useRef('');
+  const didInitializeRef = useRef(false);
 
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
+
     const nextHtml = getAnnouncementBodyHtml({ message: value });
+
+    if (!didInitializeRef.current) {
+      editor.innerHTML = nextHtml;
+      lastHtmlRef.current = nextHtml;
+      didInitializeRef.current = true;
+      return;
+    }
+
     if (nextHtml !== lastHtmlRef.current && editor.innerHTML !== nextHtml) {
       editor.innerHTML = nextHtml;
       lastHtmlRef.current = nextHtml;
@@ -671,7 +680,6 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
         onBlur={emitChange}
         onPaste={handlePaste}
         className="min-h-[170px] w-full px-5 py-4 text-base font-medium leading-7 text-slate-900 focus:outline-none [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
-        dangerouslySetInnerHTML={{ __html: initialHtml }}
       />
     </div>
   );
