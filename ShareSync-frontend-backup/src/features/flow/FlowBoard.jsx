@@ -238,6 +238,73 @@ export default function FlowBoard({
               linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.76)) !important;
             border-color: rgba(255, 255, 255, 0.08) !important;
           }
+
+            /* flow-board-final-surface-override */
+            .flow-board-shell {
+              background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.10), transparent 34%),
+                radial-gradient(circle at 86% 4%, rgba(34, 211, 238, 0.11), transparent 38%),
+                radial-gradient(circle at 70% 100%, rgba(16, 185, 129, 0.08), transparent 34%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.90), rgba(241, 245, 249, 0.62) 48%, rgba(236, 253, 245, 0.38)) !important;
+              border-color: rgba(167, 139, 250, 0.28) !important;
+              box-shadow:
+                0 24px 70px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.84) !important;
+            }
+
+            .flow-board-shell::before {
+              content: "";
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background:
+                linear-gradient(rgba(99, 102, 241, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.035) 1px, transparent 1px);
+              background-size: 32px 32px;
+              opacity: 0.55;
+              z-index: 0;
+            }
+
+            .flow-board-shell::after {
+              content: "";
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background: linear-gradient(135deg, rgba(255, 255, 255, 0.34), transparent 46%, rgba(34, 211, 238, 0.07));
+              opacity: 0.72;
+              z-index: 0;
+            }
+
+            .flow-board-shell > * {
+              position: relative;
+              z-index: 1;
+            }
+
+            .flow-board-rail {
+              z-index: 2;
+            }
+
+            .flow-board-shell :where(
+              .flow-board-header,
+              .flow-stat-card,
+              .flow-column,
+              .flow-column-shell,
+              .flow-lane,
+              .flow-stage-column
+            ) {
+              background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.74), rgba(248, 250, 252, 0.52)) !important;
+              border-color: rgba(203, 213, 225, 0.62) !important;
+            }
+
+            .dark .flow-board-shell {
+              background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.14), transparent 34%),
+                radial-gradient(circle at 86% 4%, rgba(34, 211, 238, 0.10), transparent 38%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.68)) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
+            }
+
         `}
       </style>
 
@@ -681,7 +748,7 @@ export default function FlowBoard({
         `}
       </style>
 
-      <div className="flow-board-shell relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/82 shadow-2xl shadow-slate-200/50 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.035] dark:shadow-black/30">
+      <div className="flow-board-shell relative overflow-hidden rounded-[2rem] border border-violet-100/70 bg-white/90 shadow-2xl shadow-violet-100/40 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.045] dark:shadow-black/30">
         <div className="flow-board-rail absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
 
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/10" />
