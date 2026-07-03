@@ -618,10 +618,16 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
 
   const handlePaste = (event) => {
     event.preventDefault();
+    event.stopPropagation();
     const html = event.clipboardData?.getData('text/html');
     const text = event.clipboardData?.getData('text/plain');
     document.execCommand('insertHTML', false, html ? sanitizeAnnouncementHtml(html) : announcementTextToHtml(text || ''));
     emitChange();
+  };
+
+  const stopEditorShortcutPropagation = (event) => {
+    event.stopPropagation();
+    event.nativeEvent?.stopImmediatePropagation?.();
   };
 
   const toolbarButtonClass = 'rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-700 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700';
@@ -679,6 +685,9 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
         onInput={emitChange}
         onBlur={emitChange}
         onPaste={handlePaste}
+        onKeyDownCapture={stopEditorShortcutPropagation}
+        onKeyUpCapture={stopEditorShortcutPropagation}
+        onBeforeInputCapture={stopEditorShortcutPropagation}
         className="min-h-[170px] w-full px-5 py-4 text-base font-medium leading-7 text-slate-900 focus:outline-none [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
       />
     </div>
