@@ -663,6 +663,8 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
+        dir="ltr"
+        style={{ direction: 'ltr', unicodeBidi: 'normal', textAlign: 'left', transform: 'none' }}
         aria-label="Announcement details"
         role="textbox"
         onInput={emitChange}
@@ -1013,6 +1015,8 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
             <div className="mt-4 h-px w-full max-w-3xl bg-gradient-to-r from-violet-300 via-cyan-200 to-transparent" />
 
             <div
+              dir="ltr"
+              style={{ direction: 'ltr', unicodeBidi: 'normal', textAlign: 'left', transform: 'none' }}
               className="announcement-rich-body mt-5 text-[16px] font-medium leading-8 text-slate-700 [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_strong]:font-black [&_b]:font-black [&_em]:italic [&_i]:italic [&_u]:underline"
               dangerouslySetInnerHTML={{ __html: getAnnouncementBodyHtml(item) }}
             />
