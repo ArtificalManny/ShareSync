@@ -203,13 +203,13 @@ export class AnnouncementsService {
 
         const rawVotes = Array.isArray(option?.votes) ? option.votes : [];
         const voteIds = Array.from(
-          new Set(
+          new Set<string>(
             rawVotes
               .map((vote: any) => this.normalizeId(vote))
               .filter(Boolean)
               .map((vote: any) => vote.toString()),
           ),
-        ).map((voteId) => new Types.ObjectId(voteId));
+        ).map((voteId: string) => new Types.ObjectId(voteId));
 
         return {
           id,
