@@ -25,6 +25,13 @@ export type GetAnnouncementsOptions = {
   pinnedOnly?: boolean;
 };
 
+export type AnnouncementPollInput = {
+  question?: string;
+  options?: Array<string | { id?: string; text?: string; votes?: any[] }>;
+  closed?: boolean;
+  createdAt?: Date | string;
+} | null;
+
 export type CreateAnnouncementInput = {
   projectId: string;
   authorId: string;
@@ -33,6 +40,7 @@ export type CreateAnnouncementInput = {
   type?: string;
   pinned?: boolean;
   attachments?: string[];
+  poll?: AnnouncementPollInput;
 };
 
 export type UpdateAnnouncementInput = {
@@ -43,6 +51,7 @@ export type UpdateAnnouncementInput = {
   type?: string;
   pinned?: boolean;
   attachments?: string[];
+  poll?: AnnouncementPollInput;
 };
 
 @Injectable()
@@ -172,6 +181,53 @@ export class AnnouncementsService {
     if (opts.pinnedOnly) query.pinned = true;
 
     return this.announcementModel.find(query).populate('authorId', this.userPopulateFields).sort({ pinned: -1, createdAt: -1 }).exec();
+  }
+
+  private normalizePoll(poll: AnnouncementPollInput) {
+    if (poll === undefined || poll === null || typeof poll !== 'object') return null;
+
+    const question = String((poll as any).question ?? '').trim().slice(0, 180);
+    const rawOptions = Array.isArray((poll as any).options) ? (poll as any).options : [];
+
+    const options = rawOptions
+      .map((option: any, index: number) => {
+        const text = typeof option === 'string'
+          ? option.trim()
+          : String(option?.text ?? '').trim();
+
+        if (!text) return null;
+
+        const id = typeof option === 'object' && option?.id
+          ? String(option.id).trim().slice(0, 64)
+          : `option-${index + 1}-${new Types.ObjectId().toString().slice(-6)}`;
+
+        const rawVotes = Array.isArray(option?.votes) ? option.votes : [];
+        const voteIds = Array.from(
+          new Set(
+            rawVotes
+              .map((vote: any) => this.normalizeId(vote))
+              .filter(Boolean)
+              .map((vote: any) => vote.toString()),
+          ),
+        ).map((voteId) => new Types.ObjectId(voteId));
+
+        return {
+          id,
+          text: text.slice(0, 120),
+          votes: voteIds,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 5);
+
+    if (!question || options.length < 2) return null;
+
+    return {
+      question,
+      options,
+      closed: Boolean((poll as any).closed),
+      createdAt: (poll as any).createdAt ? new Date((poll as any).createdAt) : new Date(),
+    };
   }
 
   public async create(input: CreateAnnouncementInput) {
@@ -434,6 +490,63 @@ export class AnnouncementsService {
     (doc as any).likedBy = likedBy;
     (doc as any).likesCount = likedBy.length;
     (doc as any).likes = likedBy;
+
+    await ann.save();
+    await ann.populate('authorId', this.userPopulateFields);
+    return ann;
+  }
+
+  public async votePoll(announcementId: string, userId: string, optionId: string) {
+    const annId = this.toObjectId(announcementId, 'announcementId');
+    const actorId = this.normalizeId(userId);
+    const cleanOptionId = String(optionId ?? '').trim();
+
+    if (!actorId) {
+      throw new BadRequestException('User is required to vote');
+    }
+
+    if (!cleanOptionId) {
+      throw new BadRequestException('Poll option is required');
+    }
+
+    const ann = await this.announcementModel.findById(annId).exec();
+
+    if (!ann) {
+      throw new NotFoundException('Announcement not found');
+    }
+
+    const poll = (ann as any).poll;
+    if (!poll || !Array.isArray(poll.options)) {
+      throw new BadRequestException('Announcement does not have a poll');
+    }
+
+    if (poll.closed) {
+      throw new BadRequestException('Poll is closed');
+    }
+
+    const hasOption = poll.options.some((option: any) => String(option?.id) === cleanOptionId);
+    if (!hasOption) {
+      throw new BadRequestException('Poll option not found');
+    }
+
+    const actorKey = actorId.toString();
+
+    poll.options = poll.options.map((option: any) => {
+      const votes = Array.isArray(option.votes) ? option.votes : [];
+      const nextVotes = votes.filter((vote: any) => String(vote) !== actorKey);
+
+      if (String(option.id) === cleanOptionId) {
+        nextVotes.push(actorId);
+      }
+
+      return {
+        ...option,
+        votes: nextVotes,
+      };
+    });
+
+    (ann as any).poll = poll;
+    ann.markModified('poll');
 
     await ann.save();
     await ann.populate('authorId', this.userPopulateFields);

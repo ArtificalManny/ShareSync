@@ -136,6 +136,17 @@ export class AnnouncementsController {
     return this.announcementsService.toggleLike(id, userId);
   }
 
+  @Post(':id/poll/vote')
+  async votePoll(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() body: any = {},
+  ) {
+    const userId =
+      String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
+    return this.announcementsService.votePoll(id, userId, String(body?.optionId || body?.id || ''));
+  }
+
   @Post(':id/comments')
   async addComment(
     @Param('id') id: string,

@@ -26,6 +26,28 @@ export class Announcement {
   @Prop({ type: [String], default: [] })
   attachments: string[];
 
+  @Prop({
+    type: {
+      question: { type: String, default: '' },
+      options: [
+        {
+          id: { type: String, required: true },
+          text: { type: String, required: true },
+          votes: { type: [{ type: Types.ObjectId, ref: 'User' }], default: [] },
+        },
+      ],
+      closed: { type: Boolean, default: false },
+      createdAt: { type: Date, default: Date.now },
+    },
+    default: null,
+  })
+  poll?: {
+    question: string;
+    options: { id: string; text: string; votes: Types.ObjectId[] }[];
+    closed: boolean;
+    createdAt?: Date;
+  } | null;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   readBy: Types.ObjectId[];
 
