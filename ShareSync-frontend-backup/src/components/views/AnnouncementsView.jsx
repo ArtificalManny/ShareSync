@@ -17,7 +17,7 @@ import client from '../../api/client';
 import {
   getAnnouncements, createAnnouncement, updateAnnouncement,
   toggleAnnouncementPin, deleteAnnouncement, markAnnouncementAsRead,
-  toggleLike, addComment, deleteComment,
+  toggleLike, addComment, deleteComment, votePoll,
 } from '../../api/announcements';
 
 // ─── Upload helper ──────────────────────────────────────────────────────────
@@ -127,6 +127,48 @@ function getLikeValueForCurrentUser(user) {
     user?.sub ||
     user
   );
+}
+
+function createPollOptionState(text = '') {
+  return { text };
+}
+
+function getPollVoteId(vote) {
+  return String(
+    vote?._id ||
+    vote?.id ||
+    vote?.userId?._id ||
+    vote?.userId?.id ||
+    vote?.userId ||
+    vote?.user?._id ||
+    vote?.user?.id ||
+    vote ||
+    ''
+  );
+}
+
+function getPollOptionVotes(option) {
+  return Array.isArray(option?.votes) ? option.votes : [];
+}
+
+function normalizePollForSubmit(enabled, question, options) {
+  if (!enabled) return null;
+
+  const cleanQuestion = String(question || '').trim();
+  const cleanOptions = (Array.isArray(options) ? options : [])
+    .map((option) => ({
+      text: String(option?.text || option || '').trim(),
+    }))
+    .filter((option) => option.text)
+    .slice(0, 5);
+
+  if (!cleanQuestion || cleanOptions.length < 2) return null;
+
+  return {
+    question: cleanQuestion,
+    options: cleanOptions,
+    closed: false,
+  };
 }
 
 function normalizeAnnouncementLikeState(announcement, currentUser) {
@@ -705,6 +747,187 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
 
 // ─── Comment Section ────────────────────────────────────────────────────────
 
+function PollComposer({
+  enabled,
+  setEnabled,
+  question,
+  setQuestion,
+  options,
+  setOptions,
+}) {
+  const updateOption = (index, value) => {
+    setOptions((prev) =>
+      prev.map((option, optionIndex) =>
+        optionIndex === index ? { ...option, text: value } : option
+      )
+    );
+  };
+
+  const addOption = () => {
+    setOptions((prev) =>
+      prev.length >= 5 ? prev : [...prev, createPollOptionState()]
+    );
+  };
+
+  const removeOption = (index) => {
+    setOptions((prev) =>
+      prev.length <= 2 ? prev : prev.filter((_, optionIndex) => optionIndex !== index)
+    );
+  };
+
+  return (
+    <div className="rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-4">
+      <label className="flex cursor-pointer items-center justify-between gap-4">
+        <div>
+          <span className="block text-sm font-black text-slate-800">Attach poll</span>
+          <span className="text-xs font-semibold text-slate-500">
+            Ask one question and let teammates vote once.
+          </span>
+        </div>
+
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => setEnabled(event.target.checked)}
+          className="h-5 w-5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+        />
+      </label>
+
+      {enabled && (
+        <div className="mt-4 space-y-3">
+          <input
+            type="text"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            placeholder="What should the team decide?"
+            maxLength={180}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+          />
+
+          <div className="space-y-2">
+            {options.map((option, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={option.text}
+                  onChange={(event) => updateOption(index, event.target.value)}
+                  placeholder={`Option ${index + 1}`}
+                  maxLength={120}
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+                />
+
+                {options.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => removeOption(index)}
+                    className="rounded-xl px-3 py-2 text-xs font-black text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={addOption}
+            disabled={options.length >= 5}
+            className="rounded-xl border border-violet-200 bg-white px-4 py-2 text-xs font-black text-violet-700 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Add option
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AnnouncementPollBlock({ item, projectId, currentUser, onUpdate }) {
+  const [votingOptionId, setVotingOptionId] = useState(null);
+  const poll = item?.poll;
+  const options = Array.isArray(poll?.options) ? poll.options : [];
+  const currentUserId = getCurrentUserId(currentUser);
+  const totalVotes = options.reduce(
+    (sum, option) => sum + getPollOptionVotes(option).length,
+    0
+  );
+
+  if (!poll?.question || options.length < 2) return null;
+
+  const selectedOptionId = options.find((option) =>
+    getPollOptionVotes(option).some((vote) => getPollVoteId(vote) === currentUserId)
+  )?.id;
+
+  const handleVote = async (optionId) => {
+    if (!projectId || !getId(item) || !optionId || votingOptionId) return;
+
+    setVotingOptionId(optionId);
+    try {
+      const response = await votePoll(projectId, getId(item), optionId);
+      const updated = unwrapAnnouncementPayload(response);
+      onUpdate?.(normalizeAnnouncementLikeState(updated, currentUser));
+    } catch (error) {
+      toast({
+        title: error?.response?.data?.message || error?.message || 'Failed to vote',
+        variant: 'error',
+      });
+    } finally {
+      setVotingOptionId(null);
+    }
+  };
+
+  return (
+    <div className="mt-5 rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-700">
+            Team Poll
+          </p>
+          <h4 className="mt-1 text-base font-black text-slate-950">{poll.question}</h4>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">
+          {totalVotes} vote{totalVotes === 1 ? '' : 's'}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {options.map((option) => {
+          const votes = getPollOptionVotes(option);
+          const voteCount = votes.length;
+          const percent = totalVotes ? Math.round((voteCount / totalVotes) * 100) : 0;
+          const selected = String(option.id) === String(selectedOptionId);
+
+          return (
+            <button
+              key={option.id}
+              type="button"
+              disabled={Boolean(poll.closed) || Boolean(votingOptionId)}
+              onClick={() => handleVote(option.id)}
+              className={`relative w-full overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all ${
+                selected
+                  ? 'border-violet-300 bg-white text-violet-900 shadow-sm'
+                  : 'border-slate-200 bg-white/80 text-slate-700 hover:border-violet-200 hover:bg-white'
+              }`}
+            >
+              <span
+                className="absolute inset-y-0 left-0 bg-violet-200/50"
+                style={{ width: `${percent}%` }}
+              />
+              <span className="relative flex items-center justify-between gap-3">
+                <span className="font-black">{option.text}</span>
+                <span className="text-xs font-black text-slate-500">
+                  {percent}% · {voteCount}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CommentSection({ item, projectId, currentUser, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState('');
@@ -1126,6 +1349,9 @@ export default function AnnouncementsView({ projectId }) {
   const [type, setType] = useState('info');
   const [pinned, setPinned] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [pollEnabled, setPollEnabled] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState([createPollOptionState(), createPollOptionState()]);
   const [posting, setPosting] = useState(false);
   const mountedRef = useRef(true);
 
@@ -1136,6 +1362,9 @@ export default function AnnouncementsView({ projectId }) {
     setType('info');
     setPinned(false);
     setUploadedFiles([]);
+    setPollEnabled(false);
+    setPollQuestion('');
+    setPollOptions([createPollOptionState(), createPollOptionState()]);
   };
 
   const openCreateModal = () => {
@@ -1157,6 +1386,15 @@ export default function AnnouncementsView({ projectId }) {
     setType(String(announcement?.type || 'info').toLowerCase());
     setPinned(Boolean(announcement?.pinned));
     setUploadedFiles([]);
+
+    const existingPoll = announcement?.poll;
+    const existingOptions = Array.isArray(existingPoll?.options)
+      ? existingPoll.options.map((option) => createPollOptionState(option?.text || '')).slice(0, 5)
+      : [];
+
+    setPollEnabled(Boolean(existingPoll?.question && existingOptions.length >= 2));
+    setPollQuestion(existingPoll?.question || '');
+    setPollOptions(existingOptions.length >= 2 ? existingOptions : [createPollOptionState(), createPollOptionState()]);
     setShowCreate(true);
   };
 
@@ -1192,7 +1430,14 @@ export default function AnnouncementsView({ projectId }) {
 
   const handleCreate = async () => {
     const cleanMessage = sanitizeAnnouncementHtml(message);
+    const cleanPoll = normalizePollForSubmit(pollEnabled, pollQuestion, pollOptions);
+
     if (!title.trim() || !getAnnouncementPlainText(cleanMessage).trim() || posting) return;
+
+    if (pollEnabled && !cleanPoll) {
+      toast({ title: 'Add a poll question and at least two options', variant: 'error' });
+      return;
+    }
 
     if (!editingAnnouncement && anyUploading) {
       toast({ title: 'Please wait for uploads to finish', variant: 'error' });
