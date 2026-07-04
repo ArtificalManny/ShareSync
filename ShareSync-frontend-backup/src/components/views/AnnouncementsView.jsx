@@ -195,6 +195,7 @@ function normalizeAnnouncementLikeState(announcement, currentUser) {
 
   return {
     ...announcement,
+    poll: announcement?.poll || null,
     likes: likesArray,
     likedBy: likesArray,
     _clientHasLiked: hasLiked,
