@@ -242,6 +242,7 @@ export class AnnouncementsService {
       type: input.type || 'info',
       pinned: Boolean(input.pinned),
       attachments: input.attachments || [],
+        poll: this.normalizePoll(input.poll),
       readBy: [],
     });
     await doc.populate('authorId', this.userPopulateFields);
