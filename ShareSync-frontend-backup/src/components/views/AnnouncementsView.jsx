@@ -765,13 +765,99 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
 
 // ─── Comment Section ────────────────────────────────────────────────────────
 
-function PollComposer({
-  enabled,
-  setEnabled,
-  question,
-  setQuestion,
-  options,
-  setOptions,
+function PollComposer({ enabled, setEnabled, question, setQuestion, options, setOptions }) {
+  const safeOptions = Array.isArray(options) && options.length ? options : [createPollOptionState(), createPollOptionState()];
+
+  const updateOption = (index, nextText) => {
+    setOptions(
+      safeOptions.map((option, optionIndex) =>
+        optionIndex === index ? { ...option, text: nextText } : option
+      )
+    );
+  };
+
+  const addOption = () => {
+    if (safeOptions.length >= 5) return;
+    setOptions([...safeOptions, createPollOptionState()]);
+  };
+
+  const removeOption = (index) => {
+    if (safeOptions.length <= 2) return;
+    setOptions(safeOptions.filter((_, optionIndex) => optionIndex !== index));
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.22em] text-slate-700">
+        <span className="h-1.5 w-1.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.45)]" />
+        Poll
+      </div>
+
+      <div className={`rounded-[28px] border-2 p-5 shadow-[0_18px_45px_rgba(79,70,229,0.08)] transition-all ${
+        enabled
+          ? 'border-violet-200 bg-violet-50/40'
+          : 'border-slate-200 bg-white/85'
+      }`}>
+        <label className="flex cursor-pointer items-center justify-between gap-5">
+          <div>
+            <span className="block text-[16px] font-black text-slate-900">Attach poll</span>
+            <span className="mt-1 block text-sm font-bold text-slate-500">
+              Ask one question and let teammates vote once.
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="h-6 w-6 shrink-0 cursor-pointer rounded-lg border-2 border-slate-300 text-violet-600 accent-violet-600"
+          />
+        </label>
+
+        {enabled && (
+          <div className="mt-5 space-y-3 border-t border-violet-100 pt-5">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Poll question"
+              className="w-full rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 text-[15px] font-bold text-slate-900 placeholder-slate-400 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+            />
+
+            {safeOptions.map((option, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={option.text}
+                  onChange={(e) => updateOption(index, e.target.value)}
+                  placeholder={`Option ${index + 1}`}
+                  className="min-w-0 flex-1 rounded-2xl border-2 border-slate-200 bg-white px-5 py-3.5 text-[15px] font-bold text-slate-900 placeholder-slate-400 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                />
+                {safeOptions.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => removeOption(index)}
+                    className="rounded-xl px-3 py-2 text-sm font-black text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {safeOptions.length < 5 && (
+              <button
+                type="button"
+                onClick={addOption}
+                className="rounded-xl px-1 py-2 text-sm font-black text-violet-600 transition hover:text-violet-700"
+              >
+                Add option
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }) {
   const updateOption = (index, value) => {
     setOptions((prev) =>
