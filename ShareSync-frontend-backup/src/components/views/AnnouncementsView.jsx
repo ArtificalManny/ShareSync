@@ -579,41 +579,50 @@ function RichAnnouncementBodyEditor({ value, onChange }) {
   const applyInlineStyle = (styles) => {
     const editor = editorRef.current;
     if (!editor) return;
+
     editor.focus();
 
     const selection = window.getSelection();
+    let range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+
+    if (!range || !editor.contains(range.commonAncestorContainer)) {
+      const fallbackRange = document.createRange();
+      fallbackRange.selectNodeContents(editor);
+      fallbackRange.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(fallbackRange);
+      range = fallbackRange;
+    }
+
     const span = document.createElement('span');
+
     Object.entries(styles).forEach(([key, styleValue]) => {
-      if (styleValue) span.style[key] = styleValue;
+      if (!styleValue) return;
+      span.style[key] = styleValue;
     });
 
-    if (!selection || selection.rangeCount === 0 || !editor.contains(selection.anchorNode)) {
-      span.innerHTML = '&#8203;';
-      editor.appendChild(span);
-      emitChange();
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
     if (range.collapsed) {
-      span.innerHTML = '&#8203;';
+      span.appendChild(document.createTextNode('\u200b'));
       range.insertNode(span);
+
+      const nextRange = document.createRange();
+      nextRange.setStart(span.firstChild, 1);
+      nextRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(nextRange);
     } else {
-      try {
-        range.surroundContents(span);
-      } catch {
-        const contents = range.extractContents();
-        span.appendChild(contents);
-        range.insertNode(span);
-      }
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+
+      const nextRange = document.createRange();
+      nextRange.selectNodeContents(span);
+      nextRange.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(nextRange);
     }
 
-    selection.removeAllRanges();
-    const nextRange = document.createRange();
-    nextRange.selectNodeContents(span);
-    nextRange.collapse(false);
-    selection.addRange(nextRange);
-    emitChange();
+    syncFromEditor();
   };
 
   const handlePaste = (event) => {
