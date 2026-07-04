@@ -2073,7 +2073,16 @@ export default function AnnouncementsView({ projectId }) {
                 <RichAnnouncementBodyEditor value={message} onChange={setMessage} />
               </div>
 
-              <AttachmentInput uploadedFiles={uploadedFiles} onFilesChange={setUploadedFiles} />
+                            <PollComposer
+                enabled={pollEnabled}
+                setEnabled={setPollEnabled}
+                question={pollQuestion}
+                setQuestion={setPollQuestion}
+                options={pollOptions}
+                setOptions={setPollOptions}
+              />
+
+<AttachmentInput uploadedFiles={uploadedFiles} onFilesChange={setUploadedFiles} />
 
               <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-amber-200 hover:bg-amber-50/60">
                 <div className="flex items-center gap-3">
