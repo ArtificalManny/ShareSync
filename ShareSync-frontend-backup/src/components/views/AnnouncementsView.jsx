@@ -1289,6 +1289,13 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
             />
 
             <AttachmentGallery attachments={item.attachments} />
+            <AnnouncementPollBlock
+              item={item}
+              projectId={projectId}
+              currentUser={currentUser}
+              onUpdate={onUpdate}
+            />
+
           </div>
         </div>
       </div>
