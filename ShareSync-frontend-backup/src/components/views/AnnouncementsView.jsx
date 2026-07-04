@@ -794,9 +794,7 @@ function PollComposer({ enabled, setEnabled, question, setQuestion, options, set
       </div>
 
       <div className={`rounded-[28px] border-2 p-5 shadow-[0_18px_45px_rgba(79,70,229,0.08)] transition-all ${
-        enabled
-          ? 'border-violet-200 bg-violet-50/40'
-          : 'border-slate-200 bg-white/85'
+        enabled ? 'border-violet-200 bg-violet-50/40' : 'border-slate-200 bg-white/85'
       }`}>
         <label className="flex cursor-pointer items-center justify-between gap-5">
           <div>
@@ -857,93 +855,6 @@ function PollComposer({ enabled, setEnabled, question, setQuestion, options, set
         )}
       </div>
     </section>
-  );
-}) {
-  const updateOption = (index, value) => {
-    setOptions((prev) =>
-      prev.map((option, optionIndex) =>
-        optionIndex === index ? { ...option, text: value } : option
-      )
-    );
-  };
-
-  const addOption = () => {
-    setOptions((prev) =>
-      prev.length >= 5 ? prev : [...prev, createPollOptionState()]
-    );
-  };
-
-  const removeOption = (index) => {
-    setOptions((prev) =>
-      prev.length <= 2 ? prev : prev.filter((_, optionIndex) => optionIndex !== index)
-    );
-  };
-
-  return (
-    <div className="rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-4">
-      <label className="flex cursor-pointer items-center justify-between gap-4">
-        <div>
-          <span className="block text-sm font-black text-slate-800">Attach poll</span>
-          <span className="text-xs font-semibold text-slate-500">
-            Ask one question and let teammates vote once.
-          </span>
-        </div>
-
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(event) => setEnabled(event.target.checked)}
-          className="h-5 w-5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-        />
-      </label>
-
-      {enabled && (
-        <div className="mt-4 space-y-3">
-          <input
-            type="text"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder="What should the team decide?"
-            maxLength={180}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-          />
-
-          <div className="space-y-2">
-            {options.map((option, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={option.text}
-                  onChange={(event) => updateOption(index, event.target.value)}
-                  placeholder={`Option ${index + 1}`}
-                  maxLength={120}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-                />
-
-                {options.length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => removeOption(index)}
-                    className="rounded-xl px-3 py-2 text-xs font-black text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={addOption}
-            disabled={options.length >= 5}
-            className="rounded-xl border border-violet-200 bg-white px-4 py-2 text-xs font-black text-violet-700 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Add option
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 
