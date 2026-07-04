@@ -798,9 +798,9 @@ function PollComposer({ enabled, setEnabled, question, setQuestion, options, set
       }`}>
         <label className="flex cursor-pointer items-center justify-between gap-5">
           <div>
-            <span className="block text-[16px] font-black text-slate-900">Attach poll</span>
+            <span className="block text-[16px] font-black text-slate-900">Add poll</span>
             <span className="mt-1 block text-sm font-bold text-slate-500">
-              Ask one question and let teammates vote once.
+              Optional team vote for this announcement.
             </span>
           </div>
           <input
