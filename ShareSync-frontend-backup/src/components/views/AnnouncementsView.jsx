@@ -171,6 +171,23 @@ function normalizePollForSubmit(enabled, question, options) {
   };
 }
 
+function makeRenderablePoll(poll) {
+  if (!poll?.question || !Array.isArray(poll?.options) || poll.options.length < 2) {
+    return null;
+  }
+
+  return {
+    question: poll.question,
+    closed: Boolean(poll.closed),
+    createdAt: poll.createdAt || new Date().toISOString(),
+    options: poll.options.map((option, index) => ({
+      id: option.id || `option-${index + 1}`,
+      text: option.text,
+      votes: Array.isArray(option.votes) ? option.votes : [],
+    })),
+  };
+}
+
 function normalizeAnnouncementLikeState(announcement, currentUser) {
   const currentUserId = getCurrentUserId(currentUser);
 
@@ -1499,21 +1516,27 @@ export default function AnnouncementsView({ projectId }) {
         .filter((a) => a.url && !a.error)
         .map((a) => a.url);
 
-      const created = await createAnnouncement(projectId, {
-        title: title.trim(),
-        message: cleanMessage,
-        type,
-        pinned,
-        attachments: attachmentUrls,
-      });
+        const response = await createAnnouncement(projectId, {
+          title: title.trim(),
+          message: cleanMessage,
+          type,
+          pinned,
+          attachments: attachmentUrls,
+          poll: cleanPoll,
+        });
 
-      const optimisticAnnouncement = {
-        ...created,
-        authorId: user,
-        title: created.title || title.trim(),
-        message: created.message || created.content || cleanMessage,
-        attachments: created.attachments || attachmentUrls,
-      };
+        const created = unwrapAnnouncementPayload(response);
+        const renderablePoll = makeRenderablePoll(created?.poll || cleanPoll);
+
+        const optimisticAnnouncement = {
+          ...created,
+          authorId: created?.authorId || user,
+          title: created?.title || title.trim(),
+          message: created?.message || created?.content || cleanMessage,
+          attachments: created?.attachments || attachmentUrls,
+          poll: renderablePoll,
+        };
+
 
       setAnnouncements((prev) => [
         normalizeAnnouncementLikeState(optimisticAnnouncement, user),
