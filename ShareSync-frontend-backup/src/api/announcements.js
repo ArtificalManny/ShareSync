@@ -63,6 +63,6 @@ export const deleteComment = async (projectId, announcementId, commentId) => {
 
 
 export const votePoll = async (projectId, announcementId, optionId) => {
-  const response = await api.post(`/projects/${projectId}/announcements/${announcementId}/poll/vote`, { optionId });
-  return response.data;
+  const response = await client.post(`/projects/${projectId}/announcements/${announcementId}/poll/vote`, { optionId });
+  return unwrap(response);
 };
