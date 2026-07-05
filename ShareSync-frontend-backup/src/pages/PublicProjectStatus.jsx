@@ -115,7 +115,7 @@ export default function PublicProjectStatus() {
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold font-display">
-              <GradientText variant="cnbc">{title}</GradientText>
+              {title}
             </h1>
             <p className="mt-1 timestamp">
               <span className="prefix">Read-only</span>
