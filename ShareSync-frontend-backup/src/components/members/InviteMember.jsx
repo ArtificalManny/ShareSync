@@ -67,15 +67,25 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
     setSpectatorLoading(true);
     try {
       const result = await enablePublic(projectId);
-      const token = result?.token || result?.publicToken || '';
+      const token =
+        result?.token ||
+        result?.publicToken ||
+        result?.data?.token ||
+        result?.data?.publicToken ||
+        '';
+
+      if (!token) {
+        throw new Error('No spectator token returned');
+      }
+
       setSpectatorToken(token);
       toast({
         title: 'Spectator link ready',
-        description: 'Anyone with this link can view a read-only project snapshot.',
+        description: `${window.location.origin}/share/project/${encodeURIComponent(token)}`,
         variant: 'success'
       });
     } catch (error) {
-      toast({ title: 'Failed to create spectator link', variant: 'error' });
+      toast({ title: error?.message || 'Failed to create spectator link', variant: 'error' });
     } finally {
       setSpectatorLoading(false);
     }
@@ -87,12 +97,26 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
     setSpectatorLoading(true);
     try {
       const result = await regeneratePublicToken(projectId);
-      const token = result?.token || result?.publicToken || '';
+      const token =
+        result?.token ||
+        result?.publicToken ||
+        result?.data?.token ||
+        result?.data?.publicToken ||
+        '';
+
+      if (!token) {
+        throw new Error('No spectator token returned');
+      }
+
       setSpectatorToken(token);
       setCopiedSpectatorLink(false);
-      toast({ title: 'Spectator link regenerated', variant: 'success' });
+      toast({
+        title: 'Spectator link regenerated',
+        description: `${window.location.origin}/share/project/${encodeURIComponent(token)}`,
+        variant: 'success'
+      });
     } catch (error) {
-      toast({ title: 'Failed to regenerate spectator link', variant: 'error' });
+      toast({ title: error?.message || 'Failed to regenerate spectator link', variant: 'error' });
     } finally {
       setSpectatorLoading(false);
     }
