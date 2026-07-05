@@ -432,7 +432,7 @@ export default function BillingSettings() {
 
             <div className="mt-3 flex flex-wrap gap-2">
               <FeaturePill>{projectsLimit === -1 ? "Unlimited" : formatNumber(projectsLimit)} projects</FeaturePill>
-              <FeaturePill>{membersLimit === -1 ? "Unlimited" : formatNumber(membersLimit)} members/project</FeaturePill>
+              <FeaturePill>{membersLimit === -1 ? "Unlimited" : formatNumber(membersLimit)} workspace members</FeaturePill>
               <FeaturePill>{storageLimit === -1 ? "Unlimited" : formatBytes(storageLimit)} storage</FeaturePill>
               <FeaturePill>{aiLimit === -1 ? "Unlimited" : formatNumber(aiLimit)} AI calls/mo</FeaturePill>
             </div>
