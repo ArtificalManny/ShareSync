@@ -739,6 +739,7 @@ function AppRoutes() {
               <Route path="/invite/accept" element={<AcceptInvite />} />
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
               <Route path="/status/:token" element={<PublicProjectStatus />} />
+              <Route path="/share/project/:token" element={<PublicProjectStatus />} />
 
               <Route
                 path="/home"

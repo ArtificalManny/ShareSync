@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Send, UserPlus, Copy, Check, Mail } from 'lucide-react';
 import { toast } from '../ui/toast';
+import { enablePublic, disablePublic, regeneratePublicToken } from '../../api/public';
 
 /**
  * InviteMember - Invite new members to project
@@ -12,8 +13,14 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
   const [role, setRole] = useState('member');
   const [inviting, setInviting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [spectatorToken, setSpectatorToken] = useState('');
+  const [copiedSpectatorLink, setCopiedSpectatorLink] = useState(false);
+  const [spectatorLoading, setSpectatorLoading] = useState(false);
 
   const inviteLink = `${window.location.origin}/invite/${projectId}`;
+  const spectatorLink = spectatorToken
+    ? `${window.location.origin}/share/project/${encodeURIComponent(spectatorToken)}`
+    : '';
 
   const handleInvite = async () => {
     if (!email.trim()) {
@@ -46,12 +53,78 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteLink);
     setCopiedLink(true);
-    toast({ 
-      title: '🔗 Link copied!', 
+    toast({
+      title: '�� Link copied!',
       description: 'Share this link with anyone',
-      variant: 'success' 
+      variant: 'success'
     });
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleGenerateSpectatorLink = async () => {
+    if (!projectId || spectatorLoading) return;
+
+    setSpectatorLoading(true);
+    try {
+      const result = await enablePublic(projectId);
+      const token = result?.token || result?.publicToken || '';
+      setSpectatorToken(token);
+      toast({
+        title: 'Spectator link ready',
+        description: 'Anyone with this link can view a read-only project snapshot.',
+        variant: 'success'
+      });
+    } catch (error) {
+      toast({ title: 'Failed to create spectator link', variant: 'error' });
+    } finally {
+      setSpectatorLoading(false);
+    }
+  };
+
+  const handleRegenerateSpectatorLink = async () => {
+    if (!projectId || spectatorLoading) return;
+
+    setSpectatorLoading(true);
+    try {
+      const result = await regeneratePublicToken(projectId);
+      const token = result?.token || result?.publicToken || '';
+      setSpectatorToken(token);
+      setCopiedSpectatorLink(false);
+      toast({ title: 'Spectator link regenerated', variant: 'success' });
+    } catch (error) {
+      toast({ title: 'Failed to regenerate spectator link', variant: 'error' });
+    } finally {
+      setSpectatorLoading(false);
+    }
+  };
+
+  const handleDisableSpectatorLink = async () => {
+    if (!projectId || spectatorLoading) return;
+
+    setSpectatorLoading(true);
+    try {
+      await disablePublic(projectId);
+      setSpectatorToken('');
+      setCopiedSpectatorLink(false);
+      toast({ title: 'Spectator link disabled', variant: 'warning' });
+    } catch (error) {
+      toast({ title: 'Failed to disable spectator link', variant: 'error' });
+    } finally {
+      setSpectatorLoading(false);
+    }
+  };
+
+  const handleCopySpectatorLink = () => {
+    if (!spectatorLink) return;
+
+    navigator.clipboard.writeText(spectatorLink);
+    setCopiedSpectatorLink(true);
+    toast({
+      title: 'Spectator link copied',
+      description: 'This link is read-only and does not grant membership.',
+      variant: 'success'
+    });
+    setTimeout(() => setCopiedSpectatorLink(false), 2000);
   };
 
   return (
