@@ -166,29 +166,41 @@ async function _safeErr(res, fallback) {
 }
 
 function _normalizeStatus(raw) {
-  const metrics = raw?.kpis || raw?.metrics || {};
+  const source =
+    raw?.project ??
+    raw?.data?.project ??
+    raw?.data ??
+    raw?.result?.project ??
+    raw?.result ??
+    raw;
+
+  const metrics = source?.kpis || source?.metrics || {};
 
   return {
-    id: raw?.id ?? raw?._id ?? raw?.projectId ?? null,
-    title: raw?.title ?? raw?.name ?? "Untitled Project",
-    name: raw?.name ?? raw?.title ?? "Untitled Project",
-    description: raw?.description ?? raw?.summary ?? "",
-    status: raw?.status ?? "active",
-    category: raw?.category ?? null,
-    tags: Array.isArray(raw?.tags) ? raw.tags : [],
+    id: source?.id ?? source?._id ?? source?.projectId ?? null,
+    title: source?.title ?? source?.name ?? "Untitled Project",
+    name: source?.name ?? source?.title ?? "Untitled Project",
+    description: source?.description ?? source?.summary ?? "",
+    status: source?.status ?? "active",
+    category: source?.category ?? null,
+    tags: Array.isArray(source?.tags) ? source.tags : [],
     owner: {
-      name: raw?.owner?.name ?? "OpenShare project",
-      avatarUrl: raw?.owner?.avatarUrl ?? undefined,
+      name: source?.owner?.name ?? "OpenShare project",
+      avatarUrl: source?.owner?.avatarUrl ?? undefined,
     },
-    lastUpdatedAt: raw?.lastUpdatedAt ?? raw?.updatedAt ?? raw?.createdAt ?? new Date().toISOString(),
-    summary: raw?.summary ?? raw?.description ?? "",
+    lastUpdatedAt:
+      source?.lastUpdatedAt ??
+      source?.updatedAt ??
+      source?.createdAt ??
+      new Date().toISOString(),
+    summary: source?.summary ?? source?.description ?? "",
     kpis: {
       onTime30d: _num01(metrics?.onTime30d ?? metrics?.onTimeRate ?? metrics?.onTime),
       throughputPerWeek: _num(metrics?.throughputPerWeek ?? metrics?.throughput ?? metrics?.weeklyShips),
       activeDays28d: _num(metrics?.activeDays28d ?? metrics?.activeDays),
       cadence14d: _num(metrics?.cadence14d ?? metrics?.cadence),
     },
-    activity: Array.isArray(raw?.activity) ? raw.activity : [],
+    activity: Array.isArray(source?.activity) ? source.activity : [],
   };
 }
 
