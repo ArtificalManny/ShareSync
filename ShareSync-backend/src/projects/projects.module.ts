@@ -5,6 +5,7 @@ import { Project, ProjectSchema } from './schemas/project.schema';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
 
 import { ProjectsController } from './projects.controller';
+import { ProjectShareController } from './share.controller';
 import { ProjectsService } from './projects.service';
 
 // ⭐ FIXED: Now importing BOTH controllers from the file!
@@ -33,6 +34,7 @@ import { ActivitiesModule } from '../activities/activities.module';
   ],
   controllers: [
     ProjectsController,
+    ProjectShareController,
     InvitesController,
     GlobalInvitesController // ⭐ ACTIVATED: The /invites/accept route is now live!
   ],
