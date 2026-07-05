@@ -181,7 +181,16 @@ export class SubscriptionsController {
 
     const baseUsage = JSON.parse(JSON.stringify(subscription.usage || {}));
 
-    return {
+          const storedLimits = JSON.parse(JSON.stringify(subscription.limits || {}));
+      const effectiveLimits = {
+        ...storedLimits,
+        membersPerProject:
+          String(subscription.plan).toLowerCase() === 'free'
+            ? 10
+            : storedLimits.membersPerProject,
+      };
+
+return {
       success: true,
       data: {
         plan: subscription.plan,
@@ -199,7 +208,7 @@ export class SubscriptionsController {
           maxMembersInProject: realMaxMembersInProject,
           activeMembers: realMaxMembersInProject,
         },
-        limits: subscription.limits,
+        limits: effectiveLimits,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAt: subscription.cancelAt,

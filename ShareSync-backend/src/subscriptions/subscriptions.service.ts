@@ -387,7 +387,13 @@ export class SubscriptionsService {
     candidate?: { userId?: string; email?: string },
   ): Promise<{ allowed: boolean; current: number; limit: number; remaining: number }> {
     const subscription = await this.getOrCreateSubscription(ownerUserId);
-    const limit = subscription.limits.membersPerProject;
+    const storedLimit = subscription.limits?.membersPerProject;
+      const limit =
+        String(subscription.plan).toLowerCase() === 'free'
+          ? PLAN_CONFIGS[SubscriptionPlan.FREE].limits.membersPerProject
+          : typeof storedLimit === 'number'
+            ? storedLimit
+            : PLAN_CONFIGS[SubscriptionPlan.TEAM].limits.membersPerProject;
 
     if (limit === -1) {
       return { allowed: true, current: 0, limit, remaining: Infinity };
