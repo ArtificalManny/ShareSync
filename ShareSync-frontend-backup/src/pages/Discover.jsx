@@ -235,9 +235,9 @@ export default function Discover() {
                 <div className="max-w-2xl">
                   <div className="mb-5 flex items-center gap-5">
                     <div className="relative">
-                      <div className="absolute inset-0 rounded-[2rem] bg-brand-500/30 blur-xl" />
-                      <div className="relative flex h-16 w-16 items-center justify-center rounded-[2rem] border border-white/60 bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-2xl shadow-brand-500/25 dark:border-white/[0.12]">
-                        <span className="text-2xl font-black text-white tracking-wider">S</span>
+                      <div className="absolute inset-0 rounded-[2rem] bg-yellow-300/35 blur-xl" />
+                      <div className="relative flex h-16 w-16 items-center justify-center rounded-[2rem] border border-yellow-200/80 bg-yellow-50 text-violet-600 shadow-2xl shadow-violet-500/20 dark:border-yellow-300/30 dark:bg-yellow-300/15 dark:text-violet-300">
+                        <Trophy className="h-8 w-8" />
                       </div>
                     </div>
 
