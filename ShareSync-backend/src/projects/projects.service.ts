@@ -339,15 +339,13 @@ export class ProjectsService {
       rawPrivacy === 'public' ||
       rawPrivacy === 'listed';
 
-    const isListed = isPublic
-      ? Boolean(
-          dto?.isListed ??
-            dto?.discoverable ??
-            dto?.settings?.isListed ??
-            dto?.settings?.discoverable ??
-            false,
-        )
-      : false;
+    const listingPreference =
+      dto?.isListed ??
+      dto?.discoverable ??
+      dto?.settings?.isListed ??
+      dto?.settings?.discoverable;
+
+    const isListed = isPublic ? listingPreference !== false : false;
 
     const rawAccessMode = String(
       dto?.publicAccessMode ??

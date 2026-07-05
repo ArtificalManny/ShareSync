@@ -209,9 +209,13 @@ function normalizeCreateProjectPayload(projectData = {}) {
         privacyRaw === 'listed';
 
   const visibility = isProjectPublic ? 'public' : 'private';
-  const isListed = isProjectPublic
-    ? Boolean(projectData.isListed ?? projectData.discoverable ?? projectData.settings?.isListed)
-    : false;
+  const listingPreference =
+    projectData.isListed ??
+    projectData.discoverable ??
+    projectData.settings?.isListed ??
+    projectData.settings?.discoverable;
+
+  const isListed = isProjectPublic ? listingPreference !== false : false;
 
   const rawSpectatorMode = (
     projectData.publicAccessMode ??
@@ -271,6 +275,7 @@ function normalizeCreateProjectPayload(projectData = {}) {
       ...(projectData.settings || {}),
       isPublic: isProjectPublic,
       isListed,
+      discoverable: isListed,
       publicAccessMode,
       spectatorMode: publicAccessMode,
       suggestionsEnabled,
