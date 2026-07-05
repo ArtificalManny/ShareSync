@@ -345,8 +345,6 @@ export default function Discover() {
                 streakDays={streakDays}
               />
 
-              <div className="rounded-[1.75rem] border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#111116]/80 shadow-sm p-4">
-              </div>
             </aside>
           </div>
         ) : (
