@@ -1,3 +1,5 @@
+import client from './client';
+
 const DEFAULT_TIMEOUT_MS = 8000;
 
 /** Build the public, shareable status URL for a given token. */
@@ -44,43 +46,34 @@ export async function copyPublicStatusLink(token) {
 /** POST /api/public/projects/:projectId/enable -> { token } */
 export async function enablePublic(projectId, { signal } = {}) {
   if (!projectId) throw new Error("projectId is required");
-  const res = await fetch(`/api/public/projects/${encodeURIComponent(projectId)}/enable`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    credentials: "include",
-    signal,
-  });
-  if (!res.ok) throw new Error(await _safeErr(res, "Failed to enable public status"));
-  const json = await res.json();
-  // Normalized to {token}; callers may also check .publicToken if backend returns that shape
-  return { token: json?.token ?? json?.publicToken };
+  const { data } = await client.post(
+    `/public/projects/${encodeURIComponent(projectId)}/enable`,
+    undefined,
+    { signal }
+  );
+  return { token: data?.token ?? data?.publicToken };
 }
 
 /** POST /api/public/projects/:projectId/disable -> { ok:true } */
 export async function disablePublic(projectId, { signal } = {}) {
   if (!projectId) throw new Error("projectId is required");
-  const res = await fetch(`/api/public/projects/${encodeURIComponent(projectId)}/disable`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    credentials: "include",
-    signal,
-  });
-  if (!res.ok) throw new Error(await _safeErr(res, "Failed to disable public status"));
+  await client.post(
+    `/public/projects/${encodeURIComponent(projectId)}/disable`,
+    undefined,
+    { signal }
+  );
   return { ok: true };
 }
 
 /** POST /api/public/projects/:projectId/regenerate -> { token } */
 export async function regeneratePublicToken(projectId, { signal } = {}) {
   if (!projectId) throw new Error("projectId is required");
-  const res = await fetch(`/api/public/projects/${encodeURIComponent(projectId)}/regenerate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    credentials: "include",
-    signal,
-  });
-  if (!res.ok) throw new Error(await _safeErr(res, "Failed to regenerate public token"));
-  const json = await res.json();
-  return { token: json?.token ?? json?.publicToken };
+  const { data } = await client.post(
+    `/public/projects/${encodeURIComponent(projectId)}/regenerate`,
+    undefined,
+    { signal }
+  );
+  return { token: data?.token ?? data?.publicToken };
 }
 
 /* ---------- Public status fetchers ---------- */
