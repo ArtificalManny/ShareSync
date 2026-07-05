@@ -382,9 +382,6 @@ export default function Discover() {
                 streakDays={streakDays}
               />
 
-              <div className="rounded-[1.75rem] border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#111116]/80 shadow-sm p-4">
-              </div>
-
               <div className="hidden xl:block rounded-[1.75rem] border border-slate-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-[#111116]/80 shadow-sm p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 flex items-center justify-center">
