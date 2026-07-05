@@ -166,19 +166,27 @@ async function _safeErr(res, fallback) {
 }
 
 function _normalizeStatus(raw) {
+  const metrics = raw?.kpis || raw?.metrics || {};
+
   return {
-    title: raw?.title ?? "Untitled Project",
+    id: raw?.id ?? raw?._id ?? raw?.projectId ?? null,
+    title: raw?.title ?? raw?.name ?? "Untitled Project",
+    name: raw?.name ?? raw?.title ?? "Untitled Project",
+    description: raw?.description ?? raw?.summary ?? "",
+    status: raw?.status ?? "active",
+    category: raw?.category ?? null,
+    tags: Array.isArray(raw?.tags) ? raw.tags : [],
     owner: {
-      name: raw?.owner?.name ?? "Unknown",
+      name: raw?.owner?.name ?? "OpenShare project",
       avatarUrl: raw?.owner?.avatarUrl ?? undefined,
     },
-    lastUpdatedAt: raw?.lastUpdatedAt ?? new Date().toISOString(),
-    summary: raw?.summary ?? "",
+    lastUpdatedAt: raw?.lastUpdatedAt ?? raw?.updatedAt ?? raw?.createdAt ?? new Date().toISOString(),
+    summary: raw?.summary ?? raw?.description ?? "",
     kpis: {
-      onTime30d: _num01(raw?.kpis?.onTime30d),
-      throughputPerWeek: _num(raw?.kpis?.throughputPerWeek),
-      activeDays28d: _num(raw?.kpis?.activeDays28d),
-      cadence14d: _num(raw?.kpis?.cadence14d),
+      onTime30d: _num01(metrics?.onTime30d ?? metrics?.onTimeRate ?? metrics?.onTime),
+      throughputPerWeek: _num(metrics?.throughputPerWeek ?? metrics?.throughput ?? metrics?.weeklyShips),
+      activeDays28d: _num(metrics?.activeDays28d ?? metrics?.activeDays),
+      cadence14d: _num(metrics?.cadence14d ?? metrics?.cadence),
     },
     activity: Array.isArray(raw?.activity) ? raw.activity : [],
   };

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchPublicProjectStatus } from "../api/public";
 import { ArrowLeft } from "lucide-react";
-import GradientText from "../components/ui/GradientText.jsx";
 import { labelledTimestamp, formatLongDateTime } from "../utils/formatters.js";
 
 // ✅ Frontend-only follow UI (no backend changes)
