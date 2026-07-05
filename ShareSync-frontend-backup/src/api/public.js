@@ -52,7 +52,15 @@ export async function enablePublic(projectId, { signal } = {}) {
     { signal }
   );
   const data = response?.data ?? response;
-  return { token: data?.token ?? data?.publicToken };
+  const token =
+    data?.token ??
+    data?.publicToken ??
+    data?.data?.token ??
+    data?.data?.publicToken ??
+    data?.result?.token ??
+    data?.result?.publicToken;
+
+  return { token };
 }
 
 /** POST /api/public/projects/:projectId/disable -> { ok:true } */
@@ -75,7 +83,15 @@ export async function regeneratePublicToken(projectId, { signal } = {}) {
     { signal }
   );
   const data = response?.data ?? response;
-  return { token: data?.token ?? data?.publicToken };
+  const token =
+    data?.token ??
+    data?.publicToken ??
+    data?.data?.token ??
+    data?.data?.publicToken ??
+    data?.result?.token ??
+    data?.result?.publicToken;
+
+  return { token };
 }
 
 /* ---------- Public status fetchers ---------- */
