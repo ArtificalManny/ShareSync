@@ -46,11 +46,12 @@ export async function copyPublicStatusLink(token) {
 /** POST /api/public/projects/:projectId/enable -> { token } */
 export async function enablePublic(projectId, { signal } = {}) {
   if (!projectId) throw new Error("projectId is required");
-  const { data } = await client.post(
+  const response = await client.post(
     `/public/projects/${encodeURIComponent(projectId)}/enable`,
     undefined,
     { signal }
   );
+  const data = response?.data ?? response;
   return { token: data?.token ?? data?.publicToken };
 }
 
@@ -68,11 +69,12 @@ export async function disablePublic(projectId, { signal } = {}) {
 /** POST /api/public/projects/:projectId/regenerate -> { token } */
 export async function regeneratePublicToken(projectId, { signal } = {}) {
   if (!projectId) throw new Error("projectId is required");
-  const { data } = await client.post(
+  const response = await client.post(
     `/public/projects/${encodeURIComponent(projectId)}/regenerate`,
     undefined,
     { signal }
   );
+  const data = response?.data ?? response;
   return { token: data?.token ?? data?.publicToken };
 }
 
