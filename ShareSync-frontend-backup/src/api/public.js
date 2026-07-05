@@ -108,19 +108,20 @@ export async function fetchPublicProjectStatus(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  const compositeSignal = _mergeSignals(signal, controller.signal);
-
-  const url = `/api/public/projects/${encodeURIComponent(String(tokenOrId))}/status`;
+  const compositeSignal =Signal _mergeSignals(signal, controller.signal);
 
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-      headers: { Accept: "application/json" },
-      signal: compositeSignal,
-    });
+    const response = await client.get(
+      `/public/projects/${encodeURIComponent(String(tokenOrId))}/status`,
+      { signal: compositeSignal }
+    );
 
-    if (res.status === 404) {
+    const data = response?.data ?? response;
+    return _normalizeStatus(data);
+  } catch (err) {
+    const status = err?.response?.status;
+
+    if (status === 404) {
       if (import.meta?.env?.MODE !== "production") {
         console.warn("[public] 404; returning dev mock.");
         return _mockStatus();
@@ -128,17 +129,11 @@ export async function fetchPublicProjectStatus(
       throw new Error("Public status link not found or has been revoked.");
     }
 
-    if (!res.ok) {
-      throw new Error(await _safeErr(res, `Failed to fetch public status (${res.status})`));
-    }
-
-    const json = await res.json();
-    return _normalizeStatus(json);
-  } catch (err) {
     if (import.meta?.env?.MODE !== "production") {
       console.warn("[public] fetchPublicProjectStatus failed; returning dev mock.", err);
       return _mockStatus();
     }
+
     throw err;
   } finally {
     clearTimeout(timeoutId);
