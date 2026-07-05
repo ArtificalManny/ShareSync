@@ -27,14 +27,6 @@ const COLOR_MAP = {
   orange: { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/20', dot: 'bg-amber-500' },
 };
 
-// Fallback items when feed is empty
-const FALLBACK_ITEMS = [
-  { id: 'f1', user: 'Team Alpha', action: 'shipped an update for', project: 'Design System v2', content: 'Dark mode components complete', icon: 'Rocket', color: 'purple', timestamp: '2h ago' },
-  { id: 'f2', user: 'Sarah K.', action: 'hit a milestone in', project: 'AI Writing Tool', content: 'Deployed v2.0 to production', icon: 'TrendingUp', color: 'emerald', timestamp: '30m ago' },
-  { id: 'f3', user: 'Mike R.', action: 'posted a task on', project: 'Mobile App', content: 'Push notification system live', icon: 'CheckCircle', color: 'blue', timestamp: '1h ago' },
-  { id: 'f4', user: 'DevOps Team', action: 'made progress on', project: 'Infrastructure', content: 'Zero-downtime deploy pipeline', icon: 'Sparkles', color: 'orange', timestamp: '4h ago' },
-];
-
 function timeAgo(ts) {
   if (!ts) return '';
   if (typeof ts === 'string' && ts.includes('ago')) return ts;
@@ -89,24 +81,32 @@ function ShipCard({ item }) {
   );
 }
 
-export default function TeamStories() {
+export default function TeamStories({ items: externalItems, loading = false } = {}) {
   const scrollRef = useRef(null);
-  const [items, setItems] = useState(FALLBACK_ITEMS);
+  const [items, setItems] = useState([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const hasExternalItems = Array.isArray(externalItems);
+  const visibleItems = (hasExternalItems ? externalItems : items).filter(
+    (item) => item && item.type !== 'interstitial'
+  );
 
-  // Load real feed data
+  // Load real feed data when the parent did not provide it.
   useEffect(() => {
+    if (hasExternalItems) return undefined;
+
     let mounted = true;
     getAlgorithmicFeed({ limit: 8 })
       .then(({ items: feedItems }) => {
-        if (mounted && feedItems && feedItems.length > 0) {
-          setItems(feedItems);
+        if (mounted) {
+          setItems(Array.isArray(feedItems) ? feedItems : []);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (mounted) setItems([]);
+      });
     return () => { mounted = false; };
-  }, []);
+  }, [hasExternalItems]);
 
   const updateScrollButtons = () => {
     const el = scrollRef.current;
@@ -121,7 +121,7 @@ export default function TeamStories() {
     el.addEventListener('scroll', updateScrollButtons, { passive: true });
     updateScrollButtons();
     return () => el.removeEventListener('scroll', updateScrollButtons);
-  }, [items]);
+  }, [visibleItems.length]);
 
   const scroll = (dir) => {
     scrollRef.current?.scrollBy({ left: dir * 300, behavior: 'smooth' });
@@ -168,16 +168,26 @@ export default function TeamStories() {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
       >
         <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>
-        {items.map((item) => (
-          <ShipCard key={item.id} item={item} />
-        ))}
+        {loading && visibleItems.length === 0 ? (
+            <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.03] px-4 py-8 text-center text-sm font-medium text-slate-500 dark:text-zinc-400">
+              Loading public shipping activity...
+            </div>
+          ) : visibleItems.length > 0 ? (
+            visibleItems.map((item) => (
+              <ShipCard key={item.id || item.projectId || item.project} item={item} />
+            ))
+          ) : (
+            <div className="w-full rounded-xl border border-dashed border-slate-200 dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.03] px-4 py-8 text-center text-sm font-medium text-slate-500 dark:text-zinc-400">
+              No public shipping activity yet.
+            </div>
+          )}
       </div>
 
       {/* Fade edges */}
-      {canScrollLeft && (
+      {visibleItems.length > 0 && canScrollLeft && (
         <div className="absolute left-0 top-10 bottom-0 w-8 bg-gradient-to-r from-slate-50 dark:from-[#09090B] to-transparent pointer-events-none" />
       )}
-      {canScrollRight && (
+      {visibleItems.length > 0 && canScrollRight && (
         <div className="absolute right-0 top-10 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-[#09090B] to-transparent pointer-events-none" />
       )}
     </div>

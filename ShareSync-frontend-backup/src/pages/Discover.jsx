@@ -313,7 +313,7 @@ export default function Discover() {
           </div>
 
           <div className="px-4 sm:px-5 pb-5">
-            <TeamStories />
+            <TeamStories items={publicFeedItems} loading={loading} />
           </div>
         </section>
 
