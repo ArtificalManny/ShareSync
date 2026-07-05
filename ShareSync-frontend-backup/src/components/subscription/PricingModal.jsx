@@ -477,7 +477,7 @@ export default function PricingModal({
                     />
 
                     <UsageMeter
-                      label="Members/Project"
+                      label="Workspace Members"
                       current={
                         usage.maxMembersInProject ??
                         usage.membersPerProject ??

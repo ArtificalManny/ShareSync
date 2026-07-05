@@ -744,7 +744,7 @@ export default function SubscriptionButton() {
 
             <UsageRow
               icon={Users}
-              label="Members/Project"
+              label="Workspace Members"
               used={membersUsed}
               limit={membersLimit}
               color="bg-emerald-500"
