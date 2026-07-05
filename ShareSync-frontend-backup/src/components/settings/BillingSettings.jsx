@@ -469,7 +469,7 @@ export default function BillingSettings() {
 
         <UsageMetric
           icon={Users}
-          label="Members/Project"
+          label="Workspace Members"
           used={membersUsed}
           limit={membersLimit}
           premium={isPremium}
