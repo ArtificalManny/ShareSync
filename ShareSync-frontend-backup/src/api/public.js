@@ -108,7 +108,7 @@ export async function fetchPublicProjectStatus(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  const compositeSignal =Signal _mergeSignals(signal, controller.signal);
+  const compositeSignal = _mergeSignals(signal, controller.signal);
 
   try {
     const response = await client.get(
