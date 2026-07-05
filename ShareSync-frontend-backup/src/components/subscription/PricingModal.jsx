@@ -43,7 +43,7 @@ const PLANS = {
     bgGradient: 'from-slate-100 to-slate-200',
     features: [
       { text: 'Up to 10 projects', icon: Folder },
-      { text: '5 workspace members', icon: Users },
+      { text: '10 workspace members', icon: Users },
       { text: '1GB storage', icon: HardDrive },
       { text: '100 AI calls/month', icon: Bot },
       { text: 'Community support', icon: Shield },

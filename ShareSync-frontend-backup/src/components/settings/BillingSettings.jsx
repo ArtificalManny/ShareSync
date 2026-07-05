@@ -31,7 +31,7 @@ const FALLBACK_SUBSCRIPTION = {
   },
   limits: {
     projects: 10,
-    membersPerProject: 5,
+    membersPerProject: 10,
     aiCallsPerMonth: 100,
     storageBytes: 1024 * 1024 * 1024,
   },
@@ -40,7 +40,7 @@ const FALLBACK_SUBSCRIPTION = {
 const PLAN_LIMIT_DEFAULTS = {
   free: {
     projects: 10,
-    membersPerProject: 5,
+    membersPerProject: 10,
     aiCallsPerMonth: 100,
     storageBytes: 1024 * 1024 * 1024,
   },

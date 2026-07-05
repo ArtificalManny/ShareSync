@@ -34,7 +34,7 @@ const FALLBACK_SUBSCRIPTION = {
   },
   limits: {
     projects: 10,
-    membersPerProject: 5,
+    membersPerProject: 10,
     aiCallsPerMonth: 100,
     storageBytes: 1024 * 1024 * 1024,
   },
@@ -524,7 +524,7 @@ export default function SubscriptionButton() {
     usage.maxMembersInProject ?? usage.membersPerProject ?? usage.activeMembers ?? subscription?.activeMembers,
     0
   );
-  const membersLimit = toNumber(limits.membersPerProject, 5);
+  const membersLimit = toNumber(limits.membersPerProject, 10);
 
   const primaryPct =
     projectsLimit > 0 ? Math.min((projectsUsed / projectsLimit) * 100, 100) : 0;

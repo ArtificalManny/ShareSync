@@ -121,14 +121,14 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
     priceYearly: 0,
     limits: {
       projects: 10,
-      membersPerProject: 5,
+      membersPerProject: 10,
       storageBytes: 1 * 1024 * 1024 * 1024,
       aiCallsPerMonth: 100,
       maxWorkspaces: 3,
     },
     features: [
       'Up to 10 projects',
-      '5 workspace members',
+      '10 workspace members',
       '1GB storage',
       'Basic analytics',
       'Community support',

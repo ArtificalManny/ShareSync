@@ -15,7 +15,7 @@ export const PLAN_TIERS = {
     bg: 'bg-surface-2',
     limits: {
       projects: 3,
-      membersPerProject: 5,
+      membersPerProject: 10,
       storageGB: 1,
       aiCredits: 100,
       historyDays: 30,
@@ -23,7 +23,7 @@ export const PLAN_TIERS = {
     },
     features: [
       'Up to 3 projects',
-      '5 workspace members',
+      '10 workspace members',
       '1 GB storage',
       '100 AI credits/month',
       '30-day history',
