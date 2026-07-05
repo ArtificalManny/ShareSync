@@ -692,7 +692,7 @@ export default function SubscriptionButton() {
 
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <FeaturePill>50 projects</FeaturePill>
-                  <FeaturePill>25 members/project</FeaturePill>
+                  <FeaturePill>25 workspace members</FeaturePill>
                   <FeaturePill>10GB storage</FeaturePill>
                   <FeaturePill>1,000 AI calls/mo</FeaturePill>
                 </div>
@@ -706,7 +706,7 @@ export default function SubscriptionButton() {
                 </div>
 
                 <div className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
-                  Unlock 50 projects, 25 members per project, 10GB storage, and 1,000 AI calls per month.
+                  Unlock 50 projects, 25 workspace members, 10GB storage, and 1,000 AI calls per month.
                 </div>
               </div>
             )}

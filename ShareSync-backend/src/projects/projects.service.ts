@@ -1265,6 +1265,26 @@ export class ProjectsService {
       throw new BadRequestException('Cannot add project owner as a member');
     }
 
+    const workspaceOwnerId = String(
+      (project as any).ownerId ||
+      (project as any).owner ||
+      (project as any).createdBy ||
+      (project as any).createdById ||
+      (project as any).creatorId ||
+      userId,
+    );
+
+    const memberUsageCheck = await this.subscriptionsService.checkWorkspaceMemberLimit(
+      workspaceOwnerId,
+      { userId: dto.userId },
+    );
+
+    if (!memberUsageCheck.allowed) {
+      throw new ForbiddenException(
+        `Workspace member limit reached. Your current plan allows ${memberUsageCheck.limit} active workspace members.`,
+      );
+    }
+
     project.members.push({
       userId: new Types.ObjectId(dto.userId),
       role: dto.role || MemberRole.MEMBER,

@@ -23,7 +23,7 @@ export const PLAN_TIERS = {
     },
     features: [
       'Up to 3 projects',
-      '5 members per project',
+      '5 workspace members',
       '1 GB storage',
       '100 AI credits/month',
       '30-day history',
@@ -45,7 +45,7 @@ export const PLAN_TIERS = {
     },
     features: [
       'Up to 10 projects',
-      '15 members per project',
+      '15 workspace members',
       '10 GB storage',
       '1,000 AI credits/month',
       '1-year history',

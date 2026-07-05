@@ -18,6 +18,7 @@ import {
   MemberRole,
 } from './schemas/project.schema';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 type InviteRole = Exclude<ProjectRole, MemberRole.OWNER>;
 
@@ -39,6 +40,7 @@ export class InvitesService {
     private readonly projectModel: Model<ProjectDocument>,
     private readonly realtime: RealtimeGateway,
     private readonly eventEmitter: EventEmitter2,
+      private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   private static genToken() {
@@ -235,10 +237,29 @@ export class InvitesService {
 
     const project = await this.projectModel.findById(projectId);
     if (!project) throw new NotFoundException('Project not found');
+      this.assertCanManageInvitesOrThrow(project, actingUserId);
 
-    this.assertCanManageInvitesOrThrow(project, actingUserId);
+      const workspaceOwnerId = this.getId(
+        (project as any).ownerId ||
+        (project as any).owner ||
+        (project as any).createdBy ||
+        (project as any).createdById ||
+        (project as any).creatorId ||
+        actingUserId,
+      );
 
-    const now = Date.now();
+      const memberUsageCheck = await this.subscriptionsService.checkWorkspaceMemberLimit(
+        workspaceOwnerId || actingUserId,
+        { email: normalizedEmail },
+      );
+
+      if (!memberUsageCheck.allowed) {
+        throw new ForbiddenException(
+          `Workspace member limit reached. Your current plan allows ${memberUsageCheck.limit} active workspace members.`,
+        );
+      }
+
+      const now = Date.now();
     const expiresAt = new Date(now + INVITE_TTL_MS);
     let inviteToken: string | undefined;
 
@@ -462,9 +483,28 @@ export class InvitesService {
     const alreadyMember =
       this.getId(project.ownerId) === String(userId) ||
       (project.members || []).some((m) => this.getId(m.userId) === String(userId));
+      if (!alreadyMember) {
+        const workspaceOwnerId = this.getId(
+          (project as any).ownerId ||
+          (project as any).owner ||
+          (project as any).createdBy ||
+          (project as any).createdById ||
+          (project as any).creatorId ||
+          invite.invitedBy,
+        );
 
-    if (!alreadyMember) {
-      project.members.push({
+        const memberUsageCheck = await this.subscriptionsService.checkWorkspaceMemberLimit(
+          workspaceOwnerId || String(invite.invitedBy || ''),
+          { userId },
+        );
+
+        if (!memberUsageCheck.allowed) {
+          throw new ForbiddenException(
+            `Workspace member limit reached. Your current plan allows ${memberUsageCheck.limit} active workspace members.`,
+          );
+        }
+
+        project.members.push({
         userId: new Types.ObjectId(userId),
         role: invite.role as any,
         joinedAt: new Date(),

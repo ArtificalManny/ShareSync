@@ -128,7 +128,7 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
     },
     features: [
       'Up to 10 projects',
-      '5 members per project',
+      '5 workspace members',
       '1GB storage',
       'Basic analytics',
       'Community support',
@@ -148,7 +148,7 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanConfig> = {
     },
     features: [
       'Up to 50 projects',
-      '25 members per project',
+      '25 workspace members',
       '10GB storage',
       'Advanced analytics',
       'Priority support',
@@ -328,6 +328,113 @@ export class SubscriptionsService {
 
   private async countActiveProjectsForUser(userId: string): Promise<number> {
     return this.projectModel.countDocuments(this.getActiveProjectUsageQuery(userId)).exec();
+  }
+
+  private getRefId(ref: any): string {
+    if (!ref) return '';
+    if (typeof ref === 'string') return ref;
+    return String(ref?._id || ref?.id || ref || '');
+  }
+
+  private getWorkspaceOwnerIdFromProject(project: any): string {
+    return [
+      project?.ownerId,
+      project?.owner,
+      project?.createdBy,
+      project?.createdById,
+      project?.creatorId,
+      project?.userId,
+    ].map((ref) => this.getRefId(ref)).find(Boolean) || '';
+  }
+
+  private getActiveWorkspaceOwnedProjectQuery(ownerUserId: string): Record<string, any> {
+    const oid = new Types.ObjectId(ownerUserId);
+    const inactiveProjectStatuses = [
+      'completed',
+      'done',
+      'archived',
+      'deleted',
+      'COMPLETED',
+      'DONE',
+      'ARCHIVED',
+      'DELETED',
+    ];
+
+    return {
+      $or: [
+        { ownerId: oid },
+        { owner: oid },
+        { createdBy: oid },
+        { createdById: oid },
+        { creatorId: oid },
+        { userId: oid },
+      ],
+      $and: [
+        {
+          $or: [
+            { completedAt: { $exists: false } },
+            { completedAt: null },
+          ],
+        },
+      ],
+      isArchived: { $ne: true },
+      status: { $nin: inactiveProjectStatuses },
+    };
+  }
+
+  async checkWorkspaceMemberLimit(
+    ownerUserId: string,
+    candidate?: { userId?: string; email?: string },
+  ): Promise<{ allowed: boolean; current: number; limit: number; remaining: number }> {
+    const subscription = await this.getOrCreateSubscription(ownerUserId);
+    const limit = subscription.limits.membersPerProject;
+
+    if (limit === -1) {
+      return { allowed: true, current: 0, limit, remaining: Infinity };
+    }
+
+    const identities = new Set<string>();
+    identities.add(`user:${ownerUserId}`);
+
+    const projects = await this.projectModel
+      .find(this.getActiveWorkspaceOwnedProjectQuery(ownerUserId))
+      .select('ownerId owner createdBy createdById creatorId userId members invites')
+      .lean()
+      .exec();
+
+    for (const project of projects) {
+      const ownerId = this.getWorkspaceOwnerIdFromProject(project);
+      if (ownerId) identities.add(`user:${ownerId}`);
+
+      for (const member of project?.members || []) {
+        const memberId = this.getRefId(member?.userId || member?.user || member?.memberId || member);
+        if (memberId) identities.add(`user:${memberId}`);
+      }
+
+      for (const invite of project?.invites || []) {
+        const status = String(invite?.status || '').toLowerCase();
+        const email = String(invite?.email || '').trim().toLowerCase();
+        const expiresAt = invite?.expiresAt ? new Date(invite.expiresAt).getTime() : null;
+
+        if (email && status === 'pending' && (!expiresAt || expiresAt > Date.now())) {
+          identities.add(`email:${email}`);
+        }
+      }
+    }
+
+    const current = identities.size;
+
+    if (candidate?.userId) {
+      identities.add(`user:${candidate.userId}`);
+    } else if (candidate?.email) {
+      identities.add(`email:${String(candidate.email).trim().toLowerCase()}`);
+    }
+
+    const projected = identities.size;
+    const allowed = projected <= limit;
+    const remaining = Math.max(0, limit - current);
+
+    return { allowed, current, limit, remaining };
   }
 
   async checkLimit(

@@ -43,7 +43,7 @@ const PLANS = {
     bgGradient: 'from-slate-100 to-slate-200',
     features: [
       { text: 'Up to 10 projects', icon: Folder },
-      { text: '5 members per project', icon: Users },
+      { text: '5 workspace members', icon: Users },
       { text: '1GB storage', icon: HardDrive },
       { text: '100 AI calls/month', icon: Bot },
       { text: 'Community support', icon: Shield },
@@ -62,7 +62,7 @@ const PLANS = {
     popular: true,
     features: [
       { text: 'Up to 50 projects', icon: Folder },
-      { text: '25 members per project', icon: Users },
+      { text: '25 workspace members', icon: Users },
       { text: '10GB storage', icon: HardDrive },
       { text: '1,000 AI calls/month', icon: Bot },
       { text: 'Priority support', icon: Shield },
