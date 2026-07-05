@@ -257,6 +257,59 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
           </p>
         </div>
 
+        {/* Spectator Link Sharing */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-white mb-3">Share Spectator Link</label>
+          <div className="flex gap-3">
+            <div className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-300 text-sm overflow-x-auto whitespace-nowrap">
+              {spectatorLink || 'Generate a read-only spectator link'}
+            </div>
+            <button
+              onClick={spectatorLink ? handleCopySpectatorLink : handleGenerateSpectatorLink}
+              disabled={!projectId || spectatorLoading}
+              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-semibold transition-all flex items-center gap-2"
+            >
+              {copiedSpectatorLink ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  Copied!
+                </>
+              ) : spectatorLink ? (
+                <>
+                  <Copy className="w-4 h-4" />
+                  Copy
+                </>
+              ) : (
+                spectatorLoading ? 'Working...' : 'Generate'
+              )}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Anyone with this link can view a read-only project snapshot. They cannot join, edit, or see private project data.
+          </p>
+
+          {spectatorLink && (
+            <div className="mt-3 flex gap-3 text-xs">
+              <button
+                type="button"
+                onClick={handleRegenerateSpectatorLink}
+                disabled={spectatorLoading}
+                className="text-blue-300 hover:text-blue-200 disabled:opacity-50"
+              >
+                Regenerate link
+              </button>
+              <button
+                type="button"
+                onClick={handleDisableSpectatorLink}
+                disabled={spectatorLoading}
+                className="text-rose-300 hover:text-rose-200 disabled:opacity-50"
+              >
+                Disable link
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Info */}
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
           <div className="flex gap-3">
