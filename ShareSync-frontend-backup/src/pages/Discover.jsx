@@ -235,9 +235,9 @@ export default function Discover() {
                 <div className="max-w-2xl">
                   <div className="mb-5 flex items-center gap-5">
                     <div className="relative">
-                      <div className="absolute inset-0 rounded-[2rem] bg-violet-500/30 blur-xl" />
-                      <div className="relative flex h-16 w-16 items-center justify-center rounded-[2rem] border border-white/60 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 text-white shadow-2xl shadow-violet-500/25 dark:border-white/[0.12]">
-                        <Sparkles className="h-8 w-8" />
+                      <div className="absolute inset-0 rounded-[2rem] bg-brand-500/30 blur-xl" />
+                      <div className="relative flex h-16 w-16 items-center justify-center rounded-[2rem] border border-white/60 bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-2xl shadow-brand-500/25 dark:border-white/[0.12]">
+                        <span className="text-2xl font-black text-white tracking-wider">S</span>
                       </div>
                     </div>
 
