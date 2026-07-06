@@ -957,12 +957,16 @@ export default function VaultView({ projectId, readOnly = false }) {
         onClose={() => setIsFolderModalOpen(false)}
         onCreate={handleCreateFolder}
       />
-      {!readOnly && <UploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onUpload={handleUploadFile}
-        folders={data.folders}
-      />
+      {!readOnly && (
+        {!readOnly && (
+          <UploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onUpload={handleUploadFile}
+          folders={data.folders}
+          />
+        )}
+      )}
       {isUpgradeModalOpen ? (
         <PricingModal
           isOpen={isUpgradeModalOpen}
