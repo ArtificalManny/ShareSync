@@ -4062,6 +4062,8 @@ export default function ProjectHome() {
     [project, user]
   );
 
+  const canUseMemberActions = viewerAccess?.canUseMemberActions !== false;
+
   const {
     following: spectatorFollowing,
     loading: isSpectatorFollowLoading,
