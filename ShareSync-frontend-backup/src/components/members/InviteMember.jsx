@@ -18,8 +18,8 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
   const [spectatorLoading, setSpectatorLoading] = useState(false);
 
   const inviteLink = `${window.location.origin}/invite/${projectId}`;
-  const spectatorLink = spectatorToken
-    ? `${window.location.origin}/share/project/${encodeURIComponent(spectatorToken)}`
+  const spectatorLink = projectId
+    ? `${window.location.origin}/projects/${encodeURIComponent(projectId)}`
     : '';
 
   const handleInvite = async () => {
@@ -81,7 +81,7 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
       setSpectatorToken(token);
       toast({
         title: 'Spectator link ready',
-        description: `${window.location.origin}/share/project/${encodeURIComponent(token)}`,
+        description: `${window.location.origin}/projects/${encodeURIComponent(projectId)}`,
         variant: 'success'
       });
     } catch (error) {
@@ -112,7 +112,7 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
       setCopiedSpectatorLink(false);
       toast({
         title: 'Spectator link regenerated',
-        description: `${window.location.origin}/share/project/${encodeURIComponent(token)}`,
+        description: `${window.location.origin}/projects/${encodeURIComponent(projectId)}`,
         variant: 'success'
       });
     } catch (error) {
