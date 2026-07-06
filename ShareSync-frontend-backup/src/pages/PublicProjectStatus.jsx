@@ -114,12 +114,12 @@ export default function PublicProjectStatus() {
         {/* Header */}
         <header className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold font-display">
+            <h1 className="text-xl font-bold font-display text-slate-950 dark:text-white">
               {title}
             </h1>
-            <p className="mt-1 timestamp">
-              <span className="prefix">Read-only</span>
-              <span className="dot" />
+            <p className="mt-1 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:bg-white/[0.08] dark:text-slate-300">Read-only</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
               {updated || "Updated just now"}
             </p>
           </div>
