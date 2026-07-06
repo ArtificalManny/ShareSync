@@ -1001,17 +1001,20 @@ function ProjectHeader({
             </button>
           ) : null}
 
-          <div className="project-home-action-divider w-px h-6 bg-slate-200 dark:bg-white/10" />
-
-          <button
-            type="button"
-            onClick={onShareInviteClick}
-            aria-label="Share invite link"
-            title="Share invite link"
-            className="project-home-icon-action p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
+          {canUseMemberActions ? (
+            <>
+              <div className="project-home-action-divider w-px h-6 bg-slate-200 dark:bg-white/10" />
+              <button
+                type="button"
+                onClick={onShareInviteClick}
+                aria-label="Share invite link"
+                title="Share invite link"
+                className="project-home-icon-action p-2.5 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 shadow-sm text-slate-500 hover:text-slate-700 dark:hover:text-white transition-all"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </>
+          ) : null}
 
           {canUseMemberActions ? (
             <button
@@ -4108,6 +4111,10 @@ export default function ProjectHome() {
   }, [toggleSpectatorFollow]);
 
   const handleInviteMember = useCallback(async ({ email, role }) => {
+    if (!canUseMemberActions) {
+      throw new Error("Spectators cannot invite members.");
+    }
+
     if (!id) {
       throw new Error("Missing project ID");
     }
@@ -4127,7 +4134,7 @@ export default function ProjectHome() {
     await refreshSilently?.();
 
     return payload;
-  }, [id, refreshSilently]);
+  }, [id, refreshSilently, canUseMemberActions]);
 
   useEffect(() => {
     console.log("[ProjectHome] render-state", {
@@ -4264,6 +4271,8 @@ export default function ProjectHome() {
 
   const handleShipUpdate = useCallback(
     async (description) => {
+      if (!canUseMemberActions) return;
+
       try {
         await shipUpdate({ description });
         flashShip();
@@ -4279,12 +4288,13 @@ export default function ProjectHome() {
         throw e;
       }
     },
-    [shipUpdate, flashShip, triggerPulse, refreshSilently]
+    [shipUpdate, flashShip, triggerPulse, refreshSilently, canUseMemberActions]
   );
 
   const handleSettings = useCallback(() => {
+    if (!canUseMemberActions) return;
     navigate(`/projects/${id}/settings`);
-  }, [navigate, id]);
+  }, [navigate, id, canUseMemberActions]);
 
   const handleBackToProjects = useCallback(() => {
     navigate("/projects");
@@ -4393,7 +4403,7 @@ export default function ProjectHome() {
 
   const handleReopenProject = useCallback(
     async () => {
-      if (!id || isReopeningProject) return;
+      if (!canUseMemberActions || !id || isReopeningProject) return;
 
       const confirmed = window.confirm("Reopen this project and return it to active work?");
       if (!confirmed) return;
@@ -4459,9 +4469,10 @@ export default function ProjectHome() {
   }, []);
 
   const handleAddMilestone = useCallback(() => {
+    if (!canUseMemberActions) return;
     console.log("Add milestone");
     setShowAddMilestone(true);
-  }, []);
+  }, [canUseMemberActions]);
 
   const handleAddEvent = useCallback(() => {
     console.log("Add event");
@@ -4472,16 +4483,18 @@ export default function ProjectHome() {
   }, []);
 
   const handleUpload = useCallback(() => {
+    if (!canUseMemberActions) return;
     console.log("Upload file");
-  }, []);
+  }, [canUseMemberActions]);
 
   const handleFileClick = useCallback((file) => {
     console.log("File clicked:", file.id);
   }, []);
 
   const handleNewFolder = useCallback(() => {
+    if (!canUseMemberActions) return;
     console.log("Create folder");
-  }, []);
+  }, [canUseMemberActions]);
 
   const projectViews = useMemo(() => {
     const discussionCount = Array.isArray(threads) ? threads.length : 0;
@@ -5195,7 +5208,7 @@ export default function ProjectHome() {
         />
       )}
 
-      {isInviteMemberOpen && (
+      {canUseMemberActions && isInviteMemberOpen && (
         <InviteMember
           projectId={id}
           projectName={project?.name || "Project"}
