@@ -452,6 +452,52 @@ export default function Sidebar({ user }) {
           position: relative;
         }
 
+        #app-sidebar .openshare-logo-shell {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: 58px;
+          height: 58px;
+          flex: 0 0 58px;
+          border-radius: 9999px;
+          isolation: isolate;
+        }
+
+        #app-sidebar .openshare-logo-aurora {
+          position: absolute;
+          inset: -10px;
+          border-radius: 9999px;
+          background:
+            radial-gradient(circle at 32% 18%, rgba(168, 85, 247, 0.58), transparent 34%),
+            radial-gradient(circle at 78% 24%, rgba(45, 212, 191, 0.46), transparent 32%),
+            radial-gradient(circle at 50% 88%, rgba(56, 189, 248, 0.38), transparent 36%);
+          filter: blur(10px);
+          opacity: 0.95;
+          z-index: -2;
+        }
+
+        #app-sidebar .openshare-logo-shell::after {
+          content: "";
+          position: absolute;
+          inset: 8px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.66);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+            0 10px 28px rgba(124, 58, 237, 0.18);
+          z-index: -1;
+        }
+
+        #app-sidebar .openshare-logo-shell-fire .openshare-logo-aurora {
+          background:
+            radial-gradient(circle at 30% 18%, rgba(249, 115, 22, 0.55), transparent 34%),
+            radial-gradient(circle at 78% 26%, rgba(168, 85, 247, 0.52), transparent 34%),
+            radial-gradient(circle at 50% 88%, rgba(45, 212, 191, 0.38), transparent 36%);
+          filter: blur(12px);
+          opacity: 1;
+        }
+
+
         #app-sidebar .sidebar-brand-zone::after {
           content: "";
           position: absolute;
@@ -737,13 +783,18 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-        <div className="sidebar-brand-zone flex items-center justify-center p-4 pt-6 pb-6">
-          <div className="flex items-center gap-2.5">
-            <OpenShareLogo className="w-10 h-10 drop-shadow-[0_0_18px_rgba(168,85,247,0.55)] dark:drop-shadow-[0_0_22px_rgba(45,212,191,0.34)]"
-              className={`w-7 h-7 shrink-0 transition-all duration-500 ${
-                isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] scale-110" : ""
-              }`}
-              monochrome={false} animated />
+                <div className="sidebar-brand-zone flex items-center justify-center p-4 pt-6 pb-6">
+          <div className="flex items-center gap-3">
+            <span className={`openshare-logo-shell ${isFireMode ? "openshare-logo-shell-fire" : ""}`}>
+              <span className="openshare-logo-aurora" aria-hidden="true" />
+              <OpenShareLogo
+                className={`relative z-10 w-11 h-11 shrink-0 transition-transform duration-500 ${
+                  isFireMode ? "scale-110" : ""
+                }`}
+                title="OpenShare Logo"
+                monochrome={false}
+              />
+            </span>
             {!collapsed && (
               <span className="openshare-sidebar-wordmark text-[15px] font-black text-slate-950 dark:text-white tracking-wide whitespace-nowrap animate-in fade-in duration-200">
                 OpenShare
