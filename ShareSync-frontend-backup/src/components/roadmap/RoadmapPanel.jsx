@@ -438,6 +438,7 @@ export default function RoadmapPanel({
   projectId,
   onMilestoneClick,
   onAddMilestone,
+  readOnly = false,
   liveTasks = [],
   selectedMilestoneId = null,
   defaultStatus = "all",
