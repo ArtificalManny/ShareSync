@@ -739,12 +739,11 @@ export default function Sidebar({ user }) {
       >
         <div className="sidebar-brand-zone flex items-center justify-center p-4 pt-6 pb-6">
           <div className="flex items-center gap-2.5">
-            <OpenShareLogo
+            <OpenShareLogo className="w-10 h-10 drop-shadow-[0_0_18px_rgba(168,85,247,0.55)] dark:drop-shadow-[0_0_22px_rgba(45,212,191,0.34)]"
               className={`w-7 h-7 shrink-0 transition-all duration-500 ${
                 isFireMode ? "drop-shadow-[0_0_8px_rgba(249,115,22,0.6)] scale-110" : ""
               }`}
-              monochrome={false}
-            />
+              monochrome={false} animated />
             {!collapsed && (
               <span className="openshare-sidebar-wordmark text-[15px] font-black text-slate-950 dark:text-white tracking-wide whitespace-nowrap animate-in fade-in duration-200">
                 OpenShare
