@@ -453,7 +453,7 @@ function FolderSection({ folder, files, folders, viewMode, isExpanded, onToggle,
 
 
 
-export default function VaultView({ projectId }) {
+export default function VaultView({ projectId, readOnly = false }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ folders: [], files: [], storage: { usedBytes: 0, limitBytes: 5 * 1024 * 1024 * 1024 } });
   const [searchQuery, setSearchQuery] = useState('');
@@ -810,7 +810,7 @@ export default function VaultView({ projectId }) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex flex-col group">
             <button
-              onClick={() => setIsUploadModalOpen(true)}
+              onClick={() => !readOnly && setIsUploadModalOpen(true)}
               className="vault-upload-button relative z-10 isolate inline-flex items-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-sm font-black transition-all hover:-translate-y-0.5 focus:outline-none"
             >
               <span
@@ -831,7 +831,7 @@ export default function VaultView({ projectId }) {
           </div>
 
           <button
-            onClick={() => setIsFolderModalOpen(true)}
+            onClick={() => !readOnly && setIsFolderModalOpen(true)}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-200 hover:bg-amber-50 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-200 dark:hover:border-amber-400/20 dark:hover:bg-amber-500/10"
           >
             <FolderPlus className="h-4 w-4" />
@@ -917,7 +917,7 @@ export default function VaultView({ projectId }) {
               ].map((cat) => (
                 <button
                   key={cat.label}
-                  onClick={() => setIsFolderModalOpen(true)}
+                  onClick={() => !readOnly && setIsFolderModalOpen(true)}
                   className={`rounded-[1.75rem] ${cat.bg} border border-dashed ${cat.border} p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl`}
                 >
                   <div className="mb-3 text-4xl">{cat.emoji}</div>
@@ -941,7 +941,7 @@ export default function VaultView({ projectId }) {
               </p>
 
               <button
-                onClick={() => setIsUploadModalOpen(true)}
+                onClick={() => !readOnly && setIsUploadModalOpen(true)}
                 className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
               >
                 <Upload className="h-4 w-4" />
@@ -957,7 +957,7 @@ export default function VaultView({ projectId }) {
         onClose={() => setIsFolderModalOpen(false)}
         onCreate={handleCreateFolder}
       />
-      <UploadModal
+      {!readOnly && <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onUpload={handleUploadFile}

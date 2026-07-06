@@ -474,7 +474,7 @@ function ConversationPanel({ thread, currentUserId, participants = [], onBack })
             maxLength={5000}
             className="flex-1 text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
           />
-          <button onClick={handleSend} disabled={sending || !newMsg.trim()} className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm">
+          <button onClick={handleSend} disabled={readOnly || sending || !newMsg.trim()} className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
           </button>
         </div>
@@ -826,7 +826,7 @@ function ThreadListItem({ thread, participants = [], active = false, onClick }) 
 }
 
 
-export default function ThreadsView({ projectId, project, onOpenFullChat }) {
+export default function ThreadsView({ projectId, project, onOpenFullChat, readOnly = false }) {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChannel, setActiveChannel] = useState('all');
@@ -1461,7 +1461,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
               </div>
 
               <button
-                onClick={() => setShowCreate(true)}
+                onClick={() => !readOnly && setShowCreate(true)}
                 className="team room-primary-button team room-force-purple inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-2.5 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
               >
                 <Plus className="h-4 w-4" />
@@ -1580,7 +1580,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                       Start a new thread or adjust your filter.
                     </p>
                     <button
-                      onClick={() => setShowCreate(true)}
+                      onClick={() => !readOnly && setShowCreate(true)}
                       className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 hover:bg-violet-700"
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -1672,7 +1672,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
                     </p>
 
                     <button
-                      onClick={() => setShowCreate(true)}
+                      onClick={() => !readOnly && setShowCreate(true)}
                       className="team room-primary-button team room-force-purple mt-6 inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-3 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
                     >
                       <Plus className="h-4 w-4" />
@@ -1686,7 +1686,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat }) {
         </div>
       </div>
 
-      {showCreate && (
+      {!readOnly && showCreate && (
         <CreateThreadModal
           projectId={projectId}
           members={projectMembers}

@@ -218,7 +218,7 @@ function CalendarEvent({ event, onEdit }) {
 
 // ─── DayColumn ──────────────────────────────────────────────────────────────
 
-function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent }) {
+function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent, readOnly = false }) {
   const getWorkloadTone = () => {
     if (workload > 100) return 'from-rose-500 to-orange-400';
     if (workload > 80) return 'from-amber-500 to-orange-400';
@@ -300,7 +300,7 @@ function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent }) 
                 dark:border-white/[0.04] dark:hover:bg-white/[0.04]
                 ${zone?.bg || ''}
               `}
-              onClick={() => onAddEvent(day.fullDate, slot.hour)}
+              onClick={() => !readOnly && onAddEvent?.(day.fullDate, slot.hour)}
             >
               <div className="absolute inset-2 flex items-center justify-center rounded-2xl border border-dashed border-transparent opacity-0 transition-all group-hover:border-violet-200 group-hover:bg-violet-50/70 group-hover:opacity-100 dark:group-hover:border-violet-400/20 dark:group-hover:bg-violet-500/10">
                 <div className="flex items-center gap-2 text-xs font-black text-violet-600 dark:text-violet-200">
@@ -371,7 +371,7 @@ function EnergySidebar() {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function RhythmView({ projectId }) {
+export default function RhythmView({ projectId, readOnly = false }) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [realEvents, setRealEvents] = useState([]);
   const [agendaEvents, setAgendaEvents] = useState([]);
@@ -534,6 +534,7 @@ export default function RhythmView({ projectId }) {
   }, [projectId, currentWeek]);
 
   const handleAddEventClick = (date, hour) => {
+    if (readOnly) return;
     setEditingSession(null);
     setSelectedSlot({ date, hour });
     setIsModalOpen(true);
@@ -913,7 +914,7 @@ export default function RhythmView({ projectId }) {
               </button>
 
               <button
-                onClick={() => handleAddEventClick(new Date(), 9)}
+                onClick={() => !readOnly && handleAddEventClick(new Date(), 9)}
                 className="rhythm-primary-action inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/35"
               >
                 <Plus className="h-4 w-4" />
@@ -1011,7 +1012,8 @@ export default function RhythmView({ projectId }) {
                       events={realEvents.filter((event) => event.day === idx)}
                       isToday={day.isToday}
                       workload={workloads[idx]}
-                      onAddEvent={handleAddEventClick}
+                      onAddEvent={readOnly ? undefined : handleAddEventClick}
+                      readOnly={readOnly}
                       onEditEvent={handleEditEventClick}
                     />
                   ))}

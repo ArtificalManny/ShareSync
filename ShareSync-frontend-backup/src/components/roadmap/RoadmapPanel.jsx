@@ -576,9 +576,10 @@ export default function RoadmapPanel({
   );
 
   const handleEdit = useCallback((milestoneId, milestone) => {
+    if (readOnly) return;
     setSaveError("");
     setEditingMilestone(milestone);
-  }, []);
+  }, [readOnly]);
 
   const handleEditSave = useCallback(
     async (data) => {
@@ -614,9 +615,10 @@ export default function RoadmapPanel({
   );
 
   const handleDelete = useCallback((milestoneId, milestone) => {
+    if (readOnly) return;
     setDeleteError("");
     setDeletingMilestone(milestone);
-  }, []);
+  }, [readOnly]);
 
   const handleConfirmDelete = useCallback(async () => {
     const mid = getMilestoneId(deletingMilestone);
@@ -1186,7 +1188,7 @@ export default function RoadmapPanel({
               </button>
 
               <button
-                onClick={() => onAddMilestone?.()}
+                onClick={() => !readOnly && onAddMilestone?.()}
                 className="roadmap-hard-purple-button roadmap-force-visible-button-v2 roadmap-add-milestone-button 
                   inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-600
                   px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-fuchsia-500/25 transition-all
@@ -1368,7 +1370,7 @@ export default function RoadmapPanel({
                   </p>
 
                   <button
-                    onClick={() => onAddMilestone?.()}
+                    onClick={() => !readOnly && onAddMilestone?.()}
                     className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
                   >
                     <Plus className="h-4 w-4" />
@@ -1395,8 +1397,8 @@ export default function RoadmapPanel({
                           onClick={handleCardClick}
                           showActions={false}
                           isSelected={isSelected}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
+                          onEdit={readOnly ? undefined : handleEdit}
+                          onDelete={readOnly ? undefined : handleDelete}
                           onStatusChange={handleStatusChange}
                           onUpdate={handleMilestoneUpdate}
                         />

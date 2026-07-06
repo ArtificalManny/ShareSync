@@ -4916,7 +4916,8 @@ export default function ProjectHome() {
                 setSelectedMilestoneId(milestoneId);
                 handleMilestoneClick?.(milestone);
               }}
-              onAddMilestone={handleAddMilestone}
+              onAddMilestone={canUseMemberActions ? handleAddMilestone : undefined}
+              readOnly={!canUseMemberActions}
             />
           );
 
@@ -4925,7 +4926,8 @@ export default function ProjectHome() {
             <RhythmView
               projectId={id}
               events={events || []}
-              onAddEvent={handleAddEvent}
+              onAddEvent={canUseMemberActions ? handleAddEvent : undefined}
+              readOnly={!canUseMemberActions}
               onEventClick={handleEventClick}
             />
           );
@@ -4936,9 +4938,12 @@ export default function ProjectHome() {
               projectId={id}
               project={project}
               threads={threads || []}
-              onOpenFullChat={() =>
-                navigate("/messages", { state: { projectId: id } })
+              onOpenFullChat={
+                canUseMemberActions
+                  ? () => navigate("/messages", { state: { projectId: id } })
+                  : undefined
               }
+              readOnly={!canUseMemberActions}
             />
           );
 
@@ -4947,9 +4952,10 @@ export default function ProjectHome() {
             <VaultView
               projectId={id}
               files={files || []}
-              onUpload={handleUpload}
+              onUpload={canUseMemberActions ? handleUpload : undefined}
               onFileClick={handleFileClick}
-              onNewFolder={handleNewFolder}
+              onNewFolder={canUseMemberActions ? handleNewFolder : undefined}
+              readOnly={!canUseMemberActions}
             />
           );
 
@@ -4959,6 +4965,7 @@ export default function ProjectHome() {
               <AnnouncementsView
                 projectId={id}
                 announcements={announcements || []}
+                readOnly={!canUseMemberActions}
               />
             </div>
           );
@@ -4975,6 +4982,7 @@ export default function ProjectHome() {
                     roadmapItems={commandMilestones}
                     scheduleEvents={events || []}
                     announcements={announcements || []}
+                    readOnly={!canUseMemberActions}
                     scheduleCount={Array.isArray(events) ? events.length : 0}
                     announcementCount={Array.isArray(announcements) ? announcements.length : 0}
                   />
@@ -5184,7 +5192,7 @@ export default function ProjectHome() {
 
       <main key={pulseRefreshKey} className="relative z-10">{renderViewContent()}</main>
 
-      <CompleteProjectModal
+      {canUseMemberActions && <CompleteProjectModal
         isOpen={showCompleteProjectModal}
         onClose={() => {
           if (!isCompletingProject) {
@@ -5196,14 +5204,14 @@ export default function ProjectHome() {
         projectName={project?.name || "Project"}
         isSubmitting={isCompletingProject}
         allowForceComplete
-      />
+      />}
 
       <GlobalPulseBar position="bottom" color="brand" />
 
-      <QuickActionsManager projectId={id} />
+      {canUseMemberActions && <QuickActionsManager projectId={id} />}
       <KeyboardShortcuts />
 
-      {showAddMilestone && (
+      {canUseMemberActions && showAddMilestone && (
         <AddMilestoneModal
           projectId={id}
           onClose={() => setShowAddMilestone(false)}

@@ -1044,7 +1044,7 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
 
 // ─── Announcement Card ──────────────────────────────────────────────────────
 
-function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdit, onUpdate }) {
+function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdit, onUpdate, readOnly = false }) {
   const rawType = String(item.type || 'info').toLowerCase();
   const style = TYPE_STYLES[rawType] || TYPE_STYLES.info;
   const isPinned = item.pinned;
@@ -1278,9 +1278,9 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
             <AttachmentGallery attachments={item.attachments} />
             <AnnouncementPollBlock
               item={item}
-              projectId={projectId}
+              projectId={readOnly ? undefined : projectId}
               currentUser={currentUser}
-              onUpdate={onUpdate}
+              onUpdate={readOnly ? undefined : onUpdate}
             />
 
           </div>
@@ -1340,7 +1340,14 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
       </div>
 
       <div data-comment-input={getId(item)}>
-        <CommentSection item={item} projectId={projectId} currentUser={currentUser} onUpdate={onUpdate} />
+        {!readOnly && (
+          <CommentSection
+            item={item}
+            projectId={projectId}
+            currentUser={currentUser}
+            onUpdate={onUpdate}
+          />
+        )}
       </div>
     </article>
   );
@@ -1348,7 +1355,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function AnnouncementsView({ projectId }) {
+export default function AnnouncementsView({ projectId, readOnly = false }) {
   const { user } = useAuth();
   
   const [announcements, setAnnouncements] = useState([]);
@@ -1380,12 +1387,14 @@ export default function AnnouncementsView({ projectId }) {
   };
 
   const openCreateModal = () => {
+    if (readOnly) return;
     setEditingAnnouncement(null);
     resetAnnouncementForm();
     setShowCreate(true);
   };
 
   const openEditModal = (announcement) => {
+    if (readOnly) return;
     setEditingAnnouncement(announcement);
     setTitle(announcement?.title || announcement?.subject || announcement?.name || '');
     setMessage(
@@ -1441,6 +1450,7 @@ export default function AnnouncementsView({ projectId }) {
   useEffect(() => { mountedRef.current = true; load(); return () => { mountedRef.current = false; }; }, [load]);
 
   const handleCreate = async () => {
+    if (readOnly) return;
     const cleanMessage = sanitizeAnnouncementHtml(message);
     const cleanPoll = normalizePollForSubmit(pollEnabled, pollQuestion, pollOptions);
 
@@ -1553,6 +1563,7 @@ export default function AnnouncementsView({ projectId }) {
   };
 
   const handlePin = async (id) => {
+    if (readOnly) return;
     try {
       const updated = await toggleAnnouncementPin(projectId, id);
       setAnnouncements(prev => prev.map(a => getId(a) === id ? { ...a, ...updated } : a));
@@ -1560,6 +1571,7 @@ export default function AnnouncementsView({ projectId }) {
   };
 
   const handleDelete = async (id) => {
+    if (readOnly) return;
     setAnnouncements(prev => prev.filter(a => getId(a) !== id));
     try { await deleteAnnouncement(projectId, id); toast({ title: 'Announcement deleted', variant: 'default' }); } 
     catch { toast({ title: 'Failed to delete', variant: 'error' }); }
@@ -1952,7 +1964,7 @@ export default function AnnouncementsView({ projectId }) {
 
             <button
               onClick={openCreateModal}
-              className="announcements-hero-cta announcements-primary-button relative isolate inline-flex items-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40"
+              className={`${readOnly ? 'hidden ' : ''}announcements-hero-cta announcements-primary-button relative isolate inline-flex items-center gap-2 overflow-hidden rounded-2xl px-5 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40`}
             >
               <span
                 aria-hidden="true"
@@ -1992,19 +2004,28 @@ export default function AnnouncementsView({ projectId }) {
             <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Megaphone className="w-10 h-10 text-slate-400" /></div>
             <p className="text-xl font-black text-slate-900 mb-2">No announcements yet</p>
             <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm mx-auto">No broadcasts yet. Post the first high-signal update so the team knows what changed, what matters, and what happens next.</p>
-            <button onClick={openCreateModal} className="px-6 py-3 text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
+            <button onClick={openCreateModal} className={`${readOnly ? 'hidden ' : ''}px-6 py-3 text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:-translate-y-0.5 flex items-center gap-2 mx-auto`}>
               <Plus className="w-4 h-4" /> Post First Announcement
             </button>
           </div>
         ) : (
           sorted.map(item => (
-            <AnnouncementCard key={getId(item)} item={item} projectId={projectId} currentUser={user} onPin={handlePin} onDelete={handleDelete} onUpdate={handleUpdate} 
-                onEdit={openEditModal}/>
+            <AnnouncementCard
+              key={getId(item)}
+              item={item}
+              projectId={projectId}
+              currentUser={user}
+              onPin={readOnly ? undefined : handlePin}
+              onDelete={readOnly ? undefined : handleDelete}
+              onUpdate={handleUpdate}
+              onEdit={readOnly ? undefined : openEditModal}
+              readOnly={readOnly}
+            />
           ))
         )}
       </div>
 
-      {showCreate && (
+      {!readOnly && showCreate && (
         <div className="pc-create-viewport fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
           <button
             type="button"
