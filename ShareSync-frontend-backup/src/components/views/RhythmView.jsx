@@ -150,62 +150,30 @@ function getEventDurationMinutes(event) {
 }
 
 function layoutCalendarEvents(events = []) {
-  const minVisualHeightPx = 52;
-  const gapPx = 6;
+  const minVisualHeightPx = 54;
+  const gapPx = 8;
   const hourHeightPx = 64;
   const dayStartMinutes = 7 * 60;
 
   const sorted = [...events].sort((a, b) => getEventStartMinutes(a) - getEventStartMinutes(b));
-  const active = [];
-  const laidOut = [];
+  let lastVisualBottom = -Infinity;
 
-  sorted.forEach((event) => {
+  return sorted.map((event) => {
     const start = getEventStartMinutes(event);
     const duration = getEventDurationMinutes(event);
-    const end = start + duration;
+    const exactTop = ((start - dayStartMinutes) / 60) * hourHeightPx;
+    const height = Math.max((duration / 60) * hourHeightPx, minVisualHeightPx);
+    const visualTop = Math.max(exactTop, lastVisualBottom + gapPx);
 
-    for (let i = active.length - 1; i >= 0; i -= 1) {
-      if (active[i].end <= start) active.splice(i, 1);
-    }
-
-    const used = new Set(active.map((item) => item.lane));
-    let lane = 0;
-    while (used.has(lane)) lane += 1;
-
-    const entry = { event, start, end, lane, laneCount: 1 };
-    active.push(entry);
-
-    const laneCount = Math.max(1, active.length);
-    active.forEach((item) => {
-      item.laneCount = Math.max(item.laneCount || 1, laneCount);
-    });
-
-    laidOut.push(entry);
-  });
-
-  const lastBottomByLane = new Map();
-
-  return laidOut.map((item) => {
-    const laneCount = Math.max(item.laneCount || 1, item.lane + 1);
-    const exactTop = ((item.start - dayStartMinutes) / 60) * hourHeightPx;
-    const height = Math.max(((item.end - item.start) / 60) * hourHeightPx, minVisualHeightPx);
-    const previousBottom = lastBottomByLane.get(item.lane) ?? -Infinity;
-    const visualTop = Math.max(exactTop, previousBottom + gapPx);
-
-    lastBottomByLane.set(item.lane, visualTop + height);
-
-    const gap = 6;
-    const widthPercent = 100 / laneCount;
-    const leftPercent = item.lane * widthPercent;
+    lastVisualBottom = visualTop + height;
 
     return {
-      ...item.event,
+      ...event,
       _layout: {
-        lane: item.lane,
         top: `${visualTop}px`,
         height: `${height}px`,
-        left: laneCount > 1 ? `calc(${leftPercent}% + 8px)` : '8px',
-        width: laneCount > 1 ? `calc(${widthPercent}% - ${gap + 8}px)` : 'calc(100% - 16px)',
+        left: '8px',
+        width: 'calc(100% - 16px)',
       },
     };
   });
