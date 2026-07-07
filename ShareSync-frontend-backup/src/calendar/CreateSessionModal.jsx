@@ -344,11 +344,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 <AlignLeft className="h-5 w-5" />
               </div>
 
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
-                  Notes
-                </label>
-
+              <div className="space-y-5">
                 <div className="space-y-2">
                   <div className="rounded-2xl bg-white/90 px-4 py-3 text-xs font-bold uppercase tracking-[0.28em] text-slate-700 shadow-sm">
                     Session Color
@@ -378,6 +374,11 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                   </div>
                 </div>
 
+                <div>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
+                    Notes
+                  </label>
+
                 <textarea
                   rows="3"
                   value={description}
@@ -385,6 +386,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                   className={`${inputClassName} min-h-[64px] resize-none leading-relaxed`}
                   placeholder="Add description or meeting links..."
                 />
+                </div>
               </div>
             </div>
 
