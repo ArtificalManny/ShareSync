@@ -137,6 +137,63 @@ function getEventMeta(type) {
   }
 }
 
+
+function getEventStartMinutes(event) {
+  const hour = Number.isFinite(Number(event?.startHour)) ? Number(event.startHour) : 7;
+  const minute = Number.isFinite(Number(event?.startMinute)) ? Number(event.startMinute) : 0;
+  return hour * 60 + minute;
+}
+
+function getEventDurationMinutes(event) {
+  const duration = Number(event?.duration);
+  return Number.isFinite(duration) && duration > 0 ? duration : 30;
+}
+
+function layoutCalendarEvents(events = []) {
+  const sorted = [...events].sort((a, b) => getEventStartMinutes(a) - getEventStartMinutes(b));
+  const active = [];
+  const laidOut = [];
+
+  sorted.forEach((event) => {
+    const start = getEventStartMinutes(event);
+    const end = start + getEventDurationMinutes(event);
+
+    for (let i = active.length - 1; i >= 0; i -= 1) {
+      if (active[i].end <= start) active.splice(i, 1);
+    }
+
+    const used = new Set(active.map((item) => item.lane));
+    let lane = 0;
+    while (used.has(lane)) lane += 1;
+
+    const entry = { event, start, end, lane, laneCount: 1 };
+    active.push(entry);
+
+    const collisionCount = Math.max(1, active.length);
+    active.forEach((item) => {
+      item.laneCount = Math.max(item.laneCount || 1, collisionCount);
+    });
+
+    laidOut.push(entry);
+  });
+
+  return laidOut.map((item) => {
+    const laneCount = Math.max(item.laneCount || 1, item.lane + 1);
+    const gap = 6;
+    const widthPercent = 100 / laneCount;
+    const leftPercent = item.lane * widthPercent;
+
+    return {
+      ...item.event,
+      _layout: {
+        left: `calc(${leftPercent}% + 8px)`,
+        width: `calc(${widthPercent}% - ${gap + 8}px)`,
+      },
+    };
+  });
+}
+
+
 // ─── CalendarEvent ──────────────────────────────────────────────────────────
 
 function CalendarEvent({ event, onEdit }) {
@@ -170,17 +227,22 @@ function CalendarEvent({ event, onEdit }) {
       onKeyDown={handleKeyDown}
       data-openshare-schedule-session-edit={canEdit ? 'enabled-v1' : undefined}
       aria-label={canEdit ? `Edit scheduled session ${event.title || ''}`.trim() : undefined}
-      className={`
-        rhythm-calendar-event absolute left-2 right-2 overflow-hidden rounded-2xl border px-3 py-2.5
-        ${canEdit ? 'cursor-pointer focus:outline-none focus:ring-4 focus:ring-violet-300/35' : 'cursor-default'}
-        shadow-lg backdrop-blur-xl transition-all duration-200
-        hover:-translate-y-0.5 hover:shadow-xl ${meta.shell}
-      `}
-      style={getSessionCardStyle(event, {
-        top: `${((startHour - 7) + startMinute / 60) * 64}px`,
-        height: `${Math.max(height, 52)}px`,
-        zIndex: 5,
-      })}
+        className={`
+          rhythm-calendar-event absolute overflow-hidden rounded-xl border px-2.5 py-2
+          ${canEdit ? 'cursor-pointer focus:outline-none focus:ring-4 focus:ring-violet-300/35' : 'cursor-default'}
+          bg-white/95 text-slate-900 shadow-md backdrop-blur-xl transition-all duration-200
+          hover:-translate-y-0.5 hover:shadow-lg dark:bg-[#18181d]/95 dark:text-white
+        `}
+        style={getSessionCardStyle(event, {
+          top: `${((startHour - 7) + startMinute / 60) * 64}px`,
+          height: `${Math.max(height, 46)}px`,
+          zIndex: 5 + Number(event?._layout?.lane || 0),
+          left: event?._layout?.left || '8px',
+          width: event?._layout?.width || 'calc(100% - 16px)',
+          right: 'auto',
+          borderColor: `${getSessionColor(event)}66`,
+          boxShadow: `0 12px 28px ${getSessionColor(event)}22`,
+        })}
       title={canEdit ? 'Click to edit this scheduled session' : undefined}
     >
       <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${meta.rail}`} />
@@ -316,7 +378,7 @@ function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent, re
           );
         })}
 
-        {events.map((event) => (
+        {layoutCalendarEvents(events).map((event) => (
           <CalendarEvent key={event.id} event={event} onEdit={onEditEvent} />
         ))}
       </div>
