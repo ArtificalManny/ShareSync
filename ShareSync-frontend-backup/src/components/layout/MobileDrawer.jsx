@@ -6,6 +6,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import OpenShareLogo from '../ui/OpenShareLogo';
 import {
   X, Home, Folder, Trophy, User, Settings, Moon, Sun,
   ShieldCheck, LogOut,
@@ -120,9 +121,10 @@ export default function MobileDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 dark:border-white/5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
-              <span className="text-xs font-bold text-white">S</span>
-            </div>
+            <OpenShareLogo
+              className="h-7 w-7 shrink-0 drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]"
+              title="OpenShare"
+            />
             <span className="text-sm font-semibold text-slate-900 dark:text-white">
               OpenShare
             </span>
