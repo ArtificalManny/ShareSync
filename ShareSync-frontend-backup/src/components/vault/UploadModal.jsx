@@ -52,7 +52,7 @@ export default function UploadModal({ isOpen, onClose, onUpload, folders = [] })
       <style>
         {`
           .upload-modal-submit-button {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
             color: #ffffff !important;
             border: 1px solid rgba(124, 58, 237, 0.92) !important;
             box-shadow: 0 14px 32px rgba(109, 40, 217, 0.34) !important;
@@ -60,15 +60,15 @@ export default function UploadModal({ isOpen, onClose, onUpload, folders = [] })
           }
 
           .upload-modal-submit-button:hover:not(:disabled) {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
             box-shadow: 0 18px 40px rgba(109, 40, 217, 0.46) !important;
             transform: translateY(-1px);
           }
 
           .upload-modal-submit-button:disabled {
-            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available) !important;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
             color: #ffffff !important;
-            opacity: 0.88 !important;
+            opacity: 0.72 !important;
             cursor: not-allowed !important;
             box-shadow: 0 10px 24px rgba(109, 40, 217, 0.22) !important;
           }
@@ -260,8 +260,8 @@ export default function UploadModal({ isOpen, onClose, onUpload, folders = [] })
                 className="pointer-events-none absolute inset-0 rounded-xl"
                 style={{
                   background: file
-                    ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)'
-                    : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available)',
+                    ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
+                    : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
                   boxShadow: file
                     ? '0 14px 32px rgba(109, 40, 217, 0.34)'
                     : '0 10px 24px rgba(109, 40, 217, 0.22)',
