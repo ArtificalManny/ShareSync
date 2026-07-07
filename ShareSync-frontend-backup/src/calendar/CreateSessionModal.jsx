@@ -186,7 +186,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
     },
   ];
 
-  const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white/95 px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15";
+  const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white/95 dark:bg-white/[0.08] px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 pt-16 pb-8 backdrop-blur-md sm:px-5 sm:pt-16 sm:pb-10">
@@ -239,7 +239,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 autoFocus
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white/95 px-4 py-2.5 text-base font-semibold tracking-tight text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15"
+                className="w-full rounded-2xl border border-slate-200 bg-white/95 dark:bg-white/[0.08] px-4 py-2.5 text-base font-semibold tracking-tight text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15"
                 placeholder="Add title..."
               />
             </div>
@@ -263,7 +263,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                       className={`flex items-center gap-3 rounded-2xl border px-3 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 ${
                         isActive
                           ? option.activeClass
-                          : 'border-slate-200 bg-white/75 text-slate-600 hover:border-violet-200 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.045] dark:text-white/55 dark:hover:bg-white/[0.075]'
+                          : 'border-slate-200 bg-white/75 text-slate-600 hover:border-violet-200 hover:bg-white hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.045] dark:text-white/70 dark:hover:bg-white/[0.075]'
                       }`}
                     >
                       <div className={`flex h-7.5 w-7.5 items-center justify-center rounded-xl ${isActive ? 'bg-white/80 dark:bg-white/[0.08]' : 'bg-slate-50 dark:bg-white/[0.04]'}`}>
@@ -346,11 +346,11 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <div className="rounded-2xl border border-white/70 bg-white/95 px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-slate-700 shadow-[0_10px_30px_rgba(15,23,42,0.10)]">
+                  <div className="rounded-2xl border border-white/70 dark:border-white/[0.14] bg-white/95 dark:bg-white/[0.08] px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-slate-700 dark:text-violet-100 shadow-[0_10px_30px_rgba(15,23,42,0.10)]">
                     Session Color
                   </div>
 
-                  <div className="flex flex-wrap gap-3 rounded-3xl border border-white/45 bg-white/45 p-4 shadow-inner">
+                  <div className="flex flex-wrap gap-3 rounded-3xl border border-white/45 bg-white/45 dark:bg-white/[0.08] p-4 shadow-inner">
                     {SESSION_COLORS.map((option) => {
                       const isSelected = color === option.value;
 
@@ -393,12 +393,12 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
           </form>
 
           {/* Footer Actions */}
-          <div className="relative z-10 shrink-0 border-t border-slate-200/70 bg-white/95 px-5 py-3 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
+          <div className="relative z-10 shrink-0 border-t border-slate-200/70 bg-white/95 dark:bg-white/[0.08] px-5 py-3 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full px-5 py-3 text-sm font-bold text-white/55 transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-full px-5 py-3 text-sm font-bold text-white/70 transition-colors hover:bg-white/12 hover:text-white"
               >
                 Cancel
               </button>
