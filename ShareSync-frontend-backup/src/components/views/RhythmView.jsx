@@ -150,23 +150,25 @@ function getEventDurationMinutes(event) {
 }
 
 function layoutCalendarEvents(events = []) {
+  const minVisualMinutes = 42;
   const sorted = [...events].sort((a, b) => getEventStartMinutes(a) - getEventStartMinutes(b));
   const active = [];
   const laidOut = [];
 
   sorted.forEach((event) => {
     const start = getEventStartMinutes(event);
-    const end = start + getEventDurationMinutes(event);
+    const duration = getEventDurationMinutes(event);
+    const visualEnd = start + Math.max(duration, minVisualMinutes);
 
     for (let i = active.length - 1; i >= 0; i -= 1) {
-      if (active[i].end <= start) active.splice(i, 1);
+      if (active[i].visualEnd <= start) active.splice(i, 1);
     }
 
     const used = new Set(active.map((item) => item.lane));
     let lane = 0;
     while (used.has(lane)) lane += 1;
 
-    const entry = { event, start, end, lane, laneCount: 1 };
+    const entry = { event, start, visualEnd, lane, laneCount: 1 };
     active.push(entry);
 
     const collisionCount = Math.max(1, active.length);
@@ -186,13 +188,13 @@ function layoutCalendarEvents(events = []) {
     return {
       ...item.event,
       _layout: {
+        lane: item.lane,
         left: `calc(${leftPercent}% + 8px)`,
         width: `calc(${widthPercent}% - ${gap + 8}px)`,
       },
     };
   });
 }
-
 
 // ─── CalendarEvent ──────────────────────────────────────────────────────────
 
