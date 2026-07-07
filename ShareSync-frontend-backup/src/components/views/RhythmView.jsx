@@ -1100,9 +1100,10 @@ export default function RhythmView({ projectId, readOnly = false }) {
                 </div>
 
                 <div className="relative p-5">
-                  <div className="absolute bottom-6 left-8 top-6 hidden w-px bg-gradient-to-b from-violet-300 via-cyan-300 to-slate-200 sm:block dark:from-violet-500/60 dark:via-cyan-500/40 dark:to-white/10" />
+                  <div className="pointer-events-none absolute bottom-6 left-8 top-6 hidden w-px bg-gradient-to-b from-violet-300 via-cyan-300 to-slate-200 sm:block dark:from-violet-500/60 dark:via-cyan-500/40 dark:to-white/10" />
 
-                  <div className="space-y-4">
+                  <div className="max-h-[560px] overflow-y-auto pr-2 overscroll-contain [scrollbar-gutter:stable]">
+                    <div className="space-y-4">
                     {agendaEvents
                       .slice()
                       .sort((a, b) => {
@@ -1210,6 +1211,7 @@ export default function RhythmView({ projectId, readOnly = false }) {
                                   <span className="inline-flex w-fit shrink-0 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
                                     {eventType}
                                   </span>
+                                </div>
                                 </div>
                               </div>
 
