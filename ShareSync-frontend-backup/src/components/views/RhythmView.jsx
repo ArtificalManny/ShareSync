@@ -1212,7 +1212,6 @@ export default function RhythmView({ projectId, readOnly = false }) {
                                     {eventType}
                                   </span>
                                 </div>
-                                </div>
                               </div>
 
                               {notes && (
@@ -1234,6 +1233,7 @@ export default function RhythmView({ projectId, readOnly = false }) {
                           </button>
                         );
                       })}
+                  </div>
                   </div>
                 </div>
               </div>
