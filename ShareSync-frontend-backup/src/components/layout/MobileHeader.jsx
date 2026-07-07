@@ -1,15 +1,10 @@
 // src/components/layout/MobileHeader.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// Priority 5.5: Compact mobile header replacing desktop sidebar header
-// Hamburger → slide-out drawer. Logo, page title, notification bell. 48px height.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Menu, Search } from 'lucide-react';
 import NotificationsBell from '../notifications/NotificationsBell';
+import OpenShareLogo from '../ui/OpenShareLogo';
 
-// Map paths to page titles
 function getPageTitle(pathname) {
   if (pathname === '/home') return 'Home';
   if (pathname === '/projects') return 'Projects';
@@ -27,8 +22,6 @@ function getPageTitle(pathname) {
 export default function MobileHeader({
   onMenuPress,
   onSearchPress,
-  onNotificationPress,
-  unreadCount = 0,
   className = '',
 }) {
   const location = useLocation();
@@ -37,69 +30,57 @@ export default function MobileHeader({
   return (
     <header
       className={`
-        sticky top-0 z-[70]
-        flex items-center justify-between
-        h-12 px-4
-        bg-white/95 dark:bg-[#111113]/95
-        backdrop-blur-md
-        border-b border-slate-200 dark:border-white/10
-        md:hidden
+        sticky top-0 z-[70] md:hidden
+        border-b border-white/10
+        bg-[#080914]/90 text-white
+        backdrop-blur-2xl
         ${className}
       `}
-      style={{
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-      }}
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      {/* Left: hamburger */}
-      <button
-        type="button"
-        onClick={onMenuPress}
-        className="
-          flex items-center justify-center
-          w-10 h-10 -ml-2
-          rounded-lg
-          text-slate-600 dark:text-zinc-300
-          active:bg-slate-100 dark:active:bg-white/5
-          transition-colors
-        "
-        aria-label="Open menu"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(124,58,237,0.42),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(14,165,233,0.28),transparent_32%)]" />
 
-      {/* Center: title */}
-      <div className="flex items-center gap-2">
-        <div className="w-5 h-5 bg-violet-600 rounded-md flex items-center justify-center">
-          <span className="text-[9px] font-bold text-white">S</span>
-        </div>
-        <h1 className="text-sm font-semibold text-slate-800 dark:text-white truncate max-w-[180px]">
-          {title}
-        </h1>
-      </div>
+        <div className="relative flex h-16 items-center justify-between px-4">
+          <button
+            type="button"
+            onClick={onMenuPress}
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white shadow-lg shadow-black/20 active:scale-95"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-      {/* Right: actions */}
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={onSearchPress}
-          className="
-            flex items-center justify-center
-            w-10 h-10
-            rounded-lg
-            text-slate-500 dark:text-zinc-400
-            active:bg-slate-100 dark:active:bg-white/5
-            transition-colors
-          "
-          aria-label="Search"
-        >
-          <Search className="w-4.5 h-4.5" />
-        </button>
+          <div className="min-w-0 flex-1 px-3">
+            <div className="flex items-center justify-center gap-2.5">
+              <OpenShareLogo
+                className="h-8 w-8 shrink-0 drop-shadow-[0_0_14px_rgba(168,85,247,0.42)]"
+                title="OpenShare"
+                animated
+              />
+              <h1 className="truncate text-[17px] font-black leading-tight text-white drop-shadow-sm">
+                {title}
+              </h1>
+            </div>
+          </div>
 
-        <div className="relative flex items-center justify-center w-10 h-10 -mr-2">
-          <NotificationsBell
-            dropdownWidthClassName="!w-[calc(100vw-24px)] !max-w-[420px]"
-            anchorClassName="!fixed !left-1/2 !right-auto !top-[calc(env(safe-area-inset-top,0px)+56px)] !z-[9999] !-translate-x-1/2 !mt-0"
-          />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onSearchPress}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white/90 shadow-lg shadow-black/20 active:scale-95"
+              aria-label="Search"
+            >
+              <Search className="h-4.5 w-4.5" />
+            </button>
+
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 shadow-lg shadow-black/20">
+              <NotificationsBell
+                dropdownWidthClassName="!w-[calc(100vw-24px)] !max-w-[420px]"
+                anchorClassName="!fixed !left-1/2 !right-auto !top-[calc(env(safe-area-inset-top,0px)+68px)] !z-[9999] !-translate-x-1/2 !mt-0"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </header>
