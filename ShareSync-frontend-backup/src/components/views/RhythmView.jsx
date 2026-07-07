@@ -150,8 +150,8 @@ function getEventDurationMinutes(event) {
 }
 
 function layoutCalendarEvents(events = []) {
-  const minVisualHeightPx = 54;
-  const gapPx = 8;
+  const minVisualHeightPx = 40;
+  const gapPx = 6;
   const hourHeightPx = 64;
   const dayStartMinutes = 7 * 60;
 
@@ -213,7 +213,7 @@ function CalendarEvent({ event, onEdit }) {
       data-openshare-schedule-session-edit={canEdit ? 'enabled-v1' : undefined}
       aria-label={canEdit ? `Edit scheduled session ${event.title || ''}`.trim() : undefined}
         className={`
-          rhythm-calendar-event absolute overflow-hidden rounded-xl border px-2.5 py-2
+          rhythm-calendar-event absolute overflow-hidden rounded-lg border px-2 py-1.5
           ${canEdit ? 'cursor-pointer focus:outline-none focus:ring-4 focus:ring-violet-300/35' : 'cursor-default'}
           bg-white/95 text-slate-900 shadow-md backdrop-blur-xl transition-all duration-200
           hover:-translate-y-0.5 hover:shadow-lg dark:bg-[#18181d]/95 dark:text-white
@@ -226,24 +226,24 @@ function CalendarEvent({ event, onEdit }) {
           width: event?._layout?.width || 'calc(100% - 16px)',
           right: 'auto',
           borderColor: `${getSessionColor(event)}66`,
-          boxShadow: `0 12px 28px ${getSessionColor(event)}22`,
+          boxShadow: `0 8px 18px ${getSessionColor(event)}22`,
         })}
       title={canEdit ? 'Click to edit this scheduled session' : undefined}
     >
       <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${meta.rail}`} />
 
-      <div className="flex items-start gap-2 pl-1">
+      <div className="flex items-start gap-1.5 pl-1">
         <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-xl bg-white/70 shadow-sm dark:bg-white/[0.08]">
           <Icon className="h-3.5 w-3.5" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-black leading-5">
+          <div className="truncate text-[13px] font-black leading-5">
             {event.title}
           </div>
 
           {height >= 48 && (
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex items-center gap-1.5">
               <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] ${meta.chip}`}>
                 {meta.label}
               </span>
