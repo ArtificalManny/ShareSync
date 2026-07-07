@@ -346,11 +346,11 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <div className="rounded-2xl bg-white/90 px-4 py-3 text-xs font-bold uppercase tracking-[0.28em] text-slate-700 shadow-sm">
+                  <div className="rounded-2xl border border-white/70 bg-white/95 px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-slate-700 shadow-[0_10px_30px_rgba(15,23,42,0.10)]">
                     Session Color
                   </div>
 
-                  <div className="flex flex-wrap gap-2 rounded-3xl bg-white/35 p-3">
+                  <div className="flex flex-wrap gap-3 rounded-3xl border border-white/45 bg-white/45 p-4 shadow-inner">
                     {SESSION_COLORS.map((option) => {
                       const isSelected = color === option.value;
 
@@ -361,7 +361,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                           onClick={() => setColor(option.value)}
                           aria-label={`Use ${option.name}`}
                           title={option.name}
-                          className="h-9 w-9 rounded-full border border-white/70 transition hover:scale-105"
+                          className="h-10 w-10 rounded-full border-2 border-white/80 shadow-lg transition hover:-translate-y-0.5 hover:scale-105"
                           style={{
                             backgroundColor: option.value,
                             boxShadow: isSelected
@@ -398,7 +398,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full px-5 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                className="rounded-full px-5 py-3 text-sm font-bold text-white/55 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Cancel
               </button>
@@ -406,7 +406,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
               <button
                 type="submit"
                 form="create-session-form"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/35 focus:outline-none focus:ring-4 focus:ring-violet-200 dark:border-violet-400/30 dark:focus:ring-violet-500/20"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-200/70 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-700 px-6 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(124,58,237,0.42)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(124,58,237,0.55)] focus:outline-none focus:ring-4 focus:ring-violet-300/35"
               >
                 <Zap className="h-4 w-4" />
                 {initialData?.mode === 'edit' ? 'Update Session' : 'Add Session'}
