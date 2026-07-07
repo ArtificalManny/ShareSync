@@ -219,8 +219,8 @@ function CalendarEvent({ event, onEdit }) {
           hover:-translate-y-0.5 hover:shadow-lg dark:bg-[#18181d]/95 dark:text-white
         `}
         style={getSessionCardStyle(event, {
-          top: `${((startHour - 7) + startMinute / 60) * 64}px`,
-          height: `${Math.max(height, 46)}px`,
+          top: event?._layout?.top || `${((startHour - 7) + startMinute / 60) * 64}px`,
+          height: event?._layout?.height || `${Math.max(height, 40)}px`,
           zIndex: 5 + Number(event?._layout?.lane || 0),
           left: event?._layout?.left || '8px',
           width: event?._layout?.width || 'calc(100% - 16px)',
@@ -230,7 +230,7 @@ function CalendarEvent({ event, onEdit }) {
         })}
       title={canEdit ? 'Click to edit this scheduled session' : undefined}
     >
-      <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${meta.rail}`} />
+      <div className="absolute inset-y-0 left-0 w-1.5" style={{ backgroundColor: getSessionColor(event) }} />
 
       <div className="flex items-start gap-1.5 pl-1">
         <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-xl bg-white/70 shadow-sm dark:bg-white/[0.08]">
