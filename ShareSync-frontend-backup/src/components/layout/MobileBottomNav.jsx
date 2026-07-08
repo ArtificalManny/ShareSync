@@ -1,20 +1,14 @@
 // src/components/layout/MobileBottomNav.jsx
-// ═══════════════════════════════════════════════════════════════════════════════
-// Priority 5.5: Bottom tab bar for mobile (visible below md breakpoint)
-// Tabs: Home, Tasks, Create (+), Projects, Settings
-// Fixed to bottom, 56px height, safe-area-inset padding for notched phones
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import React, { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Plus, Folder, Settings } from 'lucide-react';
+import { Home, Plus, Folder, Trophy, User } from 'lucide-react';
 
 const TABS = [
   { id: 'home', path: '/home', icon: Home, label: 'Home' },
-  { id: 'tasks', path: '/projects', icon: Folder, label: 'Projects' },
+  { id: 'projects', path: '/projects', icon: Folder, label: 'Projects' },
   { id: 'create', path: null, icon: Plus, label: 'Create', isAction: true },
-  { id: 'discover', path: '/discover', icon: CheckSquare, label: 'Discover' },
-  { id: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
+  { id: 'discover', path: '/discover', icon: Trophy, label: 'Discover' },
+  { id: 'profile', path: '/profile', icon: User, label: 'Profile' },
 ];
 
 export default function MobileBottomNav({
@@ -26,102 +20,87 @@ export default function MobileBottomNav({
 
   const handleTabPress = useCallback((tab) => {
     if (tab.isAction) {
-      // Fire global event for quick-add task
       onCreatePress?.();
       try {
         window.dispatchEvent(new CustomEvent('shortcut-action', {
           detail: { action: 'QUICK_ADD_OPEN' },
         }));
-      } catch { /* non-fatal */ }
+      } catch {}
       return;
     }
-    if (tab.path) {
-      navigate(tab.path);
-    }
+
+    if (tab.path) navigate(tab.path);
   }, [navigate, onCreatePress]);
 
   const isActive = useCallback((tab) => {
-    if (tab.isAction) return false;
-    if (!tab.path) return false;
+    if (tab.isAction || !tab.path) return false;
     if (tab.path === '/home') return location.pathname === '/home';
+    if (tab.path === '/profile') return location.pathname === '/profile' || location.pathname === '/me';
     return location.pathname.startsWith(tab.path);
   }, [location.pathname]);
 
   return (
     <nav
       className={`
-        fixed bottom-0 left-0 right-0 z-[80]
-        bg-white dark:bg-[#111113]
-        border-t border-slate-200 dark:border-white/10
-        md:hidden
+        fixed bottom-0 left-0 right-0 z-[80] md:hidden
+        border-t border-white/10
+        bg-[#080914]/92 text-white
+        shadow-[0_-18px_50px_rgba(0,0,0,0.42)]
+        backdrop-blur-2xl
         ${className}
       `}
-      style={{
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="flex items-center justify-around h-14 px-2">
-        {TABS.map((tab) => {
-          const active = isActive(tab);
-          const Icon = tab.icon;
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.28),transparent_42%)]" />
+        <div className="relative flex h-16 items-center justify-around px-2">
+          {TABS.map((tab) => {
+            const active = isActive(tab);
+            const Icon = tab.icon;
 
-          if (tab.isAction) {
+            if (tab.isAction) {
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleTabPress(tab)}
+                  className="grid h-14 w-14 -translate-y-4 place-items-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-sky-400 text-white shadow-2xl shadow-violet-500/35 ring-4 ring-[#080914] active:scale-95"
+                  aria-label={tab.label}
+                >
+                  <Icon className="h-6 w-6" strokeWidth={2.7} />
+                </button>
+              );
+            }
+
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabPress(tab)}
-                className="
-                  flex items-center justify-center
-                  w-12 h-12 -mt-5
-                  rounded-full
-                  bg-violet-600 dark:bg-violet-500
-                  text-white
-                  shadow-lg shadow-violet-500/30
-                  active:scale-95
-                  transition-transform duration-100
-                "
+                className={`
+                  relative flex min-w-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2
+                  transition duration-150 active:scale-95
+                  ${active ? 'text-white' : 'text-white/48'}
+                `}
                 aria-label={tab.label}
+                aria-current={active ? 'page' : undefined}
               >
-                <Icon className="w-5 h-5" strokeWidth={2.5} />
+                <span className={`
+                  grid h-8 w-10 place-items-center rounded-2xl
+                  ${active ? 'bg-white/12 shadow-lg shadow-violet-500/15' : 'bg-transparent'}
+                `}>
+                  <Icon className="h-5 w-5" strokeWidth={active ? 2.6 : 2} />
+                </span>
+                <span className={`text-[10px] leading-none ${active ? 'font-bold' : 'font-semibold'}`}>
+                  {tab.label}
+                </span>
+                {active && (
+                  <span className="absolute -bottom-0.5 h-1 w-6 rounded-full bg-gradient-to-r from-violet-400 to-sky-300" />
+                )}
               </button>
             );
-          }
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleTabPress(tab)}
-              className={`
-                flex flex-col items-center justify-center
-                min-w-[56px] py-1.5 px-2
-                rounded-lg
-                transition-colors duration-150
-                active:bg-slate-100 dark:active:bg-white/5
-                ${active
-                  ? 'text-violet-600 dark:text-violet-400'
-                  : 'text-slate-400 dark:text-zinc-500'
-                }
-              `}
-              aria-label={tab.label}
-              aria-current={active ? 'page' : undefined}
-            >
-              <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-              <span className={`
-                text-[10px] mt-0.5
-                ${active ? 'font-semibold' : 'font-medium'}
-              `}>
-                {tab.label}
-              </span>
-
-              {/* Active indicator dot */}
-              {active && (
-                <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-violet-600 dark:bg-violet-400" />
-              )}
-            </button>
-          );
-        })}
+          })}
+        </div>
       </div>
     </nav>
   );
