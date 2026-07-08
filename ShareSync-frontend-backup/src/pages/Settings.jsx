@@ -237,25 +237,25 @@ function MobileSettingsRows({ activeSection, onSelect, onLogout }) {
     {
       id: 'preferences',
       label: 'Appearance / Dark Mode',
-      description: 'Theme, density, and workspace feel',
+      description: 'Theme and app feel',
       icon: Palette,
     },
     {
       id: 'account',
       label: 'Account',
-      description: 'Profile, email, and public identity',
+      description: 'Profile, email, identity',
       icon: UserCircle,
     },
     {
       id: 'notifications',
       label: 'Notifications',
-      description: 'Email, mentions, invites, and digests',
+      description: 'Email, mentions, invites',
       icon: BellRing,
     },
     {
       id: 'privacy',
       label: 'Privacy',
-      description: 'Presence, visibility, and safety controls',
+      description: 'Presence and visibility',
       icon: ShieldCheck,
     },
   ];
@@ -263,24 +263,10 @@ function MobileSettingsRows({ activeSection, onSelect, onLogout }) {
   return (
     <section
       data-mobile-settings-app-frame="true"
-      className="md:hidden rounded-[28px] border border-white/70 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111116]/90"
+      className="md:hidden space-y-3"
     >
-      <div className="mb-2 flex items-center gap-3 px-2 py-2">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 text-white shadow-lg shadow-violet-500/20">
-          <SlidersHorizontal className="h-5 w-5" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-black text-slate-950 dark:text-white">
-            Settings
-          </span>
-          <span className="block text-xs font-semibold text-slate-500 dark:text-zinc-500">
-            Control center
-          </span>
-        </span>
-      </div>
-
-      <div className="space-y-1">
-        {rows.map(({ id, label, description, icon: Icon }) => {
+      <div className="overflow-hidden rounded-[26px] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111116]/90">
+        {rows.map(({ id, label, description, icon: Icon }, index) => {
           const active = activeSection === id;
 
           return (
@@ -288,11 +274,11 @@ function MobileSettingsRows({ activeSection, onSelect, onLogout }) {
               key={id}
               type="button"
               onClick={() => onSelect(id)}
-              className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition active:scale-[0.99] ${
+              className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:scale-[0.99] ${
                 active
-                  ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-200 dark:ring-violet-400/10'
-                  : 'text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-white/[0.04]'
-              }`}
+                  ? 'bg-violet-50/95 text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'
+                  : 'text-slate-800 hover:bg-slate-50 dark:text-zinc-100 dark:hover:bg-white/[0.04]'
+              } ${index > 0 ? 'border-t border-slate-100 dark:border-white/[0.06]' : ''}`}
             >
               <span
                 className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${
@@ -305,28 +291,30 @@ function MobileSettingsRows({ activeSection, onSelect, onLogout }) {
               </span>
 
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-black">{label}</span>
-                <span className="block truncate text-xs font-semibold text-slate-500 dark:text-zinc-500">
+                <span className="block text-[13px] font-black leading-tight">{label}</span>
+                <span className="mt-0.5 block truncate text-[11px] font-semibold text-slate-500 dark:text-zinc-500">
                   {description}
                 </span>
               </span>
+
+              {active && (
+                <span className="h-2 w-2 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.55)]" />
+              )}
             </button>
           );
         })}
-
-        <div className="my-2 h-px bg-slate-200/80 dark:bg-white/[0.08]" />
-
-        <button
-          type="button"
-          onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-red-500 transition active:scale-[0.99] hover:bg-red-50 dark:hover:bg-red-500/10"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-red-50 text-red-500 dark:bg-red-500/10">
-            <LogOut className="h-5 w-5" />
-          </span>
-          <span className="text-sm font-black">Log Out</span>
-        </button>
       </div>
+
+      <button
+        type="button"
+        onClick={onLogout}
+        className="flex w-full items-center gap-3 rounded-[24px] border border-red-100 bg-white/90 px-4 py-3.5 text-left text-red-500 shadow-[0_14px_35px_rgba(244,63,94,0.08)] transition active:scale-[0.99] hover:bg-red-50 dark:border-red-500/10 dark:bg-[#111116]/90 dark:hover:bg-red-500/10"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-red-50 text-red-500 dark:bg-red-500/10">
+          <LogOut className="h-5 w-5" />
+        </span>
+        <span className="text-[13px] font-black">Log Out</span>
+      </button>
     </section>
   );
 }
@@ -1255,7 +1243,46 @@ export default function Settings() {
 
   return (
     <main data-settings-app-frame="true" className="settings-page-surface min-h-screen overflow-x-hidden px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-4 text-slate-900 transition-colors duration-300 md:px-6 md:py-12 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_100%)] dark:text-white">
-      <div className="mx-auto max-w-[430px] space-y-4 md:max-w-6xl md:space-y-8">
+        <style data-settings-mobile-css>{`
+          @media (max-width: 767px) {
+            [data-settings-app-frame="true"] {
+              padding-left: 14px !important;
+              padding-right: 14px !important;
+              padding-top: 14px !important;
+            }
+
+            [data-mobile-settings-panels="true"] > div,
+            [data-mobile-settings-panels="true"] > section {
+              border-radius: 26px !important;
+              padding: 18px !important;
+              box-shadow: 0 16px 42px rgba(15, 23, 42, 0.07) !important;
+            }
+
+            [data-mobile-settings-panels="true"] h2,
+            [data-mobile-settings-panels="true"] h3 {
+              font-size: 18px !important;
+              line-height: 1.15 !important;
+            }
+
+            [data-mobile-settings-panels="true"] p,
+            [data-mobile-settings-panels="true"] label,
+            [data-mobile-settings-panels="true"] span {
+              line-height: 1.35;
+            }
+
+            [data-mobile-settings-panels="true"] input,
+            [data-mobile-settings-panels="true"] select,
+            [data-mobile-settings-panels="true"] textarea {
+              font-size: 16px !important;
+            }
+
+            [data-mobile-settings-panels="true"] .grid {
+              gap: 12px !important;
+            }
+          }
+        `}</style>
+
+      <div className="mx-auto max-w-[410px] space-y-3 md:max-w-6xl md:space-y-8">
 
         {/* Header */}
         <div className="hidden text-center mb-12 md:block">
@@ -1287,7 +1314,7 @@ export default function Settings() {
           </div>
           <MobileSettingsRows activeSection={activeSection} onSelect={setActiveSection} onLogout={handleMobileLogout} />
 
-          <form onSubmit={handleSave} className="min-w-0 space-y-4 md:space-y-6">
+          <form data-mobile-settings-panels="true" onSubmit={handleSave} className="min-w-0 space-y-4 md:space-y-6">
           {activeSection === 'account' && (
             <>
               <SectionCard
