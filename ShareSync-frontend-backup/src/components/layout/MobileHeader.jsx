@@ -1,7 +1,7 @@
 // src/components/layout/MobileHeader.jsx
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import NotificationsBell from '../notifications/NotificationsBell';
 import OpenShareLogo from '../ui/OpenShareLogo';
 
@@ -20,7 +20,6 @@ function getPageTitle(pathname) {
 }
 
 export default function MobileHeader({
-  onMenuPress,
   onSearchPress,
   className = '',
 }) {
@@ -42,26 +41,15 @@ export default function MobileHeader({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(124,58,237,0.42),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(14,165,233,0.28),transparent_32%)]" />
 
         <div className="relative flex h-16 items-center justify-between px-4">
-          <button
-            type="button"
-            onClick={onMenuPress}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white shadow-lg shadow-black/20 active:scale-95"
-            aria-label="Open menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
-          <div className="min-w-0 flex-1 px-3">
-            <div className="flex items-center justify-center gap-2.5">
-              <OpenShareLogo
-                className="h-8 w-8 shrink-0 drop-shadow-[0_0_14px_rgba(168,85,247,0.42)]"
-                title="OpenShare"
-                animated
-              />
-              <h1 className="truncate text-[17px] font-black leading-tight text-white drop-shadow-sm">
-                {title}
-              </h1>
-            </div>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <OpenShareLogo
+              className="h-8 w-8 shrink-0 drop-shadow-[0_0_14px_rgba(168,85,247,0.42)]"
+              title="OpenShare"
+              animated
+            />
+            <h1 className="truncate text-[17px] font-black leading-tight text-white drop-shadow-sm">
+              {title}
+            </h1>
           </div>
 
           <div className="flex items-center gap-1">

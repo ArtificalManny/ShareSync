@@ -41,6 +41,7 @@ import BillingSettings from "../components/settings/BillingSettings";
 import PersonaPicker from "../components/settings/PersonaPicker";
 import CelebrationStylePicker from "../components/settings/CelebrationStylePicker";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { useAuth } from "../context/AuthContext";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLIDER COMPONENT - Adaptive
@@ -228,6 +229,70 @@ const SETTINGS_SECTIONS = [
     icon: BrainCircuit,
   },
 ];
+
+
+function MobileSettingsRows({ onSelect, onLogout }) {
+  const rows = [
+    {
+      id: 'preferences',
+      label: 'Appearance / Dark Mode',
+      description: 'Theme, density, and workspace feel',
+      icon: Palette,
+    },
+    {
+      id: 'account',
+      label: 'Account',
+      description: 'Profile, email, and public identity',
+      icon: UserCircle,
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      description: 'Email, mentions, invites, and digests',
+      icon: BellRing,
+    },
+    {
+      id: 'privacy',
+      label: 'Privacy',
+      description: 'Presence, visibility, and safety controls',
+      icon: ShieldCheck,
+    },
+  ];
+
+  return (
+    <div className="md:hidden mb-5 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-sm dark:border-white/[0.08] dark:bg-[#121216]">
+      {rows.map(({ id, label, description, icon: Icon }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onSelect(id)}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.99] hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+            <Icon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-black text-slate-950 dark:text-white">{label}</span>
+            <span className="block truncate text-xs font-semibold text-slate-500 dark:text-zinc-500">{description}</span>
+          </span>
+        </button>
+      ))}
+
+      <div className="my-1 h-px bg-slate-200/80 dark:bg-white/[0.08]" />
+
+      <button
+        type="button"
+        onClick={onLogout}
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-red-500 transition active:scale-[0.99] hover:bg-red-50 dark:hover:bg-red-500/10"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-500 dark:bg-red-500/10">
+          <LogOut className="h-5 w-5" />
+        </span>
+        <span className="text-sm font-black">Log Out</span>
+      </button>
+    </div>
+  );
+}
 
 
 function AccountIdentityPanel() {
@@ -534,6 +599,7 @@ function ComingSoonRow({ label, description }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
   useDocumentTitle("Settings");
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -554,6 +620,13 @@ export default function Settings() {
   const [showStreakTo, setShowStreakTo] = useState('friends');
   const [celebratePublicly, setCelebratePublicly] = useState(true);
   const [shareLiveActivity, setShareLiveActivity] = useState(true);
+  const handleMobileLogout = () => {
+    logout?.();
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  };
+
   const [publicProfile, setPublicProfile] = useState(true);
   const [discoverable, setDiscoverable] = useState(false);
 
@@ -1174,6 +1247,7 @@ export default function Settings() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
           <SettingsNav activeSection={activeSection} onChange={setActiveSection} />
+          <MobileSettingsRows onSelect={setActiveSection} onLogout={handleMobileLogout} />
 
           <form onSubmit={handleSave} className="space-y-6">
           {activeSection === 'account' && (

@@ -38,6 +38,7 @@ import {
   Download,
   Star,
   Edit3,
+  Settings as SettingsIcon,
   X,
   Save,
   Loader2,
@@ -1410,7 +1411,8 @@ export default function Profile() {
 
           {/* Edit button - Blue action */}
           {isOwnProfile && (
-            <button
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
               type="button"
               onClick={handleEditProfile}
               data-profile-edit-real-v19="true"
@@ -1446,6 +1448,17 @@ export default function Profile() {
               <Edit3 className="w-4 h-4" />
               <span>Edit Profile</span>
             </button>
+              <a
+                href="/settings"
+                data-profile-settings-pill="true"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-200 bg-white px-5 py-3 text-sm font-black text-violet-700 shadow-xl shadow-violet-500/20 transition active:scale-95"
+                aria-label="Open settings"
+                title="Settings"
+              >
+                <SettingsIcon className="w-4 h-4" />
+                <span>Settings</span>
+              </a>
+              </div>
           )}
         </div>
       </section>
