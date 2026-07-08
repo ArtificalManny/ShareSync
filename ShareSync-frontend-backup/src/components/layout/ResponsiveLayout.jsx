@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
+import MobileFloatingMessages from './MobileFloatingMessages';
 
 export default function ResponsiveLayout({
   children,
@@ -40,6 +41,8 @@ export default function ResponsiveLayout({
       <main className="flex-1 w-full max-w-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
         {children}
       </main>
+
+      <MobileFloatingMessages />
 
       <MobileBottomNav onCreatePress={onCreatePress} />
     </div>
