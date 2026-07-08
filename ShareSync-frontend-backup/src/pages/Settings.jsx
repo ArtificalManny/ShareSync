@@ -232,7 +232,7 @@ const SETTINGS_SECTIONS = [
 ];
 
 
-function MobileSettingsRows({ onSelect, onLogout }) {
+function MobileSettingsRows({ activeSection, onSelect, onLogout }) {
   const rows = [
     {
       id: 'preferences',
@@ -261,40 +261,75 @@ function MobileSettingsRows({ onSelect, onLogout }) {
   ];
 
   return (
-    <div className="md:hidden mb-5 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-sm dark:border-white/[0.08] dark:bg-[#121216]">
-      {rows.map(({ id, label, description, icon: Icon }) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onSelect(id)}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.99] hover:bg-slate-50 dark:hover:bg-white/[0.04]"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
-            <Icon className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-black text-slate-950 dark:text-white">{label}</span>
-            <span className="block truncate text-xs font-semibold text-slate-500 dark:text-zinc-500">{description}</span>
-          </span>
-        </button>
-      ))}
-
-      <div className="my-1 h-px bg-slate-200/80 dark:bg-white/[0.08]" />
-
-      <button
-        type="button"
-        onClick={onLogout}
-        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-red-500 transition active:scale-[0.99] hover:bg-red-50 dark:hover:bg-red-500/10"
-      >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-500 dark:bg-red-500/10">
-          <LogOut className="h-5 w-5" />
+    <section
+      data-mobile-settings-app-frame="true"
+      className="md:hidden rounded-[28px] border border-white/70 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111116]/90"
+    >
+      <div className="mb-2 flex items-center gap-3 px-2 py-2">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 text-white shadow-lg shadow-violet-500/20">
+          <SlidersHorizontal className="h-5 w-5" />
         </span>
-        <span className="text-sm font-black">Log Out</span>
-      </button>
-    </div>
+        <span className="min-w-0">
+          <span className="block text-sm font-black text-slate-950 dark:text-white">
+            Settings
+          </span>
+          <span className="block text-xs font-semibold text-slate-500 dark:text-zinc-500">
+            Control center
+          </span>
+        </span>
+      </div>
+
+      <div className="space-y-1">
+        {rows.map(({ id, label, description, icon: Icon }) => {
+          const active = activeSection === id;
+
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSelect(id)}
+              className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition active:scale-[0.99] ${
+                active
+                  ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-200 dark:ring-violet-400/10'
+                  : 'text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-white/[0.04]'
+              }`}
+            >
+              <span
+                className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${
+                  active
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                    : 'bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-zinc-400'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
+
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-black">{label}</span>
+                <span className="block truncate text-xs font-semibold text-slate-500 dark:text-zinc-500">
+                  {description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+
+        <div className="my-2 h-px bg-slate-200/80 dark:bg-white/[0.08]" />
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-red-500 transition active:scale-[0.99] hover:bg-red-50 dark:hover:bg-red-500/10"
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-red-50 text-red-500 dark:bg-red-500/10">
+            <LogOut className="h-5 w-5" />
+          </span>
+          <span className="text-sm font-black">Log Out</span>
+        </button>
+      </div>
+    </section>
   );
 }
-
 
 function AccountIdentityPanel() {
   const [accountUser, setAccountUser] = useState(null);
@@ -1219,11 +1254,11 @@ export default function Settings() {
   }
 
   return (
-    <main className="settings-page-surface min-h-screen px-6 py-12 text-slate-900 transition-colors duration-300 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_100%)] dark:text-white">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <main data-settings-app-frame="true" className="settings-page-surface min-h-screen overflow-x-hidden px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-4 text-slate-900 transition-colors duration-300 md:px-6 md:py-12 bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_50%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.16),transparent_32%),linear-gradient(180deg,#09090B_0%,#0F0F14_48%,#09090B_100%)] dark:text-white">
+      <div className="mx-auto max-w-[430px] space-y-4 md:max-w-6xl md:space-y-8">
 
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="hidden text-center mb-12 md:block">
           <div className="flex items-center justify-center gap-2 mb-3">
             <SettingsIcon className="w-5 h-5 text-violet-500" />
             <span className="text-xs text-slate-500 dark:text-zinc-500 uppercase tracking-wider">System</span>
@@ -1246,11 +1281,13 @@ export default function Settings() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
-          <SettingsNav activeSection={activeSection} onChange={setActiveSection} />
-          <MobileSettingsRows onSelect={setActiveSection} onLogout={handleMobileLogout} />
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+          <div className="hidden md:block">
+            <SettingsNav activeSection={activeSection} onChange={setActiveSection} />
+          </div>
+          <MobileSettingsRows activeSection={activeSection} onSelect={setActiveSection} onLogout={handleMobileLogout} />
 
-          <form onSubmit={handleSave} className="space-y-6">
+          <form onSubmit={handleSave} className="min-w-0 space-y-4 md:space-y-6">
           {activeSection === 'account' && (
             <>
               <SectionCard
