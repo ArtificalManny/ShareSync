@@ -34,7 +34,8 @@ import {
   Globe2,
   MousePointer2,
   WandSparkles,
-} from 'lucide-react';
+    LogOut,
+  } from 'lucide-react';
 import PresenceSettings from '../components/settings/PresenceSettings';
 import PrivacyCard from "../components/settings/PrivacyCard";
 import BillingSettings from "../components/settings/BillingSettings";
