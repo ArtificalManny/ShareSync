@@ -94,6 +94,50 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   return (
     <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
+          /* add-milestone-dark-surface-copy-readable-v4 */
+
+          /* Header: ROADMAP + Create Milestone */
+          .dark .roadmap-add-milestone-modal-contrast-v1 > div > div:first-child,
+          .dark .roadmap-add-milestone-modal-contrast-v1 > div > div:first-child * {
+            color: rgba(248, 250, 252, 0.94) !important;
+            -webkit-text-fill-color: rgba(248, 250, 252, 0.94) !important;
+            text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 > div > div:first-child [class*="tracking"] {
+            color: rgb(196, 181, 253) !important;
+            -webkit-text-fill-color: rgb(196, 181, 253) !important;
+            text-shadow: 0 0 18px rgba(139, 92, 246, 0.35) !important;
+          }
+
+          /* Dark-surface section labels: DESCRIPTION, TARGET DATE, OPTIONAL */
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(label,div,span)[class*="uppercase"][class*="tracking"]:not([class*="bg-white"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]):not([class*="rounded"]) {
+            color: rgba(226, 232, 240, 0.88) !important;
+            -webkit-text-fill-color: rgba(226, 232, 240, 0.88) !important;
+            text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(label,div,span)[class*="uppercase"][class*="tracking"]:not([class*="bg-white"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]):not([class*="rounded"]) svg {
+            color: rgba(191, 219, 254, 0.9) !important;
+            -webkit-text-fill-color: rgba(191, 219, 254, 0.9) !important;
+          }
+
+          /* Dark inputs/textarea placeholders */
+          .dark .roadmap-add-milestone-modal-contrast-v1 textarea,
+          .dark .roadmap-add-milestone-modal-contrast-v1 input[type="date"] {
+            color: rgb(241, 245, 249) !important;
+            -webkit-text-fill-color: rgb(241, 245, 249) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 textarea::placeholder,
+          .dark .roadmap-add-milestone-modal-contrast-v1 input[type="date"]::placeholder {
+            color: rgba(203, 213, 225, 0.72) !important;
+            -webkit-text-fill-color: rgba(203, 213, 225, 0.72) !important;
+            opacity: 1 !important;
+          }
+        `}</style>
+
+        <style>{`
           /* add-milestone-white-pill-readable-v3 */
           .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-white"][class*="rounded"],
           .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-50"][class*="rounded"],
