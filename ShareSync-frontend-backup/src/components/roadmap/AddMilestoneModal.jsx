@@ -92,185 +92,74 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   };
 
   return (
-    <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+    <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v6 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
-          /* add-milestone-global-dark-copy-readable-v5 */
+          /* add-milestone-final-readable-v6 */
 
           /*
-            Final contrast pass:
-            In dark mode, make modal copy readable by default,
-            then restore dark text inside white label/input surfaces.
+            Clean final pass:
+            - Dark modal copy becomes readable.
+            - Dark inputs/placeholders stay light.
+            - White uppercase pills like TITLE / STATUS stay dark.
+            - Avoid broad bg-white selectors on inputs because Tailwind class strings
+              often contain both bg-white and dark:bg-*.
           */
 
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(
+          .dark .roadmap-add-milestone-final-readable-v6,
+          .dark .roadmap-add-milestone-final-readable-v6 :is(
             h1,h2,h3,h4,h5,h6,
-            p,span,label,div,button,svg
+            p,span,label,div,small,strong,em
           ) {
             opacity: 1 !important;
             color: rgba(248, 250, 252, 0.92) !important;
             -webkit-text-fill-color: rgba(248, 250, 252, 0.92) !important;
-            text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45) !important;
+            text-shadow: 0 1px 16px rgba(0, 0, 0, 0.45) !important;
           }
 
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="tracking"] {
+          .dark .roadmap-add-milestone-final-readable-v6 [class*="tracking"] {
             opacity: 1 !important;
             color: rgba(221, 214, 254, 0.96) !important;
             -webkit-text-fill-color: rgba(221, 214, 254, 0.96) !important;
-            text-shadow: 0 0 18px rgba(139, 92, 246, 0.35) !important;
+            text-shadow: 0 0 18px rgba(139, 92, 246, 0.32) !important;
           }
 
-          /* White pill labels like TITLE / STATUS should stay dark and crisp */
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-white"],
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-50"],
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-100"],
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-white"] *,
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-50"] *,
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-100"] * {
-            color: rgb(15, 23, 42) !important;
-            -webkit-text-fill-color: rgb(15, 23, 42) !important;
-            text-shadow: none !important;
-          }
-
-          /* Dark form fields should have readable typed text and placeholders */
-          .dark .roadmap-add-milestone-modal-contrast-v1 input:not([class*="bg-white"]):not([class*="bg-slate-50"]),
-          .dark .roadmap-add-milestone-modal-contrast-v1 textarea:not([class*="bg-white"]):not([class*="bg-slate-50"]) {
+          /* Real form fields in dark mode */
+          .dark .roadmap-add-milestone-final-readable-v6 :is(input, textarea) {
             color: rgb(241, 245, 249) !important;
             -webkit-text-fill-color: rgb(241, 245, 249) !important;
             caret-color: rgb(196, 181, 253) !important;
           }
 
-          .dark .roadmap-add-milestone-modal-contrast-v1 input::placeholder,
-          .dark .roadmap-add-milestone-modal-contrast-v1 textarea::placeholder {
+          .dark .roadmap-add-milestone-final-readable-v6 :is(input, textarea)::placeholder {
             color: rgba(203, 213, 225, 0.72) !important;
             -webkit-text-fill-color: rgba(203, 213, 225, 0.72) !important;
             opacity: 1 !important;
           }
 
-          /* Purple CTA should remain white-on-purple */
-          .dark .roadmap-add-milestone-modal-contrast-v1 button[class*="bg-violet"],
-          .dark .roadmap-add-milestone-modal-contrast-v1 button[class*="bg-violet"] * {
+          .dark .roadmap-add-milestone-final-readable-v6 input[type="date"] {
+            color-scheme: dark !important;
+          }
+
+          /*
+            White/light uppercase label pills only.
+            This fixes TITLE and STATUS without ruining dark inputs.
+          */
+          .dark .roadmap-add-milestone-final-readable-v6 :is(div,span,label)[class*="tracking"][class*="bg-white"],
+          .dark .roadmap-add-milestone-final-readable-v6 :is(div,span,label)[class*="tracking"][class*="bg-slate-50"],
+          .dark .roadmap-add-milestone-final-readable-v6 :is(div,span,label)[class*="tracking"][class*="bg-slate-100"] {
+            color: rgb(15, 23, 42) !important;
+            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            text-shadow: none !important;
+          }
+
+          .dark .roadmap-add-milestone-final-readable-v6 button[class*="bg-violet"],
+          .dark .roadmap-add-milestone-final-readable-v6 button[class*="bg-violet"] * {
             color: white !important;
             -webkit-text-fill-color: white !important;
             text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35) !important;
           }
         `}</style>
 
-        <style>{`
-          /* add-milestone-dark-surface-copy-readable-v4 */
-
-          /* Header: ROADMAP + Create Milestone */
-          .dark .roadmap-add-milestone-modal-contrast-v1 > div > div:first-child,
-          .dark .roadmap-add-milestone-modal-contrast-v1 > div > div:first-child * {
-            color: rgba(248, 250, 252, 0.94) !important;
-            -webkit-text-fill-color: rgba(248, 250, 252, 0.94) !important;
-            text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45) !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 > div > div:first-child [class*="tracking"] {
-            color: rgb(196, 181, 253) !important;
-            -webkit-text-fill-color: rgb(196, 181, 253) !important;
-            text-shadow: 0 0 18px rgba(139, 92, 246, 0.35) !important;
-          }
-
-          /* Dark-surface section labels: DESCRIPTION, TARGET DATE, OPTIONAL */
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(label,div,span)[class*="uppercase"][class*="tracking"]:not([class*="bg-white"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]):not([class*="rounded"]) {
-            color: rgba(226, 232, 240, 0.88) !important;
-            -webkit-text-fill-color: rgba(226, 232, 240, 0.88) !important;
-            text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45) !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(label,div,span)[class*="uppercase"][class*="tracking"]:not([class*="bg-white"]):not([class*="bg-slate-50"]):not([class*="bg-slate-100"]):not([class*="rounded"]) svg {
-            color: rgba(191, 219, 254, 0.9) !important;
-            -webkit-text-fill-color: rgba(191, 219, 254, 0.9) !important;
-          }
-
-          /* Dark inputs/textarea placeholders */
-          .dark .roadmap-add-milestone-modal-contrast-v1 textarea,
-          .dark .roadmap-add-milestone-modal-contrast-v1 input[type="date"] {
-            color: rgb(241, 245, 249) !important;
-            -webkit-text-fill-color: rgb(241, 245, 249) !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 textarea::placeholder,
-          .dark .roadmap-add-milestone-modal-contrast-v1 input[type="date"]::placeholder {
-            color: rgba(203, 213, 225, 0.72) !important;
-            -webkit-text-fill-color: rgba(203, 213, 225, 0.72) !important;
-            opacity: 1 !important;
-          }
-        `}</style>
-
-        <style>{`
-          /* add-milestone-white-pill-readable-v3 */
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-white"][class*="rounded"],
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-50"][class*="rounded"],
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-100"][class*="rounded"] {
-            color: rgb(15, 23, 42) !important;
-            -webkit-text-fill-color: rgb(15, 23, 42) !important;
-            text-shadow: none !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-white"][class*="rounded"] *,
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-50"][class*="rounded"] *,
-          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-100"][class*="rounded"] * {
-            color: rgb(15, 23, 42) !important;
-            -webkit-text-fill-color: rgb(15, 23, 42) !important;
-            text-shadow: none !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 input[class*="bg-white"]::placeholder,
-          .dark .roadmap-add-milestone-modal-contrast-v1 input[class*="bg-slate-50"]::placeholder,
-          .dark .roadmap-add-milestone-modal-contrast-v1 input[class*="bg-slate-100"]::placeholder {
-            color: rgb(51, 65, 85) !important;
-            -webkit-text-fill-color: rgb(51, 65, 85) !important;
-            opacity: 1 !important;
-          }
-        `}</style>
-
-        <style>{`
-          /* add-milestone-title-status-label-readable-v2 */
-          .dark .roadmap-add-milestone-modal-contrast-v1 .roadmap-milestone-field-label-readable-v2 {
-            color: rgba(255, 255, 255, 0.96) !important;
-            background: rgba(15, 23, 42, 0.92) !important;
-            border: 1px solid rgba(167, 139, 250, 0.28) !important;
-            box-shadow:
-              inset 0 1px 0 rgba(255, 255, 255, 0.06),
-              0 12px 34px rgba(0, 0, 0, 0.28),
-              0 0 24px rgba(124, 58, 237, 0.10) !important;
-            text-shadow: 0 1px 16px rgba(167, 139, 250, 0.28) !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 .roadmap-milestone-field-label-readable-v2 * {
-            color: rgba(255, 255, 255, 0.96) !important;
-          }
-        `}</style>
-
-        <style>{`
-          /* add-milestone-modal-dark-label-css-v1 */
-          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="rounded"][class*="uppercase"][class*="tracking"] {
-            color: rgba(237, 233, 254, 0.98) !important;
-            background: rgba(15, 23, 42, 0.86) !important;
-            border-color: rgba(167, 139, 250, 0.28) !important;
-            text-shadow: 0 1px 14px rgba(124, 58, 237, 0.35);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(0,0,0,0.18);
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 input,
-          .dark .roadmap-add-milestone-modal-contrast-v1 textarea {
-            color: rgba(255, 255, 255, 0.96) !important;
-            background: rgba(15, 23, 42, 0.78) !important;
-            border-color: rgba(167, 139, 250, 0.28) !important;
-            caret-color: rgb(167, 139, 250);
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 input::placeholder,
-          .dark .roadmap-add-milestone-modal-contrast-v1 textarea::placeholder {
-            color: rgba(203, 213, 225, 0.72) !important;
-          }
-
-          .dark .roadmap-add-milestone-modal-contrast-v1 input[type="date"] {
-            color-scheme: dark;
-          }
-        `}</style>
 
       <style className="roadmap-create-final-button-visibility-style">
         {`
