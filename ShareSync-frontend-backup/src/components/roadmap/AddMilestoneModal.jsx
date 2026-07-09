@@ -92,29 +92,32 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   };
 
   return (
-    <div className="roadmap-add-milestone-contrast-final-v9 roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v7 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+    <div className="roadmap-create-milestone-clean-labels-v1 roadmap-add-milestone-contrast-final-v9 roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v7 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
-          /* add-milestone-contrast-final-v9 */
-          .dark .roadmap-add-milestone-contrast-final-v9 .roadmap-white-pill-readable-label-v9,
-          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"],
-          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"],
-          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="dark:bg-white"][class*="uppercase"][class*="tracking"],
-          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="dark:bg-slate-50"][class*="uppercase"][class*="tracking"] {
-            color: rgb(15, 23, 42) !important;
-            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+          /* roadmap-create-milestone-clean-labels-v1 */
+          .roadmap-create-milestone-clean-labels-v1 .roadmap-field-label-plain-v1 {
+            display: inline-flex !important;
+            width: auto !important;
+            max-width: max-content !important;
+            padding: 0 !important;
+            margin: 0 0 0.5rem 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            color: rgb(71, 85, 105) !important;
+            -webkit-text-fill-color: rgb(71, 85, 105) !important;
             text-shadow: none !important;
             opacity: 1 !important;
           }
 
-          .dark .roadmap-add-milestone-contrast-final-v9 .roadmap-white-pill-readable-label-v9 *,
-          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"] *,
-          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"] * {
-            color: rgb(15, 23, 42) !important;
-            -webkit-text-fill-color: rgb(15, 23, 42) !important;
-            text-shadow: none !important;
-            opacity: 1 !important;
+          .dark .roadmap-create-milestone-clean-labels-v1 .roadmap-field-label-plain-v1 {
+            color: rgba(255, 255, 255, 0.92) !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
+            text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55) !important;
           }
         `}</style>
+
 
 
 
@@ -353,7 +356,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
           <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
             {/* Title */}
             <div>
-              <label className="roadmap-white-pill-readable-label-v9 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">Title</label>
+              <label className="roadmap-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Title</label>
 
               <input
                 value={title}
@@ -401,7 +404,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
 
             {/* Status */}
             <div>
-              <label className="roadmap-white-pill-readable-label-v9 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">Status</label>
+              <label className="roadmap-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Status</label>
 
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {STATUS_OPTIONS.map((option) => {
