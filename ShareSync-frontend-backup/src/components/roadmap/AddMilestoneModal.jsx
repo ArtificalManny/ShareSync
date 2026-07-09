@@ -92,7 +92,35 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   };
 
   return (
-    <div className="roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+    <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+        <style>{`
+          /* add-milestone-modal-dark-label-css-v1 */
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="rounded"][class*="uppercase"][class*="tracking"] {
+            color: rgba(237, 233, 254, 0.98) !important;
+            background: rgba(15, 23, 42, 0.86) !important;
+            border-color: rgba(167, 139, 250, 0.28) !important;
+            text-shadow: 0 1px 14px rgba(124, 58, 237, 0.35);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 30px rgba(0,0,0,0.18);
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 input,
+          .dark .roadmap-add-milestone-modal-contrast-v1 textarea {
+            color: rgba(255, 255, 255, 0.96) !important;
+            background: rgba(15, 23, 42, 0.78) !important;
+            border-color: rgba(167, 139, 250, 0.28) !important;
+            caret-color: rgb(167, 139, 250);
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 input::placeholder,
+          .dark .roadmap-add-milestone-modal-contrast-v1 textarea::placeholder {
+            color: rgba(203, 213, 225, 0.72) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 input[type="date"] {
+            color-scheme: dark;
+          }
+        `}</style>
+
       <style className="roadmap-create-final-button-visibility-style">
         {`
           .roadmap-create-milestone-modal-v2 button.roadmap-create-hard-purple-button,
@@ -343,7 +371,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             {/* Description */}
             <div>
               <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
-                <AlignLeft className="h-4 w-4 text-slate-400 dark:text-white/35" />
+                <AlignLeft className="h-4 w-4 text-slate-400 dark:text-violet-100" />
                 Description
               </label>
 
@@ -359,9 +387,9 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             {/* Target Date */}
             <div>
               <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
-                <Calendar className="h-4 w-4 text-slate-400 dark:text-white/35" />
+                <Calendar className="h-4 w-4 text-slate-400 dark:text-violet-100" />
                 Target date
-                <span className="font-medium tracking-normal text-slate-400 dark:text-white/30">
+                <span className="font-medium tracking-normal text-slate-400 dark:text-violet-100">
                   optional
                 </span>
               </label>
@@ -428,7 +456,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
                 className={`roadmap-create-hard-purple-button roadmap-create-force-visible-button-v2 roadmap-create-button inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all ${
                   canSave
                     ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25 hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/35"
-                    : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-white/[0.08] dark:text-white/30"
+                    : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-white/[0.08] dark:text-violet-100"
                 }`}
               
                 style={{
