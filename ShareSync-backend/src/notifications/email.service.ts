@@ -192,7 +192,7 @@ export class EmailService {
         <center style="width: 100%; table-layout: fixed; background-color: #f4f4f5; padding: 40px 0;">
           <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
             <tr>
-              <td style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
+              <td align="center" style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
                 <img src="https://via.placeholder.com/180x40/0F172A/06B6D4?text=OPENSHARE" alt="OpenShare" width="180" style="display: block; margin: 0 auto;">
               </td>
             </tr>
@@ -375,8 +375,8 @@ export class EmailService {
         <center style="width: 100%; table-layout: fixed; background-color: #f4f4f5; padding: 40px 0;">
           <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);">
             <tr>
-              <td style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
-                <img src="https://openshare.ca/icon-192.png" width="72" height="72" alt="OpenShare" style="display:block; border:0; border-radius:16px;" />
+              <td align="center" style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
+                <img src="https://openshare.ca/icon-192.png" width="72" height="72" alt="OpenShare" style="display:block; margin: 0 auto; border:0; border-radius:16px;" />
               </td>
             </tr>
             <tr>
