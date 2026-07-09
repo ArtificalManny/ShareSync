@@ -1104,6 +1104,43 @@ export default function RoadmapPanel({
               opacity: 0.85;
             }
 
+            /* roadmap-dark-card-contrast-v2 */
+            .dark .roadmap-milestone-card::before {
+              opacity: 0.14 !important;
+              background:
+                radial-gradient(circle at 20% 0%, rgba(139, 92, 246, 0.18), transparent 42%),
+                radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.10), transparent 48%) !important;
+            }
+
+            .dark .roadmap-visible-card-actions-v1 {
+              background: rgba(2, 6, 23, 0.92) !important;
+              border-color: rgba(255, 255, 255, 0.12) !important;
+            }
+
+            .dark .roadmap-visible-card-actions-v1 button {
+              opacity: 1 !important;
+              color: rgba(255, 255, 255, 0.92) !important;
+              background: rgba(15, 23, 42, 0.92) !important;
+              border: 1px solid rgba(255, 255, 255, 0.14) !important;
+              box-shadow: 0 10px 24px rgba(0, 0, 0, 0.20) !important;
+            }
+
+            .dark .roadmap-visible-card-actions-v1 button:not(:disabled):hover {
+              transform: translateY(-1px);
+              background: rgba(76, 29, 149, 0.72) !important;
+              border-color: rgba(196, 181, 253, 0.35) !important;
+            }
+
+            .dark .roadmap-visible-card-actions-v1 button:disabled {
+              opacity: 0.48 !important;
+              color: rgba(255, 255, 255, 0.48) !important;
+              background: rgba(15, 23, 42, 0.55) !important;
+              border-color: rgba(255, 255, 255, 0.08) !important;
+              box-shadow: none !important;
+            }
+
+
+
             .roadmap-milestone-card > * {
               position: relative;
               z-index: 1;

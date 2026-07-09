@@ -31,9 +31,9 @@ import {
 const STATUS_CONFIG = {
   planned: {
     label: 'Planned',
-    color: 'text-slate-600 dark:text-zinc-400',
-    bgColor: 'bg-slate-100 dark:bg-white/[0.08]',
-    borderColor: 'border-slate-200 dark:border-white/[0.06]',
+    color: 'text-slate-600 dark:text-zinc-200',
+    bgColor: 'bg-slate-100 dark:bg-white/[0.10]',
+    borderColor: 'border-slate-200 dark:border-white/[0.16]',
     icon: Circle,
   },
   'in-progress': {
@@ -74,7 +74,7 @@ const STATUS_CONFIG = {
 };
 
 const ALL_STATUS_TRANSITIONS = [
-  { value: 'planned', label: 'Mark Planned', icon: Circle, color: 'text-slate-600 dark:text-zinc-400' },
+  { value: 'planned', label: 'Mark Planned', icon: Circle, color: 'text-slate-600 dark:text-zinc-200' },
   { value: 'in_progress', label: 'Mark In Progress', icon: Clock, color: 'text-violet-700 dark:text-violet-100' },
   { value: 'completed', label: 'Mark Completed', icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-100' },
   { value: 'at_risk', label: 'Mark At Risk', icon: AlertTriangle, color: 'text-red-700 dark:text-red-100' },
@@ -314,7 +314,7 @@ const MilestoneCard = ({
 
       </div>
 
-      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-violet-700 dark:group-hover:text-brand transition-colors line-clamp-2">
+      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-violet-700 dark:group-hover:text-violet-200 transition-colors line-clamp-2">
         {title}
       </h3>
 
@@ -349,7 +349,7 @@ const MilestoneCard = ({
               {checkpoints.slice(0, 4).map((checkpoint) => (
                 <div
                   key={checkpoint.id}
-                  className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08]/70 dark:text-zinc-300"
+                  className="flex items-center gap-2 rounded-xl bg-white/85 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08] dark:text-zinc-200"
                 >
                   <button
                     type="button"
@@ -387,7 +387,7 @@ const MilestoneCard = ({
                 value={newCheckpointTitle}
                 onChange={(e) => setNewCheckpointTitle(e.target.value)}
                 placeholder="Add checkpoint..."
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 dark:border-white/[0.08] dark:bg-white/[0.08] dark:text-white"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 dark:border-white/[0.14] dark:bg-slate-950/75 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-violet-300/40 dark:focus:ring-violet-400/15"
               />
               <button
                 type="submit"
