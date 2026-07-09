@@ -92,84 +92,30 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   };
 
   return (
-    <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v7 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
+    <div className="roadmap-add-milestone-contrast-final-v9 roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v7 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
-          /* add-milestone-white-pill-label-fix-v8 */
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"],
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"],
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-zinc-50"][class*="uppercase"][class*="tracking"] {
+          /* add-milestone-contrast-final-v9 */
+          .dark .roadmap-add-milestone-contrast-final-v9 .roadmap-white-pill-readable-label-v9,
+          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"],
+          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"],
+          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="dark:bg-white"][class*="uppercase"][class*="tracking"],
+          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="dark:bg-slate-50"][class*="uppercase"][class*="tracking"] {
             color: rgb(15, 23, 42) !important;
             -webkit-text-fill-color: rgb(15, 23, 42) !important;
             text-shadow: none !important;
             opacity: 1 !important;
           }
 
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"] *,
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"] *,
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-zinc-50"][class*="uppercase"][class*="tracking"] * {
+          .dark .roadmap-add-milestone-contrast-final-v9 .roadmap-white-pill-readable-label-v9 *,
+          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"] *,
+          .dark .roadmap-add-milestone-contrast-final-v9 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"] * {
             color: rgb(15, 23, 42) !important;
             -webkit-text-fill-color: rgb(15, 23, 42) !important;
             text-shadow: none !important;
+            opacity: 1 !important;
           }
         `}</style>
 
-        <style>{`
-          /* add-milestone-final-readable-v7 */
-
-          .dark .roadmap-add-milestone-final-readable-v7,
-          .dark .roadmap-add-milestone-final-readable-v7 :is(h1,h2,h3,h4,p,span,label,small,strong,button) {
-            opacity: 1 !important;
-          }
-
-          .dark .roadmap-add-milestone-final-readable-v7 h2,
-          .dark .roadmap-add-milestone-final-readable-v7 h3,
-          .dark .roadmap-add-milestone-final-readable-v7 [class*="ROADMAP"],
-          .dark .roadmap-add-milestone-final-readable-v7 [class*="text-violet"] {
-            color: rgb(245, 243, 255) !important;
-            -webkit-text-fill-color: rgb(245, 243, 255) !important;
-            text-shadow: 0 0 18px rgba(139, 92, 246, 0.35) !important;
-          }
-
-          /* Make dark-mode fields actually dark instead of white. */
-          .dark .roadmap-add-milestone-final-readable-v7 :is(input, textarea) {
-            background: rgba(15, 23, 42, 0.72) !important;
-            color: rgb(248, 250, 252) !important;
-            -webkit-text-fill-color: rgb(248, 250, 252) !important;
-            border-color: rgba(167, 139, 250, 0.34) !important;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 18px 35px rgba(0,0,0,0.20) !important;
-            caret-color: rgb(196, 181, 253) !important;
-          }
-
-          .dark .roadmap-add-milestone-final-readable-v7 :is(input, textarea)::placeholder {
-            color: rgba(226, 232, 240, 0.70) !important;
-            -webkit-text-fill-color: rgba(226, 232, 240, 0.70) !important;
-            opacity: 1 !important;
-          }
-
-          .dark .roadmap-add-milestone-final-readable-v7 input[type="date"] {
-            color-scheme: dark !important;
-          }
-
-          /* Turn the TITLE / STATUS pill labels into dark readable labels in dark mode. */
-          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="rounded"][class*="tracking"] {
-            background: rgba(15, 23, 42, 0.82) !important;
-            border: 1px solid rgba(167, 139, 250, 0.26) !important;
-            color: rgb(245, 243, 255) !important;
-            -webkit-text-fill-color: rgb(245, 243, 255) !important;
-            text-shadow: 0 0 14px rgba(139, 92, 246, 0.26) !important;
-          }
-
-          .dark .roadmap-add-milestone-final-readable-v7 :is(label,span,div)[class*="uppercase"][class*="tracking"] {
-            color: rgb(245, 243, 255) !important;
-            -webkit-text-fill-color: rgb(245, 243, 255) !important;
-          }
-
-          .dark .roadmap-add-milestone-final-readable-v7 button[class*="bg-violet"],
-          .dark .roadmap-add-milestone-final-readable-v7 button[class*="bg-violet"] * {
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-          }
-        `}</style>
 
 
 
@@ -407,9 +353,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
           <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
             {/* Title */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
-                Title
-              </label>
+              <label className="roadmap-white-pill-readable-label-v9 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">Title</label>
 
               <input
                 value={title}
@@ -457,9 +401,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
 
             {/* Status */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">
-                Status
-              </label>
+              <label className="roadmap-white-pill-readable-label-v9 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-white/45">Status</label>
 
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {STATUS_OPTIONS.map((option) => {
