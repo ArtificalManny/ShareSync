@@ -94,6 +94,68 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   return (
     <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
+          /* add-milestone-global-dark-copy-readable-v5 */
+
+          /*
+            Final contrast pass:
+            In dark mode, make modal copy readable by default,
+            then restore dark text inside white label/input surfaces.
+          */
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(
+            h1,h2,h3,h4,h5,h6,
+            p,span,label,div,button,svg
+          ) {
+            opacity: 1 !important;
+            color: rgba(248, 250, 252, 0.92) !important;
+            -webkit-text-fill-color: rgba(248, 250, 252, 0.92) !important;
+            text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="tracking"] {
+            opacity: 1 !important;
+            color: rgba(221, 214, 254, 0.96) !important;
+            -webkit-text-fill-color: rgba(221, 214, 254, 0.96) !important;
+            text-shadow: 0 0 18px rgba(139, 92, 246, 0.35) !important;
+          }
+
+          /* White pill labels like TITLE / STATUS should stay dark and crisp */
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-white"],
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-50"],
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-100"],
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-white"] *,
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-50"] *,
+          .dark .roadmap-add-milestone-modal-contrast-v1 [class*="bg-slate-100"] * {
+            color: rgb(15, 23, 42) !important;
+            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            text-shadow: none !important;
+          }
+
+          /* Dark form fields should have readable typed text and placeholders */
+          .dark .roadmap-add-milestone-modal-contrast-v1 input:not([class*="bg-white"]):not([class*="bg-slate-50"]),
+          .dark .roadmap-add-milestone-modal-contrast-v1 textarea:not([class*="bg-white"]):not([class*="bg-slate-50"]) {
+            color: rgb(241, 245, 249) !important;
+            -webkit-text-fill-color: rgb(241, 245, 249) !important;
+            caret-color: rgb(196, 181, 253) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 input::placeholder,
+          .dark .roadmap-add-milestone-modal-contrast-v1 textarea::placeholder {
+            color: rgba(203, 213, 225, 0.72) !important;
+            -webkit-text-fill-color: rgba(203, 213, 225, 0.72) !important;
+            opacity: 1 !important;
+          }
+
+          /* Purple CTA should remain white-on-purple */
+          .dark .roadmap-add-milestone-modal-contrast-v1 button[class*="bg-violet"],
+          .dark .roadmap-add-milestone-modal-contrast-v1 button[class*="bg-violet"] * {
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35) !important;
+          }
+        `}</style>
+
+        <style>{`
           /* add-milestone-dark-surface-copy-readable-v4 */
 
           /* Header: ROADMAP + Create Milestone */
