@@ -474,7 +474,7 @@ function ConversationPanel({ thread, currentUserId, participants = [], onBack })
             maxLength={5000}
             className="flex-1 text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
           />
-          <button onClick={handleSend} disabled={readOnly || sending || !newMsg.trim()} className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm">
+          <button onClick={handleSend} disabled={sending || !newMsg.trim()} className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 shadow-sm">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
           </button>
         </div>
