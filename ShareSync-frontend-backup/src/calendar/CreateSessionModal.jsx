@@ -191,7 +191,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
   return (
     <div className="schedule-session-clean-labels-v1 fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 pt-16 pb-8 backdrop-blur-md sm:px-5 sm:pt-16 sm:pb-10">
         <style>{`
-          /* schedule-session-clean-labels-v1 */
+          /* schedule-session-label-contrast-v2 */
           .schedule-session-clean-labels-v1 .schedule-field-label-plain-v1 {
             display: inline-flex !important;
             width: auto !important;
@@ -202,18 +202,18 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
             border: 0 !important;
             border-radius: 0 !important;
             box-shadow: none !important;
-            color: rgb(71, 85, 105) !important;
-            -webkit-text-fill-color: rgb(71, 85, 105) !important;
-            text-shadow: none !important;
+            color: rgba(255, 255, 255, 0.92) !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
+            text-shadow: 0 1px 14px rgba(0, 0, 0, 0.55) !important;
             opacity: 1 !important;
           }
 
           .dark .schedule-session-clean-labels-v1 .schedule-field-label-plain-v1 {
-            color: rgba(255, 255, 255, 0.92) !important;
-            -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
-            text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55) !important;
+            color: rgba(255, 255, 255, 0.94) !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.94) !important;
           }
         `}</style>
+
 
       <div className="relative flex h-auto max-h-[calc(100dvh-9rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/92 shadow-[0_22px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 dark:border-white/[0.08] dark:bg-[#101827]/95 dark:shadow-black/40">
         {/* Pearl/glass atmosphere */}
