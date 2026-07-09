@@ -31,53 +31,53 @@ import {
 const STATUS_CONFIG = {
   planned: {
     label: 'Planned',
-    color: 'text-slate-600 dark:text-text-tertiary',
-    bgColor: 'bg-slate-100 dark:bg-surface-2',
+    color: 'text-slate-600 dark:text-zinc-400',
+    bgColor: 'bg-slate-100 dark:bg-white/[0.08]',
     borderColor: 'border-slate-200 dark:border-white/[0.06]',
     icon: Circle,
   },
   'in-progress': {
     label: 'In Progress',
-    color: 'text-violet-700 dark:text-brand',
-    bgColor: 'bg-violet-50 dark:bg-brand/10',
-    borderColor: 'border-violet-200 dark:border-brand/20',
+    color: 'text-violet-700 dark:text-violet-100',
+    bgColor: 'bg-violet-50 dark:bg-violet-500/20',
+    borderColor: 'border-violet-200 dark:border-violet-300/30',
     icon: Clock,
   },
   in_progress: {
     label: 'In Progress',
-    color: 'text-violet-700 dark:text-brand',
-    bgColor: 'bg-violet-50 dark:bg-brand/10',
-    borderColor: 'border-violet-200 dark:border-brand/20',
+    color: 'text-violet-700 dark:text-violet-100',
+    bgColor: 'bg-violet-50 dark:bg-violet-500/20',
+    borderColor: 'border-violet-200 dark:border-violet-300/30',
     icon: Clock,
   },
   completed: {
     label: 'Completed',
-    color: 'text-emerald-700 dark:text-success',
-    bgColor: 'bg-emerald-50 dark:bg-success/10',
-    borderColor: 'border-emerald-200 dark:border-success/20',
+    color: 'text-emerald-700 dark:text-emerald-100',
+    bgColor: 'bg-emerald-50 dark:bg-emerald-500/20',
+    borderColor: 'border-emerald-200 dark:border-emerald-300/30',
     icon: CheckCircle2,
   },
   at_risk: {
     label: 'At Risk',
-    color: 'text-red-700 dark:text-error-500',
-    bgColor: 'bg-red-50 dark:bg-error-500/10',
-    borderColor: 'border-red-200 dark:border-error-500/20',
+    color: 'text-red-700 dark:text-red-100',
+    bgColor: 'bg-red-50 dark:bg-red-500/20',
+    borderColor: 'border-red-200 dark:border-red-300/30',
     icon: AlertTriangle,
   },
   overdue: {
     label: 'Overdue',
-    color: 'text-red-700 dark:text-error-500',
-    bgColor: 'bg-red-50 dark:bg-error-500/10',
-    borderColor: 'border-red-200 dark:border-error-500/20',
+    color: 'text-red-700 dark:text-red-100',
+    bgColor: 'bg-red-50 dark:bg-red-500/20',
+    borderColor: 'border-red-200 dark:border-red-300/30',
     icon: AlertTriangle,
   },
 };
 
 const ALL_STATUS_TRANSITIONS = [
-  { value: 'planned', label: 'Mark Planned', icon: Circle, color: 'text-slate-600 dark:text-text-tertiary' },
-  { value: 'in_progress', label: 'Mark In Progress', icon: Clock, color: 'text-violet-700 dark:text-brand' },
-  { value: 'completed', label: 'Mark Completed', icon: CheckCircle2, color: 'text-emerald-700 dark:text-success' },
-  { value: 'at_risk', label: 'Mark At Risk', icon: AlertTriangle, color: 'text-red-700 dark:text-error-500' },
+  { value: 'planned', label: 'Mark Planned', icon: Circle, color: 'text-slate-600 dark:text-zinc-400' },
+  { value: 'in_progress', label: 'Mark In Progress', icon: Clock, color: 'text-violet-700 dark:text-violet-100' },
+  { value: 'completed', label: 'Mark Completed', icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-100' },
+  { value: 'at_risk', label: 'Mark At Risk', icon: AlertTriangle, color: 'text-red-700 dark:text-red-100' },
 ];
 
 const parseDateOnlyLocal = (value) => {
@@ -293,11 +293,12 @@ const MilestoneCard = ({
     <div
       onClick={handleClick}
       className={`roadmap-milestone-card 
-        group relative p-5 rounded-xl cursor-pointer
-        bg-white dark:bg-surface-1 border transition-all duration-200
+        group relative overflow-hidden p-5 rounded-[1.5rem] cursor-pointer
+        border bg-white text-slate-900 shadow-sm transition-all duration-200
+        dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-white dark:shadow-none
         ${isSelected
-          ? 'border-violet-300 bg-violet-50/50 dark:border-brand/50 dark:bg-brand/5'
-          : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:border-white/[0.06] dark:hover:bg-surface-2 dark:hover:border-white/[0.1]'
+          ? 'border-violet-300 bg-violet-50/70 ring-2 ring-violet-200/70 dark:border-violet-300/45 dark:bg-violet-500/10 dark:ring-violet-400/15'
+          : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:border-white/[0.10] dark:hover:bg-white/[0.05] dark:hover:border-violet-300/30'
         }
       `}
     >
@@ -313,32 +314,32 @@ const MilestoneCard = ({
 
       </div>
 
-      <h3 className="text-base font-semibold text-slate-900 dark:text-text-primary mb-2 group-hover:text-violet-700 dark:group-hover:text-brand transition-colors line-clamp-2">
+      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-violet-700 dark:group-hover:text-brand transition-colors line-clamp-2">
         {title}
       </h3>
 
       {description && (
-        <p className="text-sm text-slate-600 dark:text-text-secondary line-clamp-2 mb-4">
+        <p className="text-sm text-slate-600 dark:text-zinc-300 line-clamp-2 mb-4">
           {description}
         </p>
       )}
 
       {dueLabel && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-text-tertiary mb-4">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 mb-4">
           <Calendar className="w-3.5 h-3.5" />
           <span>Due {dueLabel}</span>
         </div>
       )}
 
         <div
-          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 shadow-sm shadow-violet-100/40 dark:border-white/[0.08] dark:bg-white/[0.03] dark:shadow-none"
+          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 shadow-sm shadow-violet-100/40 dark:border-white/[0.12] dark:bg-slate-950/55 dark:shadow-inner dark:shadow-black/20" 
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-tertiary">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
               Checkpoints
             </span>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-text-tertiary">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">
               {checkpointSummary}
             </span>
           </div>
@@ -348,12 +349,12 @@ const MilestoneCard = ({
               {checkpoints.slice(0, 4).map((checkpoint) => (
                 <div
                   key={checkpoint.id}
-                  className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs text-slate-700 dark:bg-surface-2/70 dark:text-text-secondary"
+                  className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08]/70 dark:text-zinc-300"
                 >
                   <button
                     type="button"
                     onClick={(e) => handleToggleCheckpoint(e, checkpoint.id)}
-                    className="shrink-0 text-violet-600 dark:text-brand"
+                    className="shrink-0 text-violet-600 dark:text-violet-100"
                   >
                     {checkpoint.completed ? (
                       <CheckCircle2 className="h-3.5 w-3.5" />
@@ -362,7 +363,7 @@ const MilestoneCard = ({
                     )}
                   </button>
 
-                  <span className={`min-w-0 flex-1 truncate ${checkpoint.completed ? "text-slate-400 line-through dark:text-text-tertiary" : ""}`}>
+                  <span className={`min-w-0 flex-1 truncate ${checkpoint.completed ? "text-slate-400 line-through dark:text-zinc-500" : ""}`}>
                     {checkpoint.title}
                   </span>
 
@@ -386,11 +387,11 @@ const MilestoneCard = ({
                 value={newCheckpointTitle}
                 onChange={(e) => setNewCheckpointTitle(e.target.value)}
                 placeholder="Add checkpoint..."
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 dark:border-white/[0.08] dark:bg-surface-2 dark:text-text-primary"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 dark:border-white/[0.08] dark:bg-white/[0.08] dark:text-white"
               />
               <button
                 type="submit"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40" 
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -404,7 +405,7 @@ const MilestoneCard = ({
           className="
             roadmap-milestone-action-tray
             mt-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08]
-            bg-slate-50/80 dark:bg-white/[0.03]
+            bg-slate-50/80 dark:bg-slate-950/65
             p-2 shadow-inner shadow-white/70 dark:shadow-none
           "
           onClick={(e) => e.stopPropagation()}
@@ -416,9 +417,9 @@ const MilestoneCard = ({
               className="
                 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
                 text-xs font-semibold
-                bg-white dark:bg-surface-2
-                text-violet-700 dark:text-brand
-                border border-violet-100 dark:border-brand/20
+                bg-white dark:bg-white/[0.08]
+                text-violet-700 dark:text-violet-100
+                border border-violet-100 dark:border-violet-300/30
                 hover:bg-violet-50 dark:hover:bg-brand/10
                 transition-colors
               "
@@ -434,10 +435,10 @@ const MilestoneCard = ({
                 className="
                   inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
                   text-xs font-semibold
-                  bg-emerald-50 dark:bg-success/10
-                  text-emerald-700 dark:text-success
-                  border border-emerald-200 dark:border-success/20
-                  hover:bg-emerald-100 dark:hover:bg-success/15
+                  bg-emerald-50 dark:bg-emerald-500/20
+                  text-emerald-700 dark:text-emerald-100
+                  border border-emerald-200 dark:border-emerald-300/30
+                  hover:bg-emerald-100 dark:hover:bg-emerald-500/25
                   transition-colors
                 "
               >
@@ -451,9 +452,9 @@ const MilestoneCard = ({
                 className="
                   inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
                   text-xs font-semibold
-                  bg-violet-50 dark:bg-brand/10
-                  text-violet-700 dark:text-brand
-                  border border-violet-200 dark:border-brand/20
+                  bg-violet-50 dark:bg-violet-500/20
+                  text-violet-700 dark:text-violet-100
+                  border border-violet-200 dark:border-violet-300/30
                   hover:bg-violet-100 dark:hover:bg-brand/15
                   transition-colors
                 "
@@ -470,10 +471,10 @@ const MilestoneCard = ({
                 className="
                   inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
                   text-xs font-semibold
-                  bg-white dark:bg-surface-2
-                  text-slate-700 dark:text-text-secondary
+                  bg-white dark:bg-white/[0.08]
+                  text-slate-700 dark:text-zinc-300
                   border border-slate-200 dark:border-white/[0.08]
-                  hover:bg-slate-100 dark:hover:bg-surface-3
+                  hover:bg-slate-100 dark:hover:bg-white/[0.12]
                   transition-colors
                 "
               >
@@ -487,9 +488,9 @@ const MilestoneCard = ({
                 className="
                   inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
                   text-xs font-semibold
-                  bg-violet-50 dark:bg-brand/10
-                  text-violet-700 dark:text-brand
-                  border border-violet-200 dark:border-brand/20
+                  bg-violet-50 dark:bg-violet-500/20
+                  text-violet-700 dark:text-violet-100
+                  border border-violet-200 dark:border-violet-300/30
                   hover:bg-violet-100 dark:hover:bg-brand/15
                   transition-colors
                 "
@@ -506,10 +507,10 @@ const MilestoneCard = ({
                 className="
                   inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5
                   text-xs font-semibold
-                  bg-red-50 dark:bg-error-500/10
-                  text-red-700 dark:text-error-500
-                  border border-red-200 dark:border-error-500/20
-                  hover:bg-red-100 dark:hover:bg-error-500/15
+                  bg-red-50 dark:bg-red-500/20
+                  text-red-700 dark:text-red-100
+                  border border-red-200 dark:border-red-300/30
+                  hover:bg-red-100 dark:hover:bg-red-500/25
                   transition-colors
                 "
               >

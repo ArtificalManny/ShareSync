@@ -1392,7 +1392,7 @@ export default function RoadmapPanel({
                       key={mid}
                       className="group rounded-[1.75rem] bg-gradient-to-br from-violet-500/35 via-cyan-400/20 to-emerald-400/25 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:from-violet-400/45 dark:via-cyan-300/25 dark:to-emerald-300/25 dark:hover:shadow-black/50"
                     >
-                      <div className="rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-[#0f172a]/92 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/35 overflow-hidden">
+                      <div className="rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/50 overflow-hidden">
                         <MilestoneCard
                           milestone={m}
                           onClick={handleCardClick}
@@ -1404,7 +1404,7 @@ export default function RoadmapPanel({
                           onUpdate={handleMilestoneUpdate}
                         />
 
-                        <div className="roadmap-visible-card-actions-v1 flex flex-wrap items-center gap-2 border-t border-slate-100/80 bg-white/85 px-5 py-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-slate-950/70">
+                        <div className="roadmap-visible-card-actions-v1 flex flex-wrap items-center gap-2 border-t border-slate-100/80 bg-white/85 px-5 py-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-slate-950">
                           <button
                             type="button"
                             onClick={(e) => {
