@@ -913,14 +913,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
   return (
     <section className="team room-visual-scope relative mx-auto max-w-[1600px] px-4 py-5 pb-10 sm:px-6 lg:px-10">
       <style className="team room-visual-strike-style">{`
-        .team room-visual-scope {
+        .team.room-visual-scope {
           --team room-purple: #7c3aed;
           --team room-violet: #8b5cf6;
           --team room-cyan: #22d3ee;
           --team room-emerald: #34d399;
         }
 
-        .team room-holo-shell {
+        .team.room-holo-shell {
           isolation: isolate;
           border-color: rgba(139, 92, 246, 0.28) !important;
           background:
@@ -932,7 +932,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
             inset 0 1px 0 rgba(255,255,255,0.95) !important;
         }
 
-        .dark .team room-holo-shell {
+        .dark .team.room-holo-shell {
           border-color: rgba(139, 92, 246, 0.24) !important;
           background:
             radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
@@ -943,33 +943,33 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
             inset 0 1px 0 rgba(255,255,255,0.08) !important;
         }
 
-        .team room-command-orb {
+        .team.room-command-orb {
           background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,243,255,0.92)) !important;
           box-shadow:
             0 16px 34px rgba(124, 58, 237, 0.18),
             0 0 0 8px rgba(139, 92, 246, 0.08) !important;
         }
 
-        .dark .team room-command-orb {
+        .dark .team.room-command-orb {
           background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(34, 211, 238, 0.08)) !important;
           box-shadow:
             0 18px 40px rgba(0, 0, 0, 0.34),
             0 0 0 8px rgba(139, 92, 246, 0.12) !important;
         }
 
-        .team room-primary-button,
-        .team room-modal-create-button {
+        .team.room-primary-button,
+        .team.room-modal-create-button {
           opacity: 1 !important;
           color: #fff !important;
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #06b6d4 Available) !important;
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #06b6d4 100%) !important;
           border: 1px solid rgba(255,255,255,0.42) !important;
           box-shadow:
             0 16px 34px rgba(124, 58, 237, 0.34),
             inset 0 1px 0 rgba(255,255,255,0.34) !important;
         }
 
-        .team room-primary-button:hover:not(:disabled),
-        .team room-modal-create-button:hover:not(:disabled) {
+        .team.room-primary-button:hover:not(:disabled),
+        .team.room-modal-create-button:hover:not(:disabled) {
           transform: translateY(-2px) !important;
           filter: brightness(1.05) saturate(1.08) !important;
           box-shadow:
@@ -978,19 +978,19 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
             inset 0 1px 0 rgba(255,255,255,0.38) !important;
         }
 
-        .team room-primary-button *,
-        .team room-modal-create-button * {
+        .team.room-primary-button *,
+        .team.room-modal-create-button * {
           color: #fff !important;
           opacity: 1 !important;
         }
 
-        .team room-modal-create-button:disabled {
+        .team.room-modal-create-button:disabled {
           opacity: 0.72 !important;
           cursor: not-allowed !important;
-          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available) !important;
+          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
         }
 
-        .team room-stat-card {
+        .team.room-stat-card {
           position: relative;
           overflow: hidden;
           min-height: 112px;
@@ -1003,7 +1003,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
         }
 
-        .team room-stat-card:hover {
+        .team.room-stat-card:hover {
           transform: translateY(-2px);
           box-shadow:
             0 22px 54px rgba(15, 23, 42, 0.12),
@@ -1011,7 +1011,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
             inset 0 1px 0 rgba(255,255,255,0.98) !important;
         }
 
-        .dark .team room-stat-card {
+        .dark .team.room-stat-card {
           background:
             radial-gradient(circle at 18% 0%, rgba(255,255,255,0.10), transparent 36%),
             linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)) !important;
@@ -1020,60 +1020,60 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
             inset 0 1px 0 rgba(255,255,255,0.08) !important;
         }
 
-        .team room-thread-stage {
+        .team.room-thread-stage {
           border-color: rgba(148, 163, 184, 0.38) !important;
           box-shadow:
             0 24px 70px rgba(15, 23, 42, 0.12),
             inset 0 1px 0 rgba(255,255,255,0.86) !important;
         }
 
-        .team room-thread-rail {
+        .team.room-thread-rail {
           background:
             linear-gradient(180deg, rgba(15,23,42,0.94), rgba(30,41,59,0.90)) !important;
           box-shadow: inset -1px 0 0 rgba(255,255,255,0.12) !important;
         }
 
-        .team room-thread-rail input {
+        .team.room-thread-rail input {
           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18) !important;
         }
 
-        .team room-thread-list-card {
+        .team.room-thread-list-card {
           border-color: rgba(148, 163, 184, 0.28) !important;
           box-shadow: 0 12px 32px rgba(15, 23, 42, 0.09) !important;
         }
 
-        .team room-thread-list-card:hover {
+        .team.room-thread-list-card:hover {
           box-shadow:
             0 18px 44px rgba(124, 58, 237, 0.16),
             0 0 0 4px rgba(139, 92, 246, 0.07) !important;
         }
 
-        .team room-conversation-canvas {
+        .team.room-conversation-canvas {
           background:
             radial-gradient(circle at 50% 28%, rgba(139, 92, 246, 0.12), transparent 26%),
             radial-gradient(circle at 88% 18%, rgba(34, 211, 238, 0.14), transparent 30%),
             linear-gradient(135deg, rgba(255,255,255,0.98), rgba(241,245,249,0.70)) !important;
         }
 
-        .dark .team room-conversation-canvas {
+        .dark .team.room-conversation-canvas {
           background:
             radial-gradient(circle at 50% 28%, rgba(139, 92, 246, 0.12), transparent 28%),
             radial-gradient(circle at 88% 18%, rgba(34, 211, 238, 0.10), transparent 32%),
             linear-gradient(135deg, rgba(15,23,42,0.98), rgba(2,6,23,0.96)) !important;
         }
 
-        .team room-empty-orb {
+        .team.room-empty-orb {
           background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,243,255,0.94)) !important;
           box-shadow:
             0 18px 42px rgba(124, 58, 237, 0.18),
             0 0 0 10px rgba(139, 92, 246, 0.08) !important;
         }
 
-        .dark .team room-empty-orb {
+        .dark .team.room-empty-orb {
           background: linear-gradient(135deg, rgba(139,92,246,0.20), rgba(34,211,238,0.08)) !important;
         }
 
-        .team room-create-modal-card {
+        .team.room-create-modal-card {
           border-color: rgba(139, 92, 246, 0.28) !important;
           background:
             radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.14), transparent 32%),
@@ -1082,7 +1082,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           box-shadow: 0 30px 90px rgba(15, 23, 42, 0.24) !important;
         }
 
-        .dark .team room-create-modal-card {
+        .dark .team.room-create-modal-card {
           background:
             radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
             radial-gradient(circle at 88% 0%, rgba(34, 211, 238, 0.10), transparent 36%),
@@ -1093,13 +1093,13 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
 
         <style className="team room-button-visibility-v3-style">
           {`
-            .team room-primary-button,
-            .team room-modal-create-button {
+            .team.room-primary-button,
+            .team.room-modal-create-button {
               position: relative !important;
               isolation: isolate !important;
               overflow: hidden !important;
               border: 1px solid rgba(216, 180, 254, 0.96) !important;
-              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
               box-shadow:
                 0 18px 40px rgba(124, 58, 237, 0.42),
                 0 0 0 1px rgba(255, 255, 255, 0.38) inset !important;
@@ -1108,8 +1108,8 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
               mix-blend-mode: normal !important;
             }
 
-            .team room-primary-button::before,
-            .team room-modal-create-button::before {
+            .team.room-primary-button::before,
+            .team.room-modal-create-button::before {
               content: "" !important;
               position: absolute !important;
               inset: 1px !important;
@@ -1121,14 +1121,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
               pointer-events: none !important;
             }
 
-            .team room-primary-button,
-            .team room-primary-button *,
-            .team room-primary-button span,
-            .team room-primary-button svg,
-            .team room-modal-create-button,
-            .team room-modal-create-button *,
-            .team room-modal-create-button span,
-            .team room-modal-create-button svg {
+            .team.room-primary-button,
+            .team.room-primary-button *,
+            .team.room-primary-button span,
+            .team.room-primary-button svg,
+            .team.room-modal-create-button,
+            .team.room-modal-create-button *,
+            .team.room-modal-create-button span,
+            .team.room-modal-create-button svg {
               color: #ffffff !important;
               -webkit-text-fill-color: #ffffff !important;
               opacity: 1 !important;
@@ -1137,18 +1137,18 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
               text-shadow: 0 1px 8px rgba(15, 23, 42, 0.32) !important;
             }
 
-            .team room-primary-button:hover:not(:disabled),
-            .team room-modal-create-button:hover:not(:disabled) {
-              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
+            .team.room-primary-button:hover:not(:disabled),
+            .team.room-modal-create-button:hover:not(:disabled) {
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
               box-shadow:
                 0 22px 48px rgba(124, 58, 237, 0.52),
                 0 0 0 1px rgba(255, 255, 255, 0.44) inset !important;
               transform: translateY(-1px) !important;
             }
 
-            .team room-primary-button:disabled,
-            .team room-modal-create-button:disabled {
-              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed Available) !important;
+            .team.room-primary-button:disabled,
+            .team.room-modal-create-button:disabled {
+              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%) !important;
               border-color: rgba(221, 214, 254, 0.98) !important;
               opacity: 0.92 !important;
               cursor: not-allowed !important;
@@ -1157,17 +1157,17 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
                 0 0 0 1px rgba(255, 255, 255, 0.36) inset !important;
             }
 
-            .team room-primary-button:disabled *,
-            .team room-modal-create-button:disabled * {
+            .team.room-primary-button:disabled *,
+            .team.room-modal-create-button:disabled * {
               color: #ffffff !important;
               -webkit-text-fill-color: #ffffff !important;
               opacity: 1 !important;
               text-shadow: 0 1px 8px rgba(15, 23, 42, 0.28) !important;
             }
         /* FINAL visibility override: Team Room buttons only */
-        .team room-primary-button,
-        .team room-modal-create-button {
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+        .team.room-primary-button,
+        .team.room-modal-create-button {
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
           color: #ffffff !important;
           opacity: 1 !important;
           border: 1px solid rgba(196, 181, 253, 0.95) !important;
@@ -1180,12 +1180,12 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           backdrop-filter: none !important;
         }
 
-        .team room-primary-button *,
-        .team room-primary-button span,
-        .team room-primary-button svg,
-        .team room-modal-create-button *,
-        .team room-modal-create-button span,
-        .team room-modal-create-button svg {
+        .team.room-primary-button *,
+        .team.room-primary-button span,
+        .team.room-primary-button svg,
+        .team.room-modal-create-button *,
+        .team.room-modal-create-button span,
+        .team.room-modal-create-button svg {
           color: #ffffff !important;
           stroke: #ffffff !important;
           fill: none;
@@ -1194,18 +1194,18 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           mix-blend-mode: normal !important;
         }
 
-        .team room-primary-button:hover:not(:disabled),
-        .team room-modal-create-button:hover:not(:disabled) {
-          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
+        .team.room-primary-button:hover:not(:disabled),
+        .team.room-modal-create-button:hover:not(:disabled) {
+          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
           box-shadow:
             0 22px 54px rgba(124, 58, 237, 0.52),
             inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
           transform: translateY(-1px);
         }
 
-        .team room-primary-button:disabled,
-        .team room-modal-create-button:disabled {
-          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 48%, #7c3aed Available) !important;
+        .team.room-primary-button:disabled,
+        .team.room-modal-create-button:disabled {
+          background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 48%, #7c3aed 100%) !important;
           color: #ffffff !important;
           opacity: 0.92 !important;
           cursor: not-allowed !important;
@@ -1214,12 +1214,12 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
             inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
         }
 
-        .team room-primary-button:disabled *,
-        .team room-primary-button:disabled span,
-        .team room-primary-button:disabled svg,
-        .team room-modal-create-button:disabled *,
-        .team room-modal-create-button:disabled span,
-        .team room-modal-create-button:disabled svg {
+        .team.room-primary-button:disabled *,
+        .team.room-primary-button:disabled span,
+        .team.room-primary-button:disabled svg,
+        .team.room-modal-create-button:disabled *,
+        .team.room-modal-create-button:disabled span,
+        .team.room-modal-create-button:disabled svg {
           color: #ffffff !important;
           stroke: #ffffff !important;
           opacity: 1 !important;
@@ -1227,14 +1227,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           
 
         /* team room-buttons-hard-final-css */
-        button.team room-primary-button,
-        button.team room-modal-create-button,
-        .team room-primary-button,
-        .team room-modal-create-button {
+        button.team.room-primary-button,
+        button.team.room-modal-create-button,
+        .team.room-primary-button,
+        .team.room-modal-create-button {
           position: relative !important;
           isolation: isolate !important;
           background-color: #7c3aed !important;
-          background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+          background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           opacity: 1 !important;
@@ -1251,27 +1251,27 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           transform: translateZ(0) !important;
         }
 
-        button.team room-primary-button::before,
-        button.team room-primary-button::after,
-        button.team room-modal-create-button::before,
-        button.team room-modal-create-button::after,
-        .team room-primary-button::before,
-        .team room-primary-button::after,
-        .team room-modal-create-button::before,
-        .team room-modal-create-button::after {
+        button.team.room-primary-button::before,
+        button.team.room-primary-button::after,
+        button.team.room-modal-create-button::before,
+        button.team.room-modal-create-button::after,
+        .team.room-primary-button::before,
+        .team.room-primary-button::after,
+        .team.room-modal-create-button::before,
+        .team.room-modal-create-button::after {
           content: none !important;
           display: none !important;
           opacity: 0 !important;
         }
 
-        button.team room-primary-button *,
-        button.team room-modal-create-button *,
-        .team room-primary-button *,
-        .team room-modal-create-button *,
-        .team room-primary-button span,
-        .team room-modal-create-button span,
-        .team room-primary-button svg,
-        .team room-modal-create-button svg {
+        button.team.room-primary-button *,
+        button.team.room-modal-create-button *,
+        .team.room-primary-button *,
+        .team.room-modal-create-button *,
+        .team.room-primary-button span,
+        .team.room-modal-create-button span,
+        .team.room-primary-button svg,
+        .team.room-modal-create-button svg {
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           opacity: 1 !important;
@@ -1280,14 +1280,14 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           mix-blend-mode: normal !important;
         }
 
-        button.team room-primary-button:disabled,
-        button.team room-modal-create-button:disabled,
-        .team room-primary-button:disabled,
-        .team room-modal-create-button:disabled,
-        .team room-primary-button[disabled],
-        .team room-modal-create-button[disabled] {
+        button.team.room-primary-button:disabled,
+        button.team.room-modal-create-button:disabled,
+        .team.room-primary-button:disabled,
+        .team.room-modal-create-button:disabled,
+        .team.room-primary-button[disabled],
+        .team.room-modal-create-button[disabled] {
           background-color: #7c3aed !important;
-          background-image: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #7c3aed Available) !important;
+          background-image: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 45%, #7c3aed 100%) !important;
           color: #ffffff !important;
           -webkit-text-fill-color: #ffffff !important;
           opacity: 1 !important;
@@ -1298,12 +1298,12 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
           cursor: not-allowed !important;
         }
 
-        button.team room-primary-button:hover:not(:disabled),
-        button.team room-modal-create-button:hover:not(:disabled),
-        .team room-primary-button:hover:not(:disabled),
-        .team room-modal-create-button:hover:not(:disabled) {
+        button.team.room-primary-button:hover:not(:disabled),
+        button.team.room-modal-create-button:hover:not(:disabled),
+        .team.room-primary-button:hover:not(:disabled),
+        .team.room-modal-create-button:hover:not(:disabled) {
           background-color: #6d28d9 !important;
-          background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 Available) !important;
+          background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%) !important;
           box-shadow:
             0 22px 52px rgba(124, 58, 237, 0.54),
             0 0 0 1px rgba(255, 255, 255, 0.34) inset,
@@ -1415,7 +1415,127 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
         </style>
 
 
-      <div className="team room-holo-shell relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
+      
+        <style className="team-room-readability-final-v1">
+          {`
+            /* team-room-readability-final-v1 */
+
+            .team-room-readable-v1.room-holo-shell {
+              isolation: isolate;
+            }
+
+            .team-room-readable-v1 .room-primary-button,
+            .team-room-readable-v1 .room-modal-create-button {
+              background-color: #7c3aed !important;
+              background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+              opacity: 1 !important;
+              border-color: rgba(221, 214, 254, 0.96) !important;
+              box-shadow:
+                0 18px 44px rgba(124, 58, 237, 0.42),
+                inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+            }
+
+            .team-room-readable-v1 .room-primary-button *,
+            .team-room-readable-v1 .room-modal-create-button * {
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+              opacity: 1 !important;
+              stroke: currentColor !important;
+            }
+
+            .team-room-readable-v1 .room-stat-card {
+              opacity: 1 !important;
+              color: rgb(15, 23, 42) !important;
+            }
+
+            .team-room-readable-v1 .room-stat-card > div:last-child {
+              color: rgb(15, 23, 42) !important;
+              -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-stat-card {
+              background:
+                radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.10), transparent 38%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(2, 6, 23, 0.72)) !important;
+              border-color: rgba(255, 255, 255, 0.13) !important;
+              box-shadow:
+                0 18px 52px rgba(0, 0, 0, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-stat-card > div:first-child {
+              color: rgba(221, 214, 254, 0.92) !important;
+              -webkit-text-fill-color: rgba(221, 214, 254, 0.92) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-stat-card > div:last-child {
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-list-card {
+              background:
+                linear-gradient(135deg, rgba(30, 41, 59, 0.82), rgba(15, 23, 42, 0.72)) !important;
+              border-color: rgba(255, 255, 255, 0.12) !important;
+              box-shadow:
+                0 16px 38px rgba(0, 0, 0, 0.24),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-list-card > div {
+              background: rgba(15, 23, 42, 0.92) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-list-card button {
+              background: transparent !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-list-card button:hover {
+              background: rgba(255, 255, 255, 0.055) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-list-card span,
+            .dark .team-room-readable-v1 .room-thread-list-card p {
+              color: rgba(226, 232, 240, 0.82) !important;
+              -webkit-text-fill-color: rgba(226, 232, 240, 0.82) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-list-card [class*="text-slate-800"],
+            .dark .team-room-readable-v1 .room-thread-list-card [class*="text-slate-900"],
+            .dark .team-room-readable-v1 .room-thread-list-card [class*="dark:text-white"] {
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-rail input {
+              background: rgba(15, 23, 42, 0.82) !important;
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+              border-color: rgba(255, 255, 255, 0.13) !important;
+              box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-thread-rail input::placeholder {
+              color: rgba(203, 213, 225, 0.64) !important;
+              -webkit-text-fill-color: rgba(203, 213, 225, 0.64) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-conversation-canvas {
+              background:
+                radial-gradient(circle at 50% 24%, rgba(139, 92, 246, 0.10), transparent 34%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.94)) !important;
+            }
+
+            .dark .team-room-readable-v1 .room-empty-orb {
+              background: rgba(139, 92, 246, 0.14) !important;
+              border-color: rgba(196, 181, 253, 0.22) !important;
+            }
+          `}
+        </style>
+
+<div className="team team-room-readable-v1 room-holo-shell relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" />
