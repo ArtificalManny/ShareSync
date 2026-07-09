@@ -327,7 +327,7 @@ const MomentumStatusBanner = () => {
           <div className={`text-sm font-medium ${currentConfig.color}`}>
             {glowState.charAt(0).toUpperCase() + glowState.slice(1)} Mode
           </div>
-          <div className="text-xs text-slate-500 dark:text-zinc-400">{message}</div>
+          <div className="text-xs font-semibold text-slate-500 dark:text-zinc-200">{message}</div>
         </div>
       </div>
       <div className={`text-2xl font-bold tabular-nums ${currentConfig.color}`}>L{glowLevel}</div>
@@ -596,7 +596,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER
       ═══════════════════════════════════════════════════════════════════ */}
-      <header className="mb-6 md:mb-10 flex flex-col md:flex-row md:justify-between items-start md:items-end gap-2 md:gap-0">
+      <header className="home-hero-readable relative z-10 mb-6 md:mb-10 flex flex-col md:flex-row md:justify-between items-start md:items-end gap-2 md:gap-0">
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div
@@ -615,7 +615,7 @@ export default function Home() {
             )}
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-semibold text-slate-800 dark:text-zinc-100">
+          <h1 className="text-3xl md:text-4xl font-semibold text-slate-800 dark:text-white dark:drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]">
             {(() => {
               const hour = new Date().getHours();
               if (hour < 12) return "Good morning";
@@ -626,7 +626,7 @@ export default function Home() {
               className={`${
                 isFireMode
                   ? "text-orange-500"
-                  : "text-violet-600 dark:text-zinc-300"
+                  : "text-violet-600 dark:text-violet-200"
               } transition-colors duration-500`}
             >
               {authUser?.firstName || "Builder"}
@@ -928,7 +928,7 @@ export default function Home() {
           background:
             radial-gradient(circle at top left, rgba(139, 92, 246, 0.12), transparent 34%),
             radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08), transparent 30%),
-            linear-gradient(180deg, #09090B 0%, #0F0F14 42%, #09090B Available) !important;
+            linear-gradient(180deg, #09090B 0%, #0F0F14 42%, #09090B 100%) !important;
           color: #F8FAFC;
           box-shadow: 0 0 0 100vmax #09090B;
           clip-path: inset(0 -100vmax);
@@ -963,7 +963,7 @@ export default function Home() {
           background:
             radial-gradient(circle at 15% 8%, rgba(124, 58, 237, 0.16), transparent 30%),
             radial-gradient(circle at 88% 72%, rgba(34, 211, 238, 0.075), transparent 30%),
-            linear-gradient(180deg, #07090F 0%, #090B12 48%, #07090F Available) !important;
+            linear-gradient(180deg, #07090F 0%, #090B12 48%, #07090F 100%) !important;
           color: #F5F7FB !important;
           box-shadow: 0 0 0 100vmax #07090F;
           clip-path: inset(0 -100vmax);
