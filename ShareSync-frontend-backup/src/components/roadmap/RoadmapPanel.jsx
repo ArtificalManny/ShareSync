@@ -1390,9 +1390,9 @@ export default function RoadmapPanel({
                   return (
                     <div
                       key={mid}
-                      className="group rounded-[1.75rem] bg-gradient-to-br from-violet-500/20 via-cyan-400/15 to-emerald-400/20 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-black/40"
+                      className="group rounded-[1.75rem] bg-gradient-to-br from-violet-500/35 via-cyan-400/20 to-emerald-400/25 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:from-violet-400/45 dark:via-cyan-300/25 dark:to-emerald-300/25 dark:hover:shadow-black/50"
                     >
-                      <div className="rounded-[1.7rem] bg-white/95 dark:bg-[#111113]/95 overflow-hidden">
+                      <div className="rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-[#0f172a]/92 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/35 overflow-hidden">
                         <MilestoneCard
                           milestone={m}
                           onClick={handleCardClick}
@@ -1404,14 +1404,14 @@ export default function RoadmapPanel({
                           onUpdate={handleMilestoneUpdate}
                         />
 
-                        <div className="roadmap-visible-card-actions-v1 px-5 pb-5 pt-0 flex flex-wrap items-center gap-2 border-t border-slate-100/80 dark:border-white/[0.06]">
+                        <div className="roadmap-visible-card-actions-v1 flex flex-wrap items-center gap-2 border-t border-slate-100/80 bg-white/85 px-5 py-4 backdrop-blur-xl dark:border-white/[0.08] dark:bg-slate-950/70">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEdit(mid, m);
                             }}
-                            className="inline-flex items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm transition hover:bg-violet-100 dark:border-brand-500/25 dark:bg-brand-500/10 dark:text-brand-200"
+                            className="inline-flex items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 shadow-sm transition hover:bg-violet-100 dark:border-violet-400/30 dark:bg-violet-500/18 dark:text-violet-100 dark:hover:bg-violet-500/25"
                           >
                             Edit
                           </button>
@@ -1423,7 +1423,7 @@ export default function RoadmapPanel({
                                 e.stopPropagation();
                                 handleStatusChange(mid, 'in_progress');
                               }}
-                              className="inline-flex items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 shadow-sm transition hover:bg-cyan-100 dark:border-cyan-500/25 dark:bg-cyan-500/10 dark:text-cyan-200"
+                              className="inline-flex items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-black text-cyan-700 shadow-sm transition hover:bg-cyan-100 dark:border-cyan-300/30 dark:bg-cyan-500/18 dark:text-cyan-100 dark:hover:bg-cyan-500/25"
                             >
                               Mark In Progress
                             </button>
@@ -1434,7 +1434,7 @@ export default function RoadmapPanel({
                                 e.stopPropagation();
                                 handleStatusChange(mid, 'completed');
                               }}
-                              className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200"
+                              className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-300/30 dark:bg-emerald-500/18 dark:text-emerald-100 dark:hover:bg-emerald-500/25"
                             >
                               Mark Completed
                             </button>
@@ -1447,7 +1447,7 @@ export default function RoadmapPanel({
                                 e.stopPropagation();
                                 handleStatusChange(mid, 'planned');
                               }}
-                              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-text-secondary"
+                              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/[0.14] dark:bg-white/[0.08] dark:text-zinc-100 dark:hover:bg-white/[0.12]"
                             >
                               Plan
                             </button>
@@ -1459,7 +1459,7 @@ export default function RoadmapPanel({
                               e.stopPropagation();
                               handleDelete(mid, m);
                             }}
-                            className="ml-auto inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200"
+                            className="ml-auto inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 shadow-sm transition hover:bg-red-100 dark:border-red-300/25 dark:bg-red-500/16 dark:text-red-100 dark:hover:bg-red-500/24"
                           >
                             Delete
                           </button>
