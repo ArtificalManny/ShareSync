@@ -94,6 +94,33 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   return (
     <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
+          /* add-milestone-white-pill-readable-v3 */
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-white"][class*="rounded"],
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-50"][class*="rounded"],
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-100"][class*="rounded"] {
+            color: rgb(15, 23, 42) !important;
+            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            text-shadow: none !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-white"][class*="rounded"] *,
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-50"][class*="rounded"] *,
+          .dark .roadmap-add-milestone-modal-contrast-v1 :is(div,label,span,input)[class*="bg-slate-100"][class*="rounded"] * {
+            color: rgb(15, 23, 42) !important;
+            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            text-shadow: none !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 input[class*="bg-white"]::placeholder,
+          .dark .roadmap-add-milestone-modal-contrast-v1 input[class*="bg-slate-50"]::placeholder,
+          .dark .roadmap-add-milestone-modal-contrast-v1 input[class*="bg-slate-100"]::placeholder {
+            color: rgb(51, 65, 85) !important;
+            -webkit-text-fill-color: rgb(51, 65, 85) !important;
+            opacity: 1 !important;
+          }
+        `}</style>
+
+        <style>{`
           /* add-milestone-title-status-label-readable-v2 */
           .dark .roadmap-add-milestone-modal-contrast-v1 .roadmap-milestone-field-label-readable-v2 {
             color: rgba(255, 255, 255, 0.96) !important;
