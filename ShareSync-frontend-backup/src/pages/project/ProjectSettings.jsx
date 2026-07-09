@@ -371,7 +371,119 @@ const ProjectSettings = () => {
   }
 
   return (
-    <div className="project-settings-page min-h-screen bg-slate-50 dark:bg-[#09090B] text-slate-800 dark:text-white pb-20 transition-colors">
+    <div className="project-settings-page project-settings-readable-v1 min-h-screen bg-slate-50 dark:bg-[#09090B] text-slate-800 dark:text-white pb-20 transition-colors">
+        <style className="project-settings-readability-final-v1">
+          {`
+            /* project-settings-readability-final-v1 */
+
+            .project-settings-readable-v1 .project-settings-field-label-plain-v1 {
+              display: block !important;
+              width: auto !important;
+              max-width: max-content !important;
+              background: transparent !important;
+              background-image: none !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+              padding: 0 !important;
+              margin: 0 0 0.5rem 0 !important;
+              color: rgb(71, 85, 105) !important;
+              -webkit-text-fill-color: rgb(71, 85, 105) !important;
+              opacity: 1 !important;
+              text-shadow: none !important;
+              line-height: 1.25 !important;
+              letter-spacing: 0.14em !important;
+              text-transform: uppercase !important;
+            }
+
+            .dark .project-settings-readable-v1 .project-settings-field-label-plain-v1 {
+              color: rgba(255, 255, 255, 0.92) !important;
+              -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
+              text-shadow: 0 1px 10px rgba(0, 0, 0, 0.32) !important;
+            }
+
+            .project-settings-readable-v1 .project-information-card {
+              background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.10), transparent 34%),
+                radial-gradient(circle at 90% 10%, rgba(34, 211, 238, 0.10), transparent 34%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.90)) !important;
+              border-color: rgba(203, 213, 225, 0.78) !important;
+              color: rgb(15, 23, 42) !important;
+              box-shadow:
+                0 24px 72px rgba(15, 23, 42, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+            }
+
+            .dark .project-settings-readable-v1 .project-information-card {
+              background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.16), transparent 34%),
+                radial-gradient(circle at 90% 10%, rgba(34, 211, 238, 0.12), transparent 36%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.88)) !important;
+              border-color: rgba(139, 92, 246, 0.24) !important;
+              color: #ffffff !important;
+              box-shadow:
+                0 24px 72px rgba(0, 0, 0, 0.34),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .project-settings-readable-v1 .project-information-card input,
+            .project-settings-readable-v1 .project-information-card textarea {
+              background: rgba(255, 255, 255, 0.98) !important;
+              color: rgb(15, 23, 42) !important;
+              -webkit-text-fill-color: rgb(15, 23, 42) !important;
+              border-color: rgba(203, 213, 225, 0.90) !important;
+              box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05) !important;
+            }
+
+            .dark .project-settings-readable-v1 .project-information-card input,
+            .dark .project-settings-readable-v1 .project-information-card textarea {
+              background: rgba(15, 23, 42, 0.82) !important;
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+              border-color: rgba(255, 255, 255, 0.13) !important;
+              box-shadow:
+                0 14px 34px rgba(0, 0, 0, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+            }
+
+            .project-settings-readable-v1 .project-information-card input::placeholder,
+            .project-settings-readable-v1 .project-information-card textarea::placeholder {
+              color: rgba(100, 116, 139, 0.72) !important;
+              -webkit-text-fill-color: rgba(100, 116, 139, 0.72) !important;
+            }
+
+            .dark .project-settings-readable-v1 .project-information-card input::placeholder,
+            .dark .project-settings-readable-v1 .project-information-card textarea::placeholder {
+              color: rgba(203, 213, 225, 0.58) !important;
+              -webkit-text-fill-color: rgba(203, 213, 225, 0.58) !important;
+            }
+
+            .project-settings-readable-v1 .project-settings-banner-empty {
+              background: rgba(241, 245, 249, 0.94) !important;
+              color: rgb(100, 116, 139) !important;
+              -webkit-text-fill-color: rgb(100, 116, 139) !important;
+            }
+
+            .dark .project-settings-readable-v1 .project-settings-banner-empty {
+              background: rgba(30, 41, 59, 0.72) !important;
+              color: rgba(226, 232, 240, 0.74) !important;
+              -webkit-text-fill-color: rgba(226, 232, 240, 0.74) !important;
+            }
+
+            .project-settings-readable-v1 .project-information-card button {
+              color: #ffffff !important;
+              -webkit-text-fill-color: #ffffff !important;
+            }
+
+            .project-settings-readable-v1 .project-information-card button * {
+              color: inherit !important;
+              -webkit-text-fill-color: inherit !important;
+              stroke: currentColor !important;
+            }
+          `}
+        </style>
+
+
       <div className="project-settings-shell max-w-4xl mx-auto px-6 py-8">
         <input
           ref={logoFileInputRef}
@@ -431,12 +543,12 @@ const ProjectSettings = () => {
           <div className={!canEditProjectInfo ? 'opacity-60 pointer-events-none grayscale-[0.5]' : ''}>
             {/* Banner */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Banner</label>
+              <label className="project-settings-field-label-plain-v1 block text-sm font-black uppercase tracking-[0.14em]">Project Banner</label>
               <div className="relative h-40 rounded-xl overflow-hidden bg-slate-700 group">
                 {formData.banner ? (
                   <img src={resolveProjectAssetUrl(formData.banner)} alt="Banner" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  <div className="project-settings-banner-empty w-full h-full flex items-center justify-center text-slate-500">
                     No banner set
                   </div>
                 )}
@@ -466,7 +578,7 @@ const ProjectSettings = () => {
             {/* Project Picture & Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Logo / Icon</label>
+                <label className="project-settings-field-label-plain-v1 block text-sm font-black uppercase tracking-[0.14em]">Project Logo / Icon</label>
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full flex items-center justify-center text-3xl font-bold relative group overflow-hidden">
                     {formData.picture ? (
@@ -503,7 +615,7 @@ const ProjectSettings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Project Name</label>
+                <label className="project-settings-field-label-plain-v1 block text-sm font-black uppercase tracking-[0.14em]">Project Name</label>
                 <input
                   type="text"
                   disabled={!canEditProjectInfo}
@@ -516,7 +628,7 @@ const ProjectSettings = () => {
 
             {/* Description */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 dark:text-white mb-2">Description</label>
+              <label className="project-settings-field-label-plain-v1 block text-sm font-black uppercase tracking-[0.14em]">Description</label>
               <textarea
                 value={formData.description}
                 disabled={!canEditProjectInfo}
