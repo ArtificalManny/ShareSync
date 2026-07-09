@@ -189,7 +189,32 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
   const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white/95 dark:bg-white/[0.08] px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 pt-16 pb-8 backdrop-blur-md sm:px-5 sm:pt-16 sm:pb-10">
+    <div className="schedule-session-clean-labels-v1 fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 pt-16 pb-8 backdrop-blur-md sm:px-5 sm:pt-16 sm:pb-10">
+        <style>{`
+          /* schedule-session-clean-labels-v1 */
+          .schedule-session-clean-labels-v1 .schedule-field-label-plain-v1 {
+            display: inline-flex !important;
+            width: auto !important;
+            max-width: max-content !important;
+            padding: 0 !important;
+            margin: 0 0 0.5rem 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            color: rgb(71, 85, 105) !important;
+            -webkit-text-fill-color: rgb(71, 85, 105) !important;
+            text-shadow: none !important;
+            opacity: 1 !important;
+          }
+
+          .dark .schedule-session-clean-labels-v1 .schedule-field-label-plain-v1 {
+            color: rgba(255, 255, 255, 0.92) !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
+            text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55) !important;
+          }
+        `}</style>
+
       <div className="relative flex h-auto max-h-[calc(100dvh-9rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/92 shadow-[0_22px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 dark:border-white/[0.08] dark:bg-[#101827]/95 dark:shadow-black/40">
         {/* Pearl/glass atmosphere */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.92),rgba(255,255,255,0.68)_32%,rgba(139,92,246,0.08)_70%,rgba(34,211,238,0.04)_Available)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),rgba(15,23,42,0.08)_38%,rgba(15,23,42,0)_Available)]" />
@@ -231,9 +256,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
           <form id="create-session-form" onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 pb-7 overscroll-contain">
             {/* Title Input */}
             <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
-                Session title
-              </label>
+              <label className="schedule-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Session Title</label>
               <input
                 type="text"
                 autoFocus
@@ -246,9 +269,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
 
             {/* Type Selector */}
             <div>
-              <label className="mb-3 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
-                Session type
-              </label>
+              <label className="schedule-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Session Type</label>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {typeOptions.map((option) => {
@@ -290,9 +311,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
-                    Date
-                  </label>
+                  <label className="schedule-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Date</label>
                   <input
                     type="date"
                     required
@@ -309,9 +328,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
-                    Time window
-                  </label>
+                  <label className="schedule-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Time Window</label>
 
                   <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                     <input
@@ -375,9 +392,7 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-white/35">
-                    Notes
-                  </label>
+                  <label className="schedule-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Notes</label>
 
                 <textarea
                   rows="3"
