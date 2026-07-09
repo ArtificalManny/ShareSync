@@ -94,6 +94,26 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   return (
     <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v7 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
+          /* add-milestone-white-pill-label-fix-v8 */
+          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"],
+          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"],
+          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-zinc-50"][class*="uppercase"][class*="tracking"] {
+            color: rgb(15, 23, 42) !important;
+            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            text-shadow: none !important;
+            opacity: 1 !important;
+          }
+
+          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-white"][class*="uppercase"][class*="tracking"] *,
+          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-slate-50"][class*="uppercase"][class*="tracking"] *,
+          .dark .roadmap-add-milestone-final-readable-v7 :is(div,span,label)[class*="bg-zinc-50"][class*="uppercase"][class*="tracking"] * {
+            color: rgb(15, 23, 42) !important;
+            -webkit-text-fill-color: rgb(15, 23, 42) !important;
+            text-shadow: none !important;
+          }
+        `}</style>
+
+        <style>{`
           /* add-milestone-final-readable-v7 */
 
           .dark .roadmap-add-milestone-final-readable-v7,
