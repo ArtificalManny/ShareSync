@@ -94,6 +94,24 @@ export default function AddMilestoneModal({ projectId, onClose }) {
   return (
     <div className="roadmap-add-milestone-modal-contrast-v1 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
+          /* add-milestone-title-status-label-readable-v2 */
+          .dark .roadmap-add-milestone-modal-contrast-v1 .roadmap-milestone-field-label-readable-v2 {
+            color: rgba(255, 255, 255, 0.96) !important;
+            background: rgba(15, 23, 42, 0.92) !important;
+            border: 1px solid rgba(167, 139, 250, 0.28) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.06),
+              0 12px 34px rgba(0, 0, 0, 0.28),
+              0 0 24px rgba(124, 58, 237, 0.10) !important;
+            text-shadow: 0 1px 16px rgba(167, 139, 250, 0.28) !important;
+          }
+
+          .dark .roadmap-add-milestone-modal-contrast-v1 .roadmap-milestone-field-label-readable-v2 * {
+            color: rgba(255, 255, 255, 0.96) !important;
+          }
+        `}</style>
+
+        <style>{`
           /* add-milestone-modal-dark-label-css-v1 */
           .dark .roadmap-add-milestone-modal-contrast-v1 [class*="rounded"][class*="uppercase"][class*="tracking"] {
             color: rgba(237, 233, 254, 0.98) !important;
