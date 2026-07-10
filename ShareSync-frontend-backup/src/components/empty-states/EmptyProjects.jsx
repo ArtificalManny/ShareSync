@@ -10,42 +10,53 @@ import { OPENSHARE_MESSAGING } from '../../content/openShareMessaging';
 
 export default function EmptyProjects({ onCreateProject, onImport }) {
   return (
-    <motion.div 
+    <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="flex flex-col items-center justify-center py-20 px-4 text-center h-full w-full max-w-2xl mx-auto"
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="mx-auto flex h-full w-full max-w-2xl flex-col items-center justify-center px-4 py-20 text-center"
     >
       <div className="relative mb-8">
-        {/* Glow behind the icon */}
-        <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full scale-150" />
-        <div className="relative w-24 h-24 rounded-3xl bg-surface-2 border border-white/[0.08] shadow-2xl flex items-center justify-center">
-          <Rocket className="w-12 h-12 text-brand-400" />
+        <div className="absolute inset-0 scale-150 rounded-full bg-brand-500/20 blur-2xl" />
+
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border border-white/[0.08] bg-surface-2 shadow-2xl">
+          <Rocket className="h-12 w-12 text-brand-400" />
         </div>
       </div>
 
-      <h2 className="text-3xl font-bold text-text-primary mb-3">Ready for liftoff?</h2>
-      <p className="text-text-secondary text-lg mb-10 max-w-md">
-        {OPENSHARE_MESSAGING.compact}
+      <span className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-brand-400">
+        Welcome to OpenShare
+      </span>
+
+      <h2 className="mb-4 text-3xl font-bold text-text-primary">
+        Build your first project command center
+      </h2>
+
+      <p className="mb-3 max-w-xl text-base leading-7 text-text-secondary sm:text-lg">
+        {OPENSHARE_MESSAGING.plainEnglish}
       </p>
-      
+
+      <p className="mb-10 max-w-lg text-sm leading-6 text-text-tertiary sm:text-base">
+        {OPENSHARE_MESSAGING.brandBridge}
+      </p>
+
       <div className="flex flex-col items-center gap-6">
-        <button 
+        <button
           onClick={onCreateProject}
-          className="btn-primary flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white text-base transition-all duration-200 hover:scale-105"
+          className="btn-primary flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-all duration-200 hover:scale-105"
         >
-          <Plus className="w-5 h-5" />
-          Create Project
+          <Plus className="h-5 w-5" />
+          Create your first project
         </button>
-        
-        <button 
+
+        <button
           onClick={onImport}
-          className="text-sm font-medium text-text-tertiary hover:text-brand-400 transition-colors flex items-center gap-2 group"
+          className="group flex items-center gap-2 text-sm font-medium text-text-tertiary transition-colors hover:text-brand-400"
         >
-          <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+          <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
           Import from Asana/Trello
         </button>
       </div>
-    </motion.div>
+    </motion.section>
   );
 }

@@ -6,17 +6,14 @@
 import React, { useEffect, useState } from 'react';
 import { Rocket, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { OPENSHARE_MESSAGING } from '../../../content/openShareMessaging';
 
 export default function WelcomeStep({ onNext }) {
   const { user } = useAuth();
   const [showContent, setShowContent] = useState(false);
 
-  // Get first name
   const firstName =
     user?.firstName || user?.name?.split(' ')[0] || 'there';
 
-  // Stagger animation
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 300);
     return () => clearTimeout(timer);
@@ -24,7 +21,6 @@ export default function WelcomeStep({ onNext }) {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-      {/* Animated rocket */}
       <div
         className={`
           mb-8 transition-all duration-700 ease-out
@@ -40,7 +36,6 @@ export default function WelcomeStep({ onNext }) {
         </div>
       </div>
 
-      {/* Welcome text */}
       <h1
         className={`
           mb-4 text-4xl font-bold text-text-primary
@@ -55,11 +50,10 @@ export default function WelcomeStep({ onNext }) {
         Welcome, <span className="text-brand">{firstName}</span>
       </h1>
 
-      {/* Level 1: global promise */}
       <p
         className={`
-          mb-4 max-w-xl text-base leading-7 text-text-secondary
-          transition-all delay-200 duration-700 ease-out sm:text-lg
+          mb-8 max-w-md text-lg text-text-secondary
+          transition-all delay-200 duration-700 ease-out
           ${
             showContent
               ? 'translate-y-0 opacity-100'
@@ -67,14 +61,19 @@ export default function WelcomeStep({ onNext }) {
           }
         `}
       >
-        {OPENSHARE_MESSAGING.plainEnglish}
+        You&apos;re not here just to manage tasks.
+        <br />
+        You&apos;re here to{' '}
+        <span className="font-medium text-text-primary">
+          turn plans into progress
+        </span>
+        .
       </p>
 
-      {/* Level 2: brand bridge */}
       <p
         className={`
-          mb-10 max-w-lg text-sm leading-6 text-text-tertiary
-          transition-all delay-300 duration-700 ease-out sm:text-base
+          mb-12 max-w-sm text-sm text-text-tertiary
+          transition-all delay-300 duration-700 ease-out
           ${
             showContent
               ? 'translate-y-0 opacity-100'
@@ -82,10 +81,9 @@ export default function WelcomeStep({ onNext }) {
           }
         `}
       >
-        {OPENSHARE_MESSAGING.brandBridge}
+        Let&apos;s take a moment to personalize your workspace.
       </p>
 
-      {/* CTA Button */}
       <button
         onClick={onNext}
         className={`
