@@ -380,7 +380,7 @@ export default function CreateAccount() {
   return (
     <AuthLayout
       title={step === "data" ? "Create your account" : "Verify your email"}
-      subtitle={step === "data" ? OPENSHARE_MESSAGING.auth : undefined}
+      subtitle={step === "data" ? OPENSHARE_MESSAGING.plainEnglish : undefined}
     >
 
       <AnimatePresence mode="wait">
