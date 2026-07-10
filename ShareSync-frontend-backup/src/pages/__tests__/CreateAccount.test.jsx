@@ -41,6 +41,14 @@ describe('CreateAccount Component', () => {
     
     expect(screen.getByText('OpenShare')).toBeInTheDocument();
     expect(screen.getByText('Create your account')).toBeInTheDocument();
+    // openshare-create-account-messaging-test-v1
+    expect(
+      screen.getByText(/project command center that shows your team/i)
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/plan work through moves/i)
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 

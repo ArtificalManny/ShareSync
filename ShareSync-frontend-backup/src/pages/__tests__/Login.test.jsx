@@ -41,6 +41,10 @@ describe('Login Component', () => {
     
     expect(screen.getByText('OpenShare')).toBeInTheDocument();
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
+    // openshare-login-messaging-test-v1
+    expect(
+      screen.getByText(/project command center that shows your team/i)
+    ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
