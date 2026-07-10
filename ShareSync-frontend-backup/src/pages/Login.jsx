@@ -7,7 +7,6 @@
 // - NO auth logic changed
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus, KeyRound } from "lucide-react";
@@ -175,12 +174,6 @@ export default function Login() {
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to continue shipping">
-      {/* openshare-login-explanation-v1 */}
-      <div className="mb-6 rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-center dark:border-white/10 dark:bg-white/[0.04]">
-        <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-          {OPENSHARE_MESSAGING.plainEnglish}
-        </p>
-      </div>
 
       <form onSubmit={onSubmit} className="space-y-5">
         <AuthError>{error}</AuthError>

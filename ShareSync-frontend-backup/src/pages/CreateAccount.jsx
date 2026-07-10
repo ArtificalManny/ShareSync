@@ -10,7 +10,6 @@
 // - NO backend endpoints or auth logic modified
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -379,20 +378,8 @@ export default function CreateAccount() {
   return (
     <AuthLayout
       title={step === "data" ? "Create your account" : "Verify your email"}
-      subtitle={step === "data" ? "Start shipping with momentum" : undefined}
+      subtitle={step === "data" ? "See what’s moving, what’s blocked, who owns it, and what comes next." : undefined}
     >
-      {/* openshare-create-account-explanation-v1 */}
-      {step === "data" && (
-        <div className="mb-6 space-y-2 rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-4 text-center dark:border-white/10 dark:bg-white/[0.04]">
-          <p className="text-sm font-medium leading-6 text-slate-700 dark:text-slate-200">
-            {OPENSHARE_MESSAGING.plainEnglish}
-          </p>
-
-          <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-            {OPENSHARE_MESSAGING.brandBridge}
-          </p>
-        </div>
-      )}
 
       <AnimatePresence mode="wait">
         {step === "data" ? (
