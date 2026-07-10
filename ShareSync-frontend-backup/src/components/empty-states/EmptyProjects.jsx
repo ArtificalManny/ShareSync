@@ -6,6 +6,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, Plus, Download } from 'lucide-react';
+import { OPENSHARE_MESSAGING } from '../../content/openShareMessaging';
 
 export default function EmptyProjects({ onCreateProject, onImport }) {
   return (
@@ -25,7 +26,7 @@ export default function EmptyProjects({ onCreateProject, onImport }) {
 
       <h2 className="text-3xl font-bold text-text-primary mb-3">Ready for liftoff?</h2>
       <p className="text-text-secondary text-lg mb-10 max-w-md">
-        Create your first project and start building momentum.
+        {OPENSHARE_MESSAGING.compact}
       </p>
       
       <div className="flex flex-col items-center gap-6">

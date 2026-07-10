@@ -14,6 +14,7 @@ import PersonaStep from './PersonaStep';
 import FirstTaskStep from './steps/FirstTaskStep';
 import MomentumStep from './steps/MomentumStep';
 import api from '../../api/client';
+import { OPENSHARE_MESSAGING } from '../../content/openShareMessaging';
 
 // ⭐ Priority 4.1: Persona context for saving selection
 import { usePersonaContext } from '../../context/PersonaContext';
@@ -176,7 +177,13 @@ export default function OnboardingFlow({ onComplete }) {
       )}
       
       {/* Step content */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center">
+        {currentStep === 0 && (
+          <p className="mx-auto mb-5 max-w-xl px-6 text-center text-sm leading-6 text-text-secondary sm:text-base">
+            {OPENSHARE_MESSAGING.plainEnglish}
+          </p>
+        )}
+
         {renderStep()}
       </div>
       
