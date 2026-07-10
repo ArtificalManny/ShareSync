@@ -11,4 +11,7 @@ export const OPENSHARE_MESSAGING = Object.freeze({
 
   compact:
     "See your project's work, ownership, blockers, and next steps in one shared command center.",
+
+  auth:
+    "See what’s moving, what’s blocked, who owns it, and what comes next.",
 });

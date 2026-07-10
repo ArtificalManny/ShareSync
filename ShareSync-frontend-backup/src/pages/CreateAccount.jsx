@@ -222,6 +222,8 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
   );
 }
 
+import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
+
 export default function CreateAccount() {
   useDocumentTitle("OpenShare");
   const navigate = useNavigate();
@@ -378,7 +380,7 @@ export default function CreateAccount() {
   return (
     <AuthLayout
       title={step === "data" ? "Create your account" : "Verify your email"}
-      subtitle={step === "data" ? "See what’s moving, what’s blocked, who owns it, and what comes next." : undefined}
+      subtitle={step === "data" ? OPENSHARE_MESSAGING.auth : undefined}
     >
 
       <AnimatePresence mode="wait">
