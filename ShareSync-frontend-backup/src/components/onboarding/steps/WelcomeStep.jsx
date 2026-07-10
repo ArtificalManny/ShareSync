@@ -6,14 +6,16 @@
 import React, { useEffect, useState } from 'react';
 import { Rocket, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { OPENSHARE_MESSAGING } from '../../../content/openShareMessaging';
 
 export default function WelcomeStep({ onNext }) {
   const { user } = useAuth();
   const [showContent, setShowContent] = useState(false);
-  
+
   // Get first name
-  const firstName = user?.firstName || user?.name?.split(' ')[0] || 'there';
-  
+  const firstName =
+    user?.firstName || user?.name?.split(' ')[0] || 'there';
+
   // Stagger animation
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 300);
@@ -21,58 +23,85 @@ export default function WelcomeStep({ onNext }) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
       {/* Animated rocket */}
-      <div className={`
-        mb-8 transition-all duration-700 ease-out
-        ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-      `}>
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand to-accent-500 flex items-center justify-center shadow-lg shadow-brand/25">
-          <Rocket className="w-10 h-10 text-white" />
+      <div
+        className={`
+          mb-8 transition-all duration-700 ease-out
+          ${
+            showContent
+              ? 'translate-y-0 opacity-100'
+              : 'translate-y-8 opacity-0'
+          }
+        `}
+      >
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-accent-500 shadow-lg shadow-brand/25">
+          <Rocket className="h-10 w-10 text-white" />
         </div>
       </div>
-      
+
       {/* Welcome text */}
-      <h1 className={`
-        text-4xl md:text-5xl font-bold text-text-primary mb-4
-        transition-all duration-700 delay-100 ease-out
-        ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-      `}>
+      <h1
+        className={`
+          mb-4 text-4xl font-bold text-text-primary
+          transition-all delay-100 duration-700 ease-out md:text-5xl
+          ${
+            showContent
+              ? 'translate-y-0 opacity-100'
+              : 'translate-y-8 opacity-0'
+          }
+        `}
+      >
         Welcome, <span className="text-brand">{firstName}</span>
       </h1>
-      
-      <p className={`
-        text-lg text-text-secondary max-w-md mb-8
-        transition-all duration-700 delay-200 ease-out
-        ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-      `}>
-        You're not here to manage tasks.<br />
-        You're here to <span className="text-text-primary font-medium">become someone who ships</span>.
+
+      {/* Level 1: global promise */}
+      <p
+        className={`
+          mb-4 max-w-xl text-base leading-7 text-text-secondary
+          transition-all delay-200 duration-700 ease-out sm:text-lg
+          ${
+            showContent
+              ? 'translate-y-0 opacity-100'
+              : 'translate-y-8 opacity-0'
+          }
+        `}
+      >
+        {OPENSHARE_MESSAGING.plainEnglish}
       </p>
-      
-      {/* Subtitle */}
-      <p className={`
-        text-sm text-text-tertiary max-w-sm mb-12
-        transition-all duration-700 delay-300 ease-out
-        ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-      `}>
-        Let's take 60 seconds to set you up for momentum.
+
+      {/* Level 2: brand bridge */}
+      <p
+        className={`
+          mb-10 max-w-lg text-sm leading-6 text-text-tertiary
+          transition-all delay-300 duration-700 ease-out sm:text-base
+          ${
+            showContent
+              ? 'translate-y-0 opacity-100'
+              : 'translate-y-8 opacity-0'
+          }
+        `}
+      >
+        {OPENSHARE_MESSAGING.brandBridge}
       </p>
-      
+
       {/* CTA Button */}
       <button
         onClick={onNext}
         className={`
-          group flex items-center gap-3 px-8 py-4 rounded-xl
-          bg-brand text-white font-semibold text-lg
+          group flex items-center gap-3 rounded-xl bg-brand px-8 py-4
+          text-lg font-semibold text-white transition-all duration-300
           hover:bg-brand-600 hover:shadow-glow-brand
-          transition-all duration-300
-          ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+          ${
+            showContent
+              ? 'translate-y-0 opacity-100'
+              : 'translate-y-8 opacity-0'
+          }
         `}
         style={{ transitionDelay: showContent ? '400ms' : '0ms' }}
       >
-        Let's Go
-        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        Let&apos;s Go
+        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
       </button>
     </div>
   );
