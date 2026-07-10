@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
 
 export default function Landing() {
   useDocumentTitle("OpenShare");
@@ -127,9 +128,19 @@ export default function Landing() {
               </span>
             </h1>
 
-            <p className={`max-w-3xl mx-auto ${isMobile ? 'text-lg' : 'text-xl sm:text-2xl'} text-slate-300 leading-relaxed px-4`}>
-              The only project tracker that <span className="text-white font-semibold">prevents burnout</span> before it happens
-            </p>
+            <div className="mx-auto max-w-4xl space-y-3 px-4">
+              <p
+                className={`${isMobile ? 'text-base' : 'text-xl sm:text-2xl'} font-medium leading-relaxed text-slate-200`}
+              >
+                {OPENSHARE_MESSAGING.plainEnglish}
+              </p>
+
+              <p
+                className={`${isMobile ? 'text-sm' : 'text-base sm:text-lg'} leading-relaxed text-slate-400`}
+              >
+                {OPENSHARE_MESSAGING.brandBridge}
+              </p>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 px-4">
               <button
