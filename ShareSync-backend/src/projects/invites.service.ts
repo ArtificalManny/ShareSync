@@ -29,6 +29,10 @@ export interface CreateInviteDto {
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
+const OPENSHARE_PLAIN_ENGLISH =
+  'OpenShare is a project command center that shows your team what is moving, what is blocked, who owns it, and what should happen next.';
+
+
 @Injectable()
 export class InvitesService {
   private readonly logger = new Logger(InvitesService.name);
@@ -191,6 +195,10 @@ export class InvitesService {
               <p style="color: #334155; line-height: 1.6;">
                 ${safeInviterName} has invited you to join <strong>${safeProjectName}</strong> as a <strong>${safeRole}</strong>.
               </p>
+              <!-- openshare-plain-english -->
+              <p style="color: #475569; line-height: 1.6; margin-top: 16px;">
+                ${OPENSHARE_PLAIN_ENGLISH}
+              </p>
               ${safeMessage ? `<p style="color: #334155; line-height: 1.6;">${this.escapeHtml(safeMessage)}</p>` : ''}
               <a href="${this.escapeHtml(inviteUrl)}" style="display: inline-block; background: #9333ea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px;">
                 Accept invite
@@ -215,7 +223,11 @@ export class InvitesService {
         to,
         subject: `You're invited to ${args.projectName || 'a project'} on OpenShare`,
         html,
-        text: `${args.invitedByName || 'Someone'} has invited you to join ${args.projectName || 'a project'} on OpenShare as a ${args.role || 'member'}. Accept invite: ${inviteUrl}`,
+        text: `${args.invitedByName || 'Someone'} has invited you to join ${args.projectName || 'a project'} on OpenShare as a ${args.role || 'member'}.
+
+${OPENSHARE_PLAIN_ENGLISH}
+
+Accept invite: ${inviteUrl}`,
       }),
     });
 
