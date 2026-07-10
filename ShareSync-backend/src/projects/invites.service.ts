@@ -19,6 +19,7 @@ import {
 } from './schemas/project.schema';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { EmailService } from '../notifications/email.service';
 
 type InviteRole = Exclude<ProjectRole, MemberRole.OWNER>;
 
@@ -29,8 +30,6 @@ export interface CreateInviteDto {
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
-const OPENSHARE_PLAIN_ENGLISH =
-  'OpenShare is a project command center that shows your team what is moving, what is blocked, who owns it, and what should happen next.';
 
 
 @Injectable()
@@ -45,6 +44,7 @@ export class InvitesService {
     private readonly realtime: RealtimeGateway,
     private readonly eventEmitter: EventEmitter2,
       private readonly subscriptionsService: SubscriptionsService,
+      private readonly emailService: EmailService,
   ) {}
 
   private static genToken() {
@@ -161,83 +161,16 @@ export class InvitesService {
     message?: string;
     invitedByName?: string;
   }): Promise<void> {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM;
-    const to = String(args.to || '').trim().toLowerCase();
-
-    if (!to) return;
-
-    if (!resendApiKey || !resendFrom) {
-      this.logger.warn(`Project invite email skipped for ${to}: Resend env not configured`);
-      return;
-    }
-
-    if (typeof globalThis.fetch !== 'function') {
-      this.logger.warn(`Project invite email skipped for ${to}: global fetch unavailable`);
-      return;
-    }
-
     const inviteUrl = this.buildInviteUrl(args.inviteToken);
-    const safeProjectName = this.escapeHtml(args.projectName || 'Project');
-    const safeRole = this.escapeHtml(args.role || 'member');
-    const safeInviterName = this.escapeHtml(args.invitedByName || 'Someone');
-    const safeMessage = String(args.message || '').trim();
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #9333ea, #c026d3); padding: 30px; border-radius: 12px;">
-              <h1 style="color: white; font-size: 24px; margin: 0;">👋 You're invited to ${safeProjectName}</h1>
-            </div>
-            <div style="background: #f8fafc; padding: 30px; border-radius: 12px; margin-top: 20px;">
-              <p style="color: #334155; line-height: 1.6;">
-                ${safeInviterName} has invited you to join <strong>${safeProjectName}</strong> as a <strong>${safeRole}</strong>.
-              </p>
-              <!-- openshare-plain-english -->
-              <p style="color: #475569; line-height: 1.6; margin-top: 16px;">
-                ${OPENSHARE_PLAIN_ENGLISH}
-              </p>
-              ${safeMessage ? `<p style="color: #334155; line-height: 1.6;">${this.escapeHtml(safeMessage)}</p>` : ''}
-              <a href="${this.escapeHtml(inviteUrl)}" style="display: inline-block; background: #9333ea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px;">
-                Accept invite
-              </a>
-            </div>
-            <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px;">
-              You're receiving this because someone invited this email address to an OpenShare project.
-            </p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const response = await globalThis.fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: resendFrom,
-        to,
-        subject: `You're invited to ${args.projectName || 'a project'} on OpenShare`,
-        html,
-        text: `${args.invitedByName || 'Someone'} has invited you to join ${args.projectName || 'a project'} on OpenShare as a ${args.role || 'member'}.
-
-${OPENSHARE_PLAIN_ENGLISH}
-
-Accept invite: ${inviteUrl}`,
-      }),
+    await this.emailService.sendProjectInviteEmail({
+      to: args.to,
+      projectName: args.projectName,
+      role: args.role,
+      inviteUrl,
+      message: args.message,
+      invitedByName: args.invitedByName,
     });
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.logger.warn(`Project invite email failed for ${to} (${response.status}): ${body}`);
-      return;
-    }
-
-    this.logger.log(`Project invite email sent to ${to} for ${args.projectName || 'Project'}`);
   }
 
   async createInvite(projectId: string, actingUserId: string, dto: CreateInviteDto) {

@@ -118,6 +118,198 @@ export class EmailService {
     }
   }
 
+
+  /**
+   * Transactional project invitation.
+   *
+   * This deliberately bypasses notification preference gating because the
+   * recipient has been directly invited to a project.
+   */
+  async sendProjectInviteEmail(args: {
+    to: string;
+    projectName: string;
+    role: string;
+    inviteUrl: string;
+    invitedByName?: string;
+    message?: string;
+  }): Promise<void> {
+    const projectName =
+      String(args.projectName || '').trim() || 'a project';
+    const role =
+      String(args.role || '').trim() || 'member';
+    const invitedByName =
+      String(args.invitedByName || '').trim() || 'Someone';
+    const inviteUrl = String(args.inviteUrl || '').trim();
+    const personalMessage = String(args.message || '').trim();
+
+    if (!inviteUrl) {
+      console.warn('Project invitation email skipped - invite URL missing');
+      return;
+    }
+
+    const plainEnglish =
+      'OpenShare is a project command center that shows your team what is moving, what is blocked, who owns it, and what should happen next.';
+
+    const safeProjectName = this.escapeHtml(projectName);
+    const safeRole = this.escapeHtml(role);
+    const safeInvitedByName = this.escapeHtml(invitedByName);
+    const safeInviteUrl = this.escapeAttr(inviteUrl);
+    const safeMessage = this.escapeHtml(personalMessage);
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+              Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f5;
+          }
+
+          table {
+            border-spacing: 0;
+          }
+
+          td {
+            padding: 0;
+          }
+
+          img {
+            border: 0;
+          }
+        </style>
+      </head>
+
+      <body style="margin:0; padding:0; background-color:#f4f4f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <center style="width:100%; table-layout:fixed; background-color:#f4f4f5; padding:40px 0;">
+
+          <table
+            width="100%"
+            role="presentation"
+            style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border-collapse:collapse; box-shadow:0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);"
+          >
+            <tr>
+              <td
+                align="center"
+                style="padding:30px 40px; text-align:center; background-color:#0F172A;"
+              >
+                <img
+                  src="https://openshare.ca/icon-192.png"
+                  width="72"
+                  height="72"
+                  alt="OpenShare"
+                  style="display:block; margin:0 auto; border:0; border-radius:16px;"
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="padding:40px 40px 30px; text-align:center; background-color:#1E1B4B; border-bottom:3px solid #06B6D4;"
+              >
+                <h1
+                  style="margin:0; color:#ffffff; font-size:22px; line-height:1.35; font-weight:600; letter-spacing:-0.5px;"
+                >
+                  <span style="font-size:26px;">👋</span>
+                  &nbsp; You're invited to ${safeProjectName}
+                </h1>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:40px;">
+                <p
+                  style="margin:0 0 20px; color:#334155; font-size:16px; line-height:1.65; text-align:center;"
+                >
+                  ${safeInvitedByName} has invited you to join
+                  <strong>${safeProjectName}</strong> as a
+                  <strong>${safeRole}</strong>.
+                </p>
+
+                <p
+                  style="margin:0 0 24px; color:#64748B; font-size:15px; line-height:1.65; text-align:center;"
+                >
+                  ${plainEnglish}
+                </p>
+
+                ${
+                  safeMessage
+                    ? `
+                      <div
+                        style="margin:0 0 24px; padding:16px 18px; background-color:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;"
+                      >
+                        <p
+                          style="margin:0; color:#475569; font-size:14px; line-height:1.6;"
+                        >
+                          ${safeMessage}
+                        </p>
+                      </div>
+                    `
+                    : ''
+                }
+
+                <table
+                  width="100%"
+                  role="presentation"
+                  border="0"
+                  cellspacing="0"
+                  cellpadding="0"
+                >
+                  <tr>
+                    <td align="center">
+                      <a
+                        href="${safeInviteUrl}"
+                        style="display:inline-block; background-color:#7C3AED; color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:8px; font-weight:600; font-size:15px; box-shadow:0 4px 6px -1px rgba(124,58,237,0.2);"
+                      >
+                        Accept invite
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="padding:30px 40px; background-color:#F8FAFC; text-align:center; border-top:1px solid #E2E8F0;"
+              >
+                <p
+                  style="margin:0; color:#64748B; font-size:13px; line-height:1.5;"
+                >
+                  You're receiving this because someone invited this email
+                  address to an OpenShare project.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+        </center>
+      </body>
+      </html>
+    `;
+
+    const text = [
+      `${invitedByName} has invited you to join ${projectName} as a ${role}.`,
+      plainEnglish,
+      personalMessage || '',
+      `Accept invite: ${inviteUrl}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    await this.sendDirectEmail({
+      to: args.to,
+      subject: `You're invited to ${projectName} on OpenShare`,
+      html,
+      text,
+    });
+  }
+
   /**
    * PHASE 4 RULE:
    * - No email until user has verified + opted in
