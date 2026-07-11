@@ -3,12 +3,76 @@
 // PHASE 4.1: Empty States That Sell - Empty Projects
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, Plus, Download } from 'lucide-react';
 import { OPENSHARE_MESSAGING } from '../../content/openShareMessaging';
+import {
+  trackFirstRunExplanationViewed,
+  trackFirstProjectStarted,
+} from '../../utils/telemetry';
 
 export default function EmptyProjects({ onCreateProject, onImport }) {
+  useEffect(() => {
+    const storageKey =
+      'openshare:first-run-explanation-viewed';
+
+    let alreadyTracked = false;
+
+    try {
+      alreadyTracked =
+        sessionStorage.getItem(storageKey) === '1';
+
+      if (!alreadyTracked) {
+        sessionStorage.setItem(storageKey, '1');
+      }
+    } catch {
+      // Analytics must never block the first-run experience.
+    }
+
+    if (!alreadyTracked) {
+      trackFirstRunExplanationViewed({
+        entry_point: 'empty_projects',
+      });
+    }
+  }, []);
+
+  const handleCreateProject = () => {
+    const flow = {
+      project_entry_point: 'empty_projects',
+      creation_method: 'blank',
+    };
+
+    let alreadyTracked = false;
+
+    try {
+      alreadyTracked =
+        sessionStorage.getItem(
+          'openshare:first-project-started',
+        ) === '1';
+
+      sessionStorage.setItem(
+        'openshare:first-project-flow',
+        JSON.stringify(flow),
+      );
+
+      if (!alreadyTracked) {
+        sessionStorage.setItem(
+          'openshare:first-project-started',
+          '1',
+        );
+      }
+    } catch {
+      // Analytics must never block project creation.
+    }
+
+    if (!alreadyTracked) {
+      trackFirstProjectStarted(flow);
+    }
+
+    onCreateProject?.();
+  };
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
@@ -42,7 +106,7 @@ export default function EmptyProjects({ onCreateProject, onImport }) {
 
       <div className="flex flex-col items-center gap-6">
         <button
-          onClick={onCreateProject}
+          onClick={handleCreateProject}
           className="btn-primary flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-all duration-200 hover:scale-105"
         >
           <Plus className="h-5 w-5" />

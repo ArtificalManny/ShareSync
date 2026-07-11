@@ -25,6 +25,7 @@ import { toast } from "../components/ui/toast";
 import SmartStart from "../components/projects/SmartStart";
 import "./ProjectsCreate.css";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { trackFirstProjectCreated } from "../utils/telemetry";
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim().toLowerCase());
@@ -287,6 +288,29 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
       const id = project?._id || project?.id || project?.projectId;
       if (!id) throw new Error("Backend did not return an _id");
+
+      try {
+        const flowRaw = sessionStorage.getItem(
+          "openshare:first-project-flow",
+        );
+
+        if (flowRaw) {
+          const flow = JSON.parse(flowRaw);
+
+          trackFirstProjectCreated({
+            project_entry_point:
+              flow?.project_entry_point || "empty_projects",
+            creation_method:
+              flow?.creation_method || "blank",
+          });
+
+          sessionStorage.removeItem(
+            "openshare:first-project-flow",
+          );
+        }
+      } catch {
+        // Analytics must never affect successful project creation.
+      }
 
       if (members.length > 0) {
         try {

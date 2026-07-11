@@ -10,7 +10,7 @@
 // - NO backend endpoints or auth logic modified
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import {
+  trackRegistrationStarted,
+  trackRegistrationCompleted,
+} from "../utils/telemetry";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
@@ -246,6 +250,7 @@ export default function CreateAccount() {
   // Verification step state
   const [step, setStep] = useState('data'); // 'data' | 'verify'
   const [userId, setUserId] = useState(null);
+  const registrationStartedRef = useRef(false);
 
   const validateField = (name, value) => {
     switch (name) {
@@ -269,8 +274,18 @@ export default function CreateAccount() {
     }
   };
 
+  const markRegistrationStarted = (method) => {
+    if (registrationStartedRef.current) return;
+
+    registrationStartedRef.current = true;
+    trackRegistrationStarted({
+      registration_method: method,
+    });
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    markRegistrationStarted("email");
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (fieldErrors[name]) {
@@ -292,6 +307,7 @@ export default function CreateAccount() {
   // ─────────────────────────────────────────────────────────────────────────────
   const handleSubmitData = async (e) => {
     e.preventDefault();
+    markRegistrationStarted("email");
     setError("");
     setFieldErrors({});
 
@@ -370,6 +386,10 @@ export default function CreateAccount() {
       localStorage.setItem("ss.jwt", data.token);
       localStorage.setItem("ss.user", JSON.stringify(data.user));
 
+      trackRegistrationCompleted({
+        registration_method: "email",
+      });
+
       navigate("/home", { replace: true });
     } catch (err) {
       setError(err.message);
@@ -401,6 +421,17 @@ export default function CreateAccount() {
              <button
           type="button"
           onClick={() => {
+            markRegistrationStarted("google");
+
+            try {
+              sessionStorage.setItem(
+                "openshare:google-registration-pending",
+                "1",
+              );
+            } catch {
+              // Analytics must never block authentication.
+            }
+
             window.location.href = `${API_BASE_URL}/auth/google`;
           }}
           className="

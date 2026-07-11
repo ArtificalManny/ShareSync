@@ -1,6 +1,38 @@
 // src/pages/GoogleCallback.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { trackRegistrationCompleted } from "../utils/telemetry";
+
+const GOOGLE_REGISTRATION_PENDING_KEY =
+  "openshare:google-registration-pending";
+
+function clearGoogleRegistrationPending() {
+  try {
+    sessionStorage.removeItem(
+      GOOGLE_REGISTRATION_PENDING_KEY,
+    );
+  } catch {
+    // Telemetry state must never interfere with authentication.
+  }
+}
+
+function consumeGoogleRegistrationPending() {
+  try {
+    const wasPending =
+      sessionStorage.getItem(
+        GOOGLE_REGISTRATION_PENDING_KEY,
+      ) === "1";
+
+    sessionStorage.removeItem(
+      GOOGLE_REGISTRATION_PENDING_KEY,
+    );
+
+    return wasPending;
+  } catch {
+    return false;
+  }
+}
+
 
 export default function GoogleCallback() {
   const navigate = useNavigate();
@@ -11,6 +43,7 @@ export default function GoogleCallback() {
     try {
       const error = searchParams.get("error");
       if (error) {
+        clearGoogleRegistrationPending();
         console.error("[GoogleCallback] OAuth error:", error);
         setMessage("Google sign-in failed. Redirecting...");
         setTimeout(() => navigate(`/login?error=${encodeURIComponent(error)}`, { replace: true }), 900);
@@ -25,6 +58,7 @@ export default function GoogleCallback() {
       const userParam = searchParams.get("user");
 
       if (!token) {
+        clearGoogleRegistrationPending();
         console.error("[GoogleCallback] Missing token in callback URL.");
         setMessage("Google sign-in failed: missing token.");
         setTimeout(() => navigate("/login?error=missing_google_token", { replace: true }), 900);
@@ -48,6 +82,12 @@ export default function GoogleCallback() {
 
       console.log("✅ Google OAuth token stored.");
 
+      if (consumeGoogleRegistrationPending()) {
+        trackRegistrationCompleted({
+          registration_method: "google",
+        });
+      }
+
       setMessage("Google sign-in successful. Redirecting...");
       const redirectTo =
         localStorage.getItem("openshare.postLoginRedirect") ||
@@ -61,6 +101,7 @@ export default function GoogleCallback() {
 
       setTimeout(() => navigate(redirectTo, { replace: true }), 350);
     } catch (err) {
+      clearGoogleRegistrationPending();
       console.error("[GoogleCallback] Error processing callback:", err);
       setMessage("Google sign-in failed. Redirecting...");
       setTimeout(() => navigate("/login?error=google_callback_failed", { replace: true }), 900);

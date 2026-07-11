@@ -215,6 +215,24 @@ export const trackShipClicked       = (props = {}) => track("ship_clicked", prop
 // ────────────────────────────────────────────────────────────────────────────
 // NEW GOLDEN PATH TELEMETRY (Phase 2 additions)
 // ────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
+// ENTRY AND FIRST-PROJECT FUNNEL
+// ────────────────────────────────────────────────────────────────────────────
+export const trackRegistrationStarted = (props = {}) =>
+  track("registration_started", props);
+
+export const trackRegistrationCompleted = (props = {}) =>
+  track("registration_completed", props);
+
+export const trackFirstRunExplanationViewed = (props = {}) =>
+  track("first_run_explanation_viewed", props);
+
+export const trackFirstProjectStarted = (props = {}) =>
+  track("first_project_started", props);
+
+export const trackFirstProjectCreated = (props = {}) =>
+  track("first_project_created", props);
+
 export const trackProjectCreated    = (props = {}) => track("project_created", props);
 export const trackTaskCreated       = (props = {}) => track("task_created", props);
 
