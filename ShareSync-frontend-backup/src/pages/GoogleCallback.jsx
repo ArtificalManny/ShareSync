@@ -99,7 +99,11 @@ export default function GoogleCallback() {
         sessionStorage.removeItem("openshare.pendingInviteRedirect");
       } catch {}
 
-      setTimeout(() => navigate(redirectTo, { replace: true }), 350);
+      // Perform a full reload so AuthContext initializes with the newly
+      // stored Google token before ProtectedRoute evaluates /home.
+      setTimeout(() => {
+        window.location.replace(redirectTo);
+      }, 350);
     } catch (err) {
       clearGoogleRegistrationPending();
       console.error("[GoogleCallback] Error processing callback:", err);
