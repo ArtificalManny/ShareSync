@@ -6,6 +6,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { ProjectsService } from '../projects/projects.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TextModerationService } from '../moderation/text-moderation.service';
 import {
   NotificationPriority,
   NotificationType,
@@ -25,6 +26,7 @@ export class MilestonesService {
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly projectsService: ProjectsService,
+    private readonly textModerationService: TextModerationService,
     private readonly moduleRef: ModuleRef,
   ) {}
 
@@ -41,6 +43,58 @@ export class MilestonesService {
   private toObjectIdOrNull(value?: string): Types.ObjectId | null {
     if (!value || !Types.ObjectId.isValid(value)) return null;
     return new Types.ObjectId(value);
+  }
+
+  private async assertMilestoneTextAllowed(
+    userId: string,
+    dto: CreateMilestoneDto | UpdateMilestoneDto,
+  ): Promise<void> {
+    const checkpointTitles = Array.isArray(
+      (dto as any)?.checkpoints,
+    )
+      ? (dto as any).checkpoints.map(
+          (checkpoint: any) => checkpoint?.title,
+        )
+      : [];
+
+    const values = [
+      (dto as any)?.title,
+      (dto as any)?.description,
+      ...checkpointTitles,
+    ]
+      .filter(
+        (value): value is string =>
+          typeof value === 'string' &&
+          value.trim().length > 0,
+      )
+      .map((value) => value.trim());
+
+    const textToModerate = Array.from(
+      new Set(values),
+    ).join('\n');
+
+    if (!textToModerate) return;
+
+    const result =
+      await this.textModerationService.moderateText(
+        textToModerate,
+        'roadmap-milestone',
+      );
+
+    if (result.action !== 'block') return;
+
+    // Never print the rejected title, description, or checkpoint text.
+    this.logger.warn(
+      `[Roadmap moderation] blocked user=${userId} ` +
+      `categories=${result.categories.join(',') || 'unknown'}`,
+    );
+
+    throw new BadRequestException({
+      code: 'CONTENT_BLOCKED',
+      message:
+        'This milestone contains content that is not allowed. Please revise it.',
+      categories: result.categories,
+    });
   }
 
   // Roadmap Activity Feed writer.
@@ -217,6 +271,8 @@ export class MilestonesService {
     if (!creatorObjectId) {
       throw new BadRequestException('userId in token is not a valid ObjectId (cannot set createdBy)');
     }
+
+    await this.assertMilestoneTextAllowed(userId, dto);
 
     // ✅ If schema requires order, always set it here.
     // This avoids forcing the frontend to send order (and avoids DTO forbidNonWhitelisted issues).
@@ -529,6 +585,8 @@ export class MilestonesService {
 
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
+
+    await this.assertMilestoneTextAllowed(userId, dto);
 
     const wasCompleted =
       String((milestone as any)?.status || '').toLowerCase() === 'completed' ||

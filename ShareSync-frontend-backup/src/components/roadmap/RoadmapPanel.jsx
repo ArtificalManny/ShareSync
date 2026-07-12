@@ -662,7 +662,25 @@ export default function RoadmapPanel({
         await fetchData();
       } catch (e) {
         setItems(prevItems);
-        console.error("[RoadmapPanel] Milestone update failed:", e?.message);
+
+        const rawMessage =
+          e?.response?.data?.message ||
+          e?.response?.data?.error ||
+          e?.message ||
+          "Failed to update milestone";
+
+        const message = Array.isArray(rawMessage)
+          ? rawMessage.join(" • ")
+          : typeof rawMessage === "string"
+            ? rawMessage
+            : "Failed to update milestone";
+
+        console.error(
+          "[RoadmapPanel] Milestone update failed:",
+          message
+        );
+
+        window.alert(`Failed to update milestone: ${message}`);
       }
     },
     [items, fetchData]

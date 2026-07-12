@@ -36,7 +36,10 @@ export class MilestonesController {
 
       this.logger.log(`[CREATE] req.user keys: ${Object.keys(req.user || {}).join(', ')}`);
       this.logger.log(`[CREATE] userId resolved: ${userId}`);
-      this.logger.log(`[CREATE] dto: ${JSON.stringify(dto)}`);
+      this.logger.log(
+        `[CREATE] milestone request user=${userId || 'unknown'} ` +
+        `project=${dto?.projectId || 'unknown'}`,
+      );
 
       const milestone = await this.milestonesService.create(userId, dto);
       return { success: true, data: milestone, timestamp: this.now() };
