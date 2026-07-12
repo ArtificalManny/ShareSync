@@ -54,6 +54,32 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function getTaskActionErrorMessage(error) {
+  const raw =
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.message ??
+    error;
+
+  if (Array.isArray(raw)) {
+    return raw.join(" • ");
+  }
+
+  if (typeof raw === "string" && raw.trim()) {
+    return raw;
+  }
+
+  if (
+    raw &&
+    typeof raw === "object" &&
+    typeof raw.message === "string"
+  ) {
+    return raw.message;
+  }
+
+  return "The task action could not be completed.";
+}
+
 function getTaskId(task) {
   return task?.id || task?._id || "";
 }
@@ -433,10 +459,7 @@ export default function StackPanel({
 
       setActionBusyId(id);
 
-      optimisticUpdate((prev) =>
-        prev.map((t) => (getTaskId(t) === id ? { ...t, ...cleanUpdates } : t))
-      );
-
+      // Text updates are rendered only after backend moderation succeeds.
       try {
         const updated = await updateTask(id, cleanUpdates);
         optimisticUpdate((prev) =>
@@ -531,43 +554,36 @@ export default function StackPanel({
         "";
       const effectiveMilestoneId = normalizedMilestoneId || "";
 
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const optimisticTask = {
-        _id: tempId,
-        title: trimmed,
-        status: "todo",
-        priority: newPriority,
-        projectId,
-        ...(effectiveAssigneeId ? { assigneeId: effectiveAssigneeId } : {}),
-        ...(matchedAssignee?.name ? { assigneeName: matchedAssignee.name } : {}),
-        ...(matchedAssignee?.email ? { assigneeEmail: matchedAssignee.email } : {}),
-        ...(effectiveMilestoneId ? { milestoneId: effectiveMilestoneId } : {}),
-      };
-
-      optimisticUpdate((prev) => [optimisticTask, ...prev]);
-      setNewTitle("");
-
+      // Do not render user text until backend moderation accepts it.
       try {
         const created = await createTask(projectId, {
           title: trimmed,
           status: "todo",
           priority: newPriority,
-          ...(effectiveAssigneeId ? { assigneeId: effectiveAssigneeId } : {}),
-          ...(effectiveMilestoneId ? { milestoneId: effectiveMilestoneId } : {}),
+          ...(effectiveAssigneeId
+            ? { assigneeId: effectiveAssigneeId }
+            : {}),
+          ...(effectiveMilestoneId
+            ? { milestoneId: effectiveMilestoneId }
+            : {}),
         });
 
+        const createdId = getTaskId(created);
+
         setTasks((prev) =>
-          sortLikeBackend(
-            (Array.isArray(prev) ? prev : []).map((t) =>
-              getTaskId(t) === tempId ? { ...optimisticTask, ...created } : t
-            )
-          )
+          sortLikeBackend([
+            created,
+            ...(Array.isArray(prev) ? prev : []).filter(
+              (task) =>
+                !createdId ||
+                getTaskId(task) !== createdId
+            ),
+          ])
         );
+
+        setNewTitle("");
       } catch (e) {
         setActionError(e);
-        setTasks((prev) =>
-          (Array.isArray(prev) ? prev : []).filter((t) => getTaskId(t) !== tempId)
-        );
       } finally {
         setAddingTask(false);
         if (addInputRef.current) {
@@ -1248,7 +1264,7 @@ export default function StackPanel({
               Action failed
             </div>
             <div className="mt-1 text-amber-600/80 dark:text-yellow-200/70">
-              {String(actionError?.message || actionError)}
+              {getTaskActionErrorMessage(actionError)}
             </div>
           </div>
         ) : null}

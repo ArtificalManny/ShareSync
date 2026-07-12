@@ -42,6 +42,7 @@ import { TaskEventType } from './events/task-events';
 import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 import { RealtimeService } from '../realtime/realtime.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TextModerationService } from '../moderation/text-moderation.service';
 import { NotificationPriority } from '../notifications/schemas/notification.schema';
 
 export interface TaskQueryOptions {
@@ -88,8 +89,52 @@ export class TasksService {
     private readonly projectsService: ProjectsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly realtime: RealtimeService,
+    private readonly textModerationService: TextModerationService,
     private readonly moduleRef: ModuleRef,
   ) {}
+
+  private async assertTaskTextAllowed(
+    userId: string,
+    dto: CreateTaskDto | UpdateTaskDto,
+  ): Promise<void> {
+    const values = [
+      (dto as any)?.title,
+      (dto as any)?.description,
+    ]
+      .filter(
+        (value): value is string =>
+          typeof value === 'string' &&
+          value.trim().length > 0,
+      )
+      .map((value) => value.trim());
+
+    const textToModerate = Array.from(
+      new Set(values),
+    ).join('\n');
+
+    if (!textToModerate) return;
+
+    const result =
+      await this.textModerationService.moderateText(
+        textToModerate,
+        'project-task',
+      );
+
+    if (result.action !== 'block') return;
+
+    // Never log the rejected title or description.
+    this.logger.warn(
+      `[Task moderation] blocked user=${userId} ` +
+      `categories=${result.categories.join(',') || 'unknown'}`,
+    );
+
+    throw new BadRequestException({
+      code: 'CONTENT_BLOCKED',
+      message:
+        'This task contains content that is not allowed. Please revise it.',
+      categories: result.categories,
+    });
+  }
 
   private async emitPublicProjectUpdate(projectId: string, payload: any): Promise<void> {
     try {
@@ -102,6 +147,8 @@ export class TasksService {
 
   async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
     const project = await this.projectsService.findByIdWithAccess(dto.projectId, userId);
+
+    await this.assertTaskTextAllowed(userId, dto);
 
     if (dto.parentId) {
       const parent = await this.taskModel.findById(dto.parentId);
@@ -510,6 +557,9 @@ export class TasksService {
 
   async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
+
+    await this.assertTaskTextAllowed(userId, dto);
+
     const previousAssigneeId = task.assigneeId?.toString?.() || null;
 
     if (dto.status && dto.status !== task.status) {

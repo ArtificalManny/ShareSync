@@ -19,6 +19,7 @@ import { ProjectAccessGuard } from '../common/guards/project-access.guard';
 // ✅ Realtime (Socket emit layer)
 import { RealtimeModule } from '../realtime/realtime.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 // ✅ Priority 1: UserService needed for first-task/first-ship XP bonus tracking
 import { UserModule } from '../user/user.module';
@@ -36,6 +37,7 @@ import { UserModule } from '../user/user.module';
     // ✅ Allows TasksService to inject RealtimeService safely
     RealtimeModule,
     NotificationsModule,
+    ModerationModule,
 
     // ✅ Priority 1: forwardRef avoids circular dependency (UserModule ↔ TasksModule)
     forwardRef(() => UserModule),
