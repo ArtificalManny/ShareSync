@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, AlignLeft, Calendar as CalIcon, Zap, Users, Coffee } from 'lucide-react';
+import {
+  X,
+  Clock,
+  AlignLeft,
+  Calendar as CalIcon,
+  Zap,
+  Users,
+  Coffee,
+  Trash2,
+} from 'lucide-react';
 
 
 function toDateInputValue(value) {
@@ -54,7 +63,15 @@ const SESSION_COLORS = [
 
 const DEFAULT_SESSION_COLOR = '#8B5CF6';
 
-export default function CreateSessionModal({ isOpen, onClose, onSave, initialData, projectId }) {
+export default function CreateSessionModal({
+  isOpen,
+  onClose,
+  onSave,
+  onDelete,
+  isDeleting = false,
+  initialData,
+  projectId,
+}) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('focus'); // 'focus', 'meeting', 'break'
   const [dateStr, setDateStr] = useState('');
@@ -409,23 +426,41 @@ export default function CreateSessionModal({ isOpen, onClose, onSave, initialDat
 
           {/* Footer Actions */}
           <div className="relative z-10 shrink-0 border-t border-slate-200/70 bg-white/95 dark:bg-white/[0.08] px-5 py-3 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-full px-5 py-3 text-sm font-bold text-white/70 transition-colors hover:bg-white/12 hover:text-white"
-              >
-                Cancel
-              </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                {initialData?.mode === 'edit' && onDelete && (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(initialData)}
+                    disabled={isDeleting}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-red-300/50 bg-red-500/10 px-5 py-3 text-sm font-black text-red-200 transition-all hover:-translate-y-0.5 hover:border-red-300/70 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {isDeleting ? 'Deleting…' : 'Delete Session'}
+                  </button>
+                )}
+              </div>
 
-              <button
-                type="submit"
-                form="create-session-form"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-200/70 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-700 px-6 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(124,58,237,0.42)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(124,58,237,0.55)] focus:outline-none focus:ring-4 focus:ring-violet-300/35"
-              >
-                <Zap className="h-4 w-4" />
-                {initialData?.mode === 'edit' ? 'Update Session' : 'Add Session'}
-              </button>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isDeleting}
+                  className="rounded-full px-5 py-3 text-sm font-bold text-white/70 transition-colors hover:bg-white/12 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  form="create-session-form"
+                  disabled={isDeleting}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-200/70 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-700 px-6 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(124,58,237,0.42)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(124,58,237,0.55)] focus:outline-none focus:ring-4 focus:ring-violet-300/35 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Zap className="h-4 w-4" />
+                  {initialData?.mode === 'edit' ? 'Update Session' : 'Add Session'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

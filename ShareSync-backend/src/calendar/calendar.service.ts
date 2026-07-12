@@ -864,15 +864,95 @@ export class CalendarService {
   async delete(eventId: string, userId: string): Promise<void> {
     const event = await this.findById(eventId);
 
-    if (event.createdBy.toString() !== userId) {
-      throw new BadRequestException('Only creator can delete event');
+    const toIdString = (value: any): string => {
+      if (!value) return '';
+      if (typeof value === 'string') return value;
+
+      if (value instanceof Types.ObjectId) {
+        return value.toHexString();
+      }
+
+      if (typeof value?.toHexString === 'function') {
+        return value.toHexString();
+      }
+
+      if (typeof value === 'object') {
+        if (value._id && value._id !== value) {
+          return toIdString(value._id);
+        }
+
+        if (value.id && value.id !== value) {
+          return toIdString(value.id);
+        }
+      }
+
+      if (typeof value.toString === 'function') {
+        const result = value.toString();
+        return result === '[object Object]' ? '' : result;
+      }
+
+      return '';
+    };
+
+    const actorId = toIdString(userId);
+    const creatorId = toIdString((event as any).createdBy);
+    const projectId = toIdString((event as any).projectId);
+
+    let canDelete = creatorId === actorId;
+
+    // Match the existing update policy for project Schedule sessions.
+    if (!canDelete && projectId && Types.ObjectId.isValid(projectId)) {
+      const actorValues: any[] = [actorId];
+
+      if (Types.ObjectId.isValid(actorId)) {
+        actorValues.push(new Types.ObjectId(actorId));
+      }
+
+      const project = await this.eventModel.db.collection('projects').findOne({
+        _id: new Types.ObjectId(projectId),
+        $or: [
+          { owner: { $in: actorValues } },
+          { ownerId: { $in: actorValues } },
+          { createdBy: { $in: actorValues } },
+          { userId: { $in: actorValues } },
+
+          { members: { $in: actorValues } },
+          { memberIds: { $in: actorValues } },
+          { sharedWith: { $in: actorValues } },
+          { participantIds: { $in: actorValues } },
+          { collaborators: { $in: actorValues } },
+
+          { 'members.userId': { $in: actorValues } },
+          { 'members.user': { $in: actorValues } },
+          { 'members.memberId': { $in: actorValues } },
+          { 'sharedWith.userId': { $in: actorValues } },
+          { 'collaborators.userId': { $in: actorValues } },
+        ],
+      });
+
+      canDelete = Boolean(project);
+    }
+
+    if (!canDelete) {
+      throw new BadRequestException(
+        'Only event creator or project member can delete event',
+      );
     }
 
     if (event.isRecurring) {
-      await this.eventModel.deleteMany({ parentEventId: event._id });
+      await this.eventModel.deleteMany({
+        parentEventId: event._id,
+      });
     }
 
     await this.eventModel.findByIdAndDelete(eventId);
+
+    this.eventEmitter.emit('calendar.event.deleted', {
+      eventId,
+      title: event.title,
+      projectId: projectId || undefined,
+      deletedBy: actorId,
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

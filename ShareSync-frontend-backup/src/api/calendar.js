@@ -102,6 +102,16 @@ export async function updateEvent(eventId, payload = {}) {
   return data;
 }
 
+/**
+ * Permanently delete an existing calendar event / Schedule session.
+ */
+export async function deleteEvent(eventId) {
+  if (!eventId) throw new Error('eventId is required');
+
+  const { data } = await client.delete(`/calendar/events/${eventId}`);
+  return data;
+}
+
 export default {
   linkCalendar,
   unlinkCalendar,
@@ -109,4 +119,5 @@ export default {
   getProjectRhythm,
   createEvent,
   updateEvent,
+  deleteEvent,
 };

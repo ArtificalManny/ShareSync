@@ -18,7 +18,12 @@ import {
   Brain,
   Shield,
 } from 'lucide-react';
-import { getProjectRhythm, createEvent, updateEvent } from '../../api/calendar';
+import {
+  getProjectRhythm,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+} from '../../api/calendar';
 import CreateSessionModal from '../../calendar/CreateSessionModal';
 
 const DEFAULT_SESSION_COLOR = '#8B5CF6';
@@ -427,6 +432,7 @@ export default function RhythmView({ projectId, readOnly = false }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
+  const [deletingSessionId, setDeletingSessionId] = useState(null);
 
   const getSessionColor = (session) =>
     session?.color || session?.originalData?.color || '#8B5CF6';
@@ -588,7 +594,7 @@ export default function RhythmView({ projectId, readOnly = false }) {
   };
 
   const handleEditEventClick = (session) => {
-    if (!session?.editable) return;
+    if (readOnly || !session?.editable) return;
 
     const startDate = weekDays[session.day]?.fullDate
       ? new Date(weekDays[session.day].fullDate)
@@ -703,6 +709,80 @@ export default function RhythmView({ projectId, readOnly = false }) {
           ? `Failed to update session: ${backendMessage}`
           : `Failed to save session: ${backendMessage}`
       );
+    }
+  };
+
+
+  const getScheduleEventId = (event) =>
+    String(
+      event?.id ||
+      event?._id ||
+      event?.originalData?._id ||
+      event?.originalData?.id ||
+      ''
+    );
+
+  const handleDeleteSession = async (session = editingSession) => {
+    if (readOnly) return;
+
+    const eventId = getScheduleEventId(session);
+
+    if (!eventId) {
+      alert('Unable to delete this session because its event ID is missing.');
+      return;
+    }
+
+    const sessionTitle =
+      session?.title ||
+      session?.originalData?.title ||
+      'Scheduled session';
+
+    const confirmed = window.confirm(
+      `Delete "${sessionTitle}"?\n\nThis will permanently remove it from the calendar and Schedule History.`
+    );
+
+    if (!confirmed) return;
+
+    const previousRealEvents = realEvents;
+    const previousAgendaEvents = agendaEvents;
+
+    setDeletingSessionId(eventId);
+
+    // Optimistically remove the same event from both Schedule surfaces.
+    setRealEvents((current) =>
+      current.filter((event) => getScheduleEventId(event) !== eventId)
+    );
+
+    setAgendaEvents((current) =>
+      current.filter((event) => getScheduleEventId(event) !== eventId)
+    );
+
+    try {
+      await deleteEvent(eventId);
+      closeSessionModal();
+      await loadRhythmData();
+      console.log('✅ Successfully deleted event');
+    } catch (err) {
+      const backendData = err?.response?.data;
+      const backendMessage =
+        backendData?.message ||
+        backendData?.error ||
+        err?.message ||
+        'Unknown error';
+
+      setRealEvents(previousRealEvents);
+      setAgendaEvents(previousAgendaEvents);
+
+      console.error('Failed to delete event', {
+        eventId,
+        backendData,
+        message: backendMessage,
+        rawError: err,
+      });
+
+      alert(`Failed to delete session: ${backendMessage}`);
+    } finally {
+      setDeletingSessionId(null);
     }
   };
 
@@ -1246,6 +1326,8 @@ export default function RhythmView({ projectId, readOnly = false }) {
         onClose={closeSessionModal}
         initialData={editingSession || selectedSlot}
         onSave={handleSaveSession}
+        onDelete={readOnly ? undefined : handleDeleteSession}
+        isDeleting={Boolean(deletingSessionId)}
         projectId={projectId}
       />
     </section>
