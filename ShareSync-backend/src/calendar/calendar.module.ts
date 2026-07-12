@@ -13,6 +13,7 @@ import { CalendarService } from './calendar.service';
 // ✅ NEW: Import schemas needed for the Rhythm aggregator
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
 import { Sprint, SprintSchema } from '../sprints/schemas/sprint.schema';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { Sprint, SprintSchema } from '../sprints/schemas/sprint.schema';
       { name: Task.name, schema: TaskSchema },
       { name: Sprint.name, schema: SprintSchema },
     ]),
+    ModerationModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [CalendarController],

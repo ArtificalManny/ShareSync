@@ -686,6 +686,7 @@ export default function RhythmView({ projectId, readOnly = false }) {
       }
 
       await loadRhythmData();
+      return true;
     } catch (err) {
       const status = err?.response?.status;
       const backendData = err?.response?.data;
@@ -709,6 +710,8 @@ export default function RhythmView({ projectId, readOnly = false }) {
           ? `Failed to update session: ${backendMessage}`
           : `Failed to save session: ${backendMessage}`
       );
+
+      return false;
     }
   };
 

@@ -135,7 +135,7 @@ export default function CreateSessionModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Convert local HTML5 string inputs back into Date objects for the backend
@@ -162,7 +162,7 @@ export default function CreateSessionModal({
 
     const sessionDescription = description ?? '';
 
-    onSave({
+    const saveSucceeded = await onSave({
       title: finalTitle,
       type: backendType,
       startTime: startObj.toISOString(), // Send as UTC
@@ -173,7 +173,9 @@ export default function CreateSessionModal({
       projectId: projectId,
     });
 
-    onClose();
+    if (saveSucceeded !== false) {
+      onClose();
+    }
   };
 
   const typeOptions = [

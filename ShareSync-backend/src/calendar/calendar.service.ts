@@ -31,6 +31,7 @@ import {
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { Sprint, SprintDocument } from '../sprints/schemas/sprint.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TextModerationService } from '../moderation/text-moderation.service';
 import {
   NotificationPriority,
   NotificationType,
@@ -49,8 +50,53 @@ export class CalendarService {
     @InjectModel(Sprint.name)
     private readonly sprintModel: Model<SprintDocument>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly textModerationService: TextModerationService,
     private readonly moduleRef: ModuleRef,
   ) {}
+
+  private async assertScheduleTextAllowed(
+    userId: string,
+    dto: any,
+  ): Promise<void> {
+    const values = [
+      dto?.title,
+      dto?.description,
+      dto?.notes,
+    ]
+      .filter(
+        (value) =>
+          typeof value === 'string' &&
+          value.trim().length > 0,
+      )
+      .map((value: string) => value.trim());
+
+    const textToModerate = Array.from(
+      new Set(values),
+    ).join('\n');
+
+    if (!textToModerate) return;
+
+    const result =
+      await this.textModerationService.moderateText(
+        textToModerate,
+        'calendar-session',
+      );
+
+    if (result.action !== 'block') return;
+
+    // Never log the rejected title or description.
+    this.logger.warn(
+      `[Calendar moderation] blocked user=${userId} ` +
+      `categories=${result.categories.join(',') || 'unknown'}`,
+    );
+
+    throw new BadRequestException({
+      code: 'CONTENT_BLOCKED',
+      message:
+        'This session contains content that is not allowed. Please revise it.',
+      categories: result.categories,
+    });
+  }
 
   private async recordProjectActivity(data: {
     userId: string;
@@ -183,6 +229,8 @@ export class CalendarService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   async create(userId: string, dto: CreateEventDto): Promise<CalendarEventDocument> {
+    await this.assertScheduleTextAllowed(userId, dto);
+
     if (new Date(dto.startTime) >= new Date(dto.endTime)) {
       throw new BadRequestException('End time must be after start time');
     }
@@ -626,6 +674,8 @@ export class CalendarService {
     if (!canUpdate) {
       throw new BadRequestException('Only event owner or project member can update event');
     }
+
+    await this.assertScheduleTextAllowed(userId, dto);
 
     const raw = (dto || {}) as any;
     const update: Record<string, any> = {};
