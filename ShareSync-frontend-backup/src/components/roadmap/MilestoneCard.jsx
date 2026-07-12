@@ -25,8 +25,26 @@ import {
   Edit2,
   Trash2,
   Plus,
+  GripVertical,
   X,
 } from 'lucide-react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 
 const STATUS_CONFIG = {
   planned: {
@@ -127,6 +145,160 @@ const normalizeToApiStatus = (cardStatus) => {
 };
 
 
+
+const SortableCheckpointRow = ({
+  checkpoint,
+  editable,
+  isEditing,
+  editingTitle,
+  onEditingTitleChange,
+  onToggle,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onDelete,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: checkpoint.id,
+    disabled: !editable || isEditing,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.82 : 1,
+    zIndex: isDragging ? 20 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 rounded-xl bg-white/85 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08] dark:text-zinc-200 ${
+        isDragging
+          ? "shadow-xl ring-2 ring-violet-300/60 dark:ring-violet-400/40"
+          : ""
+      }`}
+    >
+      {editable && (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex h-6 w-5 shrink-0 touch-none cursor-grab items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-violet-600 active:cursor-grabbing dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-violet-200"
+          aria-label={`Move checkpoint ${checkpoint.title}`}
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={onToggle}
+        className="shrink-0 text-violet-600 dark:text-violet-100"
+        aria-label={
+          checkpoint.completed
+            ? `Mark ${checkpoint.title} incomplete`
+            : `Mark ${checkpoint.title} complete`
+        }
+      >
+        {checkpoint.completed ? (
+          <CheckCircle2 className="h-3.5 w-3.5" />
+        ) : (
+          <Circle className="h-3.5 w-3.5" />
+        )}
+      </button>
+
+      {isEditing ? (
+        <input
+          autoFocus
+          value={editingTitle}
+          onChange={(e) => onEditingTitleChange(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onSaveEdit(e);
+            }
+
+            if (e.key === "Escape") {
+              onCancelEdit(e);
+            }
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-2 py-1 text-xs text-slate-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-200/60 dark:border-violet-400/30 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-400/20"
+          aria-label="Edit checkpoint title"
+        />
+      ) : (
+        <span
+          className={`min-w-0 flex-1 break-words ${
+            checkpoint.completed
+              ? "text-slate-400 line-through dark:text-zinc-500"
+              : ""
+          }`}
+        >
+          {checkpoint.title}
+        </span>
+      )}
+
+      {editable && isEditing && (
+        <>
+          <button
+            type="button"
+            onClick={onSaveEdit}
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+            aria-label="Save checkpoint title"
+            title="Save"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200"
+            aria-label="Cancel checkpoint editing"
+            title="Cancel"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+
+      {editable && !isEditing && (
+        <>
+          <button
+            type="button"
+            onClick={onStartEdit}
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 opacity-70 transition hover:bg-violet-50 hover:text-violet-600 group-hover:opacity-100 dark:text-zinc-500 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
+            aria-label={`Edit checkpoint ${checkpoint.title}`}
+            title="Edit checkpoint"
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10"
+            aria-label={`Delete checkpoint ${checkpoint.title}`}
+            title="Delete checkpoint"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
 const MilestoneCard = ({
   milestone,
   onClick,
@@ -138,6 +310,8 @@ const MilestoneCard = ({
   onUpdate,
 }) => {
   const [newCheckpointTitle, setNewCheckpointTitle] = useState("");
+  const [editingCheckpointId, setEditingCheckpointId] = useState(null);
+  const [editingCheckpointTitle, setEditingCheckpointTitle] = useState("");
 
   const [showMenu, setShowMenu] = useState(false);
   const actionButtonRef = useRef(null);
@@ -193,6 +367,22 @@ const MilestoneCard = ({
     [milestone?.checkpoints]
   );
 
+  const checkpointIds = useMemo(
+    () => checkpoints.map((checkpoint) => checkpoint.id),
+    [checkpoints]
+  );
+
+  const checkpointSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const completedCheckpoints = checkpoints.filter((checkpoint) => checkpoint?.completed).length;
   const checkpointSummary = checkpoints.length
     ? `${completedCheckpoints}/${checkpoints.length} checkpoints`
@@ -244,7 +434,77 @@ const MilestoneCard = ({
 
   const handleDeleteCheckpoint = (e, checkpointId) => {
     e.stopPropagation();
-    persistCheckpoints(checkpoints.filter((checkpoint) => checkpoint.id !== checkpointId));
+
+    if (editingCheckpointId === checkpointId) {
+      setEditingCheckpointId(null);
+      setEditingCheckpointTitle("");
+    }
+
+    persistCheckpoints(
+      checkpoints.filter(
+        (checkpoint) => checkpoint.id !== checkpointId
+      )
+    );
+  };
+
+  const handleStartCheckpointEdit = (e, checkpoint) => {
+    e.stopPropagation();
+    setEditingCheckpointId(checkpoint.id);
+    setEditingCheckpointTitle(checkpoint.title || "");
+  };
+
+  const handleCancelCheckpointEdit = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    setEditingCheckpointId(null);
+    setEditingCheckpointTitle("");
+  };
+
+  const handleSaveCheckpointEdit = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
+    const title = editingCheckpointTitle.trim();
+    if (!editingCheckpointId || !title) return;
+
+    const currentCheckpoint = checkpoints.find(
+      (checkpoint) => checkpoint.id === editingCheckpointId
+    );
+
+    if (currentCheckpoint?.title !== title) {
+      persistCheckpoints(
+        checkpoints.map((checkpoint) =>
+          checkpoint.id === editingCheckpointId
+            ? {
+                ...checkpoint,
+                title,
+                updatedAt: new Date().toISOString(),
+              }
+            : checkpoint
+        )
+      );
+    }
+
+    setEditingCheckpointId(null);
+    setEditingCheckpointTitle("");
+  };
+
+  const handleCheckpointDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = checkpoints.findIndex(
+      (checkpoint) => checkpoint.id === active.id
+    );
+
+    const newIndex = checkpoints.findIndex(
+      (checkpoint) => checkpoint.id === over.id
+    );
+
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    persistCheckpoints(
+      arrayMove(checkpoints, oldIndex, newIndex)
+    );
   };
 
 
@@ -345,40 +605,57 @@ const MilestoneCard = ({
           </div>
 
           {checkpoints.length > 0 && (
-            <div className="mb-3 space-y-1.5">
-              {checkpoints.slice(0, 4).map((checkpoint) => (
-                <div
-                  key={checkpoint.id}
-                  className="flex items-center gap-2 rounded-xl bg-white/85 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08] dark:text-zinc-200"
-                >
-                  <button
-                    type="button"
-                    onClick={(e) => handleToggleCheckpoint(e, checkpoint.id)}
-                    className="shrink-0 text-violet-600 dark:text-violet-100"
-                  >
-                    {checkpoint.completed ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <Circle className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-
-                  <span className={`min-w-0 flex-1 truncate ${checkpoint.completed ? "text-slate-400 line-through dark:text-zinc-500" : ""}`}>
-                    {checkpoint.title}
-                  </span>
-
-                  {onUpdate && (
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteCheckpoint(e, checkpoint.id)}
-                      className="shrink-0 text-slate-400 hover:text-red-500"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+            <DndContext
+              sensors={checkpointSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleCheckpointDragEnd}
+            >
+              <SortableContext
+                items={checkpointIds}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="mb-3 max-h-52 space-y-1.5 overflow-y-auto overscroll-contain pr-1">
+                  {checkpoints.map((checkpoint) => (
+                    <SortableCheckpointRow
+                      key={checkpoint.id}
+                      checkpoint={checkpoint}
+                      editable={Boolean(onUpdate)}
+                      isEditing={
+                        editingCheckpointId === checkpoint.id
+                      }
+                      editingTitle={editingCheckpointTitle}
+                      onEditingTitleChange={
+                        setEditingCheckpointTitle
+                      }
+                      onToggle={(e) =>
+                        handleToggleCheckpoint(
+                          e,
+                          checkpoint.id
+                        )
+                      }
+                      onStartEdit={(e) =>
+                        handleStartCheckpointEdit(
+                          e,
+                          checkpoint
+                        )
+                      }
+                      onSaveEdit={
+                        handleSaveCheckpointEdit
+                      }
+                      onCancelEdit={
+                        handleCancelCheckpointEdit
+                      }
+                      onDelete={(e) =>
+                        handleDeleteCheckpoint(
+                          e,
+                          checkpoint.id
+                        )
+                      }
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
 
           {onUpdate && (
