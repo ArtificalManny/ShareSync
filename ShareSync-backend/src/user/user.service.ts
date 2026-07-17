@@ -112,49 +112,437 @@ export class UserService {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  private getStatsDayKey(value: any): string | null {
+  private getStatsTimeZone(user: any): string {
+    const candidate =
+      typeof user?.timezone === 'string' && user.timezone.trim()
+        ? user.timezone.trim()
+        : 'America/Los_Angeles';
+
+    try {
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: candidate,
+      }).format(new Date());
+
+      return candidate;
+    } catch {
+      return 'America/Los_Angeles';
+    }
+  }
+
+  private getStatsDayKey(
+    value: any,
+    timeZone = 'America/Los_Angeles',
+  ): string | null {
     const date = this.getStatsDate(value);
     if (!date) return null;
+
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date);
+
+      const year = parts.find(
+        (part) => part.type === 'year',
+      )?.value;
+
+      const month = parts.find(
+        (part) => part.type === 'month',
+      )?.value;
+
+      const day = parts.find(
+        (part) => part.type === 'day',
+      )?.value;
+
+      if (!year || !month || !day) return null;
+
+      return `${year}-${month}-${day}`;
+    } catch {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  private shiftStatsDayKey(
+    dayKey: string,
+    numberOfDays: number,
+  ): string {
+    const [year, month, day] = dayKey
+      .split('-')
+      .map(Number);
+
+    const date = new Date(
+      Date.UTC(year, month - 1, day, 12, 0, 0),
+    );
+
+    date.setUTCDate(
+      date.getUTCDate() + numberOfDays,
+    );
 
     return date.toISOString().slice(0, 10);
   }
 
-  private calculateCurrentStreakFromCompletedTasks(tasks: any[]): number {
-    const dayKeys = new Set<string>();
+  private getStatsWeekStartKey(
+    dayKey: string,
+  ): string {
+    const [year, month, day] = dayKey
+      .split('-')
+      .map(Number);
 
-    for (const task of Array.isArray(tasks) ? tasks : []) {
-      const key = this.getStatsDayKey(task?.completedAt);
-      if (key) dayKeys.add(key);
+    const date = new Date(
+      Date.UTC(year, month - 1, day, 12, 0, 0),
+    );
+
+    const weekday = date.getUTCDay();
+
+    const daysSinceMonday =
+      weekday === 0 ? 6 : weekday - 1;
+
+    return this.shiftStatsDayKey(
+      dayKey,
+      -daysSinceMonday,
+    );
+  }
+
+  private readStatsActivityText(
+    activity: any,
+  ): string {
+    return [
+      activity?.type,
+      activity?.eventType,
+      activity?.action,
+      activity?.verb,
+      activity?.entityType,
+      activity?.message,
+
+      activity?.payload?.type,
+      activity?.payload?.action,
+      activity?.payload?.status,
+      activity?.payload?.source,
+
+      activity?.details?.type,
+      activity?.details?.action,
+      activity?.details?.status,
+      activity?.details?.source,
+
+      activity?.metadata?.type,
+      activity?.metadata?.action,
+      activity?.metadata?.status,
+      activity?.metadata?.source,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  }
+
+  private getStatsActivityTimestamp(
+    activity: any,
+  ): Date | null {
+    return this.getStatsDate(
+      activity?.createdAt ||
+        activity?.completedAt ||
+        activity?.updatedAt ||
+        activity?.timestamp ||
+        activity?.ts,
+    );
+  }
+
+  private isMeaningfulStatsActivity(
+    activity: any,
+  ): boolean {
+    const textValue =
+      this.readStatsActivityText(activity);
+
+    if (!textValue) return false;
+
+    const passiveTokens = [
+      'viewed',
+      'view_count',
+      'read',
+      'presence',
+      'cursor',
+      'heartbeat',
+      'typing',
+      'login',
+      'logout',
+      'notification',
+      'download_count',
+    ];
+
+    if (
+      passiveTokens.some((token) =>
+        textValue.includes(token),
+      )
+    ) {
+      return false;
     }
 
-    if (dayKeys.size === 0) return 0;
+    // Deleting something does not maintain an execution streak.
+    const excludedActions = [
+      'deleted',
+      'removed',
+      'archived',
+    ];
 
-    const cursor = new Date();
-    let streak = 0;
+    if (
+      excludedActions.some((token) =>
+        textValue.includes(token),
+      )
+    ) {
+      return false;
+    }
 
-    while (true) {
-      const key = cursor.toISOString().slice(0, 10);
+    const qualifyingDomains = [
+      'task',
+      'milestone',
+      'checkpoint',
+      'roadmap',
+      'file',
+      'folder',
+      'announcement',
+      'event',
+      'schedule',
+      'calendar',
+    ];
 
-      if (!dayKeys.has(key)) {
-        break;
+    const qualifyingActions = [
+      'created',
+      'added',
+      'uploaded',
+      'updated',
+      'edited',
+      'moved',
+      'changed',
+      'started',
+      'completed',
+      'done',
+      'shipped',
+      'assigned',
+      'published',
+      'reordered',
+    ];
+
+    const hasDomain =
+      qualifyingDomains.some((token) =>
+        textValue.includes(token),
+      );
+
+    const hasAction =
+      qualifyingActions.some((token) =>
+        textValue.includes(token),
+      );
+
+    return hasDomain && hasAction;
+  }
+
+  private getStatsActivitySemanticKey(
+    activity: any,
+    timestamp: Date,
+  ): string {
+    return [
+      String(
+        activity?.projectId ||
+          activity?.payload?.projectId ||
+          activity?.details?.projectId ||
+          '',
+      ),
+      String(activity?.entityType || ''),
+      String(
+        activity?.entityId ||
+          activity?.entityKey ||
+          '',
+      ),
+      String(
+        activity?.type ||
+          activity?.eventType ||
+          '',
+      ),
+      String(
+        activity?.action ||
+          activity?.verb ||
+          '',
+      ),
+      Math.floor(timestamp.getTime() / 2000),
+    ].join('|');
+  }
+
+  private calculateProjectActivityStreak(
+    activities: any[],
+    timeZone: string,
+    now = new Date(),
+  ): {
+    currentStreak: number;
+    longestStreak: number;
+    activeToday: boolean;
+    atRiskToday: boolean;
+    activeDaysThisWeek: number;
+    lastActiveDate: string | null;
+  } {
+    const activeDayKeys = new Set<string>();
+    const seenActivities = new Set<string>();
+
+    for (
+      const activity of Array.isArray(activities)
+        ? activities
+        : []
+    ) {
+      if (
+        !this.isMeaningfulStatsActivity(activity)
+      ) {
+        continue;
       }
 
-      streak += 1;
-      cursor.setUTCDate(cursor.getUTCDate() - 1);
+      const timestamp =
+        this.getStatsActivityTimestamp(activity);
+
+      if (!timestamp) continue;
+
+      const semanticKey =
+        this.getStatsActivitySemanticKey(
+          activity,
+          timestamp,
+        );
+
+      if (seenActivities.has(semanticKey)) {
+        continue;
+      }
+
+      seenActivities.add(semanticKey);
+
+      const dayKey = this.getStatsDayKey(
+        timestamp,
+        timeZone,
+      );
+
+      if (dayKey) {
+        activeDayKeys.add(dayKey);
+      }
     }
 
-    return streak;
+    const todayKey =
+      this.getStatsDayKey(now, timeZone) ||
+      now.toISOString().slice(0, 10);
+
+    const yesterdayKey =
+      this.shiftStatsDayKey(todayKey, -1);
+
+    const activeToday =
+      activeDayKeys.has(todayKey);
+
+    let cursor: string | null = activeToday
+      ? todayKey
+      : activeDayKeys.has(yesterdayKey)
+        ? yesterdayKey
+        : null;
+
+    let currentStreak = 0;
+
+    while (
+      cursor &&
+      activeDayKeys.has(cursor)
+    ) {
+      currentStreak += 1;
+
+      cursor = this.shiftStatsDayKey(
+        cursor,
+        -1,
+      );
+    }
+
+    const sortedDayKeys = Array.from(
+      activeDayKeys,
+    ).sort();
+
+    let longestStreak = 0;
+    let currentRun = 0;
+    let previousKey: string | null = null;
+
+    for (const dayKey of sortedDayKeys) {
+      const consecutive =
+        previousKey !== null &&
+        dayKey ===
+          this.shiftStatsDayKey(
+            previousKey,
+            1,
+          );
+
+      currentRun = consecutive
+        ? currentRun + 1
+        : 1;
+
+      longestStreak = Math.max(
+        longestStreak,
+        currentRun,
+      );
+
+      previousKey = dayKey;
+    }
+
+    const weekStartKey =
+      this.getStatsWeekStartKey(todayKey);
+
+    const weekEndKey =
+      this.shiftStatsDayKey(
+        weekStartKey,
+        6,
+      );
+
+    const activeDaysThisWeek =
+      sortedDayKeys.filter(
+        (dayKey) =>
+          dayKey >= weekStartKey &&
+          dayKey <= weekEndKey,
+      ).length;
+
+    return {
+      currentStreak,
+      longestStreak,
+      activeToday,
+      atRiskToday:
+        !activeToday && currentStreak > 0,
+      activeDaysThisWeek,
+      lastActiveDate:
+        sortedDayKeys.length > 0
+          ? sortedDayKeys[
+              sortedDayKeys.length - 1
+            ]
+          : null,
+    };
   }
 
   async getMyStats(userId: string): Promise<any> {
-    if (!userId || !Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException('Invalid user ID');
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new BadRequestException(
+        'Invalid user ID',
+      );
     }
 
     const oid = new Types.ObjectId(userId);
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const sevenDaysAgo = new Date(
+      now.getTime() -
+        7 * 24 * 60 * 60 * 1000,
+    );
+
+    const fourteenDaysAgo = new Date(
+      now.getTime() -
+        14 * 24 * 60 * 60 * 1000,
+    );
+
+    const streakActivitySince = new Date(
+      now.getTime() -
+        730 * 24 * 60 * 60 * 1000,
+    );
+
+    const streakActivityUntil = new Date(
+      now.getTime() +
+        2 * 24 * 60 * 60 * 1000,
+    );
 
     const userActivityQuery = {
       $or: [
@@ -168,22 +556,44 @@ export class UserService {
     };
 
     const completedStatusQuery = {
-      status: { $in: ['done', 'completed', 'DONE', 'COMPLETED'] },
-      completedAt: { $exists: true, $ne: null },
+      status: {
+        $in: [
+          'done',
+          'completed',
+          'DONE',
+          'COMPLETED',
+        ],
+      },
+      completedAt: {
+        $exists: true,
+        $ne: null,
+      },
     };
 
-    const [user, completedTasks, recentRelevantCount] = await Promise.all([
+    const [
+      user,
+      completedTasks,
+      recentRelevantCount,
+      projectActivities,
+    ] = await Promise.all([
       this.userModel
         .findById(oid)
-        .select('totalShips streakDays currentStreak longestStreak xp level')
+        .select(
+          'totalShips streakDays currentStreak longestStreak xp level timezone',
+        )
         .lean()
         .exec(),
 
       this.taskModel
         .find({
-          $and: [userActivityQuery, completedStatusQuery],
+          $and: [
+            userActivityQuery,
+            completedStatusQuery,
+          ],
         })
-        .select('_id status completedAt completedBy assigneeId createdBy reporterId')
+        .select(
+          '_id status completedAt completedBy assigneeId createdBy reporterId',
+        )
         .lean()
         .exec(),
 
@@ -193,48 +603,102 @@ export class UserService {
             userActivityQuery,
             {
               $or: [
-                { createdAt: { $gte: sevenDaysAgo } },
-                { updatedAt: { $gte: sevenDaysAgo } },
-                { completedAt: { $gte: sevenDaysAgo } },
+                {
+                  createdAt: {
+                    $gte: sevenDaysAgo,
+                  },
+                },
+                {
+                  updatedAt: {
+                    $gte: sevenDaysAgo,
+                  },
+                },
+                {
+                  completedAt: {
+                    $gte: sevenDaysAgo,
+                  },
+                },
               ],
             },
           ],
         })
         .exec(),
+
+      this.activities
+        .listUserActivityForRange({
+          userId,
+          since: streakActivitySince,
+          until: streakActivityUntil,
+          limit: 5000,
+        })
+        .catch(() => []),
     ]);
 
-    const totalShipsFromTasks = completedTasks.length;
+    const timeZone =
+      this.getStatsTimeZone(user);
 
-    const weeklyShips = completedTasks.filter((task: any) => {
-      const completedAt = this.getStatsDate(task?.completedAt);
-      return completedAt && completedAt >= sevenDaysAgo;
-    }).length;
+    const activityStreak =
+      this.calculateProjectActivityStreak(
+        projectActivities,
+        timeZone,
+        now,
+      );
 
-    const previousWeekShips = completedTasks.filter((task: any) => {
-      const completedAt = this.getStatsDate(task?.completedAt);
-      return completedAt && completedAt >= fourteenDaysAgo && completedAt < sevenDaysAgo;
-    }).length;
+    const totalShipsFromTasks =
+      completedTasks.length;
 
-    const activeDaysThisWeek = new Set(
-      completedTasks
-        .filter((task: any) => {
-          const completedAt = this.getStatsDate(task?.completedAt);
-          return completedAt && completedAt >= sevenDaysAgo;
-        })
-        .map((task: any) => this.getStatsDayKey(task?.completedAt))
-        .filter(Boolean),
-    ).size;
+    const weeklyShips = completedTasks.filter(
+      (task: any) => {
+        const completedAt =
+          this.getStatsDate(task?.completedAt);
 
-    const calculatedStreak = this.calculateCurrentStreakFromCompletedTasks(completedTasks);
-    const persistedStreak = Number((user as any)?.streakDays ?? (user as any)?.currentStreak ?? 0);
-    const persistedTotalShips = Number((user as any)?.totalShips ?? 0);
+        return (
+          completedAt &&
+          completedAt >= sevenDaysAgo
+        );
+      },
+    ).length;
 
-    const totalShips = Math.max(totalShipsFromTasks, persistedTotalShips);
-    const streakDays = Math.max(calculatedStreak, persistedStreak);
+    const previousWeekShips =
+      completedTasks.filter((task: any) => {
+        const completedAt =
+          this.getStatsDate(task?.completedAt);
+
+        return (
+          completedAt &&
+          completedAt >= fourteenDaysAgo &&
+          completedAt < sevenDaysAgo
+        );
+      }).length;
+
+    const activeDaysThisWeek =
+      activityStreak.activeDaysThisWeek;
+
+    const persistedTotalShips = Number(
+      (user as any)?.totalShips ?? 0,
+    );
+
+    const totalShips = Math.max(
+      totalShipsFromTasks,
+      persistedTotalShips,
+    );
+
+    const streakDays =
+      activityStreak.currentStreak;
+
+    const longestStreak =
+      activityStreak.longestStreak;
 
     const focus =
       recentRelevantCount > 0
-        ? Math.min(100, Math.round((weeklyShips / recentRelevantCount) * 100))
+        ? Math.min(
+            100,
+            Math.round(
+              (weeklyShips /
+                recentRelevantCount) *
+                100,
+            ),
+          )
         : weeklyShips > 0
           ? 100
           : 0;
@@ -244,7 +708,12 @@ export class UserService {
         ? weeklyShips > 0
           ? 100
           : 0
-        : Math.round(((weeklyShips - previousWeekShips) / previousWeekShips) * 100);
+        : Math.round(
+            ((weeklyShips -
+              previousWeekShips) /
+              previousWeekShips) *
+              100,
+          );
 
     return {
       ships: totalShips,
@@ -260,23 +729,31 @@ export class UserService {
 
       streakDays,
       currentStreak: streakDays,
-      longestStreak: Number((user as any)?.longestStreak ?? streakDays),
+      longestStreak,
+
+      activeToday:
+        activityStreak.activeToday,
+      atRiskToday:
+        activityStreak.atRiskToday,
+      lastActiveDate:
+        activityStreak.lastActiveDate,
+
+      timezone: timeZone,
+      streakSource: 'project-activity',
 
       focus,
       completionRate: focus,
       efficiency,
 
       xp: Number((user as any)?.xp ?? 0),
-      level: Number((user as any)?.level ?? 1),
+      level: Number(
+        (user as any)?.level ?? 1,
+      ),
 
       updatedAt: new Date().toISOString(),
     };
   }
 
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FIND METHODS
-  // ═══════════════════════════════════════════════════════════════════════════
 
   async findById(id: string): Promise<UserDocument | null> {
     const result = await this.userModel.findById(id).exec();

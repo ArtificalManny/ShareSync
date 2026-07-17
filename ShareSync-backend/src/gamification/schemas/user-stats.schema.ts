@@ -411,6 +411,24 @@ UserStatsSchema.methods.updateStreak = async function (completed: boolean): Prom
     const lastActivityDate = lastActivity ? new Date(lastActivity) : null;
     if (lastActivityDate) lastActivityDate.setHours(0, 0, 0, 0);
 
+    const isSameCalendarDay =
+      Boolean(lastActivityDate) &&
+      today.getTime() === lastActivityDate?.getTime();
+
+    if (isSameCalendarDay) {
+      const todayKey = today.toISOString().slice(0, 10);
+
+      if (!this.streak.activeDays.includes(todayKey)) {
+        this.streak.activeDays.push(todayKey);
+      }
+
+      this.streak.lastActivityDate = today;
+      this.streak.atRisk = false;
+
+      await this.save();
+      return this.streak;
+    }
+
     const isConsecutive =
       lastActivityDate &&
       today.getTime() - lastActivityDate.getTime() <= 24 * 60 * 60 * 1000;

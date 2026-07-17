@@ -229,7 +229,7 @@ const CatchUpMessage = ({ yourStreak, teamAverage, teamBest }) => {
 
   // ── CASE 1: Both zero — be honest, encourage start ──
   if (yourStreak === 0 && teamAverage === 0) {
-    message = "Start your first streak today! Complete 1 task to begin.";
+    message = "Start your first streak today! Make one meaningful project update to begin.";
     icon = Sparkles;
     color = 'text-text-secondary';
   }

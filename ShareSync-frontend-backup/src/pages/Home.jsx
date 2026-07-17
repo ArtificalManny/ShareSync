@@ -575,6 +575,11 @@ export default function Home() {
       intelligence?.isCoWorking
   );
   const hasCompetitiveStreakSignal = Boolean(
+    Number(
+      summary?.streakDays ??
+        summary?.currentStreak ??
+        0
+    ) > 0 ||
     Number(streakComparison?.userStreakDays || 0) > 0 ||
       Number(streakComparison?.teamAvgDays || 0) > 0 ||
       (streakComparison?.rankText && streakComparison.rankText !== "--")
