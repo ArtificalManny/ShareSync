@@ -1095,6 +1095,46 @@ export default function RoadmapPanel({
                 inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
             }
 
+            /* roadmap-natural-height-masonry-v1 */
+            .roadmap-masonry-columns {
+              width: 100%;
+            }
+
+            .roadmap-masonry-item {
+              break-inside: avoid;
+              page-break-inside: avoid;
+              -webkit-column-break-inside: avoid;
+              vertical-align: top;
+            }
+
+            /*
+             * MilestoneCard and the visible action footer are one shell.
+             * Only the outer masonry item moves when hovered.
+             */
+            .roadmap-visible-card-shell {
+              position: relative;
+              isolation: isolate;
+            }
+
+            .roadmap-visible-card-shell .roadmap-milestone-card {
+              border-bottom: 0 !important;
+              border-bottom-left-radius: 0 !important;
+              border-bottom-right-radius: 0 !important;
+              box-shadow: none !important;
+              transform: none !important;
+            }
+
+            .roadmap-visible-card-shell .roadmap-milestone-card:hover {
+              transform: none !important;
+              box-shadow: none !important;
+            }
+
+            .roadmap-visible-card-shell .roadmap-visible-card-actions-v1 {
+              position: relative;
+              z-index: 2;
+              margin-top: 0 !important;
+            }
+
             .roadmap-milestone-card {
               position: relative;
               overflow: hidden;
@@ -1437,7 +1477,7 @@ export default function RoadmapPanel({
             )}
 
             {!loading && !error && (itemsWithProgress?.length || 0) > 0 && (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              <div className="roadmap-masonry-columns columns-1 md:columns-2 xl:columns-3 [column-gap:1.25rem]">
                 {itemsWithProgress.map((m) => {
                   const mid = getMilestoneId(m);
                   const isSelected = normalizeId(selectedMilestoneId) === normalizeId(mid);
@@ -1445,9 +1485,9 @@ export default function RoadmapPanel({
                   return (
                     <div
                       key={mid}
-                      className="group rounded-[1.75rem] bg-gradient-to-br from-violet-500/35 via-cyan-400/20 to-emerald-400/25 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:from-violet-400/45 dark:via-cyan-300/25 dark:to-emerald-300/25 dark:hover:shadow-black/50"
+                      className="roadmap-masonry-item group mb-5 inline-block w-full break-inside-avoid align-top rounded-[1.75rem] bg-gradient-to-br from-violet-500/35 via-cyan-400/20 to-emerald-400/25 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:from-violet-400/45 dark:via-cyan-300/25 dark:to-emerald-300/25 dark:hover:shadow-black/50"
                     >
-                      <div className="rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/50 overflow-hidden">
+                      <div className="roadmap-visible-card-shell overflow-hidden rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/50">
                         <MilestoneCard
                           milestone={m}
                           onClick={handleCardClick}
