@@ -366,12 +366,12 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const isPublic = privacy === "Public";
 
   return (
-    <Dialog open={true} onClose={submitting ? () => {} : onClose} className="fixed inset-0 z-50">
+    <Dialog open={true} onClose={submitting ? () => {} : onClose} className="fixed inset-0 z-[100]">
       <div className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px]" aria-hidden="true" />
 
       <div className="pc-create-viewport fixed inset-0 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
-        <Dialog.Panel className="pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/96 backdrop-blur-sm shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200/80 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50/70 rounded-t-[28px]">
+        <Dialog.Panel className="pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[85dvh] flex flex-col overflow-hidden rounded-[28px] border border-slate-100 bg-white backdrop-blur-sm shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
+          <div className="shrink-0 flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50/70 rounded-t-[28px]">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-[0_10px_28px_rgba(139,92,246,0.24)]">
                 <Sparkles className="w-5 h-5 text-white" />
@@ -802,22 +802,20 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             </div>
           </form>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-t border-slate-200/80 bg-slate-50/88 backdrop-blur-md rounded-b-[28px]">
-            <div className="text-xs text-slate-500">
+          <div className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-t border-slate-100 bg-white rounded-b-[28px]">
+            <div className="text-xs">
               {subData && !isUnlimited ? (
-                <span
-                  className={isAtLimit ? "text-amber-600 font-medium flex items-center gap-1.5" : "flex items-center gap-1.5"}
-                >
+                <div className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium border ${isAtLimit ? "bg-amber-50 border-amber-200/50 text-amber-700" : "bg-violet-50/50 border-violet-100/50 text-violet-600"}`}>
                   {isAtLimit ? (
                     <AlertTriangle className="w-3.5 h-3.5" />
                   ) : (
-                    <Zap className="w-3.5 h-3.5 text-violet-500" />
+                    <Zap className="w-3.5 h-3.5" />
                   )}
-                  You have used {projectsUsed} of {projectsLimit} free projects.
-                </span>
+                  {isAtLimit ? `Limit reached: ${projectsLimit} free projects` : `Used ${projectsUsed} of ${projectsLimit} free projects`}
+                </div>
               ) : (
-                <span className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-violet-500" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-slate-400">
+                  <Zap className="w-3.5 h-3.5" />
                   Press ESC to cancel
                 </span>
               )}
@@ -826,7 +824,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             <div className="flex w-full sm:w-auto flex-col-reverse sm:flex-row gap-3 sm:justify-end">
               <button
                 type="button"
-                className="rounded-2xl border border-slate-200 bg-white/95 hover:bg-slate-50 px-5 py-3 text-sm font-medium text-slate-700 transition-all w-full sm:w-auto min-w-[132px]"
+                className="rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-3 text-sm font-medium text-slate-700 transition-all w-full sm:w-auto min-w-[132px]"
                 onClick={onClose}
                 disabled={submitting}
               >
@@ -840,7 +838,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                     onClose();
                     navigate("/settings");
                   }}
-                  className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_28px_rgba(245,158,11,0.28)] transition-all hover:scale-[1.02]"
+                  className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 px-6 py-3 text-sm font-bold text-white shadow-[0_10px_28px_rgba(245,158,11,0.28)] transition-all hover:scale-[1.02]"
                 >
                   <Crown className="w-4 h-4 inline mr-2" />
                   Upgrade to Team
