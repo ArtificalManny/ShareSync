@@ -1095,28 +1095,33 @@ export default function RoadmapPanel({
                 inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
             }
 
-            /* roadmap-natural-height-masonry-v1 */
-            .roadmap-masonry-columns {
-              width: 100%;
+            /* roadmap-balanced-row-grid-v1 */
+            .roadmap-balanced-grid {
+              align-items: stretch;
             }
 
-            .roadmap-masonry-item {
-              break-inside: avoid;
-              page-break-inside: avoid;
-              -webkit-column-break-inside: avoid;
-              vertical-align: top;
+            .roadmap-balanced-grid-item {
+              display: flex;
+              min-width: 0;
+              height: 100%;
             }
 
             /*
-             * MilestoneCard and the visible action footer are one shell.
-             * Only the outer masonry item moves when hovered.
+             * The milestone body and visible action footer form one
+             * full-height card inside each grid row.
              */
             .roadmap-visible-card-shell {
               position: relative;
               isolation: isolate;
+              display: flex;
+              flex-direction: column;
+              width: 100%;
+              height: 100%;
             }
 
             .roadmap-visible-card-shell .roadmap-milestone-card {
+              flex: 1 1 auto;
+              width: 100%;
               border-bottom: 0 !important;
               border-bottom-left-radius: 0 !important;
               border-bottom-right-radius: 0 !important;
@@ -1132,7 +1137,8 @@ export default function RoadmapPanel({
             .roadmap-visible-card-shell .roadmap-visible-card-actions-v1 {
               position: relative;
               z-index: 2;
-              margin-top: 0 !important;
+              flex: 0 0 auto;
+              margin-top: auto !important;
             }
 
             .roadmap-milestone-card {
@@ -1477,7 +1483,7 @@ export default function RoadmapPanel({
             )}
 
             {!loading && !error && (itemsWithProgress?.length || 0) > 0 && (
-              <div className="roadmap-masonry-columns columns-1 md:columns-2 xl:columns-3 [column-gap:1.25rem]">
+              <div className="roadmap-balanced-grid grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {itemsWithProgress.map((m) => {
                   const mid = getMilestoneId(m);
                   const isSelected = normalizeId(selectedMilestoneId) === normalizeId(mid);
@@ -1485,9 +1491,9 @@ export default function RoadmapPanel({
                   return (
                     <div
                       key={mid}
-                      className="roadmap-masonry-item group mb-5 inline-block w-full break-inside-avoid align-top rounded-[1.75rem] bg-gradient-to-br from-violet-500/35 via-cyan-400/20 to-emerald-400/25 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:from-violet-400/45 dark:via-cyan-300/25 dark:to-emerald-300/25 dark:hover:shadow-black/50"
+                      className="roadmap-balanced-grid-item group h-full min-w-0 rounded-[1.75rem] bg-gradient-to-br from-violet-500/35 via-cyan-400/20 to-emerald-400/25 p-[1px] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/10 dark:from-violet-400/45 dark:via-cyan-300/25 dark:to-emerald-300/25 dark:hover:shadow-black/50"
                     >
-                      <div className="roadmap-visible-card-shell overflow-hidden rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/50">
+                      <div className="roadmap-visible-card-shell h-full overflow-hidden rounded-[1.7rem] bg-white/95 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-white/[0.08] dark:shadow-2xl dark:shadow-black/50">
                         <MilestoneCard
                           milestone={m}
                           onClick={handleCardClick}
