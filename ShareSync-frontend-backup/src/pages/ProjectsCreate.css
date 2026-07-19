@@ -83,3 +83,16 @@
 [role="dialog"] > .pc-create-viewport > .pc-create-modal {
   background-color: rgba(255, 255, 255, 0.96) !important;
 }
+
+/* projects-create-ios-safe-area-v1 */
+@media (max-width: 639px) {
+  .pc-create-modal {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pc-create-viewport {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}

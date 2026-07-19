@@ -366,12 +366,12 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
   const isPublic = privacy === "Public";
 
   return (
-    <Dialog open={true} onClose={submitting ? () => {} : onClose} className="fixed inset-0 z-[100]">
+    <Dialog open={true} onClose={submitting ? () => {} : onClose} className="fixed inset-0 z-[10000]">
       <div className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px]" aria-hidden="true" />
 
-      <div className="pc-create-viewport fixed inset-0 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
-        <Dialog.Panel className="pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[85dvh] flex flex-col overflow-hidden rounded-[28px] border border-slate-100 bg-white backdrop-blur-sm shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
-          <div className="shrink-0 flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-violet-50 via-white to-fuchsia-50/70 rounded-t-[28px]">
+      <div className="pc-create-viewport fixed inset-0 flex items-start justify-center overflow-hidden p-0 pointer-events-none sm:items-center sm:p-6">
+        <Dialog.Panel className="pc-create-modal pointer-events-auto relative flex h-[100dvh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-white shadow-[0_24px_80px_rgba(139,92,246,0.16)] dark:bg-slate-950 sm:h-auto sm:max-h-[85dvh] sm:rounded-[28px] sm:border sm:border-slate-100">
+          <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 pb-5 pt-5 dark:border-white/10 dark:bg-slate-950 sm:rounded-t-[28px] sm:bg-gradient-to-r sm:from-violet-50 sm:via-white sm:to-fuchsia-50/70">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-[0_10px_28px_rgba(139,92,246,0.24)]">
                 <Sparkles className="w-5 h-5 text-white" />
@@ -399,7 +399,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             id={formId}
             onSubmit={handleSubmit}
             onKeyDown={handleKeyDown}
-            className="flex-1 overflow-y-auto px-6 py-6 bg-transparent"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-6 py-6 [-webkit-overflow-scrolling:touch] dark:bg-slate-950"
           >
             <div className="space-y-6">
               {fieldErrors.form ? (
@@ -802,7 +802,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             </div>
           </form>
 
-          <div className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-t border-slate-100 bg-white rounded-b-[28px]">
+          <div className="shrink-0 flex flex-col gap-4 border-t border-slate-100 bg-white px-6 pb-5 pt-4 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between sm:rounded-b-[28px] sm:py-5">
             <div className="text-xs">
               {subData && !isUnlimited ? (
                 <div className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium border ${isAtLimit ? "bg-amber-50 border-amber-200/50 text-amber-700" : "bg-violet-50/50 border-violet-100/50 text-violet-600"}`}>
