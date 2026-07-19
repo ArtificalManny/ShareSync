@@ -9,16 +9,24 @@ function getAuthToken() {
   );
 }
 
-function normalizeProjects(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.projects)) return payload.projects;
-  if (Array.isArray(payload?.items)) return payload.items;
-  if (Array.isArray(payload?.results)) return payload.results;
-  return [];
+function normalizeProjectCount(payload) {
+  const rawCount =
+    payload?.data?.usage?.projects ??
+    payload?.usage?.projects ??
+    null;
+
+  const count = Number(rawCount);
+
+  if (!Number.isFinite(count) || count < 0) {
+    return null;
+  }
+
+  return count;
 }
 
-export function useProjectUsageCount({ refreshMs = 30000 } = {}) {
+export function useProjectUsageCount({
+  refreshMs = 30000,
+} = {}) {
   const [projectCount, setProjectCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,26 +35,43 @@ export function useProjectUsageCount({ refreshMs = 30000 } = {}) {
     try {
       const token = getAuthToken();
 
-      const res = await fetch("/api/projects", {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {},
-      });
+      const response = await fetch(
+        "/api/subscriptions/current",
+        {
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : {},
+        },
+      );
 
-      if (!res.ok) {
-        throw new Error(`Project count request failed with ${res.status}`);
+      if (!response.ok) {
+        throw new Error(
+          `Project usage request failed with ${response.status}`,
+        );
       }
 
-      const payload = await res.json();
-      const projects = normalizeProjects(payload);
+      const payload = await response.json();
+      const nextCount = normalizeProjectCount(payload);
 
-      setProjectCount(projects.length);
+      if (nextCount === null) {
+        throw new Error(
+          "Subscription response did not contain project usage",
+        );
+      }
+
+      setProjectCount(nextCount);
       setError("");
     } catch (err) {
-      console.warn("[useProjectUsageCount] Failed to load project count:", err);
-      setError(err?.message || "Failed to load project count");
+      console.warn(
+        "[useProjectUsageCount] Failed to load project usage:",
+        err,
+      );
+
+      setError(
+        err?.message || "Failed to load project usage",
+      );
     } finally {
       setLoading(false);
     }
@@ -59,13 +84,9 @@ export function useProjectUsageCount({ refreshMs = 30000 } = {}) {
 
     const events = [
       "projectCreated",
-      "projectUpdated",
       "projectDeleted",
-      "projectCompleted",
       "project:created",
-      "project:updated",
       "project:deleted",
-      "project:completed",
     ];
 
     events.forEach((eventName) => {
@@ -74,6 +95,7 @@ export function useProjectUsageCount({ refreshMs = 30000 } = {}) {
 
     return () => {
       clearInterval(interval);
+
       events.forEach((eventName) => {
         window.removeEventListener(eventName, refresh);
       });

@@ -62,11 +62,11 @@ export class SubscriptionsController {
     const subscription = await this.subscriptionsService.getOrCreateSubscription(userId);
 
     // SUBSCRIPTION USAGE REALTIME BRIDGE
-    // ACTIVE PROJECT USAGE COUNT BRIDGE
-    // Count active operating projects only. Completed and archived projects
-    // remain visible but do not consume free-plan project capacity.
-    // Projects and storage are derived from live records so the Navbar usage pill
-    // does not depend on stale subscription.usage snapshots.
+    // REALTIME SUBSCRIPTION USAGE BRIDGE
+    // Project capacity uses stable ownership. Completed and archived
+    // owned projects continue to count until permanently deleted.
+    // The access query below remains responsible for the separate
+    // storage and member calculations.
     const oid = new Types.ObjectId(userId);
     const inactiveProjectStatuses = [
       'completed',
@@ -107,7 +107,10 @@ export class SubscriptionsController {
           .select('_id owner ownerId createdBy members')
           .lean()
       : [];
-    const realProjectCount = realProjectIds.length;
+    const realProjectCount =
+      await this.subscriptionsService.countOwnedProjectsForUser(
+        userId,
+      );
 
     const storageRows = realProjectIds.length
       ? await this.vaultFileModel.aggregate([

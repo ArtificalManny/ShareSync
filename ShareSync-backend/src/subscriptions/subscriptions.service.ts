@@ -285,49 +285,37 @@ export class SubscriptionsService {
 
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // ACTIVE PROJECT USAGE COUNT BRIDGE
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Subscription project limits are based on active operating capacity, not total
-  // historical projects. Completed/archived projects remain visible but do not
-  // consume a free-plan active project slot.
-  private getActiveProjectUsageQuery(userId: string): Record<string, any> {
+  // OWNED PROJECT CAPACITY COUNT
+  // Project limits are attached to stable ownership, not current access
+  // or operating status. Completed and archived projects continue to
+  // consume capacity. Only permanent deletion releases a project slot.
+  private getOwnedProjectUsageQuery(
+    userId: string,
+  ): Record<string, any> {
     const oid = new Types.ObjectId(userId);
 
-    const inactiveProjectStatuses = [
-      'completed',
-      'done',
-      'archived',
-      'deleted',
-      'COMPLETED',
-      'DONE',
-      'ARCHIVED',
-      'DELETED',
-    ];
-
     return {
-      $and: [
-        {
-          $or: [
-            { ownerId: oid },
-            { owner: oid },
-            { 'members.userId': oid },
-            { 'members.user': oid },
-          ],
-        },
-        {
-          $or: [
-            { completedAt: { $exists: false } },
-            { completedAt: null },
-          ],
-        },
+      $or: [
+        { ownerId: oid },
+        { owner: oid },
+        { createdBy: oid },
+        { createdById: oid },
+
+        // Backward-compatible ownership fields from older records.
+        { creatorId: oid },
+        { userId: oid },
       ],
-      isArchived: { $ne: true },
-      status: { $nin: inactiveProjectStatuses },
     };
   }
 
-  private async countActiveProjectsForUser(userId: string): Promise<number> {
-    return this.projectModel.countDocuments(this.getActiveProjectUsageQuery(userId)).exec();
+  async countOwnedProjectsForUser(
+    userId: string,
+  ): Promise<number> {
+    return this.projectModel
+      .countDocuments(
+        this.getOwnedProjectUsageQuery(userId),
+      )
+      .exec();
   }
 
   private getRefId(ref: any): string {
@@ -456,7 +444,7 @@ export class SubscriptionsService {
     switch (resource) {
       case 'projects':
         limit = subscription.limits.projects;
-        current = await this.countActiveProjectsForUser(userId);
+        current = await this.countOwnedProjectsForUser(userId);
         break;
       case 'storage':
         limit = subscription.limits.storageBytes;

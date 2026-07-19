@@ -718,40 +718,63 @@ const ProjectSettings = () => {
             <h2 className="text-xl font-bold text-error-400">Danger Zone</h2>
           </div>
 
-          <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-            Once you leave this project, you will lose access to all project data and won't be able to rejoin unless invited again.
-            {role === 'owner' && (project?.members?.filter(m => String(m?.userId?._id || m?.userId || '') !== currentUserId).length > 0
-              ? <span className="font-bold text-error-300 block mt-2">⚠️ You are the Owner. Transfer ownership to another member first.</span>
-              : <span className="font-bold text-amber-300 block mt-2">⚠️ You are the only member. Leaving will archive this project.</span>
-            )}
-          </p>
+          {/* owner-project-capacity-guard-v1 */}
+          {role === 'owner' ? (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                You own this project. Project owners cannot leave
+                projects they own.
+              </p>
 
-          {showLeaveConfirm ? (
-            <div className="bg-white dark:bg-slate-900/80 rounded-xl p-5 border border-error-200 dark:border-error-500/50">
-              <p className="text-white font-semibold mb-4">Are you absolutely sure you want to leave {project?.name}?</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowLeaveConfirm(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleLeaveProject}
-                  disabled={role === 'owner' && project?.members?.filter(m => String(m?.userId?._id || m?.userId || '') !== currentUserId).length > 0}
-                  className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-error-500/20"
-                >
-                  {role === 'owner' && (!project?.members || project.members.length === 0) ? 'Yes, Archive & Leave' : 'Yes, Leave Project'}
-                </button>
+              <div className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                Completed and archived projects continue to count
+                toward your project limit. Archive the project to
+                preserve its history, or permanently delete it to
+                release one project slot.
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowLeaveConfirm(true)}
-              className="px-6 py-3 bg-error-600 hover:bg-error-500 rounded-xl font-bold transition-all shadow-lg shadow-error-500/20"
-            >
-              Leave Project
-            </button>
+            <>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                Once you leave this project, you will lose access to
+                all project data and will not be able to rejoin unless
+                you are invited again.
+              </p>
+
+              {showLeaveConfirm ? (
+                <div className="bg-white dark:bg-slate-900/80 rounded-xl p-5 border border-error-200 dark:border-error-500/50">
+                  <p className="text-slate-900 dark:text-white font-semibold mb-4">
+                    Are you absolutely sure you want to leave {project?.name}?
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowLeaveConfirm(false)}
+                      className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-semibold transition-all"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleLeaveProject}
+                      className="flex-1 px-4 py-2.5 bg-error-600 hover:bg-error-500 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-error-500/20"
+                    >
+                      Yes, Leave Project
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveConfirm(true)}
+                  className="px-6 py-3 bg-error-600 hover:bg-error-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-error-500/20"
+                >
+                  Leave Project
+                </button>
+              )}
+            </>
           )}
         </div>
 

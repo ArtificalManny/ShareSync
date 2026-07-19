@@ -393,7 +393,7 @@ export class ProjectsService {
       const planLimit = projectUsageCheck.limit === -1 ? 'unlimited' : projectUsageCheck.limit;
 
       throw new ForbiddenException(
-        `Project limit reached. Your current plan allows ${planLimit} active projects. Complete, archive, or upgrade to create more projects.`,
+        `Project limit reached. Your current plan allows ${planLimit} owned projects. Completed and archived projects still count. Permanently delete a project or upgrade to create more projects.`,
       );
     }
 
@@ -1704,33 +1704,45 @@ export class ProjectsService {
     return nextPreferences;
   }
 
-  async leaveProject(projectId: string, userId: string): Promise<void> {
-    const project = await this.findByIdWithAccess(projectId, userId);
-    const isOwner = project.ownerId.toString() === userId;
-    const otherMembers = (project.members || []).filter(
-      (m) => m.userId.toString() !== userId,
+  async leaveProject(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    const project = await this.findByIdWithAccess(
+      projectId,
+      userId,
     );
 
-    if (isOwner && otherMembers.length > 0) {
-      throw new BadRequestException('Owner cannot leave project with other members. Transfer ownership first.');
+    const ownerId =
+      project.ownerId?.toString?.() ||
+      String((project as any)?.owner || '');
+
+    if (ownerId === String(userId)) {
+      throw new BadRequestException(
+        'Project owners cannot leave their own project. ' +
+        'Archive or permanently delete the project.',
+      );
     }
 
-    if (isOwner && otherMembers.length === 0) {
-      project.status = 'archived' as any;
-      project.isArchived = true;
-      project.archivedAt = new Date();
-      await project.save();
+    const memberIndex = (
+      project.members || []
+    ).findIndex((member: any) => {
+      const memberId =
+        member?.userId?._id ||
+        member?.userId ||
+        member?.user?._id ||
+        member?.user ||
+        member?.memberId ||
+        '';
 
-      this.eventEmitter.emit('project.archived', {
-        projectId: project._id,
-        userId,
-      });
+      return String(memberId) === String(userId);
+    });
 
-      return;
+    if (memberIndex === -1) {
+      throw new BadRequestException(
+        'You are not a member of this project',
+      );
     }
-
-    const memberIndex = project.members.findIndex((m) => m.userId.toString() === userId);
-    if (memberIndex === -1) throw new BadRequestException('You are not a member of this project');
 
     project.members.splice(memberIndex, 1);
     await project.save();
