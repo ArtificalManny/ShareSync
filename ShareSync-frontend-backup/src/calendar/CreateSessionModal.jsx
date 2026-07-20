@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Clock,
@@ -133,7 +134,34 @@ export default function CreateSessionModal({
     }
   }, [isOpen, initialData]);
 
-  if (!isOpen) return null;
+  // schedule-session-scroll-lock-v1
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const previousBodyOverflow =
+      document.body.style.overflow;
+
+    const previousHtmlOverflow =
+      document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow =
+        previousBodyOverflow;
+
+      document.documentElement.style.overflow =
+        previousHtmlOverflow;
+    };
+  }, [isOpen]);
+
+
+  if (!isOpen || typeof document === 'undefined') {
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -207,8 +235,13 @@ export default function CreateSessionModal({
 
   const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white/95 dark:bg-white/[0.08] px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/30 dark:focus:border-violet-400/40 dark:focus:ring-violet-500/15";
 
-  return (
-    <div className="schedule-session-clean-labels-v1 fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 px-4 pt-16 pb-8 backdrop-blur-md sm:px-5 sm:pt-16 sm:pb-10">
+  return createPortal(
+    <div
+      className="schedule-session-clean-labels-v1 fixed inset-0 z-[10000] flex items-start justify-center overflow-hidden bg-white p-0 dark:bg-[#101827] sm:items-center sm:bg-slate-950/45 sm:px-5 sm:py-6 sm:backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Schedule session"
+    >
         <style>{`
           /* schedule-session-label-contrast-v2 */
           .schedule-session-clean-labels-v1 .schedule-field-label-plain-v1 {
@@ -231,10 +264,71 @@ export default function CreateSessionModal({
             color: rgba(255, 255, 255, 0.94) !important;
             -webkit-text-fill-color: rgba(255, 255, 255, 0.94) !important;
           }
+
+
+          /* schedule-session-ios-shell-v2 */
+
+          /*
+           * Light mode labels must remain readable against the
+           * solid white mobile modal surface.
+           */
+          .schedule-session-clean-labels-v1
+            .schedule-field-label-plain-v1 {
+            color: rgb(51 65 85) !important;
+            -webkit-text-fill-color:
+              rgb(51 65 85) !important;
+            text-shadow: none !important;
+          }
+
+          .dark
+            .schedule-session-clean-labels-v1
+            .schedule-field-label-plain-v1 {
+            color: rgba(255, 255, 255, 0.94) !important;
+            -webkit-text-fill-color:
+              rgba(255, 255, 255, 0.94) !important;
+          }
+
+          @media (max-width: 639px) {
+            /*
+             * Some iOS WebViews do not reliably resolve 100dvh.
+             * The fixed modal root already occupies the viewport,
+             * so make the panel fill that root directly.
+             */
+            .schedule-session-clean-labels-v1 {
+              background: #ffffff !important;
+            }
+
+            .dark.schedule-session-clean-labels-v1,
+            .dark .schedule-session-clean-labels-v1 {
+              background: #101827 !important;
+            }
+
+            .schedule-session-clean-labels-v1
+              .schedule-session-modal {
+              width: 100% !important;
+              max-width: none !important;
+              height: 100% !important;
+              min-height: 100% !important;
+              max-height: none !important;
+              border-radius: 0 !important;
+            }
+
+            .schedule-session-clean-labels-v1
+              .schedule-session-scroll {
+              min-height: 0 !important;
+              flex: 1 1 auto !important;
+            }
+
+            .schedule-session-clean-labels-v1
+              .schedule-session-footer {
+              flex: 0 0 auto !important;
+              margin-top: auto !important;
+            }
+          }
         `}</style>
 
 
-      <div className="relative flex h-auto max-h-[calc(100dvh-9rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/92 shadow-[0_22px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 dark:border-white/[0.08] dark:bg-[#101827]/95 dark:shadow-black/40">
+        <div className="schedule-session-modal relative flex h-[100dvh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-none border-0 bg-white shadow-none animate-in fade-in zoom-in-95 duration-200 dark:bg-[#101827] sm:h-auto sm:max-h-[calc(100dvh-3rem)] sm:rounded-[1.5rem] sm:border sm:border-white/80 sm:bg-white/95 sm:shadow-[0_22px_60px_rgba(15,23,42,0.18)] sm:backdrop-blur-xl dark:sm:border-white/[0.08] dark:sm:bg-[#101827]/95 dark:sm:shadow-black/40">
         {/* Pearl/glass atmosphere */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.92),rgba(255,255,255,0.68)_32%,rgba(139,92,246,0.08)_70%,rgba(34,211,238,0.04)_Available)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),rgba(15,23,42,0.08)_38%,rgba(15,23,42,0)_Available)]" />
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl dark:bg-cyan-400/10" />
@@ -243,7 +337,13 @@ export default function CreateSessionModal({
 
         <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           {/* Header */}
-          <div className="shrink-0 flex items-start justify-between gap-3 border-b border-slate-200/70 px-5 py-3 dark:border-white/[0.06]">
+            <div
+              className="schedule-session-header shrink-0 flex items-start justify-between gap-3 border-b border-slate-200/70 bg-white px-5 pb-3 dark:border-white/[0.06] dark:bg-[#101827]"
+              style={{
+                paddingTop:
+                  'max(env(safe-area-inset-top, 0px), 1rem)',
+              }}
+            >
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600 shadow-sm shadow-violet-100 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300">
                 <Clock className="h-5 w-5" />
@@ -272,7 +372,11 @@ export default function CreateSessionModal({
             </button>
           </div>
 
-          <form id="create-session-form" onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 pb-7 overscroll-contain">
+            <form
+              id="create-session-form"
+              onSubmit={handleSubmit}
+              className="schedule-session-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-white px-5 py-4 pb-7 [-webkit-overflow-scrolling:touch] dark:bg-[#101827]"
+            >
             {/* Title Input */}
             <div>
               <label className="schedule-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Session Title</label>
@@ -427,7 +531,13 @@ export default function CreateSessionModal({
           </form>
 
           {/* Footer Actions */}
-          <div className="relative z-10 shrink-0 border-t border-slate-200/70 bg-white/95 dark:bg-white/[0.08] px-5 py-3 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
+            <div
+              className="schedule-session-footer relative z-20 shrink-0 border-t border-slate-200/70 bg-white px-5 pt-3 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] dark:border-white/[0.06] dark:bg-[#101827]"
+              style={{
+                paddingBottom:
+                  'max(env(safe-area-inset-bottom, 0px), 1rem)',
+              }}
+            >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 {initialData?.mode === 'edit' && onDelete && (
@@ -443,12 +553,12 @@ export default function CreateSessionModal({
                 )}
               </div>
 
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <div className="schedule-session-actions grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isDeleting}
-                  className="rounded-full px-5 py-3 text-sm font-bold text-white/70 transition-colors hover:bg-white/12 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full min-w-0 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.12] sm:w-auto sm:px-5"
                 >
                   Cancel
                 </button>
@@ -457,7 +567,7 @@ export default function CreateSessionModal({
                   type="submit"
                   form="create-session-form"
                   disabled={isDeleting}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-200/70 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-700 px-6 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(124,58,237,0.42)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(124,58,237,0.55)] focus:outline-none focus:ring-4 focus:ring-violet-300/35 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="schedule-session-submit inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-full border border-violet-200/70 bg-violet-600 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-700 px-4 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(124,58,237,0.42)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(124,58,237,0.55)] focus:outline-none focus:ring-4 focus:ring-violet-300/35 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-[170px] sm:px-6"
                 >
                   <Zap className="h-4 w-4" />
                   {initialData?.mode === 'edit' ? 'Update Session' : 'Add Session'}
@@ -467,6 +577,7 @@ export default function CreateSessionModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

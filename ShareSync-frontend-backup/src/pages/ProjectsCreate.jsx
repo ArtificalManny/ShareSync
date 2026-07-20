@@ -802,7 +802,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
             </div>
           </form>
 
-          <div className="shrink-0 flex flex-col gap-4 border-t border-slate-100 bg-white px-6 pb-5 pt-4 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between sm:rounded-b-[28px] sm:py-5">
+          <div className="pc-create-footer relative z-20 shrink-0 flex flex-col gap-4 border-t border-slate-100 bg-white px-6 pb-5 pt-4 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between sm:rounded-b-[28px] sm:py-5">
             <div className="text-xs">
               {subData && !isUnlimited ? (
                 <div className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-medium border ${isAtLimit ? "bg-amber-50 border-amber-200/50 text-amber-700" : "bg-violet-50/50 border-violet-100/50 text-violet-600"}`}>
@@ -821,10 +821,10 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               )}
             </div>
 
-            <div className="flex w-full sm:w-auto flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+            <div className="pc-create-actions grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:flex-row sm:justify-end">
               <button
                 type="button"
-                className="rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-3 text-sm font-medium text-slate-700 transition-all w-full sm:w-auto min-w-[132px]"
+                className="rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-3 text-sm font-medium text-slate-700 transition-all w-full min-w-0 sm:w-auto sm:min-w-[132px]"
                 onClick={onClose}
                 disabled={submitting}
               >
@@ -847,7 +847,7 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                 <button
                   type="submit"
                   form={formId}
-                  className={`rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 hover:from-violet-500 hover:via-purple-500 hover:to-fuchsia-500 px-6 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(139,92,246,0.32)] transition-all w-full sm:w-auto min-w-[190px] inline-flex items-center justify-center ${
+                  className={`pc-create-submit rounded-2xl bg-violet-600 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 hover:from-violet-500 hover:via-purple-500 hover:to-fuchsia-500 px-6 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(139,92,246,0.32)] transition-all w-full min-w-0 sm:w-auto sm:min-w-[190px] inline-flex items-center justify-center ${
                     submitting ? "opacity-70 cursor-wait" : "hover:scale-[1.02]"
                   }`}
                   disabled={!canSubmit}

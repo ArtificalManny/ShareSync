@@ -96,3 +96,41 @@
     min-height: 100dvh;
   }
 }
+
+/* projects-create-mobile-actions-v1 */
+@media (max-width: 639px) {
+  .pc-create-footer {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: max(
+      env(safe-area-inset-bottom, 0px),
+      1rem
+    ) !important;
+  }
+
+  .pc-create-actions {
+    display: grid !important;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr) !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+  }
+
+  .pc-create-actions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .pc-create-submit {
+    display: inline-flex !important;
+    visibility: visible !important;
+    background-color: #7c3aed !important;
+    color: #ffffff !important;
+  }
+
+  .pc-create-submit:disabled {
+    opacity: 0.55 !important;
+  }
+}
