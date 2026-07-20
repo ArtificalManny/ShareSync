@@ -313,6 +313,91 @@ const MentorDock = () => {
         .generate-plan-btn:hover { border-color: #cbd5e1; background: #f8fafc; color: #1e293b; }
         @keyframes pulse-mic { 0%, Available { box-shadow: 0 0 0 0 rgba(236,72,153, 0.3); } 50% { box-shadow: 0 0 0 6px rgba(236,72,153, 0); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* openshare-native-mentor-position-v1 */
+        @media (max-width: 767px) {
+          .mentor-dock {
+            right: 16px;
+            bottom:
+              calc(
+                5.25rem +
+                env(safe-area-inset-bottom, 0px)
+              );
+            z-index: 140;
+          }
+
+          .mentor-toggle {
+            width: 52px;
+            height: 52px;
+            border-width: 1px;
+            box-shadow:
+              0 14px 32px -8px
+                rgba(124, 58, 237, 0.48),
+              inset 0 1px 2px
+                rgba(255, 255, 255, 0.28);
+          }
+
+          .glow-aura {
+            inset: -4px;
+            filter: blur(10px);
+            opacity: 0.48;
+          }
+
+          .sparkle-icon {
+            width: 24px;
+            height: 24px;
+          }
+
+          .mentor-panel {
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            bottom:
+              calc(
+                9.25rem +
+                env(safe-area-inset-bottom, 0px)
+              );
+            width: auto;
+            max-width: none;
+            max-height:
+              calc(
+                100dvh -
+                env(safe-area-inset-top, 0px) -
+                10.5rem -
+                env(safe-area-inset-bottom, 0px)
+              );
+            border-radius: 24px;
+            transform-origin: bottom right;
+          }
+
+          .mentor-body {
+            height: min(58dvh, 500px);
+            max-height:
+              calc(
+                100dvh -
+                env(safe-area-inset-top, 0px) -
+                15rem -
+                env(safe-area-inset-bottom, 0px)
+              );
+            padding: 16px;
+          }
+
+          .mentor-header {
+            padding: 14px 16px;
+          }
+
+          .chat-container {
+            margin-bottom: 12px;
+            gap: 12px;
+          }
+
+          .chat-bubble {
+            max-width: 90%;
+            padding: 11px 14px;
+            font-size: 14px;
+          }
+        }
+
       `}</style>
     </>
   );

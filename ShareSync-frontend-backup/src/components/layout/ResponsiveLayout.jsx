@@ -31,18 +31,24 @@ export default function ResponsiveLayout({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex h-[100dvh] w-full max-w-full flex-col overflow-x-hidden bg-slate-50 dark:bg-[#0f1014]">
+    <div
+      data-mobile-app-shell="true"
+      className="fixed inset-0 z-[100] flex h-[100dvh] min-h-0 w-full max-w-full flex-col overflow-hidden bg-slate-50 dark:bg-[#0f1014]"
+    >
       <MobileHeader
         onSearchPress={handleSearch}
         onNotificationPress={onNotificationPress}
         unreadCount={unreadCount}
       />
 
-      <main className="flex-1 w-full max-w-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <main
+        data-mobile-scroll-region="true"
+        className="min-h-0 min-w-0 w-full max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] [-webkit-overflow-scrolling:touch]"
+      >
         {children}
       </main>
 
-      <MobileFloatingMessages />
+      <MobileFloatingMessages unreadCount={unreadCount} />
 
       <MobileBottomNav onCreatePress={onCreatePress} />
     </div>

@@ -29,13 +29,14 @@ export default function MobileFloatingMessages({
 
   return (
     <button
+      data-mobile-utility="messages"
       type="button"
       onClick={handlePress}
       aria-label={unreadCount > 0 ? `${unreadCount} unread messages` : 'Open messages'}
       title="Messages"
       className={`
-        fixed right-5 bottom-[calc(10.25rem+env(safe-area-inset-bottom,0px))]
-        z-[74] flex h-12 w-12 items-center justify-center md:hidden
+        fixed right-4 bottom-[calc(9rem+env(safe-area-inset-bottom,0px))]
+        z-[74] flex h-[52px] w-[52px] items-center justify-center md:hidden
         rounded-full border border-white/70
         bg-white/85 text-slate-700
         shadow-[0_18px_45px_rgba(15,23,42,0.18)]

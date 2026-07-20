@@ -41,11 +41,12 @@ export default function MobileBottomNav({
 
   return (
     <nav
+      data-mobile-bottom-nav="true"
       className={`
         fixed bottom-0 left-0 right-0 z-[80] md:hidden
         border-t border-white/10
-        bg-[#080914]/92 text-white
-        shadow-[0_-18px_50px_rgba(0,0,0,0.42)]
+        bg-[#080914]/97 text-white
+        shadow-[0_-12px_36px_rgba(0,0,0,0.36)]
         backdrop-blur-2xl
         ${className}
       `}
