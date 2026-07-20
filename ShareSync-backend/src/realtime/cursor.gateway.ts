@@ -48,7 +48,39 @@ import {
   @WebSocketGateway({
     namespace: '/cursors',
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:54693',
+      // openshare-native-socket-cors-v1
+      origin: Array.from(
+        new Set([
+          'https://openshare.ca',
+          'https://www.openshare.ca',
+          'https://openshare-frontend.onrender.com',
+
+          // Capacitor and Ionic native WebViews
+          'capacitor://localhost',
+          'ionic://localhost',
+          'http://localhost',
+          'https://localhost',
+
+          // Browser development
+          'http://localhost:3000',
+          'http://localhost:5173',
+          'http://localhost:54693',
+          'http://127.0.0.1:3000',
+          'http://127.0.0.1:5173',
+          'http://127.0.0.1:54693',
+
+          // Render-configured origins
+          ...String(
+            process.env.CORS_ORIGINS ||
+              process.env.CORS_ORIGIN ||
+              process.env.FRONTEND_URL ||
+              '',
+          )
+            .split(',')
+            .map((origin) => origin.trim())
+            .filter(Boolean),
+        ]),
+      ),
       credentials: true,
     },
     // Optimize for real-time cursor updates

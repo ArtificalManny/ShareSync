@@ -289,22 +289,141 @@ export function usePresence(options = {}) {
     sendPresenceUpdate(PresenceStatus.ONLINE);
   }, [sendPresenceUpdate]);
 
+  // presence-count-normalization-v1
   const getProjectStats = useCallback(() => {
     const users = resolveUsers();
 
-    if (!users || users.length === 0) {
-      return { total: 0, online: 0, idle: 0, focus: 0, away: 0, busy: 0 };
+    if (!Array.isArray(users) || users.length === 0) {
+      return {
+        total: 0,
+        online: 0,
+        idle: 0,
+        focus: 0,
+        away: 0,
+        busy: 0,
+      };
     }
 
+    /*
+     * Presence events can contain one entry per browser, phone,
+     * tab, or socket. Normalize those entries to one person so
+     * the same account on desktop and iPhone still counts once.
+     */
+    const getIdentityKey = (entry, index) => {
+      const directUserId = entry?.userId;
+
+      const rawUserId =
+        directUserId?._id ||
+        directUserId?.id ||
+        (
+          typeof directUserId === "string" ||
+          typeof directUserId === "number"
+            ? directUserId
+            : ""
+        ) ||
+        entry?.id ||
+        entry?._id ||
+        "";
+
+      const normalizedUserId =
+        String(rawUserId || "").trim();
+
+      if (normalizedUserId) {
+        return `user:${normalizedUserId}`;
+      }
+
+      const rawSessionId =
+        entry?.sessionId ||
+        entry?.socketId ||
+        entry?.connectionId ||
+        "";
+
+      const normalizedSessionId =
+        String(rawSessionId || "").trim();
+
+      if (normalizedSessionId) {
+        return `session:${normalizedSessionId}`;
+      }
+
+      return `presence:${index}`;
+    };
+
+    /*
+     * When one person has multiple sessions, retain their most
+     * active status for the status breakdown.
+     */
+    const getStatusPriority = (value) => {
+      const resolvedStatus =
+        value || PresenceStatus.ONLINE;
+
+      if (resolvedStatus === PresenceStatus.ONLINE) return 6;
+      if (resolvedStatus === PresenceStatus.FOCUS) return 5;
+      if (resolvedStatus === PresenceStatus.BUSY) return 4;
+      if (resolvedStatus === PresenceStatus.IDLE) return 3;
+      if (resolvedStatus === PresenceStatus.AWAY) return 2;
+      if (resolvedStatus === PresenceStatus.OFFLINE) return 1;
+
+      return 6;
+    };
+
+    const uniqueUsersById = users.reduce(
+      (map, entry, index) => {
+        const key = getIdentityKey(entry, index);
+
+        const candidate = {
+          ...entry,
+          status:
+            entry?.status || PresenceStatus.ONLINE,
+        };
+
+        const existing = map.get(key);
+
+        if (
+          !existing ||
+          getStatusPriority(candidate.status) >
+            getStatusPriority(existing.status)
+        ) {
+          map.set(key, candidate);
+        }
+
+        return map;
+      },
+      new Map()
+    );
+
+    const uniqueUsers = Array.from(
+      uniqueUsersById.values()
+    );
+
+    /*
+     * "Online" means connected to the project. Idle, focus,
+     * busy, and away are presence states—not disconnections.
+     */
+    const connectedUsers = uniqueUsers.filter(
+      (entry) =>
+        (entry?.status || PresenceStatus.ONLINE) !==
+        PresenceStatus.OFFLINE
+    );
+
     return {
-      total: users.length,
-      online: users.filter(
-        (c) => c.status === PresenceStatus.ONLINE || !c.status
+      total: uniqueUsers.length,
+      online: connectedUsers.length,
+      idle: uniqueUsers.filter(
+        (entry) =>
+          entry.status === PresenceStatus.IDLE
       ).length,
-      idle: users.filter((c) => c.status === PresenceStatus.IDLE).length,
-      focus: users.filter((c) => c.status === PresenceStatus.FOCUS).length,
-      away: users.filter((c) => c.status === PresenceStatus.AWAY).length,
-      busy: users.filter((c) => c.status === PresenceStatus.BUSY).length,
+      focus: uniqueUsers.filter(
+        (entry) =>
+          entry.status === PresenceStatus.FOCUS
+      ).length,
+      away: uniqueUsers.filter(
+        (entry) =>
+          entry.status === PresenceStatus.AWAY
+      ).length,
+      busy: uniqueUsers.filter(
+        (entry) =>
+          entry.status === PresenceStatus.BUSY
+      ).length,
     };
   }, [resolveUsers]);
 
