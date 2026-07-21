@@ -539,8 +539,26 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Project Title <span className="text-fuchsia-500">*</span>
+                        {/* project-create-field-labels-dark-v1 */}
+                        <label
+                          className="
+                            pc-create-field-label
+                            mb-2 block rounded-xl border
+                            border-slate-200 bg-slate-50
+                            px-4 py-3
+                            text-sm font-semibold text-slate-700
+                            shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+                            transition-colors
+                            dark:border-violet-400/20
+                            dark:bg-slate-900
+                            dark:text-slate-100
+                            dark:shadow-none
+                          "
+                        >
+                          Project Title{" "}
+                          <span className="text-fuchsia-500 dark:text-fuchsia-400">
+                            *
+                          </span>
                         </label>
                         <input
                           ref={modalFieldRef}
@@ -566,7 +584,23 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                        <label
+                          className="
+                            pc-create-field-label
+                            mb-2 block rounded-xl border
+                            border-slate-200 bg-slate-50
+                            px-4 py-3
+                            text-sm font-semibold text-slate-700
+                            shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+                            transition-colors
+                            dark:border-violet-400/20
+                            dark:bg-slate-900
+                            dark:text-slate-100
+                            dark:shadow-none
+                          "
+                        >
+                          Category
+                        </label>
                         <input
                           ref={modalFieldRef}
                           type="text"
@@ -594,8 +628,25 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Description <span className="text-fuchsia-500">*</span>
+                        <label
+                          className="
+                            pc-create-field-label
+                            mb-2 block rounded-xl border
+                            border-slate-200 bg-slate-50
+                            px-4 py-3
+                            text-sm font-semibold text-slate-700
+                            shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+                            transition-colors
+                            dark:border-violet-400/20
+                            dark:bg-slate-900
+                            dark:text-slate-100
+                            dark:shadow-none
+                          "
+                        >
+                          Description{" "}
+                          <span className="text-fuchsia-500 dark:text-fuchsia-400">
+                            *
+                          </span>
                         </label>
                         <textarea
                           ref={modalFieldRef}
