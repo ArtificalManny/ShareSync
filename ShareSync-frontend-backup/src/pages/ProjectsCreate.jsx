@@ -627,11 +627,75 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </section>
 
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-violet-500" />
-                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-[0.16em]">
-                    Privacy
-                  </h3>
+                <div className="flex items-center gap-3 mb-4">
+                  {/* privacy-access-seal-v1 */}
+                  <span
+                    className="
+                      relative grid h-8 w-8 shrink-0 place-items-center
+                      rounded-xl border border-violet-200/90
+                      bg-gradient-to-br from-violet-50 via-white to-fuchsia-50
+                      shadow-[0_5px_16px_rgba(124,58,237,0.12)]
+                      dark:border-violet-400/30
+                      dark:from-violet-500/20
+                      dark:via-slate-900
+                      dark:to-fuchsia-500/20
+                      dark:shadow-[0_6px_18px_rgba(124,58,237,0.18)]
+                    "
+                    aria-hidden="true"
+                  >
+                    <span className="relative h-[18px] w-[18px]">
+                      <span
+                        className="
+                          absolute left-1/2 top-[1px]
+                          h-[8px] w-[10px] -translate-x-1/2
+                          rounded-t-full border-2 border-b-0
+                          border-violet-500
+                          dark:border-violet-300
+                        "
+                      />
+                      <span
+                        className="
+                          absolute bottom-[1px] left-1/2
+                          h-[10px] w-[14px] -translate-x-1/2
+                          rounded-[5px] border-2
+                          border-violet-400
+                          bg-white/70
+                          dark:border-violet-300
+                          dark:bg-violet-950/50
+                        "
+                      />
+                      <span
+                        className="
+                          absolute bottom-[4px] left-1/2
+                          h-[4px] w-[4px] -translate-x-1/2
+                          rounded-full bg-fuchsia-500
+                          shadow-[0_0_7px_rgba(217,70,239,0.55)]
+                          dark:bg-fuchsia-400
+                        "
+                      />
+                    </span>
+                  </span>
+
+                  <div>
+                    <h3
+                      className="
+                        text-sm font-bold uppercase tracking-[0.16em]
+                        text-slate-800
+                        dark:text-slate-100
+                      "
+                    >
+                      Privacy
+                    </h3>
+                    <p
+                      className="
+                        mt-0.5 text-[11px] font-medium
+                        text-slate-500
+                        dark:text-slate-400
+                      "
+                    >
+                      Set visibility and access
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -778,12 +842,114 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
               </section>
 
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <UsersIcon className="w-5 h-5 text-violet-500" />
-                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-[0.16em]">
-                    Team Members
-                  </h3>
-                  <span className="text-xs text-slate-500">(Optional)</span>
+                <div className="flex items-center gap-3 mb-4">
+                  {/* team-collaboration-mark-v1 */}
+                  <span
+                    className="
+                      relative grid h-8 w-8 shrink-0 place-items-center
+                      rounded-xl border border-violet-200/90
+                      bg-gradient-to-br from-violet-50 via-white to-sky-50
+                      shadow-[0_5px_16px_rgba(124,58,237,0.12)]
+                      dark:border-violet-400/30
+                      dark:from-violet-500/20
+                      dark:via-slate-900
+                      dark:to-sky-500/20
+                      dark:shadow-[0_6px_18px_rgba(124,58,237,0.18)]
+                    "
+                    aria-hidden="true"
+                  >
+                    <span className="relative h-[18px] w-[18px]">
+                      <span
+                        className="
+                          absolute left-[4px] right-[4px] top-[8px]
+                          h-px bg-gradient-to-r
+                          from-violet-400 via-fuchsia-400 to-sky-400
+                          opacity-90
+                        "
+                      />
+                      <span
+                        className="
+                          absolute left-[5px] top-[6px]
+                          h-[9px] w-px rotate-[35deg]
+                          bg-violet-400/80
+                        "
+                      />
+                      <span
+                        className="
+                          absolute right-[5px] top-[6px]
+                          h-[9px] w-px -rotate-[35deg]
+                          bg-sky-400/80
+                        "
+                      />
+                      <span
+                        className="
+                          absolute left-1/2 top-0
+                          h-[7px] w-[7px] -translate-x-1/2
+                          rounded-full border-2 border-violet-500
+                          bg-white
+                          dark:border-violet-300
+                          dark:bg-slate-900
+                        "
+                      />
+                      <span
+                        className="
+                          absolute bottom-0 left-0
+                          h-[7px] w-[7px]
+                          rounded-full bg-fuchsia-500
+                          shadow-[0_0_7px_rgba(217,70,239,0.45)]
+                          dark:bg-fuchsia-400
+                        "
+                      />
+                      <span
+                        className="
+                          absolute bottom-0 right-0
+                          h-[7px] w-[7px]
+                          rounded-full bg-sky-500
+                          shadow-[0_0_7px_rgba(14,165,233,0.42)]
+                          dark:bg-sky-400
+                        "
+                      />
+                    </span>
+                  </span>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3
+                        className="
+                          text-sm font-bold uppercase tracking-[0.16em]
+                          text-slate-800
+                          dark:text-slate-100
+                        "
+                      >
+                        Team Members
+                      </h3>
+
+                      <span
+                        className="
+                          inline-flex rounded-full
+                          border border-violet-200
+                          bg-violet-50 px-2 py-0.5
+                          text-[10px] font-bold uppercase tracking-[0.08em]
+                          text-violet-600
+                          dark:border-violet-400/25
+                          dark:bg-violet-500/10
+                          dark:text-violet-300
+                        "
+                      >
+                        Optional
+                      </span>
+                    </div>
+
+                    <p
+                      className="
+                        mt-0.5 text-[11px] font-medium
+                        text-slate-500
+                        dark:text-slate-400
+                      "
+                    >
+                      Invite collaborators now or later
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px] gap-3">
