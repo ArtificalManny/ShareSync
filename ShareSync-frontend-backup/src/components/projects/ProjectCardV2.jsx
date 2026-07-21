@@ -22,7 +22,6 @@ import React, { useMemo } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronRight,
   Clock3,
   Flame,
   Play,
@@ -551,15 +550,6 @@ export default function ProjectCardV2({
     };
   }, [onlineCount, lastActivityText, memberCount]);
 
-  const handleOpenProject = (e) => {
-    e.stopPropagation();
-    if (!projectId) {
-      console.warn('[ProjectCardV2] No ID found for project:', name);
-      return;
-    }
-    onProjectClick?.(projectId);
-  };
-
   const handleCardClick = () => {
     if (!projectId) {
       console.warn('[ProjectCardV2] No ID found for project:', name);
@@ -747,6 +737,7 @@ export default function ProjectCardV2({
             </div>
           </div>
 
+          {/* project-card-remove-open-button-v1 */}
           <div className="flex items-center gap-2 shrink-0">
             {onStartSprint ? (
               <button
@@ -763,22 +754,7 @@ export default function ProjectCardV2({
               </button>
             ) : null}
 
-            <button
-              type="button"
-              onClick={handleOpenProject}
-              className="
-                inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg
-                text-white text-xs font-semibold
-                transition-all duration-200
-              "
-              style={{
-                background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 Available)',
-                boxShadow: '0 10px 20px rgba(124, 58, 237, 0.22)',
-              }}
-            >
-              Open
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+
           </div>
         </div>
       </div>
