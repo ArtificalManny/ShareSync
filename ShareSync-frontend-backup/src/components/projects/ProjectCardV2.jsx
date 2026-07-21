@@ -300,11 +300,18 @@ export default function ProjectCardV2({
     project?.metrics?.openTasks?.value,
     Math.max(totalTasks - completedTasks, 0)
   );
+  // project-card-progress-summary-v1
   const rawProgress = safeNumber(
-    project?.progress,
-    safeNumber(project?.metrics?.onTimePercent?.value, 0)
+    project?.progressSummary?.percent ??
+      project?.computedProgress ??
+      project?.progress,
+    0
   );
-  const progress = Math.min(Math.max(rawProgress, 0), 100);
+
+  const progress = Math.min(
+    Math.max(Math.round(rawProgress), 0),
+    100
+  );
 
   const streak = safeNumber(project?.streak?.value ?? project?.streak, 0);
   const isImpressiveStreak = streak >= 7;

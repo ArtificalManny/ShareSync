@@ -171,8 +171,24 @@ export class ProjectsService {
     // Status values matched here come from TaskStatus + common legacy values.
     let taskCounts: any[] = [];
     try {
+      // canonical-project-action-progress-v1
       taskCounts = await this.taskModel.aggregate([
-        { $match: { projectId: { $in: projectIds } } },
+        {
+          $match: {
+            projectId: { $in: projectIds },
+            isArchived: { $ne: true },
+            tags: { $ne: 'closeout:canceled' },
+          },
+        },
+        {
+          $addFields: {
+            __normalizedStatus: {
+              $toLower: {
+                $ifNull: ['$status', ''],
+              },
+            },
+          },
+        },
         {
           $group: {
             _id: '$projectId',
@@ -180,7 +196,28 @@ export class ProjectsService {
             completed: {
               $sum: {
                 $cond: [
-                  { $in: ['$status', ['done', 'completed', 'DONE', 'COMPLETED']] },
+                  {
+                    $or: [
+                      {
+                        $in: [
+                          '$__normalizedStatus',
+                          ['done', 'completed', 'complete', 'shipped'],
+                        ],
+                      },
+                      {
+                        $eq: [
+                          { $ifNull: ['$isCompleted', false] },
+                          true,
+                        ],
+                      },
+                      {
+                        $ne: [
+                          { $ifNull: ['$completedAt', null] },
+                          null,
+                        ],
+                      },
+                    ],
+                  },
                   1,
                   0,
                 ],
@@ -189,7 +226,7 @@ export class ProjectsService {
             blocked: {
               $sum: {
                 $cond: [
-                  { $in: ['$status', ['blocked', 'BLOCKED']] },
+                  { $eq: ['$__normalizedStatus', 'blocked'] },
                   1,
                   0,
                 ],
@@ -218,14 +255,36 @@ export class ProjectsService {
       const counts = countsByProjectId.get(String(plain?._id)) || {};
 
       const total = safeNumber(counts.total, 0);
-      const completed = safeNumber(counts.completed, 0);
+      const completed = Math.min(
+        safeNumber(counts.completed, 0),
+        total,
+      );
       const blockerCount = safeNumber(counts.blocked, 0);
       const openTaskCount = Math.max(total - completed, 0);
-      const computedProgress =
-        total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      const normalizedProjectStatus = String(
+        plain?.status || '',
+      )
+        .trim()
+        .toLowerCase();
+
+      const isCompletedProject =
+        Boolean(plain?.completedAt) ||
+        ['completed', 'complete', 'done', 'shipped'].includes(
+          normalizedProjectStatus,
+        );
+
+      const computedProgress = isCompletedProject
+        ? 100
+        : total > 0
+          ? Math.round((completed / total) * 100)
+          : 0;
 
       let momentumState: string;
-      if (blockerCount > 0) {
+
+      if (isCompletedProject) {
+        momentumState = 'Complete';
+      } else if (blockerCount > 0) {
         momentumState = 'Blocked';
       } else if (computedProgress >= 100 && total > 0) {
         momentumState = 'Complete';
@@ -237,21 +296,28 @@ export class ProjectsService {
         momentumState = 'Planning';
       }
 
-      // Card-friendly fields. We DO NOT overwrite anything that's already
-      // set on the project — we only fill in when the field is missing.
-      // The frontend ProjectCardV2 already reads each of these names.
-      plain.taskCount = plain.taskCount ?? total;
-      plain.completedTasks = plain.completedTasks ?? completed;
-      plain.openTaskCount = plain.openTaskCount ?? openTaskCount;
-      plain.blockerCount = plain.blockerCount ?? blockerCount;
-      plain.computedProgress = plain.computedProgress ?? computedProgress;
-      plain.momentumState = plain.momentumState ?? momentumState;
+      /*
+       * These values are derived from the canonical Task collection.
+       * Do not preserve stale project-level counters here.
+       */
+      plain.taskCount = total;
+      plain.completedTasks = completed;
+      plain.openTaskCount = openTaskCount;
+      plain.blockerCount = blockerCount;
+      plain.computedProgress = computedProgress;
+      plain.momentumState = momentumState;
 
-      // Only fill progress if it's missing or zero AND we have computed data.
-      const existingProgress = safeNumber(plain.progress, 0);
-      if (existingProgress === 0 && total > 0) {
-        plain.progress = computedProgress;
-      }
+      plain.progressSummary = {
+        completed,
+        pending: openTaskCount,
+        total,
+        blocked: blockerCount,
+        percent: computedProgress,
+        source: 'canonical-task-actions',
+      };
+
+      // Canonical calculated progress always replaces stale stored progress.
+      plain.progress = computedProgress;
 
       // Activity timestamp: prefer existing lastActivityAt, otherwise the
       // most recent task update we just aggregated, otherwise updatedAt.
