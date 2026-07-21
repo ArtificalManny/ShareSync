@@ -117,14 +117,14 @@ import { buildProjectPulse } from "../utils/projectPulse";
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
-import StackPanel from "../features/stack/StackPanel";
-import FlowBoard from "../features/flow/FlowBoard";
-import RoadmapPanel from "../components/roadmap/RoadmapPanel";
-import RhythmView from "../components/views/RhythmView";
-import InsightsTab from "../components/insights/InsightsTab";
-import ThreadsView from "../components/views/ThreadsView";
-import VaultView from "../components/views/VaultView";
-import AnnouncementsView from "../components/views/AnnouncementsView";
+const StackPanel = React.lazy(() => import("../features/stack/StackPanel"));
+const FlowBoard = React.lazy(() => import("../features/flow/FlowBoard"));
+const RoadmapPanel = React.lazy(() => import("../components/roadmap/RoadmapPanel"));
+const RhythmView = React.lazy(() => import("../components/views/RhythmView"));
+const InsightsTab = React.lazy(() => import("../components/insights/InsightsTab"));
+const ThreadsView = React.lazy(() => import("../components/views/ThreadsView"));
+const VaultView = React.lazy(() => import("../components/views/VaultView"));
+const AnnouncementsView = React.lazy(() => import("../components/views/AnnouncementsView"));
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import MembersPanel from "../components/members/MembersPanel";
 import { completeProject, reopenProject } from "../api/projects";
@@ -236,6 +236,38 @@ function LoadingState() {
       <div className="text-center">
         <div className="w-16 h-16 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin mx-auto mb-4" />
         <p className="text-slate-500 text-sm">Loading project...</p>
+      </div>
+    </div>
+  );
+}
+
+// project-home-view-code-splitting-v1
+function ProjectViewLoadingState() {
+  return (
+    <div
+      className="
+        project-home-view-loading
+        min-h-[320px]
+        flex items-center justify-center
+        px-6 py-16
+      "
+      role="status"
+      aria-live="polite"
+    >
+      <div className="text-center">
+        <div
+          className="
+            mx-auto mb-4
+            h-10 w-10
+            rounded-full
+            border-2 border-violet-500/20
+            border-t-violet-500
+            animate-spin
+          "
+        />
+        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">
+          Opening project view...
+        </p>
       </div>
     </div>
   );
@@ -5190,7 +5222,9 @@ export default function ProjectHome() {
         />
       ) : null}
 
-      <main key={pulseRefreshKey} className="relative z-10">{renderViewContent()}</main>
+      <main key={pulseRefreshKey} className="relative z-10"><React.Suspense fallback={<ProjectViewLoadingState />}>
+              {renderViewContent()}
+            </React.Suspense></main>
 
       {canUseMemberActions && <CompleteProjectModal
         isOpen={showCompleteProjectModal}
