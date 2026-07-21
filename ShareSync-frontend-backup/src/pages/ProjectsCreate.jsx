@@ -371,27 +371,28 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
       <div className="pc-create-viewport fixed inset-0 flex items-start justify-center overflow-hidden p-0 pointer-events-none sm:items-center sm:p-6">
         <Dialog.Panel className="pc-create-modal pointer-events-auto relative flex h-[100dvh] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-white shadow-[0_24px_80px_rgba(139,92,246,0.16)] dark:bg-slate-950 sm:h-auto sm:max-h-[85dvh] sm:rounded-[28px] sm:border sm:border-slate-100">
-          <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 pb-5 pt-5 dark:border-white/10 dark:bg-slate-950 sm:rounded-t-[28px] sm:bg-gradient-to-r sm:from-violet-50 sm:via-white sm:to-fuchsia-50/70">
+          {/* create-project-dark-header-v1 */}
+          <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 pb-5 pt-5 dark:border-white/10 dark:bg-slate-950 sm:rounded-t-[28px] sm:bg-gradient-to-r sm:from-violet-50 sm:via-white sm:to-fuchsia-50/70 dark:sm:from-slate-950 dark:sm:via-slate-900 dark:sm:to-violet-950/80">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-[0_10px_28px_rgba(139,92,246,0.24)]">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <Dialog.Title className="text-xl font-semibold text-slate-900">
+                <Dialog.Title className="text-xl font-semibold text-slate-900 dark:text-white">
                   Create New Project
                 </Dialog.Title>
-                <p className="text-sm text-slate-500">Start building your next big thing</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Start building your next big thing</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 hover:bg-slate-100 transition-colors group"
+              className="rounded-full p-2 transition-colors group hover:bg-slate-100 dark:hover:bg-white/10"
               aria-label="Close create project dialog"
               disabled={submitting}
             >
-              <X className="w-5 h-5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+              <X className="w-5 h-5 text-slate-400 transition-colors group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-white" />
             </button>
           </div>
 
