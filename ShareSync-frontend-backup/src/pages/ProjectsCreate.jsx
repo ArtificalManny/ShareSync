@@ -417,11 +417,79 @@ export default function ProjectsCreate({ onClose, onProjectCreated }) {
 
               <section className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-violet-500" />
-                    <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-[0.16em]">
-                      {smartStartMode ? "Smart Start" : "Project Basics"}
-                    </h3>
+                  <div className="flex items-center gap-3">
+                    {/* project-basics-foundation-mark-v1 */}
+                    <span
+                      className="
+                        relative grid h-8 w-8 shrink-0 place-items-center
+                        rounded-xl border border-violet-200/90
+                        bg-gradient-to-br from-violet-50 via-white to-fuchsia-50
+                        shadow-[0_5px_16px_rgba(124,58,237,0.12)]
+                        dark:border-violet-400/30
+                        dark:from-violet-500/20
+                        dark:via-slate-900
+                        dark:to-fuchsia-500/20
+                        dark:shadow-[0_6px_18px_rgba(124,58,237,0.18)]
+                      "
+                      aria-hidden="true"
+                    >
+                      <span className="relative h-[18px] w-[18px]">
+                        <span
+                          className="
+                            absolute left-0 top-0 h-[7px] w-[7px]
+                            rounded-[2px] border-2 border-violet-500
+                            dark:border-violet-300
+                          "
+                        />
+                        <span
+                          className="
+                            absolute right-0 top-0 h-[7px] w-[7px]
+                            rounded-full bg-fuchsia-500
+                            shadow-[0_0_8px_rgba(217,70,239,0.45)]
+                            dark:bg-fuchsia-400
+                          "
+                        />
+                        <span
+                          className="
+                            absolute bottom-0 left-1/2 h-[7px] w-[10px]
+                            -translate-x-1/2 rounded-[2px]
+                            border-2 border-violet-400
+                            dark:border-violet-300
+                          "
+                        />
+                        <span
+                          className="
+                            absolute left-[4px] right-[4px] top-[8px] h-px
+                            bg-gradient-to-r
+                            from-violet-400 via-fuchsia-400 to-violet-400
+                            opacity-80
+                          "
+                        />
+                      </span>
+                    </span>
+
+                    <div>
+                      <h3
+                        className="
+                          text-sm font-bold uppercase tracking-[0.16em]
+                          text-slate-800
+                          dark:text-slate-100
+                        "
+                      >
+                        {smartStartMode ? "Smart Start" : "Project Basics"}
+                      </h3>
+                      <p
+                        className="
+                          mt-0.5 text-[11px] font-medium
+                          text-slate-500
+                          dark:text-slate-400
+                        "
+                      >
+                        {smartStartMode
+                          ? "Shape your foundation with AI"
+                          : "Define the foundation"}
+                      </p>
+                    </div>
                   </div>
 
                   <button
