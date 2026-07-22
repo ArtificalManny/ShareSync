@@ -696,27 +696,71 @@ export default function ProjectCardV2({
           />
         </div>
 
-        {/* Secondary progress strip */}
-        <div className="project-card-v2-progress rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+        {/* project-card-visible-progress-fill-v2 */}
+        <div
+          className="
+            project-card-v2-progress
+            rounded-xl border border-slate-200
+            bg-slate-50 px-3 py-3
+            dark:border-white/10
+            dark:bg-white/[0.04]
+          "
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <span
+              className="
+                text-[10px] font-semibold uppercase
+                tracking-[0.14em] text-slate-500
+                dark:text-slate-400
+              "
+            >
               Progress
             </span>
-            <span className="text-xs font-semibold text-slate-700">
+
+            <span
+              className="
+                text-xs font-bold tabular-nums
+                text-slate-700 dark:text-slate-200
+              "
+            >
               {progress}%
             </span>
           </div>
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+
+          <div
+            className="
+              h-2 overflow-hidden rounded-full
+              bg-slate-200/90 shadow-inner
+              dark:bg-white/10
+            "
+            role="progressbar"
+            aria-label={`${name || 'Untitled project'} progress`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+          >
             <div
-              className="h-full rounded-full transition-all duration-500"
+              className="
+                h-full rounded-full
+                transition-[width] duration-700 ease-out
+              "
               style={{
                 width: `${progress}%`,
+                minWidth: progress > 0 ? '6px' : '0',
                 background:
-                  isComplete
-                    ? 'linear-gradient(90deg, #10B981 0%, #34D399 Available)'
+                  progress >= 100 || isComplete
+                    ? 'linear-gradient(90deg, #059669 0%, #10B981 55%, #34D399 100%)'
                     : livingState?.isBlocked || blockerCount > 0
-                      ? 'linear-gradient(90deg, #EF4444 0%, #F87171 Available)'
-                      : 'linear-gradient(90deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 Available)',
+                      ? 'linear-gradient(90deg, #DC2626 0%, #EF4444 55%, #F87171 100%)'
+                      : 'linear-gradient(90deg, #6D28D9 0%, #7C3AED 50%, #A855F7 100%)',
+                boxShadow:
+                  progress <= 0
+                    ? 'none'
+                    : progress >= 100 || isComplete
+                      ? '0 0 10px rgba(16, 185, 129, 0.32)'
+                      : livingState?.isBlocked || blockerCount > 0
+                        ? '0 0 10px rgba(239, 68, 68, 0.28)'
+                        : '0 0 10px rgba(124, 58, 237, 0.32)',
               }}
             />
           </div>
