@@ -7,7 +7,6 @@ import {
   Flag,
   GaugeCircle,
   Sparkles,
-  Target,
   TriangleAlert,
 } from "lucide-react";
 
@@ -24,6 +23,63 @@ function normalizeArray(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value === "string" && value.trim()) return [value.trim()];
   return [];
+}
+
+/* finish-line-canonical-metrics-v1
+ * OpenShare Goal Orbit Mark:
+ * one central outcome with active work orbiting toward completion.
+ */
+function GoalOrbitMark({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M4.2 12c0-4.3 3.5-7.8 7.8-7.8 2.4 0 4.5 1.1 5.9 2.8"
+        stroke="currentColor"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+        opacity="0.72"
+      />
+
+      <path
+        d="M19.8 12c0 4.3-3.5 7.8-7.8 7.8-2.4 0-4.5-1.1-5.9-2.8"
+        stroke="currentColor"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+        opacity="0.42"
+      />
+
+      <circle
+        cx="12"
+        cy="12"
+        r="3.35"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+
+      <path
+        d="m10.5 12 1.05 1.05 2.15-2.45"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      <circle cx="18.25" cy="7.05" r="1.55" fill="currentColor" />
+
+      <circle
+        cx="5.75"
+        cy="16.95"
+        r="1.55"
+        fill="currentColor"
+        opacity="0.62"
+      />
+    </svg>
+  );
 }
 
 function getFinishLineTitle(finishLine) {
@@ -193,14 +249,14 @@ function getTheme(readiness) {
 }
 
 function MetricCard({ icon: Icon, label, value, tone = "neutral" }) {
-  const toneClasses =
-    tone === "danger"
-      ? "text-rose-500"
-      : tone === "warning"
-      ? "text-amber-500"
-      : tone === "accent"
-      ? "text-violet-500"
-      : "text-emerald-500";
+  const toneClasses = {
+    danger: "text-rose-500 dark:text-rose-300",
+    warning: "text-amber-500 dark:text-amber-300",
+    accent: "text-violet-500 dark:text-violet-300",
+    success: "text-emerald-500 dark:text-emerald-300",
+    info: "text-cyan-600 dark:text-cyan-300",
+    neutral: "text-slate-500 dark:text-zinc-400",
+  }[tone] || "text-slate-500 dark:text-zinc-400";
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white/85 p-4 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.03]">
@@ -267,13 +323,70 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
     setIsNextMoveOpen(true);
   };
 
-  const openTasks = getMetric(finishLine, ["openTasks", "openTaskCount"]);
-  const criticalOpen = getMetric(finishLine, ["criticalOpen", "criticalOpenCount"]);
-  const blockers = getMetric(finishLine, ["blockers", "blockerCount"]);
-  const activeGoals = getMetric(finishLine, ["activeGoals", "activeGoalCount"]);
-  const goalsDone = getMetric(finishLine, ["goalsDone", "goalsCompleted", "completedGoals"]);
-  const closureBlockers = getMetric(finishLine, ["closureBlockers", "closeBlockers", "closureBlockerCount"]);
-  const warningsCount = warnings.length || getMetric(finishLine, ["warningCount"], 0);
+  const openTasks = getMetric(
+    finishLine,
+    ["openTasks", "openTaskCount"]
+  );
+
+  const criticalOpen = getMetric(
+    finishLine,
+    [
+      "criticalOpen",
+      "criticalOpenCount",
+      "openCriticalTaskCount",
+    ]
+  );
+
+  const blockers = getMetric(
+    finishLine,
+    [
+      "blockers",
+      "blockerCount",
+      "blockedTaskCount",
+    ]
+  );
+
+  const activeGoals = getMetric(
+    finishLine,
+    ["activeGoals", "activeGoalCount"]
+  );
+
+  const goalsDone = getMetric(
+    finishLine,
+    [
+      "goalsDone",
+      "goalsCompleted",
+      "completedGoals",
+      "completedGoalCount",
+    ]
+  );
+
+  const explicitClosureBlockers = getMetric(
+    finishLine,
+    [
+      "closureBlockers",
+      "closeBlockers",
+      "closureBlockerCount",
+    ]
+  );
+
+  /*
+   * Each normalized blocking reason represents one distinct
+   * closeout condition. This keeps the badge synchronized with
+   * the reasons displayed directly below it.
+   */
+  const closureBlockers = Math.max(
+    explicitClosureBlockers,
+    blockingReasons.length
+  );
+
+  const hasActiveSprint = Boolean(
+    finishLine?.hasActiveSprint
+  );
+
+  const warningsCount =
+    warnings.length ||
+    getMetric(finishLine, ["warningCount"], 0);
 
   const theme = getTheme(readiness);
 
@@ -412,12 +525,48 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
           </span>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <MetricCard icon={ClipboardList} label="Open Tasks" value={openTasks} tone="neutral" />
-          <MetricCard icon={TriangleAlert} label="Critical Open" value={criticalOpen} tone="warning" />
-          <MetricCard icon={AlertTriangle} label="Blockers" value={blockers} tone="danger" />
-          <MetricCard icon={Target} label="Active Goals" value={activeGoals} tone="accent" />
-          <MetricCard icon={CheckCircle2} label="Goals Done" value={goalsDone} tone="neutral" />
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+          <MetricCard
+            icon={ClipboardList}
+            label="Open Tasks"
+            value={openTasks}
+            tone={openTasks > 0 ? "info" : "neutral"}
+          />
+
+          <MetricCard
+            icon={TriangleAlert}
+            label="Critical Open"
+            value={criticalOpen}
+            tone={criticalOpen > 0 ? "warning" : "neutral"}
+          />
+
+          <MetricCard
+            icon={AlertTriangle}
+            label="Blockers"
+            value={blockers}
+            tone={blockers > 0 ? "danger" : "neutral"}
+          />
+
+          <MetricCard
+            icon={GoalOrbitMark}
+            label="Active Goals"
+            value={activeGoals}
+            tone={activeGoals > 0 ? "accent" : "neutral"}
+          />
+
+          <MetricCard
+            icon={CheckCircle2}
+            label="Goals Done"
+            value={goalsDone}
+            tone={goalsDone > 0 ? "success" : "neutral"}
+          />
+
+          <MetricCard
+            icon={Flag}
+            label="Sprint State"
+            value={hasActiveSprint ? "Active" : "Clear"}
+            tone={hasActiveSprint ? "warning" : "success"}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.15fr_1fr]">
