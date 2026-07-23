@@ -3651,6 +3651,7 @@ function OverviewView({
   onSprintAction,
   onOpenNextMoves,
   onFinishLineAction,
+  onFinishLineMetricAction,
   onReopenProject,
   onViewCaseStudy,
   isReopeningProject,
@@ -3908,6 +3909,7 @@ function OverviewView({
         <FinishLineCard
           finishLine={finishLine}
           onPrimaryAction={onFinishLineAction}
+          onMetricAction={onFinishLineMetricAction}
         />
       </div>
 
@@ -4011,6 +4013,17 @@ export default function ProjectHome() {
 
   const [activeView, setActiveView] = useState("overview");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
+
+  // finish-line-action-navigation-v1
+  const [
+    finishLineMoveFilter,
+    setFinishLineMoveFilter,
+  ] = useState(null);
+
+  const [
+    finishLineRoadmapFilter,
+    setFinishLineRoadmapFilter,
+  ] = useState(null);
   const [isMembersPanelOpen, setIsMembersPanelOpen] = useState(false);
   const [isInviteMemberOpen, setIsInviteMemberOpen] = useState(false);
 
@@ -4498,6 +4511,93 @@ export default function ProjectHome() {
     handleReopenProject,
   ]);
 
+  const handleProjectViewChange = useCallback(
+    (viewId) => {
+      setFinishLineMoveFilter(null);
+      setFinishLineRoadmapFilter(null);
+      setSelectedMilestoneId(null);
+      setActiveView(viewId);
+    },
+    []
+  );
+
+  const handleFinishLineMetricAction = useCallback(
+    (action) => {
+      setSelectedMilestoneId(null);
+
+      if (action === "moves-remaining") {
+        setFinishLineRoadmapFilter(null);
+        setFinishLineMoveFilter("remaining");
+        setActiveView("tasks");
+        return;
+      }
+
+      if (action === "blocked-moves") {
+        setFinishLineRoadmapFilter(null);
+        setFinishLineMoveFilter("blocked");
+        setActiveView("tasks");
+        return;
+      }
+
+      if (action === "milestones-remaining") {
+        setFinishLineMoveFilter(null);
+        setFinishLineRoadmapFilter("remaining");
+        setActiveView("roadmap");
+        return;
+      }
+
+      if (action === "milestones-completed") {
+        setFinishLineMoveFilter(null);
+        setFinishLineRoadmapFilter("completed");
+        setActiveView("roadmap");
+        return;
+      }
+
+      setFinishLineMoveFilter(null);
+      setFinishLineRoadmapFilter(null);
+      setActiveView("overview");
+
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      window.setTimeout(() => {
+        const selectors =
+          action === "sprint-status"
+            ? [
+                "[data-project-sprint]",
+                "#project-sprint",
+                "#active-sprint",
+              ]
+            : [
+                "[data-project-goals]",
+                "#project-goals",
+                "#active-goals",
+              ];
+
+        const target = selectors
+          .map((selector) =>
+            document.querySelector(selector)
+          )
+          .find(Boolean);
+
+        if (target) {
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+          return;
+        }
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }, 120);
+    },
+    []
+  );
+
   const handleMilestoneClick = useCallback((milestone) => {
     console.log("Milestone clicked:", milestone?._id || milestone?.id);
   }, []);
@@ -4634,6 +4734,9 @@ export default function ProjectHome() {
               onSprintAction={handleSprintAction}
               onOpenNextMoves={() => setActiveView("suggestions")}
               onFinishLineAction={handleFinishLineAction}
+              onFinishLineMetricAction={
+                handleFinishLineMetricAction
+              }
               onReopenProject={handleReopenProject}
               onViewCaseStudy={handleViewCaseStudy}
               isReopeningProject={isReopeningProject}
@@ -4919,8 +5022,20 @@ export default function ProjectHome() {
               <div className="moves-stack-workspace mt-4">
                 <StackPanel
                   projectId={id}
-                  limit={10}
+                  limit={
+                    finishLineMoveFilter
+                      ? 100
+                      : 10
+                  }
                   milestoneIdFilter={selectedMilestoneId}
+                  finishLineFilter={finishLineMoveFilter}
+                  title={
+                    finishLineMoveFilter === "blocked"
+                      ? "Blocked moves"
+                      : finishLineMoveFilter === "remaining"
+                        ? "Moves remaining"
+                        : "Top tasks to do next"
+                  }
                   teamMembers={projectPulseGetProjectMembers(project)}
                 />
               </div>
@@ -4950,6 +5065,9 @@ export default function ProjectHome() {
               }}
               onAddMilestone={canUseMemberActions ? handleAddMilestone : undefined}
               readOnly={!canUseMemberActions}
+              defaultStatus={
+                finishLineRoadmapFilter || "all"
+              }
             />
           );
 
@@ -5205,7 +5323,7 @@ export default function ProjectHome() {
 
       <ViewNavigation
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleProjectViewChange}
         views={projectViews}
       />
 

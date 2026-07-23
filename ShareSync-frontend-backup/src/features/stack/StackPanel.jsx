@@ -89,8 +89,28 @@ function normalizeStatus(status) {
 }
 
 function isInStack(task) {
-  const s = normalizeStatus(task?.status);
-  return s === "todo" || s === "in_progress";
+  if (!task) return false;
+
+  if (
+    task?.completed === true ||
+    task?.isCompleted === true ||
+    Boolean(task?.completedAt)
+  ) {
+    return false;
+  }
+
+  const status = normalizeStatus(task?.status)
+    .trim()
+    .replace(/[\s-]+/g, "_");
+
+  return ![
+    "done",
+    "completed",
+    "complete",
+    "cancelled",
+    "canceled",
+    "archived",
+  ].includes(status);
 }
 
 function normalizeId(v) {
@@ -115,7 +135,30 @@ function getTaskAssigneeId(task) {
 }
 
 function isBlockingTask(task) {
-  return Boolean(task?.isBlocking || task?.blocking || task?.blocked);
+  const status = normalizeStatus(task?.status)
+    .trim()
+    .replace(/[\s-]+/g, "_");
+
+  const blockerCollections = [
+    task?.blockers,
+    task?.blockedBy,
+    task?.blockingDependencies,
+  ];
+
+  return Boolean(
+    task?.isBlocking ||
+      task?.blocking ||
+      task?.blocked ||
+      task?.blockingReason ||
+      task?.blockedReason ||
+      status === "blocked" ||
+      status === "blocking" ||
+      blockerCollections.some(
+        (value) =>
+          Array.isArray(value) &&
+          value.length > 0
+      )
+  );
 }
 
 function isCriticalTask(task) {
@@ -269,6 +312,7 @@ export default function StackPanel({
   socket = null,
   title = "Top tasks to do next",
   milestoneIdFilter = null,
+  finishLineFilter = null,
 } = {}) {
   const { tasks, loading, error, refresh, setTasks } = useStackTasks({
     projectId,
@@ -362,12 +406,44 @@ export default function StackPanel({
   const normalizedPanelAssigneeId = useMemo(() => normalizeId(assigneeId), [assigneeId]);
   const normalizedMilestoneId = useMemo(() => normalizeId(milestoneIdFilter), [milestoneIdFilter]);
 
-  const filteredTasks = useMemo(() => {
-    const mid = normalizedMilestoneId;
-    if (!mid) return safeTasks;
+  // finish-line-moves-filter-v1
+  const normalizedFinishLineFilter = useMemo(
+    () =>
+      String(finishLineFilter || "")
+        .trim()
+        .toLowerCase(),
+    [finishLineFilter]
+  );
 
-    return safeTasks.filter((t) => normalizeId(t?.milestoneId) === mid);
-  }, [safeTasks, normalizedMilestoneId]);
+  const filteredTasks = useMemo(() => {
+    let nextTasks = safeTasks;
+
+    if (normalizedMilestoneId) {
+      nextTasks = nextTasks.filter(
+        (task) =>
+          normalizeId(task?.milestoneId) ===
+          normalizedMilestoneId
+      );
+    }
+
+    if (normalizedFinishLineFilter === "remaining") {
+      return nextTasks.filter(isInStack);
+    }
+
+    if (normalizedFinishLineFilter === "blocked") {
+      return nextTasks.filter(
+        (task) =>
+          isInStack(task) &&
+          isBlockingTask(task)
+      );
+    }
+
+    return nextTasks;
+  }, [
+    safeTasks,
+    normalizedMilestoneId,
+    normalizedFinishLineFilter,
+  ]);
 
   const optimisticUpdate = useCallback(
     (updater) => {
@@ -619,7 +695,29 @@ export default function StackPanel({
   );
 
   const visibleCount = filteredTasks.filter(isInStack).length;
-  const hasFilter = !!normalizedMilestoneId;
+
+  const hasFilter = Boolean(
+    normalizedMilestoneId ||
+      normalizedFinishLineFilter
+  );
+
+  const emptyStateTitle =
+    normalizedFinishLineFilter === "blocked"
+      ? "No blocked moves"
+      : normalizedFinishLineFilter === "remaining"
+        ? "No moves remaining"
+        : normalizedMilestoneId
+          ? "No tasks in this milestone"
+          : "No tasks ready right now.";
+
+  const emptyStateCopy =
+    normalizedFinishLineFilter === "blocked"
+      ? "Nothing in the current execution queue is blocked."
+      : normalizedFinishLineFilter === "remaining"
+        ? "Every move in this project is complete."
+        : normalizedMilestoneId
+          ? "Try another milestone, or assign tasks to this milestone."
+          : "Add the next task your team should act on so this queue becomes your clear next-step view.";
 
   const taskSignals = useMemo(() => {
     const stackTasks = filteredTasks.filter(isInStack);
@@ -1290,13 +1388,11 @@ export default function StackPanel({
               </div>
 
               <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
-                {hasFilter ? "No tasks in this milestone" : "No tasks ready right now."}
+                {emptyStateTitle}
               </h3>
 
               <p className="mx-auto mb-6 max-w-[340px] text-sm leading-6 text-slate-500 dark:text-zinc-400">
-                {hasFilter
-                  ? "Try another milestone, or assign tasks to this milestone."
-                  : "Add the next task your team should act on so this queue becomes your clear next-step view."}
+                {emptyStateCopy}
               </p>
 
               {!hasFilter && projectId && !showAddForm ? (

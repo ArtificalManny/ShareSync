@@ -87,12 +87,17 @@ function getFinishLineTitle(finishLine) {
 }
 
 function getStatusLabel(finishLine) {
-  return (
+  const explicit =
     finishLine?.statusLabel ||
-    finishLine?.status ||
-    finishLine?.phaseLabel ||
-    (finishLine?.isCompleted ? "Completed" : "Almost ready to close")
-  );
+    finishLine?.phaseLabel;
+
+  if (explicit) return explicit;
+  if (finishLine?.isCompleted) return "Completed";
+  if (finishLine?.isReadyToClose) return "Ready to close";
+
+  return getReadiness(finishLine) >= 70
+    ? "Almost ready to close"
+    : "Not ready to close";
 }
 
 function getPrimarySummary(finishLine) {
@@ -248,7 +253,13 @@ function getTheme(readiness) {
   };
 }
 
-function MetricCard({ icon: Icon, label, value, tone = "neutral" }) {
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  tone = "neutral",
+  onAction,
+}) {
   const toneClasses = {
     danger: "text-rose-500 dark:text-rose-300",
     warning: "text-amber-500 dark:text-amber-300",
@@ -258,22 +269,53 @@ function MetricCard({ icon: Icon, label, value, tone = "neutral" }) {
     neutral: "text-slate-500 dark:text-zinc-400",
   }[tone] || "text-slate-500 dark:text-zinc-400";
 
+  const interactive = typeof onAction === "function";
+  const Component = interactive ? "button" : "div";
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/85 p-4 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.03]">
+    <Component
+      {...(
+        interactive
+          ? {
+              type: "button",
+              onClick: onAction,
+              "aria-label": `Open ${label}`,
+            }
+          : {}
+      )}
+      className={`
+        w-full rounded-2xl border border-slate-200 bg-white/85 p-4
+        text-left shadow-sm transition
+        hover:-translate-y-[1px] hover:shadow-md
+        dark:border-white/[0.06] dark:bg-white/[0.03]
+        ${
+          interactive
+            ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#111113]"
+            : ""
+        }
+      `}
+    >
       <div className="mb-2 flex items-center gap-2">
         <Icon className={`h-4 w-4 ${toneClasses}`} />
+
         <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
           {label}
         </span>
       </div>
+
       <div className="text-[22px] font-black leading-none text-slate-950 dark:text-white">
         {value}
       </div>
-    </div>
+    </Component>
   );
 }
 
-export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMoveClick }) {
+export default function FinishLineCard({
+  finishLine,
+  onPrimaryAction,
+  onNextMoveClick,
+  onMetricAction,
+}) {
   const title = getFinishLineTitle(finishLine);
   const statusLabel = getStatusLabel(finishLine);
   const primarySummary = getPrimarySummary(finishLine);
@@ -323,6 +365,12 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
     setIsNextMoveOpen(true);
   };
 
+  // finish-line-actionable-card-v1
+  const metricAction =
+    typeof onMetricAction === "function"
+      ? (action) => onMetricAction(action, finishLine)
+      : null;
+
   const openTasks = getMetric(
     finishLine,
     ["openTasks", "openTaskCount"]
@@ -358,6 +406,24 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
       "goalsCompleted",
       "completedGoals",
       "completedGoalCount",
+    ]
+  );
+
+  const milestonesRemaining = getMetric(
+    finishLine,
+    [
+      "milestonesRemaining",
+      "remainingMilestones",
+      "remainingMilestoneCount",
+    ]
+  );
+
+  const milestonesCompleted = getMetric(
+    finishLine,
+    [
+      "milestonesCompleted",
+      "completedMilestones",
+      "completedMilestoneCount",
     ]
   );
 
@@ -517,7 +583,7 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
 
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">
-            {closureBlockers} blocker{closureBlockers === 1 ? "" : "s"}
+            {closureBlockers} closure requirement{closureBlockers === 1 ? "" : "s"}
           </span>
 
           <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-zinc-300">
@@ -525,47 +591,115 @@ export default function FinishLineCard({ finishLine, onPrimaryAction, onNextMove
           </span>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
           <MetricCard
             icon={ClipboardList}
-            label="Open Tasks"
+            label="Moves Remaining"
             value={openTasks}
-            tone={openTasks > 0 ? "info" : "neutral"}
-          />
-
-          <MetricCard
-            icon={TriangleAlert}
-            label="Critical Open"
-            value={criticalOpen}
-            tone={criticalOpen > 0 ? "warning" : "neutral"}
+            tone={openTasks > 0 ? "info" : "success"}
+            onAction={
+              metricAction
+                ? () => metricAction("moves-remaining")
+                : undefined
+            }
           />
 
           <MetricCard
             icon={AlertTriangle}
-            label="Blockers"
+            label="Blocked Moves"
             value={blockers}
-            tone={blockers > 0 ? "danger" : "neutral"}
-          />
-
-          <MetricCard
-            icon={GoalOrbitMark}
-            label="Active Goals"
-            value={activeGoals}
-            tone={activeGoals > 0 ? "accent" : "neutral"}
-          />
-
-          <MetricCard
-            icon={CheckCircle2}
-            label="Goals Done"
-            value={goalsDone}
-            tone={goalsDone > 0 ? "success" : "neutral"}
+            tone={blockers > 0 ? "danger" : "success"}
+            onAction={
+              metricAction
+                ? () => metricAction("blocked-moves")
+                : undefined
+            }
           />
 
           <MetricCard
             icon={Flag}
-            label="Sprint State"
+            label="Milestones Remaining"
+            value={milestonesRemaining}
+            tone={
+              milestonesRemaining > 0
+                ? "warning"
+                : "success"
+            }
+            onAction={
+              metricAction
+                ? () =>
+                    metricAction(
+                      "milestones-remaining"
+                    )
+                : undefined
+            }
+          />
+
+          <MetricCard
+            icon={CheckCircle2}
+            label="Milestones Completed"
+            value={milestonesCompleted}
+            tone={
+              milestonesCompleted > 0
+                ? "success"
+                : "neutral"
+            }
+            onAction={
+              metricAction
+                ? () =>
+                    metricAction(
+                      "milestones-completed"
+                    )
+                : undefined
+            }
+          />
+
+          <MetricCard
+            icon={GoalOrbitMark}
+            label="Goals Remaining"
+            value={activeGoals}
+            tone={
+              activeGoals > 0
+                ? "accent"
+                : "success"
+            }
+            onAction={
+              metricAction
+                ? () => metricAction("goals-remaining")
+                : undefined
+            }
+          />
+
+          <MetricCard
+            icon={CheckCircle2}
+            label="Goals Completed"
+            value={goalsDone}
+            tone={
+              goalsDone > 0
+                ? "success"
+                : "neutral"
+            }
+            onAction={
+              metricAction
+                ? () => metricAction("goals-completed")
+                : undefined
+            }
+          />
+
+          <MetricCard
+            icon={Sparkles}
+            label="Sprint Status"
             value={hasActiveSprint ? "Active" : "Clear"}
-            tone={hasActiveSprint ? "warning" : "success"}
+            tone={
+              hasActiveSprint
+                ? "warning"
+                : "success"
+            }
+            onAction={
+              metricAction
+                ? () => metricAction("sprint-status")
+                : undefined
+            }
           />
         </div>
 

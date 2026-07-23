@@ -37,6 +37,7 @@ import client from "../../api/client";
 
 const STATUS_OPTIONS = [
   { id: "all", label: "All" },
+  { id: "remaining", label: "Remaining" },
   { id: "planned", label: "Planned" },
   { id: "in-progress", label: "In Progress" },
   { id: "completed", label: "Completed" },
@@ -75,8 +76,22 @@ function isTaskDone(task) {
 }
 
 function isMilestoneCompleted(m) {
-  const s = normalizeStatus(m?.status);
-  return s === "done" || s === "completed" || s === "complete";
+  const status = normalizeStatus(m?.status)
+    .trim()
+    .replace(/[\s-]+/g, "_");
+
+  const progress = Number(m?.progress || 0);
+
+  return (
+    Boolean(m?.completedAt) ||
+    (Number.isFinite(progress) && progress >= 100) ||
+    [
+      "done",
+      "completed",
+      "complete",
+      "shipped",
+    ].includes(status)
+  );
 }
 
 function isMilestoneInProgress(m) {
@@ -100,6 +115,13 @@ function isOverdueMilestone(m) {
 function applyStatusFilter(items, statusId) {
   if (!Array.isArray(items)) return [];
   if (!statusId || statusId === "all") return items;
+
+  if (statusId === "remaining") {
+    return items.filter(
+      (milestone) =>
+        !isMilestoneCompleted(milestone)
+    );
+  }
 
   if (statusId === "planned") {
     return items.filter((m) => normalizeStatus(m?.status || "planned") === "planned");
@@ -448,6 +470,15 @@ export default function RoadmapPanel({
   const [status, setStatus] = useState(defaultStatus);
   const [sort, setSort] = useState(defaultSort);
 
+  // finish-line-roadmap-filter-v1
+  useEffect(() => {
+    setStatus(defaultStatus || "all");
+  }, [defaultStatus]);
+
+  useEffect(() => {
+    setSort(defaultSort || "dueDate:asc");
+  }, [defaultSort]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
@@ -500,9 +531,21 @@ export default function RoadmapPanel({
   }, [fetchData]);
 
   const counts = useMemo(() => {
-    const c = { all: 0, planned: 0, "in-progress": 0, completed: 0, overdue: 0 };
+    const c = {
+      all: 0,
+      remaining: 0,
+      planned: 0,
+      "in-progress": 0,
+      completed: 0,
+      overdue: 0,
+    };
+
     (items || []).forEach((m) => {
       c.all += 1;
+
+      if (!isMilestoneCompleted(m)) {
+        c.remaining += 1;
+      }
 
       if (isOverdueMilestone(m)) {
         c.overdue += 1;
@@ -521,6 +564,7 @@ export default function RoadmapPanel({
 
       c.planned += 1;
     });
+
     return c;
   }, [items]);
 
@@ -1315,7 +1359,7 @@ export default function RoadmapPanel({
           </div>
 
           {/* Signal stats */}
-          <div className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             {STATUS_OPTIONS.map((opt) => {
               const n = counts[opt.id] ?? (opt.id === "all" ? counts.all : 0);
               const active = status === opt.id;
