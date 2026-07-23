@@ -122,6 +122,7 @@ function safeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// finish-line-milestone-projects-api-v1
 function normalizeClosureReadiness(readiness) {
   if (!readiness || typeof readiness !== 'object') {
     return {
@@ -134,6 +135,9 @@ function normalizeClosureReadiness(readiness) {
       blockedTaskCount: 0,
       activeGoalCount: 0,
       completedGoalCount: 0,
+      remainingMilestoneCount: 0,
+      completedMilestoneCount: 0,
+      totalMilestoneCount: 0,
       hasActiveSprint: false,
     };
   }
@@ -149,6 +153,18 @@ function normalizeClosureReadiness(readiness) {
     blockedTaskCount: safeNumber(readiness.blockedTaskCount, 0),
     activeGoalCount: safeNumber(readiness.activeGoalCount, 0),
     completedGoalCount: safeNumber(readiness.completedGoalCount, 0),
+    remainingMilestoneCount: safeNumber(
+      readiness.remainingMilestoneCount,
+      0
+    ),
+    completedMilestoneCount: safeNumber(
+      readiness.completedMilestoneCount,
+      0
+    ),
+    totalMilestoneCount: safeNumber(
+      readiness.totalMilestoneCount,
+      0
+    ),
     hasActiveSprint: Boolean(readiness.hasActiveSprint),
   };
 }

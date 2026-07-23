@@ -80,6 +80,9 @@ export interface ProjectClosureReadinessResult {
   blockedTaskCount: number;
   activeGoalCount: number;
   completedGoalCount: number;
+  remainingMilestoneCount: number;
+  completedMilestoneCount: number;
+  totalMilestoneCount: number;
   hasActiveSprint: boolean;
 }
 
@@ -1023,8 +1026,18 @@ export class ProjectsService {
       .lean()
       .exec();
 
+    // finish-line-milestone-closure-paths-v1
+    const milestones =
+      await this.loadProjectMilestones(projectId);
+
     const normalizedGoals = this.buildGoalSnapshots(project, tasks);
-    const closureReadiness = this.buildClosureReadiness(project, tasks, normalizedGoals);
+    const closureReadiness =
+      this.buildClosureReadiness(
+        project,
+        tasks,
+        normalizedGoals,
+        milestones,
+      );
 
     (project as any).closureReadiness = {
       ...(project as any).closureReadiness,
@@ -1053,8 +1066,17 @@ export class ProjectsService {
       .lean()
       .exec();
 
+    const milestones =
+      await this.loadProjectMilestones(projectId);
+
     const normalizedGoals = this.buildGoalSnapshots(project, tasks);
-    const closureReadiness = this.buildClosureReadiness(project, tasks, normalizedGoals);
+    const closureReadiness =
+      this.buildClosureReadiness(
+        project,
+        tasks,
+        normalizedGoals,
+        milestones,
+      );
 
     if (!closureReadiness.isReadyToClose && !payload?.forceComplete) {
       throw new BadRequestException({
@@ -2679,87 +2701,257 @@ export class ProjectsService {
   }
 
 
+  /* finish-line-milestone-backend-v1
+   * Moves represent execution work.
+   * Milestones represent major project stages.
+   * Linked milestone tasks are not duplicated here.
+   */
+  private isMilestoneDone(milestone: any): boolean {
+    if (!milestone) return false;
+
+    const status = String(
+      milestone?.status ||
+        milestone?.state ||
+        '',
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_');
+
+    const progress = Number(milestone?.progress || 0);
+
+    return (
+      Boolean(milestone?.completedAt) ||
+      (Number.isFinite(progress) && progress >= 100) ||
+      [
+        'completed',
+        'complete',
+        'done',
+        'shipped',
+      ].includes(status)
+    );
+  }
+
+  private async loadProjectMilestones(
+    projectId: string | Types.ObjectId,
+  ): Promise<any[]> {
+    const rawProjectId = String(projectId || '');
+
+    if (!Types.ObjectId.isValid(rawProjectId)) {
+      return [];
+    }
+
+    const pid = new Types.ObjectId(rawProjectId);
+
+    return this.projectModel.db
+      .collection('milestones')
+      .find({ projectId: pid })
+      .sort({
+        order: 1,
+        targetDate: 1,
+        createdAt: 1,
+      })
+      .toArray();
+  }
+
   private buildClosureReadiness(
     project: any,
     tasks: any[],
     goals: any[],
+    milestones: any[] = [],
   ): ProjectClosureReadinessResult {
     const openTasks = Array.isArray(tasks)
-      ? tasks.filter((task) => !this.isTaskDone(task))
+      ? tasks.filter(
+          (task) => !this.isTaskDone(task),
+        )
       : [];
 
     const openCriticalTasks = openTasks.filter(
-      (task) => this.priorityRank(task?.priority) >= 3,
+      (task) =>
+        this.priorityRank(task?.priority) >= 3,
     );
 
-    const blockedTasks = openTasks.filter((task) => this.isTaskBlocked(task));
+    const blockedTasks = openTasks.filter(
+      (task) => this.isTaskBlocked(task),
+    );
 
     const activeGoals = Array.isArray(goals)
-      ? goals.filter((goal) => goal?.status !== 'completed')
+      ? goals.filter(
+          (goal) => goal?.status !== 'completed',
+        )
       : [];
 
     const completedGoals = Array.isArray(goals)
-      ? goals.filter((goal) => goal?.status === 'completed')
+      ? goals.filter(
+          (goal) => goal?.status === 'completed',
+        )
       : [];
 
-    const hasActiveSprint = Boolean((project as any)?.metrics?.activeSprintId);
-    const checklist = (project as any)?.closureChecklist || {};
+    const milestoneItems = Array.isArray(milestones)
+      ? milestones.filter(Boolean)
+      : [];
+
+    const completedMilestones =
+      milestoneItems.filter(
+        (milestone) =>
+          this.isMilestoneDone(milestone),
+      );
+
+    const remainingMilestones =
+      milestoneItems.filter(
+        (milestone) =>
+          !this.isMilestoneDone(milestone),
+      );
+
+    const hasActiveSprint = Boolean(
+      (project as any)?.metrics?.activeSprintId,
+    );
+
+    const checklist =
+      (project as any)?.closureChecklist || {};
 
     const blockingReasons: string[] = [];
     const warnings: string[] = [];
 
-    if (openCriticalTasks.length > 0) {
+    if (openTasks.length > 0) {
       blockingReasons.push(
-        `${openCriticalTasks.length} high-priority task${openCriticalTasks.length === 1 ? '' : 's'} still open`,
+        `${openTasks.length} move${
+          openTasks.length === 1 ? '' : 's'
+        } remaining`,
       );
     }
 
     if (blockedTasks.length > 0) {
       blockingReasons.push(
-        `${blockedTasks.length} blocker${blockedTasks.length === 1 ? '' : 's'} unresolved`,
+        `${blockedTasks.length} blocked move${
+          blockedTasks.length === 1 ? '' : 's'
+        } unresolved`,
       );
     }
 
-    if (hasActiveSprint) {
-      blockingReasons.push('Active sprint still running');
+    if (remainingMilestones.length > 0) {
+      blockingReasons.push(
+        `${remainingMilestones.length} milestone${
+          remainingMilestones.length === 1 ? '' : 's'
+        } remaining`,
+      );
     }
 
     if (activeGoals.length > 0) {
       blockingReasons.push(
-        `${activeGoals.length} active goal${activeGoals.length === 1 ? '' : 's'} still in progress`,
+        `${activeGoals.length} goal${
+          activeGoals.length === 1 ? '' : 's'
+        } remaining`,
+      );
+    }
+
+    if (hasActiveSprint) {
+      blockingReasons.push(
+        'Active sprint still running',
       );
     }
 
     if (!checklist.primaryGoalConfirmed) {
-      warnings.push('Primary outcome not yet confirmed');
+      warnings.push(
+        'Primary outcome not yet confirmed',
+      );
     }
 
     if (!checklist.summaryWritten) {
-      warnings.push('Closure summary not yet written');
+      warnings.push(
+        'Closure summary not yet written',
+      );
     }
 
     if (!checklist.stakeholderSignoff) {
-      warnings.push('Stakeholder signoff not yet recorded');
+      warnings.push(
+        'Stakeholder signoff not yet recorded',
+      );
     }
 
     let readinessScore = 100;
-    readinessScore -= Math.min(40, openCriticalTasks.length * 20);
-    readinessScore -= Math.min(25, blockedTasks.length * 10);
-    readinessScore -= hasActiveSprint ? 15 : 0;
-    readinessScore -= Math.min(15, activeGoals.length * 5);
-    readinessScore -= Math.min(15, warnings.length * 5);
-    readinessScore = Math.max(0, Math.min(100, readinessScore));
+
+    /*
+     * All unfinished Moves affect closeout readiness.
+     */
+    readinessScore -= Math.min(
+      35,
+      openTasks.length * 7,
+    );
+
+    /*
+     * Blocked Moves receive an additional urgency penalty.
+     */
+    readinessScore -= Math.min(
+      20,
+      blockedTasks.length * 10,
+    );
+
+    /*
+     * Priority remains an internal risk signal rather
+     * than a separate user-facing Finish Line category.
+     */
+    readinessScore -= Math.min(
+      10,
+      openCriticalTasks.length * 5,
+    );
+
+    /*
+     * Milestone penalty is separate from linked Moves.
+     */
+    readinessScore -= Math.min(
+      15,
+      remainingMilestones.length * 5,
+    );
+
+    readinessScore -= Math.min(
+      15,
+      activeGoals.length * 5,
+    );
+
+    readinessScore -= hasActiveSprint ? 10 : 0;
+
+    readinessScore -= Math.min(
+      15,
+      warnings.length * 5,
+    );
+
+    readinessScore = Math.max(
+      0,
+      Math.min(100, readinessScore),
+    );
 
     return {
-      isReadyToClose: blockingReasons.length === 0,
+      isReadyToClose:
+        blockingReasons.length === 0,
+
       readinessScore,
       blockingReasons,
       warnings,
+
       openTaskCount: openTasks.length,
-      openCriticalTaskCount: openCriticalTasks.length,
-      blockedTaskCount: blockedTasks.length,
-      activeGoalCount: activeGoals.length,
-      completedGoalCount: completedGoals.length,
+
+      openCriticalTaskCount:
+        openCriticalTasks.length,
+
+      blockedTaskCount:
+        blockedTasks.length,
+
+      activeGoalCount:
+        activeGoals.length,
+
+      completedGoalCount:
+        completedGoals.length,
+
+      remainingMilestoneCount:
+        remainingMilestones.length,
+
+      completedMilestoneCount:
+        completedMilestones.length,
+
+      totalMilestoneCount:
+        milestoneItems.length,
+
       hasActiveSprint,
     };
   }
@@ -2794,6 +2986,9 @@ export class ProjectsService {
       .sort({ updatedAt: -1, createdAt: -1 })
       .lean()
       .exec();
+
+    const milestones =
+      await this.loadProjectMilestones(pid);
 
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter((task) => this.isTaskDone(task)).length;
@@ -2841,12 +3036,18 @@ export class ProjectsService {
 
     const normalizedGoals = this.buildGoalSnapshots(project, tasks);
     const activeGoals = normalizedGoals.filter((goal) => goal.status !== 'completed');
-    const closureReadiness = this.buildClosureReadiness(project, tasks, normalizedGoals);
+    const closureReadiness =
+        this.buildClosureReadiness(
+          project,
+          tasks,
+          normalizedGoals,
+          milestones,
+        );
 
     return {
       project,
       tasks,
-      milestones: [],
+      milestones,
       events: [],
       threads: [],
       files: [],

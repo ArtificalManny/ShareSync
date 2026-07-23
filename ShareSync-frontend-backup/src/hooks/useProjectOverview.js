@@ -1063,6 +1063,45 @@ function buildFinishLine(
     ? activeGoals.filter((goal) => goal?.status === "completed").length
     : 0;
 
+  // finish-line-milestone-hook-v1
+  const finishLineMilestones = Array.isArray(data?.milestones)
+    ? data.milestones
+    : [];
+
+  const isFinishLineMilestoneDone = (milestone) => {
+    const status = String(
+      milestone?.status ||
+        milestone?.state ||
+        ""
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+    return (
+      Boolean(milestone?.completedAt) ||
+      safeNumber(milestone?.progress, 0) >= 100 ||
+      [
+        "completed",
+        "complete",
+        "done",
+        "shipped",
+      ].includes(status)
+    );
+  };
+
+  const derivedCompletedMilestoneCount =
+    finishLineMilestones.filter(
+      isFinishLineMilestoneDone
+    ).length;
+
+  const derivedRemainingMilestoneCount =
+    Math.max(
+      finishLineMilestones.length -
+        derivedCompletedMilestoneCount,
+      0
+    );
+
   const hasActiveSprint =
     typeof backend?.hasActiveSprint === "boolean"
       ? backend.hasActiveSprint
@@ -1074,18 +1113,38 @@ function buildFinishLine(
         );
 
   const blockingReasons = uniqueStrings(
-    Array.isArray(backend?.blockingReasons) && backend.blockingReasons.length > 0
+    Array.isArray(backend?.blockingReasons) &&
+      backend.blockingReasons.length > 0
       ? backend.blockingReasons
       : [
-          openCriticalTasks.length > 0
-            ? `${openCriticalTasks.length} high-priority task${openCriticalTasks.length === 1 ? "" : "s"} still open`
+          openTasks.length > 0
+            ? `${openTasks.length} move${
+                openTasks.length === 1 ? "" : "s"
+              } remaining`
             : "",
+
           blockedTasks.length > 0
-            ? `${blockedTasks.length} blocker${blockedTasks.length === 1 ? "" : "s"} unresolved`
+            ? `${blockedTasks.length} blocked move${
+                blockedTasks.length === 1 ? "" : "s"
+              } unresolved`
             : "",
-          hasActiveSprint ? "Active sprint still running" : "",
+
+          derivedRemainingMilestoneCount > 0
+            ? `${derivedRemainingMilestoneCount} milestone${
+                derivedRemainingMilestoneCount === 1
+                  ? ""
+                  : "s"
+              } remaining`
+            : "",
+
           derivedActiveGoalCount > 0
-            ? `${derivedActiveGoalCount} active goal${derivedActiveGoalCount === 1 ? "" : "s"} still in progress`
+            ? `${derivedActiveGoalCount} goal${
+                derivedActiveGoalCount === 1 ? "" : "s"
+              } remaining`
+            : "",
+
+          hasActiveSprint
+            ? "Active sprint still running"
             : "",
         ]
   );
@@ -1103,12 +1162,44 @@ function buildFinishLine(
 
   if (!Number.isFinite(readinessScore)) {
     readinessScore = 100;
-    readinessScore -= Math.min(40, openCriticalTasks.length * 20);
-    readinessScore -= Math.min(25, blockedTasks.length * 10);
-    readinessScore -= hasActiveSprint ? 15 : 0;
-    readinessScore -= Math.min(15, derivedActiveGoalCount * 5);
-    readinessScore -= Math.min(10, warnings.length * 5);
-    readinessScore = clamp(readinessScore, 0, 100);
+
+    readinessScore -= Math.min(
+      35,
+      openTasks.length * 7
+    );
+
+    readinessScore -= Math.min(
+      20,
+      blockedTasks.length * 10
+    );
+
+    readinessScore -= Math.min(
+      10,
+      openCriticalTasks.length * 5
+    );
+
+    readinessScore -= Math.min(
+      15,
+      derivedRemainingMilestoneCount * 5
+    );
+
+    readinessScore -= Math.min(
+      15,
+      derivedActiveGoalCount * 5
+    );
+
+    readinessScore -= hasActiveSprint ? 10 : 0;
+
+    readinessScore -= Math.min(
+      15,
+      warnings.length * 5
+    );
+
+    readinessScore = clamp(
+      readinessScore,
+      0,
+      100
+    );
   }
 
   const isCompleted =
@@ -1182,7 +1273,29 @@ function buildFinishLine(
     activeGoalCount:
       safeNumber(backend?.activeGoalCount, derivedActiveGoalCount),
     completedGoalCount:
-      safeNumber(backend?.completedGoalCount, derivedCompletedGoalCount),
+      safeNumber(
+        backend?.completedGoalCount,
+        derivedCompletedGoalCount
+      ),
+
+    remainingMilestoneCount:
+      safeNumber(
+        backend?.remainingMilestoneCount,
+        derivedRemainingMilestoneCount
+      ),
+
+    completedMilestoneCount:
+      safeNumber(
+        backend?.completedMilestoneCount,
+        derivedCompletedMilestoneCount
+      ),
+
+    totalMilestoneCount:
+      safeNumber(
+        backend?.totalMilestoneCount,
+        finishLineMilestones.length
+      ),
+
     hasActiveSprint,
     closureSummary,
     outcomeStatus,
