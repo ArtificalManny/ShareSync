@@ -370,9 +370,10 @@ export default function PricingModal({
               )}
 
               {/* Billing Toggle */}
-              <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+              {/* pricing-toggle-overlap-fix-v1 */}
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 mb-8">
                 <span
-                  className={`text-sm font-medium ${
+                  className={`shrink-0 whitespace-nowrap text-sm font-medium ${
                     billingInterval === 'monthly'
                       ? 'text-slate-800'
                       : 'text-slate-400'
@@ -388,7 +389,7 @@ export default function PricingModal({
                       billingInterval === 'monthly' ? 'yearly' : 'monthly',
                     )
                   }
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                  className={`relative h-7 w-14 min-w-[3.5rem] shrink-0 overflow-hidden rounded-full transition-colors ${
                     billingInterval === 'yearly'
                       ? 'bg-violet-500'
                       : 'bg-slate-200'
@@ -396,7 +397,7 @@ export default function PricingModal({
                   aria-label="Toggle billing interval"
                 >
                   <span
-                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                    className={`absolute left-0 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
                       billingInterval === 'yearly'
                         ? 'translate-x-8'
                         : 'translate-x-1'
@@ -405,7 +406,7 @@ export default function PricingModal({
                 </button>
 
                 <span
-                  className={`text-sm font-medium ${
+                  className={`shrink-0 whitespace-nowrap text-sm font-medium ${
                     billingInterval === 'yearly'
                       ? 'text-slate-800'
                       : 'text-slate-400'

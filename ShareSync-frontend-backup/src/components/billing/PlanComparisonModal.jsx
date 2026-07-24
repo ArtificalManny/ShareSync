@@ -83,11 +83,12 @@ export default function PlanComparisonModal({ isOpen, onClose, onSelectPlan }) {
 
             <div className="flex items-center gap-4">
               {/* Billing Toggle */}
-              <div className="flex items-center gap-2 p-1 rounded-lg bg-surface-2">
+              {/* pricing-toggle-overlap-fix-v1 */}
+              <div className="flex shrink-0 items-center gap-2 rounded-lg bg-surface-2 p-1">
                 <button
                   onClick={() => setBillingCycle('monthly')}
                   className={`
-                    px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                    shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors
                     ${billingCycle === 'monthly' 
                       ? 'bg-surface-1 text-text-primary shadow-sm' 
                       : 'text-text-tertiary hover:text-text-secondary'
@@ -99,7 +100,7 @@ export default function PlanComparisonModal({ isOpen, onClose, onSelectPlan }) {
                 <button
                   onClick={() => setBillingCycle('yearly')}
                   className={`
-                    px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                    shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors
                     ${billingCycle === 'yearly' 
                       ? 'bg-surface-1 text-text-primary shadow-sm' 
                       : 'text-text-tertiary hover:text-text-secondary'
