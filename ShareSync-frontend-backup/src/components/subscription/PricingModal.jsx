@@ -26,6 +26,8 @@ import {
   resumeSubscription,
 } from '../../api/subscriptions';
 import { toast } from '../ui/toast';
+// enterprise-sales-inquiry-frontend-v1
+import ContactSalesModal from './ContactSalesModal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLAN CONFIGURATION (matches backend PLAN_CONFIGS)
@@ -107,6 +109,7 @@ export default function PricingModal({
 }) {
   const [activeAction, setActiveAction] = useState(null); // Tracks specific loading state
   const [billingInterval, setBillingInterval] = useState('monthly'); // 'monthly' | 'yearly'
+  const [contactSalesOpen, setContactSalesOpen] = useState(false);
 
   const normalizedPlan = currentPlan || 'free';
   const isPremium = normalizedPlan !== 'free';
@@ -120,9 +123,14 @@ export default function PricingModal({
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        onClose?.();
+      if (event.key !== 'Escape') return;
+
+      if (contactSalesOpen) {
+        setContactSalesOpen(false);
+        return;
       }
+
+      onClose?.();
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -131,7 +139,7 @@ export default function PricingModal({
       document.body.style.overflow = originalOverflow;
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [contactSalesOpen, onClose]);
 
   const handleBackdropMouseDown = (event) => {
     if (event.target === event.currentTarget) {
@@ -141,10 +149,7 @@ export default function PricingModal({
 
   const handleUpgrade = async (plan) => {
     if (plan === 'enterprise') {
-      window.open(
-        'mailto:enterprise@sharesync.app?subject=Enterprise%20Plan%20Inquiry',
-        '_blank',
-      );
+      setContactSalesOpen(true);
       return;
     }
 
@@ -495,6 +500,13 @@ export default function PricingModal({
           </div>
         </div>
       </div>
+
+      {contactSalesOpen && (
+        <ContactSalesModal
+          currentPlan={normalizedPlan}
+          onClose={() => setContactSalesOpen(false)}
+        />
+      )}
     </div>
   );
 

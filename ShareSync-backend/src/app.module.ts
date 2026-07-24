@@ -85,6 +85,8 @@ import { ReportsModule } from './reports/reports.module';
 import { AIModule } from './ai/ai.module';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+// enterprise-sales-inquiry-backend-v1
+import { SalesModule } from './sales/sales.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRUST & SAFETY MODULES
@@ -233,6 +235,7 @@ import { SettingsModule } from './settings/settings.module';
     // ✅ DISCOVERY (Public project feed)
     DiscoveryModule,
     SubscriptionsModule,
+    SalesModule,
 
     // ─────────────────────────────────────────────────────────────────────────
     // POLISH & SCALE
