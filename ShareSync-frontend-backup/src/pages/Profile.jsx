@@ -44,6 +44,8 @@ import {
   Loader2,
   RefreshCw,
   Folder,
+  Briefcase,
+  Users,
   CheckCircle2,
   Clock,
   Flame,
@@ -1036,6 +1038,227 @@ const RecentShipsPanel = ({ ships = [], loading = false }) => {
   );
 };
 
+const getProfileProjectId = (project) =>
+  project?._id || project?.id || project?.projectId || null;
+
+const getProfileProjectName = (project) => {
+  const raw = project?.name || project?.title || "";
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  return trimmed || "Untitled project";
+};
+
+const getProfileProjectMembers = (project) =>
+  Array.isArray(project?.members)
+    ? project.members
+    : Array.isArray(project?.team)
+      ? project.team
+      : [];
+
+const getProfilePerson = (member) => {
+  if (!member || typeof member !== "object") return null;
+
+  if (member.user && typeof member.user === "object") {
+    return member.user;
+  }
+
+  if (member.userId && typeof member.userId === "object") {
+    return member.userId;
+  }
+
+  return member;
+};
+
+const getProfilePersonId = (person, member) => {
+  const raw =
+    person?._id ||
+    person?.id ||
+    member?.userId ||
+    member?._id ||
+    member?.id ||
+    person?.email ||
+    member?.email;
+
+  if (!raw || typeof raw === "object") return null;
+  return String(raw);
+};
+
+const getProfilePersonName = (person) => {
+  const fullName = [
+    person?.firstName,
+    person?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return (
+    person?.name ||
+    person?.displayName ||
+    fullName ||
+    person?.username ||
+    person?.handle ||
+    person?.email?.split("@")[0] ||
+    "Collaborator"
+  );
+};
+
+const isProfileProjectActive = (project) => {
+  const state = String(
+    project?.status ||
+      project?.lifecycleStatus ||
+      project?.state ||
+      ""
+  ).toLowerCase();
+
+  const isArchived =
+    Boolean(project?.archivedAt) ||
+    state.includes("archiv");
+
+  const isCompleted =
+    Boolean(project?.completedAt) ||
+    state.includes("complete") ||
+    state.includes("closed") ||
+    state === "done";
+
+  return !isArchived && !isCompleted;
+};
+
+const getProfileProjectMemberCount = (project) => {
+  const members = getProfileProjectMembers(project);
+
+  const declaredCount = Number(
+    project?.memberCount ??
+      project?.membersCount ??
+      project?.metrics?.memberCount?.value ??
+      project?.metrics?.memberCount ??
+      0
+  );
+
+  return Math.max(
+    Number.isFinite(declaredCount) ? declaredCount : 0,
+    members.length
+  );
+};
+
+const getProfileProjectActivityDate = (project) => {
+  const raw =
+    project?.lastActivityAt ||
+    project?.lastActivity ||
+    project?.lastShipAt ||
+    project?.lastShippedAt ||
+    project?.updatedAt ||
+    project?.createdAt ||
+    null;
+
+  const parsed = raw ? new Date(raw) : null;
+
+  if (!parsed || Number.isNaN(parsed.getTime())) {
+    return 0;
+  }
+
+  return parsed.getTime();
+};
+
+const formatProfileProjectActivity = (project) => {
+  const timestamp = getProfileProjectActivityDate(project);
+
+  if (!timestamp) return "Activity pending";
+
+  const diffMs = Math.max(0, Date.now() - timestamp);
+  const minutes = Math.floor(diffMs / 60000);
+
+  if (minutes < 1) return "Updated just now";
+  if (minutes < 60) return `Updated ${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+
+  if (hours < 24) return `Updated ${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+
+  if (days < 7) return `Updated ${days}d ago`;
+
+  const weeks = Math.floor(days / 7);
+
+  if (weeks < 5) return `Updated ${weeks}w ago`;
+
+  return `Updated ${new Date(timestamp).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })}`;
+};
+
+const buildProfileWorkspaceSnapshot = (
+  projects = [],
+  recentWork = [],
+  currentUser = null
+) => {
+  const safeProjects = Array.isArray(projects)
+    ? projects.filter((project) => getProfileProjectId(project))
+    : [];
+
+  const activeProjects = safeProjects
+    .filter(isProfileProjectActive)
+    .sort(
+      (left, right) =>
+        getProfileProjectActivityDate(right) -
+        getProfileProjectActivityDate(left)
+    );
+
+  const currentUserId = String(
+    currentUser?._id ||
+      currentUser?.id ||
+      ""
+  );
+
+  const collaboratorMap = new Map();
+
+  for (const project of safeProjects) {
+    for (const member of getProfileProjectMembers(project)) {
+      const person = getProfilePerson(member);
+      const personId = getProfilePersonId(person, member);
+
+      if (!person || !personId || personId === currentUserId) {
+        continue;
+      }
+
+      const existing = collaboratorMap.get(personId);
+
+      collaboratorMap.set(personId, {
+        id: personId,
+        user: existing?.user || person,
+        name: existing?.name || getProfilePersonName(person),
+        sharedProjects: (existing?.sharedProjects || 0) + 1,
+      });
+    }
+  }
+
+  const frequentCollaborators = [...collaboratorMap.values()]
+    .sort((left, right) => {
+      if (right.sharedProjects !== left.sharedProjects) {
+        return right.sharedProjects - left.sharedProjects;
+      }
+
+      return left.name.localeCompare(right.name);
+    })
+    .slice(0, 5);
+
+  const activeTeams = activeProjects.filter(
+    (project) => getProfileProjectMemberCount(project) > 1
+  ).length;
+
+  return {
+    projectCount: safeProjects.length,
+    activeTeams,
+    currentProjects: activeProjects.slice(0, 3),
+    frequentCollaborators,
+    mostRecentWork:
+      Array.isArray(recentWork) && recentWork.length > 0
+        ? recentWork[0]
+        : null,
+  };
+};
+
 /* ─────────────────────────────────────────────────────────────────────────
    MAIN PAGE - "The Personal Gallery"
 ───────────────────────────────────────────────────────────────────────── */
@@ -1228,7 +1451,7 @@ export default function Profile() {
         try {
           const projRes = await client.get("/projects");
           const projs = Array.isArray(projRes.data) ? projRes.data : (projRes.data?.data || projRes.data?.projects || []);
-          setUserProjects(projs.slice(0, 6));
+          setUserProjects(Array.isArray(projs) ? projs : []);
         } catch (_) {}
 
         // Fetch recent completed tasks
@@ -1303,6 +1526,16 @@ export default function Profile() {
     ? "Live analytics"
     : "Profile fallback";
   const name = useMemo(() => resolveUserName(user), [user]);
+
+  const profileWorkspace = useMemo(
+    () =>
+      buildProfileWorkspaceSnapshot(
+        userProjects,
+        recentShips,
+        user
+      ),
+    [userProjects, recentShips, user]
+  );
 
   // Phase 7: Handle edit profile
   const handleEditProfile = () => {
@@ -1478,6 +1711,286 @@ export default function Profile() {
           )}
         </div>
       </section>
+
+      {/* profile-human-context-v1
+          Uses the authenticated user's existing project and activity data.
+          Public-profile support can be added once the backend exposes a
+          privacy-safe public collaboration contract. */}
+      {isOwnProfile && (
+        <section
+          className="
+            mb-10 grid grid-cols-1 gap-6
+            lg:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.8fr)]
+          "
+          aria-label="Current work and collaboration"
+        >
+          {/* Current Work */}
+          <article
+            className="
+              overflow-hidden rounded-2xl border border-slate-200/90
+              bg-white/90 shadow-sm shadow-violet-100/40 backdrop-blur
+              dark:border-white/10 dark:bg-[#1f1f23]/90
+              dark:shadow-black/20
+            "
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 dark:border-white/[0.07]">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-violet-100 bg-violet-50 text-violet-600 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+                  <Briefcase className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">
+                    Current Work
+                  </p>
+
+                  <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+                    Projects in motion
+                  </h2>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500 dark:text-zinc-400">
+                    Your most recently active OpenShare workspaces.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="/projects"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:border-violet-400/30 dark:hover:text-violet-300"
+              >
+                View all
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+            <div className="p-4">
+              {profileWorkspace.currentProjects.length > 0 ? (
+                <div className="space-y-2">
+                  {profileWorkspace.currentProjects.map((project) => {
+                    const projectId = getProfileProjectId(project);
+                    const projectName = getProfileProjectName(project);
+                    const description =
+                      typeof project?.description === "string" &&
+                      project.description.trim()
+                        ? project.description.trim()
+                        : "Open project workspace";
+
+                    return (
+                      <a
+                        key={projectId}
+                        href={`/projects/${projectId}`}
+                        className="
+                          group flex items-center justify-between gap-4
+                          rounded-2xl border border-slate-200/80 bg-white
+                          px-4 py-3 transition-all duration-200
+                          hover:-translate-y-0.5 hover:border-violet-200
+                          hover:bg-violet-50/30 hover:shadow-md
+                          hover:shadow-violet-100/50
+                          dark:border-white/10 dark:bg-white/[0.03]
+                          dark:hover:border-violet-500/30
+                          dark:hover:bg-violet-500/[0.06]
+                          dark:hover:shadow-black/20
+                        "
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <ProjectAvatar
+                            project={project}
+                            size="sm"
+                            className="shrink-0 transition-transform duration-200 group-hover:scale-105"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-violet-700 dark:text-zinc-100 dark:group-hover:text-violet-300">
+                              {projectName}
+                            </p>
+
+                            <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-zinc-400">
+                              {description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="hidden shrink-0 text-right sm:block">
+                          <p className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+                            {formatProfileProjectActivity(project)}
+                          </p>
+
+                          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-violet-300">
+                            Open project
+                          </p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center dark:border-white/[0.14] dark:bg-white/[0.04]">
+                  <Folder className="mx-auto h-6 w-6 text-violet-500" />
+
+                  <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                    No active projects yet
+                  </p>
+
+                  <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                    Create or reopen a project to surface it here.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.035]">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-600 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
+                    <Activity className="h-4 w-4" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-zinc-400">
+                      Most recent project activity
+                    </p>
+
+                    {profileWorkspace.mostRecentWork ? (
+                      <>
+                        <p className="mt-1 truncate text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                          {getShipTitle(profileWorkspace.mostRecentWork)}
+                        </p>
+
+                        <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-zinc-400">
+                          {getShipProjectName(profileWorkspace.mostRecentWork)}
+                          {" · "}
+                          {formatShipDate(profileWorkspace.mostRecentWork)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                        No completed project activity has been recorded yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          {/* Collaboration */}
+          <article
+            className="
+              rounded-2xl border border-slate-200/90 bg-white/90
+              p-5 shadow-sm shadow-teal-100/40 backdrop-blur
+              dark:border-white/10 dark:bg-[#1f1f23]/90
+              dark:shadow-black/20
+            "
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-600 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
+                <Users className="h-5 w-5" />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+                  Collaboration
+                </p>
+
+                <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+                  Shared work network
+                </h2>
+
+                <p className="mt-1 text-sm leading-5 text-slate-500 dark:text-zinc-400">
+                  Project and teammate context from your OpenShare workspace.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+                <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                  {profileWorkspace.projectCount}
+                </p>
+
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                  Projects
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+                <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                  {profileWorkspace.activeTeams}
+                </p>
+
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                  Active teams
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-slate-100 pt-5 dark:border-white/[0.07]">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                    Frequent collaborators
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                    People appearing across the most shared projects.
+                  </p>
+                </div>
+
+                {profileWorkspace.frequentCollaborators.length > 0 && (
+                  <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-semibold text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
+                    {profileWorkspace.frequentCollaborators.length} shown
+                  </span>
+                )}
+              </div>
+
+              {profileWorkspace.frequentCollaborators.length > 0 ? (
+                <div className="mt-4 space-y-2">
+                  {profileWorkspace.frequentCollaborators.map(
+                    (collaborator) => (
+                      <div
+                        key={collaborator.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.03]"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <UserAvatar
+                            user={collaborator.user}
+                            name={collaborator.name}
+                            size={36}
+                            className="shrink-0"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                              {collaborator.name}
+                            </p>
+
+                            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                              {collaborator.sharedProjects} shared{" "}
+                              {collaborator.sharedProjects === 1
+                                ? "project"
+                                : "projects"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5 text-center dark:border-white/[0.14] dark:bg-white/[0.04]">
+                  <Users className="mx-auto h-5 w-5 text-teal-500" />
+
+                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                    Collaboration is warming up
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                    Shared project members will appear here automatically.
+                  </p>
+                </div>
+              )}
+            </div>
+          </article>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           MAIN GRID
