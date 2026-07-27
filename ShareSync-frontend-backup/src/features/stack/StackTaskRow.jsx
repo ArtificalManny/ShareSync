@@ -211,15 +211,32 @@ export default function StackTaskRow({
   const pri = useMemo(() => priorityMeta(task?.priority), [task?.priority]);
   const assigneeLabel = useMemo(() => getAssigneeLabel(task), [task]);
 
+  const statusValue = (task?.status || "").toString().toLowerCase();
+  const normalizedStatus = statusValue
+    .trim()
+    .replace(/[\s-]+/g, "_");
+
+  const blockerCollections = [
+    task?.blockers,
+    task?.blockedBy,
+    task?.blockingDependencies,
+  ];
+
   const isBlocking = Boolean(
     task?.isBlocking ||
-    task?.blocked ||
-    task?.hasBlocker ||
-    task?.blockedBy ||
-    (Array.isArray(task?.blockers) && task.blockers.length > 0)
+      task?.blocking ||
+      task?.blocked ||
+      task?.blockingReason ||
+      task?.blockedReason ||
+      normalizedStatus === "blocked" ||
+      normalizedStatus === "blocking" ||
+      blockerCollections.some(
+        (value) =>
+          Array.isArray(value) &&
+          value.length > 0
+      )
   );
 
-  const statusValue = (task?.status || "").toString().toLowerCase();
   const statusLabel = getStatusLabel(task?.status);
   const isInProgress = statusValue === "in_progress";
   const isReview = statusValue === "review";
