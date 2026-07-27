@@ -144,7 +144,14 @@ export default function FlowBoard({
     const inProgress = filteredBoard?.in_progress?.length || 0;
     const review = filteredBoard?.review?.length || 0;
     const done = filteredBoard?.done?.length || 0;
-    const blocked = allTasks.filter(isBlockedTask).length;
+    const doneTaskIds = new Set(
+      (filteredBoard?.done || []).map((task) => String(getTaskId(task)))
+    );
+    const blocked = allTasks.filter(
+      (task) =>
+        !doneTaskIds.has(String(getTaskId(task))) &&
+        isBlockedTask(task)
+    ).length;
     const activeColumns = FLOW_STATUSES.filter(
       (status) => (filteredBoard?.[status]?.length || 0) > 0
     ).length;
