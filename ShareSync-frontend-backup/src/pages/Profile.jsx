@@ -1727,6 +1727,7 @@ export default function Profile() {
           {/* Current Work */}
           <article
             className="
+              profile-context-card
               overflow-hidden rounded-2xl border border-slate-200/90
               bg-white/90 shadow-sm shadow-violet-100/40 backdrop-blur
               dark:border-white/10 dark:bg-[#1f1f23]/90
@@ -1781,6 +1782,7 @@ export default function Profile() {
                         href={`/projects/${projectId}`}
                         className="
                           group flex items-center justify-between gap-4
+                          profile-context-row
                           rounded-2xl border border-slate-200/80 bg-white
                           px-4 py-3 transition-all duration-200
                           hover:-translate-y-0.5 hover:border-violet-200
@@ -1837,7 +1839,7 @@ export default function Profile() {
                 </div>
               )}
 
-              <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.035]">
+              <div className="profile-context-soft mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.035]">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-600 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
                     <Activity className="h-4 w-4" />
@@ -1874,6 +1876,7 @@ export default function Profile() {
           {/* Collaboration */}
           <article
             className="
+              profile-context-card
               rounded-2xl border border-slate-200/90 bg-white/90
               p-5 shadow-sm shadow-teal-100/40 backdrop-blur
               dark:border-white/10 dark:bg-[#1f1f23]/90
@@ -1901,7 +1904,7 @@ export default function Profile() {
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+              <div className="profile-context-soft rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
                 <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
                   {profileWorkspace.projectCount}
                 </p>
@@ -1911,7 +1914,7 @@ export default function Profile() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+              <div className="profile-context-soft rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
                 <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
                   {profileWorkspace.activeTeams}
                 </p>
@@ -1947,7 +1950,7 @@ export default function Profile() {
                     (collaborator) => (
                       <div
                         key={collaborator.id}
-                        className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.03]"
+                        className="profile-context-row flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.03]"
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <UserAvatar
