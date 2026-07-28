@@ -275,7 +275,7 @@ export default function MoveTaskDetailDrawer({
   return (
     <>
       <div
-        className="fixed inset-0 z-[90] bg-slate-950/45 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[10000] bg-slate-950/45 backdrop-blur-[2px]"
         onClick={() => {
           if (!isBusy) onClose?.();
         }}
@@ -283,7 +283,7 @@ export default function MoveTaskDetailDrawer({
       />
 
       <aside
-        className="fixed right-0 top-0 z-[91] flex h-full w-full max-w-[680px] flex-col border-l border-slate-200 bg-white shadow-[-24px_0_80px_rgba(15,23,42,0.20)] dark:border-white/10 dark:bg-[#111116] dark:shadow-[-24px_0_90px_rgba(0,0,0,0.55)]"
+        className="fixed right-0 top-0 z-[10001] flex h-full w-full max-w-[680px] flex-col border-l border-slate-200 bg-white shadow-[-24px_0_80px_rgba(15,23,42,0.20)] dark:border-white/10 dark:bg-[#111116] dark:shadow-[-24px_0_90px_rgba(0,0,0,0.55)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="move-detail-title"
