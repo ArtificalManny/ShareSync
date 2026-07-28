@@ -4,6 +4,7 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -14,6 +15,7 @@ import { UploadsService } from './uploads.service';
 import { ModerationService, ModerationDecision, ModerationCategory } from '../moderation/moderation.service';
 import { ImageModerationService } from '../moderation/image-moderation.service';
 import { policyForUpload } from '../moderation/policy';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 // Multer disk storage — saves files to /uploads with unique names
 const uploadsDiskStorage = diskStorage({
@@ -26,6 +28,7 @@ const uploadsDiskStorage = diskStorage({
 });
 
 @Controller('uploads')
+@UseGuards(JwtAuthGuard)
 export class UploadsController {
   constructor(
     private readonly uploadsService: UploadsService,
