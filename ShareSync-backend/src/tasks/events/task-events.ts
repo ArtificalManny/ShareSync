@@ -39,6 +39,8 @@ export type TaskEventSnapshot = {
   milestoneId?: string | null;
   isBlocking?: boolean;
   blockingCount?: number;
+  blockedBy?: string[];
+  blocks?: string[];
   xpValue?: number;
   bonusXP?: number;
   isLegendary?: boolean;

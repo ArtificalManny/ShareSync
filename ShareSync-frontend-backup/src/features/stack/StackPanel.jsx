@@ -37,7 +37,7 @@ import StackTaskRow from "./StackTaskRow";
 import MoveTaskDetailDrawer from "./MoveTaskDetailDrawer";
 import { useStackTasks } from "./useStackTasks";
 import { completeTask, moveTask, updateTask, deleteTask } from "../../api/taskApi";
-import { createTask } from "../../api/tasks";
+import { createTask, listTasks } from "../../api/tasks";
 import {
   Layers,
   RefreshCw,
@@ -326,6 +326,9 @@ export default function StackPanel({
   const [actionError, setActionError] = useState(null);
   const [actionBusyId, setActionBusyId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [projectTasks, setProjectTasks] = useState([]);
+  const [dependenciesLoading, setDependenciesLoading] = useState(false);
+  const [dependenciesError, setDependenciesError] = useState("");
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -336,6 +339,52 @@ export default function StackPanel({
 
   const safeTasks = useMemo(() => (Array.isArray(tasks) ? tasks : []), [tasks]);
   const [fallbackTeamMembers, setFallbackTeamMembers] = useState([]);
+  const selectedTaskId = getTaskId(selectedTask);
+
+  useEffect(() => {
+    if (!projectId || !selectedTaskId) {
+      setProjectTasks([]);
+      setDependenciesError("");
+      setDependenciesLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadProjectTasksForDependencies() {
+      setDependenciesLoading(true);
+      setDependenciesError("");
+
+      try {
+        const loadedTasks = await listTasks(projectId);
+
+        if (!cancelled) {
+          setProjectTasks(
+            Array.isArray(loadedTasks)
+              ? loadedTasks
+              : []
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setProjectTasks([]);
+          setDependenciesError(
+            getTaskActionErrorMessage(error)
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setDependenciesLoading(false);
+        }
+      }
+    }
+
+    loadProjectTasksForDependencies();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, selectedTaskId]);
 
   useEffect(() => {
     if (!projectId) {
@@ -514,6 +563,17 @@ export default function StackPanel({
 
       try {
         await completeTask(id, {});
+
+        try {
+          const loadedTasks = await listTasks(projectId);
+
+          setProjectTasks(
+            Array.isArray(loadedTasks)
+              ? loadedTasks
+              : []
+          );
+        } catch {}
+
         return true;
       } catch (e) {
         setActionError(e);
@@ -523,7 +583,7 @@ export default function StackPanel({
         setActionBusyId(null);
       }
     },
-    [optimisticUpdate, refresh]
+    [optimisticUpdate, projectId, refresh]
   );
 
   const handleOpenTaskDetail = useCallback((task) => {
@@ -575,6 +635,15 @@ export default function StackPanel({
           )
         );
 
+        setProjectTasks((previousTasks) =>
+          (Array.isArray(previousTasks) ? previousTasks : []).map(
+            (currentTask) =>
+              getTaskId(currentTask) === id
+                ? { ...currentTask, ...nextTask }
+                : currentTask
+          )
+        );
+
         setSelectedTask((currentTask) =>
           getTaskId(currentTask) === id
             ? { ...currentTask, ...nextTask }
@@ -609,6 +678,13 @@ export default function StackPanel({
 
       try {
         await deleteTask(id);
+
+        setProjectTasks((previousTasks) =>
+          (Array.isArray(previousTasks) ? previousTasks : []).filter(
+            (currentTask) =>
+              getTaskId(currentTask) !== id
+          )
+        );
       } catch (e) {
         setActionError(e);
         await refresh();
@@ -1507,6 +1583,9 @@ export default function StackPanel({
         open={Boolean(selectedTask)}
         task={selectedTask}
         members={memberOptions}
+        projectTasks={projectTasks}
+        dependenciesLoading={dependenciesLoading}
+        dependenciesError={dependenciesError}
         disabled={
           Boolean(selectedTask) &&
           actionBusyId === getTaskId(selectedTask)

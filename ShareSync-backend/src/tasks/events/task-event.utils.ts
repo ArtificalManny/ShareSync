@@ -17,6 +17,14 @@ const toId = (v: any): string | null => {
   return null;
 };
 
+const toIds = (value: any): string[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => toId(item))
+    .filter((id): id is string => Boolean(id));
+};
+
 export function buildTaskSnapshot(task: TaskDocument): TaskEvent['snapshot'] {
   return {
     _id: toId(task._id) || '',
@@ -33,6 +41,8 @@ export function buildTaskSnapshot(task: TaskDocument): TaskEvent['snapshot'] {
     milestoneId: toId((task as any).milestoneId),
     isBlocking: (task as any).isBlocking,
     blockingCount: (task as any).blockingCount,
+    blockedBy: toIds((task as any).blockedBy),
+    blocks: toIds((task as any).blocks),
     xpValue: (task as any).xpValue,
     bonusXP: (task as any).bonusXP,
     isLegendary: (task as any).isLegendary,

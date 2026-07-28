@@ -10,7 +10,10 @@ import {
   CheckCircle2,
   CircleDot,
   Flag,
+  GitBranch,
   Loader2,
+  LockKeyhole,
+  Plus,
   Save,
   UserRound,
   X,
@@ -58,6 +61,26 @@ function getTaskAssigneeId(task) {
   );
 }
 
+function normalizeIdList(value) {
+  if (!Array.isArray(value)) return [];
+
+  return [
+    ...new Set(
+      value
+        .map((item) => normalizeId(item))
+        .filter(Boolean)
+    ),
+  ];
+}
+
+function getTaskStatus(task) {
+  return String(
+    task?.status ||
+      task?.scheduleState ||
+      ""
+  ).toLowerCase();
+}
+
 function toDateInputValue(value) {
   if (!value) return "";
 
@@ -80,6 +103,9 @@ export default function MoveTaskDetailDrawer({
   open = false,
   task = null,
   members = [],
+  projectTasks = [],
+  dependenciesLoading = false,
+  dependenciesError = "",
   disabled = false,
   onClose,
   onSave,
@@ -91,6 +117,8 @@ export default function MoveTaskDetailDrawer({
   const [priority, setPriority] = useState("medium");
   const [assigneeId, setAssigneeId] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [blockedByIds, setBlockedByIds] = useState([]);
+  const [dependencyChoice, setDependencyChoice] = useState("");
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -99,6 +127,90 @@ export default function MoveTaskDetailDrawer({
     () => (Array.isArray(members) ? members : []),
     [members]
   );
+
+  const safeProjectTasks = useMemo(
+    () =>
+      Array.isArray(projectTasks)
+        ? projectTasks
+        : [],
+    [projectTasks]
+  );
+
+  const selectedTaskId = normalizeId(task);
+
+  const selectedBlockers = useMemo(
+    () =>
+      blockedByIds.map((blockedById) => {
+        const matchingTask =
+          safeProjectTasks.find(
+            (candidate) =>
+              normalizeId(candidate) ===
+              blockedById
+          );
+
+        return (
+          matchingTask || {
+            id: blockedById,
+            _id: blockedById,
+            title: "Unavailable Move",
+          }
+        );
+      }),
+    [blockedByIds, safeProjectTasks]
+  );
+
+  const dependencyCandidates = useMemo(
+    () =>
+      safeProjectTasks.filter((candidate) => {
+        const candidateId =
+          normalizeId(candidate);
+
+        return (
+          candidateId &&
+          candidateId !== selectedTaskId &&
+          !blockedByIds.includes(candidateId) &&
+          ![
+            "done",
+            "complete",
+            "completed",
+            "archived",
+          ].includes(getTaskStatus(candidate))
+        );
+      }),
+    [
+      blockedByIds,
+      safeProjectTasks,
+      selectedTaskId,
+    ]
+  );
+
+  const blockingTasks = useMemo(
+    () =>
+      safeProjectTasks.filter((candidate) => {
+        const candidateId =
+          normalizeId(candidate);
+
+        const candidateBlockedBy =
+          normalizeIdList(candidate?.blockedBy);
+
+        return (
+          candidateId &&
+          candidateId !== selectedTaskId &&
+          ![
+            "done",
+            "complete",
+            "completed",
+          ].includes(getTaskStatus(candidate)) &&
+          candidateBlockedBy.includes(
+            selectedTaskId
+          )
+        );
+      }),
+    [safeProjectTasks, selectedTaskId]
+  );
+
+  const hasUnresolvedDependencies =
+    blockedByIds.length > 0;
 
   useEffect(() => {
     if (!open || !task) return;
@@ -109,8 +221,41 @@ export default function MoveTaskDetailDrawer({
     setPriority(String(task?.priority || "medium").toLowerCase());
     setAssigneeId(getTaskAssigneeId(task));
     setDueDate(toDateInputValue(task?.dueDate));
+    setBlockedByIds(
+      normalizeIdList(task?.blockedBy)
+    );
+    setDependencyChoice("");
     setActionError("");
   }, [open, task]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      !task ||
+      Array.isArray(task?.blockedBy)
+    ) {
+      return;
+    }
+
+    const loadedTask = safeProjectTasks.find(
+      (candidate) =>
+        normalizeId(candidate) ===
+        selectedTaskId
+    );
+
+    if (Array.isArray(loadedTask?.blockedBy)) {
+      setBlockedByIds(
+        normalizeIdList(
+          loadedTask.blockedBy
+        )
+      );
+    }
+  }, [
+    open,
+    task,
+    safeProjectTasks,
+    selectedTaskId,
+  ]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -163,6 +308,7 @@ export default function MoveTaskDetailDrawer({
         dueDate: dueDate
           ? `${dueDate}T12:00:00.000Z`
           : null,
+        blockedBy: blockedByIds,
       });
 
       if (!savedTask) {
@@ -189,6 +335,7 @@ export default function MoveTaskDetailDrawer({
     priority,
     assigneeId,
     dueDate,
+    blockedByIds,
     disabled,
     saving,
     completing,
@@ -226,6 +373,7 @@ export default function MoveTaskDetailDrawer({
         dueDate: dueDate
           ? `${dueDate}T12:00:00.000Z`
           : null,
+        blockedBy: blockedByIds,
       });
 
       if (!savedTask) {
@@ -261,6 +409,7 @@ export default function MoveTaskDetailDrawer({
     priority,
     assigneeId,
     dueDate,
+    blockedByIds,
     disabled,
     saving,
     completing,
@@ -467,6 +616,221 @@ export default function MoveTaskDetailDrawer({
                 />
               </label>
             </div>
+
+            <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.035] sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
+                    <GitBranch className="h-4 w-4 text-violet-500" />
+                    Dependencies
+                  </div>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                    Choose the Moves that must finish before this one can begin.
+                  </p>
+                </div>
+
+                <div
+                  className={
+                    hasUnresolvedDependencies
+                      ? "inline-flex items-center gap-1.5 self-start rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300"
+                      : "inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  }
+                >
+                  {hasUnresolvedDependencies ? (
+                    <LockKeyhole className="h-3.5 w-3.5" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  )}
+
+                  {hasUnresolvedDependencies
+                    ? `Blocked by ${blockedByIds.length}`
+                    : "Ready to begin"}
+                </div>
+              </div>
+
+              {dependenciesError ? (
+                <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">
+                  {dependenciesError}
+                </div>
+              ) : null}
+
+              <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                <div>
+                  <div className="mb-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                    Blocked by
+                  </div>
+
+                  <div className="flex gap-2">
+                    <select
+                      value={dependencyChoice}
+                      onChange={(event) =>
+                        setDependencyChoice(
+                          event.target.value
+                        )
+                      }
+                      disabled={
+                        isBusy ||
+                        dependenciesLoading ||
+                        !dependencyCandidates.length
+                      }
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-[#19191f] dark:text-white"
+                    >
+                      <option value="">
+                        {dependenciesLoading
+                          ? "Loading Moves…"
+                          : dependencyCandidates.length
+                            ? "Choose a Move…"
+                            : "No available Moves"}
+                      </option>
+
+                      {dependencyCandidates.map(
+                        (candidate) => {
+                          const candidateId =
+                            normalizeId(candidate);
+
+                          return (
+                            <option
+                              key={candidateId}
+                              value={candidateId}
+                            >
+                              {candidate?.title ||
+                                candidate?.name ||
+                                "Untitled Move"}
+                            </option>
+                          );
+                        }
+                      )}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!dependencyChoice) {
+                          return;
+                        }
+
+                        setBlockedByIds(
+                          (previousIds) => [
+                            ...new Set([
+                              ...previousIds,
+                              dependencyChoice,
+                            ]),
+                          ]
+                        );
+
+                        setDependencyChoice("");
+                      }}
+                      disabled={
+                        isBusy ||
+                        !dependencyChoice
+                      }
+                      className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-violet-500 dark:hover:bg-violet-400"
+                      aria-label="Add dependency"
+                      title="Add dependency"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {selectedBlockers.length ? (
+                      selectedBlockers.map(
+                        (blocker) => {
+                          const blockerId =
+                            normalizeId(blocker);
+
+                          return (
+                            <div
+                              key={blockerId}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 dark:border-amber-500/20 dark:bg-amber-500/[0.07]"
+                            >
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-bold text-slate-800 dark:text-zinc-100">
+                                  {blocker?.title ||
+                                    blocker?.name ||
+                                    "Untitled Move"}
+                                </div>
+
+                                <div className="mt-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                                  Must finish first
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setBlockedByIds(
+                                    (previousIds) =>
+                                      previousIds.filter(
+                                        (id) =>
+                                          id !== blockerId
+                                      )
+                                  )
+                                }
+                                disabled={isBusy}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-rose-600 disabled:opacity-50 dark:hover:bg-white/10 dark:hover:text-rose-300"
+                                aria-label="Remove dependency"
+                                title="Remove dependency"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          );
+                        }
+                      )
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-500">
+                        No blockers. This Move is ready to begin.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                    Blocking
+                  </div>
+
+                  <div className="space-y-2">
+                    {dependenciesLoading ? (
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-400">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Loading dependent Moves…
+                      </div>
+                    ) : blockingTasks.length ? (
+                      blockingTasks.map(
+                        (blockedTask) => {
+                          const blockedTaskId =
+                            normalizeId(blockedTask);
+
+                          return (
+                            <div
+                              key={blockedTaskId}
+                              className="rounded-xl border border-violet-200/80 bg-violet-50/80 px-3 py-2.5 dark:border-violet-500/20 dark:bg-violet-500/[0.07]"
+                            >
+                              <div className="truncate text-sm font-bold text-slate-800 dark:text-zinc-100">
+                                {blockedTask?.title ||
+                                  blockedTask?.name ||
+                                  "Untitled Move"}
+                              </div>
+
+                              <div className="mt-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                                Waiting for this Move
+                              </div>
+                            </div>
+                          );
+                        }
+                      )
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-500">
+                        This Move is not blocking another Move.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <MoveTaskCollaborationPanel
               task={task}

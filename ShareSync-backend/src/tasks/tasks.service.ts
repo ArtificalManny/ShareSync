@@ -158,6 +158,13 @@ export class TasksService {
       }
     }
 
+    const resolvedBlockedBy =
+      await this.resolveTaskDependencies(
+        dto.projectId,
+        null,
+        dto.blockedBy || [],
+      );
+
     const xpValue = this.calculateBaseXP(dto.priority || TaskPriority.MEDIUM);
 
     const task = new this.taskModel({
@@ -169,7 +176,9 @@ export class TasksService {
       parentId: dto.parentId ? new Types.ObjectId(dto.parentId) : undefined,
       sprintId: dto.sprintId ? new Types.ObjectId(dto.sprintId) : undefined,
       milestoneId: dto.milestoneId ? new Types.ObjectId(dto.milestoneId) : undefined,
-      blockedBy: dto.blockedBy?.map((id) => new Types.ObjectId(id)) || [],
+      blockedBy: resolvedBlockedBy.map(
+        (id) => new Types.ObjectId(id),
+      ),
       xpValue,
     });
 
@@ -177,8 +186,8 @@ export class TasksService {
 
     await this.projectsService.incrementTaskCount(dto.projectId);
 
-    if (dto.blockedBy?.length) {
-      await this.updateBlockingRelationships(saved);
+    if (resolvedBlockedBy.length) {
+      await this.updateBlockingRelationships(saved, []);
     }
 
     emitTaskEvent({
@@ -584,14 +593,48 @@ export class TasksService {
       delete (dto as any).milestoneId;
     }
 
-    if ((dto as any).blockedBy) {
-      task.blockedBy = (dto as any).blockedBy.map((id: string) => new Types.ObjectId(id));
-      await this.updateBlockingRelationships(task);
+    const previousBlockedBy = Array.isArray(task.blockedBy)
+      ? task.blockedBy.map(
+          (id: any) => id.toString(),
+        )
+      : [];
+
+    let dependencyChanges:
+      | {
+          previousBlockedBy: string[];
+          blockedBy: string[];
+        }
+      | undefined;
+
+    if ((dto as any).blockedBy !== undefined) {
+      const resolvedBlockedBy =
+        await this.resolveTaskDependencies(
+          task.projectId.toString(),
+          task._id.toString(),
+          (dto as any).blockedBy,
+        );
+
+      task.blockedBy = resolvedBlockedBy.map(
+        (id) => new Types.ObjectId(id),
+      );
+
+      dependencyChanges = {
+        previousBlockedBy,
+        blockedBy: resolvedBlockedBy,
+      };
+
       delete (dto as any).blockedBy;
     }
 
     Object.assign(task, dto);
     const updated = await task.save();
+
+    if (dependencyChanges) {
+      await this.updateBlockingRelationships(
+        updated,
+        dependencyChanges.previousBlockedBy,
+      );
+    }
 
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
@@ -600,7 +643,16 @@ export class TasksService {
       actorId: userId,
       taskId: updated._id.toString(),
       snapshot: buildTaskSnapshot(updated),
-      changes: dto as any,
+      changes: {
+        ...(dto as any),
+        ...(dependencyChanges
+          ? {
+              blockedBy: dependencyChanges.blockedBy,
+              previousBlockedBy:
+                dependencyChanges.previousBlockedBy,
+            }
+          : {}),
+      },
     });
 
     const newAssigneeId = updated.assigneeId?.toString?.() || null;
@@ -980,16 +1032,145 @@ export class TasksService {
     };
   }
 
-  async delete(taskId: string, userId: string): Promise<void> {
-    const task = await this.findByIdWithAccess(taskId, userId);
-    const wasCompleted = task.status === TaskStatus.DONE;
+  async delete(
+    taskId: string,
+    userId: string,
+  ): Promise<void> {
+    const task = await this.findByIdWithAccess(
+      taskId,
+      userId,
+    );
 
-    await this.taskModel.updateMany({ blockedBy: task._id }, { $pull: { blockedBy: task._id } });
-    await this.taskModel.updateMany({ blocks: task._id }, { $pull: { blocks: task._id } });
-    await this.taskModel.deleteMany({ parentId: task._id });
-    await this.taskModel.deleteOne({ _id: task._id });
+    const wasCompleted =
+      task.status === TaskStatus.DONE;
 
-    await this.projectsService.decrementTaskCount(task.projectId.toString(), wasCompleted);
+    const deletedTaskId =
+      new Types.ObjectId(task._id.toString());
+
+    const previousDependencyIds = Array.isArray(
+      task.blockedBy,
+    )
+      ? task.blockedBy.map(
+          (id: any) => id.toString(),
+        )
+      : [];
+
+    const dependentTasks = await this.taskModel
+      .find({
+        blockedBy: deletedTaskId,
+      })
+      .select("_id projectId")
+      .lean()
+      .exec();
+
+    const dependentIds = dependentTasks.map(
+      (dependent: any) => dependent._id,
+    );
+
+    if (dependentIds.length) {
+      await this.taskModel.updateMany(
+        {
+          _id: {
+            $in: dependentIds,
+          },
+        },
+        {
+          $pull: {
+            blockedBy: deletedTaskId,
+          },
+        },
+      );
+    }
+
+    if (previousDependencyIds.length) {
+      await this.taskModel.updateMany(
+        {
+          _id: {
+            $in: previousDependencyIds.map(
+              (id) => new Types.ObjectId(id),
+            ),
+          },
+        },
+        {
+          $pull: {
+            blocks: deletedTaskId,
+          },
+        },
+      );
+    }
+
+    await this.taskModel.deleteMany({
+      parentId: deletedTaskId,
+    });
+
+    await this.taskModel.deleteOne({
+      _id: deletedTaskId,
+    });
+
+    await Promise.all(
+      previousDependencyIds.map(
+        async (blockingId) => {
+          const blockingObjectId =
+            new Types.ObjectId(blockingId);
+
+          const activeBlockingCount =
+            await this.taskModel.countDocuments({
+              blockedBy: blockingObjectId,
+              status: {
+                $ne: TaskStatus.DONE,
+              },
+            });
+
+          await this.taskModel.updateOne(
+            {
+              _id: blockingObjectId,
+            },
+            {
+              $set: {
+                blockingCount:
+                  activeBlockingCount,
+                isBlocking:
+                  activeBlockingCount > 0,
+              },
+            },
+          );
+        },
+      ),
+    );
+
+    const changedTaskIds = [
+      ...new Set([
+        ...dependentIds.map(
+          (id: any) => id.toString(),
+        ),
+        ...previousDependencyIds,
+      ]),
+    ];
+
+    if (changedTaskIds.length) {
+      const changedTasks = await this.taskModel
+        .find({
+          _id: {
+            $in: changedTaskIds.map(
+              (id) => new Types.ObjectId(id),
+            ),
+          },
+        })
+        .exec();
+
+      for (const changedTask of changedTasks) {
+        this.realtime.projectEmit(
+          changedTask.projectId.toString(),
+          "taskUpdated",
+          buildTaskSnapshot(changedTask),
+        );
+      }
+    }
+
+    await this.projectsService.decrementTaskCount(
+      task.projectId.toString(),
+      wasCompleted,
+    );
 
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
@@ -1000,24 +1181,34 @@ export class TasksService {
       snapshot: buildTaskSnapshot(task),
     });
 
-    this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', {
-      id: task._id.toString(),
-      projectId: task.projectId.toString(),
-      deleted: true,
-    });
-
-    await this.emitPublicProjectUpdate(task.projectId.toString(), {
-      type: 'task.deleted',
-      projectId: task.projectId.toString(),
-      data: {
+    this.realtime.projectEmit(
+      task.projectId.toString(),
+      "taskUpdated",
+      {
         id: task._id.toString(),
         projectId: task.projectId.toString(),
         deleted: true,
       },
-      createdAt: new Date(),
-    });
+    );
 
-    this.logger.log(`Task deleted: ${taskId}`);
+    await this.emitPublicProjectUpdate(
+      task.projectId.toString(),
+      {
+        type: "task.deleted",
+        projectId: task.projectId.toString(),
+        data: {
+          id: task._id.toString(),
+          projectId:
+            task.projectId.toString(),
+          deleted: true,
+        },
+        createdAt: new Date(),
+      },
+    );
+
+    this.logger.log(
+      `Task deleted: ${taskId}`,
+    );
   }
 
   async addComment(taskId: string, userId: string, dto: AddCommentDto): Promise<TaskDocument> {
@@ -1340,37 +1531,322 @@ export class TasksService {
     return { bonusXP, isLegendary, multiplier };
   }
 
-  private async updateBlockingRelationships(task: TaskDocument): Promise<void> {
-    if (task.blockedBy?.length) {
-      await this.taskModel.updateMany(
-        { _id: { $in: task.blockedBy } },
-        { $addToSet: { blocks: task._id }, $set: { isBlocking: true } },
+  private async resolveTaskDependencies(
+    projectId: string,
+    taskId: string | null,
+    requestedIds: unknown,
+  ): Promise<string[]> {
+    const rawIds = Array.isArray(requestedIds)
+      ? requestedIds
+      : [];
+
+    const uniqueIds = [
+      ...new Set(
+        rawIds
+          .map((value) =>
+            String(value || "").trim(),
+          )
+          .filter(Boolean),
+      ),
+    ];
+
+    const invalidId = uniqueIds.find(
+      (id) => !Types.ObjectId.isValid(id),
+    );
+
+    if (invalidId) {
+      throw new BadRequestException(
+        "One of the selected Move dependencies is invalid",
+      );
+    }
+
+    if (taskId && uniqueIds.includes(taskId)) {
+      throw new BadRequestException(
+        "A Move cannot depend on itself",
+      );
+    }
+
+    if (!uniqueIds.length) {
+      return [];
+    }
+
+    const dependencies = await this.taskModel
+      .find({
+        _id: {
+          $in: uniqueIds.map(
+            (id) => new Types.ObjectId(id),
+          ),
+        },
+        projectId: new Types.ObjectId(projectId),
+      })
+      .select("_id status blockedBy")
+      .lean()
+      .exec();
+
+    if (dependencies.length !== uniqueIds.length) {
+      throw new BadRequestException(
+        "Dependencies must be Moves from the same project",
+      );
+    }
+
+    const activeDependencyIds = new Set(
+      dependencies
+        .filter(
+          (dependency: any) =>
+            String(
+              dependency?.status || "",
+            ).toLowerCase() !== TaskStatus.DONE,
+        )
+        .map((dependency: any) =>
+          dependency._id.toString(),
+        ),
+    );
+
+    const resolvedIds = uniqueIds.filter(
+      (id) => activeDependencyIds.has(id),
+    );
+
+    if (!taskId || !resolvedIds.length) {
+      return resolvedIds;
+    }
+
+    const visited = new Set<string>();
+    let frontier = [...resolvedIds];
+
+    while (frontier.length) {
+      const currentIds = frontier.filter(
+        (id) => !visited.has(id),
       );
 
-      for (const blockingId of task.blockedBy) {
-        const count = await this.taskModel.countDocuments({
-          blockedBy: blockingId,
-          status: { $ne: TaskStatus.DONE },
-        });
+      if (!currentIds.length) break;
 
-        await this.taskModel.updateOne({ _id: blockingId }, { $set: { blockingCount: count } });
+      currentIds.forEach(
+        (id) => visited.add(id),
+      );
+
+      const currentTasks = await this.taskModel
+        .find({
+          _id: {
+            $in: currentIds.map(
+              (id) => new Types.ObjectId(id),
+            ),
+          },
+        })
+        .select("_id blockedBy")
+        .lean()
+        .exec();
+
+      const nextFrontier: string[] = [];
+
+      for (const currentTask of currentTasks as any[]) {
+        const nestedDependencies = Array.isArray(
+          currentTask?.blockedBy,
+        )
+          ? currentTask.blockedBy
+          : [];
+
+        for (
+          const nestedDependency
+          of nestedDependencies
+        ) {
+          const nestedId =
+            nestedDependency.toString();
+
+          if (nestedId === taskId) {
+            throw new BadRequestException(
+              "This dependency would create a circular chain",
+            );
+          }
+
+          if (!visited.has(nestedId)) {
+            nextFrontier.push(nestedId);
+          }
+        }
       }
+
+      frontier = nextFrontier;
     }
+
+    return resolvedIds;
   }
 
-  private async unblockDependentTasks(completedTask: TaskDocument): Promise<TaskDocument[]> {
-    const unblocked = await this.taskModel.find({ blockedBy: completedTask._id });
+  private async updateBlockingRelationships(
+    task: TaskDocument,
+    previousBlockedBy: string[] = [],
+  ): Promise<void> {
+    const taskId = task._id.toString();
 
-    await this.taskModel.updateMany(
-      { blockedBy: completedTask._id },
-      { $pull: { blockedBy: completedTask._id } },
+    const currentBlockedBy = Array.isArray(
+      task.blockedBy,
+    )
+      ? task.blockedBy.map(
+          (id: any) => id.toString(),
+        )
+      : [];
+
+    const previousIds = [
+      ...new Set(
+        previousBlockedBy.map(
+          (id) => String(id),
+        ),
+      ),
+    ];
+
+    const currentIds = [
+      ...new Set(currentBlockedBy),
+    ];
+
+    const removedIds = previousIds.filter(
+      (id) => !currentIds.includes(id),
     );
+
+    if (removedIds.length) {
+      await this.taskModel.updateMany(
+        {
+          _id: {
+            $in: removedIds.map(
+              (id) => new Types.ObjectId(id),
+            ),
+          },
+        },
+        {
+          $pull: {
+            blocks: new Types.ObjectId(taskId),
+          },
+        },
+      );
+    }
+
+    if (currentIds.length) {
+      await this.taskModel.updateMany(
+        {
+          _id: {
+            $in: currentIds.map(
+              (id) => new Types.ObjectId(id),
+            ),
+          },
+        },
+        {
+          $addToSet: {
+            blocks: new Types.ObjectId(taskId),
+          },
+        },
+      );
+    }
+
+    const affectedIds = [
+      ...new Set([
+        ...previousIds,
+        ...currentIds,
+      ]),
+    ];
+
+    await Promise.all(
+      affectedIds.map(async (blockingId) => {
+        const blockingObjectId =
+          new Types.ObjectId(blockingId);
+
+        const activeBlockingCount =
+          await this.taskModel.countDocuments({
+            blockedBy: blockingObjectId,
+            status: {
+              $ne: TaskStatus.DONE,
+            },
+          });
+
+        await this.taskModel.updateOne(
+          {
+            _id: blockingObjectId,
+          },
+          {
+            $set: {
+              blockingCount:
+                activeBlockingCount,
+              isBlocking:
+                activeBlockingCount > 0,
+            },
+          },
+        );
+      }),
+    );
+  }
+
+  private async unblockDependentTasks(
+    completedTask: TaskDocument,
+  ): Promise<TaskDocument[]> {
+    const completedTaskId =
+      new Types.ObjectId(
+        completedTask._id.toString(),
+      );
+
+    const dependents = await this.taskModel
+      .find({
+        blockedBy: completedTaskId,
+      })
+      .select("_id")
+      .lean()
+      .exec();
+
+    const dependentIds = dependents.map(
+      (dependent: any) => dependent._id,
+    );
+
+    if (dependentIds.length) {
+      await this.taskModel.updateMany(
+        {
+          _id: {
+            $in: dependentIds,
+          },
+        },
+        {
+          $pull: {
+            blockedBy: completedTaskId,
+          },
+        },
+      );
+    }
 
     await this.taskModel.updateOne(
-      { _id: completedTask._id },
-      { $set: { isBlocking: false, blockingCount: 0 } },
+      {
+        _id: completedTaskId,
+      },
+      {
+        $set: {
+          blocks: [],
+          isBlocking: false,
+          blockingCount: 0,
+        },
+      },
     );
 
-    return unblocked;
+    if (!dependentIds.length) {
+      return [];
+    }
+
+    const updatedDependents =
+      await this.taskModel
+        .find({
+          _id: {
+            $in: dependentIds,
+          },
+        })
+        .exec();
+
+    for (const dependent of updatedDependents) {
+      this.realtime.projectEmit(
+        dependent.projectId.toString(),
+        "taskUpdated",
+        buildTaskSnapshot(dependent),
+      );
+    }
+
+    return updatedDependents.filter(
+      (dependent) =>
+        dependent.status !== TaskStatus.DONE &&
+        (
+          !Array.isArray(dependent.blockedBy) ||
+          dependent.blockedBy.length === 0
+        ),
+    );
   }
 }
