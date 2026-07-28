@@ -3776,17 +3776,28 @@ function OverviewView({
     });
   }, [project, projectTasksForTeamCapacity, overview, rawTeamCapacity]);
 
+  const commandPulse = overview?.pulse || pulse || {};
+
   const projectForesight = useMemo(() => {
     return buildProjectForesight({
       project: project || overview?.project || {},
       tasks,
       blockers,
       priorityStack,
-      pulse,
+      pulse: commandPulse,
       momentum,
       finishLine,
     });
-  }, [project, overview?.project, tasks, blockers, priorityStack, pulse, momentum, finishLine]);
+  }, [
+    project,
+    overview?.project,
+    tasks,
+    blockers,
+    priorityStack,
+    commandPulse,
+    momentum,
+    finishLine,
+  ]);
 
   const nextActionTitle =
     summary?.nextAction?.title ||
@@ -3931,7 +3942,7 @@ function OverviewView({
       ) : null}
 
       <div className="mb-8">
-        <OverviewPulseCard pulse={pulse} />
+        <OverviewPulseCard pulse={commandPulse} />
       </div>
 
       <div className="grid grid-cols-12 gap-8 mb-8">
