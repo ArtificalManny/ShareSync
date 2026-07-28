@@ -13,6 +13,7 @@ import api from "./client";
  *  - scope: 'user' | 'project' (default 'user')
  *  - userId?: string
  *  - projectId?: string
+ *  - entityId?: string         // task, file, update, etc.
  *  - types?: string[]          // e.g., ['task.created','update.posted']
  *  - cursor?: string
  *  - limit?: number            // default 20
@@ -24,6 +25,7 @@ export async function getActivity({
   scope = "user",
   userId,
   projectId,
+  entityId,
   types,
   cursor,
   limit = 20,
@@ -33,6 +35,7 @@ export async function getActivity({
     scope,
     ...(userId ? { userId } : {}),
     ...(projectId ? { projectId } : {}),
+    ...(entityId ? { entityId } : {}),
     ...(Array.isArray(types) && types.length ? { types: types.join(",") } : {}),
     ...(cursor ? { cursor } : {}),
     ...(limit ? { limit } : {}),
@@ -45,7 +48,11 @@ export async function getActivity({
   if (scope === 'project' && projectId) {
     try {
       const { data } = await api.get(`/projects/${projectId}/activity`, {
-        params: { limit, cursor: cursor || undefined },
+        params: {
+          limit,
+          cursor: cursor || undefined,
+          entityId: entityId || undefined,
+        },
         signal,
       });
       json = data;

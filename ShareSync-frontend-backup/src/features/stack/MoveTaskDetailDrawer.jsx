@@ -16,6 +16,8 @@ import {
   X,
 } from "lucide-react";
 
+import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
+
 const STATUS_OPTIONS = [
   { value: "backlog", label: "Backlog" },
   { value: "todo", label: "To do" },
@@ -465,6 +467,12 @@ export default function MoveTaskDetailDrawer({
                 />
               </label>
             </div>
+
+            <MoveTaskCollaborationPanel
+              task={task}
+              members={safeMembers}
+              disabled={isBusy}
+            />
 
             {actionError ? (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">

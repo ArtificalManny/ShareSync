@@ -163,6 +163,50 @@ export async function deleteTask(taskId) {
 }
 
 /**
+ * GET /tasks/:id - fetch the complete task document
+ */
+export async function fetchTaskDetail(taskId) {
+  if (!taskId) throw new Error("taskId is required");
+
+  const response = await client.get(`/tasks/${taskId}`);
+  return response.data?.data || response.data;
+}
+
+/**
+ * POST /tasks/:id/comments - add a task comment
+ */
+export async function addTaskComment(taskId, { content, mentions = [] } = {}) {
+  if (!taskId) throw new Error("taskId is required");
+
+  const normalizedContent = String(content || "").trim();
+
+  if (!normalizedContent) {
+    throw new Error("Comment content is required");
+  }
+
+  const response = await client.post(`/tasks/${taskId}/comments`, {
+    content: normalizedContent,
+    mentions: Array.isArray(mentions) ? mentions : [],
+  });
+
+  return response.data?.data || response.data;
+}
+
+/**
+ * DELETE /tasks/:id/comments/:commentId - delete your own comment
+ */
+export async function deleteTaskComment(taskId, commentId) {
+  if (!taskId) throw new Error("taskId is required");
+  if (!commentId) throw new Error("commentId is required");
+
+  const response = await client.delete(
+    `/tasks/${taskId}/comments/${commentId}`
+  );
+
+  return response.data?.data || response.data;
+}
+
+/**
  * GET /tasks/pulse?projectId=...
  * Phase 2: timestamp-based metrics
  */
