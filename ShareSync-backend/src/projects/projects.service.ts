@@ -3024,7 +3024,11 @@ export class ProjectsService {
     ).length;
 
     const inProgress = tasks.filter((task) => this.isTaskInProgress(task)).length;
-    const blocked = tasks.filter((task) => this.isTaskBlocked(task)).length;
+    const blocked = tasks.filter(
+      (task) =>
+        !this.isTaskDone(task) &&
+        this.isTaskBlocked(task),
+    ).length;
 
     const completionRate =
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
