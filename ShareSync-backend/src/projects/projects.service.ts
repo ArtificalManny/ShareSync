@@ -1852,15 +1852,32 @@ export class ProjectsService {
   }
 
   private isTaskBlocked(task: any): boolean {
-    const status = String(task?.status || '').toLowerCase();
+    const status = String(task?.status || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_');
+
+    const blockerCollections = [
+      task?.blockers,
+      task?.blockedBy,
+      task?.blockingDependencies,
+    ];
+
     return Boolean(
-      task?.isBlocking ||
-      task?.isBlocked ||
-      task?.blocked ||
-      task?.hasBlocker ||
-      task?.blockedBy ||
-      status.includes('block') ||
-      (Array.isArray(task?.blockers) && task.blockers.length > 0)
+      task?.isBlocking === true ||
+      task?.isBlocked === true ||
+      task?.blocking === true ||
+      task?.blocked === true ||
+      task?.hasBlocker === true ||
+      Boolean(task?.blockingReason) ||
+      Boolean(task?.blockedReason) ||
+      status === 'blocked' ||
+      status === 'blocking' ||
+      blockerCollections.some(
+        (value) =>
+          Array.isArray(value) &&
+          value.length > 0,
+      )
     );
   }
 
