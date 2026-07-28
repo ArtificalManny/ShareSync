@@ -55,6 +55,10 @@ export const ActivityTypes = /** @type {const} */ ({
    * @property {ActivityEntityRef=} entity
    * @property {string=} message     // human-friendly summary from server (optional)
    * @property {ActivityAttachment[]=} attachments
+ * @property {Object=} payload
+ * @property {Object=} details
+ * @property {Object=} metadata
+ * @property {string=} action
    * @property {string} ts           // ISO timestamp
    * @property {boolean=} __optimistic // client-only flag for pending events
    */
@@ -145,6 +149,21 @@ export const ActivityTypes = /** @type {const} */ ({
   
     // Attachments
     const attachments = normalizeAttachments(raw.attachments);
+
+    // Preserve task-mutation context for detailed timelines.
+    const rawPayload =
+      raw.payload && typeof raw.payload === "object"
+        ? raw.payload
+        : {};
+    const rawDetails =
+      raw.details && typeof raw.details === "object"
+        ? raw.details
+        : {};
+    const rawMetadata =
+      raw.metadata && typeof raw.metadata === "object"
+        ? raw.metadata
+        : {};
+    const action = s(raw.action);
   
     // Timestamp
     const ts =
@@ -161,6 +180,10 @@ export const ActivityTypes = /** @type {const} */ ({
       entity,
       message,
       attachments,
+      payload: rawPayload,
+      details: rawDetails,
+      metadata: rawMetadata,
+      action,
       ts,
       __optimistic: !!raw.__optimistic,
     });

@@ -207,6 +207,170 @@ export async function deleteTaskComment(taskId, commentId) {
 }
 
 /**
+ * POST /uploads/file - upload one moderated Move attachment
+ */
+export async function uploadTaskAttachmentFile(file) {
+  if (!file) throw new Error("A file is required");
+
+  const maximumBytes = 20 * 1024 * 1024;
+
+  if (Number(file.size || 0) > maximumBytes) {
+    throw new Error("Attachments must be 20 MB or smaller");
+  }
+
+  const blockedExtensions = new Set([
+    "exe",
+    "msi",
+    "bat",
+    "cmd",
+    "sh",
+    "bash",
+    "zsh",
+    "ps1",
+    "js",
+    "mjs",
+    "cjs",
+    "jar",
+    "apk",
+    "dmg",
+    "pkg",
+    "iso",
+    "dll",
+    "sys",
+    "scr",
+    "reg",
+    "vb",
+    "vbs",
+  ]);
+
+  const normalizedName = String(file.name || "").toLowerCase();
+  const extensionParts = normalizedName.split(".");
+  const extension =
+    extensionParts.length > 1
+      ? extensionParts.at(-1)
+      : "";
+
+  if (
+    extension &&
+    blockedExtensions.has(extension)
+  ) {
+    throw new Error(`.${extension} files are not allowed`);
+  }
+
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+
+  const response = await client.post(
+    "/uploads/file",
+    formData
+  );
+
+  const responseData =
+    response.data?.data || response.data || {};
+
+  if (responseData?.ok === false) {
+    throw new Error(
+      responseData?.moderation?.reason ||
+        responseData?.message ||
+        responseData?.error ||
+        "The upload was blocked"
+    );
+  }
+
+  const raw =
+    responseData?.file ||
+    responseData?.item ||
+    responseData;
+
+  const uploadedFile = {
+    id:
+      raw?.id ||
+      raw?._id ||
+      raw?.fileId ||
+      raw?.key ||
+      "",
+    url:
+      raw?.url ||
+      raw?.fileUrl ||
+      "",
+    name:
+      raw?.name ||
+      raw?.fileName ||
+      raw?.filename ||
+      file.name ||
+      "Attachment",
+    size:
+      Number(
+        raw?.size ??
+          raw?.fileSize ??
+          file.size ??
+          0
+      ) || 0,
+    mime:
+      raw?.mime ||
+      raw?.fileType ||
+      raw?.mimetype ||
+      raw?.contentType ||
+      file.type ||
+      "",
+  };
+
+  if (
+    !uploadedFile.id ||
+    !uploadedFile.url ||
+    !uploadedFile.name
+  ) {
+    throw new Error(
+      "Upload succeeded, but its file information was incomplete"
+    );
+  }
+
+  return uploadedFile;
+}
+
+/**
+ * POST /tasks/:id/attachments - upload and attach one file
+ */
+export async function addTaskAttachment(taskId, file) {
+  if (!taskId) throw new Error("taskId is required");
+
+  const uploadedFile =
+    await uploadTaskAttachmentFile(file);
+
+  const response = await client.post(
+    `/tasks/${taskId}/attachments`,
+    {
+      fileId: uploadedFile.id,
+      fileName: uploadedFile.name,
+      fileUrl: uploadedFile.url,
+      fileType: uploadedFile.mime,
+      fileSize: uploadedFile.size,
+    }
+  );
+
+  return response.data?.data || response.data;
+}
+
+/**
+ * DELETE /tasks/:id/attachments/:fileId
+ */
+export async function deleteTaskAttachment(
+  taskId,
+  fileId
+) {
+  if (!taskId) throw new Error("taskId is required");
+  if (!fileId) throw new Error("fileId is required");
+
+  const response = await client.delete(
+    `/tasks/${taskId}/attachments/${encodeURIComponent(
+      fileId
+    )}`
+  );
+
+  return response.data?.data || response.data;
+}
+
+/**
  * GET /tasks/pulse?projectId=...
  * Phase 2: timestamp-based metrics
  */

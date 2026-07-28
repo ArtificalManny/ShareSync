@@ -37,6 +37,7 @@ import {
   MoveTaskDto,
   CompleteTaskDto,
   AddCommentDto,
+  AddAttachmentDto,
   LogTimeDto,
 } from './dto/update-task.dto';
 import { TaskStatus, TaskPriority } from './schemas/task.schema';
@@ -348,6 +349,61 @@ export class TasksController {
   ) {
     const userId = req.user?.sub || req.user?.userId;
     const task = await this.tasksService.deleteComment(id, commentId, userId);
+    return {
+      success: true,
+      data: task,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ATTACHMENTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post(':id/attachments')
+  @ApiOperation({
+    summary: 'Attach an uploaded file to a task',
+  })
+  @ApiParam({ name: 'id', description: 'Task ID' })
+  async addAttachment(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: AddAttachmentDto,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.addAttachment(
+      id,
+      userId,
+      dto,
+    );
+
+    return {
+      success: true,
+      data: task,
+    };
+  }
+
+  @Delete(':id/attachments/:fileId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Remove your attachment from a task',
+  })
+  @ApiParam({ name: 'id', description: 'Task ID' })
+  @ApiParam({
+    name: 'fileId',
+    description: 'Stored upload identifier',
+  })
+  async deleteAttachment(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Param('fileId') fileId: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    const task = await this.tasksService.deleteAttachment(
+      id,
+      fileId,
+      userId,
+    );
+
     return {
       success: true,
       data: task,

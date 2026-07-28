@@ -158,6 +158,49 @@ export class AddCommentDto {
   mentions?: string[];
 }
 
+export class AddAttachmentDto {
+  @ApiPropertyOptional({
+    description: 'Stored upload identifier',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  fileId: string;
+
+  @ApiPropertyOptional({
+    description: 'Original file name',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  fileName: string;
+
+  @ApiPropertyOptional({
+    description: 'Stored file URL',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(5000)
+  fileUrl: string;
+
+  @ApiPropertyOptional({
+    description: 'MIME type',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  fileType?: string;
+
+  @ApiPropertyOptional({
+    description: 'File size in bytes',
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  fileSize?: number;
+}
+
 export class LogTimeDto {
   @ApiPropertyOptional({ description: 'Minutes spent', minimum: 1 })
   @IsNumber()

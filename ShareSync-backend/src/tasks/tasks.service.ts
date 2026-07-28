@@ -35,6 +35,7 @@ import {
   MoveTaskDto,
   CompleteTaskDto,
   AddCommentDto,
+  AddAttachmentDto,
   LogTimeDto,
 } from './dto/update-task.dto';
 
@@ -1062,6 +1063,226 @@ export class TasksService {
 
     task.comments.splice(commentIndex, 1);
     return task.save();
+  }
+
+  async addAttachment(
+    taskId: string,
+    userId: string,
+    dto: AddAttachmentDto,
+  ): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(
+      taskId,
+      userId,
+    );
+
+    const fileId = String(dto.fileId || '').trim();
+    const fileName = String(dto.fileName || '').trim();
+    const fileUrl = String(dto.fileUrl || '').trim();
+    const fileType = String(dto.fileType || '').trim();
+    const fileSize = Number(dto.fileSize || 0);
+
+    if (!fileId || !fileName || !fileUrl) {
+      throw new BadRequestException(
+        'File ID, file name, and file URL are required',
+      );
+    }
+
+    if (!/^[A-Za-z0-9._~-]+$/.test(fileId)) {
+      throw new BadRequestException(
+        'Attachment file ID is invalid',
+      );
+    }
+
+    if (
+      !Number.isFinite(fileSize) ||
+      fileSize < 0 ||
+      fileSize > 20 * 1024 * 1024
+    ) {
+      throw new BadRequestException(
+        'Attachment must be 20 MB or smaller',
+      );
+    }
+
+    let parsedUrl: URL;
+
+    try {
+      parsedUrl = new URL(fileUrl);
+    } catch {
+      throw new BadRequestException(
+        'Attachment URL is invalid',
+      );
+    }
+
+    if (
+      !['http:', 'https:'].includes(parsedUrl.protocol)
+    ) {
+      throw new BadRequestException(
+        'Attachment URL must use HTTP or HTTPS',
+      );
+    }
+
+    if (!parsedUrl.pathname.includes('/uploads/')) {
+      throw new BadRequestException(
+        'Attachment is not from the upload system',
+      );
+    }
+
+    const approvedBases = [
+      process.env.R2_PUBLIC_BASE_URL,
+      process.env.UPLOADS_BASE_URL,
+      process.env.PUBLIC_BACKEND_URL,
+      process.env.API_PUBLIC_URL,
+      process.env.BACKEND_URL,
+      process.env.RENDER_EXTERNAL_URL,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.replace(/\/+$/, ''));
+
+    if (
+      approvedBases.length > 0 &&
+      !approvedBases.some(
+        (base) =>
+          fileUrl === base ||
+          fileUrl.startsWith(`${base}/`),
+      )
+    ) {
+      throw new BadRequestException(
+        'Attachment URL is not from an approved upload location',
+      );
+    }
+
+    if (!Array.isArray(task.attachments)) {
+      task.attachments = [] as any;
+    }
+
+    const duplicate = task.attachments.some(
+      (attachment: any) =>
+        String(attachment?.fileId || '') === fileId ||
+        String(
+          attachment?.fileUrl ||
+            attachment?.url ||
+            '',
+        ) === fileUrl,
+    );
+
+    if (duplicate) {
+      throw new BadRequestException(
+        'This file is already attached to the task',
+      );
+    }
+
+    task.attachments.push({
+      fileId,
+      fileName,
+      fileUrl,
+      fileType,
+      fileSize,
+      name: fileName,
+      url: fileUrl,
+      type: fileType,
+      size: fileSize,
+      uploadedBy: new Types.ObjectId(userId),
+      uploadedAt: new Date(),
+    } as any);
+
+    const updated = await task.save();
+
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_UPDATED,
+      projectId: task.projectId.toString(),
+      actorId: userId,
+      taskId: updated._id.toString(),
+      snapshot: buildTaskSnapshot(updated),
+      changes: {
+        attachmentAdded: {
+          fileId,
+          fileName,
+        },
+      } as any,
+    });
+
+    this.realtime.projectEmit(
+      task.projectId.toString(),
+      'taskUpdated',
+      buildTaskSnapshot(updated),
+    );
+
+    return updated;
+  }
+
+  async deleteAttachment(
+    taskId: string,
+    fileId: string,
+    userId: string,
+  ): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(
+      taskId,
+      userId,
+    );
+
+    const normalizedFileId = String(fileId || '').trim();
+
+    if (!Array.isArray(task.attachments)) {
+      task.attachments = [] as any;
+    }
+
+    const attachmentIndex = task.attachments.findIndex(
+      (attachment: any) =>
+        String(attachment?.fileId || '') ===
+        normalizedFileId,
+    );
+
+    if (attachmentIndex === -1) {
+      throw new NotFoundException(
+        'Attachment not found',
+      );
+    }
+
+    const attachment: any =
+      task.attachments[attachmentIndex];
+
+    if (
+      !attachment?.uploadedBy ||
+      attachment.uploadedBy.toString() !== userId
+    ) {
+      throw new ForbiddenException(
+        'You can only remove attachments you uploaded',
+      );
+    }
+
+    const removedFileName = String(
+      attachment?.fileName ||
+        attachment?.name ||
+        'Attachment',
+    );
+
+    task.attachments.splice(attachmentIndex, 1);
+
+    const updated = await task.save();
+
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_UPDATED,
+      projectId: task.projectId.toString(),
+      actorId: userId,
+      taskId: updated._id.toString(),
+      snapshot: buildTaskSnapshot(updated),
+      changes: {
+        attachmentRemoved: {
+          fileId: normalizedFileId,
+          fileName: removedFileName,
+        },
+      } as any,
+    });
+
+    this.realtime.projectEmit(
+      task.projectId.toString(),
+      'taskUpdated',
+      buildTaskSnapshot(updated),
+    );
+
+    return updated;
   }
 
   async logTime(taskId: string, userId: string, dto: LogTimeDto): Promise<TaskDocument> {

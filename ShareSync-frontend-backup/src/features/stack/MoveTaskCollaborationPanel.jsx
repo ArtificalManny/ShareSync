@@ -2,19 +2,26 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
+  ExternalLink,
+  FileText,
   History,
   Loader2,
   MessageSquare,
+  Paperclip,
   RefreshCw,
   Send,
   Trash2,
+  UploadCloud,
 } from "lucide-react";
 
 import {
+  addTaskAttachment,
   addTaskComment,
+  deleteTaskAttachment,
   deleteTaskComment,
   fetchTaskDetail,
 } from "../../api/taskApi";
@@ -111,8 +118,73 @@ function formatRelativeTime(value) {
   }).format(date);
 }
 
+function formatFileSize(value) {
+  const bytes = Number(value);
+
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return "Size unavailable";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
+  const amount = bytes / 1024 ** unitIndex;
+
+  return `${amount >= 10 || unitIndex === 0
+    ? amount.toFixed(0)
+    : amount.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function getMutationChanges(activity) {
+  const candidates = [
+    activity?.payload?.changes,
+    activity?.details?.changes,
+    activity?.metadata?.changes,
+    activity?.changes,
+  ];
+
+  return (
+    candidates.find(
+      (candidate) =>
+        candidate &&
+        typeof candidate === "object" &&
+        !Array.isArray(candidate)
+    ) || {}
+  );
+}
+
 function describeMutation(activity) {
   if (activity?.message) return activity.message;
+
+  const changes = getMutationChanges(activity);
+  const attachmentAdded = changes?.attachmentAdded;
+  const attachmentRemoved = changes?.attachmentRemoved;
+
+  if (attachmentAdded) {
+    const fileName = String(
+      attachmentAdded?.fileName || ""
+    )
+      .trim()
+      .slice(0, 120);
+
+    return fileName
+      ? `added attachment “${fileName}”`
+      : "added an attachment";
+  }
+
+  if (attachmentRemoved) {
+    const fileName = String(
+      attachmentRemoved?.fileName || ""
+    )
+      .trim()
+      .slice(0, 120);
+
+    return fileName
+      ? `removed attachment “${fileName}”`
+      : "removed an attachment";
+  }
 
   const type = String(activity?.type || "")
     .trim()
@@ -150,6 +222,15 @@ export default function MoveTaskCollaborationPanel({
   const [deletingCommentId, setDeletingCommentId] = useState("");
   const [loadError, setLoadError] = useState("");
   const [commentError, setCommentError] = useState("");
+  const [uploadingAttachment, setUploadingAttachment] =
+    useState(false);
+  const [
+    deletingAttachmentId,
+    setDeletingAttachmentId,
+  ] = useState("");
+  const [attachmentError, setAttachmentError] =
+    useState("");
+  const fileInputRef = useRef(null);
 
   const currentUser = useMemo(() => readStoredUser(), []);
   const currentUserId = normalizeId(currentUser);
@@ -243,6 +324,7 @@ export default function MoveTaskCollaborationPanel({
     setDetailTask(task);
     setCommentText("");
     setCommentError("");
+    setAttachmentError("");
     loadCollaboration();
   }, [loadCollaboration, task]);
 
@@ -259,6 +341,22 @@ export default function MoveTaskCollaborationPanel({
       )
       .slice(-30);
   }, [detailTask?.comments]);
+
+  const attachments = useMemo(() => {
+    const source = Array.isArray(detailTask?.attachments)
+      ? detailTask.attachments
+      : [];
+
+    return [...source].sort(
+      (a, b) =>
+        new Date(
+          b?.uploadedAt || b?.createdAt || 0
+        ).getTime() -
+        new Date(
+          a?.uploadedAt || a?.createdAt || 0
+        ).getTime()
+    );
+  }, [detailTask?.attachments]);
 
   const timelineItems = useMemo(() => {
     const mutations = activityItems
@@ -388,8 +486,113 @@ export default function MoveTaskCollaborationPanel({
     ]
   );
 
+  const handleAddAttachment = useCallback(
+    async (event) => {
+      const input = event?.target;
+      const file = input?.files?.[0] || null;
+
+      if (input) {
+        input.value = "";
+      }
+
+      if (
+        !file ||
+        !taskId ||
+        disabled ||
+        commenting ||
+        deletingCommentId ||
+        uploadingAttachment ||
+        deletingAttachmentId
+      ) {
+        return;
+      }
+
+      setUploadingAttachment(true);
+      setAttachmentError("");
+
+      try {
+        const updatedTask = await addTaskAttachment(
+          taskId,
+          file
+        );
+
+        setDetailTask(updatedTask || detailTask);
+        await loadCollaboration({ quiet: true });
+      } catch (error) {
+        setAttachmentError(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "The attachment could not be uploaded."
+        );
+      } finally {
+        setUploadingAttachment(false);
+      }
+    },
+    [
+      commenting,
+      deletingAttachmentId,
+      deletingCommentId,
+      detailTask,
+      disabled,
+      loadCollaboration,
+      taskId,
+      uploadingAttachment,
+    ]
+  );
+
+  const handleDeleteAttachment = useCallback(
+    async (fileId) => {
+      if (
+        !fileId ||
+        !taskId ||
+        disabled ||
+        commenting ||
+        deletingCommentId ||
+        uploadingAttachment ||
+        deletingAttachmentId
+      ) {
+        return;
+      }
+
+      setDeletingAttachmentId(fileId);
+      setAttachmentError("");
+
+      try {
+        const updatedTask =
+          await deleteTaskAttachment(taskId, fileId);
+
+        setDetailTask(updatedTask || detailTask);
+        await loadCollaboration({ quiet: true });
+      } catch (error) {
+        setAttachmentError(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "The attachment could not be removed."
+        );
+      } finally {
+        setDeletingAttachmentId("");
+      }
+    },
+    [
+      commenting,
+      deletingAttachmentId,
+      deletingCommentId,
+      detailTask,
+      disabled,
+      loadCollaboration,
+      taskId,
+      uploadingAttachment,
+    ]
+  );
+
   const collaborationBusy =
-    disabled || commenting || Boolean(deletingCommentId);
+    disabled ||
+    commenting ||
+    Boolean(deletingCommentId) ||
+    uploadingAttachment ||
+    Boolean(deletingAttachmentId);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 dark:border-white/10 dark:bg-black/15">
@@ -420,6 +623,176 @@ export default function MoveTaskCollaborationPanel({
       </header>
 
       <div className="space-y-5 p-4">
+        <section aria-labelledby="move-attachments-heading">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleAddAttachment}
+            disabled={collaborationBusy}
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.xml,.zip,.7z,.rar,.tar"
+          />
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div
+                id="move-attachments-heading"
+                className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-300"
+              >
+                <Paperclip className="h-4 w-4 text-fuchsia-500" />
+                Move attachments
+              </div>
+
+              <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+                Add briefs, screenshots, documents, or handoff files.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={collaborationBusy}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/15"
+            >
+              {uploadingAttachment ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UploadCloud className="h-4 w-4" />
+              )}
+              {uploadingAttachment
+                ? "Uploading…"
+                : "Add file"}
+            </button>
+          </div>
+
+          {attachmentError ? (
+            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">
+              {attachmentError}
+            </div>
+          ) : null}
+
+          {attachments.length ? (
+            <div className="mt-3 space-y-2">
+              {attachments.map((attachment, index) => {
+                const fileId = String(
+                  attachment?.fileId ||
+                    attachment?.id ||
+                    attachment?._id ||
+                    ""
+                );
+                const fileName = String(
+                  attachment?.fileName ||
+                    attachment?.name ||
+                    "Attachment"
+                );
+                const fileUrl =
+                  attachment?.fileUrl ||
+                  attachment?.url ||
+                  "";
+                const fileType = String(
+                  attachment?.fileType ||
+                    attachment?.type ||
+                    ""
+                );
+                const fileSize =
+                  attachment?.fileSize ??
+                  attachment?.size;
+                const uploaderId = normalizeId(
+                  attachment?.uploadedBy
+                );
+                const canRemove =
+                  Boolean(currentUserId) &&
+                  uploaderId === currentUserId;
+
+                return (
+                  <article
+                    key={
+                      fileId ||
+                      `${fileName}-${attachment?.uploadedAt || index}`
+                    }
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.035]"
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
+                      <FileText className="h-5 w-5" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      {fileUrl ? (
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group inline-flex max-w-full items-center gap-1.5 text-sm font-black text-slate-800 hover:text-violet-700 dark:text-zinc-200 dark:hover:text-violet-300"
+                          title={`Open ${fileName}`}
+                        >
+                          <span className="truncate">
+                            {fileName}
+                          </span>
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-50 transition group-hover:opacity-100" />
+                        </a>
+                      ) : (
+                        <div className="truncate text-sm font-black text-slate-800 dark:text-zinc-200">
+                          {fileName}
+                        </div>
+                      )}
+
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400 dark:text-zinc-600">
+                        <span>{formatFileSize(fileSize)}</span>
+                        {fileType ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span className="max-w-[180px] truncate">
+                              {fileType}
+                            </span>
+                          </>
+                        ) : null}
+                        <span aria-hidden="true">·</span>
+                        <span>
+                          {formatRelativeTime(
+                            attachment?.uploadedAt ||
+                              attachment?.createdAt
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {canRemove && fileId ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDeleteAttachment(fileId)
+                        }
+                        disabled={collaborationBusy}
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
+                        aria-label={`Remove ${fileName}`}
+                        title="Remove attachment"
+                      >
+                        {deletingAttachmentId === fileId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center dark:border-white/10">
+              <Paperclip className="mx-auto h-5 w-5 text-slate-300 dark:text-zinc-700" />
+              <p className="mt-2 text-sm font-bold text-slate-600 dark:text-zinc-400">
+                No attachments yet
+              </p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-zinc-600">
+                Files added here stay connected to this move.
+              </p>
+            </div>
+          )}
+        </section>
+
+        <div className="border-t border-slate-200 dark:border-white/10" />
+
         <form onSubmit={handleAddComment}>
           <textarea
             value={commentText}
