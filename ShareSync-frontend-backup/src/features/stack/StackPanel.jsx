@@ -34,6 +34,7 @@
 
 import React, { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import StackTaskRow from "./StackTaskRow";
+import MoveTaskDetailDrawer from "./MoveTaskDetailDrawer";
 import { useStackTasks } from "./useStackTasks";
 import { completeTask, moveTask, updateTask, deleteTask } from "../../api/taskApi";
 import { createTask } from "../../api/tasks";
@@ -324,6 +325,7 @@ export default function StackPanel({
 
   const [actionError, setActionError] = useState(null);
   const [actionBusyId, setActionBusyId] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -502,17 +504,21 @@ export default function StackPanel({
     async (task) => {
       setActionError(null);
       const id = getTaskId(task);
-      if (!id) return;
+      if (!id) return false;
 
       setActionBusyId(id);
 
-      optimisticUpdate((prev) => prev.filter((t) => getTaskId(t) !== id));
+      optimisticUpdate((prev) =>
+        prev.filter((t) => getTaskId(t) !== id)
+      );
 
       try {
         await completeTask(id, {});
+        return true;
       } catch (e) {
         setActionError(e);
         await refresh();
+        return false;
       } finally {
         setActionBusyId(null);
       }
@@ -520,30 +526,66 @@ export default function StackPanel({
     [optimisticUpdate, refresh]
   );
 
+  const handleOpenTaskDetail = useCallback((task) => {
+    if (!task) return;
+
+    setActionError(null);
+    setSelectedTask(task);
+  }, []);
+
+  const handleCloseTaskDetail = useCallback(() => {
+    setSelectedTask(null);
+  }, []);
+
   const handleEditTask = useCallback(
     async (task, updates = {}) => {
       setActionError(null);
+
       const id = getTaskId(task);
-      if (!id) return;
+      if (!id) return null;
 
       const cleanUpdates = {};
+
       for (const [key, value] of Object.entries(updates || {})) {
-        if (value !== undefined) cleanUpdates[key] = value;
+        if (value !== undefined) {
+          cleanUpdates[key] = value;
+        }
       }
 
-      if (!Object.keys(cleanUpdates).length) return;
+      if (!Object.keys(cleanUpdates).length) {
+        return task;
+      }
 
       setActionBusyId(id);
 
       // Text updates are rendered only after backend moderation succeeds.
       try {
         const updated = await updateTask(id, cleanUpdates);
+        const nextTask = {
+          ...task,
+          ...cleanUpdates,
+          ...(updated || {}),
+        };
+
         optimisticUpdate((prev) =>
-          prev.map((t) => (getTaskId(t) === id ? { ...t, ...(updated || {}) } : t))
+          prev.map((currentTask) =>
+            getTaskId(currentTask) === id
+              ? { ...currentTask, ...nextTask }
+              : currentTask
+          )
         );
+
+        setSelectedTask((currentTask) =>
+          getTaskId(currentTask) === id
+            ? { ...currentTask, ...nextTask }
+            : currentTask
+        );
+
+        return nextTask;
       } catch (e) {
         setActionError(e);
         await refresh();
+        return null;
       } finally {
         setActionBusyId(null);
       }
@@ -1450,6 +1492,7 @@ export default function StackPanel({
                     onMoveToReview={handleMoveToReview}
                     onComplete={handleComplete}
                     onEdit={handleEditTask}
+                    onOpenDetail={handleOpenTaskDetail}
                     onDelete={handleDeleteTask}
                   />
                 );
@@ -1459,6 +1502,19 @@ export default function StackPanel({
         </div>
       </div>
       </section>
+
+      <MoveTaskDetailDrawer
+        open={Boolean(selectedTask)}
+        task={selectedTask}
+        members={memberOptions}
+        disabled={
+          Boolean(selectedTask) &&
+          actionBusyId === getTaskId(selectedTask)
+        }
+        onClose={handleCloseTaskDetail}
+        onSave={handleEditTask}
+        onComplete={handleComplete}
+      />
     </>
   );
 }

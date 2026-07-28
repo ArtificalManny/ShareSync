@@ -203,6 +203,7 @@ export default function StackTaskRow({
   onMoveToReview,
   onComplete,
   onEdit,
+  onOpenDetail,
   onDelete,
 } = {}) {
   const id = getTaskId(task);
@@ -371,9 +372,15 @@ export default function StackTaskRow({
                       autoFocus
                     />
                   ) : (
-                    <div className="stack-task-title font-bold text-sm text-slate-900 dark:text-white truncate">
+                    <button
+                      type="button"
+                      onClick={() => onOpenDetail?.(task)}
+                      disabled={disabled || completing}
+                      className="stack-task-title max-w-full min-w-0 truncate text-left text-sm font-bold text-slate-900 transition hover:text-violet-700 disabled:cursor-not-allowed dark:text-white dark:hover:text-violet-300"
+                      title="Open move details"
+                    >
                       {title}
-                    </div>
+                    </button>
                   )}
 
                   {isBlocking ? (
