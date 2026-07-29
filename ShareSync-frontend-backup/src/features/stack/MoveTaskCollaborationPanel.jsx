@@ -87,6 +87,56 @@ function getDisplayName(user, fallback = "Team member") {
   );
 }
 
+function getMentionMatch(value, cursor) {
+  const text = String(value || "");
+  const numericCursor = Number(cursor);
+
+  const safeCursor = Math.max(
+    0,
+    Math.min(
+      Number.isFinite(numericCursor)
+        ? numericCursor
+        : text.length,
+      text.length
+    )
+  );
+
+  const beforeCursor = text.slice(
+    0,
+    safeCursor
+  );
+
+  const match = beforeCursor.match(
+    /(^|[\s(\[{])@([^\s@\n\r]{0,80})$/
+  );
+
+  if (!match) return null;
+
+  const query = String(match[2] || "");
+
+  return {
+    start: safeCursor - query.length - 1,
+    end: safeCursor,
+    query,
+  };
+}
+
+function getMentionSearchText(member) {
+  return [
+    member?.name,
+    member?.fullName,
+    member?.displayName,
+    member?.firstName,
+    member?.lastName,
+    member?.username,
+    member?.email,
+    member?.role,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
 function formatRelativeTime(value) {
   const date = new Date(value);
 
@@ -217,6 +267,10 @@ export default function MoveTaskCollaborationPanel({
   const [detailTask, setDetailTask] = useState(task);
   const [activityItems, setActivityItems] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [mentionMatch, setMentionMatch] = useState(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [selectedMentions, setSelectedMentions] =
+    useState([]);
   const [loading, setLoading] = useState(true);
   const [commenting, setCommenting] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState("");
@@ -230,6 +284,7 @@ export default function MoveTaskCollaborationPanel({
   ] = useState("");
   const [attachmentError, setAttachmentError] =
     useState("");
+  const commentInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const currentUser = useMemo(() => readStoredUser(), []);
@@ -259,6 +314,72 @@ export default function MoveTaskCollaborationPanel({
 
     return map;
   }, [members, currentUser, currentUserId]);
+
+  const mentionMembers = useMemo(() => {
+    const seenIds = new Set();
+    const normalizedMembers = [];
+
+    for (
+      const member of Array.isArray(members)
+        ? members
+        : []
+    ) {
+      const id = normalizeId(member);
+
+      if (
+        !id ||
+        id === currentUserId ||
+        seenIds.has(id)
+      ) {
+        continue;
+      }
+
+      seenIds.add(id);
+
+      const name = getDisplayName(
+        member,
+        "Project member"
+      );
+
+      normalizedMembers.push({
+        ...member,
+        id,
+        name,
+        searchText: getMentionSearchText({
+          ...member,
+          name,
+        }),
+      });
+    }
+
+    return normalizedMembers.sort((a, b) =>
+      a.name.localeCompare(
+        b.name,
+        undefined,
+        {
+          sensitivity: "base",
+        }
+      )
+    );
+  }, [members, currentUserId]);
+
+  const mentionCandidates = useMemo(() => {
+    if (!mentionMatch) return [];
+
+    const query = String(
+      mentionMatch.query || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    return mentionMembers
+      .filter(
+        (member) =>
+          !query ||
+          member.searchText.includes(query)
+      )
+      .slice(0, 8);
+  }, [mentionMatch, mentionMembers]);
 
   const resolveCommentAuthor = useCallback(
     (comment) => {
@@ -323,6 +444,9 @@ export default function MoveTaskCollaborationPanel({
   useEffect(() => {
     setDetailTask(task);
     setCommentText("");
+    setMentionMatch(null);
+    setMentionIndex(0);
+    setSelectedMentions([]);
     setCommentError("");
     setAttachmentError("");
     loadCollaboration();
@@ -393,11 +517,133 @@ export default function MoveTaskCollaborationPanel({
       .slice(0, 30);
   }, [activityItems, comments, resolveCommentAuthor]);
 
+  const updateMentionMatch = useCallback(
+    (value, cursor) => {
+      setMentionMatch(
+        getMentionMatch(value, cursor)
+      );
+      setMentionIndex(0);
+    },
+    []
+  );
+
+  const handleCommentChange = useCallback(
+    (event) => {
+      const nextValue = event.target.value;
+
+      setCommentText(nextValue);
+
+      setSelectedMentions((previous) =>
+        previous.filter((mention) =>
+          nextValue.includes(
+            `@${mention.name}`
+          )
+        )
+      );
+
+      updateMentionMatch(
+        nextValue,
+        event.target.selectionStart
+      );
+    },
+    [updateMentionMatch]
+  );
+
+  const selectMention = useCallback(
+    (member) => {
+      if (
+        !member?.id ||
+        !member?.name ||
+        !mentionMatch
+      ) {
+        return;
+      }
+
+      const before = commentText.slice(
+        0,
+        mentionMatch.start
+      );
+
+      const after = commentText.slice(
+        mentionMatch.end
+      );
+
+      const mentionText = `@${member.name}`;
+
+      const spacer =
+        !after
+          ? " "
+          : /^[\s,.;:!?)}\]]/.test(after)
+            ? ""
+            : " ";
+
+      const nextValue =
+        `${before}${mentionText}${spacer}${after}`;
+
+      if (nextValue.length > 5000) {
+        return;
+      }
+
+      const nextCursor =
+        before.length +
+        mentionText.length +
+        spacer.length;
+
+      setCommentText(nextValue);
+
+      setSelectedMentions((previous) => {
+        const withoutDuplicate =
+          previous.filter(
+            (mention) =>
+              mention.id !== member.id
+          );
+
+        return [
+          ...withoutDuplicate,
+          {
+            id: member.id,
+            name: member.name,
+          },
+        ];
+      });
+
+      setMentionMatch(null);
+      setMentionIndex(0);
+
+      if (typeof window !== "undefined") {
+        window.requestAnimationFrame(() => {
+          const textarea =
+            commentInputRef.current;
+
+          textarea?.focus();
+          textarea?.setSelectionRange(
+            nextCursor,
+            nextCursor
+          );
+        });
+      }
+    },
+    [commentText, mentionMatch]
+  );
+
   const handleAddComment = useCallback(
     async (event) => {
       event?.preventDefault?.();
 
       const content = commentText.trim();
+
+      const mentionIds = [
+        ...new Set(
+          selectedMentions
+            .filter((mention) =>
+              content.includes(
+                `@${mention.name}`
+              )
+            )
+            .map((mention) => mention.id)
+            .filter(Boolean)
+        ),
+      ];
 
       if (
         !content ||
@@ -413,14 +659,24 @@ export default function MoveTaskCollaborationPanel({
       setCommentError("");
 
       try {
-        const updatedTask = await addTaskComment(taskId, {
-          content,
-        });
+        const updatedTask =
+          await addTaskComment(taskId, {
+            content,
+            mentions: mentionIds,
+          });
 
-        setDetailTask(updatedTask || detailTask);
+        setDetailTask(
+          updatedTask || detailTask
+        );
+
         setCommentText("");
+        setMentionMatch(null);
+        setMentionIndex(0);
+        setSelectedMentions([]);
 
-        await loadCollaboration({ quiet: true });
+        await loadCollaboration({
+          quiet: true,
+        });
       } catch (error) {
         setCommentError(
           error?.response?.data?.message ||
@@ -438,7 +694,93 @@ export default function MoveTaskCollaborationPanel({
       detailTask,
       disabled,
       loadCollaboration,
+      selectedMentions,
       taskId,
+    ]
+  );
+
+  const handleCommentKeyDown = useCallback(
+    (event) => {
+      if (
+        event.key === "Enter" &&
+        (event.metaKey || event.ctrlKey)
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        handleAddComment(event);
+        return;
+      }
+
+      if (!mentionMatch) return;
+
+      if (
+        event.key === "ArrowDown" &&
+        mentionCandidates.length
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        setMentionIndex((current) =>
+          (current + 1) %
+          mentionCandidates.length
+        );
+
+        return;
+      }
+
+      if (
+        event.key === "ArrowUp" &&
+        mentionCandidates.length
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        setMentionIndex((current) =>
+          (
+            current -
+            1 +
+            mentionCandidates.length
+          ) % mentionCandidates.length
+        );
+
+        return;
+      }
+
+      if (
+        (
+          event.key === "Enter" ||
+          event.key === "Tab"
+        ) &&
+        mentionCandidates.length
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        selectMention(
+          mentionCandidates[
+            Math.min(
+              mentionIndex,
+              mentionCandidates.length - 1
+            )
+          ]
+        );
+
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setMentionMatch(null);
+        setMentionIndex(0);
+      }
+    },
+    [
+      handleAddComment,
+      mentionCandidates,
+      mentionIndex,
+      mentionMatch,
+      selectMention,
     ]
   );
 
@@ -793,50 +1135,169 @@ export default function MoveTaskCollaborationPanel({
 
         <div className="border-t border-slate-200 dark:border-white/10" />
 
-        <form onSubmit={handleAddComment}>
-          <textarea
-            value={commentText}
-            onChange={(event) =>
-              setCommentText(event.target.value)
-            }
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                (event.metaKey || event.ctrlKey)
-              ) {
-                event.preventDefault();
-                event.stopPropagation();
-                handleAddComment(event);
-              }
-            }}
-            rows={3}
-            maxLength={5000}
-            disabled={collaborationBusy}
-            placeholder="Add a decision, question, handoff note, or progress update…"
-            className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200 dark:placeholder:text-zinc-600"
-          />
+          <form onSubmit={handleAddComment}>
+            <div className="relative">
+              <textarea
+                ref={commentInputRef}
+                value={commentText}
+                onChange={handleCommentChange}
+                onKeyDown={handleCommentKeyDown}
+                onSelect={(event) =>
+                  updateMentionMatch(
+                    event.currentTarget.value,
+                    event.currentTarget.selectionStart
+                  )
+                }
+                onBlur={() => {
+                  if (
+                    typeof window === "undefined"
+                  ) {
+                    return;
+                  }
 
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <span className="text-[11px] text-slate-400 dark:text-zinc-600">
-              Ctrl/⌘ + Enter to post
-            </span>
+                  window.setTimeout(() => {
+                    setMentionMatch(null);
+                    setMentionIndex(0);
+                  }, 120);
+                }}
+                rows={3}
+                maxLength={5000}
+                disabled={collaborationBusy}
+                placeholder="Add a decision, question, handoff note, or progress update… Type @ to mention a project member."
+                aria-autocomplete="list"
+                aria-expanded={Boolean(
+                  mentionMatch
+                )}
+                aria-controls="move-comment-mention-list"
+                aria-activedescendant={
+                  mentionMatch &&
+                  mentionCandidates[mentionIndex]
+                    ? `move-comment-mention-${mentionCandidates[mentionIndex].id}`
+                    : undefined
+                }
+                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200 dark:placeholder:text-zinc-600"
+              />
 
-            <button
-              type="submit"
-              disabled={
-                collaborationBusy || !commentText.trim()
-              }
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-violet-500/20 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {commenting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Post comment
-            </button>
-          </div>
-        </form>
+              {mentionMatch ? (
+                <div
+                  id="move-comment-mention-list"
+                  role="listbox"
+                  aria-label="Project members"
+                  className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-white/10 dark:bg-[#202027] dark:shadow-black/40"
+                >
+                  <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:border-white/10 dark:text-zinc-500">
+                    @ Mention a project member
+                  </div>
+
+                  {mentionCandidates.length ? (
+                    <div className="max-h-60 overflow-y-auto p-1.5">
+                      {mentionCandidates.map(
+                        (member, index) => {
+                          const active =
+                            index === mentionIndex;
+
+                          const secondary =
+                            member?.role ||
+                            member?.email ||
+                            member?.username ||
+                            "Project member";
+
+                          return (
+                            <button
+                              key={member.id}
+                              id={`move-comment-mention-${member.id}`}
+                              type="button"
+                              role="option"
+                              aria-selected={
+                                active
+                              }
+                              onMouseDown={(
+                                event
+                              ) =>
+                                event.preventDefault()
+                              }
+                              onClick={() =>
+                                selectMention(
+                                  member
+                                )
+                              }
+                              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+                                active
+                                  ? "bg-violet-50 text-violet-900 dark:bg-violet-500/15 dark:text-violet-100"
+                                  : "text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-white/[0.06]"
+                              }`}
+                            >
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xs font-black text-white">
+                                {member.name
+                                  .slice(0, 1)
+                                  .toUpperCase()}
+                              </span>
+
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-black">
+                                  {member.name}
+                                </span>
+
+                                <span className="block truncate text-[11px] text-slate-400 dark:text-zinc-500">
+                                  {secondary}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-5 text-center text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                      No matching project members.
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            {selectedMentions.length ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="font-semibold text-slate-400 dark:text-zinc-500">
+                  Will notify:
+                </span>
+
+                {selectedMentions.map(
+                  (mention) => (
+                    <span
+                      key={mention.id}
+                      className="rounded-full border border-violet-200 bg-violet-50 px-2 py-1 font-black text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200"
+                    >
+                      @{mention.name}
+                    </span>
+                  )
+                )}
+              </div>
+            ) : null}
+
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-400 dark:text-zinc-600">
+                Type @ to mention · Ctrl/⌘ + Enter to post
+              </span>
+
+              <button
+                type="submit"
+                disabled={
+                  collaborationBusy ||
+                  !commentText.trim()
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-violet-500/20 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {commenting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+
+                Post comment
+              </button>
+            </div>
+          </form>
 
         {commentError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">
