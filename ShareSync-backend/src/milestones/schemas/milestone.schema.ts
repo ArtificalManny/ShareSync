@@ -2,6 +2,44 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+@Schema({ _id: false })
+export class MilestoneFileReference {
+  @Prop({ required: true })
+  fileId: string;
+
+  @Prop({ required: true })
+  fileName: string;
+
+  @Prop({ required: true })
+  fileUrl: string;
+
+  @Prop({ default: '' })
+  fileType: string;
+
+  @Prop({ default: 0 })
+  fileSize: number;
+
+  @Prop({
+    type: String,
+    enum: ['project_file'],
+    default: 'project_file',
+  })
+  source: 'project_file';
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+  })
+  linkedBy: Types.ObjectId;
+
+  @Prop({
+    type: Date,
+    default: Date.now,
+  })
+  linkedAt: Date;
+}
+
 @Schema({
   timestamps: true,
   toJSON: {
@@ -78,6 +116,12 @@ export class Milestone {
 
   @Prop({ type: [Types.ObjectId], ref: 'Milestone', default: [] })
   blockedBy: Types.ObjectId[];
+
+  @Prop({
+    type: [MilestoneFileReference],
+    default: [],
+  })
+  fileReferences: MilestoneFileReference[];
 
   @Prop({ default: '#8B5CF6' })
   color: string;

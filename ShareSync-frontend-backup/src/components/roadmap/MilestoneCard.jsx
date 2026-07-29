@@ -44,6 +44,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import MilestoneFileReferences from './MilestoneFileReferences';
 
 
 const STATUS_CONFIG = {
@@ -676,6 +677,17 @@ const MilestoneCard = ({
           )}
         </div>
 
+
+        <MilestoneFileReferences
+          milestoneId={id}
+          projectId={milestone?.projectId}
+          initialReferences={
+            milestone?.fileReferences
+          }
+          editable={Boolean(
+            onEdit || onDelete
+          )}
+        />
 
         {showActions && (
         <div

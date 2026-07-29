@@ -160,6 +160,68 @@ export const unlinkTask = async (milestoneId, taskId) => {
   }
 };
 
+
+export const addMilestoneFileReference = async (
+  milestoneId,
+  fileId
+) => {
+  if (!milestoneId) {
+    throw new Error(
+      "milestoneId is required"
+    );
+  }
+
+  if (!fileId) {
+    throw new Error(
+      "fileId is required"
+    );
+  }
+
+  const response = await client.post(
+    `/milestones/${encodeURIComponent(
+      milestoneId
+    )}/file-references`,
+    {
+      fileId,
+    }
+  );
+
+  return (
+    response?.data?.data ||
+    response?.data
+  );
+};
+
+export const removeMilestoneFileReference = async (
+  milestoneId,
+  fileId
+) => {
+  if (!milestoneId) {
+    throw new Error(
+      "milestoneId is required"
+    );
+  }
+
+  if (!fileId) {
+    throw new Error(
+      "fileId is required"
+    );
+  }
+
+  const response = await client.delete(
+    `/milestones/${encodeURIComponent(
+      milestoneId
+    )}/file-references/${encodeURIComponent(
+      fileId
+    )}`
+  );
+
+  return (
+    response?.data?.data ||
+    response?.data
+  );
+};
+
 export default {
   getMilestones,
   getMilestone,
@@ -168,4 +230,6 @@ export default {
   deleteMilestone,
   linkTask,
   unlinkTask,
+  addMilestoneFileReference,
+  removeMilestoneFileReference,
 };

@@ -8,3 +8,4 @@ export * from './update-milestone.dto';
 
 // Optional: keep a dedicated DTO for linking tasks (if/when you want to use it in controller)
 export * from './link-task.dto';
+export * from './link-project-file.dto';

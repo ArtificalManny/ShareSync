@@ -1,5 +1,11 @@
 // src/milestones/milestones.service.ts
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -12,7 +18,12 @@ import {
   NotificationType,
 } from '../notifications/schemas/notification.schema';
 import { Milestone, MilestoneDocument } from './schemas/milestone.schema';
-import { CreateMilestoneDto, UpdateMilestoneDto } from './dto';
+import {
+  CreateMilestoneDto,
+  LinkProjectFileDto,
+  UpdateMilestoneDto,
+} from './dto';
+import { FilesService } from '../files/files.service';
 
 // ✅ NEW: Task model for progress calculation
 import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
@@ -27,6 +38,7 @@ export class MilestonesService {
     private readonly eventEmitter: EventEmitter2,
     private readonly projectsService: ProjectsService,
     private readonly textModerationService: TextModerationService,
+    private readonly filesService: FilesService,
     private readonly moduleRef: ModuleRef,
   ) {}
 
@@ -809,6 +821,301 @@ if (projectId) {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
+  async addFileReference(
+    milestoneId: string,
+    userId: string,
+    dto: LinkProjectFileDto,
+  ): Promise<MilestoneDocument> {
+    const milestone =
+      await this.findById(milestoneId);
+
+    const projectId = String(
+      milestone.projectId || '',
+    );
+
+    if (!projectId) {
+      throw new BadRequestException(
+        'Milestone project is missing',
+      );
+    }
+
+    await this.projectsService
+      .findByIdWithAccess(
+        projectId,
+        userId,
+      );
+
+    const fileId = String(
+      dto?.fileId || '',
+    ).trim();
+
+    if (!Types.ObjectId.isValid(fileId)) {
+      throw new BadRequestException(
+        'Project File ID is invalid',
+      );
+    }
+
+    const file =
+      await this.filesService.findById(
+        fileId,
+      );
+
+    const fileProjectId = String(
+      file.projectId || '',
+    );
+
+    if (
+      !fileProjectId ||
+      fileProjectId !== projectId
+    ) {
+      throw new ForbiddenException(
+        'This File does not belong to the milestone project',
+      );
+    }
+
+    const fileStatus = String(
+      file.status || '',
+    ).toLowerCase();
+
+    const fileKind = String(
+      file.type || '',
+    ).toLowerCase();
+
+    if (
+      fileStatus === 'deleted' ||
+      file.isArchived === true
+    ) {
+      throw new BadRequestException(
+        'This project File is not available',
+      );
+    }
+
+    if (fileKind === 'folder') {
+      throw new BadRequestException(
+        'Folders cannot be linked to a milestone',
+      );
+    }
+
+    const fileName = String(
+      file.name ||
+        file.originalName ||
+        'Project file',
+    ).trim();
+
+    const fileUrl = String(
+      file.url || '',
+    ).trim();
+
+    const fileType = String(
+      file.mimeType ||
+        file.fileType ||
+        '',
+    ).trim();
+
+    const rawFileSize = Number(
+      file.size || 0,
+    );
+
+    const fileSize =
+      Number.isFinite(rawFileSize) &&
+      rawFileSize >= 0
+        ? rawFileSize
+        : 0;
+
+    if (!fileName || !fileUrl) {
+      throw new BadRequestException(
+        'This project File is missing required file information',
+      );
+    }
+
+    if (
+      !Array.isArray(
+        milestone.fileReferences,
+      )
+    ) {
+      milestone.fileReferences = [];
+    }
+
+    const duplicate =
+      milestone.fileReferences.some(
+        (reference: any) =>
+          String(
+            reference?.fileId || '',
+          ) === fileId ||
+          String(
+            reference?.fileUrl || '',
+          ) === fileUrl,
+      );
+
+    if (duplicate) {
+      throw new BadRequestException(
+        'This project File is already linked to the milestone',
+      );
+    }
+
+    milestone.fileReferences.push({
+      fileId,
+      fileName,
+      fileUrl,
+      fileType,
+      fileSize,
+      source: 'project_file',
+      linkedBy:
+        this.toObjectIdOrThrow(
+          userId,
+          'userId',
+        ),
+      linkedAt: new Date(),
+    });
+
+    milestone.markModified(
+      'fileReferences',
+    );
+
+    const saved =
+      await milestone.save();
+
+    await this.recordProjectActivity({
+      userId,
+      projectId,
+      type: 'milestone_file_linked',
+      entityType: 'milestone',
+      entityId: saved._id.toString(),
+      action: 'file_linked',
+      details: {
+        milestoneTitle:
+          saved.title || 'Milestone',
+        fileId,
+        fileName,
+      },
+      metadata: {
+        milestoneId:
+          saved._id.toString(),
+        fileId,
+        fileName,
+      },
+      payload: {
+        milestoneId:
+          saved._id.toString(),
+        fileId,
+        fileName,
+      },
+    });
+
+    return saved;
+  }
+
+  async removeFileReference(
+    milestoneId: string,
+    fileId: string,
+    userId: string,
+  ): Promise<MilestoneDocument> {
+    const milestone =
+      await this.findById(milestoneId);
+
+    const projectId = String(
+      milestone.projectId || '',
+    );
+
+    if (!projectId) {
+      throw new BadRequestException(
+        'Milestone project is missing',
+      );
+    }
+
+    await this.projectsService
+      .findByIdWithAccess(
+        projectId,
+        userId,
+      );
+
+    const normalizedFileId = String(
+      fileId || '',
+    ).trim();
+
+    if (
+      !Types.ObjectId.isValid(
+        normalizedFileId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Project File ID is invalid',
+      );
+    }
+
+    const references = Array.isArray(
+      milestone.fileReferences,
+    )
+      ? milestone.fileReferences
+      : [];
+
+    const referenceIndex =
+      references.findIndex(
+        (reference: any) =>
+          String(
+            reference?.fileId || '',
+          ) === normalizedFileId,
+      );
+
+    if (referenceIndex < 0) {
+      throw new NotFoundException(
+        'Milestone File reference not found',
+      );
+    }
+
+    const removed =
+      references[referenceIndex];
+
+    references.splice(
+      referenceIndex,
+      1,
+    );
+
+    milestone.fileReferences =
+      references;
+
+    milestone.markModified(
+      'fileReferences',
+    );
+
+    const saved =
+      await milestone.save();
+
+    const removedFileName = String(
+      removed?.fileName ||
+        'Project file',
+    );
+
+    await this.recordProjectActivity({
+      userId,
+      projectId,
+      type: 'milestone_file_unlinked',
+      entityType: 'milestone',
+      entityId: saved._id.toString(),
+      action: 'file_unlinked',
+      details: {
+        milestoneTitle:
+          saved.title || 'Milestone',
+        fileId: normalizedFileId,
+        fileName: removedFileName,
+      },
+      metadata: {
+        milestoneId:
+          saved._id.toString(),
+        fileId: normalizedFileId,
+        fileName: removedFileName,
+      },
+      payload: {
+        milestoneId:
+          saved._id.toString(),
+        fileId: normalizedFileId,
+        fileName: removedFileName,
+      },
+    });
+
+    return saved;
+  }
+
   // TASK LINKING (kept for backwards compatibility)
   // NOTE: Roadmap uses task.milestoneId primarily.
   // ═══════════════════════════════════════════════════════════════════════════════

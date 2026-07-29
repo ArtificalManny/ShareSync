@@ -7,6 +7,7 @@ import { MilestonesController } from './milestones.controller';
 import { ProjectsModule } from '../projects/projects.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ModerationModule } from '../moderation/moderation.module';
+import { FilesModule } from '../files/files.module';
 
 // ✅ NEW: task model access for progress calculation
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
@@ -23,6 +24,7 @@ import { ProjectMilestonesController } from './project-milestones.controller';
     forwardRef(() => ProjectsModule),
     NotificationsModule,
     ModerationModule,
+    FilesModule,
   ],
   controllers: [MilestonesController, ProjectMilestonesController],
   providers: [MilestonesService],

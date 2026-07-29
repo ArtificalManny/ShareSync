@@ -16,7 +16,11 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MilestonesService } from './milestones.service';
-import { CreateMilestoneDto, UpdateMilestoneDto } from './dto';
+import {
+  CreateMilestoneDto,
+  LinkProjectFileDto,
+  UpdateMilestoneDto,
+} from './dto';
 
 @Controller('milestones')
 @UseGuards(JwtAuthGuard)
@@ -76,6 +80,60 @@ export class MilestonesController {
     const userId = req.user?.sub || req.user?.userId || req.user?.id || req.user?._id;
     await this.milestonesService.delete(id, userId);
     return;
+  }
+
+  @Post(':id/file-references')
+  async addFileReference(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: LinkProjectFileDto,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+
+    const milestone =
+      await this.milestonesService
+        .addFileReference(
+          id,
+          userId,
+          dto,
+        );
+
+    return {
+      success: true,
+      data: milestone,
+      timestamp: this.now(),
+    };
+  }
+
+  @Delete(':id/file-references/:fileId')
+  async removeFileReference(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('fileId') fileId: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+
+    const milestone =
+      await this.milestonesService
+        .removeFileReference(
+          id,
+          fileId,
+          userId,
+        );
+
+    return {
+      success: true,
+      data: milestone,
+      timestamp: this.now(),
+    };
   }
 
   @Post(':id/tasks')
