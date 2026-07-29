@@ -609,36 +609,45 @@ export default function MoveTaskDetailDrawer({
                 </select>
               </label>
 
-              <label className="block">
-                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
-                  <CalendarDays className="h-4 w-4 text-amber-500" />
+              <div className="min-w-0">
+                <label
+                  htmlFor="move-due-date"
+                  className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400"
+                >
+                  <CalendarDays className="h-4 w-4 shrink-0 text-amber-500" />
                   Due date
-                </span>
+                </label>
 
                 <input
+                  id="move-due-date"
                   type="date"
                   value={dueDate}
                   onChange={(event) =>
                     setDueDate(event.target.value)
                   }
                   disabled={isBusy}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-[#19191f] dark:text-white"
+                  className="block min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-[#19191f] dark:text-white"
                 />
 
-                <div
-                  className={`mt-2 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-black ${dueDateMeta.chip}`}
-                  role="status"
-                  aria-live="polite"
-                  title={dueDateMeta.detail}
-                >
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {dueDateMeta.label}
-                </div>
+                <div className="mt-2 flex min-w-0 flex-col items-start gap-1.5">
+                  <div
+                    className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-black ${dueDateMeta.chip}`}
+                    role="status"
+                    aria-live="polite"
+                    title={dueDateMeta.detail}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0" />
 
-                <p className="mt-1.5 text-[11px] font-medium text-slate-400 dark:text-zinc-500">
-                  {dueDateMeta.detail}
-                </p>
-              </label>
+                    <span className="truncate">
+                      {dueDateMeta.label}
+                    </span>
+                  </div>
+
+                  <p className="max-w-full break-words text-[11px] font-medium leading-4 text-slate-400 dark:text-zinc-500">
+                    {dueDateMeta.detail}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.035] sm:p-5">
