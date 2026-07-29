@@ -191,6 +191,15 @@ export class AddCommentDto {
   mentions?: string[];
 }
 
+export class LinkProjectFileDto {
+  @ApiPropertyOptional({
+    description:
+      'Existing project File ID to reference from this task',
+  })
+  @IsMongoId()
+  fileId: string;
+}
+
 export class AddAttachmentDto {
   @ApiPropertyOptional({
     description: 'Stored upload identifier',

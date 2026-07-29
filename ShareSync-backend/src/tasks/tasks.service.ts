@@ -29,6 +29,7 @@ import {
 } from './schemas/task.schema';
 import { EVENTS, TaskCompletedEvent } from '../common/events/events.types';
 import { ProjectsService } from '../projects/projects.service';
+import { FilesService } from '../files/files.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import {
   UpdateTaskDto,
@@ -36,6 +37,7 @@ import {
   CompleteTaskDto,
   AddCommentDto,
   AddAttachmentDto,
+  LinkProjectFileDto,
   WatchTaskDto,
   LogTimeDto,
 } from './dto/update-task.dto';
@@ -107,6 +109,7 @@ export class TasksService {
     @InjectModel(Task.name)
     private readonly taskModel: Model<TaskDocument>,
     private readonly projectsService: ProjectsService,
+    private readonly filesService: FilesService,
     private readonly eventEmitter: EventEmitter2,
     private readonly realtime: RealtimeService,
     private readonly textModerationService: TextModerationService,
@@ -1923,6 +1926,7 @@ export class TasksService {
       fileUrl,
       fileType,
       fileSize,
+      source: 'upload',
       name: fileName,
       url: fileUrl,
       type: fileType,
@@ -1950,6 +1954,164 @@ export class TasksService {
 
     this.realtime.projectEmit(
       task.projectId.toString(),
+      'taskUpdated',
+      buildTaskSnapshot(updated),
+    );
+
+    return updated;
+  }
+
+  async addFileReference(
+    taskId: string,
+    userId: string,
+    dto: LinkProjectFileDto,
+  ): Promise<TaskDocument> {
+    const task = await this.findByIdWithAccess(
+      taskId,
+      userId,
+    );
+
+    const fileId = String(
+      dto?.fileId || '',
+    ).trim();
+
+    if (!Types.ObjectId.isValid(fileId)) {
+      throw new BadRequestException(
+        'Project File ID is invalid',
+      );
+    }
+
+    const file =
+      await this.filesService.findById(fileId);
+
+    const taskProjectId =
+      task.projectId.toString();
+
+    const fileProjectId = String(
+      (file as any)?.projectId || '',
+    );
+
+    if (
+      !fileProjectId ||
+      fileProjectId !== taskProjectId
+    ) {
+      throw new ForbiddenException(
+        'This File does not belong to the Move project',
+      );
+    }
+
+    const fileStatus = String(
+      (file as any)?.status || '',
+    ).toLowerCase();
+
+    const fileKind = String(
+      (file as any)?.type || '',
+    ).toLowerCase();
+
+    if (
+      fileStatus === 'deleted' ||
+      (file as any)?.isArchived === true
+    ) {
+      throw new BadRequestException(
+        'This project File is not available',
+      );
+    }
+
+    if (fileKind === 'folder') {
+      throw new BadRequestException(
+        'Folders cannot be linked to a Move',
+      );
+    }
+
+    const fileName = String(
+      (file as any)?.name ||
+        (file as any)?.originalName ||
+        'Project file',
+    ).trim();
+
+    const fileUrl = String(
+      (file as any)?.url || '',
+    ).trim();
+
+    const fileType = String(
+      (file as any)?.mimeType ||
+        (file as any)?.fileType ||
+        '',
+    ).trim();
+
+    const rawFileSize = Number(
+      (file as any)?.size || 0,
+    );
+
+    const fileSize =
+      Number.isFinite(rawFileSize) &&
+      rawFileSize >= 0
+        ? rawFileSize
+        : 0;
+
+    if (!fileName || !fileUrl) {
+      throw new BadRequestException(
+        'This project File is missing required file information',
+      );
+    }
+
+    if (!Array.isArray(task.attachments)) {
+      task.attachments = [] as any;
+    }
+
+    const duplicate = task.attachments.some(
+      (attachment: any) =>
+        String(
+          attachment?.fileId || '',
+        ) === fileId ||
+        String(
+          attachment?.fileUrl ||
+            attachment?.url ||
+            '',
+        ) === fileUrl,
+    );
+
+    if (duplicate) {
+      throw new BadRequestException(
+        'This project File is already linked to the Move',
+      );
+    }
+
+    task.attachments.push({
+      fileId,
+      fileName,
+      fileUrl,
+      fileType,
+      fileSize,
+      source: 'project_file',
+      name: fileName,
+      url: fileUrl,
+      type: fileType,
+      size: fileSize,
+      uploadedBy: new Types.ObjectId(userId),
+      uploadedAt: new Date(),
+    } as any);
+
+    const updated = await task.save();
+
+    emitTaskEvent({
+      eventEmitter: this.eventEmitter,
+      type: TaskEventType.TASK_UPDATED,
+      projectId: taskProjectId,
+      actorId: userId,
+      taskId: updated._id.toString(),
+      snapshot: buildTaskSnapshot(updated),
+      changes: {
+        attachmentAdded: {
+          fileId,
+          fileName,
+          source: 'project_file',
+        },
+      } as any,
+    });
+
+    this.realtime.projectEmit(
+      taskProjectId,
       'taskUpdated',
       buildTaskSnapshot(updated),
     );

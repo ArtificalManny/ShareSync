@@ -9,20 +9,25 @@ import {
   ExternalLink,
   FileText,
   History,
+  Link2,
   Loader2,
   MessageSquare,
   Paperclip,
   RefreshCw,
+  Search,
   Send,
   Trash2,
   UploadCloud,
+  X,
 } from "lucide-react";
 
 import {
   addTaskAttachment,
   addTaskComment,
+  addTaskFileReference,
   deleteTaskAttachment,
   deleteTaskComment,
+  fetchProjectFilesForReference,
   fetchTaskDetail,
 } from "../../api/taskApi";
 import { getActivity } from "../../api/activity";
@@ -131,6 +136,57 @@ function getMentionSearchText(member) {
     member?.username,
     member?.email,
     member?.role,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function resolveMoveFileUrl(value) {
+  const rawUrl = String(value || "").trim();
+
+  if (!rawUrl) return "";
+
+  if (/^https?:\/\//i.test(rawUrl)) {
+    return rawUrl;
+  }
+
+  const apiBase = String(
+    import.meta.env?.VITE_API_URL || ""
+  )
+    .trim()
+    .replace(/\/+$/, "");
+
+  const assetBase = apiBase.replace(
+    /\/api$/i,
+    ""
+  );
+
+  if (!assetBase) return rawUrl;
+
+  return rawUrl.startsWith("/")
+    ? `${assetBase}${rawUrl}`
+    : `${assetBase}/${rawUrl}`;
+}
+
+function getProjectFileName(file) {
+  return String(
+    file?.name ||
+      file?.originalName ||
+      "Untitled file"
+  );
+}
+
+function getProjectFileSearchText(file) {
+  return [
+    getProjectFileName(file),
+    file?.description,
+    file?.mimeType,
+    file?.fileType,
+    file?.extension,
+    ...(Array.isArray(file?.tags)
+      ? file.tags
+      : []),
   ]
     .filter(Boolean)
     .join(" ")
@@ -283,6 +339,20 @@ export default function MoveTaskCollaborationPanel({
     setDeletingAttachmentId,
   ] = useState("");
   const [attachmentError, setAttachmentError] =
+    useState("");
+  const [filePickerOpen, setFilePickerOpen] =
+    useState(false);
+  const [projectFiles, setProjectFiles] =
+    useState([]);
+  const [fileSearch, setFileSearch] =
+    useState("");
+  const [loadingProjectFiles, setLoadingProjectFiles] =
+    useState(false);
+  const [
+    linkingProjectFileId,
+    setLinkingProjectFileId,
+  ] = useState("");
+  const [filePickerError, setFilePickerError] =
     useState("");
   const commentInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -441,6 +511,61 @@ export default function MoveTaskCollaborationPanel({
     [projectId, task, taskId]
   );
 
+  const loadProjectFiles = useCallback(
+    async (searchTerm = "") => {
+      if (!projectId) {
+        setProjectFiles([]);
+        setFilePickerError(
+          "This Move is not connected to a project."
+        );
+        return;
+      }
+
+      setLoadingProjectFiles(true);
+      setFilePickerError("");
+
+      try {
+        const files =
+          await fetchProjectFilesForReference(
+            projectId,
+            {
+              search: searchTerm,
+              limit: 50,
+            }
+          );
+
+        setProjectFiles(
+          files.filter((file) => {
+            const type = String(
+              file?.type || ""
+            ).toLowerCase();
+
+            const status = String(
+              file?.status || ""
+            ).toLowerCase();
+
+            return (
+              type !== "folder" &&
+              status !== "deleted" &&
+              file?.isArchived !== true
+            );
+          })
+        );
+      } catch (error) {
+        setProjectFiles([]);
+        setFilePickerError(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Project Files could not be loaded."
+        );
+      } finally {
+        setLoadingProjectFiles(false);
+      }
+    },
+    [projectId]
+  );
+
   useEffect(() => {
     setDetailTask(task);
     setCommentText("");
@@ -449,8 +574,35 @@ export default function MoveTaskCollaborationPanel({
     setSelectedMentions([]);
     setCommentError("");
     setAttachmentError("");
+    setFilePickerOpen(false);
+    setProjectFiles([]);
+    setFileSearch("");
+    setFilePickerError("");
+    setLinkingProjectFileId("");
     loadCollaboration();
   }, [loadCollaboration, task]);
+
+  useEffect(() => {
+    if (!filePickerOpen || !projectId) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => {
+        loadProjectFiles(fileSearch);
+      },
+      250
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    filePickerOpen,
+    fileSearch,
+    loadProjectFiles,
+    projectId,
+  ]);
 
   const comments = useMemo(() => {
     const source = Array.isArray(detailTask?.comments)
@@ -481,6 +633,49 @@ export default function MoveTaskCollaborationPanel({
         ).getTime()
     );
   }, [detailTask?.attachments]);
+
+  const linkedFileIds = useMemo(
+    () =>
+      new Set(
+        attachments
+          .map((attachment) =>
+            normalizeId(
+              attachment?.fileId ||
+                attachment?.projectFileId
+            )
+          )
+          .filter(Boolean)
+      ),
+    [attachments]
+  );
+
+  const availableProjectFiles = useMemo(() => {
+    const query = String(fileSearch || "")
+      .trim()
+      .toLowerCase();
+
+    return projectFiles.filter((file) => {
+      const fileId = normalizeId(file);
+
+      if (
+        !fileId ||
+        linkedFileIds.has(fileId)
+      ) {
+        return false;
+      }
+
+      return (
+        !query ||
+        getProjectFileSearchText(file).includes(
+          query
+        )
+      );
+    });
+  }, [
+    fileSearch,
+    linkedFileIds,
+    projectFiles,
+  ]);
 
   const timelineItems = useMemo(() => {
     const mutations = activityItems
@@ -844,6 +1039,7 @@ export default function MoveTaskCollaborationPanel({
         commenting ||
         deletingCommentId ||
         uploadingAttachment ||
+        linkingProjectFileId ||
         deletingAttachmentId
       ) {
         return;
@@ -880,6 +1076,69 @@ export default function MoveTaskCollaborationPanel({
       loadCollaboration,
       taskId,
       uploadingAttachment,
+      linkingProjectFileId,
+    ]
+  );
+
+  const handleLinkProjectFile = useCallback(
+    async (fileId) => {
+      if (
+        !fileId ||
+        !taskId ||
+        !projectId ||
+        disabled ||
+        commenting ||
+        deletingCommentId ||
+        uploadingAttachment ||
+        linkingProjectFileId ||
+        deletingAttachmentId
+      ) {
+        return;
+      }
+
+      setLinkingProjectFileId(fileId);
+      setAttachmentError("");
+      setFilePickerError("");
+
+      try {
+        const updatedTask =
+          await addTaskFileReference(
+            taskId,
+            fileId
+          );
+
+        setDetailTask(
+          updatedTask || detailTask
+        );
+
+        setFilePickerOpen(false);
+        setFileSearch("");
+
+        await loadCollaboration({
+          quiet: true,
+        });
+      } catch (error) {
+        setFilePickerError(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "The project File could not be linked."
+        );
+      } finally {
+        setLinkingProjectFileId("");
+      }
+    },
+    [
+      commenting,
+      deletingAttachmentId,
+      deletingCommentId,
+      detailTask,
+      disabled,
+      linkingProjectFileId,
+      loadCollaboration,
+      projectId,
+      taskId,
+      uploadingAttachment,
     ]
   );
 
@@ -892,6 +1151,7 @@ export default function MoveTaskCollaborationPanel({
         commenting ||
         deletingCommentId ||
         uploadingAttachment ||
+        linkingProjectFileId ||
         deletingAttachmentId
       ) {
         return;
@@ -926,6 +1186,7 @@ export default function MoveTaskCollaborationPanel({
       loadCollaboration,
       taskId,
       uploadingAttachment,
+      linkingProjectFileId,
     ]
   );
 
@@ -934,6 +1195,7 @@ export default function MoveTaskCollaborationPanel({
     commenting ||
     Boolean(deletingCommentId) ||
     uploadingAttachment ||
+    Boolean(linkingProjectFileId) ||
     Boolean(deletingAttachmentId);
 
   return (
@@ -986,30 +1248,189 @@ export default function MoveTaskCollaborationPanel({
               </div>
 
               <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
-                Add briefs, screenshots, documents, or handoff files.
+                Upload a new file or link one already stored in project Files.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={collaborationBusy}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/15"
-            >
-              {uploadingAttachment ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <UploadCloud className="h-4 w-4" />
-              )}
-              {uploadingAttachment
-                ? "Uploading…"
-                : "Add file"}
-            </button>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilePickerOpen(
+                    (current) => !current
+                  );
+                  setFilePickerError("");
+                }}
+                disabled={
+                  collaborationBusy ||
+                  !projectId
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-700 transition hover:border-fuchsia-300 hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-fuchsia-500/25 dark:bg-fuchsia-500/10 dark:text-fuchsia-200 dark:hover:bg-fuchsia-500/15"
+                aria-expanded={filePickerOpen}
+                aria-controls="move-project-file-picker"
+              >
+                <Link2 className="h-4 w-4" />
+                Link project file
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  fileInputRef.current?.click()
+                }
+                disabled={collaborationBusy}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/15"
+              >
+                {uploadingAttachment ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UploadCloud className="h-4 w-4" />
+                )}
+                {uploadingAttachment
+                  ? "Uploading…"
+                  : "Add file"}
+              </button>
+            </div>
           </div>
 
           {attachmentError ? (
             <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">
               {attachmentError}
+            </div>
+          ) : null}
+
+          {filePickerOpen ? (
+            <div
+              id="move-project-file-picker"
+              className="mt-3 overflow-hidden rounded-2xl border border-fuchsia-200 bg-white shadow-sm dark:border-fuchsia-500/20 dark:bg-[#17171c]"
+            >
+              <div className="flex items-center gap-2 border-b border-slate-200 p-3 dark:border-white/10">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                  <input
+                    type="search"
+                    value={fileSearch}
+                    onChange={(event) =>
+                      setFileSearch(
+                        event.target.value
+                      )
+                    }
+                    placeholder="Search project Files…"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-fuchsia-400 focus:ring-4 focus:ring-fuchsia-500/10 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilePickerOpen(false);
+                    setFileSearch("");
+                    setFilePickerError("");
+                  }}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-white/10 dark:hover:text-white"
+                  aria-label="Close project File picker"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {filePickerError ? (
+                <div className="m-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">
+                  {filePickerError}
+                </div>
+              ) : null}
+
+              <div className="max-h-72 overflow-y-auto p-2">
+                {loadingProjectFiles ? (
+                  <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm font-bold text-slate-500 dark:text-zinc-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading project Files…
+                  </div>
+                ) : availableProjectFiles.length ? (
+                  <div className="space-y-1">
+                    {availableProjectFiles.map(
+                      (file) => {
+                        const fileId =
+                          normalizeId(file);
+
+                        const fileName =
+                          getProjectFileName(
+                            file
+                          );
+
+                        const fileType = String(
+                          file?.mimeType ||
+                            file?.fileType ||
+                            file?.extension ||
+                            "File"
+                        );
+
+                        return (
+                          <button
+                            key={fileId}
+                            type="button"
+                            onClick={() =>
+                              handleLinkProjectFile(
+                                fileId
+                              )
+                            }
+                            disabled={
+                              collaborationBusy
+                            }
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-fuchsia-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-fuchsia-500/10"
+                          >
+                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
+                              {linkingProjectFileId ===
+                              fileId ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <FileText className="h-5 w-5" />
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-black text-slate-800 dark:text-zinc-100">
+                                {fileName}
+                              </div>
+
+                              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+                                <span>
+                                  {formatFileSize(
+                                    file?.size
+                                  )}
+                                </span>
+                                <span aria-hidden="true">
+                                  ·
+                                </span>
+                                <span className="max-w-[210px] truncate">
+                                  {fileType}
+                                </span>
+                              </div>
+                            </div>
+
+                            <span className="shrink-0 text-[11px] font-black text-fuchsia-600 dark:text-fuchsia-300">
+                              Link
+                            </span>
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-4 py-8 text-center">
+                    <FileText className="mx-auto h-5 w-5 text-slate-300 dark:text-zinc-700" />
+
+                    <p className="mt-2 text-sm font-bold text-slate-600 dark:text-zinc-400">
+                      No available project Files
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-400 dark:text-zinc-600">
+                      Upload a File in the project Files area or try another search.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           ) : null}
 
@@ -1028,9 +1449,11 @@ export default function MoveTaskCollaborationPanel({
                     "Attachment"
                 );
                 const fileUrl =
-                  attachment?.fileUrl ||
-                  attachment?.url ||
-                  "";
+                  resolveMoveFileUrl(
+                    attachment?.fileUrl ||
+                      attachment?.url ||
+                      ""
+                  );
                 const fileType = String(
                   attachment?.fileType ||
                     attachment?.type ||
@@ -1042,6 +1465,9 @@ export default function MoveTaskCollaborationPanel({
                 const uploaderId = normalizeId(
                   attachment?.uploadedBy
                 );
+                const isProjectFileReference =
+                  attachment?.source ===
+                  "project_file";
                 const canRemove =
                   Boolean(currentUserId) &&
                   uploaderId === currentUserId;
@@ -1085,6 +1511,16 @@ export default function MoveTaskCollaborationPanel({
                             <span aria-hidden="true">·</span>
                             <span className="max-w-[180px] truncate">
                               {fileType}
+                            </span>
+                          </>
+                        ) : null}
+                        {isProjectFileReference ? (
+                          <>
+                            <span aria-hidden="true">
+                              ·
+                            </span>
+                            <span className="font-bold text-fuchsia-600 dark:text-fuchsia-300">
+                              Project file
                             </span>
                           </>
                         ) : null}

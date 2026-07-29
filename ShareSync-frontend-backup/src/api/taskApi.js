@@ -397,6 +397,81 @@ export async function addTaskAttachment(taskId, file) {
 }
 
 /**
+ * GET /files/project/:projectId
+ * List existing project Files that can be referenced
+ * from a Move.
+ */
+export async function fetchProjectFilesForReference(
+  projectId,
+  {
+    search = "",
+    limit = 50,
+  } = {}
+) {
+  if (!projectId) {
+    throw new Error("projectId is required");
+  }
+
+  const params = {
+    limit,
+  };
+
+  const normalizedSearch = String(
+    search || ""
+  ).trim();
+
+  if (normalizedSearch) {
+    params.search = normalizedSearch;
+  }
+
+  const response = await client.get(
+    `/files/project/${encodeURIComponent(
+      projectId
+    )}`,
+    {
+      params,
+    }
+  );
+
+  const files =
+    response.data?.data ||
+    response.data?.files ||
+    response.data ||
+    [];
+
+  return Array.isArray(files)
+    ? files
+    : [];
+}
+
+/**
+ * POST /tasks/:id/file-references
+ * Reference an existing project File without
+ * uploading or duplicating its stored bytes.
+ */
+export async function addTaskFileReference(
+  taskId,
+  fileId
+) {
+  if (!taskId) {
+    throw new Error("taskId is required");
+  }
+
+  if (!fileId) {
+    throw new Error("fileId is required");
+  }
+
+  const response = await client.post(
+    `/tasks/${taskId}/file-references`,
+    {
+      fileId,
+    }
+  );
+
+  return response.data?.data || response.data;
+}
+
+/**
  * DELETE /tasks/:id/attachments/:fileId
  */
 export async function deleteTaskAttachment(

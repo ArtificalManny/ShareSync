@@ -49,6 +49,14 @@ export class TaskAttachment {
   @Prop() fileUrl?: string;
   @Prop() fileType?: string;
   @Prop() fileSize?: number;
+
+  @Prop({
+    type: String,
+    enum: ['upload', 'project_file'],
+    default: 'upload',
+  })
+  source?: 'upload' | 'project_file';
+
   @Prop() name?: string;
   @Prop() url?: string;
   @Prop() type?: string;

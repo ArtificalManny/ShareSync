@@ -38,6 +38,7 @@ import {
   CompleteTaskDto,
   AddCommentDto,
   AddAttachmentDto,
+  LinkProjectFileDto,
   WatchTaskDto,
   LogTimeDto,
 } from './dto/update-task.dto';
@@ -429,6 +430,33 @@ export class TasksController {
       userId,
       dto,
     );
+
+    return {
+      success: true,
+      data: task,
+    };
+  }
+
+  @Post(':id/file-references')
+  @ApiOperation({
+    summary:
+      'Reference an existing project File from a task',
+  })
+  @ApiParam({ name: 'id', description: 'Task ID' })
+  async addFileReference(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: LinkProjectFileDto,
+  ) {
+    const userId =
+      req.user?.sub || req.user?.userId;
+
+    const task =
+      await this.tasksService.addFileReference(
+        id,
+        userId,
+        dto,
+      );
 
     return {
       success: true,

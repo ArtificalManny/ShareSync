@@ -11,6 +11,7 @@ import { TasksController } from './tasks.controller';
 
 // Existing deps
 import { ProjectsModule } from '../projects/projects.module';
+import { FilesModule } from '../files/files.module';
 
 // ✅ Needed for ProjectAccessGuard DI (even if ProjectsModule exists)
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
@@ -33,6 +34,7 @@ import { UserModule } from '../user/user.module';
       { name: Project.name, schema: ProjectSchema },
     ]),
     ProjectsModule,
+    FilesModule,
 
     // ✅ Allows TasksService to inject RealtimeService safely
     RealtimeModule,
