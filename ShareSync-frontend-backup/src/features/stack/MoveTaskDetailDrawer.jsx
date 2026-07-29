@@ -19,6 +19,10 @@ import {
   X,
 } from "lucide-react";
 
+import {
+  getDueDateMeta,
+} from "./dueDateIntelligence";
+
 import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
 import MoveTaskWatchPanel from "./MoveTaskWatchPanel";
 
@@ -282,6 +286,11 @@ export default function MoveTaskDetailDrawer({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open, saving, completing, disabled, onClose]);
+
+  const dueDateMeta = getDueDateMeta(
+    dueDate,
+    status
+  );
 
   const handleSave = useCallback(async () => {
     const trimmedTitle = title.trim();
@@ -615,6 +624,20 @@ export default function MoveTaskDetailDrawer({
                   disabled={isBusy}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-[#19191f] dark:text-white"
                 />
+
+                <div
+                  className={`mt-2 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-black ${dueDateMeta.chip}`}
+                  role="status"
+                  aria-live="polite"
+                  title={dueDateMeta.detail}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {dueDateMeta.label}
+                </div>
+
+                <p className="mt-1.5 text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+                  {dueDateMeta.detail}
+                </p>
               </label>
             </div>
 

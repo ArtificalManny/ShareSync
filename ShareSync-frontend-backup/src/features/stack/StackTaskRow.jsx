@@ -22,17 +22,14 @@ import {
   User,
 } from "lucide-react";
 
+import {
+  getDueDateMeta,
+} from "./dueDateIntelligence";
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getTaskId(task) {
   return task?.id || task?._id || "";
-}
-
-function fmtDue(dueDate) {
-  if (!dueDate) return null;
-  const d = new Date(dueDate);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function priorityMeta(p) {
@@ -138,62 +135,6 @@ function getAssigneeLabel(task) {
   return "Unassigned";
 }
 
-function getDueMeta(dueDate) {
-  if (!dueDate) {
-    return {
-      label: null,
-      chip:
-        "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10",
-      isOverdue: false,
-      isDueSoon: false,
-    };
-  }
-
-  const d = new Date(dueDate);
-  if (Number.isNaN(d.getTime())) {
-    return {
-      label: null,
-      chip:
-        "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10",
-      isOverdue: false,
-      isDueSoon: false,
-    };
-  }
-
-  const now = Date.now();
-  const deltaMs = d.getTime() - now;
-  const deltaHours = deltaMs / (1000 * 60 * 60);
-  const formatted = fmtDue(dueDate);
-
-  if (deltaMs < 0) {
-    return {
-      label: `Overdue · ${formatted}`,
-      chip:
-        "bg-rose-100 dark:bg-red-500/10 text-rose-700 dark:text-red-300 border-rose-200 dark:border-red-500/20",
-      isOverdue: true,
-      isDueSoon: false,
-    };
-  }
-
-  if (deltaHours <= 48) {
-    return {
-      label: `Due soon · ${formatted}`,
-      chip:
-        "bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/20",
-      isOverdue: false,
-      isDueSoon: true,
-    };
-  }
-
-  return {
-    label: formatted,
-    chip:
-      "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10",
-    isOverdue: false,
-    isDueSoon: false,
-  };
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function StackTaskRow({
@@ -241,7 +182,17 @@ export default function StackTaskRow({
   const statusLabel = getStatusLabel(task?.status);
   const isInProgress = statusValue === "in_progress";
   const isReview = statusValue === "review";
-  const dueMeta = useMemo(() => getDueMeta(task?.dueDate), [task?.dueDate]);
+  const dueMeta = useMemo(
+    () =>
+      getDueDateMeta(
+        task?.dueDate,
+        task?.status
+      ),
+    [
+      task?.dueDate,
+      task?.status,
+    ]
+  );
 
   const [completing, setCompleting] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -448,15 +399,20 @@ export default function StackTaskRow({
                     {pri.label}
                   </span>
 
-                  {/* Due date */}
-                  {dueMeta.label ? (
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md border ${dueMeta.chip}`}
-                    >
+                  {/* Due-date intelligence */}
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md border ${dueMeta.chip}`}
+                    title={dueMeta.detail}
+                    aria-label={`${dueMeta.label}. ${dueMeta.detail}`}
+                  >
+                    {dueMeta.isOverdue ? (
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                    ) : (
                       <Calendar className="h-2.5 w-2.5" />
-                      {dueMeta.label}
-                    </span>
-                  ) : null}
+                    )}
+
+                    {dueMeta.label}
+                  </span>
 
                   {/* Owner */}
                   <span
