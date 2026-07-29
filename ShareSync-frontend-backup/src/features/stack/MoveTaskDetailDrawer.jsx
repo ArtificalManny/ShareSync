@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
+import MoveTaskWatchPanel from "./MoveTaskWatchPanel";
 
 const STATUS_OPTIONS = [
   { value: "backlog", label: "Backlog" },
@@ -831,6 +832,11 @@ export default function MoveTaskDetailDrawer({
                 </div>
               </div>
             </section>
+
+            <MoveTaskWatchPanel
+              taskId={selectedTaskId}
+              disabled={isBusy}
+            />
 
             <MoveTaskCollaborationPanel
               task={task}

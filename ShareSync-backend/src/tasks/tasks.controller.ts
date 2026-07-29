@@ -38,6 +38,7 @@ import {
   CompleteTaskDto,
   AddCommentDto,
   AddAttachmentDto,
+  WatchTaskDto,
   LogTimeDto,
 } from './dto/update-task.dto';
 import { TaskStatus, TaskPriority } from './schemas/task.schema';
@@ -205,6 +206,59 @@ export class TasksController {
     return {
       success: true,
       data: task,
+    };
+  }
+
+  @Get(':id/watch')
+  @ApiOperation({
+    summary: 'Get my notification settings for a Move',
+  })
+  @ApiParam({ name: 'id', description: 'Task ID' })
+  async getWatchSettings(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const settings =
+      await this.tasksService.getWatchSettings(
+        id,
+        userId,
+      );
+
+    return {
+      success: true,
+      data: settings,
+    };
+  }
+
+  @Patch(':id/watch')
+  @ApiOperation({
+    summary:
+      'Follow or unfollow a Move and choose notification types',
+  })
+  @ApiParam({ name: 'id', description: 'Task ID' })
+  async updateWatchSettings(
+    @Req() req: any,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: WatchTaskDto,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const settings =
+      await this.tasksService.updateWatchSettings(
+        id,
+        userId,
+        dto,
+      );
+
+    return {
+      success: true,
+      data: settings,
     };
   }
 

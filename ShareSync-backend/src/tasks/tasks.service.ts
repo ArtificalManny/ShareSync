@@ -36,6 +36,7 @@ import {
   CompleteTaskDto,
   AddCommentDto,
   AddAttachmentDto,
+  WatchTaskDto,
   LogTimeDto,
 } from './dto/update-task.dto';
 
@@ -44,7 +45,10 @@ import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 import { RealtimeService } from '../realtime/realtime.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TextModerationService } from '../moderation/text-moderation.service';
-import { NotificationPriority } from '../notifications/schemas/notification.schema';
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
 
 export interface TaskQueryOptions {
   projectId?: string;
@@ -79,6 +83,21 @@ const VARIABLE_REWARDS = {
   LEGENDARY_CHANCE: 0.01,   
   MULTIPLIER_CHANCE: 0.08,  
 };
+
+type TaskWatcherPreferenceKey =
+  | 'comments'
+  | 'statusChanges'
+  | 'assignmentChanges'
+  | 'dueDateChanges'
+  | 'completion';
+
+const DEFAULT_TASK_WATCHER_PREFERENCES = {
+  comments: true,
+  statusChanges: true,
+  assignmentChanges: true,
+  dueDateChanges: true,
+  completion: true,
+} as const;
 
 @Injectable()
 export class TasksService {
@@ -144,6 +163,319 @@ export class TasksService {
         this.realtime.roomEmit?.(`public:project:${projectId}`, 'public:project:update', payload);
       }
     } catch (_err) {}
+  }
+
+  private getTaskWatcherUserId(
+    watcher: any,
+  ): string {
+    return String(
+      watcher?.userId?._id ||
+        watcher?.userId?.id ||
+        watcher?.userId ||
+        '',
+    ).trim();
+  }
+
+  private getTaskWatchers(
+    task: TaskDocument,
+  ): any[] {
+    return Array.isArray(
+      (task as any).watchers,
+    )
+      ? (task as any).watchers
+      : [];
+  }
+
+  private getTaskWatcherIds(
+    task: TaskDocument,
+  ): string[] {
+    return [
+      ...new Set(
+        this.getTaskWatchers(task)
+          .map((watcher: any) =>
+            this.getTaskWatcherUserId(watcher),
+          )
+          .filter(Boolean),
+      ),
+    ];
+  }
+
+  private getTaskWatcherIdsForPreference(
+    task: TaskDocument,
+    preference: TaskWatcherPreferenceKey,
+  ): string[] {
+    return [
+      ...new Set(
+        this.getTaskWatchers(task)
+          .filter(
+            (watcher: any) =>
+              watcher?.[preference] !== false,
+          )
+          .map((watcher: any) =>
+            this.getTaskWatcherUserId(watcher),
+          )
+          .filter(Boolean),
+      ),
+    ];
+  }
+
+  private buildTaskWatchSettings(
+    task: TaskDocument,
+    userId: string,
+  ) {
+    const watchers =
+      this.getTaskWatchers(task);
+
+    const watcher = watchers.find(
+      (candidate: any) =>
+        this.getTaskWatcherUserId(candidate) ===
+        userId,
+    );
+
+    return {
+      following: Boolean(watcher),
+      preferences: {
+        comments:
+          watcher?.comments ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.comments,
+        statusChanges:
+          watcher?.statusChanges ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.statusChanges,
+        assignmentChanges:
+          watcher?.assignmentChanges ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.assignmentChanges,
+        dueDateChanges:
+          watcher?.dueDateChanges ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.dueDateChanges,
+        completion:
+          watcher?.completion ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.completion,
+      },
+      watcherCount:
+        this.getTaskWatcherIds(task).length,
+    };
+  }
+
+  async getWatchSettings(
+    taskId: string,
+    userId: string,
+  ) {
+    const task =
+      await this.findByIdWithAccess(
+        taskId,
+        userId,
+      );
+
+    return this.buildTaskWatchSettings(
+      task,
+      userId,
+    );
+  }
+
+  async updateWatchSettings(
+    taskId: string,
+    userId: string,
+    dto: WatchTaskDto,
+  ) {
+    const task =
+      await this.findByIdWithAccess(
+        taskId,
+        userId,
+      );
+
+    const watchers = [
+      ...this.getTaskWatchers(task),
+    ];
+
+    const existingWatcher = watchers.find(
+      (candidate: any) =>
+        this.getTaskWatcherUserId(candidate) ===
+        userId,
+    );
+
+    const remainingWatchers =
+      watchers.filter(
+        (candidate: any) =>
+          this.getTaskWatcherUserId(candidate) !==
+          userId,
+      );
+
+    if (dto.following) {
+      remainingWatchers.push({
+        userId: new Types.ObjectId(userId),
+        comments:
+          dto.comments ??
+          existingWatcher?.comments ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.comments,
+        statusChanges:
+          dto.statusChanges ??
+          existingWatcher?.statusChanges ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.statusChanges,
+        assignmentChanges:
+          dto.assignmentChanges ??
+          existingWatcher?.assignmentChanges ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.assignmentChanges,
+        dueDateChanges:
+          dto.dueDateChanges ??
+          existingWatcher?.dueDateChanges ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.dueDateChanges,
+        completion:
+          dto.completion ??
+          existingWatcher?.completion ??
+          DEFAULT_TASK_WATCHER_PREFERENCES.completion,
+        followedAt:
+          existingWatcher?.followedAt ||
+          new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    (task as any).watchers =
+      remainingWatchers;
+
+    task.markModified('watchers');
+
+    const updated = await task.save();
+
+    return this.buildTaskWatchSettings(
+      updated,
+      userId,
+    );
+  }
+
+  private async notifyTaskWatchers(
+    task: TaskDocument,
+    actorId: string,
+    preference: TaskWatcherPreferenceKey,
+    payload: {
+      type: NotificationType;
+      title: string;
+      body: string;
+      icon?: string;
+      priority?: NotificationPriority;
+      groupKeySuffix: string;
+      extra?: Record<string, any>;
+      excludeUserIds?: string[];
+    },
+  ): Promise<void> {
+    try {
+      const excluded = new Set(
+        [
+          actorId,
+          ...(payload.excludeUserIds || []),
+        ]
+          .map((value) =>
+            String(value || '').trim(),
+          )
+          .filter(Boolean),
+      );
+
+      const recipients = [
+        ...new Set(
+          this.getTaskWatchers(task)
+            .filter(
+              (watcher: any) =>
+                watcher?.[preference] !== false,
+            )
+            .map((watcher: any) =>
+              this.getTaskWatcherUserId(watcher),
+            )
+            .filter(
+              (watcherId: string) =>
+                watcherId &&
+                !excluded.has(watcherId),
+            ),
+        ),
+      ];
+
+      if (!recipients.length) return;
+
+      let notificationsService:
+        | NotificationsService
+        | null = null;
+
+      try {
+        notificationsService =
+          this.moduleRef.get(
+            NotificationsService,
+            { strict: false },
+          );
+      } catch (_error) {}
+
+      if (!notificationsService?.notify) return;
+
+      const projectId =
+        task.projectId.toString();
+
+      const taskId =
+        task._id.toString();
+
+      let projectName = 'Project';
+
+      try {
+        const project =
+          await this.projectsService.findById(
+            projectId,
+          );
+
+        projectName = String(
+          (project as any)?.name ||
+            (project as any)?.title ||
+            'Project',
+        );
+      } catch (_error) {}
+
+      for (const recipientId of recipients) {
+        try {
+          await notificationsService.notify({
+            userId: recipientId,
+            type: payload.type,
+            title: payload.title,
+            body: payload.body,
+            icon: payload.icon,
+            priority:
+              payload.priority ||
+              NotificationPriority.NORMAL,
+            triggeredBy: actorId,
+            data: {
+              projectId,
+              projectName,
+              taskId,
+              taskTitle:
+                String(task.title || 'Move'),
+              extra: {
+                watcherNotification: true,
+                watcherEvent: preference,
+                ...(payload.extra || {}),
+              },
+            },
+            actions: [
+              {
+                label: 'View Move',
+                url:
+                  `/projects/${projectId}` +
+                  '?tab=stack',
+              },
+            ],
+            groupKey:
+              `task-watch-${preference}-` +
+              `${recipientId}-${taskId}-` +
+              payload.groupKeySuffix,
+          });
+        } catch (error: any) {
+          this.logger.warn(
+            `Move watcher notification failed ` +
+              `for user ${recipientId}: ` +
+              `${error?.message || error}`,
+          );
+        }
+      }
+    } catch (error: any) {
+      this.logger.warn(
+        `Move watcher fan-out skipped: ` +
+          `${error?.message || error}`,
+      );
+    }
   }
 
   async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
@@ -382,7 +714,9 @@ export class TasksService {
   }
 
   async findById(taskId: string): Promise<TaskDocument> {
-    const task = await this.taskModel.findById(taskId);
+    const task = await this.taskModel
+      .findById(taskId)
+      .select('+watchers');
     if (!task) {
       throw new NotFoundException(`Task ${taskId} not found`);
     }
@@ -570,7 +904,14 @@ export class TasksService {
 
     await this.assertTaskTextAllowed(userId, dto);
 
-    const previousAssigneeId = task.assigneeId?.toString?.() || null;
+    const previousAssigneeId =
+      task.assigneeId?.toString?.() || null;
+
+    const previousStatus = task.status;
+
+    const previousDueDate = task.dueDate
+      ? new Date(task.dueDate)
+      : null;
 
     if (dto.status && dto.status !== task.status) {
       if (dto.status === TaskStatus.DONE) {
@@ -655,8 +996,28 @@ export class TasksService {
       },
     });
 
-    const newAssigneeId = updated.assigneeId?.toString?.() || null;
-    const assigneeChanged = newAssigneeId !== previousAssigneeId;
+    const newAssigneeId =
+      updated.assigneeId?.toString?.() || null;
+
+    const assigneeChanged =
+      newAssigneeId !== previousAssigneeId;
+
+    const statusChanged =
+      updated.status !== previousStatus;
+
+    const newDueDate = updated.dueDate
+      ? new Date(updated.dueDate)
+      : null;
+
+    const previousDueDateValue =
+      previousDueDate?.getTime() ?? null;
+
+    const newDueDateValue =
+      newDueDate?.getTime() ?? null;
+
+    const dueDateChanged =
+      previousDueDateValue !==
+      newDueDateValue;
 
     if (assigneeChanged && newAssigneeId && newAssigneeId !== userId) {
       const project = await this.projectsService.findById(updated.projectId.toString());
@@ -668,6 +1029,93 @@ export class TasksService {
         projectId: updated.projectId.toString(),
         projectName: project?.name || '',
       });
+    }
+
+    if (statusChanged) {
+      const fromStatus = String(
+        previousStatus || 'previous stage',
+      ).replace(/_/g, ' ');
+
+      const toStatus = String(
+        updated.status || 'new stage',
+      ).replace(/_/g, ' ');
+
+      await this.notifyTaskWatchers(
+        updated,
+        userId,
+        'statusChanges',
+        {
+          type: NotificationType.TASK_MOVED,
+          title: 'Move status changed',
+          body:
+            `${updated.title} moved from ` +
+            `${fromStatus} to ${toStatus}.`,
+          icon: '↔️',
+          groupKeySuffix:
+            String(updated.status),
+          extra: {
+            previousStatus,
+            newStatus: updated.status,
+          },
+        },
+      );
+    }
+
+    if (assigneeChanged) {
+      await this.notifyTaskWatchers(
+        updated,
+        userId,
+        'assignmentChanges',
+        {
+          type: NotificationType.TASK_UPDATED,
+          title: 'Move assignment changed',
+          body: newAssigneeId
+            ? `${updated.title} has a new assignee.`
+            : `${updated.title} is now unassigned.`,
+          icon: '👤',
+          groupKeySuffix:
+            newAssigneeId || 'unassigned',
+          extra: {
+            previousAssigneeId,
+            newAssigneeId,
+          },
+          excludeUserIds:
+            newAssigneeId
+              ? [newAssigneeId]
+              : [],
+        },
+      );
+    }
+
+    if (dueDateChanged) {
+      const dueDateLabel = newDueDate
+        ? newDueDate.toISOString().slice(0, 10)
+        : 'No due date';
+
+      await this.notifyTaskWatchers(
+        updated,
+        userId,
+        'dueDateChanges',
+        {
+          type: NotificationType.TASK_UPDATED,
+          title: 'Move due date changed',
+          body:
+            `${updated.title}: ${dueDateLabel}.`,
+          icon: '📅',
+          groupKeySuffix:
+            newDueDateValue === null
+              ? 'removed'
+              : String(newDueDateValue),
+          extra: {
+            previousDueDate:
+              previousDueDate?.toISOString() ||
+              null,
+            newDueDate:
+              newDueDate?.toISOString() ||
+              null,
+          },
+        },
+      );
     }
 
     this.realtime.projectEmit(task.projectId.toString(), 'taskUpdated', buildTaskSnapshot(updated));
@@ -729,6 +1177,36 @@ export class TasksService {
       },
     });
 
+    if (previousStatus !== updated.status) {
+      const fromStatus = String(
+        previousStatus || 'previous stage',
+      ).replace(/_/g, ' ');
+
+      const toStatus = String(
+        updated.status || 'new stage',
+      ).replace(/_/g, ' ');
+
+      await this.notifyTaskWatchers(
+        updated,
+        userId,
+        'statusChanges',
+        {
+          type: NotificationType.TASK_MOVED,
+          title: 'Move status changed',
+          body:
+            `${updated.title} moved from ` +
+            `${fromStatus} to ${toStatus}.`,
+          icon: '↔️',
+          groupKeySuffix:
+            String(updated.status),
+          extra: {
+            previousStatus,
+            newStatus: updated.status,
+          },
+        },
+      );
+    }
+
     // ProjectHome Flow email fan-out:
     // Only notify on real column/status changes, not simple reorder changes.
     if (previousStatus !== updated.status) {
@@ -755,12 +1233,25 @@ export class TasksService {
             ...rawMembers.map((m: any) => m?.userId || m?.memberId || m?.user || m?._id || m),
           ];
 
-          const recipientIds = [...new Set(
-            allAssociatedIds
-              .filter(Boolean)
-              .map((id: any) => id.toString())
-              .filter((id: string) => id && id !== userId)
-          )];
+            const moveWatcherIds =
+              new Set(
+                this.getTaskWatcherIdsForPreference(
+                  updated,
+                  'statusChanges',
+                ),
+              );
+
+            const recipientIds = [...new Set(
+              allAssociatedIds
+                .filter(Boolean)
+                .map((id: any) => id.toString())
+                .filter(
+                  (id: string) =>
+                    id &&
+                    id !== userId &&
+                    !moveWatcherIds.has(id),
+                )
+            )];
 
           const projectName = String(projectDoc?.name || projectDoc?.title || 'Project');
           const taskTitle = String((updated as any)?.title || 'Task');
@@ -909,6 +1400,33 @@ export class TasksService {
       },
     });
 
+    await this.notifyTaskWatchers(
+      task,
+      userId,
+      'completion',
+      {
+        type: NotificationType.TASK_COMPLETED,
+        title: 'Move completed',
+        body: `${task.title} was completed.`,
+        icon: '✅',
+        priority: NotificationPriority.HIGH,
+        groupKeySuffix: 'completed',
+        extra: {
+          completedAt:
+            task.completedAt?.toISOString?.() ||
+            new Date().toISOString(),
+        },
+      },
+    );
+
+    const completionWatcherIds =
+      new Set(
+        this.getTaskWatcherIdsForPreference(
+          task,
+          'completion',
+        ),
+      );
+
     let taskCompletedProjectName = 'Project';
     let taskCompletedProjectMembers: Array<{
       userId?: string | null;
@@ -939,7 +1457,13 @@ export class TasksService {
         const memberIdValue = rawMemberId ? String(rawMemberId) : '';
         const recipientId = userIdValue || memberIdValue;
 
-        if (!recipientId || seenMemberIds.has(recipientId)) return;
+          if (
+            !recipientId ||
+            seenMemberIds.has(recipientId) ||
+            completionWatcherIds.has(recipientId)
+          ) {
+            return;
+          }
 
         seenMemberIds.add(recipientId);
         taskCompletedProjectMembers.push({
@@ -1214,8 +1738,11 @@ export class TasksService {
   async addComment(taskId: string, userId: string, dto: AddCommentDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
+    const commentId =
+      new Types.ObjectId();
+
     task.comments.push({
-      _id: new Types.ObjectId(),
+      _id: commentId,
       userId: new Types.ObjectId(userId),
       content: (dto as any).content,
       mentions: (dto as any).mentions?.map((id: string) => new Types.ObjectId(id)) || [],
@@ -1236,6 +1763,34 @@ export class TasksService {
       mentions: (dto as any).mentions || [],
       commentPreview: String((dto as any).content || '').slice(0, 160),
     });
+
+    const commentPreview = String(
+      (dto as any).content || '',
+    ).slice(0, 160);
+
+    await this.notifyTaskWatchers(
+      updated,
+      userId,
+      'comments',
+      {
+        type: NotificationType.TASK_COMMENT,
+        title: 'New comment on a Move',
+        body:
+          `${updated.title}: ${commentPreview}`,
+        icon: '💬',
+        groupKeySuffix:
+          commentId.toString(),
+        extra: {
+          commentId:
+            commentId.toString(),
+          commentPreview,
+        },
+        excludeUserIds:
+          Array.isArray((dto as any).mentions)
+            ? (dto as any).mentions
+            : [],
+      },
+    );
 
     return updated;
   }

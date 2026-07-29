@@ -173,6 +173,51 @@ export async function fetchTaskDetail(taskId) {
 }
 
 /**
+ * GET /tasks/:id/watch - fetch my Move notification settings
+ */
+export async function fetchTaskWatchSettings(taskId) {
+  if (!taskId) throw new Error("taskId is required");
+
+  const response = await client.get(
+    `/tasks/${taskId}/watch`
+  );
+
+  return response.data?.data || response.data;
+}
+
+/**
+ * PATCH /tasks/:id/watch - follow/unfollow and choose events
+ */
+export async function updateTaskWatchSettings(
+  taskId,
+  {
+    following = false,
+    preferences = {},
+  } = {}
+) {
+  if (!taskId) throw new Error("taskId is required");
+
+  const response = await client.patch(
+    `/tasks/${taskId}/watch`,
+    {
+      following: Boolean(following),
+      comments:
+        preferences?.comments !== false,
+      statusChanges:
+        preferences?.statusChanges !== false,
+      assignmentChanges:
+        preferences?.assignmentChanges !== false,
+      dueDateChanges:
+        preferences?.dueDateChanges !== false,
+      completion:
+        preferences?.completion !== false,
+    }
+  );
+
+  return response.data?.data || response.data;
+}
+
+/**
  * POST /tasks/:id/comments - add a task comment
  */
 export async function addTaskComment(taskId, { content, mentions = [] } = {}) {

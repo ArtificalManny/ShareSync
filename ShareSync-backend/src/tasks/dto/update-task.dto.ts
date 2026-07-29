@@ -113,6 +113,39 @@ export class UpdateTaskDto {
   ceremonyTier?: CeremonyTier;
 }
 
+export class WatchTaskDto {
+  @ApiPropertyOptional({
+    description: 'Whether the current user follows this Move',
+  })
+  @IsBoolean()
+  following: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  comments?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  statusChanges?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  assignmentChanges?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  dueDateChanges?: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  completion?: boolean;
+}
+
 export class MoveTaskDto {
   @ApiPropertyOptional({ enum: TaskStatus })
   @IsEnum(TaskStatus)

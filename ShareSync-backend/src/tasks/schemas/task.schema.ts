@@ -86,6 +86,37 @@ export class TaskComment {
 }
 
 @Schema({ _id: false })
+export class TaskWatcher {
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+  })
+  userId: Types.ObjectId;
+
+  @Prop({ type: Boolean, default: true })
+  comments: boolean;
+
+  @Prop({ type: Boolean, default: true })
+  statusChanges: boolean;
+
+  @Prop({ type: Boolean, default: true })
+  assignmentChanges: boolean;
+
+  @Prop({ type: Boolean, default: true })
+  dueDateChanges: boolean;
+
+  @Prop({ type: Boolean, default: true })
+  completion: boolean;
+
+  @Prop({ type: Date, default: Date.now })
+  followedAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
+}
+
+@Schema({ _id: false })
 export class TaskTimeLog {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
@@ -113,7 +144,12 @@ export type TaskDocument = HydratedDocument<Task, TaskMethods>;
     virtuals: true,
     transform: (_doc, ret) => {
       (ret as any).id = (ret as any)._id;
+
+      // Watcher identities and preferences are private.
+      // Use /tasks/:id/watch for current-user settings.
+      delete (ret as any).watchers;
       delete (ret as any).__v;
+
       return ret;
     },
   },
@@ -257,6 +293,17 @@ export class Task {
   @ApiProperty({ description: 'Comments' })
   @Prop({ type: [TaskComment], default: [] })
   comments: TaskComment[];
+
+  @ApiProperty({
+    description:
+      'Users following this Move and their notification preferences',
+  })
+  @Prop({
+    type: [TaskWatcher],
+    default: [],
+    select: false,
+  })
+  watchers: TaskWatcher[];
 
   @ApiProperty({ description: 'Time logs' })
   @Prop({ type: [TaskTimeLog], default: [] })
