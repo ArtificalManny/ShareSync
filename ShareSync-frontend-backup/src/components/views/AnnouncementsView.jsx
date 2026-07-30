@@ -10,6 +10,7 @@ import {
   Megaphone, Plus, Pin, PencilLine, Trash2, Clock, Send, X,
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
+  ExternalLink, FileText, Link2, Search,
 } from 'lucide-react';
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +20,9 @@ import {
   toggleAnnouncementPin, deleteAnnouncement, markAnnouncementAsRead,
   toggleLike, addComment, deleteComment, votePoll,
 } from '../../api/announcements';
+import {
+  fetchProjectFilesForReference,
+} from '../../api/taskApi';
 
 // ─── Upload helper ──────────────────────────────────────────────────────────
 
@@ -594,6 +598,476 @@ function AttachmentInput({ uploadedFiles, onFilesChange }) {
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
     </div>
+  );
+}
+
+
+function normalizeAnnouncementFileReference(file) {
+  const fileId = String(
+    file?.fileId ||
+    file?._id ||
+    file?.id ||
+    ''
+  ).trim();
+
+  const fileName = String(
+    file?.fileName ||
+    file?.name ||
+    file?.originalName ||
+    'Project file'
+  ).trim();
+
+  const fileUrl = String(
+    file?.fileUrl ||
+    file?.url ||
+    ''
+  ).trim();
+
+  const fileType = String(
+    file?.fileType ||
+    file?.mimeType ||
+    file?.extension ||
+    ''
+  ).trim();
+
+  const rawFileSize = Number(
+    file?.fileSize ??
+    file?.size ??
+    file?.sizeInBytes ??
+    0
+  );
+
+  const fileSize =
+    Number.isFinite(rawFileSize) &&
+    rawFileSize >= 0
+      ? rawFileSize
+      : 0;
+
+  if (!fileId || !fileName || !fileUrl) {
+    return null;
+  }
+
+  return {
+    fileId,
+    fileName,
+    fileUrl,
+    fileType,
+    fileSize,
+    source: 'project_file',
+    linkedAt:
+      file?.linkedAt ||
+      null,
+  };
+}
+
+function normalizeAnnouncementFileReferenceList(files) {
+  const seen = new Set();
+
+  return (Array.isArray(files) ? files : [])
+    .map(normalizeAnnouncementFileReference)
+    .filter((file) => {
+      if (!file || seen.has(file.fileId)) {
+        return false;
+      }
+
+      seen.add(file.fileId);
+      return true;
+    });
+}
+
+function formatAnnouncementFileSize(bytes) {
+  const size = Number(bytes || 0);
+
+  if (!Number.isFinite(size) || size <= 0) {
+    return 'Project file';
+  }
+
+  if (size < 1024) {
+    return `${Math.round(size)} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(
+    size /
+    (1024 * 1024)
+  ).toFixed(1)} MB`;
+}
+
+function resolveAnnouncementFileUrl(value) {
+  const raw = String(value || '').trim();
+
+  if (!raw) return '';
+
+  if (
+    /^(https?:|blob:|data:)/i.test(raw)
+  ) {
+    return raw;
+  }
+
+  const apiBase = String(
+    client?.defaults?.baseURL || ''
+  ).trim();
+
+  if (!apiBase) {
+    return raw;
+  }
+
+  try {
+    return new URL(
+      raw,
+      apiBase.endsWith('/')
+        ? apiBase
+        : `${apiBase}/`
+    ).toString();
+  } catch {
+    return raw;
+  }
+}
+
+function AnnouncementFileReferences({
+  references,
+}) {
+  const files =
+    normalizeAnnouncementFileReferenceList(
+      references
+    );
+
+  if (files.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-5 space-y-2">
+      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-700">
+        <Link2 className="h-3.5 w-3.5" />
+        Project Files
+      </div>
+
+      {files.map((file) => {
+        const href =
+          resolveAnnouncementFileUrl(
+            file.fileUrl
+          );
+
+        return (
+          <a
+            key={file.fileId}
+            href={href || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 px-4 py-3 transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:shadow-md hover:shadow-cyan-500/10"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
+              <FileText className="h-5 w-5" />
+            </span>
+
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-black text-slate-900">
+                {file.fileName}
+              </span>
+
+              <span className="mt-0.5 block text-xs font-semibold text-slate-500">
+                {formatAnnouncementFileSize(
+                  file.fileSize
+                )}
+              </span>
+            </span>
+
+            <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-cyan-700" />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+function AnnouncementProjectFileInput({
+  projectId,
+  selectedFiles,
+  onChange,
+  disabled = false,
+}) {
+  const [pickerOpen, setPickerOpen] =
+    useState(false);
+
+  const [searchTerm, setSearchTerm] =
+    useState('');
+
+  const [projectFiles, setProjectFiles] =
+    useState([]);
+
+  const [
+    loadingProjectFiles,
+    setLoadingProjectFiles,
+  ] = useState(false);
+
+  const [
+    projectFileError,
+    setProjectFileError,
+  ] = useState('');
+
+  const normalizedSelected =
+    normalizeAnnouncementFileReferenceList(
+      selectedFiles
+    );
+
+  const selectedIds = new Set(
+    normalizedSelected.map(
+      (file) => file.fileId
+    )
+  );
+
+  const availableFiles =
+    projectFiles.filter(
+      (file) =>
+        !selectedIds.has(file.fileId)
+    );
+
+  const loadProjectFiles =
+    useCallback(async () => {
+      if (
+        !pickerOpen ||
+        !projectId
+      ) {
+        return;
+      }
+
+      setLoadingProjectFiles(true);
+      setProjectFileError('');
+
+      try {
+        const files =
+          await fetchProjectFilesForReference(
+            projectId,
+            {
+              search: searchTerm,
+              limit: 100,
+            }
+          );
+
+        setProjectFiles(
+          normalizeAnnouncementFileReferenceList(
+            files
+          )
+        );
+      } catch (error) {
+        setProjectFileError(
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to load project Files'
+        );
+      } finally {
+        setLoadingProjectFiles(false);
+      }
+    }, [
+      pickerOpen,
+      projectId,
+      searchTerm,
+    ]);
+
+  useEffect(() => {
+    if (!pickerOpen) return undefined;
+
+    const timer = window.setTimeout(
+      loadProjectFiles,
+      180
+    );
+
+    return () =>
+      window.clearTimeout(timer);
+  }, [
+    pickerOpen,
+    loadProjectFiles,
+  ]);
+
+  const addFile = (file) => {
+    if (
+      disabled ||
+      normalizedSelected.length >= 10
+    ) {
+      return;
+    }
+
+    onChange(
+      normalizeAnnouncementFileReferenceList([
+        ...normalizedSelected,
+        file,
+      ])
+    );
+  };
+
+  const removeFile = (fileId) => {
+    if (disabled) return;
+
+    onChange(
+      normalizedSelected.filter(
+        (file) =>
+          file.fileId !== fileId
+      )
+    );
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-700">
+            <Link2 className="h-4 w-4 text-cyan-600" />
+            Project Files
+          </p>
+
+          <p className="mt-1 text-xs font-semibold text-slate-500">
+            Reference an existing File without uploading it again.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          disabled={
+            disabled ||
+            !projectId
+          }
+          onClick={() =>
+            setPickerOpen(
+              (current) => !current
+            )
+          }
+          className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pickerOpen ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <Link2 className="h-4 w-4" />
+          )}
+
+          {pickerOpen
+            ? 'Close'
+            : 'Link project file'}
+        </button>
+      </div>
+
+      {normalizedSelected.length > 0 && (
+        <div className="space-y-2">
+          {normalizedSelected.map(
+            (file) => (
+              <div
+                key={file.fileId}
+                className="flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 px-4 py-3"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
+                  <FileText className="h-5 w-5" />
+                </span>
+
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-black text-slate-900">
+                    {file.fileName}
+                  </span>
+
+                  <span className="block text-xs font-semibold text-slate-500">
+                    {formatAnnouncementFileSize(
+                      file.fileSize
+                    )}
+                  </span>
+                </span>
+
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() =>
+                    removeFile(file.fileId)
+                  }
+                  title="Remove File reference"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {pickerOpen && (
+        <div className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-lg shadow-cyan-500/10">
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-cyan-300 focus-within:bg-white">
+            <Search className="h-4 w-4 shrink-0 text-slate-400" />
+
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) =>
+                setSearchTerm(
+                  event.target.value
+                )
+              }
+              placeholder="Search project Files..."
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          {loadingProjectFiles ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm font-bold text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
+              Loading project Files...
+            </div>
+          ) : projectFileError ? (
+            <p className="py-5 text-center text-sm font-bold text-rose-600">
+              {projectFileError}
+            </p>
+          ) : availableFiles.length > 0 ? (
+            <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto">
+              {availableFiles.map(
+                (file) => (
+                  <button
+                    key={file.fileId}
+                    type="button"
+                    disabled={
+                      disabled ||
+                      normalizedSelected.length >= 10
+                    }
+                    onClick={() =>
+                      addFile(file)
+                    }
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-700">
+                      <FileText className="h-5 w-5" />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-black text-slate-900">
+                        {file.fileName}
+                      </span>
+
+                      <span className="block text-xs font-semibold text-slate-500">
+                        {formatAnnouncementFileSize(
+                          file.fileSize
+                        )}
+                      </span>
+                    </span>
+
+                    <Link2 className="h-4 w-4 shrink-0 text-cyan-600" />
+                  </button>
+                )
+              )}
+            </div>
+          ) : (
+            <p className="py-5 text-center text-sm font-semibold text-slate-500">
+              No available project Files found.
+            </p>
+          )}
+
+          {normalizedSelected.length >= 10 && (
+            <p className="mt-3 text-xs font-bold text-amber-700">
+              An announcement can reference up to 10 project Files.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1276,6 +1750,9 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
             />
 
             <AttachmentGallery attachments={item.attachments} />
+            <AnnouncementFileReferences
+              references={item.fileReferences}
+            />
             <AnnouncementPollBlock
               item={item}
               projectId={readOnly ? undefined : projectId}
@@ -1368,6 +1845,10 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
   const [type, setType] = useState('info');
   const [pinned, setPinned] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [
+    linkedProjectFiles,
+    setLinkedProjectFiles,
+  ] = useState([]);
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState([createPollOptionState(), createPollOptionState()]);
@@ -1381,6 +1862,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     setType('info');
     setPinned(false);
     setUploadedFiles([]);
+    setLinkedProjectFiles([]);
     setPollEnabled(false);
     setPollQuestion('');
     setPollOptions([createPollOptionState(), createPollOptionState()]);
@@ -1407,6 +1889,11 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     setType(String(announcement?.type || 'info').toLowerCase());
     setPinned(Boolean(announcement?.pinned));
     setUploadedFiles([]);
+    setLinkedProjectFiles(
+      normalizeAnnouncementFileReferenceList(
+        announcement?.fileReferences
+      )
+    );
 
     const existingPoll = announcement?.poll;
     const existingOptions = Array.isArray(existingPoll?.options)
@@ -1482,6 +1969,10 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
           message: cleanMessage,
           type,
           pinned,
+          fileReferences:
+            linkedProjectFiles.map(
+              (file) => file.fileId
+            ),
         });
 
         const updated = unwrapAnnouncementPayload(response);
@@ -1500,6 +1991,12 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                       updated?.text ||
                       cleanMessage,
                     type: updated?.type || type,
+                    fileReferences:
+                      Array.isArray(
+                        updated?.fileReferences
+                      )
+                        ? updated.fileReferences
+                        : linkedProjectFiles,
                     pinned:
                       typeof updated?.pinned === 'boolean'
                         ? updated.pinned
@@ -1526,6 +2023,10 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
           type,
           pinned,
           attachments: attachmentUrls,
+          fileReferences:
+            linkedProjectFiles.map(
+              (file) => file.fileId
+            ),
           poll: cleanPoll,
         });
 
@@ -1538,6 +2039,12 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
           title: created?.title || title.trim(),
           message: created?.message || created?.content || cleanMessage,
           attachments: created?.attachments || attachmentUrls,
+          fileReferences:
+            Array.isArray(
+              created?.fileReferences
+            )
+              ? created.fileReferences
+              : linkedProjectFiles,
           poll: renderablePoll,
         };
 
@@ -2121,7 +2628,17 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                 setOptions={setPollOptions}
               />
 
-<AttachmentInput uploadedFiles={uploadedFiles} onFilesChange={setUploadedFiles} />
+              <AnnouncementProjectFileInput
+                projectId={projectId}
+                selectedFiles={linkedProjectFiles}
+                onChange={setLinkedProjectFiles}
+                disabled={posting}
+              />
+
+              <AttachmentInput
+                uploadedFiles={uploadedFiles}
+                onFilesChange={setUploadedFiles}
+              />
 
               <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-amber-200 hover:bg-amber-50/60">
                 <div className="flex items-center gap-3">

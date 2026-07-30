@@ -3,6 +3,41 @@ import { Document, Types } from 'mongoose';
 
 export type AnnouncementDocument = Announcement & Document;
 
+@Schema({ _id: false })
+export class AnnouncementFileReference {
+  @Prop({ required: true })
+  fileId: string;
+
+  @Prop({ required: true })
+  fileName: string;
+
+  @Prop({ required: true })
+  fileUrl: string;
+
+  @Prop({ default: '' })
+  fileType: string;
+
+  @Prop({ default: 0 })
+  fileSize: number;
+
+  @Prop({
+    type: String,
+    enum: ['project_file'],
+    default: 'project_file',
+  })
+  source: 'project_file';
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+  })
+  linkedBy: Types.ObjectId;
+
+  @Prop({ default: Date.now })
+  linkedAt: Date;
+}
+
 @Schema({ timestamps: true })
 export class Announcement {
   @Prop({ required: true })
@@ -25,6 +60,12 @@ export class Announcement {
 
   @Prop({ type: [String], default: [] })
   attachments: string[];
+
+  @Prop({
+    type: [AnnouncementFileReference],
+    default: [],
+  })
+  fileReferences: AnnouncementFileReference[];
 
   @Prop({
     type: {

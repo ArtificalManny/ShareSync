@@ -15,6 +15,7 @@ import { ModuleRef } from '@nestjs/core';
 
 import { Announcement, AnnouncementDocument } from './schemas/announcements.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
+import { VaultService } from '../vault/vault.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   NotificationType,
@@ -32,6 +33,12 @@ export type AnnouncementPollInput = {
   createdAt?: Date | string;
 } | null;
 
+export type AnnouncementFileReferenceInput =
+  | string
+  | {
+      fileId?: string;
+    };
+
 export type CreateAnnouncementInput = {
   projectId: string;
   authorId: string;
@@ -40,6 +47,7 @@ export type CreateAnnouncementInput = {
   type?: string;
   pinned?: boolean;
   attachments?: string[];
+  fileReferences?: AnnouncementFileReferenceInput[];
   poll?: AnnouncementPollInput;
 };
 
@@ -51,6 +59,7 @@ export type UpdateAnnouncementInput = {
   type?: string;
   pinned?: boolean;
   attachments?: string[];
+  fileReferences?: AnnouncementFileReferenceInput[];
   poll?: AnnouncementPollInput;
 };
 
@@ -63,6 +72,7 @@ export class AnnouncementsService {
     private readonly announcementModel: Model<AnnouncementDocument>,
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
+    private readonly vaultService: VaultService,
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
     @Optional() private readonly notifications?: NotificationsService,
@@ -183,6 +193,113 @@ export class AnnouncementsService {
     return this.announcementModel.find(query).populate('authorId', this.userPopulateFields).sort({ pinned: -1, createdAt: -1 }).exec();
   }
 
+  private async normalizeFileReferences(
+    projectId: string,
+    userId: string,
+    references:
+      | AnnouncementFileReferenceInput[]
+      | undefined,
+  ): Promise<
+    Array<{
+      fileId: string;
+      fileName: string;
+      fileUrl: string;
+      fileType: string;
+      fileSize: number;
+      source: 'project_file';
+      linkedBy: Types.ObjectId;
+      linkedAt: Date;
+    }>
+  > {
+    if (!Array.isArray(references)) {
+      return [];
+    }
+
+    const fileIds = Array.from(
+      new Set(
+        references
+          .map((reference) =>
+            String(
+              typeof reference === 'string'
+                ? reference
+                : reference?.fileId || '',
+            ).trim(),
+          )
+          .filter(Boolean),
+      ),
+    );
+
+    if (fileIds.length > 10) {
+      throw new BadRequestException(
+        'An announcement can reference up to 10 project Files',
+      );
+    }
+
+    const linkedBy = this.toObjectId(
+      userId,
+      'userId',
+    );
+
+    return Promise.all(
+      fileIds.map(async (fileId) => {
+        if (!Types.ObjectId.isValid(fileId)) {
+          throw new BadRequestException(
+            'Project File ID is invalid',
+          );
+        }
+
+        const file =
+          await this.vaultService
+            .findAccessibleFileForProject(
+              fileId,
+              projectId,
+              userId,
+            );
+
+        const fileName = String(
+          file.originalName ||
+            'Project file',
+        ).trim();
+
+        const fileUrl = String(
+          file.fileUrl || '',
+        ).trim();
+
+        const fileType = String(
+          file.mimeType || '',
+        ).trim();
+
+        const rawFileSize = Number(
+          file.sizeInBytes ?? 0,
+        );
+
+        const fileSize =
+          Number.isFinite(rawFileSize) &&
+          rawFileSize >= 0
+            ? rawFileSize
+            : 0;
+
+        if (!fileName || !fileUrl) {
+          throw new BadRequestException(
+            'This project File is missing required file information',
+          );
+        }
+
+        return {
+          fileId,
+          fileName,
+          fileUrl,
+          fileType,
+          fileSize,
+          source:
+            'project_file' as const,
+          linkedBy,
+          linkedAt: new Date(),
+        };
+      }),
+    );
+  }
+
   private normalizePoll(poll: AnnouncementPollInput) {
     if (poll === undefined || poll === null || typeof poll !== 'object') return null;
 
@@ -234,6 +351,13 @@ export class AnnouncementsService {
     const projectObjectId = this.toObjectId(input.projectId, 'projectId');
     const authorObjectId = this.toObjectId(input.authorId, 'authorId');
 
+    const fileReferences =
+      await this.normalizeFileReferences(
+        input.projectId,
+        input.authorId,
+        input.fileReferences,
+      );
+
     const doc = await this.announcementModel.create({
       projectId: projectObjectId,
       authorId: authorObjectId,
@@ -242,6 +366,7 @@ export class AnnouncementsService {
       type: input.type || 'info',
       pinned: Boolean(input.pinned),
       attachments: input.attachments || [],
+      fileReferences,
         poll: this.normalizePoll(input.poll),
       readBy: [],
     });
@@ -394,6 +519,25 @@ export class AnnouncementsService {
 
     if (Array.isArray(input.attachments)) {
       update.attachments = input.attachments;
+    }
+
+    if (Array.isArray(input.fileReferences)) {
+      const actorId = String(
+        input.userId || '',
+      ).trim();
+
+      if (!actorId) {
+        throw new BadRequestException(
+          'User is required to update File references',
+        );
+      }
+
+      update.fileReferences =
+        await this.normalizeFileReferences(
+          input.projectId,
+          actorId,
+          input.fileReferences,
+        );
     }
 
     const updated = await this.announcementModel

@@ -53,6 +53,9 @@ export class AnnouncementsController {
       type?: string;
       pinned?: boolean;
       attachments?: string[];
+      fileReferences?: Array<
+        string | { fileId?: string }
+      >;
     },
   ) {
     const authorId =
@@ -78,6 +81,9 @@ export class AnnouncementsController {
       type?: string;
       pinned?: boolean;
       attachments?: string[];
+      fileReferences?: Array<
+        string | { fileId?: string }
+      >;
     },
     @Req() req: any,
   ) {
@@ -96,6 +102,8 @@ export class AnnouncementsController {
       type: body.type,
       pinned: body.pinned,
       attachments: body.attachments,
+      fileReferences:
+        body.fileReferences,
     });
   }
 
