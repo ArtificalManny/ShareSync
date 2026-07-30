@@ -193,8 +193,32 @@ export class FilesService {
       filter.isArchived = false;
     }
 
-    if (query.search) {
-      filter.$text = { $search: query.search };
+    const normalizedSearch = String(
+      query.search || '',
+    ).trim();
+
+    if (normalizedSearch) {
+      const escapedSearch =
+        normalizedSearch.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          '\\$&',
+        );
+
+      const searchPattern =
+        new RegExp(
+          escapedSearch,
+          'i',
+        );
+
+      filter.$or = [
+        { name: searchPattern },
+        { originalName: searchPattern },
+        { description: searchPattern },
+        { mimeType: searchPattern },
+        { fileType: searchPattern },
+        { extension: searchPattern },
+        { tags: searchPattern },
+      ];
     }
 
     const sortField = query.sortBy || 'createdAt';
