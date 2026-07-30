@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+import { VaultService } from '../vault/vault.service';
 import { CreateThreadMessageDto } from './dto/create-thread-message.dto';
 
 export interface GetThreadMessagesOptions {
@@ -20,18 +27,196 @@ export class ThreadMessagesService {
 
   constructor(
     @InjectModel(ThreadMessage.name) private readonly messageModel: Model<ThreadMessageDocument>,
+    private readonly vaultService: VaultService,
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
   ) {}
 
+  private async normalizeFileReferences(
+    projectId: string,
+    userId: string,
+    references:
+      | Array<
+          string | { fileId?: string }
+        >
+      | undefined,
+  ): Promise<
+    Array<{
+      fileId: string;
+      fileName: string;
+      fileUrl: string;
+      fileType: string;
+      fileSize: number;
+      source: 'project_file';
+      linkedBy: Types.ObjectId;
+      linkedAt: Date;
+    }>
+  > {
+    if (!Array.isArray(references)) {
+      return [];
+    }
+
+    const fileIds = Array.from(
+      new Set(
+        references
+          .map((reference) =>
+            String(
+              typeof reference === 'string'
+                ? reference
+                : reference?.fileId || '',
+            ).trim(),
+          )
+          .filter(Boolean),
+      ),
+    );
+
+    if (fileIds.length > 1) {
+      throw new BadRequestException(
+        'A Team Room message can reference one project File',
+      );
+    }
+
+    const linkedBy =
+      new Types.ObjectId(userId);
+
+    return Promise.all(
+      fileIds.map(async (fileId) => {
+        if (!Types.ObjectId.isValid(fileId)) {
+          throw new BadRequestException(
+            'Project File ID is invalid',
+          );
+        }
+
+        const file =
+          await this.vaultService
+            .findAccessibleFileForProject(
+              fileId,
+              projectId,
+              userId,
+            );
+
+        const fileName = String(
+          file.originalName ||
+          'Project file',
+        ).trim();
+
+        const fileUrl = String(
+          file.fileUrl || '',
+        ).trim();
+
+        const fileType = String(
+          file.mimeType || '',
+        ).trim();
+
+        const rawSize = Number(
+          file.sizeInBytes ?? 0,
+        );
+
+        const fileSize =
+          Number.isFinite(rawSize) &&
+          rawSize >= 0
+            ? rawSize
+            : 0;
+
+        if (!fileName || !fileUrl) {
+          throw new BadRequestException(
+            'This project File is missing required file information',
+          );
+        }
+
+        return {
+          fileId,
+          fileName,
+          fileUrl,
+          fileType,
+          fileSize,
+          source:
+            'project_file' as const,
+          linkedBy,
+          linkedAt: new Date(),
+        };
+      }),
+    );
+  }
+
   async create(threadId: string, userId: string, dto: CreateThreadMessageDto): Promise<ThreadMessageDocument> {
+    if (
+      !threadId ||
+      !Types.ObjectId.isValid(threadId)
+    ) {
+      throw new NotFoundException(
+        'Thread not found',
+      );
+    }
+
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new BadRequestException(
+        'User ID is invalid',
+      );
+    }
+
+    const threadObjectId =
+      new Types.ObjectId(threadId);
+
+    const userObjectId =
+      new Types.ObjectId(userId);
+
+    const db = this.messageModel.db;
+
+    const threadDoc: any =
+      await db
+        .collection('threads')
+        .findOne({
+          _id: threadObjectId,
+        });
+
+    if (!threadDoc) {
+      throw new NotFoundException(
+        'Thread not found',
+      );
+    }
+
+    const projectId = String(
+      threadDoc.projectId || '',
+    );
+
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(projectId)
+    ) {
+      throw new BadRequestException(
+        'Thread project is invalid',
+      );
+    }
+
+    const content = String(
+      dto.content || '',
+    ).trim();
+
+    if (!content) {
+      throw new BadRequestException(
+        'Message content is required',
+      );
+    }
+
+    const fileReferences =
+      await this.normalizeFileReferences(
+        projectId,
+        userId,
+        dto.fileReferences,
+      );
+
     const message = new this.messageModel({
-      threadId: new Types.ObjectId(threadId),
-      userId: new Types.ObjectId(userId),
-      content: dto.content,
+      threadId: threadObjectId,
+      userId: userObjectId,
+      content,
       mentions: dto.mentions?.map((id) => new Types.ObjectId(id)) || [],
       reactions: [],
       attachments: [],
+      fileReferences,
       isEdited: false,
     });
 
@@ -44,9 +229,6 @@ export class ThreadMessagesService {
       try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
       try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
 
-      const db = this.messageModel.db;
-      const threadDoc = await db.collection('threads').findOne({ _id: new Types.ObjectId(threadId) });
-      
       if (threadDoc) {
         const projectId = threadDoc.projectId;
         const projectDoc = await db.collection('projects').findOne({ _id: projectId });

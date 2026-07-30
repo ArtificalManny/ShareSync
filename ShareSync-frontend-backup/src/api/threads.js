@@ -42,8 +42,22 @@ export const getThreadMessages = async (threadId) => {
   }
 };
 
-export const postThreadMessage = async (threadId, content) => {
-  const res = await client.post(`/thread-messages/${threadId}`, { content });
+export const postThreadMessage = async (
+  threadId,
+  contentOrPayload
+) => {
+  const payload =
+    typeof contentOrPayload === 'string'
+      ? { content: contentOrPayload }
+      : {
+          ...(contentOrPayload || {}),
+        };
+
+  const res = await client.post(
+    `/thread-messages/${threadId}`,
+    payload
+  );
+
   return res.data?.data || res.data;
 };
 

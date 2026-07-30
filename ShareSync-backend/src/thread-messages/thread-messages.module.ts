@@ -4,6 +4,7 @@ import { ThreadMessage, ThreadMessageSchema } from './schemas/thread-message.sch
 import { ThreadMessagesService } from './thread-messages.service';
 import { ThreadMessagesController } from './thread-messages.controller';
 import { ModerationModule } from '../moderation/moderation.module';
+import { VaultModule } from '../vault/vault.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { ModerationModule } from '../moderation/moderation.module';
       { name: ThreadMessage.name, schema: ThreadMessageSchema },
     ]),
     ModerationModule,
+    VaultModule,
   ],
   controllers: [ThreadMessagesController],
   providers: [ThreadMessagesService],
