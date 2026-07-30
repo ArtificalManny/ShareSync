@@ -29,7 +29,7 @@ import {
 } from './schemas/task.schema';
 import { EVENTS, TaskCompletedEvent } from '../common/events/events.types';
 import { ProjectsService } from '../projects/projects.service';
-import { FilesService } from '../files/files.service';
+import { VaultService } from '../vault/vault.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import {
   UpdateTaskDto,
@@ -109,7 +109,7 @@ export class TasksService {
     @InjectModel(Task.name)
     private readonly taskModel: Model<TaskDocument>,
     private readonly projectsService: ProjectsService,
-    private readonly filesService: FilesService,
+    private readonly vaultService: VaultService,
     private readonly eventEmitter: EventEmitter2,
     private readonly realtime: RealtimeService,
     private readonly textModerationService: TextModerationService,
@@ -1981,11 +1981,16 @@ export class TasksService {
       );
     }
 
-    const file =
-      await this.filesService.findById(fileId);
-
     const taskProjectId =
       task.projectId.toString();
+
+    const file =
+      await this.vaultService
+        .findAccessibleFileForProject(
+          fileId,
+          taskProjectId,
+          userId,
+        );
 
     const fileProjectId = String(
       (file as any)?.projectId || '',
@@ -2030,7 +2035,9 @@ export class TasksService {
     ).trim();
 
     const fileUrl = String(
-      (file as any)?.url || '',
+      (file as any)?.url ||
+        (file as any)?.fileUrl ||
+        '',
     ).trim();
 
     const fileType = String(
@@ -2040,7 +2047,9 @@ export class TasksService {
     ).trim();
 
     const rawFileSize = Number(
-      (file as any)?.size || 0,
+      (file as any)?.size ??
+        (file as any)?.sizeInBytes ??
+        0,
     );
 
     const fileSize =

@@ -424,6 +424,95 @@ export class VaultService {
     return file;
   }
 
+  async findAccessibleFileForProject(
+    fileId: string,
+    projectId: string,
+    userId: string,
+  ): Promise<VaultFileDocument> {
+    const file =
+      await this.findVaultFileOrThrow(
+        fileId,
+      );
+
+    const expectedProjectId =
+      this.toObjectId(
+        projectId,
+        'Project',
+      ).toString();
+
+    const fileProjectId =
+      this.normalizeId(
+        (file as any).projectId,
+      );
+
+    if (
+      !fileProjectId ||
+      fileProjectId !== expectedProjectId
+    ) {
+      throw new ForbiddenException(
+        'This File does not belong to the project',
+      );
+    }
+
+    const folderId =
+      this.normalizeId(
+        (file as any).folderId,
+      );
+
+    if (!folderId) {
+      return file;
+    }
+
+    const folderObjectId =
+      this.toObjectId(
+        folderId,
+        'Folder',
+      );
+
+    const folder =
+      await this.folderModel
+        .findOne({
+          _id: folderObjectId,
+          projectId:
+            new Types.ObjectId(
+              expectedProjectId,
+            ),
+        })
+        .exec();
+
+    if (!folder) {
+      throw new ForbiddenException(
+        'You do not have access to this File',
+      );
+    }
+
+    const userObjectId =
+      this.toObjectId(
+        userId,
+        'User',
+      );
+
+    const folderIsVisible =
+      folder.accessLevel === 'public' ||
+      folder.createdBy.equals(
+        userObjectId,
+      ) ||
+      folder.allowedUsers.some(
+        (allowedUserId) =>
+          allowedUserId.equals(
+            userObjectId,
+          ),
+      );
+
+    if (!folderIsVisible) {
+      throw new ForbiddenException(
+        'You do not have access to this File',
+      );
+    }
+
+    return file;
+  }
+
   private async assertCanManageFile(file: VaultFileDocument, userId: string): Promise<void> {
     const userObjectId = this.toObjectId(userId, 'User');
     const userIdString = userObjectId.toString();

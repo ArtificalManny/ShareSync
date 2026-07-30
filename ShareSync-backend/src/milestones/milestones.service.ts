@@ -23,7 +23,7 @@ import {
   LinkProjectFileDto,
   UpdateMilestoneDto,
 } from './dto';
-import { FilesService } from '../files/files.service';
+import { VaultService } from '../vault/vault.service';
 
 // ✅ NEW: Task model for progress calculation
 import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
@@ -38,7 +38,7 @@ export class MilestonesService {
     private readonly eventEmitter: EventEmitter2,
     private readonly projectsService: ProjectsService,
     private readonly textModerationService: TextModerationService,
-    private readonly filesService: FilesService,
+    private readonly vaultService: VaultService,
     private readonly moduleRef: ModuleRef,
   ) {}
 
@@ -856,9 +856,12 @@ if (projectId) {
     }
 
     const file =
-      await this.filesService.findById(
-        fileId,
-      );
+      await this.vaultService
+        .findAccessibleFileForProject(
+          fileId,
+          projectId,
+          userId,
+        );
 
     const fileProjectId = String(
       file.projectId || '',
@@ -873,47 +876,21 @@ if (projectId) {
       );
     }
 
-    const fileStatus = String(
-      file.status || '',
-    ).toLowerCase();
-
-    const fileKind = String(
-      file.type || '',
-    ).toLowerCase();
-
-    if (
-      fileStatus === 'deleted' ||
-      file.isArchived === true
-    ) {
-      throw new BadRequestException(
-        'This project File is not available',
-      );
-    }
-
-    if (fileKind === 'folder') {
-      throw new BadRequestException(
-        'Folders cannot be linked to a milestone',
-      );
-    }
-
     const fileName = String(
-      file.name ||
-        file.originalName ||
+      file.originalName ||
         'Project file',
     ).trim();
 
     const fileUrl = String(
-      file.url || '',
+      file.fileUrl || '',
     ).trim();
 
     const fileType = String(
-      file.mimeType ||
-        file.fileType ||
-        '',
+      file.mimeType || '',
     ).trim();
 
     const rawFileSize = Number(
-      file.size || 0,
+      file.sizeInBytes ?? 0,
     );
 
     const fileSize =

@@ -397,9 +397,9 @@ export async function addTaskAttachment(taskId, file) {
 }
 
 /**
- * GET /files/project/:projectId
- * List existing project Files that can be referenced
- * from a Move.
+ * GET /vault/project/:projectId
+ * List visible project Files that can be referenced
+ * from a Move or Roadmap milestone.
  */
 export async function fetchProjectFilesForReference(
   projectId,
@@ -412,36 +412,94 @@ export async function fetchProjectFilesForReference(
     throw new Error("projectId is required");
   }
 
-  const params = {
-    limit,
-  };
+  const response = await client.get(
+    `/vault/project/${encodeURIComponent(
+      projectId
+    )}`
+  );
+
+  const payload =
+    response.data?.data ||
+    response.data ||
+    {};
+
+  const vaultFiles = Array.isArray(
+    payload?.files
+  )
+    ? payload.files
+    : [];
+
+  const files = vaultFiles.map((file) => ({
+    ...file,
+    id:
+      file?.id ||
+      file?._id,
+    name:
+      file?.name ||
+      file?.originalName ||
+      "Untitled file",
+    url:
+      file?.url ||
+      file?.fileUrl ||
+      "",
+    size: Number(
+      file?.size ??
+        file?.sizeInBytes ??
+        0
+    ),
+    type:
+      file?.type ||
+      "file",
+    fileType:
+      file?.fileType ||
+      file?.mimeType ||
+      "",
+    status:
+      file?.status ||
+      "ready",
+  }));
 
   const normalizedSearch = String(
     search || ""
-  ).trim();
+  )
+    .trim()
+    .toLowerCase();
 
-  if (normalizedSearch) {
-    params.search = normalizedSearch;
-  }
+  const filteredFiles = normalizedSearch
+    ? files.filter((file) =>
+        [
+          file?.name,
+          file?.originalName,
+          file?.description,
+          file?.mimeType,
+          file?.fileType,
+          file?.extension,
+          ...(Array.isArray(file?.tags)
+            ? file.tags
+            : []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch)
+      )
+    : files;
 
-  const response = await client.get(
-    `/files/project/${encodeURIComponent(
-      projectId
-    )}`,
-    {
-      params,
-    }
+  const numericLimit = Number(limit);
+
+  const normalizedLimit =
+    Number.isFinite(numericLimit) &&
+    numericLimit > 0
+      ? Math.min(
+          Math.floor(numericLimit),
+          200
+        )
+      : 50;
+
+  return filteredFiles.slice(
+    0,
+    normalizedLimit
   );
-
-  const files =
-    response.data?.data ||
-    response.data?.files ||
-    response.data ||
-    [];
-
-  return Array.isArray(files)
-    ? files
-    : [];
 }
 
 /**
