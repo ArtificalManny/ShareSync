@@ -13,6 +13,7 @@ export interface CreateThreadDto {
   title: string;
   category?: 'planning' | 'design' | 'ops' | 'general';
   content?: string;
+  participantIds?: string[];
 }
 
 export interface CreateMessageDto {
@@ -44,14 +45,137 @@ export class ThreadsService {
   ) {}
 
   async create(userId: string, dto: CreateThreadDto): Promise<ThreadDocument> {
-    const userObjectId = new Types.ObjectId(userId);
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new ForbiddenException(
+        'Authenticated user is invalid',
+      );
+    }
+
+    if (
+      !dto.projectId ||
+      !Types.ObjectId.isValid(dto.projectId)
+    ) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    const userObjectId =
+      new Types.ObjectId(userId);
+
+    const projectObjectId =
+      new Types.ObjectId(dto.projectId);
+
+    const db = this.threadModel.db;
+
+    const projectDoc: any =
+      await db
+        .collection('projects')
+        .findOne({
+          _id: projectObjectId,
+        });
+
+    if (!projectDoc) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    const normalizeUserId = (
+      value: any,
+    ): string => {
+      const candidate =
+        value?.userId?._id ||
+        value?.userId?.id ||
+        value?.userId ||
+        value?.user?._id ||
+        value?.user?.id ||
+        value?.member?._id ||
+        value?.member?.id ||
+        value?._id ||
+        value?.id ||
+        value;
+
+      return String(
+        candidate || '',
+      ).trim();
+    };
+
+    const rawProjectMembers =
+      projectDoc.members ||
+      projectDoc.sharedWith ||
+      projectDoc.participantIds ||
+      [];
+
+    const allowedParticipantIds =
+      new Set<string>(
+        [
+          projectDoc.ownerId,
+          projectDoc.owner,
+          ...(
+            Array.isArray(rawProjectMembers)
+              ? rawProjectMembers
+              : []
+          ),
+        ]
+          .map(normalizeUserId)
+          .filter(
+            (id) =>
+              id &&
+              Types.ObjectId.isValid(id),
+          ),
+      );
+
+    allowedParticipantIds.add(userId);
+
+    const requestedParticipantIds =
+      Array.from(
+        new Set(
+          (
+            Array.isArray(dto.participantIds)
+              ? dto.participantIds
+              : []
+          )
+            .map((id) =>
+              String(id || '').trim()
+            )
+            .filter(Boolean),
+        ),
+      );
+
+    const invalidParticipantIds =
+      requestedParticipantIds.filter(
+        (id) =>
+          !Types.ObjectId.isValid(id) ||
+          !allowedParticipantIds.has(id),
+      );
+
+    if (invalidParticipantIds.length > 0) {
+      throw new ForbiddenException(
+        'One or more selected participants are not project members',
+      );
+    }
+
+    const participantIds =
+      Array.from(
+        new Set([
+          userId,
+          ...requestedParticipantIds,
+        ]),
+      ).map(
+        (id) =>
+          new Types.ObjectId(id),
+      );
 
     const thread = new this.threadModel({
-      projectId: new Types.ObjectId(dto.projectId),
+      projectId: projectObjectId,
       title: dto.title,
       category: dto.category || 'general',
       createdBy: userObjectId,
-      participants: [userObjectId],
+      participants: participantIds,
       isPinned: false,
       isLocked: false,
       replyCount: 0,
@@ -65,9 +189,6 @@ export class ThreadsService {
       let notifGateway: any = null;
       try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
       try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
-
-      const db = this.threadModel.db;
-      const projectDoc = await db.collection('projects').findOne({ _id: new Types.ObjectId(dto.projectId) });
 
       if (projectDoc) {
         const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
