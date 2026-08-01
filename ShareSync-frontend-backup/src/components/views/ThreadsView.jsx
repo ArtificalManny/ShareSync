@@ -5,6 +5,7 @@ import {
   MessageCircle, Pin, Search, Plus, Clock, Users,
   Hash, Loader2, X, ChevronLeft, ArrowUp, Check,
   Paperclip, FileText, ExternalLink, Link2,
+  MoreHorizontal, ListTodo, Megaphone,
 } from 'lucide-react';
 import {
   getProjectThreads, createThread,
@@ -12,7 +13,12 @@ import {
 } from '../../api/threads';
 import {
   fetchProjectFilesForReference,
+  createTask,
+  addTaskFileReference,
 } from '../../api/taskApi';
+import {
+  createAnnouncement,
+} from '../../api/announcements';
 import { toast } from '../ui/toast';
 
 const CHANNELS = [
@@ -386,6 +392,24 @@ function formatThreadFileSize(bytes) {
   ).toFixed(1)} MB`;
 }
 
+function buildMessageConversionTitle(content) {
+  const firstLine =
+    String(content || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find(Boolean) ||
+    'Team Room message';
+
+  if (firstLine.length <= 120) {
+    return firstLine;
+  }
+
+  return (
+    firstLine.slice(0, 117).trimEnd() +
+    '...'
+  );
+}
+
 function ThreadMessageFileCard({
   file,
   isOwn = false,
@@ -611,7 +635,13 @@ function ThreadProjectFilePicker({
   );
 }
 
-function MessageBubble({ msg, isOwn }) {
+function MessageBubble({
+  msg,
+  isOwn,
+  onConvert,
+  conversionDisabled = false,
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const userObj = msg.userId || {};
   const name = isOwn ? 'You' : (userObj.firstName ? (userObj.firstName + ' ' + (userObj.lastName || '')).trim() : (msg.authorName || 'Team Member'));
   const initial = name[0]?.toUpperCase() || '?';
@@ -622,6 +652,22 @@ function MessageBubble({ msg, isOwn }) {
     normalizeThreadFileReferences(
       msg?.fileReferences
     );
+
+  const isOptimistic =
+    String(msg?._id || '')
+      .startsWith('temp-');
+
+  const canConvert =
+    !conversionDisabled &&
+    !isOptimistic &&
+    Boolean(
+      String(msg?.content || '').trim()
+    );
+
+  const requestConversion = (type) => {
+    setMenuOpen(false);
+    onConvert?.(type);
+  };
 
   return (
     <div className={'flex w-full mb-1 ' + (isOwn ? 'justify-end' : 'justify-start')}>
@@ -661,6 +707,66 @@ function MessageBubble({ msg, isOwn }) {
           <div className={'flex items-center gap-2 mb-1 ' + (isOwn ? 'flex-row-reverse' : 'flex-row')}>
             <span className="text-[11px] font-medium text-slate-700 dark:text-white/70">{name}</span>
             <span className="text-[10px] text-slate-400 dark:text-white/30">{timeAgo(msg.createdAt)}</span>
+
+            {canConvert ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMenuOpen(
+                      (current) => !current
+                    )
+                  }
+                  className="grid h-6 w-6 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-white/30 dark:hover:bg-white/[0.08] dark:hover:text-white"
+                  title="Message actions"
+                  aria-label="Message actions"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+
+                {menuOpen ? (
+                  <div
+                    role="menu"
+                    className={
+                      'absolute bottom-7 z-40 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-white/[0.10] dark:bg-[#222228] ' +
+                      (
+                        isOwn
+                          ? 'right-0'
+                          : 'left-0'
+                      )
+                    }
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() =>
+                        requestConversion('move')
+                      }
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-violet-50 hover:text-violet-700 dark:text-white/75 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
+                    >
+                      <ListTodo className="h-4 w-4 shrink-0" />
+                      Convert to Move
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() =>
+                        requestConversion(
+                          'announcement'
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-cyan-50 hover:text-cyan-700 dark:text-white/75 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-200"
+                    >
+                      <Megaphone className="h-4 w-4 shrink-0" />
+                      Convert to Announcement
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div
             className={
@@ -688,13 +794,14 @@ function MessageBubble({ msg, isOwn }) {
   );
 }
 
-function ConversationPanel({ projectId, thread, currentUserId, participants = [], onBack }) {
+function ConversationPanel({ projectId, thread, currentUserId, participants = [], onBack, readOnly = false }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMsg, setNewMsg] = useState('');
   const [linkedFile, setLinkedFile] = useState(null);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [conversionTarget, setConversionTarget] = useState(null);
   const scrollRef = useRef(null);
   const threadId = thread?._id || thread?.id;
 
@@ -704,6 +811,7 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
     setLoading(true);
     setLinkedFile(null);
     setFilePickerOpen(false);
+    setConversionTarget(null);
     getThreadMessages(threadId)
       .then(data => { if (mounted) setMessages(Array.isArray(data) ? data : []); })
       .catch(() => {})
@@ -863,7 +971,20 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
           const msgUserIdStr = rawUserId ? String(rawUserId) : null;
           const isOwn = isOptimistic || (currIdStr && msgUserIdStr && currIdStr === msgUserIdStr);
 
-          return <MessageBubble key={msg._id || idx} msg={msg} isOwn={isOwn} />;
+          return (
+            <MessageBubble
+              key={msg._id || idx}
+              msg={msg}
+              isOwn={isOwn}
+              conversionDisabled={readOnly}
+              onConvert={(type) =>
+                setConversionTarget({
+                  type,
+                  message: msg,
+                })
+              }
+            />
+          );
         })}
       </div>
 
@@ -974,6 +1095,310 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
           </button>
         </div>
       </div>
+      {conversionTarget ? (
+        <MessageConversionModal
+          projectId={projectId}
+          threadTitle={thread?.title}
+          message={conversionTarget.message}
+          conversionType={conversionTarget.type}
+          onClose={() =>
+            setConversionTarget(null)
+          }
+        />
+      ) : null}
+
+    </div>
+  );
+}
+
+function MessageConversionModal({
+  projectId,
+  threadTitle,
+  message,
+  conversionType,
+  onClose,
+}) {
+  const isMove =
+    conversionType === 'move';
+
+  const originalContent =
+    String(message?.content || '').trim();
+
+  const fileReferences =
+    normalizeThreadFileReferences(
+      message?.fileReferences
+    );
+
+  const [title, setTitle] =
+    useState(() =>
+      buildMessageConversionTitle(
+        originalContent
+      )
+    );
+
+  const [body, setBody] =
+    useState(originalContent);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const cleanTitle = title.trim();
+    const cleanBody = body.trim();
+
+    if (
+      !projectId ||
+      !cleanTitle ||
+      !cleanBody ||
+      submitting
+    ) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      if (isMove) {
+        const createdMove =
+          await createTask(
+            projectId,
+            {
+              title: cleanTitle,
+              description: cleanBody,
+              status: 'backlog',
+            }
+          );
+
+        const taskId =
+          getEntityId(createdMove);
+
+        if (!taskId) {
+          throw new Error(
+            'Move was created but its ID was missing'
+          );
+        }
+
+        for (const file of fileReferences) {
+          await addTaskFileReference(
+            taskId,
+            file.fileId
+          );
+        }
+      } else {
+        await createAnnouncement(
+          projectId,
+          {
+            title: cleanTitle,
+            message: cleanBody,
+            type: 'general',
+            pinned: false,
+            fileReferences: fileReferences.map(
+              (file) => file.fileId
+            ),
+          }
+        );
+      }
+
+      toast({
+        title:
+          isMove
+            ? 'Move created from Team Room message'
+            : 'Announcement created from Team Room message',
+        variant: 'success',
+      });
+
+      onClose?.();
+    } catch (error) {
+      toast({
+        title:
+          error?.response?.data?.message ||
+          error?.message ||
+          (
+            isMove
+              ? 'Failed to create Move'
+              : 'Failed to create Announcement'
+          ),
+        variant: 'error',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const Icon =
+    isMove
+      ? ListTodo
+      : Megaphone;
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => {
+          if (!submitting) {
+            onClose?.();
+          }
+        }}
+        aria-label="Close conversion modal"
+      />
+
+      <form
+        onSubmit={handleSubmit}
+        className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/[0.10] dark:bg-[#1f1f23]"
+      >
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-white/[0.06]">
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className={
+                'grid h-10 w-10 shrink-0 place-items-center rounded-xl ' +
+                (
+                  isMove
+                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200'
+                    : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200'
+                )
+              }
+            >
+              <Icon className="h-5 w-5" />
+            </span>
+
+            <div className="min-w-0">
+              <h2 className="text-base font-black text-slate-900 dark:text-white">
+                {isMove
+                  ? 'Convert to Move'
+                  : 'Convert to Announcement'}
+              </h2>
+
+              <p className="truncate text-xs font-semibold text-slate-500 dark:text-white/40">
+                From Team Room
+                {threadTitle
+                  ? ` · ${threadTitle}`
+                  : ''}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => onClose?.()}
+            className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-white"
+            title="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 p-5">
+          <div>
+            <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-white/40">
+              Title
+            </label>
+
+            <input
+              type="text"
+              value={title}
+              disabled={submitting}
+              maxLength={500}
+              onChange={(event) =>
+                setTitle(event.target.value)
+              }
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-50 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-white/40">
+              {isMove
+                ? 'Description'
+                : 'Announcement message'}
+            </label>
+
+            <textarea
+              value={body}
+              disabled={submitting}
+              maxLength={10000}
+              rows={7}
+              onChange={(event) =>
+                setBody(event.target.value)
+              }
+              className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-50 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-white"
+            />
+          </div>
+
+          {fileReferences.length > 0 ? (
+            <div className="rounded-xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 dark:border-cyan-400/15 dark:bg-cyan-500/10">
+              <p className="flex items-center gap-2 text-xs font-black text-cyan-800 dark:text-cyan-200">
+                <Link2 className="h-4 w-4" />
+
+                {fileReferences.length}{' '}
+                linked project File
+                {fileReferences.length === 1
+                  ? ''
+                  : 's'}{' '}
+                will be preserved
+              </p>
+
+              <div className="mt-2 space-y-1">
+                {fileReferences.map(
+                  (file) => (
+                    <p
+                      key={file.fileId}
+                      className="truncate text-[11px] font-semibold text-cyan-700/80 dark:text-cyan-100/60"
+                    >
+                      {file.fileName}
+                    </p>
+                  )
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex gap-3 border-t border-slate-100 px-5 py-4 dark:border-white/[0.06]">
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => onClose?.()}
+            className="flex-1 rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:bg-white/[0.06] dark:text-white/60 dark:hover:bg-white/[0.10]"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={
+              submitting ||
+              !title.trim() ||
+              !body.trim()
+            }
+            className={
+              'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50 ' +
+              (
+                isMove
+                  ? 'bg-violet-700 shadow-violet-500/20 hover:bg-violet-800'
+                  : 'bg-cyan-700 shadow-cyan-500/20 hover:bg-cyan-800'
+              )
+            }
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Icon className="h-4 w-4" />
+            )}
+
+            {submitting
+              ? 'Creating...'
+              : (
+                  isMove
+                    ? 'Create Move'
+                    : 'Create Announcement'
+                )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -2260,6 +2685,7 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
                     thread={activeThread}
                     currentUserId={currentUserId}
                     participants={getThreadParticipants(activeThread, projectMembers, currentUserId)}
+                    readOnly={readOnly}
                     onBack={() => setActiveThread(null)}
                   />
                 </div>
