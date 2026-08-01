@@ -8,8 +8,15 @@ import {
   Optional,
   ForbiddenException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {
+  InjectConnection,
+  InjectModel,
+} from '@nestjs/mongoose';
+import {
+  Connection,
+  Model,
+  Types,
+} from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 
@@ -39,6 +46,15 @@ export type AnnouncementFileReferenceInput =
       fileId?: string;
     };
 
+export type AnnouncementAffectedReferenceInput =
+  | string
+  | {
+      _id?: string;
+      id?: string;
+      taskId?: string;
+      milestoneId?: string;
+    };
+
 export type CreateAnnouncementInput = {
   projectId: string;
   authorId: string;
@@ -48,6 +64,8 @@ export type CreateAnnouncementInput = {
   pinned?: boolean;
   attachments?: string[];
   fileReferences?: AnnouncementFileReferenceInput[];
+  affectedMoveIds?: AnnouncementAffectedReferenceInput[];
+  affectedMilestoneIds?: AnnouncementAffectedReferenceInput[];
   poll?: AnnouncementPollInput;
 };
 
@@ -60,6 +78,8 @@ export type UpdateAnnouncementInput = {
   pinned?: boolean;
   attachments?: string[];
   fileReferences?: AnnouncementFileReferenceInput[];
+  affectedMoveIds?: AnnouncementAffectedReferenceInput[];
+  affectedMilestoneIds?: AnnouncementAffectedReferenceInput[];
   poll?: AnnouncementPollInput;
 };
 
@@ -68,6 +88,8 @@ export class AnnouncementsService {
   private readonly logger = new Logger(AnnouncementsService.name);
 
   constructor(
+    @InjectConnection()
+    private readonly connection: Connection,
     @InjectModel(Announcement.name)
     private readonly announcementModel: Model<AnnouncementDocument>,
     @InjectModel(Project.name)
@@ -190,7 +212,136 @@ export class AnnouncementsService {
 
     if (opts.pinnedOnly) query.pinned = true;
 
-    return this.announcementModel.find(query).populate('authorId', this.userPopulateFields).sort({ pinned: -1, createdAt: -1 }).exec();
+    return this.announcementModel
+      .find(query)
+      .populate(
+        'authorId',
+        this.userPopulateFields,
+      )
+      .populate(
+        'affectedMoveIds',
+        'title status priority dueDate milestoneId',
+      )
+      .populate(
+        'affectedMilestoneIds',
+        'title status targetDate dueDate progress',
+      )
+      .sort({
+        pinned: -1,
+        createdAt: -1,
+      })
+      .exec();
+  }
+
+  private async normalizeAffectedEntityIds(
+    projectId: string,
+    references:
+      | AnnouncementAffectedReferenceInput[]
+      | undefined,
+    modelName: 'Task' | 'Milestone',
+    label: 'Move' | 'milestone',
+  ): Promise<Types.ObjectId[]> {
+    if (!Array.isArray(references)) {
+      return [];
+    }
+
+    const rawIds = Array.from(
+      new Set(
+        references
+          .map((reference) => {
+            if (typeof reference === 'string') {
+              return reference.trim();
+            }
+
+            return String(
+              reference?._id ||
+                reference?.id ||
+                reference?.taskId ||
+                reference?.milestoneId ||
+                '',
+            ).trim();
+          })
+          .filter(Boolean),
+      ),
+    );
+
+    if (rawIds.length > 10) {
+      throw new BadRequestException(
+        `An announcement can reference up to 10 ${
+          label === 'Move'
+            ? 'Moves'
+            : 'milestones'
+        }`,
+      );
+    }
+
+    const objectIds = rawIds.map((rawId) => {
+      if (!Types.ObjectId.isValid(rawId)) {
+        throw new BadRequestException(
+          `${label} ID is invalid`,
+        );
+      }
+
+      return new Types.ObjectId(rawId);
+    });
+
+    if (objectIds.length === 0) {
+      return [];
+    }
+
+    const projectObjectId = this.toObjectId(
+      projectId,
+      'projectId',
+    );
+
+    let entityModel: Model<any>;
+
+    try {
+      entityModel =
+        this.connection.model(modelName);
+    } catch {
+      throw new BadRequestException(
+        `${label} references are unavailable`,
+      );
+    }
+
+    const matchingEntities = await entityModel
+      .find({
+        _id: {
+          $in: objectIds,
+        },
+        projectId: projectObjectId,
+      })
+      .select({
+        _id: 1,
+      })
+      .lean()
+      .exec();
+
+    const matchingIds = new Set(
+      matchingEntities.map((entity: any) =>
+        String(entity?._id || ''),
+      ),
+    );
+
+    const allBelongToProject =
+      objectIds.every((objectId) =>
+        matchingIds.has(
+          objectId.toString(),
+        ),
+      );
+
+    if (!allBelongToProject) {
+      throw new BadRequestException(
+        `One or more selected ${
+          label === 'Move'
+            ? 'Moves'
+            : 'milestones'
+        } do not belong to this project`,
+      );
+    }
+
+    return objectIds;
   }
 
   private async normalizeFileReferences(
@@ -351,6 +502,24 @@ export class AnnouncementsService {
     const projectObjectId = this.toObjectId(input.projectId, 'projectId');
     const authorObjectId = this.toObjectId(input.authorId, 'authorId');
 
+    const [
+      affectedMoveIds,
+      affectedMilestoneIds,
+    ] = await Promise.all([
+      this.normalizeAffectedEntityIds(
+        input.projectId,
+        input.affectedMoveIds,
+        'Task',
+        'Move',
+      ),
+      this.normalizeAffectedEntityIds(
+        input.projectId,
+        input.affectedMilestoneIds,
+        'Milestone',
+        'milestone',
+      ),
+    ]);
+
     const fileReferences =
       await this.normalizeFileReferences(
         input.projectId,
@@ -367,10 +536,27 @@ export class AnnouncementsService {
       pinned: Boolean(input.pinned),
       attachments: input.attachments || [],
       fileReferences,
-        poll: this.normalizePoll(input.poll),
+      affectedMoveIds,
+      affectedMilestoneIds,
+      poll: this.normalizePoll(input.poll),
       readBy: [],
     });
-    await doc.populate('authorId', this.userPopulateFields);
+    await doc.populate([
+      {
+        path: 'authorId',
+        select: this.userPopulateFields,
+      },
+      {
+        path: 'affectedMoveIds',
+        select:
+          'title status priority dueDate milestoneId',
+      },
+      {
+        path: 'affectedMilestoneIds',
+        select:
+          'title status targetDate dueDate progress',
+      },
+    ]);
 
     const project = await this.projectModel
       .findById(projectObjectId)
@@ -521,6 +707,30 @@ export class AnnouncementsService {
       update.attachments = input.attachments;
     }
 
+    if (Array.isArray(input.affectedMoveIds)) {
+      update.affectedMoveIds =
+        await this.normalizeAffectedEntityIds(
+          input.projectId,
+          input.affectedMoveIds,
+          'Task',
+          'Move',
+        );
+    }
+
+    if (
+      Array.isArray(
+        input.affectedMilestoneIds,
+      )
+    ) {
+      update.affectedMilestoneIds =
+        await this.normalizeAffectedEntityIds(
+          input.projectId,
+          input.affectedMilestoneIds,
+          'Milestone',
+          'milestone',
+        );
+    }
+
     if (Array.isArray(input.fileReferences)) {
       const actorId = String(
         input.userId || '',
@@ -541,8 +751,27 @@ export class AnnouncementsService {
     }
 
     const updated = await this.announcementModel
-      .findByIdAndUpdate(annId, { $set: update }, { new: true })
-      .populate('authorId', this.userPopulateFields)
+      .findByIdAndUpdate(
+        annId,
+        {
+          $set: update,
+        },
+        {
+          new: true,
+        },
+      )
+      .populate(
+        'authorId',
+        this.userPopulateFields,
+      )
+      .populate(
+        'affectedMoveIds',
+        'title status priority dueDate milestoneId',
+      )
+      .populate(
+        'affectedMilestoneIds',
+        'title status targetDate dueDate progress',
+      )
       .exec();
 
     if (!updated) {

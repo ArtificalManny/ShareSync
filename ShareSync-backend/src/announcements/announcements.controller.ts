@@ -56,6 +56,20 @@ export class AnnouncementsController {
       fileReferences?: Array<
         string | { fileId?: string }
       >;
+      affectedMoveIds?: Array<
+        string | {
+          _id?: string;
+          id?: string;
+          taskId?: string;
+        }
+      >;
+      affectedMilestoneIds?: Array<
+        string | {
+          _id?: string;
+          id?: string;
+          milestoneId?: string;
+        }
+      >;
     },
   ) {
     const authorId =
@@ -84,6 +98,20 @@ export class AnnouncementsController {
       fileReferences?: Array<
         string | { fileId?: string }
       >;
+      affectedMoveIds?: Array<
+        string | {
+          _id?: string;
+          id?: string;
+          taskId?: string;
+        }
+      >;
+      affectedMilestoneIds?: Array<
+        string | {
+          _id?: string;
+          id?: string;
+          milestoneId?: string;
+        }
+      >;
     },
     @Req() req: any,
   ) {
@@ -104,6 +132,10 @@ export class AnnouncementsController {
       attachments: body.attachments,
       fileReferences:
         body.fileReferences,
+      affectedMoveIds:
+        body.affectedMoveIds,
+      affectedMilestoneIds:
+        body.affectedMilestoneIds,
     });
   }
 

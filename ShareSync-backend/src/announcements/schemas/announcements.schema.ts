@@ -68,6 +68,28 @@ export class Announcement {
   fileReferences: AnnouncementFileReference[];
 
   @Prop({
+    type: [
+      {
+        type: Types.ObjectId,
+        ref: 'Task',
+      },
+    ],
+    default: [],
+  })
+  affectedMoveIds: Types.ObjectId[];
+
+  @Prop({
+    type: [
+      {
+        type: Types.ObjectId,
+        ref: 'Milestone',
+      },
+    ],
+    default: [],
+  })
+  affectedMilestoneIds: Types.ObjectId[];
+
+  @Prop({
     type: {
       question: { type: String, default: '' },
       options: [

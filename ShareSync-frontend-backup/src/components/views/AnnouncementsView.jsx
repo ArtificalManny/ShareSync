@@ -11,6 +11,7 @@ import {
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
   ExternalLink, FileText, Link2, Search,
+  ListTodo, Target,
 } from 'lucide-react';
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
@@ -23,6 +24,12 @@ import {
 import {
   fetchProjectFilesForReference,
 } from '../../api/taskApi';
+import {
+  listTasks,
+} from '../../api/tasks';
+import {
+  getMilestones,
+} from '../../api/milestones';
 
 // ─── Upload helper ──────────────────────────────────────────────────────────
 
@@ -84,6 +91,114 @@ function getAvatarColor(name) {
 
 function getId(item) {
   return item?._id || item?.id || '';
+}
+
+function normalizeAnnouncementAffectedReference(
+  value,
+  kind,
+) {
+  if (!value) return null;
+
+  const source =
+    typeof value === 'object'
+      ? value
+      : {};
+
+  const id = String(
+    typeof value === 'string'
+      ? value
+      : source?._id ||
+          source?.id ||
+          source?.taskId ||
+          source?.milestoneId ||
+          ''
+  ).trim();
+
+  if (!id) return null;
+
+  const fallbackLabel =
+    kind === 'move'
+      ? 'Move'
+      : 'Milestone';
+
+  return {
+    ...source,
+    id,
+    title:
+      source?.title ||
+      source?.name ||
+      source?.label ||
+      `${fallbackLabel} ${id.slice(-6)}`,
+    status:
+      source?.status ||
+      source?.scheduleState ||
+      '',
+    priority:
+      source?.priority ||
+      '',
+  };
+}
+
+function normalizeAnnouncementAffectedList(
+  values,
+  kind,
+) {
+  const unique = new Map();
+
+  (
+    Array.isArray(values)
+      ? values
+      : []
+  )
+    .map((value) =>
+      normalizeAnnouncementAffectedReference(
+        value,
+        kind,
+      )
+    )
+    .filter(Boolean)
+    .forEach((item) => {
+      if (!unique.has(item.id)) {
+        unique.set(item.id, item);
+      }
+    });
+
+  return Array.from(unique.values());
+}
+
+function formatAnnouncementWorkStatus(value) {
+  const clean = String(value || '')
+    .trim()
+    .replace(/[_-]+/g, ' ');
+
+  if (!clean) return '';
+
+  return clean.replace(
+    /\b\w/g,
+    (character) =>
+      character.toUpperCase()
+  );
+}
+
+function selectAnnouncementAffectedReferences(
+  options,
+  selectedIds,
+  kind,
+) {
+  const selected = new Set(
+    (
+      Array.isArray(selectedIds)
+        ? selectedIds
+        : []
+    ).map(String)
+  );
+
+  return normalizeAnnouncementAffectedList(
+    options,
+    kind,
+  ).filter((item) =>
+    selected.has(item.id)
+  );
 }
 
 function unwrapAnnouncementPayload(payload) {
@@ -1518,6 +1633,444 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
 
 // ─── Announcement Card ──────────────────────────────────────────────────────
 
+function AnnouncementAffectedWorkReferences({
+  moves,
+  milestones,
+}) {
+  const normalizedMoves =
+    normalizeAnnouncementAffectedList(
+      moves,
+      'move',
+    );
+
+  const normalizedMilestones =
+    normalizeAnnouncementAffectedList(
+      milestones,
+      'milestone',
+    );
+
+  if (
+    normalizedMoves.length === 0 &&
+    normalizedMilestones.length === 0
+  ) {
+    return null;
+  }
+
+  const renderReference = (
+    item,
+    kind,
+  ) => {
+    const isMove = kind === 'move';
+    const Icon = isMove
+      ? ListTodo
+      : Target;
+
+    const status =
+      formatAnnouncementWorkStatus(
+        item.status
+      );
+
+    return (
+      <div
+        key={`${kind}-${item.id}`}
+        className={`flex min-w-0 items-center gap-3 rounded-2xl border px-4 py-3 ${
+          isMove
+            ? 'border-violet-100 bg-violet-50/55'
+            : 'border-emerald-100 bg-emerald-50/55'
+        }`}
+      >
+        <span
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white shadow-sm ring-1 ${
+            isMove
+              ? 'text-violet-700 ring-violet-100'
+              : 'text-emerald-700 ring-emerald-100'
+          }`}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span
+            className={`block text-[10px] font-black uppercase tracking-[0.17em] ${
+              isMove
+                ? 'text-violet-600'
+                : 'text-emerald-600'
+            }`}
+          >
+            {isMove
+              ? 'Affected Move'
+              : 'Affected milestone'}
+          </span>
+
+          <span className="mt-0.5 block truncate text-sm font-black text-slate-900">
+            {item.title}
+          </span>
+
+          {status ? (
+            <span className="mt-0.5 block text-xs font-semibold text-slate-500">
+              {status}
+            </span>
+          ) : null}
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Link2 className="h-4 w-4 text-slate-500" />
+
+        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
+          Affected work
+        </span>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {normalizedMoves.map((item) =>
+          renderReference(
+            item,
+            'move',
+          )
+        )}
+
+        {normalizedMilestones.map(
+          (item) =>
+            renderReference(
+              item,
+              'milestone',
+            )
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AnnouncementAffectedWorkInput({
+  moves,
+  milestones,
+  selectedMoveIds,
+  selectedMilestoneIds,
+  onMoveIdsChange,
+  onMilestoneIdsChange,
+  loading = false,
+  error = '',
+  disabled = false,
+}) {
+  const [
+    moveSearch,
+    setMoveSearch,
+  ] = useState('');
+
+  const [
+    milestoneSearch,
+    setMilestoneSearch,
+  ] = useState('');
+
+  const normalizedMoves =
+    normalizeAnnouncementAffectedList(
+      moves,
+      'move',
+    );
+
+  const normalizedMilestones =
+    normalizeAnnouncementAffectedList(
+      milestones,
+      'milestone',
+    );
+
+  const moveIds = (
+    Array.isArray(selectedMoveIds)
+      ? selectedMoveIds
+      : []
+  ).map(String);
+
+  const milestoneIds = (
+    Array.isArray(selectedMilestoneIds)
+      ? selectedMilestoneIds
+      : []
+  ).map(String);
+
+  const filterItems = (
+    items,
+    search,
+  ) => {
+    const query = String(search || '')
+      .trim()
+      .toLowerCase();
+
+    if (!query) return items;
+
+    return items.filter((item) =>
+      [
+        item.title,
+        item.status,
+        item.priority,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value)
+            .toLowerCase()
+            .includes(query)
+        )
+    );
+  };
+
+  const toggleId = (
+    currentIds,
+    id,
+    onChange,
+  ) => {
+    if (currentIds.includes(id)) {
+      onChange(
+        currentIds.filter(
+          (currentId) =>
+            currentId !== id
+        )
+      );
+      return;
+    }
+
+    if (currentIds.length >= 10) {
+      toast({
+        title:
+          'An announcement can reference up to 10 items of each type',
+        variant: 'error',
+      });
+      return;
+    }
+
+    onChange([
+      ...currentIds,
+      id,
+    ]);
+  };
+
+  const renderList = ({
+    items,
+    selectedIds,
+    onChange,
+    kind,
+    search,
+    setSearch,
+  }) => {
+    const isMove = kind === 'move';
+    const Icon = isMove
+      ? ListTodo
+      : Target;
+
+    const filteredItems =
+      filterItems(
+        items,
+        search,
+      );
+
+    return (
+      <div
+        className={`rounded-2xl border bg-white p-3 ${
+          isMove
+            ? 'border-violet-100'
+            : 'border-emerald-100'
+        }`}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <span
+            className={`flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] ${
+              isMove
+                ? 'text-violet-700'
+                : 'text-emerald-700'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+
+            {isMove
+              ? 'Moves'
+              : 'Milestones'}
+          </span>
+
+          <span className="text-xs font-black text-slate-400">
+            {selectedIds.length}/10
+          </span>
+        </div>
+
+        <div className="mb-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-violet-300 focus-within:bg-white">
+          <Search className="h-4 w-4 shrink-0 text-slate-400" />
+
+          <input
+            type="search"
+            value={search}
+            disabled={disabled}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder={
+              isMove
+                ? 'Search Moves...'
+                : 'Search milestones...'
+            }
+            className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-slate-900 outline-none placeholder:text-slate-400 disabled:opacity-60"
+          />
+
+          {search ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() =>
+                setSearch('')
+              }
+              className="text-slate-400 hover:text-slate-700 disabled:opacity-50"
+              title="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </div>
+
+        {filteredItems.length > 0 ? (
+          <div className="max-h-52 space-y-1 overflow-y-auto pr-1">
+            {filteredItems.map((item) => {
+              const checked =
+                selectedIds.includes(
+                  item.id
+                );
+
+              const limitReached =
+                !checked &&
+                selectedIds.length >= 10;
+
+              return (
+                <label
+                  key={`${kind}-${item.id}`}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
+                    checked
+                      ? isMove
+                        ? 'border-violet-200 bg-violet-50'
+                        : 'border-emerald-200 bg-emerald-50'
+                      : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
+                  } ${
+                    disabled ||
+                    limitReached
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={
+                      disabled ||
+                      limitReached
+                    }
+                    onChange={() =>
+                      toggleId(
+                        selectedIds,
+                        item.id,
+                        onChange,
+                      )
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                  />
+
+                  <span
+                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+                      isMove
+                        ? 'bg-violet-100 text-violet-700'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-black text-slate-900">
+                      {item.title}
+                    </span>
+
+                    <span className="block text-xs font-semibold text-slate-500">
+                      {formatAnnouncementWorkStatus(
+                        item.status
+                      ) ||
+                        (isMove
+                          ? 'Move'
+                          : 'Milestone')}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-5 text-center text-xs font-bold text-slate-500">
+            {search
+              ? 'No matching work found.'
+              : isMove
+                ? 'No Moves are available.'
+                : 'No milestones are available.'}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <section className="rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700">
+          <Link2 className="h-5 w-5" />
+        </span>
+
+        <div>
+          <span className="block text-xs font-black uppercase tracking-[0.18em] text-slate-700">
+            Affected work
+          </span>
+
+          <span className="mt-1 block text-xs font-semibold text-slate-500">
+            Connect this broadcast to the Moves and milestones it affects.
+          </span>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-7 text-sm font-bold text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin text-violet-600" />
+          Loading project work...
+        </div>
+      ) : error ? (
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-bold text-rose-700">
+          {error}
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {renderList({
+            items: normalizedMoves,
+            selectedIds: moveIds,
+            onChange: onMoveIdsChange,
+            kind: 'move',
+            search: moveSearch,
+            setSearch: setMoveSearch,
+          })}
+
+          {renderList({
+            items:
+              normalizedMilestones,
+            selectedIds:
+              milestoneIds,
+            onChange:
+              onMilestoneIdsChange,
+            kind: 'milestone',
+            search:
+              milestoneSearch,
+            setSearch:
+              setMilestoneSearch,
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdit, onUpdate, readOnly = false }) {
   const rawType = String(item.type || 'info').toLowerCase();
   const style = TYPE_STYLES[rawType] || TYPE_STYLES.info;
@@ -1753,6 +2306,12 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
             <AnnouncementFileReferences
               references={item.fileReferences}
             />
+            <AnnouncementAffectedWorkReferences
+              moves={item.affectedMoveIds}
+              milestones={
+                item.affectedMilestoneIds
+              }
+            />
             <AnnouncementPollBlock
               item={item}
               projectId={readOnly ? undefined : projectId}
@@ -1849,6 +2408,30 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     linkedProjectFiles,
     setLinkedProjectFiles,
   ] = useState([]);
+  const [
+    linkedMoveIds,
+    setLinkedMoveIds,
+  ] = useState([]);
+  const [
+    linkedMilestoneIds,
+    setLinkedMilestoneIds,
+  ] = useState([]);
+  const [
+    announcementMoveOptions,
+    setAnnouncementMoveOptions,
+  ] = useState([]);
+  const [
+    announcementMilestoneOptions,
+    setAnnouncementMilestoneOptions,
+  ] = useState([]);
+  const [
+    affectedWorkLoading,
+    setAffectedWorkLoading,
+  ] = useState(false);
+  const [
+    affectedWorkError,
+    setAffectedWorkError,
+  ] = useState('');
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState([createPollOptionState(), createPollOptionState()]);
@@ -1863,6 +2446,8 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     setPinned(false);
     setUploadedFiles([]);
     setLinkedProjectFiles([]);
+    setLinkedMoveIds([]);
+    setLinkedMilestoneIds([]);
     setPollEnabled(false);
     setPollQuestion('');
     setPollOptions([createPollOptionState(), createPollOptionState()]);
@@ -1892,6 +2477,21 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     setLinkedProjectFiles(
       normalizeAnnouncementFileReferenceList(
         announcement?.fileReferences
+      )
+    );
+    setLinkedMoveIds(
+      normalizeAnnouncementAffectedList(
+        announcement?.affectedMoveIds,
+        'move',
+      ).map((move) => move.id)
+    );
+    setLinkedMilestoneIds(
+      normalizeAnnouncementAffectedList(
+        announcement?.affectedMilestoneIds,
+        'milestone',
+      ).map(
+        (milestone) =>
+          milestone.id
       )
     );
 
@@ -1936,6 +2536,79 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
 
   useEffect(() => { mountedRef.current = true; load(); return () => { mountedRef.current = false; }; }, [load]);
 
+  useEffect(() => {
+    if (!showCreate || !projectId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadAffectedWork = async () => {
+      setAffectedWorkLoading(true);
+      setAffectedWorkError('');
+
+      try {
+        const [
+          moves,
+          milestones,
+        ] = await Promise.all([
+          listTasks(
+            projectId,
+            {
+              limit: 200,
+            }
+          ),
+          getMilestones(
+            projectId,
+            {
+              limit: 200,
+            }
+          ),
+        ]);
+
+        if (cancelled) return;
+
+        setAnnouncementMoveOptions(
+          normalizeAnnouncementAffectedList(
+            moves,
+            'move',
+          )
+        );
+
+        setAnnouncementMilestoneOptions(
+          normalizeAnnouncementAffectedList(
+            milestones,
+            'milestone',
+          )
+        );
+      } catch (loadError) {
+        if (cancelled) return;
+
+        setAnnouncementMoveOptions([]);
+        setAnnouncementMilestoneOptions([]);
+
+        setAffectedWorkError(
+          loadError?.response?.data?.message ||
+            loadError?.message ||
+            'Failed to load project Moves and milestones'
+        );
+      } finally {
+        if (!cancelled) {
+          setAffectedWorkLoading(false);
+        }
+      }
+    };
+
+    loadAffectedWork();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    showCreate,
+    projectId,
+  ]);
+
   const handleCreate = async () => {
     if (readOnly) return;
     const cleanMessage = sanitizeAnnouncementHtml(message);
@@ -1973,6 +2646,10 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             linkedProjectFiles.map(
               (file) => file.fileId
             ),
+          affectedMoveIds:
+            linkedMoveIds,
+          affectedMilestoneIds:
+            linkedMilestoneIds,
         });
 
         const updated = unwrapAnnouncementPayload(response);
@@ -1997,6 +2674,26 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                       )
                         ? updated.fileReferences
                         : linkedProjectFiles,
+                    affectedMoveIds:
+                      Array.isArray(
+                        updated?.affectedMoveIds
+                      )
+                        ? updated.affectedMoveIds
+                        : selectAnnouncementAffectedReferences(
+                            announcementMoveOptions,
+                            linkedMoveIds,
+                            'move',
+                          ),
+                    affectedMilestoneIds:
+                      Array.isArray(
+                        updated?.affectedMilestoneIds
+                      )
+                        ? updated.affectedMilestoneIds
+                        : selectAnnouncementAffectedReferences(
+                            announcementMilestoneOptions,
+                            linkedMilestoneIds,
+                            'milestone',
+                          ),
                     pinned:
                       typeof updated?.pinned === 'boolean'
                         ? updated.pinned
@@ -2028,6 +2725,10 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
               (file) => file.fileId
             ),
           poll: cleanPoll,
+          affectedMoveIds:
+            linkedMoveIds,
+          affectedMilestoneIds:
+            linkedMilestoneIds,
         });
 
         const created = unwrapAnnouncementPayload(response);
@@ -2045,6 +2746,26 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             )
               ? created.fileReferences
               : linkedProjectFiles,
+          affectedMoveIds:
+            Array.isArray(
+              created?.affectedMoveIds
+            )
+              ? created.affectedMoveIds
+              : selectAnnouncementAffectedReferences(
+                  announcementMoveOptions,
+                  linkedMoveIds,
+                  'move',
+                ),
+          affectedMilestoneIds:
+            Array.isArray(
+              created?.affectedMilestoneIds
+            )
+              ? created.affectedMilestoneIds
+              : selectAnnouncementAffectedReferences(
+                  announcementMilestoneOptions,
+                  linkedMilestoneIds,
+                  'milestone',
+                ),
           poll: renderablePoll,
         };
 
@@ -2626,6 +3347,34 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                 setQuestion={setPollQuestion}
                 options={pollOptions}
                 setOptions={setPollOptions}
+              />
+
+              <AnnouncementAffectedWorkInput
+                moves={
+                  announcementMoveOptions
+                }
+                milestones={
+                  announcementMilestoneOptions
+                }
+                selectedMoveIds={
+                  linkedMoveIds
+                }
+                selectedMilestoneIds={
+                  linkedMilestoneIds
+                }
+                onMoveIdsChange={
+                  setLinkedMoveIds
+                }
+                onMilestoneIdsChange={
+                  setLinkedMilestoneIds
+                }
+                loading={
+                  affectedWorkLoading
+                }
+                error={
+                  affectedWorkError
+                }
+                disabled={posting}
               />
 
               <AnnouncementProjectFileInput
