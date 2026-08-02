@@ -201,6 +201,95 @@ function selectAnnouncementAffectedReferences(
   );
 }
 
+function resolveAnnouncementAffectedReferences(
+  responseValues,
+  options,
+  selectedIds,
+  kind,
+) {
+  const selected =
+    selectAnnouncementAffectedReferences(
+      options,
+      selectedIds,
+      kind,
+    );
+
+  const selectedById = new Map(
+    selected.map((item) => [
+      item.id,
+      item,
+    ])
+  );
+
+  const rawValues =
+    Array.isArray(responseValues)
+      ? responseValues
+      : [];
+
+  const rawById = new Map(
+    rawValues
+      .map((value) => {
+        const normalized =
+          normalizeAnnouncementAffectedReference(
+            value,
+            kind,
+          );
+
+        return normalized
+          ? [normalized.id, value]
+          : null;
+      })
+      .filter(Boolean)
+  );
+
+  const normalizedResponse =
+    normalizeAnnouncementAffectedList(
+      rawValues,
+      kind,
+    );
+
+  if (normalizedResponse.length === 0) {
+    return selected;
+  }
+
+  return normalizedResponse.map((item) => {
+    const selectedItem =
+      selectedById.get(item.id);
+
+    const rawValue =
+      rawById.get(item.id);
+
+    const hasExplicitTitle = Boolean(
+      rawValue &&
+        typeof rawValue === 'object' &&
+        String(
+          rawValue?.title ||
+            rawValue?.name ||
+            rawValue?.label ||
+            ''
+        ).trim()
+    );
+
+    if (
+      !selectedItem ||
+      hasExplicitTitle
+    ) {
+      return item;
+    }
+
+    return {
+      ...item,
+      title: selectedItem.title,
+      status:
+        item.status ||
+        selectedItem.status,
+      priority:
+        item.priority ||
+        selectedItem.priority,
+    };
+  });
+}
+
 function unwrapAnnouncementPayload(payload) {
   return (
     payload?.data?.announcement ||
@@ -2675,25 +2764,19 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                         ? updated.fileReferences
                         : linkedProjectFiles,
                     affectedMoveIds:
-                      Array.isArray(
-                        updated?.affectedMoveIds
-                      )
-                        ? updated.affectedMoveIds
-                        : selectAnnouncementAffectedReferences(
-                            announcementMoveOptions,
-                            linkedMoveIds,
-                            'move',
-                          ),
+                      resolveAnnouncementAffectedReferences(
+                        updated?.affectedMoveIds,
+                        announcementMoveOptions,
+                        linkedMoveIds,
+                        'move',
+                      ),
                     affectedMilestoneIds:
-                      Array.isArray(
-                        updated?.affectedMilestoneIds
-                      )
-                        ? updated.affectedMilestoneIds
-                        : selectAnnouncementAffectedReferences(
-                            announcementMilestoneOptions,
-                            linkedMilestoneIds,
-                            'milestone',
-                          ),
+                      resolveAnnouncementAffectedReferences(
+                        updated?.affectedMilestoneIds,
+                        announcementMilestoneOptions,
+                        linkedMilestoneIds,
+                        'milestone',
+                      ),
                     pinned:
                       typeof updated?.pinned === 'boolean'
                         ? updated.pinned
@@ -2747,25 +2830,19 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
               ? created.fileReferences
               : linkedProjectFiles,
           affectedMoveIds:
-            Array.isArray(
-              created?.affectedMoveIds
-            )
-              ? created.affectedMoveIds
-              : selectAnnouncementAffectedReferences(
-                  announcementMoveOptions,
-                  linkedMoveIds,
-                  'move',
-                ),
+            resolveAnnouncementAffectedReferences(
+              created?.affectedMoveIds,
+              announcementMoveOptions,
+              linkedMoveIds,
+              'move',
+            ),
           affectedMilestoneIds:
-            Array.isArray(
-              created?.affectedMilestoneIds
-            )
-              ? created.affectedMilestoneIds
-              : selectAnnouncementAffectedReferences(
-                  announcementMilestoneOptions,
-                  linkedMilestoneIds,
-                  'milestone',
-                ),
+            resolveAnnouncementAffectedReferences(
+              created?.affectedMilestoneIds,
+              announcementMilestoneOptions,
+              linkedMilestoneIds,
+              'milestone',
+            ),
           poll: renderablePoll,
         };
 
