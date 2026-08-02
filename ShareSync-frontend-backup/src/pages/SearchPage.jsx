@@ -1,8 +1,21 @@
 // /src/pages/SearchPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Loader2, Folder, CheckCircle2, User as UserIcon, MessageSquare, File as FileIcon } from "lucide-react";
-import { searchAll } from "../api/search";
+import {
+  Search,
+  Loader2,
+  Folder,
+  CheckCircle2,
+  User as UserIcon,
+  MessageSquare,
+  File as FileIcon,
+  Megaphone,
+  MessageCircle,
+} from "lucide-react";
+import {
+  searchAll,
+  searchProjectContent,
+} from "../api/search";
 import { trackSearchUsed, trackSearchFilterApplied } from "../utils/telemetry";
 import "../styles/card.css";
 import "../styles/search.css";
@@ -22,13 +35,38 @@ import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useAuth } from "../context/AuthContext";
 
 const TYPE_META = {
-  project: { icon: Folder, label: "Projects" },
-  task:    { icon: CheckCircle2, label: "Tasks" },
-  user:    { icon: UserIcon, label: "People" },
-  post:    { icon: MessageSquare, label: "Posts" },
-  file:    { icon: FileIcon, label: "Files" },
+  project: {
+    icon: Folder,
+    label: "Projects",
+  },
+  task: {
+    icon: CheckCircle2,
+    label: "Moves",
+  },
+  user: {
+    icon: UserIcon,
+    label: "People",
+  },
+  post: {
+    icon: MessageSquare,
+    label: "Posts",
+  },
+  file: {
+    icon: FileIcon,
+    label: "Files",
+  },
+  announcement: {
+    icon: Megaphone,
+    label: "Announcements",
+  },
+  teamRoom: {
+    icon: MessageCircle,
+    label: "Team Room",
+  },
 };
-const ALL_TYPES = Object.keys(TYPE_META);
+
+const ALL_TYPES =
+  Object.keys(TYPE_META);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⭐ WORLD-CLASS FIX: Data Adapter Pattern
@@ -37,7 +75,15 @@ const ALL_TYPES = Object.keys(TYPE_META);
 // so child cards get exactly the database document they expect!
 // ═══════════════════════════════════════════════════════════════════════════════
 function coerceResults(data) {
-  const result = { projects: [], tasks: [], users: [], posts: [], files: [] };
+  const result = {
+    projects: [],
+    tasks: [],
+    users: [],
+    posts: [],
+    files: [],
+    announcements: [],
+    teamRoom: [],
+  };
 
   // 1. Handle modern unified flat array from searchAll()
   if (Array.isArray(data)) {
@@ -50,6 +96,8 @@ function coerceResults(data) {
       else if (item.type === 'person' || item.type === 'user') result.users.push(payload);
       else if (item.type === 'post') result.posts.push(payload);
       else if (item.type === 'file') result.files.push(payload);
+      else if (item.type === 'announcement') result.announcements.push(payload);
+      else if (item.type === 'teamRoom') result.teamRoom.push(payload);
     });
     return result;
   }
@@ -60,6 +108,14 @@ function coerceResults(data) {
   result.users    = Array.isArray(data?.users) ? data.users : [];
   result.posts    = Array.isArray(data?.posts) ? data.posts : [];
   result.files    = Array.isArray(data?.files) ? data.files : [];
+  result.announcements =
+    Array.isArray(data?.announcements)
+      ? data.announcements
+      : [];
+  result.teamRoom =
+    Array.isArray(data?.teamRoom)
+      ? data.teamRoom
+      : [];
   
   return result;
 }
@@ -72,6 +128,92 @@ function normalizeId(value) {
   return String(value || "").trim();
 }
 
+// unified-project-search-page-v1
+function stripSearchMarkup(value) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function ProjectContentResultCard({
+  item,
+  type,
+  onOpen,
+}) {
+  const meta =
+    TYPE_META[type] ||
+    TYPE_META.file;
+
+  const Icon =
+    meta.icon;
+
+  const title =
+    item?.title ||
+    item?.originalName ||
+    item?.threadTitle ||
+    (
+      type === 'announcement'
+        ? 'Untitled Announcement'
+        : type === 'teamRoom'
+          ? 'Team Room result'
+          : type === 'task'
+            ? 'Untitled Move'
+            : 'Untitled File'
+    );
+
+  const body = stripSearchMarkup(
+    item?.description ||
+    item?.message ||
+    item?.content ||
+    item?.mimeType ||
+    item?.category ||
+    '',
+  );
+
+  const subtype =
+    item?.subtype === 'message'
+      ? 'Message'
+      : item?.subtype === 'thread'
+        ? 'Thread'
+        : null;
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full items-start gap-3 text-left"
+    >
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/15">
+        <Icon
+          className="h-4 w-4"
+          aria-hidden="true"
+        />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="truncate text-sm font-bold text-slate-900 dark:text-white">
+            {title}
+          </span>
+
+          {subtype ? (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-white/[0.06] dark:text-zinc-400">
+              {subtype}
+            </span>
+          ) : null}
+        </span>
+
+        {body ? (
+          <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-zinc-400">
+            {body}
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+}
+
 export default function SearchPage() {
   useDocumentTitle("Search");
   const { user: authUser } = useAuth();
@@ -79,17 +221,47 @@ export default function SearchPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const initialQ = params.get("q") || "";
-  const initialSort = params.get("sort") || "relevance";
-  const initialTypes = normalizeTypes(params.get("types"), ALL_TYPES);
-  const initialScope = params.get("scope") || "all"; // 'all' | 'project' | 'mine'
+  const initialQ =
+    params.get("q") || "";
+
+  const initialSort =
+    params.get("sort") ||
+    "relevance";
+
+  const projectId =
+    params.get("projectId") ||
+    "";
+
+  const initialTypes =
+    normalizeTypes(
+      params.get("types"),
+      ALL_TYPES,
+    );
+
+  const requestedScope =
+    params.get("scope") ||
+    "all";
+
+  const initialScope =
+    requestedScope === "project" &&
+    !projectId
+      ? "all"
+      : requestedScope;
 
   const [q, setQ] = useState(initialQ);
   const [types, setTypes] = useState(initialTypes.length ? initialTypes : ALL_TYPES);
   const [sort, setSort] = useState(initialSort);
   const [scope, setScope] = useState(initialScope);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState({ projects: [], tasks: [], users: [], posts: [], files: [] });
+  const [results, setResults] = useState({
+    projects: [],
+    tasks: [],
+    users: [],
+    posts: [],
+    files: [],
+    announcements: [],
+    teamRoom: [],
+  });
 
   // For a11y: count live region
   const liveRef = useRef(null);
@@ -103,6 +275,8 @@ export default function SearchPage() {
     if (types.includes("user"))    results.users.forEach((x) => seq.push({ type: "user", data: x }));
     if (types.includes("post"))    results.posts.forEach((x) => seq.push({ type: "post", data: x }));
     if (types.includes("file"))    results.files.forEach((x) => seq.push({ type: "file", data: x }));
+    if (types.includes("announcement")) results.announcements.forEach((x) => seq.push({ type: "announcement", data: x }));
+    if (types.includes("teamRoom")) results.teamRoom.forEach((x) => seq.push({ type: "teamRoom", data: x }));
     return seq;
   }, [results, types]);
 
@@ -134,25 +308,71 @@ export default function SearchPage() {
       setLoading(true);
       try {
         let data;
-        // Prefer modern signature: searchAll({ ... })
-        try {
-          data = await searchAll(payload);
-        } catch {
-          // Back-compat with earlier helper: searchAll("text")
-          data = await searchAll(q);
+
+        if (
+          scope === "project" &&
+          projectId
+        ) {
+          const projectResults =
+            await searchProjectContent(
+              projectId,
+              q,
+              payload.limit,
+            );
+
+          data = projectResults.filter(
+            (item) =>
+              types.includes(
+                item?.type,
+              ),
+          );
+        } else {
+          try {
+            data =
+              await searchAll(payload);
+          } catch {
+            data =
+              await searchAll(q);
+          }
         }
-        
+
         if (!alive) return;
         const coerced = coerceResults(data);
         setResults(coerced);
 
         // live region announce
-        const total = ["projects","tasks","users","posts","files"].reduce((n, k) => n + (coerced[k]?.length || 0), 0);
+        const total = [
+          "projects",
+          "tasks",
+          "users",
+          "posts",
+          "files",
+          "announcements",
+          "teamRoom",
+        ].reduce(
+          (count, key) =>
+            count +
+            (
+              coerced[key]?.length ||
+              0
+            ),
+          0,
+        );
         if (liveRef.current) liveRef.current.textContent = `${total} results`;
 
         try { trackSearchUsed?.({ q, types, sort, scope }); } catch {}
       } catch (err) {
-        if (alive) setResults({ projects: [], tasks: [], users: [], posts: [], files: [] });
+        if (alive) {
+          setResults({
+            projects: [],
+            tasks: [],
+            users: [],
+            posts: [],
+            files: [],
+            announcements: [],
+            teamRoom: [],
+          });
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -161,7 +381,7 @@ export default function SearchPage() {
     const timer = setTimeout(doSearch, 150);
     return () => { alive = false; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, types.join("|"), sort, scope]);
+  }, [q, types.join("|"), sort, scope, projectId]);
 
   const toggleType = (t) => {
     setTypes((prev) => {
@@ -190,41 +410,233 @@ export default function SearchPage() {
 
   const openItem = (item) => {
     if (!item) return;
-    const { type, data } = item;
+
+    const {
+      type,
+      data,
+    } = item;
+
     if (type === "project") {
-      navigate(`/projects/${data._id || data.id}`);
-    } else if (type === "task") {
-      const pid = data.projectId || data.project_id || data.project?._id || data.project?.id;
-      if (pid) navigate(`/projects/${pid}?task=${data._id || data.id}`);
-      else navigate(`/projects`);
-    } else if (type === "user") {
-      const profileKey = data.username || data.handle || data.slug || data._id || data.id;
-
-      const resultUsername = normalizeComparable(data.username || data.handle || data.slug);
-      const resultId = normalizeId(data._id || data.id || data.userId);
-
-      const authUsername = normalizeComparable(
-        authUser?.username || authUser?.handle || authUser?.slug
+      navigate(
+        `/projects/${data._id || data.id}`,
       );
-      const authId = normalizeId(authUser?._id || authUser?.id || authUser?.userId);
+      return;
+    }
+
+    if (type === "task") {
+      const resultProjectId =
+        data.projectId ||
+        data.project_id ||
+        data.project?._id ||
+        data.project?.id;
+
+      if (resultProjectId) {
+        const target =
+          new URLSearchParams({
+            view: "tasks",
+          });
+
+        const taskId =
+          data._id ||
+          data.id;
+
+        if (taskId) {
+          target.set(
+            "task",
+            taskId,
+          );
+        }
+
+        navigate(
+          `/projects/${resultProjectId}?${target.toString()}`,
+        );
+      } else {
+        navigate("/projects");
+      }
+
+      return;
+    }
+
+    if (type === "user") {
+      const profileKey =
+        data.username ||
+        data.handle ||
+        data.slug ||
+        data._id ||
+        data.id;
+
+      const resultUsername =
+        normalizeComparable(
+          data.username ||
+          data.handle ||
+          data.slug,
+        );
+
+      const resultId =
+        normalizeId(
+          data._id ||
+          data.id ||
+          data.userId,
+        );
+
+      const authUsername =
+        normalizeComparable(
+          authUser?.username ||
+          authUser?.handle ||
+          authUser?.slug,
+        );
+
+      const authId =
+        normalizeId(
+          authUser?._id ||
+          authUser?.id ||
+          authUser?.userId,
+        );
 
       const isCurrentUser =
-        Boolean(resultUsername && authUsername && resultUsername === authUsername) ||
-        Boolean(resultId && authId && resultId === authId);
+        Boolean(
+          resultUsername &&
+          authUsername &&
+          resultUsername === authUsername,
+        ) ||
+        Boolean(
+          resultId &&
+          authId &&
+          resultId === authId,
+        );
 
       navigate(
         isCurrentUser
           ? "/profile"
           : profileKey
-            ? `/profile/${encodeURIComponent(String(profileKey))}`
-            : "/profile"
+            ? `/profile/${encodeURIComponent(
+                String(profileKey),
+              )}`
+            : "/profile",
       );
-    } else if (type === "post") {
-      const pid = data.projectId || data.project?.id || data.project?._id;
-      if (pid) navigate(`/projects/${pid}`);
-    } else if (type === "file") {
-      const pid = data.projectId || data.project?.id || data.project?._id;
-      if (pid) navigate(`/projects/${pid}`);
+
+      return;
+    }
+
+    if (type === "post") {
+      const resultProjectId =
+        data.projectId ||
+        data.project?.id ||
+        data.project?._id;
+
+      if (resultProjectId) {
+        navigate(
+          `/projects/${resultProjectId}`,
+        );
+      }
+
+      return;
+    }
+
+    if (type === "file") {
+      const resultProjectId =
+        data.projectId ||
+        data.project?.id ||
+        data.project?._id;
+
+      if (resultProjectId) {
+        const target =
+          new URLSearchParams({
+            view: "files",
+          });
+
+        const fileId =
+          data._id ||
+          data.id;
+
+        if (fileId) {
+          target.set(
+            "file",
+            fileId,
+          );
+        }
+
+        navigate(
+          `/projects/${resultProjectId}?${target.toString()}`,
+        );
+      }
+
+      return;
+    }
+
+    if (type === "announcement") {
+      const resultProjectId =
+        data.projectId;
+
+      if (resultProjectId) {
+        const target =
+          new URLSearchParams({
+            view: "announcements",
+          });
+
+        const announcementId =
+          data._id ||
+          data.id;
+
+        if (announcementId) {
+          target.set(
+            "announcement",
+            announcementId,
+          );
+        }
+
+        navigate(
+          `/projects/${resultProjectId}?${target.toString()}`,
+        );
+      }
+
+      return;
+    }
+
+    if (type === "teamRoom") {
+      const resultProjectId =
+        data.projectId;
+
+      if (!resultProjectId) {
+        return;
+      }
+
+      const target =
+        new URLSearchParams({
+          view: "discussion",
+        });
+
+      const threadId =
+        data.threadId ||
+        (
+          data.subtype === "thread"
+            ? data._id || data.id
+            : ""
+        );
+
+      if (threadId) {
+        target.set(
+          "thread",
+          threadId,
+        );
+      }
+
+      if (data.subtype === "message") {
+        const messageId =
+          data._id ||
+          data.id;
+
+        if (messageId) {
+          target.set(
+            "message",
+            messageId,
+          );
+        }
+      }
+
+      navigate(
+        `/projects/${resultProjectId}?${target.toString()}`,
+      );
     }
   };
 
@@ -232,11 +644,56 @@ export default function SearchPage() {
     if (!types.includes(tKey) || rows.length === 0) return null;
     const { icon: Icon, label } = TYPE_META[tKey] || {};
     const rawItems = (() => {
+      const isProjectContent =
+        scope === "project" &&
+        [
+          "task",
+          "file",
+          "announcement",
+          "teamRoom",
+        ].includes(tKey);
+
+      if (isProjectContent) {
+        return rows.map((row) => (
+          <ProjectContentResultCard
+            key={`${row.subtype || tKey}:${row._id || row.id}`}
+            item={row}
+            type={tKey}
+            onOpen={() =>
+              openItem({
+                type: tKey,
+                data: row,
+              })
+            }
+          />
+        ));
+      }
+
       if (tKey === "project") return rows.map(r => <ProjectResultCard key={r._id || r.id} project={r} />);
       if (tKey === "user")    return rows.map(r => <UserResultCard    key={r._id || r.id || r.username} user={r} />);
       if (tKey === "post")    return rows.map(r => <PostResultCard    key={r._id || r.id} post={r} />);
       if (tKey === "file")    return rows.map(r => <FileResultCard    key={r._id || r.id} file={r} />);
       if (tKey === "task")    return rows.map(r => <TaskResultCard    key={r._id || r.id} task={r} />);
+
+      if (
+        tKey === "announcement" ||
+        tKey === "teamRoom"
+      ) {
+        return rows.map((row) => (
+          <ProjectContentResultCard
+            key={`${tKey}:${row._id || row.id}`}
+            item={row}
+            type={tKey}
+            onOpen={() =>
+              openItem({
+                type: tKey,
+                data: row,
+              })
+            }
+          />
+        ));
+      }
+
       return null;
     })();
 
@@ -279,7 +736,23 @@ export default function SearchPage() {
     );
   };
 
-  const totalResults = ["projects","tasks","users","posts","files"].reduce((n, k) => n + (results[k]?.length || 0), 0);
+  const totalResults = [
+    "projects",
+    "tasks",
+    "users",
+    "posts",
+    "files",
+    "announcements",
+    "teamRoom",
+  ].reduce(
+    (count, key) =>
+      count +
+      (
+        results[key]?.length ||
+        0
+      ),
+    0,
+  );
 
   return (
     <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown} className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_34%),linear-gradient(180deg,#F8FAFC_0%,#F5F7FF_46%,#F8FAFC_Available)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.12),transparent_34%),linear-gradient(180deg,#09090B_0%,#101014_48%,#09090B_Available)]">
@@ -345,6 +818,7 @@ export default function SearchPage() {
               onChangeSort={setSort}
               scope={scope}
               onChangeScope={setScope}
+              projectScopeAvailable={Boolean(projectId)}
             />
           </div>
         </div>
@@ -383,6 +857,14 @@ export default function SearchPage() {
           {renderGroup("user", results.users)}
           {renderGroup("post", results.posts)}
           {renderGroup("file", results.files)}
+          {renderGroup(
+            "announcement",
+            results.announcements,
+          )}
+          {renderGroup(
+            "teamRoom",
+            results.teamRoom,
+          )}
         </div>
       </div>
     </main>

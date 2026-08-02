@@ -1,5 +1,16 @@
 import React from "react";
-import { Filter, ArrowUpDown, Users, Folder, MessageSquare, File, CheckCircle2, User as UserIcon } from "lucide-react";
+// unified-project-search-filters-v1
+import {
+  Filter,
+  ArrowUpDown,
+  Folder,
+  MessageSquare,
+  File,
+  CheckCircle2,
+  User as UserIcon,
+  Megaphone,
+  MessageCircle,
+} from "lucide-react";
 
 const TYPE_ICONS = {
   project: Folder,
@@ -7,6 +18,18 @@ const TYPE_ICONS = {
   user: UserIcon,
   post: MessageSquare,
   file: File,
+  announcement: Megaphone,
+  teamRoom: MessageCircle,
+};
+
+const TYPE_LABELS = {
+  project: "Projects",
+  task: "Moves",
+  user: "People",
+  post: "Posts",
+  file: "Files",
+  announcement: "Announcements",
+  teamRoom: "Team Room",
 };
 
 export default function SearchFilters({
@@ -17,7 +40,8 @@ export default function SearchFilters({
   onChangeSort,
   scope = "all",                 // 'all' | 'project' | 'mine'
   onChangeScope,
-  projectContextTitle,          // optional: show when scope === 'project'
+  projectContextTitle,
+  projectScopeAvailable = false,
 }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Search filters">
@@ -39,7 +63,7 @@ export default function SearchFilters({
             aria-pressed={enabled ? "true" : "false"}
           >
             <Icon className="w-3.5 h-3.5" />
-            {t}
+            {TYPE_LABELS[t] || t}
           </button>
         );
       })}
@@ -56,10 +80,26 @@ export default function SearchFilters({
         </button>
         <button
           type="button"
-          className={`rounded-full border px-2 py-0.5 ${scope === "project" ? "bg-slate-100 dark:bg-slate-800/60 border-slate-300" : "border-border text-muted"}`}
-          onClick={() => onChangeScope?.("project")}
+          className={`rounded-full border px-2 py-0.5 disabled:cursor-not-allowed disabled:opacity-40 ${
+            scope === "project"
+              ? "bg-slate-100 dark:bg-slate-800/60 border-slate-300"
+              : "border-border text-muted"
+          }`}
+          onClick={() => {
+            if (projectScopeAvailable) {
+              onChangeScope?.("project");
+            }
+          }}
+          disabled={!projectScopeAvailable}
+          aria-disabled={!projectScopeAvailable}
           aria-pressed={scope === "project" ? "true" : "false"}
-          title={projectContextTitle ? `This project: ${projectContextTitle}` : "This project"}
+          title={
+            projectScopeAvailable
+              ? projectContextTitle
+                ? `This project: ${projectContextTitle}`
+                : "This project"
+              : "Open a project before using project search"
+          }
         >
           This project
         </button>

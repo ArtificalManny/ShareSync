@@ -520,11 +520,57 @@ export default function Navbar({
     return path.charAt(0).toUpperCase() + path.slice(1);
   };
 
+  // unified-project-search-frontend-v1
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+
+    const query =
+      searchQuery.trim();
+
+    if (!query) {
+      return;
     }
+
+    const target =
+      new URLSearchParams({
+        q: query,
+      });
+
+    const projectMatch =
+      location.pathname.match(
+        /^\/projects\/([^/]+)/,
+      );
+
+    const possibleProjectId =
+      projectMatch?.[1] ||
+      "";
+
+    const projectId =
+      possibleProjectId &&
+      ![
+        "create",
+        "new",
+      ].includes(possibleProjectId)
+        ? decodeURIComponent(
+            possibleProjectId,
+          )
+        : "";
+
+    if (projectId) {
+      target.set(
+        "scope",
+        "project",
+      );
+
+      target.set(
+        "projectId",
+        projectId,
+      );
+    }
+
+    navigate(
+      `/search?${target.toString()}`,
+    );
   };
 
 

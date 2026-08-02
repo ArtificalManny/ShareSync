@@ -16,6 +16,26 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto, UpdateMemberRoleDto } from './dto/project-member.dto';
 import { Task, TaskDocument, TaskStatus } from '../tasks/schemas/task.schema';
+import {
+  VaultFolder,
+  VaultFolderDocument,
+} from '../vault/schemas/vault-folder.schema';
+import {
+  VaultFile,
+  VaultFileDocument,
+} from '../vault/schemas/vault-file.schema';
+import {
+  Announcement,
+  AnnouncementDocument,
+} from '../announcements/schemas/announcements.schema';
+import {
+  Thread,
+  ThreadDocument,
+} from '../threads/schemas/thread.schema';
+import {
+  ThreadMessage,
+  ThreadMessageDocument,
+} from '../threads/schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationPriority, NotificationType } from '../notifications/schemas/notification.schema';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
@@ -41,6 +61,10 @@ const PROJECT_NOTIFICATION_PREFERENCE_KEYS = Object.keys(
 function safeNumber(value: any, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function escapeProjectSearchRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export interface ProjectQueryOptions {
@@ -111,8 +135,20 @@ export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(
-    @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
-    @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<ProjectDocument>,
+    @InjectModel(Task.name)
+    private readonly taskModel: Model<TaskDocument>,
+    @InjectModel(VaultFolder.name)
+    private readonly vaultFolderModel: Model<VaultFolderDocument>,
+    @InjectModel(VaultFile.name)
+    private readonly vaultFileModel: Model<VaultFileDocument>,
+    @InjectModel(Announcement.name)
+    private readonly announcementModel: Model<AnnouncementDocument>,
+    @InjectModel(Thread.name)
+    private readonly threadModel: Model<ThreadDocument>,
+    @InjectModel(ThreadMessage.name)
+    private readonly threadMessageModel: Model<ThreadMessageDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly subscriptionsService: SubscriptionsService,
     @Optional() private readonly notifications?: NotificationsService,
@@ -589,6 +625,418 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have access to this project');
     }
     return project;
+  }
+
+  // unified-project-search-v1
+  async searchProjectContent(
+    projectId: string,
+    userId: string,
+    query: string,
+    requestedLimit = 10,
+  ): Promise<any[]> {
+    await this.findByIdWithAccess(
+      projectId,
+      userId,
+    );
+
+    const normalizedQuery =
+      String(query || '').trim();
+
+    if (normalizedQuery.length < 2) {
+      return [];
+    }
+
+    const limit = Math.min(
+      Math.max(
+        Number(requestedLimit) || 10,
+        1,
+      ),
+      25,
+    );
+
+    const projectObjectId =
+      new Types.ObjectId(projectId);
+
+    const userObjectId =
+      new Types.ObjectId(userId);
+
+    const searchRegex = new RegExp(
+      escapeProjectSearchRegex(
+        normalizedQuery,
+      ),
+      'i',
+    );
+
+    const [
+      moves,
+      announcements,
+      projectThreads,
+      folders,
+    ] = await Promise.all([
+      this.taskModel
+        .find({
+          projectId: projectObjectId,
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+          ],
+        })
+        .sort({ updatedAt: -1 })
+        .limit(limit)
+        .lean()
+        .exec(),
+
+      this.announcementModel
+        .find({
+          projectId: projectObjectId,
+          $or: [
+            { title: searchRegex },
+            { message: searchRegex },
+          ],
+        })
+        .sort({ updatedAt: -1 })
+        .limit(limit)
+        .lean()
+        .exec(),
+
+      this.threadModel
+        .find({
+          projectId: projectObjectId,
+        })
+        .sort({
+          lastReplyAt: -1,
+          updatedAt: -1,
+        })
+        .lean()
+        .exec(),
+
+      this.vaultFolderModel
+        .find({
+          projectId: projectObjectId,
+        })
+        .select({
+          _id: 1,
+          accessLevel: 1,
+          createdBy: 1,
+          allowedUsers: 1,
+        })
+        .lean()
+        .exec(),
+    ]);
+
+    const normalizeId = (
+      value: any,
+    ): string =>
+      String(
+        value?._id ||
+          value ||
+          '',
+      ).trim();
+
+    const normalizedUserId =
+      normalizeId(userObjectId);
+
+    const accessibleFolders =
+      folders.filter((folder: any) => {
+        if (
+          folder?.accessLevel ===
+          'public'
+        ) {
+          return true;
+        }
+
+        if (
+          normalizeId(
+            folder?.createdBy,
+          ) === normalizedUserId
+        ) {
+          return true;
+        }
+
+        return (
+          Array.isArray(
+            folder?.allowedUsers,
+          ) &&
+          folder.allowedUsers.some(
+            (allowedUser: any) =>
+              normalizeId(
+                allowedUser,
+              ) === normalizedUserId,
+          )
+        );
+      });
+
+    const accessibleFolderIds =
+      accessibleFolders
+        .map((folder: any) =>
+          folder?._id,
+        )
+        .filter(Boolean);
+
+    const fileFolderFilters: any[] = [
+      {
+        folderId: null,
+      },
+    ];
+
+    if (
+      accessibleFolderIds.length > 0
+    ) {
+      fileFolderFilters.push({
+        folderId: {
+          $in: accessibleFolderIds,
+        },
+      });
+    }
+
+    const files =
+      await this.vaultFileModel
+        .find({
+          projectId: projectObjectId,
+          $and: [
+            {
+              $or: [
+                {
+                  originalName:
+                    searchRegex,
+                },
+                {
+                  mimeType:
+                    searchRegex,
+                },
+              ],
+            },
+            {
+              $or:
+                fileFolderFilters,
+            },
+          ],
+        })
+        .sort({
+          updatedAt: -1,
+        })
+        .limit(limit)
+        .lean()
+        .exec();
+
+    const threadById = new Map(
+      projectThreads.map(
+        (thread: any) => [
+          normalizeId(thread?._id),
+          thread,
+        ],
+      ),
+    );
+
+    const threadIds =
+      projectThreads
+        .map((thread: any) =>
+          thread?._id,
+        )
+        .filter(Boolean);
+
+    const messages =
+      threadIds.length > 0
+        ? await this.threadMessageModel
+            .find({
+              threadId: {
+                $in: threadIds,
+              },
+              content:
+                searchRegex,
+            })
+            .sort({
+              createdAt: -1,
+            })
+            .limit(limit)
+            .lean()
+            .exec()
+        : [];
+
+    const matchingThreads =
+      projectThreads
+        .filter((thread: any) => {
+          const searchableText = [
+            thread?.title,
+            thread?.category,
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          return searchRegex.test(
+            searchableText,
+          );
+        })
+        .slice(0, limit);
+
+    const toTimestamp = (
+      value: any,
+    ): number => {
+      const timestamp =
+        new Date(
+          value || 0,
+        ).getTime();
+
+      return Number.isFinite(
+        timestamp,
+      )
+        ? timestamp
+        : 0;
+    };
+
+    const results = [
+      ...moves.map((move: any) => ({
+        id: normalizeId(move?._id),
+        type: 'task',
+        title:
+          move?.title ||
+          'Untitled Move',
+        description:
+          move?.description ||
+          '',
+        projectId,
+        updatedAt:
+          move?.updatedAt ||
+          move?.createdAt ||
+          null,
+        raw: {
+          ...move,
+          projectId,
+        },
+      })),
+
+      ...files.map((file: any) => ({
+        id: normalizeId(file?._id),
+        type: 'file',
+        title:
+          file?.originalName ||
+          'Untitled File',
+        description:
+          file?.mimeType ||
+          'Project File',
+        projectId,
+        updatedAt:
+          file?.updatedAt ||
+          file?.createdAt ||
+          null,
+        raw: {
+          ...file,
+          projectId,
+        },
+      })),
+
+      ...announcements.map(
+        (announcement: any) => ({
+          id: normalizeId(
+            announcement?._id,
+          ),
+          type: 'announcement',
+          title:
+            announcement?.title ||
+            'Untitled Announcement',
+          description:
+            announcement?.message ||
+            '',
+          projectId,
+          updatedAt:
+            announcement?.updatedAt ||
+            announcement?.createdAt ||
+            null,
+          raw: {
+            ...announcement,
+            projectId,
+          },
+        }),
+      ),
+
+      ...matchingThreads.map(
+        (thread: any) => ({
+          id: normalizeId(
+            thread?._id,
+          ),
+          type: 'teamRoom',
+          subtype: 'thread',
+          title:
+            thread?.title ||
+            'Team Room',
+          description:
+            thread?.category
+              ? `#${thread.category}`
+              : 'Team Room thread',
+          projectId,
+          threadId:
+            normalizeId(
+              thread?._id,
+            ),
+          updatedAt:
+            thread?.updatedAt ||
+            thread?.lastReplyAt ||
+            thread?.createdAt ||
+            null,
+          raw: {
+            ...thread,
+            projectId,
+            subtype: 'thread',
+          },
+        }),
+      ),
+
+      ...messages.map(
+        (message: any) => {
+          const thread =
+            threadById.get(
+              normalizeId(
+                message?.threadId,
+              ),
+            );
+
+          return {
+            id: normalizeId(
+              message?._id,
+            ),
+            type: 'teamRoom',
+            subtype: 'message',
+            title:
+              thread?.title ||
+              'Team Room message',
+            description:
+              message?.content ||
+              '',
+            projectId,
+            threadId:
+              normalizeId(
+                message?.threadId,
+              ),
+            updatedAt:
+              message?.updatedAt ||
+              message?.createdAt ||
+              null,
+            raw: {
+              ...message,
+              projectId,
+              threadId:
+                normalizeId(
+                  message?.threadId,
+                ),
+              threadTitle:
+                thread?.title ||
+                'Team Room',
+              subtype: 'message',
+            },
+          };
+        },
+      ),
+    ];
+
+    return results.sort(
+      (left: any, right: any) =>
+        toTimestamp(
+          right?.updatedAt,
+        ) -
+        toTimestamp(
+          left?.updatedAt,
+        ),
+    );
   }
 
   async findUserProjects(userId: string, options: ProjectQueryOptions = {}): Promise<{ projects: ProjectDocument[]; total: number }> {

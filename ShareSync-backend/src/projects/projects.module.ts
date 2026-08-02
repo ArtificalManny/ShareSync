@@ -3,6 +3,26 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { Project, ProjectSchema } from './schemas/project.schema';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
+import {
+  VaultFolder,
+  VaultFolderSchema,
+} from '../vault/schemas/vault-folder.schema';
+import {
+  VaultFile,
+  VaultFileSchema,
+} from '../vault/schemas/vault-file.schema';
+import {
+  Announcement,
+  AnnouncementSchema,
+} from '../announcements/schemas/announcements.schema';
+import {
+  Thread,
+  ThreadSchema,
+} from '../threads/schemas/thread.schema';
+import {
+  ThreadMessage,
+  ThreadMessageSchema,
+} from '../threads/schemas/thread-message.schema';
 
 import { ProjectsController } from './projects.controller';
 import { ProjectShareController } from './share.controller';
@@ -23,7 +43,27 @@ import { ActivitiesModule } from '../activities/activities.module';
   imports: [
     MongooseModule.forFeature([
       { name: Project.name, schema: ProjectSchema },
-      { name: Task.name, schema: TaskSchema }
+      { name: Task.name, schema: TaskSchema },
+      {
+        name: VaultFolder.name,
+        schema: VaultFolderSchema,
+      },
+      {
+        name: VaultFile.name,
+        schema: VaultFileSchema,
+      },
+      {
+        name: Announcement.name,
+        schema: AnnouncementSchema,
+      },
+      {
+        name: Thread.name,
+        schema: ThreadSchema,
+      },
+      {
+        name: ThreadMessage.name,
+        schema: ThreadMessageSchema,
+      }
     ]),
     ProjectFollowModule,
     ModerationModule,

@@ -1746,7 +1746,13 @@ function ThreadListItem({ thread, participants = [], active = false, onClick }) 
 }
 
 
-export default function ThreadsView({ projectId, project, onOpenFullChat, readOnly = false }) {
+export default function ThreadsView({
+  projectId,
+  project,
+  onOpenFullChat,
+  readOnly = false,
+  initialThreadId = "",
+}) {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChannel, setActiveChannel] = useState('all');
@@ -1799,27 +1805,97 @@ export default function ThreadsView({ projectId, project, onOpenFullChat, readOn
 
   useEffect(() => {
     if (!projectId) return;
+
     let mounted = true;
+
     setLoading(true);
+
     getProjectThreads(projectId)
-      .then(data => {
+      .then((data) => {
         if (!mounted) return;
+
         setThreads(
-          (Array.isArray(data) ? data : []).map(t => ({
-            ...t,
-            id: t._id || t.id,
-            title: t.title || 'Untitled',
-            lastMessage: t.replyCount > 0 ? 'Recent activity' : 'No thread activity yet',
-            participantCount: t.participants?.length || 0,
-            replyCount: t.replyCount || 0,
-            category: t.category || 'general',
-          }))
+          (
+            Array.isArray(data)
+              ? data
+              : []
+          ).map((thread) => ({
+            ...thread,
+            id:
+              thread._id ||
+              thread.id,
+            title:
+              thread.title ||
+              'Untitled',
+            lastMessage:
+              thread.replyCount > 0
+                ? 'Recent activity'
+                : 'No thread activity yet',
+            participantCount:
+              thread.participants?.length ||
+              0,
+            replyCount:
+              thread.replyCount ||
+              0,
+            category:
+              thread.category ||
+              'general',
+          })),
         );
       })
       .catch(() => {})
-      .finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [projectId]);
+
+  // unified-project-search-navigation-v1
+  useEffect(() => {
+    const normalizedThreadId =
+      String(initialThreadId || "");
+
+    if (
+      !normalizedThreadId ||
+      threads.length === 0
+    ) {
+      return;
+    }
+
+    const matchingThread =
+      threads.find(
+        (thread) =>
+          String(
+            thread?._id ||
+            thread?.id ||
+            "",
+          ) === normalizedThreadId,
+      );
+
+    if (!matchingThread) {
+      return;
+    }
+
+    setActiveThread(
+      (currentThread) => {
+        const currentId =
+          String(
+            currentThread?._id ||
+            currentThread?.id ||
+            "",
+          );
+
+        return currentId === normalizedThreadId
+          ? currentThread
+          : matchingThread;
+      },
+    );
+  }, [initialThreadId, threads]);
 
   const filtered = useMemo(() => threads.filter(t => {
     if (activeChannel !== 'all' && t.category !== activeChannel) return false;

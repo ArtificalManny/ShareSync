@@ -148,6 +148,68 @@ async function searchTasks(query, limit = 10) {
   }
 }
 
+// unified-project-search-frontend-v1
+export async function searchProjectContent(
+  projectId,
+  query,
+  limit = 25,
+) {
+  const normalizedProjectId =
+    String(projectId || '').trim();
+
+  const normalizedQuery =
+    String(query || '').trim();
+
+  if (
+    !normalizedProjectId ||
+    normalizedQuery.length < 2
+  ) {
+    return [];
+  }
+
+  try {
+    const response = await api.get(
+      `/projects/${encodeURIComponent(
+        normalizedProjectId,
+      )}/search`,
+      {
+        params: {
+          q: normalizedQuery,
+          limit,
+        },
+      },
+    );
+
+    const data =
+      response?.data?.data ??
+      response?.data ??
+      [];
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.map((item = {}) => ({
+      ...item,
+      id:
+        item.id ||
+        item._id ||
+        '',
+      projectId:
+        item.projectId ||
+        normalizedProjectId,
+    }));
+  } catch (error) {
+    console.warn(
+      '[search] Project content search failed:',
+      error?.message,
+    );
+
+    return [];
+  }
+}
+
+
 // ─── Unified search ─────────────────────────────────────────────────────────
 
 /**
@@ -210,5 +272,6 @@ export const search = searchAll;
 export default {
   searchAll,
   search: searchAll,
+  searchProjectContent,
   searchPublicListedProjects,
 };

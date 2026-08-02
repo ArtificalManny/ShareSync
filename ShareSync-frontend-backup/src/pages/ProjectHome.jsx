@@ -19,7 +19,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "../components/ui/toast";
 
@@ -3995,6 +3999,13 @@ export default function ProjectHome() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const requestedProjectView =
+    searchParams.get("view") || "";
+
+  const requestedThreadId =
+    searchParams.get("thread") || "";
   const isMobile = useIsMobile();
 
   const SHOW_DEBUG = import.meta?.env?.DEV === true;
@@ -4022,7 +4033,39 @@ export default function ProjectHome() {
     return <LoadingState />;
   }
 
-  const [activeView, setActiveView] = useState("overview");
+  // unified-project-search-navigation-v1
+  const [activeView, setActiveView] =
+    useState(() =>
+      PROJECT_VIEWS.some(
+        (view) =>
+          view.id === requestedProjectView,
+      )
+        ? requestedProjectView
+        : "overview"
+    );
+
+  useEffect(() => {
+    if (!requestedProjectView) {
+      return;
+    }
+
+    const isSupportedView =
+      PROJECT_VIEWS.some(
+        (view) =>
+          view.id === requestedProjectView,
+      );
+
+    if (!isSupportedView) {
+      return;
+    }
+
+    setActiveView(
+      (currentView) =>
+        currentView === requestedProjectView
+          ? currentView
+          : requestedProjectView,
+    );
+  }, [requestedProjectView]);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
 
   // finish-line-action-navigation-v1
@@ -5101,10 +5144,19 @@ export default function ProjectHome() {
               threads={threads || []}
               onOpenFullChat={
                 canUseMemberActions
-                  ? () => navigate("/messages", { state: { projectId: id } })
+                  ? () =>
+                      navigate(
+                        "/messages",
+                        {
+                          state: {
+                            projectId: id,
+                          },
+                        },
+                      )
                   : undefined
               }
               readOnly={!canUseMemberActions}
+              initialThreadId={requestedThreadId}
             />
           );
 

@@ -235,6 +235,69 @@ export class ProjectsController {
   // OVERVIEW — MUST BE BEFORE :id
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // unified-project-search-v1
+  @Get(':id/search')
+  @ApiOperation({
+    summary:
+      'Search Moves, Files, Announcements, and Team Room content in one project',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Project ID',
+  })
+  @ApiQuery({
+    name: 'q',
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  async searchProjectContent(
+    @Req() req: any,
+    @Param(
+      'id',
+      ParseObjectIdPipe,
+    )
+    id: string,
+    @Query('q') query?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const results =
+      await this.projectsService
+        .searchProjectContent(
+          id,
+          userId,
+          query || '',
+          limit
+            ? parseInt(
+                limit,
+                10,
+              )
+            : 10,
+        );
+
+    return {
+      success: true,
+      data: results,
+      meta: {
+        query:
+          String(
+            query || '',
+          ).trim(),
+        total:
+          results.length,
+      },
+    };
+  }
+
+
   @Get(':id/overview')
   @ApiOperation({ summary: 'Get rich overview data for ProjectHome' })
   @ApiParam({ name: 'id', description: 'Project ID' })
