@@ -214,11 +214,15 @@ export class InvitesService {
     );
 
     if (existing) {
+      // invite-delivery-refresh-v1
+      const token = InvitesService.genToken();
+
       existing.role = role as any;
+      existing.token = token;
       existing.invitedBy = new Types.ObjectId(actingUserId);
       existing.createdAt = new Date(now);
       existing.expiresAt = expiresAt;
-      inviteToken = existing.token;
+      inviteToken = token;
     } else {
       const token = InvitesService.genToken();
       inviteToken = token;
@@ -240,14 +244,22 @@ export class InvitesService {
     await project.save();
 
     // ✅ Emit event so NotificationsService can send invite notification to invitee
-    this.eventEmitter.emit('project.invite.created', {
-      projectId: project.id,
-      projectName: project.name,
-      inviteeEmail: normalizedEmail,
-      inviteToken,
-      role,
-      invitedBy: actingUserId,
-    });
+    await this.eventEmitter
+      .emitAsync('project.invite.created', {
+        projectId: project.id,
+        projectName: project.name,
+        inviteeEmail: normalizedEmail,
+        inviteToken,
+        role,
+        invitedBy: actingUserId,
+      })
+      .catch((err: any) => {
+        this.logger.warn(
+          `Project invite notification failed for ${normalizedEmail}: ${
+            err?.message || err
+          }`,
+        );
+      });
 
     const inviterDisplayName = await this.getInviterDisplayName(actingUserId);
 
