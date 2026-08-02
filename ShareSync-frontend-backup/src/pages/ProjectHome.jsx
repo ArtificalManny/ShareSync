@@ -799,6 +799,7 @@ function ProjectHeader({
   onBackToProjects,
   onMembersClick,
   onShareInviteClick,
+  canManageInvites = false,
   onLifecycleAction,
   isLifecycleBusy = false,
   viewerAccess,
@@ -1037,7 +1038,7 @@ function ProjectHeader({
             </button>
           ) : null}
 
-          {canUseMemberActions ? (
+          {canUseMemberActions && canManageInvites ? (
             <>
               <div className="project-home-action-divider w-px h-6 bg-slate-200 dark:bg-white/10" />
               <button
@@ -4163,6 +4164,43 @@ export default function ProjectHome() {
 
   const canUseMemberActions = viewerAccess?.canUseMemberActions !== false;
 
+  // owner-admin-invite-policy-v1
+  const canManageInvites = useMemo(() => {
+    if (viewerAccess?.isOwner) {
+      return true;
+    }
+
+    const currentUserIds = getCurrentUserIds(user);
+    const projectMembers = Array.isArray(project?.members)
+      ? project.members
+      : [];
+
+    return projectMembers.some((member) => {
+      const memberId = normalizeId(
+        member?.userId ||
+          member?.user ||
+          member?.memberId ||
+          member?._id ||
+          member?.id ||
+          member
+      );
+
+      const memberRole = String(
+        member?.role ||
+          member?.projectRole ||
+          ""
+      )
+        .trim()
+        .toLowerCase();
+
+      return (
+        Boolean(memberId) &&
+        currentUserIds.has(memberId) &&
+        memberRole === "admin"
+      );
+    });
+  }, [project, user, viewerAccess?.isOwner]);
+
   const {
     following: spectatorFollowing,
     loading: isSpectatorFollowLoading,
@@ -4212,8 +4250,10 @@ export default function ProjectHome() {
   }, [toggleSpectatorFollow]);
 
   const handleInviteMember = useCallback(async ({ email, role }) => {
-    if (!canUseMemberActions) {
-      throw new Error("Spectators cannot invite members.");
+    if (!canManageInvites) {
+      throw new Error(
+        "Only project owners or admins can invite members."
+      );
     }
 
     if (!id) {
@@ -4235,7 +4275,7 @@ export default function ProjectHome() {
     await refreshSilently?.();
 
     return payload;
-  }, [id, refreshSilently, canUseMemberActions]);
+  }, [id, refreshSilently, canManageInvites]);
 
   useEffect(() => {
     console.log("[ProjectHome] render-state", {
@@ -5368,7 +5408,12 @@ export default function ProjectHome() {
         onSettings={handleSettings}
         onBackToProjects={handleBackToProjects}
         onMembersClick={() => setIsMembersPanelOpen(true)}
-        onShareInviteClick={() => setIsInviteMemberOpen(true)}
+        onShareInviteClick={
+          canManageInvites
+            ? () => setIsInviteMemberOpen(true)
+            : undefined
+        }
+        canManageInvites={canManageInvites}
         onLifecycleAction={handleFinishLineAction}
         isLifecycleBusy={isCompletingProject || isReopeningProject}
         viewerAccess={viewerAccess}
@@ -5433,7 +5478,7 @@ export default function ProjectHome() {
         />
       )}
 
-      {canUseMemberActions && isInviteMemberOpen && (
+      {canManageInvites && isInviteMemberOpen && (
         <InviteMember
           projectId={id}
           projectName={project?.name || "Project"}

@@ -91,8 +91,8 @@ export class InvitesService {
 
     const role = this.getProjectMemberRole(project, acting);
 
-    // Treat admin/moderator/manager as invite-capable.
-    return ['owner', 'admin', 'moderator', 'manager'].includes(role);
+    // owner-admin-invite-policy-v1
+    return ['owner', 'admin'].includes(role);
   }
 
   private assertCanManageInvitesOrThrow(project: ProjectDocument, actingUserId: string) {
