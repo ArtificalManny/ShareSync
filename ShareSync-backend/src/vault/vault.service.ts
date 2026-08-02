@@ -7,19 +7,68 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { VaultFolder, VaultFolderDocument } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileDocument } from './schemas/vault-file.schema';
+import {
+  Task,
+  TaskDocument,
+} from '../tasks/schemas/task.schema';
+import {
+  Milestone,
+  MilestoneDocument,
+} from '../milestones/schemas/milestone.schema';
+import {
+  Announcement,
+  AnnouncementDocument,
+} from '../announcements/schemas/announcements.schema';
+import {
+  Thread,
+  ThreadDocument,
+} from '../threads/schemas/thread.schema';
+import {
+  ThreadMessage,
+  ThreadMessageDocument,
+} from '../threads/schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UploadsService } from '../uploads/uploads.service';
 
 // Standard Free Tier Limit: 5GB (in bytes)
-const PROJECT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; 
+const PROJECT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
+
+type VaultBacklinkCounts = {
+  moves: number;
+  milestones: number;
+  announcements: number;
+  teamRoomMessages: number;
+  total: number;
+};
+
+const createEmptyVaultBacklinks =
+  (): VaultBacklinkCounts => ({
+    moves: 0,
+    milestones: 0,
+    announcements: 0,
+    teamRoomMessages: 0,
+    total: 0,
+  });
 
 @Injectable()
 export class VaultService {
   private readonly logger = new Logger(VaultService.name);
 
   constructor(
-    @InjectModel(VaultFolder.name) private folderModel: Model<VaultFolderDocument>,
-    @InjectModel(VaultFile.name) private fileModel: Model<VaultFileDocument>,
+    @InjectModel(VaultFolder.name)
+    private folderModel: Model<VaultFolderDocument>,
+    @InjectModel(VaultFile.name)
+    private fileModel: Model<VaultFileDocument>,
+    @InjectModel(Task.name)
+    private taskModel: Model<TaskDocument>,
+    @InjectModel(Milestone.name)
+    private milestoneModel: Model<MilestoneDocument>,
+    @InjectModel(Announcement.name)
+    private announcementModel: Model<AnnouncementDocument>,
+    @InjectModel(Thread.name)
+    private threadModel: Model<ThreadDocument>,
+    @InjectModel(ThreadMessage.name)
+    private threadMessageModel: Model<ThreadMessageDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
   
@@ -352,6 +401,177 @@ export class VaultService {
     return saved;
   }
 
+  private async getProjectFileBacklinks(
+    projectId: Types.ObjectId,
+    fileIds: string[],
+  ): Promise<Map<string, VaultBacklinkCounts>> {
+    const backlinks = new Map<
+      string,
+      VaultBacklinkCounts
+    >(
+      fileIds.map((fileId) => [
+        fileId,
+        createEmptyVaultBacklinks(),
+      ]),
+    );
+
+    if (fileIds.length === 0) {
+      return backlinks;
+    }
+
+    const [
+      moves,
+      milestones,
+      announcements,
+      threads,
+    ] = await Promise.all([
+      this.taskModel
+        .find({
+          projectId,
+          'attachments.fileId': {
+            $in: fileIds,
+          },
+        })
+        .select({
+          _id: 1,
+          attachments: 1,
+        })
+        .lean()
+        .exec(),
+      this.milestoneModel
+        .find({
+          projectId,
+          'fileReferences.fileId': {
+            $in: fileIds,
+          },
+        })
+        .select({
+          _id: 1,
+          fileReferences: 1,
+        })
+        .lean()
+        .exec(),
+      this.announcementModel
+        .find({
+          projectId,
+          'fileReferences.fileId': {
+            $in: fileIds,
+          },
+        })
+        .select({
+          _id: 1,
+          fileReferences: 1,
+        })
+        .lean()
+        .exec(),
+      this.threadModel
+        .find({
+          projectId,
+        })
+        .select({
+          _id: 1,
+        })
+        .lean()
+        .exec(),
+    ]);
+
+    const threadIds = threads
+      .map((thread: any) => thread?._id)
+      .filter(Boolean);
+
+    const teamRoomMessages =
+      threadIds.length > 0
+        ? await this.threadMessageModel
+            .find({
+              threadId: {
+                $in: threadIds,
+              },
+              'fileReferences.fileId': {
+                $in: fileIds,
+              },
+            })
+            .select({
+              _id: 1,
+              fileReferences: 1,
+            })
+            .lean()
+            .exec()
+        : [];
+
+    const countDocumentReferences = (
+      documents: any[],
+      fieldName: string,
+      countKey:
+        | 'moves'
+        | 'milestones'
+        | 'announcements'
+        | 'teamRoomMessages',
+    ) => {
+      for (const document of documents) {
+        const references = Array.isArray(
+          document?.[fieldName],
+        )
+          ? document[fieldName]
+          : [];
+
+        const documentFileIds = new Set(
+          references
+            .map((reference: any) =>
+              String(
+                reference?.fileId || '',
+              ).trim(),
+            )
+            .filter((fileId: string) =>
+              backlinks.has(fileId),
+            ),
+        );
+
+        for (const fileId of documentFileIds) {
+          const current =
+            backlinks.get(fileId);
+
+          if (current) {
+            current[countKey] += 1;
+          }
+        }
+      }
+    };
+
+    countDocumentReferences(
+      moves,
+      'attachments',
+      'moves',
+    );
+
+    countDocumentReferences(
+      milestones,
+      'fileReferences',
+      'milestones',
+    );
+
+    countDocumentReferences(
+      announcements,
+      'fileReferences',
+      'announcements',
+    );
+
+    countDocumentReferences(
+      teamRoomMessages,
+      'fileReferences',
+      'teamRoomMessages',
+    );
+
+    for (const counts of backlinks.values()) {
+      counts.total =
+        counts.moves +
+        counts.milestones +
+        counts.announcements +
+        counts.teamRoomMessages;
+    }
+
+    return backlinks;
+  }
+
   async getProjectVault(projectId: string, userId: string) {
     const projId = new Types.ObjectId(projectId);
     const userObjId = new Types.ObjectId(userId);
@@ -379,6 +599,38 @@ export class VaultService {
       return accessibleFolderIds.includes(file.folderId.toString());
     });
 
+    const accessibleFileIds = accessibleFiles
+      .map((file: any) =>
+        this.normalizeId(file?._id),
+      )
+      .filter(Boolean);
+
+    const backlinks =
+      await this.getProjectFileBacklinks(
+        projId,
+        accessibleFileIds,
+      );
+
+    const filesWithBacklinks =
+      accessibleFiles.map((file: any) => {
+        const fileObject =
+          typeof file?.toObject === 'function'
+            ? file.toObject()
+            : file;
+
+        const fileId =
+          this.normalizeId(
+            fileObject?._id,
+          );
+
+        return {
+          ...fileObject,
+          backlinks:
+            backlinks.get(fileId) ||
+            createEmptyVaultBacklinks(),
+        };
+      });
+
     // Get current usage stats for the UI progress bar
     const result = await this.fileModel.aggregate([
       { $match: { projectId: projId } },
@@ -388,7 +640,7 @@ export class VaultService {
 
     return {
       folders: accessibleFolders,
-      files: accessibleFiles,
+      files: filesWithBacklinks,
       storage: {
         usedBytes: storageUsedBytes,
         limitBytes: PROJECT_STORAGE_LIMIT_BYTES

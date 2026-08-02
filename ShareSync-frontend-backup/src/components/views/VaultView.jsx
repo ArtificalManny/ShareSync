@@ -114,6 +114,81 @@ function formatVaultDate(value) {
   return date.toLocaleDateString();
 }
 
+function getVaultBacklinkLabels(file) {
+  const backlinks =
+    file?.backlinks &&
+    typeof file.backlinks === 'object'
+      ? file.backlinks
+      : {};
+
+  const normalizeCount = (value) => {
+    const count = Number(value);
+
+    return Number.isFinite(count) &&
+      count > 0
+      ? Math.floor(count)
+      : 0;
+  };
+
+  const definitions = [
+    {
+      key: 'moves',
+      count: normalizeCount(
+        backlinks.moves
+      ),
+      singular: 'Move',
+      plural: 'Moves',
+    },
+    {
+      key: 'milestones',
+      count: normalizeCount(
+        backlinks.milestones
+      ),
+      singular: 'milestone',
+      plural: 'milestones',
+    },
+    {
+      key: 'announcements',
+      count: normalizeCount(
+        backlinks.announcements
+      ),
+      singular: 'Announcement',
+      plural: 'Announcements',
+    },
+    {
+      key: 'teamRoomMessages',
+      count: normalizeCount(
+        backlinks.teamRoomMessages
+      ),
+      singular: 'Team Room message',
+      plural: 'Team Room messages',
+    },
+  ];
+
+  return definitions
+    .filter(
+      ({ count }) =>
+        count > 0
+    )
+    .map(
+      ({
+        key,
+        count,
+        singular,
+        plural,
+      }) => ({
+        key,
+        count,
+        label:
+          `Referenced by ${count} ${
+            count === 1
+              ? singular
+              : plural
+          }`,
+      })
+    );
+}
+
 function FileCard({
   file,
   folders = [],
@@ -143,6 +218,8 @@ function FileCard({
     !imageFailed;
 
   const createdDate = formatVaultDate(file?.createdAt);
+  const backlinkLabels =
+    getVaultBacklinkLabels(file);
 
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -362,6 +439,29 @@ function FileCard({
             </span>
           ) : null}
         </div>
+
+        {backlinkLabels.length > 0 ? (
+          <div className="vault-file-backlinks mt-3 space-y-1.5">
+            {backlinkLabels.map(
+              ({
+                key,
+                label,
+              }) => (
+                <div
+                  key={key}
+                  className="flex min-w-0 items-center gap-2 rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2 text-[11px] font-black text-violet-700 dark:border-violet-400/15 dark:bg-violet-500/10 dark:text-violet-200"
+                  title={label}
+                >
+                  <Link2 className="h-3.5 w-3.5 shrink-0" />
+
+                  <span className="truncate">
+                    {label}
+                  </span>
+                </div>
+              )
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
