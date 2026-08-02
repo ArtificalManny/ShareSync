@@ -2890,6 +2890,35 @@ function projectPulseGetActionLabel(activity) {
     .join(" ")
     .toLowerCase();
 
+  const source = String(
+    activity?.details?.source ||
+      activity?.metadata?.source ||
+      activity?.payload?.source ||
+      ""
+  ).toLowerCase();
+
+  if (
+    source === "invite_acceptance" &&
+    raw.includes("member_added")
+  ) {
+    return "joined as";
+  }
+
+  if (
+    raw.includes("permission_role_updated") ||
+    raw.includes("permission role updated")
+  ) {
+    return "changed permissions for";
+  }
+
+  if (raw.includes("member_removed")) {
+    return "removed";
+  }
+
+  if (raw.includes("member_added")) {
+    return "added";
+  }
+
   if (raw.includes("complete") || raw.includes("done")) return "completed";
   if (raw.includes("ship")) return "shipped";
   if (raw.includes("move")) return "moved";
@@ -2957,6 +2986,22 @@ function projectPulseGetTargetLabel(activity, actorName) {
 
 function projectPulseGetStatusLabel(activity) {
   const action = projectPulseGetActionLabel(activity);
+
+  if (action === "changed permissions for") {
+    return "Permission changed";
+  }
+
+  if (action === "joined as") {
+    return "Member joined";
+  }
+
+  if (action === "removed") {
+    return "Member removed";
+  }
+
+  if (action === "added") {
+    return "Member added";
+  }
 
   if (action === "completed") return "Completed";
   if (action === "shipped") return "Shipped";

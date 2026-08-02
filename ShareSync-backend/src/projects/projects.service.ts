@@ -1884,6 +1884,9 @@ export class ProjectsService {
       projectId: updated._id,
       memberId: memberUserId,
       removedBy: userId,
+      removedRole:
+        removedMember?.role ||
+        MemberRole.MEMBER,
     });
 
     this.eventEmitter.emit('project.members.changed', {
@@ -1914,6 +1917,10 @@ export class ProjectsService {
     const member = project.members.find((m) => m.userId.toString() === memberUserId);
     if (!member) throw new NotFoundException('Member not found in project');
 
+    const previousRole = String(
+      member.role || MemberRole.MEMBER,
+    );
+
     member.role = dto.role;
     const updated = await project.save();
 
@@ -1929,6 +1936,7 @@ export class ProjectsService {
       changedBy: userId,
       action: 'permission_role_updated',
       memberId: memberUserId,
+      previousRole,
       role: dto.role,
     });
 

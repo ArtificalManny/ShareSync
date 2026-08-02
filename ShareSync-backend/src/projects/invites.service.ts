@@ -487,6 +487,7 @@ export class InvitesService {
       acceptedBy: userId,
       role: invite.role,
       ownerId: this.getId(project.ownerId),
+      memberAdded: !alreadyMember,
     });
 
     this.logger.log(`Invite accepted by user ${userId} for project ${project.name}`);
