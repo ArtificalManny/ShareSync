@@ -12,9 +12,9 @@ import {
   Clock3,
   Crosshair,
   Flag,
-  GitBranch,
   Layers3,
-} from "lucide-react";
+
+  Route,} from "lucide-react";
 
 import {
   completeTask,
@@ -25,7 +25,10 @@ import {
 import MoveTaskDetailDrawer from "../stack/MoveTaskDetailDrawer";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const LABEL_WIDTH = 292;
+const LABEL_WIDTH = 320;
+const MIN_VISIBLE_BAR_WIDTH = 112;
+
+// flightpath-visual-polish-v1
 
 const ZOOM_LEVELS = {
   day: {
@@ -251,8 +254,34 @@ function getMoveTitle(move) {
   );
 }
 
+function cleanMilestoneTitle(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return "Untitled milestone";
+  }
+
+  return (
+    raw
+      .replace(
+        /\s*[-–—·|]?\s*\d{4}-\d{2}-\d{2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?Z?)?\s*$/i,
+        ""
+      )
+      .replace(
+        /\s*[-–—·|]?\s*(?:\d{1,2}\/\d{1,2}|[A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?)(?:,?\s+\d{4})?\s+\d{1,2}:\d{2}\s*(?:am|pm)?\s*$/i,
+        ""
+      )
+      .replace(
+        /\s*[-–—·|]?\s*\d{1,2}:\d{2}\s*(?:am|pm)?\s*$/i,
+        ""
+      )
+      .trim() ||
+    raw
+  );
+}
+
 function getMilestoneTitle(milestone) {
-  return String(
+  return cleanMilestoneTitle(
     milestone?.title ||
       milestone?.name ||
       milestone?.label ||
@@ -380,9 +409,8 @@ function buildHeaderSegments(
       sublabel = formatShortDate(cursor);
     } else if (zoom === "week") {
       next = addDays(cursor, 7);
-      label = `Week of ${formatShortDate(
-        cursor
-      )}`;
+      label = formatShortDate(cursor);
+      sublabel = "Week";
     } else {
       next = new Date(
         cursor.getFullYear(),
@@ -571,16 +599,54 @@ export default function FlightpathView({
     timelineRange.today
   );
 
-  const milestonePoints = useMemo(
-    () =>
-      milestoneRecords
-        .filter((record) => record.date)
-        .map((record) => ({
-          ...record,
-          left: positionForDate(record.date),
-        })),
-    [milestoneRecords, positionForDate]
-  );
+  const milestonePoints = useMemo(() => {
+    const sorted = milestoneRecords
+      .filter((record) => record.date)
+      .map((record) => ({
+        ...record,
+        left: positionForDate(record.date),
+      }))
+      .sort(
+        (left, right) =>
+          left.left - right.left
+      );
+
+    const laneRightEdges = [
+      Number.NEGATIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+    ];
+
+    return sorted.map((record) => {
+      const estimatedLabelWidth = clamp(
+        record.title.length * 6.2 + 28,
+        76,
+        164
+      );
+
+      let lane = laneRightEdges.findIndex(
+        (rightEdge) =>
+          record.left -
+            estimatedLabelWidth / 2 >
+          rightEdge + 10
+      );
+
+      if (lane < 0) {
+        lane = laneRightEdges.indexOf(
+          Math.min(...laneRightEdges)
+        );
+      }
+
+      laneRightEdges[lane] =
+        record.left +
+        estimatedLabelWidth / 2;
+
+      return {
+        ...record,
+        lane,
+      };
+    });
+  }, [milestoneRecords, positionForDate]);
 
   const headerSegments = useMemo(
     () =>
@@ -737,7 +803,7 @@ export default function FlightpathView({
 
   const timelineGridStyle = {
     backgroundImage:
-      "linear-gradient(to right, rgba(148,163,184,0.16) 1px, transparent 1px)",
+      "linear-gradient(to right, rgba(148,163,184,0.14) 1px, transparent 1px)",
     backgroundSize: `${gridStep}px 100%`,
   };
 
@@ -925,7 +991,7 @@ export default function FlightpathView({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-violet-700 dark:border-violet-400/20 dark:bg-white/5 dark:text-violet-300">
-                    <GitBranch className="h-3.5 w-3.5" />
+                    <Route className="h-3.5 w-3.5" />
                     Gantt-style planning
                   </span>
 
@@ -1040,7 +1106,7 @@ export default function FlightpathView({
           {localMoves.length === 0 ? (
             <div className="px-6 py-20 text-center lg:px-8">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                <GitBranch className="h-8 w-8" />
+                <Route className="h-8 w-8" />
               </div>
 
               <h3 className="mt-5 text-xl font-black text-slate-950 dark:text-white">
@@ -1056,7 +1122,7 @@ export default function FlightpathView({
           ) : (
             <div
               ref={scrollerRef}
-              className="overflow-x-auto overscroll-x-contain"
+              className="overflow-x-auto overscroll-x-contain bg-white dark:bg-[#08111f]"
             >
               <div
                 style={{
@@ -1071,7 +1137,7 @@ export default function FlightpathView({
                     gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
                   }}
                 >
-                  <div className="sticky left-0 z-30 flex h-20 items-center border-r border-slate-200/80 bg-white/95 px-5 backdrop-blur-xl dark:border-white/10 dark:bg-[#08111f]/95">
+                  <div className="sticky left-0 z-30 flex h-20 items-center border-r border-slate-300 bg-white shadow-[8px_0_18px_rgba(15,23,42,0.06)] px-5 backdrop-blur-xl dark:border-white/10 dark:bg-[#08111f]/95">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                         Timeline range
@@ -1089,7 +1155,7 @@ export default function FlightpathView({
                   </div>
 
                   <div
-                    className="relative h-20 overflow-hidden bg-slate-50/80 dark:bg-white/[0.025]"
+                    className="relative h-20 overflow-hidden bg-white dark:bg-white/[0.035]"
                     style={{
                       width: timelineWidth,
                     }}
@@ -1105,12 +1171,12 @@ export default function FlightpathView({
                                 segment.width,
                             }}
                           >
-                            <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-zinc-400">
+                            <p className="whitespace-nowrap text-center text-[10px] font-black uppercase tracking-[0.10em] text-slate-600 dark:text-zinc-300">
                               {segment.label}
                             </p>
 
                             {segment.sublabel ? (
-                              <p className="mt-1 truncate text-[10px] font-semibold text-slate-400 dark:text-zinc-500">
+                              <p className="mt-1 whitespace-nowrap text-center text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-zinc-500">
                                 {
                                   segment.sublabel
                                 }
@@ -1126,12 +1192,12 @@ export default function FlightpathView({
                 </div>
 
                 <div
-                  className="grid border-b border-fuchsia-200/70 bg-fuchsia-50/45 dark:border-fuchsia-400/10 dark:bg-fuchsia-500/[0.035]"
+                  className="grid border-b border-fuchsia-200/70 bg-fuchsia-50/80 dark:border-fuchsia-400/10 dark:bg-fuchsia-500/[0.035]"
                   style={{
                     gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
                   }}
                 >
-                  <div className="sticky left-0 z-30 flex h-16 items-center gap-3 border-r border-fuchsia-200/70 bg-fuchsia-50/95 px-5 backdrop-blur-xl dark:border-fuchsia-400/10 dark:bg-[#120c20]/95">
+                  <div className="sticky left-0 z-30 flex h-24 items-center gap-3 border-r border-fuchsia-200 bg-fuchsia-50 shadow-[8px_0_18px_rgba(15,23,42,0.06)] px-5 backdrop-blur-xl dark:border-fuchsia-400/10 dark:bg-[#120c20]/95">
                     <Flag className="h-4 w-4 text-fuchsia-500" />
 
                     <div>
@@ -1145,7 +1211,7 @@ export default function FlightpathView({
                   </div>
 
                   <div
-                    className="relative h-16"
+                    className="relative h-24 bg-fuchsia-50/60 dark:bg-fuchsia-500/[0.025]"
                     style={{
                       width: timelineWidth,
                       ...timelineGridStyle,
@@ -1157,21 +1223,27 @@ export default function FlightpathView({
                       (milestone) => (
                         <div
                           key={milestone.id}
-                          className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
+                          className="absolute z-20 -translate-x-1/2"
                           style={{
                             left: clamp(
                               milestone.left,
                               0,
                               timelineWidth
                             ),
+                            top:
+                              milestone.lane === 0
+                                ? 10
+                                : milestone.lane === 1
+                                  ? 37
+                                  : 64,
                           }}
                           title={`${milestone.title} · ${formatFullDate(
                             milestone.date
                           )}`}
                         >
-                          <div className="mx-auto h-3.5 w-3.5 rotate-45 rounded-[3px] border-2 border-white bg-fuchsia-500 shadow-lg shadow-fuchsia-500/30 dark:border-[#08111f]" />
+                          <div className="mx-auto h-3 w-3 rotate-45 rounded-[3px] border-2 border-white bg-fuchsia-500 shadow-lg shadow-fuchsia-500/25 dark:border-[#08111f]" />
 
-                          <span className="mt-2 block max-w-36 -translate-x-[calc(50%-7px)] truncate rounded-lg bg-white/95 px-2 py-1 text-[9px] font-black text-fuchsia-700 shadow-sm dark:bg-[#17111f] dark:text-fuchsia-300">
+                          <span className="mt-1.5 block max-w-[164px] truncate rounded-lg border border-fuchsia-100 bg-white px-2 py-1 text-[9px] font-black text-fuchsia-700 shadow-sm dark:border-fuchsia-400/10 dark:bg-[#17111f] dark:text-fuchsia-300">
                             {milestone.title}
                           </span>
                         </div>
@@ -1183,12 +1255,12 @@ export default function FlightpathView({
                 {groups.map((group) => (
                   <div key={group.key}>
                     <div
-                      className="grid border-b border-slate-200/80 bg-slate-100/80 dark:border-white/[0.07] dark:bg-white/[0.035]"
+                      className="grid border-b border-slate-200/80 bg-slate-50 dark:border-white/[0.07] dark:bg-white/[0.035]"
                       style={{
                         gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
                       }}
                     >
-                      <div className="sticky left-0 z-30 flex h-11 items-center gap-2 border-r border-slate-200/80 bg-slate-100/95 px-5 backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#111925]/95">
+                      <div className="sticky left-0 z-30 flex h-11 items-center gap-2 border-r border-slate-300 bg-slate-100 shadow-[8px_0_18px_rgba(15,23,42,0.06)] px-5 backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#111925]/95">
                         <Layers3 className="h-3.5 w-3.5 text-violet-500" />
 
                         <span className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 dark:text-zinc-300">
@@ -1201,7 +1273,7 @@ export default function FlightpathView({
                       </div>
 
                       <div
-                        className="relative h-11"
+                        className="relative h-11 bg-slate-50/70 dark:bg-white/[0.025]"
                         style={{
                           width:
                             timelineWidth,
@@ -1273,6 +1345,31 @@ export default function FlightpathView({
                         durationDays *
                         zoomConfig.pixelsPerDay;
 
+                      const displayBarLeft =
+                        rangeStart
+                          ? clamp(
+                              barLeft,
+                              0,
+                              Math.max(
+                                0,
+                                timelineWidth -
+                                  MIN_VISIBLE_BAR_WIDTH
+                              )
+                            )
+                          : 0;
+
+                      const displayBarWidth =
+                        rangeStart
+                          ? Math.min(
+                              Math.max(
+                                MIN_VISIBLE_BAR_WIDTH,
+                                barWidth
+                              ),
+                              timelineWidth -
+                                displayBarLeft
+                            )
+                          : 0;
+
                       const dueOnly =
                         !start && Boolean(due);
 
@@ -1302,7 +1399,7 @@ export default function FlightpathView({
                                 move
                               )
                             }
-                            className="sticky left-0 z-20 flex h-16 min-w-0 items-center gap-3 border-r border-slate-200/80 bg-white/96 px-5 text-left transition hover:bg-violet-50 dark:border-white/[0.07] dark:bg-[#08111f]/96 dark:hover:bg-violet-500/[0.08]"
+                            className="sticky left-0 z-20 flex h-16 min-w-0 items-center gap-3 border-r border-slate-300 bg-white shadow-[8px_0_18px_rgba(15,23,42,0.06)] px-5 text-left transition hover:bg-violet-50 dark:border-white/[0.07] dark:bg-[#08111f]/96 dark:hover:bg-violet-500/[0.08]"
                           >
                             <span
                               className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusMeta.dot}`}
@@ -1331,7 +1428,7 @@ export default function FlightpathView({
                           </button>
 
                           <div
-                            className="relative h-16 bg-white/45 dark:bg-transparent"
+                            className="relative h-16 bg-white dark:bg-[#08111f]"
                             style={{
                               width:
                                 timelineWidth,
@@ -1350,27 +1447,10 @@ export default function FlightpathView({
                                 }
                                 className={`absolute top-1/2 z-20 flex h-8 -translate-y-1/2 items-center overflow-hidden rounded-xl border px-3 text-left text-[10px] font-black shadow-sm transition hover:-translate-y-[55%] hover:shadow-lg ${statusMeta.bar}`}
                                 style={{
-                                  left: clamp(
-                                    barLeft,
-                                    0,
-                                    Math.max(
-                                      0,
-                                      timelineWidth -
-                                        18
-                                    )
-                                  ),
-                                  width: Math.max(
-                                    18,
-                                    Math.min(
-                                      barWidth,
-                                      timelineWidth -
-                                        clamp(
-                                          barLeft,
-                                          0,
-                                          timelineWidth
-                                        )
-                                    )
-                                  ),
+                                  left:
+                                    displayBarLeft,
+                                  width:
+                                    displayBarWidth,
                                 }}
                                 title={`${title} · ${formatFullDate(
                                   rangeStart
@@ -1382,9 +1462,15 @@ export default function FlightpathView({
                                     : ""
                                 }`}
                               >
-                                <span className="truncate">
+                                <span className="min-w-0 truncate">
                                   {title}
                                 </span>
+
+                                {due ? (
+                                  <span className="ml-auto shrink-0 pl-2 text-[9px] opacity-70">
+                                    {formatShortDate(due)}
+                                  </span>
+                                ) : null}
                               </button>
                             ) : null}
 

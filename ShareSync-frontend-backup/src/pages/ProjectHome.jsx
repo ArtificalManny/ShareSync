@@ -126,6 +126,7 @@ const FlowBoard = React.lazy(() => import("../features/flow/FlowBoard"));
 const RoadmapPanel = React.lazy(() => import("../components/roadmap/RoadmapPanel"));
 const RhythmView = React.lazy(() => import("../components/views/RhythmView"));
 // flightpath-view-v1
+// flightpath-visual-polish-v1
 const FlightpathView = React.lazy(() => import("../features/flightpath/FlightpathView"));
 const InsightsTab = React.lazy(() => import("../components/insights/InsightsTab"));
 const ThreadsView = React.lazy(() => import("../components/views/ThreadsView"));
@@ -202,7 +203,7 @@ const PROJECT_VIEWS = [
   {
     id: "flightpath",
     label: "Flightpath",
-    icon: GitBranch,
+    icon: Route,
     description: "Moves across time",
   },
   {
