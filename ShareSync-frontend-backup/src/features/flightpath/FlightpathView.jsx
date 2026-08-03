@@ -31,6 +31,7 @@ const MOVE_LABEL_GAP = 8;
 
 // flightpath-visual-polish-v1
 // flightpath-density-polish-v2
+// flightpath-marker-cleanup-v3
 
 const ZOOM_LEVELS = {
   day: {
@@ -698,7 +699,14 @@ export default function FlightpathView({
   }, [milestoneRecords, positionForDate]);
 
   const milestoneDisplayItems = useMemo(() => {
-    if (zoom !== "month") {
+    const clusterDistance =
+      zoom === "month"
+        ? 56
+        : zoom === "week"
+          ? 18
+          : 0;
+
+    if (clusterDistance === 0) {
       return milestonePoints.map((point) => ({
         key: `milestone-${point.id}`,
         type: "milestone",
@@ -711,7 +719,6 @@ export default function FlightpathView({
       }));
     }
 
-    const clusterDistance = 56;
     const clusters = [];
 
     for (const point of milestonePoints) {
@@ -720,11 +727,12 @@ export default function FlightpathView({
 
       if (
         !current ||
-        point.left - current.firstLeft >
+        point.left - current.lastLeft >
           clusterDistance
       ) {
         clusters.push({
           firstLeft: point.left,
+          lastLeft: point.left,
           records: [point],
         });
 
@@ -732,6 +740,7 @@ export default function FlightpathView({
       }
 
       current.records.push(point);
+      current.lastLeft = point.left;
     }
 
     return clusters.map(
@@ -753,7 +762,7 @@ export default function FlightpathView({
           key:
             count === 1
               ? `milestone-${first.id}`
-              : `cluster-${clusterIndex}-${first.id}-${last.id}`,
+              : `cluster-${zoom}-${clusterIndex}-${first.id}-${last.id}`,
           type:
             count === 1
               ? "milestone"
@@ -1389,7 +1398,7 @@ export default function FlightpathView({
                           <button
                             key={item.key}
                             type="button"
-                            className="group absolute z-20 h-7 w-7 -translate-x-1/2 rounded-full outline-none"
+                            className="group absolute z-20 h-7 w-7 -translate-x-1/2 appearance-none rounded-full border-0 bg-transparent p-0 shadow-none outline-none hover:bg-transparent focus:bg-transparent"
                             style={{
                               left: clamp(
                                 item.left,
@@ -1400,6 +1409,11 @@ export default function FlightpathView({
                                 )
                               ),
                               top,
+                              background:
+                                "transparent",
+                              border: 0,
+                              padding: 0,
+                              boxShadow: "none",
                             }}
                             title={tooltip}
                             aria-label={tooltip}
@@ -1444,10 +1458,10 @@ export default function FlightpathView({
                               </span>
                             ) : (
                               <span
-                                className={`mx-auto mt-2 block h-3 w-3 rotate-45 rounded-[3px] border-2 shadow-lg transition ${
+                                className={`mx-auto mt-2 block h-3 w-3 rotate-45 rounded-[3px] border-2 shadow-sm transition ${
                                   isActive
                                     ? "border-fuchsia-800 bg-fuchsia-600 ring-4 ring-fuchsia-400/20"
-                                    : "border-white bg-fuchsia-500 dark:border-[#08111f]"
+                                    : "border-white bg-fuchsia-500 ring-1 ring-fuchsia-500/20 dark:border-[#08111f]"
                                 }`}
                               />
                             )}
