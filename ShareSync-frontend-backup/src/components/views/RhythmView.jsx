@@ -268,9 +268,168 @@ function CalendarEvent({ event, onEdit }) {
   );
 }
 
+// schedule-dated-commitments-v2
+function normalizeScheduleItemId(item) {
+  return String(
+    item?._id ||
+      item?.id ||
+      item?.taskId ||
+      item?.milestoneId ||
+      ""
+  ).trim();
+}
+
+function parseScheduleDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime())
+      ? null
+      : new Date(value);
+  }
+
+  const raw = String(value).trim();
+
+  const dateOnlyMatch = raw.match(
+    /^(\d{4})-(\d{2})-(\d{2})/
+  );
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] =
+      dateOnlyMatch;
+
+    return new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      12,
+      0,
+      0,
+      0
+    );
+  }
+
+  const parsed = new Date(raw);
+
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : parsed;
+}
+
+function getScheduleDateKey(value) {
+  const date = parseScheduleDate(value);
+
+  if (!date) return "";
+
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      date.getDate()
+    ).padStart(2, "0"),
+  ].join("-");
+}
+
+function getScheduleItemDate(
+  kind,
+  item
+) {
+  if (kind === "milestone") {
+    return (
+      item?.targetDate ||
+      item?.dueDate ||
+      item?.deadline ||
+      null
+    );
+  }
+
+  return (
+    item?.dueDate ||
+    item?.deadline ||
+    item?.targetDate ||
+    null
+  );
+}
+
+function getScheduleItemTitle(
+  item,
+  fallback
+) {
+  return (
+    item?.title ||
+    item?.name ||
+    item?.label ||
+    fallback
+  );
+}
+
+function getScheduleStatusLabel(item) {
+  return String(
+    item?.status ||
+      item?.state ||
+      "planned"
+  )
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(
+      /\b\w/g,
+      (character) =>
+        character.toUpperCase()
+    );
+}
+
+function isScheduleItemComplete(item) {
+  const status = String(
+    item?.status ||
+      item?.state ||
+      ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-");
+
+  return Boolean(
+    item?.completed === true ||
+      item?.isCompleted === true ||
+      item?.completedAt ||
+      status === "done" ||
+      status === "complete" ||
+      status === "completed" ||
+      status === "archived"
+  );
+}
+
+function formatScheduleDetailDate(value) {
+  const date = parseScheduleDate(value);
+
+  if (!date) return "No date assigned";
+
+  return date.toLocaleDateString(
+    undefined,
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }
+  );
+}
+
 // ─── DayColumn ──────────────────────────────────────────────────────────────
 
-function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent, readOnly = false }) {
+function DayColumn({
+  day,
+  events,
+  commitments = [],
+  isToday,
+  workload,
+  onAddEvent,
+  onEditEvent,
+  onCommitmentClick,
+  readOnly = false,
+}) {
   const getWorkloadTone = () => {
     if (workload > 100) return 'from-rose-500 to-orange-400';
     if (workload > 80) return 'from-amber-500 to-orange-400';
@@ -280,6 +439,11 @@ function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent, re
 
   const workloadLabel =
     workload > 100 ? 'Overloaded' : workload > 80 ? 'Heavy' : workload > 50 ? 'Healthy' : 'Open';
+  const safeCommitments =
+    Array.isArray(commitments)
+      ? commitments
+      : [];
+
 
   return (
     <div className="rhythm-day-column min-w-[170px] flex-1 border-r border-slate-200/70 last:border-r-0 dark:border-white/[0.06]">
@@ -338,6 +502,121 @@ function DayColumn({ day, events, isToday, workload, onAddEvent, onEditEvent, re
         </div>
       </div>
 
+        <div className="rhythm-due-lane h-[116px] overflow-y-auto border-b border-slate-200/80 bg-slate-50/70 p-2 dark:border-white/[0.06] dark:bg-white/[0.025]">
+          {safeCommitments.length === 0 ? (
+            <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-bold text-slate-400 dark:text-zinc-600">
+              No due work
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {safeCommitments.map(
+                (commitment, index) => {
+                  const isMove =
+                    commitment.kind ===
+                    "move";
+
+                  const item =
+                    commitment.item;
+
+                  const complete =
+                    isScheduleItemComplete(
+                      item
+                    );
+
+                  const itemId =
+                    normalizeScheduleItemId(
+                      item
+                    ) || index;
+
+                  const priority = String(
+                    item?.priority || ""
+                  )
+                    .trim()
+                    .toLowerCase();
+
+                  return (
+                    <button
+                      key={`${commitment.kind}-${itemId}`}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+
+                        onCommitmentClick?.(
+                          commitment
+                        );
+                      }}
+                      aria-label={`Open ${
+                        isMove
+                          ? "Move"
+                          : "milestone"
+                      } detail: ${
+                        commitment.title
+                      }`}
+                      className={`
+                        w-full rounded-xl border px-2.5 py-2 text-left
+                        transition-all duration-200
+                        hover:-translate-y-0.5 hover:shadow-md
+                        ${
+                          isMove
+                            ? "border-cyan-200 bg-cyan-50/90 hover:border-cyan-300 dark:border-cyan-400/20 dark:bg-cyan-500/10"
+                            : "border-dashed border-amber-300 bg-amber-50/90 hover:border-amber-400 dark:border-amber-400/25 dark:bg-amber-500/10"
+                        }
+                        ${
+                          complete
+                            ? "opacity-60"
+                            : ""
+                        }
+                      `}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`
+                            text-[8px] font-black uppercase tracking-[0.16em]
+                            ${
+                              isMove
+                                ? "text-cyan-700 dark:text-cyan-200"
+                                : "text-amber-700 dark:text-amber-200"
+                            }
+                          `}
+                        >
+                          {isMove
+                            ? "Due Move"
+                            : "Milestone"}
+                        </span>
+
+                        {isMove &&
+                        priority ? (
+                          <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[8px] font-black uppercase text-slate-500 dark:bg-black/20 dark:text-zinc-400">
+                            {priority}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div
+                        className={`
+                          mt-1 truncate text-[11px] font-black
+                          ${
+                            isMove
+                              ? "text-cyan-950 dark:text-cyan-50"
+                              : "text-amber-950 dark:text-amber-50"
+                          }
+                          ${
+                            complete
+                              ? "line-through"
+                              : ""
+                          }
+                        `}
+                      >
+                        {commitment.title}
+                      </div>
+                    </button>
+                  );
+                }
+              )}
+            </div>
+          )}
+        </div>
+
       <div className="relative bg-white/80 dark:bg-[#101014]/80">
         {TIME_SLOTS.map((slot) => {
           const zone = ENERGY_ZONES.find((z) => z.hours.includes(slot.hour));
@@ -395,6 +674,20 @@ function EnergySidebar() {
         </div>
       </div>
 
+        <div className="flex h-[116px] items-center justify-center border-b border-slate-200/80 bg-cyan-50/45 px-3 text-center dark:border-white/[0.06] dark:bg-cyan-500/[0.035]">
+          <div>
+            <div className="text-[9px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
+              Due
+            </div>
+
+            <div className="mt-1 text-[9px] font-bold leading-4 text-slate-400 dark:text-zinc-500">
+              Moves &
+              <br />
+              milestones
+            </div>
+          </div>
+        </div>
+
       {TIME_SLOTS.map((slot) => {
         const zone = ENERGY_ZONES.find((z) => z.hours.includes(slot.hour));
         const Icon = zone?.icon || Clock;
@@ -423,7 +716,12 @@ function EnergySidebar() {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function RhythmView({ projectId, readOnly = false }) {
+export default function RhythmView({
+  projectId,
+  moves = [],
+  milestones = [],
+  readOnly = false,
+}) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [realEvents, setRealEvents] = useState([]);
   const [agendaEvents, setAgendaEvents] = useState([]);
@@ -433,6 +731,7 @@ export default function RhythmView({ projectId, readOnly = false }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
   const [deletingSessionId, setDeletingSessionId] = useState(null);
+  const [selectedCommitment, setSelectedCommitment] = useState(null);
 
   const getSessionColor = (session) =>
     session?.color || session?.originalData?.color || '#8B5CF6';
@@ -465,6 +764,106 @@ export default function RhythmView({ projectId, readOnly = false }) {
       };
     });
   }, [currentWeek]);
+
+  const commitmentsByDay = useMemo(() => {
+    const buckets = new Map();
+
+    const addCommitment = (
+      kind,
+      item,
+      fallbackTitle
+    ) => {
+      const rawDate =
+        getScheduleItemDate(
+          kind,
+          item
+        );
+
+      const dateKey =
+        getScheduleDateKey(rawDate);
+
+      const itemId =
+        normalizeScheduleItemId(item);
+
+      if (!dateKey || !itemId) return;
+
+      const current =
+        buckets.get(dateKey) || [];
+
+      current.push({
+        kind,
+        item,
+        rawDate,
+        title: getScheduleItemTitle(
+          item,
+          fallbackTitle
+        ),
+      });
+
+      buckets.set(
+        dateKey,
+        current
+      );
+    };
+
+    (
+      Array.isArray(moves)
+        ? moves
+        : []
+    ).forEach((move) => {
+      addCommitment(
+        "move",
+        move,
+        "Untitled Move"
+      );
+    });
+
+    (
+      Array.isArray(milestones)
+        ? milestones
+        : []
+    ).forEach((milestone) => {
+      addCommitment(
+        "milestone",
+        milestone,
+        "Untitled Milestone"
+      );
+    });
+
+    return weekDays.map((day) => {
+      const commitments = [
+        ...(
+          buckets.get(
+            getScheduleDateKey(
+              day.fullDate
+            )
+          ) || []
+        ),
+      ];
+
+      return commitments.sort(
+        (first, second) => {
+          if (
+            first.kind !==
+            second.kind
+          ) {
+            return first.kind ===
+              "move"
+              ? -1
+              : 1;
+          }
+
+          return first.title.localeCompare(
+            second.title
+          );
+        }
+      );
+    });
+  }, [
+    milestones,
+    moves,
+    weekDays,
+  ]);
 
   const mapRhythmItems = (items = [], { restrictToWorkWeek = true } = {}) =>
     items
@@ -1140,11 +1539,13 @@ export default function RhythmView({ projectId, readOnly = false }) {
                       key={idx}
                       day={day}
                       events={realEvents.filter((event) => event.day === idx)}
+                      commitments={commitmentsByDay[idx] || []}
                       isToday={day.isToday}
                       workload={workloads[idx]}
                       onAddEvent={readOnly ? undefined : handleAddEventClick}
                       readOnly={readOnly}
                       onEditEvent={handleEditEventClick}
+                      onCommitmentClick={setSelectedCommitment}
                     />
                   ))}
                 </div>
@@ -1333,6 +1734,138 @@ export default function RhythmView({ projectId, readOnly = false }) {
         isDeleting={Boolean(deletingSessionId)}
         projectId={projectId}
       />
+      {selectedCommitment ? (
+        <div
+          className="fixed inset-0 z-[9999]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="schedule-commitment-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+            onClick={() =>
+              setSelectedCommitment(
+                null
+              )
+            }
+            aria-label="Close detail pane"
+          />
+
+          <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-white/[0.08] dark:bg-[#111116]">
+            <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 dark:border-white/[0.08]">
+              <div className="min-w-0">
+                <div
+                  className={`
+                    text-[10px] font-black uppercase tracking-[0.2em]
+                    ${
+                      selectedCommitment.kind ===
+                      "move"
+                        ? "text-cyan-600 dark:text-cyan-300"
+                        : "text-amber-600 dark:text-amber-300"
+                    }
+                  `}
+                >
+                  {selectedCommitment.kind ===
+                  "move"
+                    ? "Move Detail"
+                    : "Milestone Detail"}
+                </div>
+
+                <h2
+                  id="schedule-commitment-title"
+                  className="mt-2 text-xl font-black text-slate-950 dark:text-white"
+                >
+                  {selectedCommitment.title}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedCommitment(
+                    null
+                  )
+                }
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-600 transition hover:bg-slate-100 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/10"
+              >
+                Close
+              </button>
+            </header>
+
+            <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                  {selectedCommitment.kind ===
+                  "move"
+                    ? "Due date"
+                    : "Target date"}
+                </div>
+
+                <div className="mt-2 font-bold text-slate-800 dark:text-zinc-200">
+                  {formatScheduleDetailDate(
+                    selectedCommitment.rawDate
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                  Status
+                </div>
+
+                <div className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-zinc-200">
+                  {getScheduleStatusLabel(
+                    selectedCommitment.item
+                  )}
+                </div>
+              </div>
+
+              {selectedCommitment.kind ===
+                "move" &&
+              selectedCommitment.item
+                ?.priority ? (
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                    Priority
+                  </div>
+
+                  <div className="mt-2 font-bold capitalize text-slate-800 dark:text-zinc-200">
+                    {
+                      selectedCommitment
+                        .item.priority
+                    }
+                  </div>
+                </div>
+              ) : null}
+
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-zinc-500">
+                  Description
+                </div>
+
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                  {String(
+                    selectedCommitment.item
+                      ?.description ||
+                      ""
+                  ).trim() ||
+                    "No description has been added."}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold leading-5 text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+                Editing remains available in
+                {selectedCommitment.kind ===
+                "move"
+                  ? " Stack."
+                  : " Roadmap."}
+              </div>
+            </div>
+          </aside>
+        </div>
+      ) : null}
+
     </section>
   );
 }

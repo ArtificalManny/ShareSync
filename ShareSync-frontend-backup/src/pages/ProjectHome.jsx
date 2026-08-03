@@ -5215,6 +5215,22 @@ export default function ProjectHome() {
             <RhythmView
               projectId={id}
               events={events || []}
+              moves={
+                Array.isArray(liveTasks) &&
+                liveTasks.length > 0
+                  ? liveTasks
+                  : Array.isArray(tasks)
+                    ? tasks
+                    : []
+              }
+              milestones={
+                Array.isArray(commandMilestones) &&
+                commandMilestones.length > 0
+                  ? commandMilestones
+                  : Array.isArray(milestones)
+                    ? milestones
+                    : []
+              }
               onAddEvent={canUseMemberActions ? handleAddEvent : undefined}
               readOnly={!canUseMemberActions}
               onEventClick={handleEventClick}
