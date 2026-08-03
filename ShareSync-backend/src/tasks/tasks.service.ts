@@ -573,99 +573,77 @@ export class TasksService {
       }
     } catch (err) {}
 
-    // ⭐ 1-TO-MANY BROADCAST: Notify all project members + LIVE ROOM OVERRIDE
+    // ⭐ TEMPORARY PROJECT-ROOM NOTIFICATION COMPATIBILITY BROADCAST
+    // Persisted member notifications are now handled by
+    // TaskCreatedNotificationListener through the canonical TASK_CREATED event.
     try {
       const db = this.taskModel.db;
-      const projectDoc = await db.collection('projects').findOne({ _id: new Types.ObjectId(dto.projectId) });
+      const projectDoc = await db
+        .collection('projects')
+        .findOne({
+          _id: new Types.ObjectId(dto.projectId),
+        });
 
       if (projectDoc) {
-        const rawMembers = projectDoc.members || projectDoc.sharedWith || projectDoc.participantIds || [];
-        
-        // Grab owner, ownerId, and all members to ensure no one is missed
-        const allAssociatedIds: any[] = [
-          projectDoc.ownerId,
-          projectDoc.owner,
-          ...rawMembers.map((m: any) => m?.userId || m?._id || m)
-        ];
+        const safeProjectName =
+          typeof projectDoc.name === 'string' &&
+          projectDoc.name.trim()
+            ? projectDoc.name.trim()
+            : projectDoc.title || 'Project';
 
-        const memberIdsToNotify: string[] = allAssociatedIds
-          .filter(Boolean) // Remove undefined/null
-          .map(id => id.toString())
-          .filter(id => id !== userId);
+        const safeTaskTitle =
+          typeof dto.title === 'string' && dto.title.trim()
+            ? dto.title.trim()
+            : 'New Task';
 
-        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
-        const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
-        const safeTaskTitle = typeof dto.title === 'string' && dto.title.trim() ? dto.title.trim() : 'New Task';
-
-        let notificationsService: NotificationsService | null = null;
-        try {
-          notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
-        } catch (e) {}
-
-        // 1. Notify Official DB Members
-        for (const recipientId of uniqueMembers) {
-          try {
-            if (!notificationsService?.notify) {
-              throw new Error(
-                `NotificationsService.notify is unavailable for task-created recipient ${recipientId}`,
-              );
-            }
-
-            await notificationsService.notify({
-              userId: recipientId,
-              type: NotificationType.TASK_CREATED,
-              title: `📝 New Task in ${safeProjectName}`,
-              body: safeTaskTitle,
-              icon: '📝',
-              priority: NotificationPriority.HIGH,
-              triggeredBy: userId,
-              data: {
-                projectId: dto.projectId,
-                projectName: safeProjectName,
-                taskId: saved._id.toString(),
-                extra: { taskId: saved._id.toString() },
-                emailFanoutEligible: true,
-                projectMemberNotification: true,
-              },
-              actions: [{ label: 'View Move', url: `/projects/${dto.projectId}?tab=move` }],
-              groupKey: `project-task-${recipientId}-${dto.projectId}-${saved._id.toString()}`,
-            });
-
-          } catch (innerErr) {
-            this.logger.error(`Failed to notify project member ${recipientId} through NotificationsService`, innerErr);
-          }
-        }
-        
-        // 2. LIVE ROOM OVERRIDE: Blast notification to anyone currently viewing the project board
         const liveRoomNotif = {
-          _id: new Types.ObjectId(), // Ephemeral ID for the frontend to render
+          _id: new Types.ObjectId(),
           type: 'task_created',
           title: `📝 New Task in ${safeProjectName}`,
           body: safeTaskTitle,
           data: {
             projectId: dto.projectId,
             projectName: safeProjectName,
-            extra: { taskId: saved._id.toString() }
+            extra: {
+              taskId: saved._id.toString(),
+            },
           },
           channels: ['in_app'],
           priority: 'normal',
           isRead: false,
-          createdAt: new Date()
+          createdAt: new Date(),
         };
 
-        if (notifGateway && notifGateway.server) {
-          notifGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
-          notifGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
-        }
-        if (rtGateway && rtGateway.server) {
-          rtGateway.server.to(`project:${dto.projectId}`).emit('new_notification', liveRoomNotif);
-          rtGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
+        if (notifGateway?.server) {
+          notifGateway.server
+            .to(`project:${dto.projectId}`)
+            .emit('new_notification', liveRoomNotif);
+
+          notifGateway.server
+            .to(dto.projectId)
+            .emit('new_notification', liveRoomNotif);
         }
 
-        this.logger.log(`✅ Task ${saved._id.toString()} notified ${uniqueMembers.length} recipient(s) through NotificationsService and broadcasted to Live Rooms`);
+        if (rtGateway?.server) {
+          rtGateway.server
+            .to(`project:${dto.projectId}`)
+            .emit('new_notification', liveRoomNotif);
+
+          rtGateway.server
+            .to(dto.projectId)
+            .emit('new_notification', liveRoomNotif);
+        }
+
+        this.logger.log(
+          `✅ Task ${saved._id.toString()} broadcasted ` +
+            `to compatibility Live Rooms`,
+        );
       }
-    } catch (err) {
-      this.logger.error('⚠️ Failed to process native task notifications:', err);
+    } catch (error) {
+      this.logger.error(
+        '⚠️ Failed to broadcast task-created compatibility notification:',
+        error,
+      );
     }
 
     this.logger.log(`Task created: ${saved._id}`);

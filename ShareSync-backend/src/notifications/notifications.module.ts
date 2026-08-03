@@ -36,6 +36,7 @@ import { User, UserSchema } from '../user/schemas/user.schema';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
 import { DigestScheduler } from './digest.scheduler';
+import { TaskCreatedNotificationListener } from './listeners/task-created-notification.listener';
 
 // Optional: Project Follow schema (for follower notifications)
 // Import conditionally to avoid circular dependency issues
@@ -98,6 +99,7 @@ try {
     SmsService,
     NotificationPolicy,
     DigestScheduler,
+    TaskCreatedNotificationListener,
   ],
   exports: [
     NotificationsService,
