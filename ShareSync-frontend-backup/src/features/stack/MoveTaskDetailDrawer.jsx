@@ -121,6 +121,8 @@ export default function MoveTaskDetailDrawer({
   const [status, setStatus] = useState("todo");
   const [priority, setPriority] = useState("medium");
   const [assigneeId, setAssigneeId] = useState("");
+  // flightpath-start-date-v1
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [blockedByIds, setBlockedByIds] = useState([]);
   const [dependencyChoice, setDependencyChoice] = useState("");
@@ -225,6 +227,7 @@ export default function MoveTaskDetailDrawer({
     setStatus(String(task?.status || "todo").toLowerCase());
     setPriority(String(task?.priority || "medium").toLowerCase());
     setAssigneeId(getTaskAssigneeId(task));
+    setStartDate(toDateInputValue(task?.startDate));
     setDueDate(toDateInputValue(task?.dueDate));
     setBlockedByIds(
       normalizeIdList(task?.blockedBy)
@@ -305,6 +308,17 @@ export default function MoveTaskDetailDrawer({
       return;
     }
 
+    if (
+      startDate &&
+      dueDate &&
+      startDate > dueDate
+    ) {
+      setActionError(
+        "Start date cannot be after due date."
+      );
+      return;
+    }
+
     setSaving(true);
     setActionError("");
 
@@ -315,6 +329,9 @@ export default function MoveTaskDetailDrawer({
         status,
         priority,
         assigneeId: assigneeId || null,
+        startDate: startDate
+          ? `${startDate}T12:00:00.000Z`
+          : null,
         dueDate: dueDate
           ? `${dueDate}T12:00:00.000Z`
           : null,
@@ -344,6 +361,7 @@ export default function MoveTaskDetailDrawer({
     status,
     priority,
     assigneeId,
+    startDate,
     dueDate,
     blockedByIds,
     disabled,
@@ -370,6 +388,17 @@ export default function MoveTaskDetailDrawer({
       return;
     }
 
+    if (
+      startDate &&
+      dueDate &&
+      startDate > dueDate
+    ) {
+      setActionError(
+        "Start date cannot be after due date."
+      );
+      return;
+    }
+
     setCompleting(true);
     setActionError("");
 
@@ -380,6 +409,9 @@ export default function MoveTaskDetailDrawer({
         status,
         priority,
         assigneeId: assigneeId || null,
+        startDate: startDate
+          ? `${startDate}T12:00:00.000Z`
+          : null,
         dueDate: dueDate
           ? `${dueDate}T12:00:00.000Z`
           : null,
@@ -418,6 +450,7 @@ export default function MoveTaskDetailDrawer({
     status,
     priority,
     assigneeId,
+    startDate,
     dueDate,
     blockedByIds,
     disabled,
@@ -583,7 +616,7 @@ export default function MoveTaskDetailDrawer({
               </label>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <label className="block">
                 <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
                   <UserRound className="h-4 w-4 text-emerald-500" />
@@ -611,6 +644,32 @@ export default function MoveTaskDetailDrawer({
 
               <div className="min-w-0">
                 <label
+                  htmlFor="move-start-date"
+                  className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400"
+                >
+                  <CalendarDays className="h-4 w-4 shrink-0 text-cyan-500" />
+                  Start date
+                </label>
+
+                <input
+                  id="move-start-date"
+                  type="date"
+                  value={startDate}
+                  max={dueDate || undefined}
+                  onChange={(event) =>
+                    setStartDate(event.target.value)
+                  }
+                  disabled={isBusy}
+                  className="block min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-[#19191f] dark:text-white"
+                />
+
+                <p className="mt-2 text-[11px] font-medium leading-4 text-slate-400 dark:text-zinc-500">
+                  Used to draw this Move across Flightpath.
+                </p>
+              </div>
+
+              <div className="min-w-0">
+                <label
                   htmlFor="move-due-date"
                   className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400"
                 >
@@ -622,6 +681,7 @@ export default function MoveTaskDetailDrawer({
                   id="move-due-date"
                   type="date"
                   value={dueDate}
+                  min={startDate || undefined}
                   onChange={(event) =>
                     setDueDate(event.target.value)
                   }

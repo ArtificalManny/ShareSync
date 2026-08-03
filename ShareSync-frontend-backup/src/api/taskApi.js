@@ -68,6 +68,7 @@ export async function createTask(projectIdOrOpts, maybeData) {
     assigneeId,
     assignedToId,
     dueDate,
+    startDate,
     tags,
     effort,
     estimatedTime,
@@ -94,6 +95,7 @@ export async function createTask(projectIdOrOpts, maybeData) {
   }
 
   if (dueDate) body.dueDate = dueDate;
+  if (startDate) body.startDate = startDate;
   if (Array.isArray(tags) && tags.length > 0) body.tags = tags;
   if (effort !== undefined) body.effort = effort;
   if (estimatedTime !== undefined) body.estimatedTime = estimatedTime;
