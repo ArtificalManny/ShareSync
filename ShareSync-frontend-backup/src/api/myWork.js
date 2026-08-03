@@ -1,7 +1,7 @@
-import { http } from './http';
+import client from './client';
 
 export async function getMyWork() {
-  const response = await http.get('/my-work');
+  const response = await client.get('/my-work');
 
   /*
    * Support both shared-client response conventions:
