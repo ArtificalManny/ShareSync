@@ -611,7 +611,7 @@ export class TasksService {
               try {
                 await notificationsService.notify({
                   userId: recipientId,
-                  type: 'task_created' as any,
+                  type: NotificationType.TASK_CREATED,
                   title: `📝 New Task in ${safeProjectName}`,
                   body: safeTaskTitle,
                   icon: '📝',

@@ -8,6 +8,7 @@ import { HydratedDocument, Types } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum NotificationType {
+  TASK_CREATED = 'task_created',
   TASK_ASSIGNED = 'task_assigned',
   TASK_COMPLETED = 'task_completed',
   TASK_MOVED = 'task_moved',
@@ -129,6 +130,9 @@ export class NotificationData {
 
   @Prop({ type: Boolean, default: false })
   emailFanoutEligible?: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  projectMemberNotification?: boolean;
 
   @Prop({ type: Date })
   dueDate?: Date;
