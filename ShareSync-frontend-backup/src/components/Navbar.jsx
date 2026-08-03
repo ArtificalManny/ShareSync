@@ -517,6 +517,7 @@ export default function Navbar({
   const getPageName = () => {
     const path = location.pathname.split("/")[1];
     if (!path) return "Dashboard";
+    if (path === "my-work") return "My Work";
     return path.charAt(0).toUpperCase() + path.slice(1);
   };
 
