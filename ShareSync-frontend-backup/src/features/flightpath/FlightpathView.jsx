@@ -26,9 +26,11 @@ import MoveTaskDetailDrawer from "../stack/MoveTaskDetailDrawer";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LABEL_WIDTH = 320;
-const MIN_VISIBLE_BAR_WIDTH = 112;
+const MOVE_LABEL_WIDTH = 156;
+const MOVE_LABEL_GAP = 8;
 
 // flightpath-visual-polish-v1
+// flightpath-density-polish-v2
 
 const ZOOM_LEVELS = {
   day: {
@@ -451,26 +453,56 @@ function buildHeaderSegments(
   return segments;
 }
 
+function getMilestoneDisplayTooltip(item) {
+  if (!item) return "";
+
+  if (item.count === 1) {
+    return `${item.title} · ${formatFullDate(
+      item.date
+    )}`;
+  }
+
+  const visibleTitles = item.records
+    .slice(0, 5)
+    .map((record) => record.title)
+    .join("\n");
+
+  const remaining =
+    item.count - Math.min(5, item.count);
+
+  return [
+    `${item.count} milestones near ${formatShortDate(
+      item.date
+    )}`,
+    visibleTitles,
+    remaining > 0
+      ? `+${remaining} more`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function FlightpathGuides({
-  milestonePoints,
+  activeMilestonePoint,
   todayLeft,
   timelineWidth,
 }) {
   return (
     <div className="pointer-events-none absolute inset-0">
-      {milestonePoints.map((milestone) => (
+      {activeMilestonePoint ? (
         <div
-          key={`guide-${milestone.id}`}
-          className="absolute inset-y-0 border-l border-dashed border-fuchsia-300/55 dark:border-fuchsia-400/25"
+          key={`guide-${activeMilestonePoint.key}`}
+          className="absolute inset-y-0 z-[9] border-l border-dashed border-fuchsia-400/75 shadow-[0_0_10px_rgba(217,70,239,0.12)] dark:border-fuchsia-400/40"
           style={{
             left: clamp(
-              milestone.left,
+              activeMilestonePoint.left,
               0,
               timelineWidth
             ),
           }}
         />
-      ))}
+      ) : null}
 
       <div
         className="absolute inset-y-0 z-10 border-l-2 border-cyan-500/80 shadow-[0_0_14px_rgba(6,182,212,0.25)]"
@@ -502,6 +534,20 @@ export default function FlightpathView({
       Array.isArray(moves) ? moves : []
     );
 
+  const [
+    hoveredMilestoneKey,
+    setHoveredMilestoneKey,
+  ] = useState(null);
+
+  const [
+    selectedMilestoneKey,
+    setSelectedMilestoneKey,
+  ] = useState(null);
+
+  const activeMilestoneKey =
+    hoveredMilestoneKey ||
+    selectedMilestoneKey;
+
   const [selectedMove, setSelectedMove] =
     useState(null);
 
@@ -531,6 +577,11 @@ export default function FlightpathView({
       Array.isArray(moves) ? moves : []
     );
   }, [moves]);
+
+  useEffect(() => {
+    setHoveredMilestoneKey(null);
+    setSelectedMilestoneKey(null);
+  }, [zoom]);
 
   const milestoneRecords = useMemo(
     () =>
@@ -619,16 +670,14 @@ export default function FlightpathView({
 
     return sorted.map((record) => {
       const estimatedLabelWidth = clamp(
-        record.title.length * 6.2 + 28,
-        76,
-        164
+        record.title.length * 6.2 + 40,
+        88,
+        180
       );
 
       let lane = laneRightEdges.findIndex(
         (rightEdge) =>
-          record.left -
-            estimatedLabelWidth / 2 >
-          rightEdge + 10
+          record.left > rightEdge + 12
       );
 
       if (lane < 0) {
@@ -639,7 +688,7 @@ export default function FlightpathView({
 
       laneRightEdges[lane] =
         record.left +
-        estimatedLabelWidth / 2;
+        estimatedLabelWidth;
 
       return {
         ...record,
@@ -647,6 +696,93 @@ export default function FlightpathView({
       };
     });
   }, [milestoneRecords, positionForDate]);
+
+  const milestoneDisplayItems = useMemo(() => {
+    if (zoom !== "month") {
+      return milestonePoints.map((point) => ({
+        key: `milestone-${point.id}`,
+        type: "milestone",
+        count: 1,
+        left: point.left,
+        date: point.date,
+        title: point.title,
+        lane: point.lane,
+        records: [point],
+      }));
+    }
+
+    const clusterDistance = 56;
+    const clusters = [];
+
+    for (const point of milestonePoints) {
+      const current =
+        clusters[clusters.length - 1];
+
+      if (
+        !current ||
+        point.left - current.firstLeft >
+          clusterDistance
+      ) {
+        clusters.push({
+          firstLeft: point.left,
+          records: [point],
+        });
+
+        continue;
+      }
+
+      current.records.push(point);
+    }
+
+    return clusters.map(
+      (cluster, clusterIndex) => {
+        const count = cluster.records.length;
+
+        const left =
+          cluster.records.reduce(
+            (sum, record) =>
+              sum + record.left,
+            0
+          ) / count;
+
+        const first = cluster.records[0];
+        const last =
+          cluster.records[count - 1];
+
+        return {
+          key:
+            count === 1
+              ? `milestone-${first.id}`
+              : `cluster-${clusterIndex}-${first.id}-${last.id}`,
+          type:
+            count === 1
+              ? "milestone"
+              : "cluster",
+          count,
+          left,
+          date: first.date,
+          title:
+            count === 1
+              ? first.title
+              : `${count} milestones`,
+          lane: 1,
+          records: cluster.records,
+        };
+      }
+    );
+  }, [milestonePoints, zoom]);
+
+  const activeMilestonePoint = useMemo(
+    () =>
+      milestoneDisplayItems.find(
+        (item) =>
+          item.key === activeMilestoneKey
+      ) || null,
+    [
+      activeMilestoneKey,
+      milestoneDisplayItems,
+    ]
+  );
 
   const headerSegments = useMemo(
     () =>
@@ -973,7 +1109,9 @@ export default function FlightpathView({
 
   const renderGuides = () => (
     <FlightpathGuides
-      milestonePoints={milestonePoints}
+      activeMilestonePoint={
+        activeMilestonePoint
+      }
       todayLeft={todayLeft}
       timelineWidth={timelineWidth}
     />
@@ -1219,35 +1357,117 @@ export default function FlightpathView({
                   >
                     {renderGuides()}
 
-                    {milestonePoints.map(
-                      (milestone) => (
-                        <div
-                          key={milestone.id}
-                          className="absolute z-20 -translate-x-1/2"
-                          style={{
-                            left: clamp(
-                              milestone.left,
-                              0,
-                              timelineWidth
-                            ),
-                            top:
-                              milestone.lane === 0
-                                ? 10
-                                : milestone.lane === 1
-                                  ? 37
-                                  : 64,
-                          }}
-                          title={`${milestone.title} · ${formatFullDate(
-                            milestone.date
-                          )}`}
-                        >
-                          <div className="mx-auto h-3 w-3 rotate-45 rounded-[3px] border-2 border-white bg-fuchsia-500 shadow-lg shadow-fuchsia-500/25 dark:border-[#08111f]" />
+                    {milestoneDisplayItems.map(
+                      (item) => {
+                        const isActive =
+                          activeMilestoneKey ===
+                          item.key;
 
-                          <span className="mt-1.5 block max-w-[164px] truncate rounded-lg border border-fuchsia-100 bg-white px-2 py-1 text-[9px] font-black text-fuchsia-700 shadow-sm dark:border-fuchsia-400/10 dark:bg-[#17111f] dark:text-fuchsia-300">
-                            {milestone.title}
-                          </span>
-                        </div>
-                      )
+                        const showLabel =
+                          zoom === "day" ||
+                          isActive;
+
+                        const top =
+                          zoom === "day"
+                            ? item.lane === 0
+                              ? 6
+                              : item.lane === 1
+                                ? 34
+                                : 62
+                            : 34;
+
+                        const labelOnLeft =
+                          item.left >
+                          timelineWidth - 210;
+
+                        const tooltip =
+                          getMilestoneDisplayTooltip(
+                            item
+                          );
+
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            className="group absolute z-20 h-7 w-7 -translate-x-1/2 rounded-full outline-none"
+                            style={{
+                              left: clamp(
+                                item.left,
+                                14,
+                                Math.max(
+                                  14,
+                                  timelineWidth - 14
+                                )
+                              ),
+                              top,
+                            }}
+                            title={tooltip}
+                            aria-label={tooltip}
+                            onMouseEnter={() =>
+                              setHoveredMilestoneKey(
+                                item.key
+                              )
+                            }
+                            onMouseLeave={() =>
+                              setHoveredMilestoneKey(
+                                null
+                              )
+                            }
+                            onFocus={() =>
+                              setHoveredMilestoneKey(
+                                item.key
+                              )
+                            }
+                            onBlur={() =>
+                              setHoveredMilestoneKey(
+                                null
+                              )
+                            }
+                            onClick={() =>
+                              setSelectedMilestoneKey(
+                                (current) =>
+                                  current === item.key
+                                    ? null
+                                    : item.key
+                              )
+                            }
+                          >
+                            {item.count > 1 ? (
+                              <span
+                                className={`grid h-7 min-w-7 place-items-center rounded-full border-2 px-1 text-[9px] font-black shadow-lg transition ${
+                                  isActive
+                                    ? "border-fuchsia-700 bg-fuchsia-600 text-white ring-4 ring-fuchsia-400/20"
+                                    : "border-white bg-fuchsia-500 text-white dark:border-[#08111f]"
+                                }`}
+                              >
+                                +{item.count}
+                              </span>
+                            ) : (
+                              <span
+                                className={`mx-auto mt-2 block h-3 w-3 rotate-45 rounded-[3px] border-2 shadow-lg transition ${
+                                  isActive
+                                    ? "border-fuchsia-800 bg-fuchsia-600 ring-4 ring-fuchsia-400/20"
+                                    : "border-white bg-fuchsia-500 dark:border-[#08111f]"
+                                }`}
+                              />
+                            )}
+
+                            {showLabel ? (
+                              <span
+                                className={`pointer-events-none absolute top-1/2 z-30 max-w-[190px] -translate-y-1/2 truncate rounded-lg border border-fuchsia-100 bg-white px-2.5 py-1.5 text-left text-[9px] font-black text-fuchsia-700 shadow-lg dark:border-fuchsia-400/10 dark:bg-[#17111f] dark:text-fuchsia-300 ${
+                                  labelOnLeft
+                                    ? "right-full mr-2"
+                                    : "left-full ml-2"
+                                }`}
+                              >
+                                {item.count > 1
+                                  ? `${item.count} milestones`
+                                  : item.title}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      }
                     )}
                   </div>
                 </div>
@@ -1352,21 +1572,78 @@ export default function FlightpathView({
                               0,
                               Math.max(
                                 0,
-                                timelineWidth -
-                                  MIN_VISIBLE_BAR_WIDTH
+                                timelineWidth - 2
                               )
                             )
                           : 0;
 
                       const displayBarWidth =
                         rangeStart
+                          ? Math.max(
+                              2,
+                              Math.min(
+                                barWidth,
+                                timelineWidth -
+                                  displayBarLeft
+                              )
+                            )
+                          : 0;
+
+                      const clickTargetLeft =
+                        rangeStart
+                          ? Math.max(
+                              0,
+                              displayBarLeft - 8
+                            )
+                          : 0;
+
+                      const clickTargetWidth =
+                        rangeStart
                           ? Math.min(
-                              Math.max(
-                                MIN_VISIBLE_BAR_WIDTH,
-                                barWidth
-                              ),
                               timelineWidth -
-                                displayBarLeft
+                                clickTargetLeft,
+                              Math.max(
+                                44,
+                                displayBarWidth + 16
+                              )
+                            )
+                          : 0;
+
+                      const rightLabelSpace =
+                        timelineWidth -
+                        (
+                          displayBarLeft +
+                          displayBarWidth +
+                          MOVE_LABEL_GAP
+                        );
+
+                      const placeLabelOnLeft =
+                        rangeStart &&
+                        rightLabelSpace <
+                          MOVE_LABEL_WIDTH &&
+                        displayBarLeft >=
+                          MOVE_LABEL_WIDTH +
+                            MOVE_LABEL_GAP;
+
+                      const rawMoveLabelLeft =
+                        placeLabelOnLeft
+                          ? displayBarLeft -
+                            MOVE_LABEL_GAP -
+                            MOVE_LABEL_WIDTH
+                          : displayBarLeft +
+                            displayBarWidth +
+                            MOVE_LABEL_GAP;
+
+                      const moveLabelLeft =
+                        rangeStart
+                          ? clamp(
+                              rawMoveLabelLeft,
+                              0,
+                              Math.max(
+                                0,
+                                timelineWidth -
+                                  MOVE_LABEL_WIDTH
+                              )
                             )
                           : 0;
 
@@ -1438,40 +1715,89 @@ export default function FlightpathView({
                             {renderGuides()}
 
                             {rangeStart ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleOpenMove(
-                                    move
-                                  )
-                                }
-                                className={`absolute top-1/2 z-20 flex h-8 -translate-y-1/2 items-center overflow-hidden rounded-xl border px-3 text-left text-[10px] font-black shadow-sm transition hover:-translate-y-[55%] hover:shadow-lg ${statusMeta.bar}`}
-                                style={{
-                                  left:
-                                    displayBarLeft,
-                                  width:
-                                    displayBarWidth,
-                                }}
-                                title={`${title} · ${formatFullDate(
-                                  rangeStart
-                                )}${
-                                  due
-                                    ? ` to ${formatFullDate(
-                                        due
-                                      )}`
-                                    : ""
-                                }`}
-                              >
-                                <span className="min-w-0 truncate">
-                                  {title}
-                                </span>
-
-                                {due ? (
-                                  <span className="ml-auto shrink-0 pl-2 text-[9px] opacity-70">
-                                    {formatShortDate(due)}
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleOpenMove(
+                                      move
+                                    )
+                                  }
+                                  className="absolute top-1/2 z-30 h-11 -translate-y-1/2 rounded-xl bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70"
+                                  style={{
+                                    left:
+                                      clickTargetLeft,
+                                    width:
+                                      clickTargetWidth,
+                                  }}
+                                  aria-label={`Open ${title}`}
+                                  title={`${title} · ${formatFullDate(
+                                    rangeStart
+                                  )}${
+                                    due
+                                      ? ` to ${formatFullDate(
+                                          due
+                                        )}`
+                                      : ""
+                                  }`}
+                                >
+                                  <span className="sr-only">
+                                    Open {title}
                                   </span>
-                                ) : null}
-                              </button>
+                                </button>
+
+                                <div
+                                  aria-hidden="true"
+                                  className={`pointer-events-none absolute top-1/2 z-20 h-5 -translate-y-1/2 rounded-full border shadow-sm ${statusMeta.bar}`}
+                                  style={{
+                                    left:
+                                      displayBarLeft,
+                                    width:
+                                      displayBarWidth,
+                                  }}
+                                />
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleOpenMove(
+                                      move
+                                    )
+                                  }
+                                  className="absolute top-1/2 z-40 flex h-8 -translate-y-1/2 items-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white px-3 text-left text-[10px] font-black text-slate-800 shadow-md transition hover:-translate-y-[55%] hover:border-violet-300 hover:shadow-lg dark:border-white/10 dark:bg-[#151c28] dark:text-white"
+                                  style={{
+                                    left:
+                                      moveLabelLeft,
+                                    width:
+                                      MOVE_LABEL_WIDTH,
+                                  }}
+                                  title={`${title} · ${formatFullDate(
+                                    rangeStart
+                                  )}${
+                                    due
+                                      ? ` to ${formatFullDate(
+                                          due
+                                        )}`
+                                      : ""
+                                  }`}
+                                >
+                                  <span
+                                    className={`h-2 w-2 shrink-0 rounded-full ${statusMeta.dot}`}
+                                  />
+
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {title}
+                                  </span>
+
+                                  {due ? (
+                                    <span className="shrink-0 text-[9px] text-slate-400 dark:text-zinc-500">
+                                      {formatShortDate(
+                                        due
+                                      )}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              </>
                             ) : null}
 
                             {dueOnly ? (
