@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   CircleDashed,
   ClipboardList,
@@ -234,9 +235,18 @@ export default function MyWork() {
   const [statusFilter, setStatusFilter] =
     useState('all');
 
+  const [completedExpanded, setCompletedExpanded] =
+    useState(false);
+
   useEffect(() => {
     document.title = 'My Work | OpenShare';
   }, []);
+
+  useEffect(() => {
+    if (statusFilter === 'completed') {
+      setCompletedExpanded(true);
+    }
+  }, [statusFilter]);
 
   const loadMyWork = useCallback(
     async ({ background = false } = {}) => {
@@ -577,41 +587,102 @@ export default function MyWork() {
                 const items =
                   groupedItems[sectionKey];
 
-                return (
-                  <section key={sectionKey}>
-                    <div className="flex items-center justify-between bg-slate-50/80 px-4 py-3 dark:bg-white/[0.025] sm:px-5">
-                      <div className="flex items-center gap-3">
-                        <SectionIcon className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                const isCompletedSection =
+                  sectionKey === 'completed';
 
-                        <div>
-                          <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                            {section.title}
-                          </h3>
+                const isExpanded =
+                  !isCompletedSection ||
+                  completedExpanded;
 
-                          <p className="text-xs font-medium text-slate-500 dark:text-zinc-500">
-                            {section.description}
-                          </p>
-                        </div>
+                const isEmpty = items.length === 0;
+
+                const sectionDescription =
+                  isCompletedSection &&
+                  !completedExpanded &&
+                  items.length > 0
+                    ? `${items.length} finished items hidden to keep this view focused.`
+                    : section.description;
+
+                const headerContent = (
+                  <>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <SectionIcon className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-300" />
+
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                          {section.title}
+                        </h3>
+
+                        <p className="truncate text-xs font-medium text-slate-500 dark:text-zinc-500">
+                          {sectionDescription}
+                        </p>
                       </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      {isCompletedSection &&
+                        items.length > 0 && (
+                          <span className="hidden text-xs font-bold text-violet-600 dark:text-violet-300 sm:inline">
+                            {completedExpanded
+                              ? 'Hide completed'
+                              : 'Show completed'}
+                          </span>
+                        )}
 
                       <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-600 shadow-sm ring-1 ring-slate-200 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
                         {items.length}
                       </span>
-                    </div>
 
-                    {items.length > 0 ? (
+                      {isCompletedSection &&
+                        items.length > 0 && (
+                          <ChevronDown
+                            className={`h-4 w-4 text-slate-400 transition-transform duration-200 dark:text-zinc-500 ${
+                              completedExpanded
+                                ? 'rotate-180'
+                                : ''
+                            }`}
+                            aria-hidden="true"
+                          />
+                        )}
+                    </div>
+                  </>
+                );
+
+                return (
+                  <section key={sectionKey}>
+                    {isCompletedSection &&
+                    items.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCompletedExpanded(
+                            (current) => !current,
+                          )
+                        }
+                        aria-expanded={completedExpanded}
+                        className="flex w-full items-center justify-between bg-slate-50/80 px-4 py-3 text-left transition hover:bg-violet-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 dark:bg-white/[0.025] dark:hover:bg-violet-500/[0.06] sm:px-5"
+                      >
+                        {headerContent}
+                      </button>
+                    ) : (
+                      <div
+                        className={`flex items-center justify-between bg-slate-50/80 px-4 dark:bg-white/[0.025] sm:px-5 ${
+                          isEmpty ? 'py-2.5' : 'py-3'
+                        }`}
+                      >
+                        {headerContent}
+                      </div>
+                    )}
+
+                    {!isEmpty &&
+                      isExpanded &&
                       items.map((item) => (
                         <WorkItemRow
                           key={item.id}
                           item={item}
                           onOpen={openWorkItem}
                         />
-                      ))
-                    ) : (
-                      <div className="px-5 py-6 text-center text-sm font-medium text-slate-400 dark:text-zinc-600">
-                        Nothing in this section.
-                      </div>
-                    )}
+                      ))}
                   </section>
                 );
               })}
