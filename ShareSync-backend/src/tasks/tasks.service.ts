@@ -605,78 +605,34 @@ export class TasksService {
         // 1. Notify Official DB Members
         for (const recipientId of uniqueMembers) {
           try {
-            let createdViaNotificationsService = false;
-
-            if (notificationsService?.notify) {
-              try {
-                await notificationsService.notify({
-                  userId: recipientId,
-                  type: NotificationType.TASK_CREATED,
-                  title: `📝 New Task in ${safeProjectName}`,
-                  body: safeTaskTitle,
-                  icon: '📝',
-                  priority: NotificationPriority.HIGH,
-                  triggeredBy: userId,
-                  data: {
-                    projectId: dto.projectId,
-                    projectName: safeProjectName,
-                    taskId: saved._id.toString(),
-                    extra: { taskId: saved._id.toString() },
-                    emailFanoutEligible: true,
-                    projectMemberNotification: true,
-                  },
-                  actions: [{ label: 'View Move', url: `/projects/${dto.projectId}?tab=move` }],
-                  groupKey: `project-task-${recipientId}-${dto.projectId}-${saved._id.toString()}`,
-                });
-
-                createdViaNotificationsService = true;
-              } catch (notificationErr) {
-                this.logger.warn(
-                  `NotificationsService task-created notification failed for user ${recipientId}; falling back to direct insert: ${
-                    (notificationErr as any)?.message || notificationErr
-                  }`,
-                );
-              }
+            if (!notificationsService?.notify) {
+              throw new Error(
+                `NotificationsService.notify is unavailable for task-created recipient ${recipientId}`,
+              );
             }
 
-            if (createdViaNotificationsService) continue;
-
-            const notifResult = await db.collection('notifications').insertOne({
-              userId: new Types.ObjectId(recipientId as string),
-              type: 'task_created',
+            await notificationsService.notify({
+              userId: recipientId,
+              type: NotificationType.TASK_CREATED,
               title: `📝 New Task in ${safeProjectName}`,
               body: safeTaskTitle,
+              icon: '📝',
+              priority: NotificationPriority.HIGH,
+              triggeredBy: userId,
               data: {
                 projectId: dto.projectId,
                 projectName: safeProjectName,
+                taskId: saved._id.toString(),
                 extra: { taskId: saved._id.toString() },
                 emailFanoutEligible: true,
                 projectMemberNotification: true,
               },
-              channels: ['in_app', 'email'],
-              priority: 'high',
-              isRead: false,
-              isClicked: false,
-              isDismissed: false,
-              groupCount: 1,
-              createdAt: new Date(),
-              updatedAt: new Date()
+              actions: [{ label: 'View Move', url: `/projects/${dto.projectId}?tab=move` }],
+              groupKey: `project-task-${recipientId}-${dto.projectId}-${saved._id.toString()}`,
             });
 
-            const newNotif = await db.collection('notifications').findOne({ _id: notifResult.insertedId });
-
-            if (notifGateway && notifGateway.server) {
-              notifGateway.server.to(recipientId as string).emit('new_notification', newNotif);
-              notifGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
-            }
-            if (rtGateway && rtGateway.server) {
-              rtGateway.server.to(recipientId as string).emit('new_notification', newNotif);
-              rtGateway.server.to(`user:${recipientId}`).emit('new_notification', newNotif);
-            }
-
-            this.eventEmitter.emit('notification.created', newNotif);
           } catch (innerErr) {
-            this.logger.error(`Failed to natively notify user ${recipientId}`, innerErr);
+            this.logger.error(`Failed to notify project member ${recipientId} through NotificationsService`, innerErr);
           }
         }
         
@@ -706,7 +662,7 @@ export class TasksService {
           rtGateway.server.to(dto.projectId).emit('new_notification', liveRoomNotif);
         }
 
-        this.logger.log(`✅ Task ${saved._id.toString()} natively notified ${uniqueMembers.length} DB recipient(s) AND broadcasted to Live Rooms`);
+        this.logger.log(`✅ Task ${saved._id.toString()} notified ${uniqueMembers.length} recipient(s) through NotificationsService and broadcasted to Live Rooms`);
       }
     } catch (err) {
       this.logger.error('⚠️ Failed to process native task notifications:', err);
