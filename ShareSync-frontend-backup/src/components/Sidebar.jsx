@@ -31,6 +31,7 @@ import {
   Trophy,
   Terminal,
   LayoutGrid,
+  ClipboardList,
   Zap,
 } from "lucide-react";
 
@@ -805,6 +806,7 @@ export default function Sidebar({ user }) {
 
         <nav className="openshare-sidebar-nav flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">
           <SidebarItem to="/home" label="Home" icon={LayoutGrid} tone="violet" collapsed={collapsed} />
+          <SidebarItem to="/my-work" label="My Work" icon={ClipboardList} tone="violet" collapsed={collapsed} />
           <SidebarItem to="/projects" label="Projects" icon={Terminal} tone="sky" collapsed={collapsed} />
           <SidebarItem to="/discover" label="Discover" icon={Trophy} tone="amber" collapsed={collapsed} />
 

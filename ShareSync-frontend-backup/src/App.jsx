@@ -140,6 +140,7 @@ const Roadmap = lazy(() => import("./pages/Roadmap"));
 // ⭐ ALL other pages - lazy load
 const Landing = lazy(() => import("./pages/Landing"));
 const Home = lazy(() => import("./pages/Home"));
+const MyWork = lazy(() => import("./pages/MyWork.jsx"));
 const Projects = lazy(() => import("./pages/Projects"));
 const ProjectsCreate = lazy(() => import("./pages/ProjectsCreate"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -746,6 +747,14 @@ function AppRoutes() {
                 element={
                   <ProtectedRoute>
                     <Home />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-work"
+                element={
+                  <ProtectedRoute>
+                    <MyWork />
                   </ProtectedRoute>
                 }
               />

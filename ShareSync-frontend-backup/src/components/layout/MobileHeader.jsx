@@ -7,6 +7,7 @@ import OpenShareLogo from '../ui/OpenShareLogo';
 
 function getPageTitle(pathname) {
   if (pathname === '/home') return 'Home';
+  if (pathname === '/my-work') return 'My Work';
   if (pathname === '/projects') return 'Projects';
   if (pathname.startsWith('/projects/')) return 'Project';
   if (pathname === '/settings') return 'Settings';
