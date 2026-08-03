@@ -115,6 +115,15 @@ export class CreateTaskDto {
   @IsOptional()
   dueDate?: Date;
 
+  // flightpath-start-date-v1
+  @ApiPropertyOptional({
+    description: 'Planned start date',
+  })
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  startDate?: Date;
+
   @ApiPropertyOptional({
     description: 'Estimated hours',
     minimum: 0,

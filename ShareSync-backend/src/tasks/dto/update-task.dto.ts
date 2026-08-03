@@ -74,6 +74,15 @@ export class UpdateTaskDto {
   @IsOptional()
   dueDate?: Date | null;
 
+  // flightpath-start-date-v1
+  @ApiPropertyOptional({
+    description: 'Planned start date',
+  })
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  startDate?: Date | null;
+
   @ApiPropertyOptional({ minimum: 0 })
   @IsNumber()
   @Min(0)
