@@ -1,0 +1,1475 @@
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Crosshair,
+  Flag,
+  GitBranch,
+  Layers3,
+} from "lucide-react";
+
+import {
+  completeTask,
+  fetchTaskDetail,
+  updateTask,
+} from "../../api/taskApi";
+
+import MoveTaskDetailDrawer from "../stack/MoveTaskDetailDrawer";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LABEL_WIDTH = 292;
+
+const ZOOM_LEVELS = {
+  day: {
+    label: "Day",
+    pixelsPerDay: 42,
+    paddingDays: 7,
+    minimumSpanDays: 30,
+    gridDays: 1,
+  },
+  week: {
+    label: "Week",
+    pixelsPerDay: 15,
+    paddingDays: 21,
+    minimumSpanDays: 90,
+    gridDays: 7,
+  },
+  month: {
+    label: "Month",
+    pixelsPerDay: 4,
+    paddingDays: 60,
+    minimumSpanDays: 365,
+    gridDays: 30,
+  },
+};
+
+const STATUS_META = {
+  backlog: {
+    label: "Backlog",
+    bar: "border-slate-300 bg-slate-200 text-slate-800 dark:border-white/10 dark:bg-white/10 dark:text-zinc-100",
+    dot: "bg-slate-400",
+  },
+  todo: {
+    label: "Ready",
+    bar: "border-violet-300 bg-violet-200 text-violet-950 dark:border-violet-400/30 dark:bg-violet-500/30 dark:text-violet-100",
+    dot: "bg-violet-500",
+  },
+  in_progress: {
+    label: "In progress",
+    bar: "border-cyan-300 bg-cyan-200 text-cyan-950 dark:border-cyan-400/30 dark:bg-cyan-500/30 dark:text-cyan-100",
+    dot: "bg-cyan-500",
+  },
+  blocked: {
+    label: "Blocked",
+    bar: "border-rose-300 bg-rose-200 text-rose-950 dark:border-rose-400/30 dark:bg-rose-500/30 dark:text-rose-100",
+    dot: "bg-rose-500",
+  },
+  done: {
+    label: "Done",
+    bar: "border-emerald-300 bg-emerald-200 text-emerald-950 dark:border-emerald-400/30 dark:bg-emerald-500/30 dark:text-emerald-100",
+    dot: "bg-emerald-500",
+  },
+};
+
+function normalizeId(value) {
+  if (!value) return "";
+
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    return String(value);
+  }
+
+  return String(
+    value?._id ||
+      value?.id ||
+      value?.taskId ||
+      value?.milestoneId ||
+      ""
+  );
+}
+
+function normalizeStatus(value) {
+  const normalized = String(value || "todo")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (
+    normalized === "complete" ||
+    normalized === "completed"
+  ) {
+    return "done";
+  }
+
+  if (
+    normalized === "active" ||
+    normalized === "doing" ||
+    normalized === "inprogress"
+  ) {
+    return "in_progress";
+  }
+
+  return normalized || "todo";
+}
+
+function getStatusMeta(value) {
+  const status = normalizeStatus(value);
+
+  return (
+    STATUS_META[status] || {
+      label: status
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (letter) =>
+          letter.toUpperCase()
+        ),
+      bar: "border-slate-300 bg-slate-200 text-slate-800 dark:border-white/10 dark:bg-white/10 dark:text-zinc-100",
+      dot: "bg-slate-400",
+    }
+  );
+}
+
+function parseCalendarDate(value) {
+  if (!value) return null;
+
+  let source = value;
+
+  if (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}/.test(value)
+  ) {
+    source = `${value.slice(0, 10)}T12:00:00`;
+  }
+
+  const parsed = new Date(source);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return new Date(
+    parsed.getFullYear(),
+    parsed.getMonth(),
+    parsed.getDate(),
+    12,
+    0,
+    0,
+    0
+  );
+}
+
+function calendarStamp(date) {
+  if (!date) return NaN;
+
+  return Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+}
+
+function addDays(date, amount) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + amount,
+    12,
+    0,
+    0,
+    0
+  );
+}
+
+function differenceInCalendarDays(from, to) {
+  return Math.round(
+    (calendarStamp(to) - calendarStamp(from)) /
+      DAY_MS
+  );
+}
+
+function earlierDate(left, right) {
+  return calendarStamp(left) <= calendarStamp(right)
+    ? left
+    : right;
+}
+
+function laterDate(left, right) {
+  return calendarStamp(left) >= calendarStamp(right)
+    ? left
+    : right;
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.min(
+    maximum,
+    Math.max(minimum, value)
+  );
+}
+
+function formatShortDate(date) {
+  if (!date) return "";
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatFullDate(date) {
+  if (!date) return "";
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatMonth(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function getMoveTitle(move) {
+  return String(
+    move?.title ||
+      move?.name ||
+      move?.summary ||
+      "Untitled Move"
+  );
+}
+
+function getMilestoneTitle(milestone) {
+  return String(
+    milestone?.title ||
+      milestone?.name ||
+      milestone?.label ||
+      "Untitled milestone"
+  );
+}
+
+function getMilestoneDate(milestone) {
+  return parseCalendarDate(
+    milestone?.targetDate ||
+      milestone?.dueDate ||
+      milestone?.date ||
+      milestone?.endDate ||
+      milestone?.completedAt
+  );
+}
+
+function getMoveMilestoneId(move) {
+  return normalizeId(
+    move?.milestoneId ||
+      move?.milestone?._id ||
+      move?.milestone?.id ||
+      move?.milestone
+  );
+}
+
+function buildTimelineRange(
+  moves,
+  milestones,
+  zoom
+) {
+  const config = ZOOM_LEVELS[zoom];
+  const today = parseCalendarDate(new Date());
+  const dates = [today];
+
+  for (const move of moves) {
+    const start = parseCalendarDate(move?.startDate);
+    const due = parseCalendarDate(move?.dueDate);
+
+    if (start) dates.push(start);
+    if (due) dates.push(due);
+  }
+
+  for (const milestone of milestones) {
+    const date = getMilestoneDate(milestone);
+
+    if (date) dates.push(date);
+  }
+
+  let minimum = dates[0];
+  let maximum = dates[0];
+
+  for (const date of dates) {
+    minimum = earlierDate(minimum, date);
+    maximum = laterDate(maximum, date);
+  }
+
+  let start = addDays(
+    minimum,
+    -config.paddingDays
+  );
+
+  let end = addDays(
+    maximum,
+    config.paddingDays
+  );
+
+  const currentSpan =
+    differenceInCalendarDays(start, end);
+
+  if (currentSpan < config.minimumSpanDays) {
+    const missing =
+      config.minimumSpanDays - currentSpan;
+
+    start = addDays(
+      start,
+      -Math.floor(missing / 2)
+    );
+
+    end = addDays(
+      end,
+      Math.ceil(missing / 2)
+    );
+  }
+
+  return {
+    start,
+    end,
+    today,
+  };
+}
+
+function buildHeaderSegments(
+  rangeStart,
+  rangeEnd,
+  zoom,
+  pixelsPerDay
+) {
+  const segments = [];
+  const endExclusive = addDays(rangeEnd, 1);
+  let cursor = rangeStart;
+  let safety = 0;
+
+  while (
+    calendarStamp(cursor) <
+      calendarStamp(endExclusive) &&
+    safety < 2000
+  ) {
+    safety += 1;
+
+    let next;
+    let label;
+    let sublabel = "";
+
+    if (zoom === "day") {
+      next = addDays(cursor, 1);
+
+      label = new Intl.DateTimeFormat(
+        undefined,
+        {
+          weekday: "short",
+        }
+      ).format(cursor);
+
+      sublabel = formatShortDate(cursor);
+    } else if (zoom === "week") {
+      next = addDays(cursor, 7);
+      label = `Week of ${formatShortDate(
+        cursor
+      )}`;
+    } else {
+      next = new Date(
+        cursor.getFullYear(),
+        cursor.getMonth() + 1,
+        1,
+        12,
+        0,
+        0,
+        0
+      );
+
+      label = formatMonth(cursor);
+    }
+
+    if (
+      calendarStamp(next) >
+      calendarStamp(endExclusive)
+    ) {
+      next = endExclusive;
+    }
+
+    const days = Math.max(
+      1,
+      differenceInCalendarDays(cursor, next)
+    );
+
+    segments.push({
+      key: `${calendarStamp(cursor)}-${zoom}`,
+      date: cursor,
+      label,
+      sublabel,
+      width: days * pixelsPerDay,
+    });
+
+    cursor = next;
+  }
+
+  return segments;
+}
+
+function FlightpathGuides({
+  milestonePoints,
+  todayLeft,
+  timelineWidth,
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {milestonePoints.map((milestone) => (
+        <div
+          key={`guide-${milestone.id}`}
+          className="absolute inset-y-0 border-l border-dashed border-fuchsia-300/55 dark:border-fuchsia-400/25"
+          style={{
+            left: clamp(
+              milestone.left,
+              0,
+              timelineWidth
+            ),
+          }}
+        />
+      ))}
+
+      <div
+        className="absolute inset-y-0 z-10 border-l-2 border-cyan-500/80 shadow-[0_0_14px_rgba(6,182,212,0.25)]"
+        style={{
+          left: clamp(
+            todayLeft,
+            0,
+            timelineWidth
+          ),
+        }}
+      />
+    </div>
+  );
+}
+
+export default function FlightpathView({
+  projectId,
+  moves = [],
+  milestones = [],
+  members = [],
+  readOnly = false,
+} = {}) {
+  const [zoom, setZoom] = useState("week");
+  const [groupBy, setGroupBy] =
+    useState("milestone");
+
+  const [localMoves, setLocalMoves] =
+    useState(() =>
+      Array.isArray(moves) ? moves : []
+    );
+
+  const [selectedMove, setSelectedMove] =
+    useState(null);
+
+  const [
+    selectedMoveLoading,
+    setSelectedMoveLoading,
+  ] = useState(false);
+
+  const scrollerRef = useRef(null);
+
+  const safeMilestones = useMemo(
+    () =>
+      Array.isArray(milestones)
+        ? milestones
+        : [],
+    [milestones]
+  );
+
+  const safeMembers = useMemo(
+    () =>
+      Array.isArray(members) ? members : [],
+    [members]
+  );
+
+  useEffect(() => {
+    setLocalMoves(
+      Array.isArray(moves) ? moves : []
+    );
+  }, [moves]);
+
+  const milestoneRecords = useMemo(
+    () =>
+      safeMilestones.map(
+        (milestone, index) => ({
+          milestone,
+          id:
+            normalizeId(milestone) ||
+            `milestone-${index}`,
+          title: getMilestoneTitle(milestone),
+          date: getMilestoneDate(milestone),
+          order: index,
+        })
+      ),
+    [safeMilestones]
+  );
+
+  const milestoneById = useMemo(() => {
+    const map = new Map();
+
+    for (const record of milestoneRecords) {
+      map.set(record.id, record);
+    }
+
+    return map;
+  }, [milestoneRecords]);
+
+  const timelineRange = useMemo(
+    () =>
+      buildTimelineRange(
+        localMoves,
+        safeMilestones,
+        zoom
+      ),
+    [localMoves, safeMilestones, zoom]
+  );
+
+  const zoomConfig = ZOOM_LEVELS[zoom];
+  const timelineDays = Math.max(
+    1,
+    differenceInCalendarDays(
+      timelineRange.start,
+      timelineRange.end
+    ) + 1
+  );
+
+  const timelineWidth = Math.max(
+    900,
+    timelineDays *
+      zoomConfig.pixelsPerDay
+  );
+
+  const positionForDate = useCallback(
+    (date) =>
+      differenceInCalendarDays(
+        timelineRange.start,
+        date
+      ) * zoomConfig.pixelsPerDay,
+    [
+      timelineRange.start,
+      zoomConfig.pixelsPerDay,
+    ]
+  );
+
+  const todayLeft = positionForDate(
+    timelineRange.today
+  );
+
+  const milestonePoints = useMemo(
+    () =>
+      milestoneRecords
+        .filter((record) => record.date)
+        .map((record) => ({
+          ...record,
+          left: positionForDate(record.date),
+        })),
+    [milestoneRecords, positionForDate]
+  );
+
+  const headerSegments = useMemo(
+    () =>
+      buildHeaderSegments(
+        timelineRange.start,
+        timelineRange.end,
+        zoom,
+        zoomConfig.pixelsPerDay
+      ),
+    [
+      timelineRange.start,
+      timelineRange.end,
+      zoom,
+      zoomConfig.pixelsPerDay,
+    ]
+  );
+
+  const groups = useMemo(() => {
+    const groupMap = new Map();
+
+    localMoves.forEach((move, index) => {
+      let key;
+      let label;
+      let order;
+
+      if (groupBy === "status") {
+        const status =
+          normalizeStatus(move?.status);
+
+        key = `status-${status}`;
+        label = getStatusMeta(status).label;
+
+        order = {
+          in_progress: 0,
+          todo: 1,
+          backlog: 2,
+          blocked: 3,
+          done: 4,
+        }[status] ?? 20;
+      } else {
+        const milestoneId =
+          getMoveMilestoneId(move);
+
+        const milestone =
+          milestoneById.get(milestoneId);
+
+        key = milestoneId
+          ? `milestone-${milestoneId}`
+          : "milestone-none";
+
+        label = milestone
+          ? milestone.title
+          : "No milestone";
+
+        order = milestone
+          ? milestone.order
+          : 9999;
+      }
+
+      if (!groupMap.has(key)) {
+        groupMap.set(key, {
+          key,
+          label,
+          order,
+          moves: [],
+        });
+      }
+
+      groupMap.get(key).moves.push({
+        move,
+        originalIndex: index,
+      });
+    });
+
+    return [...groupMap.values()]
+      .map((group) => ({
+        ...group,
+        moves: group.moves
+          .sort((left, right) => {
+            const leftDate =
+              parseCalendarDate(
+                left.move?.startDate
+              ) ||
+              parseCalendarDate(
+                left.move?.dueDate
+              );
+
+            const rightDate =
+              parseCalendarDate(
+                right.move?.startDate
+              ) ||
+              parseCalendarDate(
+                right.move?.dueDate
+              );
+
+            if (leftDate && rightDate) {
+              const dateDifference =
+                calendarStamp(leftDate) -
+                calendarStamp(rightDate);
+
+              if (dateDifference !== 0) {
+                return dateDifference;
+              }
+            } else if (leftDate) {
+              return -1;
+            } else if (rightDate) {
+              return 1;
+            }
+
+            return getMoveTitle(
+              left.move
+            ).localeCompare(
+              getMoveTitle(right.move)
+            );
+          })
+          .map((entry) => entry.move),
+      }))
+      .sort(
+        (left, right) =>
+          left.order - right.order ||
+          left.label.localeCompare(
+            right.label
+          )
+      );
+  }, [
+    groupBy,
+    localMoves,
+    milestoneById,
+  ]);
+
+  const datedMoveCount = useMemo(
+    () =>
+      localMoves.filter(
+        (move) =>
+          parseCalendarDate(move?.startDate) ||
+          parseCalendarDate(move?.dueDate)
+      ).length,
+    [localMoves]
+  );
+
+  const dueOnlyCount = useMemo(
+    () =>
+      localMoves.filter(
+        (move) =>
+          !parseCalendarDate(move?.startDate) &&
+          parseCalendarDate(move?.dueDate)
+      ).length,
+    [localMoves]
+  );
+
+  const gridStep =
+    zoomConfig.gridDays *
+    zoomConfig.pixelsPerDay;
+
+  const timelineGridStyle = {
+    backgroundImage:
+      "linear-gradient(to right, rgba(148,163,184,0.16) 1px, transparent 1px)",
+    backgroundSize: `${gridStep}px 100%`,
+  };
+
+  const scrollToToday = useCallback(
+    (behavior = "smooth") => {
+      const scroller = scrollerRef.current;
+
+      if (!scroller) return;
+
+      const target =
+        LABEL_WIDTH +
+        todayLeft -
+        scroller.clientWidth / 2;
+
+      scroller.scrollTo({
+        left: Math.max(0, target),
+        behavior,
+      });
+    },
+    [todayLeft]
+  );
+
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => scrollToToday("auto"),
+      40
+    );
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [scrollToToday, zoom]);
+
+  const mergeMoveIntoLocalState =
+    useCallback((previousMove, nextMove) => {
+      const previousId =
+        normalizeId(previousMove);
+
+      const merged = {
+        ...previousMove,
+        ...(nextMove || {}),
+      };
+
+      setLocalMoves((currentMoves) => {
+        let found = false;
+
+        const updated = currentMoves.map(
+          (move) => {
+            if (
+              normalizeId(move) !== previousId
+            ) {
+              return move;
+            }
+
+            found = true;
+            return {
+              ...move,
+              ...merged,
+            };
+          }
+        );
+
+        return found
+          ? updated
+          : [...updated, merged];
+      });
+
+      return merged;
+    }, []);
+
+  const handleOpenMove = useCallback(
+    async (move) => {
+      setSelectedMove(move);
+
+      const moveId = normalizeId(move);
+
+      if (!moveId) return;
+
+      setSelectedMoveLoading(true);
+
+      try {
+        const detail =
+          await fetchTaskDetail(moveId);
+
+        if (detail) {
+          const merged =
+            mergeMoveIntoLocalState(
+              move,
+              detail
+            );
+
+          setSelectedMove(merged);
+        }
+      } catch {
+        // Keep the already-loaded Move as a safe fallback.
+      } finally {
+        setSelectedMoveLoading(false);
+      }
+    },
+    [mergeMoveIntoLocalState]
+  );
+
+  const handleSaveMove = useCallback(
+    async (move, updates) => {
+      if (readOnly) return null;
+
+      const moveId = normalizeId(move);
+
+      if (!moveId) {
+        throw new Error(
+          "The selected Move is missing its ID."
+        );
+      }
+
+      const saved = await updateTask(
+        moveId,
+        updates
+      );
+
+      const merged =
+        mergeMoveIntoLocalState(
+          move,
+          saved
+        );
+
+      setSelectedMove(merged);
+
+      return merged;
+    },
+    [
+      mergeMoveIntoLocalState,
+      readOnly,
+    ]
+  );
+
+  const handleCompleteMove = useCallback(
+    async (move) => {
+      if (readOnly) return null;
+
+      const moveId = normalizeId(move);
+
+      if (!moveId) {
+        throw new Error(
+          "The selected Move is missing its ID."
+        );
+      }
+
+      const completed =
+        await completeTask(moveId);
+
+      const merged =
+        mergeMoveIntoLocalState(move, {
+          ...(completed || {}),
+          status:
+            completed?.status || "done",
+        });
+
+      setSelectedMove(merged);
+
+      return merged;
+    },
+    [
+      mergeMoveIntoLocalState,
+      readOnly,
+    ]
+  );
+
+  const renderGuides = () => (
+    <FlightpathGuides
+      milestonePoints={milestonePoints}
+      todayLeft={todayLeft}
+      timelineWidth={timelineWidth}
+    />
+  );
+
+  return (
+    <>
+      <div
+        data-project-id={projectId || ""}
+        className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-10"
+      >
+        <section className="overflow-hidden rounded-[32px] border border-violet-200/80 bg-white/88 shadow-[0_30px_90px_rgba(76,29,149,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-[#08111f]/90">
+          <div className="border-b border-slate-200/80 bg-gradient-to-r from-violet-50 via-white to-cyan-50 px-6 py-6 dark:border-white/10 dark:from-violet-500/10 dark:via-[#08111f] dark:to-cyan-500/10 lg:px-8">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-violet-700 dark:border-violet-400/20 dark:bg-white/5 dark:text-violet-300">
+                    <GitBranch className="h-3.5 w-3.5" />
+                    Gantt-style planning
+                  </span>
+
+                  {readOnly ? (
+                    <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
+                      View only
+                    </span>
+                  ) : null}
+                </div>
+
+                <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                  Flightpath
+                </h2>
+
+                <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
+                  See how Moves travel across
+                  time toward milestones and the
+                  project&apos;s finish line.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-3 py-2 shadow-sm dark:border-white/10 dark:bg-white/5">
+                  <Layers3 className="h-4 w-4 text-violet-500" />
+
+                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    Group
+                  </span>
+
+                  <select
+                    value={groupBy}
+                    onChange={(event) =>
+                      setGroupBy(
+                        event.target.value
+                      )
+                    }
+                    className="bg-transparent text-sm font-black text-slate-800 outline-none dark:text-white"
+                  >
+                    <option value="milestone">
+                      Milestone
+                    </option>
+                    <option value="status">
+                      Status
+                    </option>
+                  </select>
+                </label>
+
+                <div className="inline-flex rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
+                  {Object.entries(
+                    ZOOM_LEVELS
+                  ).map(([value, config]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        setZoom(value)
+                      }
+                      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                        zoom === value
+                          ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+                      }`}
+                    >
+                      {config.label}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    scrollToToday("smooth")
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-xs font-black text-cyan-800 transition hover:-translate-y-0.5 hover:shadow-lg dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200"
+                >
+                  <Crosshair className="h-4 w-4" />
+                  Today
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Dated Moves
+                </p>
+                <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
+                  {datedMoveCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Due-only markers
+                </p>
+                <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
+                  {dueOnlyCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Dated milestones
+                </p>
+                <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
+                  {milestonePoints.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {localMoves.length === 0 ? (
+            <div className="px-6 py-20 text-center lg:px-8">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                <GitBranch className="h-8 w-8" />
+              </div>
+
+              <h3 className="mt-5 text-xl font-black text-slate-950 dark:text-white">
+                No Moves to chart yet
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-zinc-400">
+                Add Moves and assign Start or
+                Due dates to begin drawing this
+                project&apos;s Flightpath.
+              </p>
+            </div>
+          ) : (
+            <div
+              ref={scrollerRef}
+              className="overflow-x-auto overscroll-x-contain"
+            >
+              <div
+                style={{
+                  minWidth:
+                    LABEL_WIDTH +
+                    timelineWidth,
+                }}
+              >
+                <div
+                  className="grid border-b border-slate-200/80 dark:border-white/10"
+                  style={{
+                    gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
+                  }}
+                >
+                  <div className="sticky left-0 z-30 flex h-20 items-center border-r border-slate-200/80 bg-white/95 px-5 backdrop-blur-xl dark:border-white/10 dark:bg-[#08111f]/95">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                        Timeline range
+                      </p>
+                      <p className="mt-1 text-sm font-black text-slate-800 dark:text-white">
+                        {formatShortDate(
+                          timelineRange.start
+                        )}{" "}
+                        –{" "}
+                        {formatShortDate(
+                          timelineRange.end
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className="relative h-20 overflow-hidden bg-slate-50/80 dark:bg-white/[0.025]"
+                    style={{
+                      width: timelineWidth,
+                    }}
+                  >
+                    <div className="absolute inset-0 flex">
+                      {headerSegments.map(
+                        (segment) => (
+                          <div
+                            key={segment.key}
+                            className="shrink-0 border-r border-slate-200/80 px-2 py-3 dark:border-white/[0.07]"
+                            style={{
+                              width:
+                                segment.width,
+                            }}
+                          >
+                            <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-zinc-400">
+                              {segment.label}
+                            </p>
+
+                            {segment.sublabel ? (
+                              <p className="mt-1 truncate text-[10px] font-semibold text-slate-400 dark:text-zinc-500">
+                                {
+                                  segment.sublabel
+                                }
+                              </p>
+                            ) : null}
+                          </div>
+                        )
+                      )}
+                    </div>
+
+                    {renderGuides()}
+                  </div>
+                </div>
+
+                <div
+                  className="grid border-b border-fuchsia-200/70 bg-fuchsia-50/45 dark:border-fuchsia-400/10 dark:bg-fuchsia-500/[0.035]"
+                  style={{
+                    gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
+                  }}
+                >
+                  <div className="sticky left-0 z-30 flex h-16 items-center gap-3 border-r border-fuchsia-200/70 bg-fuchsia-50/95 px-5 backdrop-blur-xl dark:border-fuchsia-400/10 dark:bg-[#120c20]/95">
+                    <Flag className="h-4 w-4 text-fuchsia-500" />
+
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">
+                        Milestones
+                      </p>
+                      <p className="text-[10px] font-semibold text-slate-400">
+                        Project finish markers
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className="relative h-16"
+                    style={{
+                      width: timelineWidth,
+                      ...timelineGridStyle,
+                    }}
+                  >
+                    {renderGuides()}
+
+                    {milestonePoints.map(
+                      (milestone) => (
+                        <div
+                          key={milestone.id}
+                          className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
+                          style={{
+                            left: clamp(
+                              milestone.left,
+                              0,
+                              timelineWidth
+                            ),
+                          }}
+                          title={`${milestone.title} · ${formatFullDate(
+                            milestone.date
+                          )}`}
+                        >
+                          <div className="mx-auto h-3.5 w-3.5 rotate-45 rounded-[3px] border-2 border-white bg-fuchsia-500 shadow-lg shadow-fuchsia-500/30 dark:border-[#08111f]" />
+
+                          <span className="mt-2 block max-w-36 -translate-x-[calc(50%-7px)] truncate rounded-lg bg-white/95 px-2 py-1 text-[9px] font-black text-fuchsia-700 shadow-sm dark:bg-[#17111f] dark:text-fuchsia-300">
+                            {milestone.title}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {groups.map((group) => (
+                  <div key={group.key}>
+                    <div
+                      className="grid border-b border-slate-200/80 bg-slate-100/80 dark:border-white/[0.07] dark:bg-white/[0.035]"
+                      style={{
+                        gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
+                      }}
+                    >
+                      <div className="sticky left-0 z-30 flex h-11 items-center gap-2 border-r border-slate-200/80 bg-slate-100/95 px-5 backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#111925]/95">
+                        <Layers3 className="h-3.5 w-3.5 text-violet-500" />
+
+                        <span className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-slate-600 dark:text-zinc-300">
+                          {group.label}
+                        </span>
+
+                        <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-slate-500 shadow-sm dark:bg-white/10 dark:text-zinc-400">
+                          {group.moves.length}
+                        </span>
+                      </div>
+
+                      <div
+                        className="relative h-11"
+                        style={{
+                          width:
+                            timelineWidth,
+                          ...timelineGridStyle,
+                        }}
+                      >
+                        {renderGuides()}
+                      </div>
+                    </div>
+
+                    {group.moves.map((move) => {
+                      const moveId =
+                        normalizeId(move);
+
+                      const title =
+                        getMoveTitle(move);
+
+                      const statusMeta =
+                        getStatusMeta(
+                          move?.status
+                        );
+
+                      const start =
+                        parseCalendarDate(
+                          move?.startDate
+                        );
+
+                      const due =
+                        parseCalendarDate(
+                          move?.dueDate
+                        );
+
+                      const rangeStart =
+                        start && due
+                          ? earlierDate(
+                              start,
+                              due
+                            )
+                          : start;
+
+                      const rangeEnd =
+                        start && due
+                          ? laterDate(
+                              start,
+                              due
+                            )
+                          : start;
+
+                      const barLeft =
+                        rangeStart
+                          ? positionForDate(
+                              rangeStart
+                            )
+                          : 0;
+
+                      const durationDays =
+                        rangeStart &&
+                        rangeEnd
+                          ? Math.max(
+                              1,
+                              differenceInCalendarDays(
+                                rangeStart,
+                                rangeEnd
+                              ) + 1
+                            )
+                          : 0;
+
+                      const barWidth =
+                        durationDays *
+                        zoomConfig.pixelsPerDay;
+
+                      const dueOnly =
+                        !start && Boolean(due);
+
+                      const dueOnlyLeft = due
+                        ? positionForDate(
+                            due
+                          ) +
+                          zoomConfig.pixelsPerDay /
+                            2
+                        : 0;
+
+                      return (
+                        <div
+                          key={
+                            moveId ||
+                            `${group.key}-${title}`
+                          }
+                          className="grid border-b border-slate-200/70 last:border-b-0 dark:border-white/[0.06]"
+                          style={{
+                            gridTemplateColumns: `${LABEL_WIDTH}px ${timelineWidth}px`,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleOpenMove(
+                                move
+                              )
+                            }
+                            className="sticky left-0 z-20 flex h-16 min-w-0 items-center gap-3 border-r border-slate-200/80 bg-white/96 px-5 text-left transition hover:bg-violet-50 dark:border-white/[0.07] dark:bg-[#08111f]/96 dark:hover:bg-violet-500/[0.08]"
+                          >
+                            <span
+                              className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusMeta.dot}`}
+                            />
+
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-black text-slate-900 dark:text-white">
+                                {title}
+                              </span>
+
+                              <span className="mt-1 flex min-w-0 items-center gap-2">
+                                <span className="truncate text-[10px] font-black uppercase tracking-[0.13em] text-slate-400 dark:text-zinc-500">
+                                  {
+                                    statusMeta.label
+                                  }
+                                </span>
+
+                                {!start &&
+                                !due ? (
+                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500 dark:bg-white/10 dark:text-zinc-400">
+                                    Unscheduled
+                                  </span>
+                                ) : null}
+                              </span>
+                            </span>
+                          </button>
+
+                          <div
+                            className="relative h-16 bg-white/45 dark:bg-transparent"
+                            style={{
+                              width:
+                                timelineWidth,
+                              ...timelineGridStyle,
+                            }}
+                          >
+                            {renderGuides()}
+
+                            {rangeStart ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleOpenMove(
+                                    move
+                                  )
+                                }
+                                className={`absolute top-1/2 z-20 flex h-8 -translate-y-1/2 items-center overflow-hidden rounded-xl border px-3 text-left text-[10px] font-black shadow-sm transition hover:-translate-y-[55%] hover:shadow-lg ${statusMeta.bar}`}
+                                style={{
+                                  left: clamp(
+                                    barLeft,
+                                    0,
+                                    Math.max(
+                                      0,
+                                      timelineWidth -
+                                        18
+                                    )
+                                  ),
+                                  width: Math.max(
+                                    18,
+                                    Math.min(
+                                      barWidth,
+                                      timelineWidth -
+                                        clamp(
+                                          barLeft,
+                                          0,
+                                          timelineWidth
+                                        )
+                                    )
+                                  ),
+                                }}
+                                title={`${title} · ${formatFullDate(
+                                  rangeStart
+                                )}${
+                                  due
+                                    ? ` to ${formatFullDate(
+                                        due
+                                      )}`
+                                    : ""
+                                }`}
+                              >
+                                <span className="truncate">
+                                  {title}
+                                </span>
+                              </button>
+                            ) : null}
+
+                            {dueOnly ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleOpenMove(
+                                    move
+                                  )
+                                }
+                                className="absolute top-1/2 z-30 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[4px] border-2 border-white bg-amber-500 shadow-lg shadow-amber-500/30 transition hover:scale-125 dark:border-[#08111f]"
+                                style={{
+                                  left: clamp(
+                                    dueOnlyLeft,
+                                    0,
+                                    timelineWidth
+                                  ),
+                                }}
+                                title={`${title} is due ${formatFullDate(
+                                  due
+                                )}`}
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-200/80 bg-slate-50/80 px-6 py-4 text-[10px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.025] dark:text-zinc-400 lg:px-8">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-8 rounded-full bg-violet-300 dark:bg-violet-500/40" />
+              Move duration
+            </span>
+
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3 w-3 rotate-45 rounded-[3px] bg-amber-500" />
+              Due-only Move
+            </span>
+
+            <span className="inline-flex items-center gap-2">
+              <Flag className="h-3.5 w-3.5 text-fuchsia-500" />
+              Milestone
+            </span>
+
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 border-l-2 border-cyan-500" />
+              Today
+            </span>
+
+            <span className="ml-auto inline-flex items-center gap-2">
+              {readOnly ? (
+                <Clock3 className="h-3.5 w-3.5" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              )}
+
+              {readOnly
+                ? "Open Moves to inspect details"
+                : "Click any Move to edit it"}
+            </span>
+          </div>
+        </section>
+      </div>
+
+      <MoveTaskDetailDrawer
+        open={Boolean(selectedMove)}
+        task={selectedMove}
+        members={safeMembers}
+        projectTasks={localMoves}
+        dependenciesLoading={
+          selectedMoveLoading
+        }
+        disabled={readOnly}
+        onClose={() =>
+          setSelectedMove(null)
+        }
+        onSave={handleSaveMove}
+        onComplete={handleCompleteMove}
+      />
+    </>
+  );
+}

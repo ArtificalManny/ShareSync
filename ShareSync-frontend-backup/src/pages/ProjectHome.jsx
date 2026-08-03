@@ -125,6 +125,8 @@ const StackPanel = React.lazy(() => import("../features/stack/StackPanel"));
 const FlowBoard = React.lazy(() => import("../features/flow/FlowBoard"));
 const RoadmapPanel = React.lazy(() => import("../components/roadmap/RoadmapPanel"));
 const RhythmView = React.lazy(() => import("../components/views/RhythmView"));
+// flightpath-view-v1
+const FlightpathView = React.lazy(() => import("../features/flightpath/FlightpathView"));
 const InsightsTab = React.lazy(() => import("../components/insights/InsightsTab"));
 const ThreadsView = React.lazy(() => import("../components/views/ThreadsView"));
 const VaultView = React.lazy(() => import("../components/views/VaultView"));
@@ -196,6 +198,12 @@ const PROJECT_VIEWS = [
     label: "Schedule",
     icon: Calendar,
     description: "Cadence & timing",
+  },
+  {
+    id: "flightpath",
+    label: "Flightpath",
+    icon: GitBranch,
+    description: "Moves across time",
   },
   {
     id: "discussion",
@@ -5234,6 +5242,31 @@ export default function ProjectHome() {
               onAddEvent={canUseMemberActions ? handleAddEvent : undefined}
               readOnly={!canUseMemberActions}
               onEventClick={handleEventClick}
+            />
+          );
+
+        case "flightpath":
+          return (
+            <FlightpathView
+              projectId={id}
+              moves={
+                Array.isArray(liveTasks) &&
+                liveTasks.length > 0
+                  ? liveTasks
+                  : Array.isArray(tasks)
+                    ? tasks
+                    : []
+              }
+              milestones={
+                Array.isArray(commandMilestones) &&
+                commandMilestones.length > 0
+                  ? commandMilestones
+                  : Array.isArray(milestones)
+                    ? milestones
+                    : []
+              }
+              members={projectPulseGetProjectMembers(project)}
+              readOnly={!canUseMemberActions}
             />
           );
 
