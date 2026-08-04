@@ -12,7 +12,14 @@ export enum TaskEventType {
   TASK_DELETED = 'TASK_DELETED',
 }
 
+export type FlowRuleEventMeta = {
+  correlationId: string;
+  depth: number;
+  executedRuleIds: string[];
+};
+
 export type TaskEventMeta = {
+  flowRules?: FlowRuleEventMeta;
   xpAwarded?: number;
   bonusXP?: number;
   ceremonyTier?: string;

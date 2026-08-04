@@ -42,7 +42,7 @@ import {
   LogTimeDto,
 } from './dto/update-task.dto';
 
-import { TaskEventType } from './events/task-events';
+import { TaskEventMeta, TaskEventType } from './events/task-events';
 import { buildTaskSnapshot, emitTaskEvent } from './events/task-event.utils';
 import { RealtimeService } from '../realtime/realtime.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -78,6 +78,10 @@ export interface CompletionResult {
   isLegendary: boolean;
   ceremonyTier: CeremonyTier;
   unblocked: TaskDocument[];
+}
+
+export interface TaskMutationContext {
+  meta?: TaskEventMeta;
 }
 
 const VARIABLE_REWARDS = {
@@ -761,7 +765,7 @@ export class TasksService {
     }));
   }
 
-  async update(taskId: string, userId: string, dto: UpdateTaskDto): Promise<TaskDocument> {
+  async update(taskId: string, userId: string, dto: UpdateTaskDto, context?: TaskMutationContext): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
     await this.assertTaskTextAllowed(userId, dto);
@@ -770,6 +774,7 @@ export class TasksService {
       task.assigneeId?.toString?.() || null;
 
     const previousStatus = task.status;
+    const previousPriority = task.priority;
 
     const previousDueDate = task.dueDate
       ? new Date(task.dueDate)
@@ -848,14 +853,23 @@ export class TasksService {
       snapshot: buildTaskSnapshot(updated),
       changes: {
         ...(dto as any),
+        previousStatus,
+        newStatus: updated.status,
+        previousPriority,
+        newPriority: updated.priority,
+        previousAssigneeId,
+        newAssigneeId:
+          updated.assigneeId?.toString?.() || null,
         ...(dependencyChanges
           ? {
-              blockedBy: dependencyChanges.blockedBy,
+              blockedBy:
+                dependencyChanges.blockedBy,
               previousBlockedBy:
                 dependencyChanges.previousBlockedBy,
             }
           : {}),
       },
+      meta: context?.meta,
     });
 
     const newAssigneeId =
@@ -1003,7 +1017,7 @@ export class TasksService {
     return updated;
   }
 
-  async move(taskId: string, userId: string, dto: MoveTaskDto): Promise<TaskDocument> {
+  async move(taskId: string, userId: string, dto: MoveTaskDto, context?: TaskMutationContext): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
     const previousStatus = task.status;
 
@@ -1037,6 +1051,7 @@ export class TasksService {
         order: dto.order,
         sprintId: dto.sprintId,
       },
+      meta: context?.meta,
     });
 
     if (previousStatus !== updated.status) {

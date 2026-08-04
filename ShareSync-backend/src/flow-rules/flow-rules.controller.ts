@@ -66,14 +66,44 @@ export class FlowRulesController {
     )
     projectId: string,
   ) {
-    const rules =
-      await this.flowRulesService.list(
-        projectId,
-      );
-
     return {
       success: true,
-      data: rules,
+      data:
+        await this.flowRulesService.list(
+          projectId,
+        ),
+    };
+  }
+
+  @Get(':ruleId/executions')
+  @ApiOperation({
+    summary:
+      'List recent executions for a Flow Rule',
+  })
+  @ProjectAccess({
+    param: 'projectId',
+    intent: 'read',
+  })
+  async listExecutions(
+    @Param(
+      'projectId',
+      ParseObjectIdPipe,
+    )
+    projectId: string,
+    @Param(
+      'ruleId',
+      ParseObjectIdPipe,
+    )
+    ruleId: string,
+  ) {
+    return {
+      success: true,
+      data:
+        await this.flowRulesService
+          .listExecutions(
+            projectId,
+            ruleId,
+          ),
     };
   }
 
@@ -97,15 +127,13 @@ export class FlowRulesController {
     )
     ruleId: string,
   ) {
-    const rule =
-      await this.flowRulesService.findOne(
-        projectId,
-        ruleId,
-      );
-
     return {
       success: true,
-      data: rule,
+      data:
+        await this.flowRulesService.findOne(
+          projectId,
+          ruleId,
+        ),
     };
   }
 
@@ -127,16 +155,14 @@ export class FlowRulesController {
     projectId: string,
     @Body() dto: CreateFlowRuleDto,
   ) {
-    const rule =
-      await this.flowRulesService.create(
-        projectId,
-        this.getUserId(req),
-        dto,
-      );
-
     return {
       success: true,
-      data: rule,
+      data:
+        await this.flowRulesService.create(
+          projectId,
+          this.getUserId(req),
+          dto,
+        ),
     };
   }
 
@@ -163,17 +189,15 @@ export class FlowRulesController {
     ruleId: string,
     @Body() dto: UpdateFlowRuleDto,
   ) {
-    const rule =
-      await this.flowRulesService.update(
-        projectId,
-        ruleId,
-        this.getUserId(req),
-        dto,
-      );
-
     return {
       success: true,
-      data: rule,
+      data:
+        await this.flowRulesService.update(
+          projectId,
+          ruleId,
+          this.getUserId(req),
+          dto,
+        ),
     };
   }
 
@@ -200,17 +224,15 @@ export class FlowRulesController {
     ruleId: string,
     @Body() dto: SetFlowRuleEnabledDto,
   ) {
-    const rule =
-      await this.flowRulesService.setEnabled(
-        projectId,
-        ruleId,
-        this.getUserId(req),
-        dto.enabled,
-      );
-
     return {
       success: true,
-      data: rule,
+      data:
+        await this.flowRulesService.setEnabled(
+          projectId,
+          ruleId,
+          this.getUserId(req),
+          dto.enabled,
+        ),
     };
   }
 
