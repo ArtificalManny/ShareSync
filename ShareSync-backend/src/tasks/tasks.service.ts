@@ -844,24 +844,6 @@ export class TasksService {
       );
     }
 
-    this.logger.log(
-      '[FlowRulesTrace] task-updated-emitting ' +
-        JSON.stringify({
-          bus: 'task.mutation',
-          type: TaskEventType.TASK_UPDATED,
-          projectId: task.projectId.toString(),
-          taskId: updated._id.toString(),
-          actorId: userId,
-          previousPriority,
-          newPriority: updated.priority,
-          previousStatus,
-          newStatus: updated.status,
-          hasFlowRuleMeta: Boolean(
-            context?.meta?.flowRules,
-          ),
-        }),
-    );
-
     emitTaskEvent({
       eventEmitter: this.eventEmitter,
       type: TaskEventType.TASK_UPDATED,
