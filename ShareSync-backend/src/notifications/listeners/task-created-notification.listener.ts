@@ -166,15 +166,37 @@ export class TaskCreatedNotificationListener {
       return String(value).trim();
     }
 
+    // Mongoose ObjectId exposes an `_id` getter that can return the
+    // same ObjectId. Handle it before traversing object properties so
+    // normalizeId cannot recursively call itself with the same value.
+    if (value instanceof Types.ObjectId) {
+      return value.toString();
+    }
+
     if (typeof value !== 'object') return '';
 
-    return this.normalizeId(
-      value?.userId ||
-        value?.user ||
-        value?.member ||
-        value?._id ||
-        value?.id,
-    );
+    // Also support ObjectId-like values originating from another
+    // Mongoose context where instanceof may not match.
+    if (typeof value?.toHexString === 'function') {
+      try {
+        return String(value.toHexString()).trim();
+      } catch {
+        return '';
+      }
+    }
+
+    const candidate =
+      value?.userId ??
+      value?.user ??
+      value?.member ??
+      value?._id ??
+      value?.id;
+
+    if (!candidate || candidate === value) {
+      return '';
+    }
+
+    return this.normalizeId(candidate);
   }
 
   private cleanText(value: any): string {
