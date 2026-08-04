@@ -559,9 +559,7 @@ export class TasksService {
 
     // ⭐ DIRECT REALTIME BOARD UPDATE FALLBACK
     let rtGateway: any = null;
-    let notifGateway: any = null;
     try { rtGateway = this.moduleRef.get('RealtimeGateway', { strict: false }); } catch(e) {}
-    try { notifGateway = this.moduleRef.get('NotificationsGateway', { strict: false }); } catch(e) {}
 
     try {
       if (rtGateway && rtGateway.server) {
@@ -572,79 +570,6 @@ export class TasksService {
         rtGateway.server.to(dto.projectId).emit('taskCreated', payload);
       }
     } catch (err) {}
-
-    // ⭐ TEMPORARY PROJECT-ROOM NOTIFICATION COMPATIBILITY BROADCAST
-    // Persisted member notifications are now handled by
-    // TaskCreatedNotificationListener through the canonical TASK_CREATED event.
-    try {
-      const db = this.taskModel.db;
-      const projectDoc = await db
-        .collection('projects')
-        .findOne({
-          _id: new Types.ObjectId(dto.projectId),
-        });
-
-      if (projectDoc) {
-        const safeProjectName =
-          typeof projectDoc.name === 'string' &&
-          projectDoc.name.trim()
-            ? projectDoc.name.trim()
-            : projectDoc.title || 'Project';
-
-        const safeTaskTitle =
-          typeof dto.title === 'string' && dto.title.trim()
-            ? dto.title.trim()
-            : 'New Task';
-
-        const liveRoomNotif = {
-          _id: new Types.ObjectId(),
-          type: 'task_created',
-          title: `📝 New Task in ${safeProjectName}`,
-          body: safeTaskTitle,
-          data: {
-            projectId: dto.projectId,
-            projectName: safeProjectName,
-            extra: {
-              taskId: saved._id.toString(),
-            },
-          },
-          channels: ['in_app'],
-          priority: 'normal',
-          isRead: false,
-          createdAt: new Date(),
-        };
-
-        if (notifGateway?.server) {
-          notifGateway.server
-            .to(`project:${dto.projectId}`)
-            .emit('new_notification', liveRoomNotif);
-
-          notifGateway.server
-            .to(dto.projectId)
-            .emit('new_notification', liveRoomNotif);
-        }
-
-        if (rtGateway?.server) {
-          rtGateway.server
-            .to(`project:${dto.projectId}`)
-            .emit('new_notification', liveRoomNotif);
-
-          rtGateway.server
-            .to(dto.projectId)
-            .emit('new_notification', liveRoomNotif);
-        }
-
-        this.logger.log(
-          `✅ Task ${saved._id.toString()} broadcasted ` +
-            `to compatibility Live Rooms`,
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        '⚠️ Failed to broadcast task-created compatibility notification:',
-        error,
-      );
-    }
 
     this.logger.log(`Task created: ${saved._id}`);
     return saved;
