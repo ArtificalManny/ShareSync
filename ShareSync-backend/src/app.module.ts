@@ -99,10 +99,12 @@ import { AccountEnforcementModule } from './account-enforcement/account-enforcem
 import { SettingsModule } from './settings/settings.module';
 
 import { FlowRulesModule } from './flow-rules/flow-rules.module';
+import { IntakeFormsModule } from './intake-forms/intake-forms.module';
 
 @Module({
   imports: [
     FlowRulesModule,
+    IntakeFormsModule,
     SettingsModule,
     AccountEnforcementModule,
     // ─────────────────────────────────────────────────────────────────────────
