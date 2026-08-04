@@ -50,8 +50,39 @@ export class FlowRuleTaskListener {
     event: TaskEvent,
   ): Promise<void> {
     try {
+      this.logger.log(
+        '[FlowRulesTrace] listener-received ' +
+          JSON.stringify({
+            type: event?.type,
+            projectId: event?.projectId,
+            taskId: event?.taskId,
+            actorId: event?.actorId,
+            previousPriority:
+              event?.changes?.previousPriority,
+            newPriority:
+              event?.changes?.newPriority,
+            previousStatus:
+              event?.changes?.previousStatus,
+            newStatus:
+              event?.changes?.newStatus,
+            hasFlowRuleMeta: Boolean(
+              event?.meta?.flowRules,
+            ),
+          }),
+      );
+
       const triggerTypes =
         this.resolveTriggerTypes(event);
+
+      this.logger.log(
+        '[FlowRulesTrace] triggers-resolved ' +
+          JSON.stringify({
+            type: event?.type,
+            projectId: event?.projectId,
+            taskId: event?.taskId,
+            triggerTypes,
+          }),
+      );
 
       if (triggerTypes.length === 0) {
         return;
@@ -79,6 +110,22 @@ export class FlowRuleTaskListener {
             event.projectId,
             triggerTypes,
           );
+
+      this.logger.log(
+        '[FlowRulesTrace] rules-resolved ' +
+          JSON.stringify({
+            projectId: event?.projectId,
+            taskId: event?.taskId,
+            triggerTypes,
+            enabledRuleCount: rules.length,
+            ruleIds: rules.map(
+              (rule: any) =>
+                String(
+                  rule?._id || rule?.id || '',
+                ),
+            ),
+          }),
+      );
 
       for (const rule of rules) {
         await this.processRule(
