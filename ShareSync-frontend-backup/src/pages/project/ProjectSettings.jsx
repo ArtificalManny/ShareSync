@@ -69,6 +69,8 @@ function normalizeNotificationSettings(value) {
  * - User-specific notification preferences
  * - Leave project (destructive)
  */
+import FlowRulesPanel from "../../features/flow-rules/FlowRulesPanel";
+
 const ProjectSettings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -709,8 +711,17 @@ const ProjectSettings = () => {
           </button>
         </div>
 
+          {/* ══════════════════════════════════════════════════ */}
+          {/* SECTION 3: FLOW RULES                              */}
+          {/* ══════════════════════════════════════════════════ */}
+          <FlowRulesPanel
+            projectId={id}
+            project={project}
+            canManage={role === 'owner' || role === 'admin'}
+          />
+
         {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 3: DANGER ZONE                             */}
+        {/* SECTION 4: DANGER ZONE                             */}
         {/* ══════════════════════════════════════════════════ */}
         <div className="project-settings-card project-danger-card bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
