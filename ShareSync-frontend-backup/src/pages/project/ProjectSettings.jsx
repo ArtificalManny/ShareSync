@@ -70,6 +70,7 @@ function normalizeNotificationSettings(value) {
  * - Leave project (destructive)
  */
 import FlowRulesPanel from "../../features/flow-rules/FlowRulesPanel";
+import IntakeFormsPanel from "../../features/intake-forms/IntakeFormsPanel";
 
 const ProjectSettings = () => {
   const { id } = useParams();
@@ -720,8 +721,16 @@ const ProjectSettings = () => {
             canManage={role === 'owner' || role === 'admin'}
           />
 
+          {/* ══════════════════════════════════════════════════ */}
+          {/* SECTION 4: FORMS & INTAKE                         */}
+          {/* ══════════════════════════════════════════════════ */}
+          <IntakeFormsPanel
+            projectId={id}
+            canManage={role === 'owner' || role === 'admin'}
+          />
+
         {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 4: DANGER ZONE                             */}
+        {/* SECTION 5: DANGER ZONE                             */}
         {/* ══════════════════════════════════════════════════ */}
         <div className="project-settings-card project-danger-card bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
