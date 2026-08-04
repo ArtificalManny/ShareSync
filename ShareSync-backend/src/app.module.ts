@@ -98,8 +98,11 @@ import { ContentReportsModule } from './content-reports/content-reports.module';
 import { AccountEnforcementModule } from './account-enforcement/account-enforcement.module';
 import { SettingsModule } from './settings/settings.module';
 
+import { FlowRulesModule } from './flow-rules/flow-rules.module';
+
 @Module({
   imports: [
+    FlowRulesModule,
     SettingsModule,
     AccountEnforcementModule,
     // ─────────────────────────────────────────────────────────────────────────
