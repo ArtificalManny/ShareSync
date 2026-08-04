@@ -71,6 +71,7 @@ function normalizeNotificationSettings(value) {
  */
 import FlowRulesPanel from "../../features/flow-rules/FlowRulesPanel";
 import IntakeFormsPanel from "../../features/intake-forms/IntakeFormsPanel";
+import ProjectSetupPanel from "../../features/project-setup/ProjectSetupPanel";
 
 const ProjectSettings = () => {
   const { id } = useParams();
@@ -655,7 +656,17 @@ const ProjectSettings = () => {
         </div>
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 2: NOTIFICATIONS (User Specific)           */}
+        {/* SECTION 2: PROJECT SETUP                          */}
+        {/* ══════════════════════════════════════════════════ */}
+        <ProjectSetupPanel
+          projectId={id}
+          project={project}
+          canManage={canEditProjectInfo}
+          onRefreshProject={refresh}
+        />
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* SECTION 3: NOTIFICATIONS (User Specific)           */}
         {/* ══════════════════════════════════════════════════ */}
         <div className="project-settings-card project-notifications-card bg-white dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-blue-500/20 rounded-2xl p-6 shadow-xl mb-6">
           <div className="flex items-center gap-3 mb-6">
@@ -713,7 +724,7 @@ const ProjectSettings = () => {
         </div>
 
           {/* ══════════════════════════════════════════════════ */}
-          {/* SECTION 3: FLOW RULES                              */}
+          {/* SECTION 4: FLOW RULES                              */}
           {/* ══════════════════════════════════════════════════ */}
           <FlowRulesPanel
             projectId={id}
@@ -722,7 +733,7 @@ const ProjectSettings = () => {
           />
 
           {/* ══════════════════════════════════════════════════ */}
-          {/* SECTION 4: FORMS & INTAKE                         */}
+          {/* SECTION 5: FORMS & INTAKE                         */}
           {/* ══════════════════════════════════════════════════ */}
           <IntakeFormsPanel
             projectId={id}
@@ -730,7 +741,7 @@ const ProjectSettings = () => {
           />
 
         {/* ══════════════════════════════════════════════════ */}
-        {/* SECTION 5: DANGER ZONE                             */}
+        {/* SECTION 6: DANGER ZONE                             */}
         {/* ══════════════════════════════════════════════════ */}
         <div className="project-settings-card project-danger-card bg-error-500/10 border border-error-500/30 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
