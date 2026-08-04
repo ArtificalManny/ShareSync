@@ -6,7 +6,7 @@
 
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+
 import { SubscriptionsController } from './subscriptions.controller';
 import { SubscriptionsService } from './subscriptions.service';
 import { Subscription, SubscriptionSchema } from './schemas/subscription.schema';
@@ -20,7 +20,6 @@ import { VaultFile, VaultFileSchema } from '../vault/schemas/vault-file.schema';
       { name: Project.name, schema: ProjectSchema },
       { name: VaultFile.name, schema: VaultFileSchema },
     ]),
-    EventEmitterModule.forRoot(),
   ],
   controllers: [SubscriptionsController],
   providers: [SubscriptionsService],

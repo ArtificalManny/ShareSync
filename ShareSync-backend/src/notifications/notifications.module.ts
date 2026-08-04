@@ -8,7 +8,6 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Controllers
 import { NotificationsController } from './notifications.controller';
@@ -85,7 +84,6 @@ try {
     }),
 
     // Event emitter for internal events
-    EventEmitterModule.forRoot(),
   ],
   controllers: [
     NotificationsController,

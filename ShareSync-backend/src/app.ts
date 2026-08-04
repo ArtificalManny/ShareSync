@@ -8,7 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+
 import { ScheduleModule } from '@nestjs/schedule';
 
 // Feature Modules
@@ -52,16 +52,6 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       { name: 'medium', ttl: 10000, limit: 20 },
       { name: 'long', ttl: 60000, limit: 100 },
     ]),
-
-    EventEmitterModule.forRoot({
-      wildcard: false,
-      delimiter: '.',
-      newListener: false,
-      removeListener: false,
-      maxListeners: 20,
-      verboseMemoryLeak: false,
-      ignoreErrors: false,
-    }),
 
     ScheduleModule.forRoot(),
 
