@@ -1,5 +1,11 @@
 // /src/pages/SearchPage.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
@@ -263,6 +269,77 @@ export default function SearchPage() {
     teamRoom: [],
   });
 
+  // React Router can keep this page mounted while the address-bar query
+  // changes. Resynchronize local search state so deep links and project
+  // scoped URLs are respected instead of being overwritten by stale state.
+  useLayoutEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+
+    const nextQ =
+      urlParams.get("q") ||
+      "";
+
+    const nextSort =
+      urlParams.get("sort") ||
+      "relevance";
+
+    const nextProjectId =
+      urlParams.get("projectId") ||
+      "";
+
+    const requestedNextScope =
+      urlParams.get("scope") ||
+      "all";
+
+    const nextScope =
+      requestedNextScope === "project" &&
+      !nextProjectId
+        ? "all"
+        : requestedNextScope;
+
+    const parsedTypes =
+      normalizeTypes(
+        urlParams.get("types"),
+        ALL_TYPES,
+      );
+
+    const nextTypes =
+      parsedTypes.length
+        ? parsedTypes
+        : ALL_TYPES;
+
+    setQ((current) =>
+      current === nextQ
+        ? current
+        : nextQ,
+    );
+
+    setSort((current) =>
+      current === nextSort
+        ? current
+        : nextSort,
+    );
+
+    setScope((current) =>
+      current === nextScope
+        ? current
+        : nextScope,
+    );
+
+    setTypes((current) => {
+      const unchanged =
+        current.length === nextTypes.length &&
+        current.every(
+          (value, index) =>
+            value === nextTypes[index],
+        );
+
+      return unchanged
+        ? current
+        : nextTypes;
+    });
+  }, [location.search]);
+
   // For a11y: count live region
   const liveRef = useRef(null);
 
@@ -294,7 +371,20 @@ export default function SearchPage() {
       nextParams.set("sort", sort);
       nextParams.set("types", queryTypes);
       nextParams.set("scope", scope);
-      setParams(nextParams, { replace: true });
+
+      const nextSearch =
+        nextParams.toString();
+
+      const currentSearch =
+        location.search.startsWith("?")
+          ? location.search.slice(1)
+          : location.search;
+
+      if (nextSearch !== currentSearch) {
+        setParams(nextParams, {
+          replace: true,
+        });
+      }
 
       const payload = {
         q,
