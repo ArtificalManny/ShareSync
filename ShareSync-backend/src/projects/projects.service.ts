@@ -634,9 +634,28 @@ export class ProjectsService {
     query: string,
     requestedLimit = 10,
   ): Promise<any[]> {
-    await this.findByIdWithAccess(
-      projectId,
-      userId,
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+      );
+
+    const personSelect =
+      'firstName lastName displayName username email avatar profilePicture bio createdAt updatedAt';
+
+    await project.populate(
+      'ownerId',
+      personSelect,
+    );
+
+    await project.populate(
+      'members.userId',
+      personSelect,
+    );
+
+    await project.populate(
+      'members.memberId',
+      personSelect,
     );
 
     const normalizedQuery =
@@ -735,6 +754,200 @@ export class ProjectsService {
 
     const normalizedUserId =
       normalizeId(userObjectId);
+
+    const projectMembers =
+      Array.isArray(
+        (project as any)?.members,
+      )
+        ? (project as any).members
+        : [];
+
+    const requesterIsProjectMember =
+      [
+        (project as any)?.ownerId,
+        (project as any)?.owner,
+        (project as any)?.createdBy,
+        (project as any)?.createdById,
+      ].some(
+        (candidate: any) =>
+          normalizeId(candidate) ===
+          normalizedUserId,
+      ) ||
+      projectMembers.some(
+        (member: any) =>
+          [
+            member?.userId,
+            member?.user,
+            member?.memberId,
+          ].some(
+            (candidate: any) =>
+              normalizeId(candidate) ===
+              normalizedUserId,
+          ),
+      );
+
+    const peopleById =
+      new Map<string, any>();
+
+    const addProjectPerson = (
+      value: any,
+      membership: any = {},
+    ) => {
+      if (!requesterIsProjectMember) {
+        return;
+      }
+
+      const source =
+        value &&
+        typeof value?.toObject ===
+          'function'
+          ? value.toObject()
+          : value;
+
+      if (
+        !source ||
+        typeof source !== 'object'
+      ) {
+        return;
+      }
+
+      const hasIdentity =
+        [
+          source?.firstName,
+          source?.lastName,
+          source?.displayName,
+          source?.username,
+          source?.email,
+        ].some(Boolean);
+
+      if (!hasIdentity) {
+        return;
+      }
+
+      const personId =
+        normalizeId(source);
+
+      if (
+        !personId ||
+        peopleById.has(personId)
+      ) {
+        return;
+      }
+
+      const fullName =
+        [
+          source?.firstName,
+          source?.lastName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+      const name =
+        source?.displayName ||
+        fullName ||
+        source?.username ||
+        'Project member';
+
+      const searchableText =
+        [
+          name,
+          source?.firstName,
+          source?.lastName,
+          source?.displayName,
+          source?.username,
+          source?.email,
+          membership?.role,
+          membership?.displayRole,
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+      if (
+        !searchRegex.test(
+          searchableText,
+        )
+      ) {
+        return;
+      }
+
+      const safePerson = {
+        ...source,
+      };
+
+      delete safePerson.email;
+
+      peopleById.set(
+        personId,
+        {
+          id: personId,
+          type: 'person',
+          title: name,
+          description:
+            membership?.displayRole ||
+            membership?.role ||
+            'Project member',
+          projectId,
+          updatedAt:
+            source?.updatedAt ||
+            source?.createdAt ||
+            membership?.joinedAt ||
+            (project as any)?.updatedAt ||
+            null,
+          raw: {
+            ...safePerson,
+            _id:
+              safePerson?._id ||
+              personId,
+            id: personId,
+            name,
+            projectId,
+            projectRole:
+              membership?.role ||
+              null,
+            displayRole:
+              membership?.displayRole ||
+              '',
+          },
+        },
+      );
+    };
+
+    addProjectPerson(
+      (project as any)?.ownerId,
+      {
+        role: 'owner',
+        displayRole: 'Owner',
+        joinedAt:
+          (project as any)?.createdAt,
+      },
+    );
+
+    projectMembers.forEach(
+      (member: any) => {
+        addProjectPerson(
+          member?.userId ||
+            member?.user ||
+            member?.memberId,
+          {
+            role:
+              member?.role ||
+              'member',
+            displayRole:
+              member?.displayRole ||
+              '',
+            joinedAt:
+              member?.joinedAt ||
+              null,
+          },
+        );
+      },
+    );
+
+    const people =
+      Array.from(
+        peopleById.values(),
+      ).slice(0, limit);
 
     const accessibleFolders =
       folders.filter((folder: any) => {
@@ -885,6 +1098,8 @@ export class ProjectsService {
     };
 
     const results = [
+      ...people,
+
       ...moves.map((move: any) => ({
         id: normalizeId(move?._id),
         type: 'task',

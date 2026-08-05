@@ -239,7 +239,7 @@ export class ProjectsController {
   @Get(':id/search')
   @ApiOperation({
     summary:
-      'Search Moves, Files, Announcements, and Team Room content in one project',
+      'Search People, Moves, Files, Announcements, and Team Room content in one project',
   })
   @ApiParam({
     name: 'id',
