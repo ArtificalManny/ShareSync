@@ -320,12 +320,17 @@ export default function SearchPage() {
               payload.limit,
             );
 
-          data = projectResults.filter(
-            (item) =>
-              types.includes(
-                item?.type,
-              ),
-          );
+          data = projectResults.filter((item) => {
+            // Project search returns people as "person", while the UI filter
+            // uses the canonical type "user". Normalize before filtering so
+            // valid People results are not discarded.
+            const normalizedType =
+              item?.type === "person"
+                ? "user"
+                : item?.type;
+
+            return types.includes(normalizedType);
+          });
         } else {
           try {
             data =
