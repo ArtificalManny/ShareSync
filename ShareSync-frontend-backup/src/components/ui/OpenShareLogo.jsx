@@ -1,88 +1,85 @@
-import React, { useId } from 'react';
+import React, { useId } from "react";
 
 /**
  * OpenShare logo
  *
  * Visual idea:
- * - Open orbit = openness / shared workspace
- * - Signal wave = collaboration moving through the system
- * - Live dot = active momentum / public network
+ * - Open circle = openness / accessible collaboration
+ * - Two flowing arcs = people and work moving together
+ * - Two nodes = connection / sharing
+ * - Open gaps = projects are never visually "closed off"
  */
 export default function OpenShareLogo({
   className = "w-8 h-8 text-slate-900 dark:text-slate-100",
   title = "OpenShare Logo",
   monochrome = false,
   animated = false,
+  variant = "mark",
+  markClassName = "w-10 h-10 shrink-0",
+  wordmarkClassName = "text-2xl",
 }) {
-  const rawId = useId().replace(/:/g, '');
-  const orbitGradientId = `openshare-orbit-${rawId}`;
-  const signalGradientId = `openshare-signal-${rawId}`;
-  const plateGradientId = `openshare-plate-${rawId}`;
-  const glowId = `openshare-glow-${rawId}`;
+  const rawId = useId().replace(/:/g, "");
 
-  const orbitStroke = monochrome ? "currentColor" : `url(#${orbitGradientId})`;
-  const signalStroke = monochrome ? "currentColor" : `url(#${signalGradientId})`;
-  const dotFill = monochrome ? "currentColor" : "#2DD4BF";
+  const purpleGradientId = `openshare-purple-${rawId}`;
+  const blueGradientId = `openshare-blue-${rawId}`;
 
-  return (
+  const purpleStroke = monochrome
+    ? "currentColor"
+    : `url(#${purpleGradientId})`;
+
+  const blueStroke = monochrome
+    ? "currentColor"
+    : `url(#${blueGradientId})`;
+
+  const purpleDot = monochrome ? "currentColor" : "#7C3AED";
+  const cyanDot = monochrome ? "currentColor" : "#22D3EE";
+
+  const mark = (
     <svg
       viewBox="0 0 40 40"
-      width="1em"
-      height="1em"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      role="img"
-      aria-label={title}
+      className={variant === "lockup" ? markClassName : className}
       fill="none"
-      shapeRendering="geometricPrecision"
+      role={variant === "lockup" ? undefined : "img"}
+      aria-label={variant === "lockup" ? undefined : title}
+      aria-hidden={variant === "lockup" ? "true" : undefined}
     >
-      <title>{title}</title>
+      {variant !== "lockup" && <title>{title}</title>}
 
       {!monochrome && (
         <defs>
-          <radialGradient id={plateGradientId} cx="35%" cy="25%" r="75%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.98" />
-            <stop offset="36%" stopColor="#F5F3FF" stopOpacity="0.92" />
-            <stop offset="72%" stopColor="#ECFEFF" stopOpacity="0.74" />
-            <stop offset="100%" stopColor="#EEF2FF" stopOpacity="0.48" />
-          </radialGradient>
-
-          <linearGradient id={orbitGradientId} x1="7" y1="6" x2="34" y2="34">
-            <stop offset="0%" stopColor="#A855F7" />
-            <stop offset="42%" stopColor="#7C3AED" />
-            <stop offset="74%" stopColor="#38BDF8" />
-            <stop offset="100%" stopColor="#2DD4BF" />
-          </linearGradient>
-
-          <linearGradient id={signalGradientId} x1="11" y1="22" x2="29" y2="18">
+          {/* Left / lower arc */}
+          <linearGradient
+            id={purpleGradientId}
+            x1="9"
+            y1="9"
+            x2="25"
+            y2="34"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop offset="0%" stopColor="#7C3AED" />
-            <stop offset="54%" stopColor="#38BDF8" />
-            <stop offset="100%" stopColor="#2DD4BF" />
+            <stop offset="48%" stopColor="#A855F7" />
+            <stop offset="100%" stopColor="#C084FC" />
           </linearGradient>
 
-          <filter id={glowId} x="-45%" y="-45%" width="190%" height="190%">
-            <feGaussianBlur stdDeviation="1.8" result="blur" />
-            <feColorMatrix
-              in="blur"
-              type="matrix"
-              values="
-                0 0 0 0 0.486
-                0 0 0 0 0.227
-                0 0 0 0 0.929
-                0 0 0 .42 0
-              "
-              result="coloredBlur"
-            />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
+          {/* Upper / right arc */}
+          <linearGradient
+            id={blueGradientId}
+            x1="18"
+            y1="5"
+            x2="33"
+            y2="29"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" stopColor="#2563EB" />
+            <stop offset="52%" stopColor="#0EA5E9" />
+            <stop offset="100%" stopColor="#22D3EE" />
+          </linearGradient>
         </defs>
       )}
 
       <g>
-        {animated && !monochrome && (
+        {animated && (
           <animateTransform
             attributeName="transform"
             type="rotate"
@@ -93,46 +90,76 @@ export default function OpenShareLogo({
           />
         )}
 
-        {!monochrome && (
-          <circle
-            cx="20"
-            cy="20"
-            r="17.4"
-            fill={`url(#${plateGradientId})`}
-            opacity="0.78"
-          />
-        )}
+        {/*
+          Purple arc
 
+          Starts near the upper-left node and travels around
+          the left + bottom side of the mark.
+        */}
         <path
-          d="M29.4 8.6 A15 15 0 1 1 13.1 7.5"
-          stroke={orbitStroke}
-          strokeWidth="4.25"
+          d="M13.8 10.4
+             A13.4 13.4 0 0 0 24.6 32.1"
+          stroke={purpleStroke}
+          strokeWidth="5.1"
           strokeLinecap="round"
-          strokeLinejoin="round"
-          filter={monochrome ? undefined : `url(#${glowId})`}
         />
 
+        {/*
+          Blue arc
+
+          Starts across the top and travels around
+          the right side toward the cyan node.
+        */}
         <path
-          d="M12.1 21.2 C15.2 16.8 18.2 16.8 20.2 20 C22.2 23.2 25.2 23.2 28.2 18.8"
-          stroke={signalStroke}
-          strokeWidth="2.35"
+          d="M18.5 7.2
+             A13.4 13.4 0 0 1 30.3 25.3"
+          stroke={blueStroke}
+          strokeWidth="5.1"
           strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={monochrome ? "0.92" : "1"}
         />
 
+        {/* Purple connection node */}
         <circle
-          cx="29.45"
-          cy="8.65"
-          r="2.55"
-          fill={dotFill}
-          filter={monochrome ? undefined : `url(#${glowId})`}
+          cx="13.3"
+          cy="8.6"
+          r="2.65"
+          fill={purpleDot}
         />
 
-        {!monochrome && (
-          <circle cx="29.45" cy="8.65" r="5.25" fill="#2DD4BF" opacity="0.18" />
-        )}
+        {/* Cyan connection node */}
+        <circle
+          cx="29.2"
+          cy="27.8"
+          r="2.65"
+          fill={cyanDot}
+        />
       </g>
     </svg>
+  );
+
+  if (variant !== "lockup") {
+    return mark;
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-2.5 ${className}`}
+      role="img"
+      aria-label="OpenShare"
+    >
+      {mark}
+
+      <span
+        aria-hidden="true"
+        className={`inline-flex items-baseline font-semibold tracking-[-0.045em] leading-none ${wordmarkClassName}`}
+      >
+        <span className="text-slate-950 dark:text-white">
+          Open
+        </span>
+        <span className="bg-gradient-to-r from-violet-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent">
+          Share
+        </span>
+      </span>
+    </span>
   );
 }

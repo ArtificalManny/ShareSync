@@ -41,7 +41,7 @@ export class EmailService {
     this.fromAddress =
       this.resendFromAddress ||
       process.env.EMAIL_FROM ||
-      (process.env.SMTP_USER ? `"ShareSync" <${process.env.SMTP_USER}>` : `"ShareSync" <no-reply@sharesync.local>`);
+      (process.env.SMTP_USER ? `"OpenShare" <${process.env.SMTP_USER}>` : `"OpenShare" <no-reply@openshare.local>`);
 
     // Optional dependency: do not break build if nodemailer isn't installed
     let nodemailer: any;
@@ -199,7 +199,7 @@ export class EmailService {
                 style="padding:30px 40px; text-align:center; background-color:#0F172A;"
               >
                 <img
-                  src="https://openshare.ca/icon-192.png"
+                  src="https://openshare.ca/brand/openshare-mark-192.png"
                   width="72"
                   height="72"
                   alt="OpenShare"
@@ -326,7 +326,7 @@ export class EmailService {
     if (this.resendApiKey && this.resendFromAddress) {
       await this.sendViaResend({
         to,
-        subject: notification?.title || 'ShareSync Update',
+        subject: notification?.title || 'OpenShare Update',
         html: emailHtml,
         text: notification?.message || notification?.body || '',
       });
@@ -342,7 +342,7 @@ export class EmailService {
       await this.transporter.sendMail({
         from: this.fromAddress,
         to,
-        subject: notification?.title || 'ShareSync Update',
+        subject: notification?.title || 'OpenShare Update',
         html: emailHtml,
         text: notification?.message || notification?.body || '',
       });
@@ -385,7 +385,7 @@ export class EmailService {
           <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
             <tr>
               <td align="center" style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
-                <img src="https://via.placeholder.com/180x40/0F172A/06B6D4?text=OPENSHARE" alt="OpenShare" width="180" style="display: block; margin: 0 auto;">
+                <img src="https://openshare.ca/brand/openshare-email-lockup.png" alt="OpenShare" width="180" style="display: block; margin: 0 auto;">
               </td>
             </tr>
             <tr>
@@ -538,7 +538,7 @@ export class EmailService {
   private buildEmailTemplate(notification: any): string {
     const emoji = this.getEmojiForType(notification?.type);
 
-    const title = this.escapeHtml(notification?.title || 'ShareSync Update');
+    const title = this.escapeHtml(notification?.title || 'OpenShare Update');
     const msg = this.escapeHtml(notification?.message || notification?.body || '');
 
     const actionUrl = this.buildFrontendUrl(notification?.actionData?.url);
@@ -568,7 +568,7 @@ export class EmailService {
           <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);">
             <tr>
               <td align="center" style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
-                <img src="https://openshare.ca/icon-192.png" width="72" height="72" alt="OpenShare" style="display:block; margin: 0 auto; border:0; border-radius:16px;" />
+                <img src="https://openshare.ca/brand/openshare-mark-192.png" width="72" height="72" alt="OpenShare" style="display:block; margin: 0 auto; border:0; border-radius:16px;" />
               </td>
             </tr>
             <tr>

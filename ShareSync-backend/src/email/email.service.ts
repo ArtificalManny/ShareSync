@@ -20,7 +20,7 @@ export class EmailService {
   async sendMail(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.transporter.sendMail({
-        from: `"Intacom" <${process.env.EMAIL_USER}>`,
+        from: `"OpenShare" <${process.env.EMAIL_USER}>`,
         to,
         subject,
         html,

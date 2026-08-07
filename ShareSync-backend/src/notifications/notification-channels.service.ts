@@ -335,7 +335,7 @@ export class NotificationChannelsService {
       auth: { user, pass },
     });
 
-    const from = process.env.EMAIL_FROM || `"ShareSync" <${user}>`;
+    const from = process.env.EMAIL_FROM || `"OpenShare" <${user}>`;
 
     try {
       await transporter.sendMail({ from, to: email, subject, html, text });

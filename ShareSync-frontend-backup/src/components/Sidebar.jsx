@@ -784,24 +784,25 @@ export default function Sidebar({ user }) {
         data-momentum={glowLevel}
         data-autohide={autoHideEnabled}
       >
-                <div className="sidebar-brand-zone flex items-center justify-center p-4 pt-6 pb-6">
-          <div className="flex items-center gap-3">
-            <span className={`openshare-logo-shell ${isFireMode ? "openshare-logo-shell-fire" : ""}`}>
-              <span className="openshare-logo-aurora" aria-hidden="true" />
-              <OpenShareLogo
-                className={`relative z-10 w-11 h-11 shrink-0 transition-transform duration-500 ${
-                  isFireMode ? "scale-110" : ""
-                }`}
-                title="OpenShare Logo"
-                monochrome={false}
-              />
-            </span>
-            {!collapsed && (
-              <span className="openshare-sidebar-wordmark text-[15px] font-black text-slate-950 dark:text-white tracking-wide whitespace-nowrap animate-in fade-in duration-200">
-                OpenShare
-              </span>
-            )}
-          </div>
+        <div
+          className={`sidebar-brand-zone flex items-center pt-6 pb-6 ${
+            collapsed ? "justify-center px-4" : "pl-6"
+          }`}
+        >
+          {collapsed ? (
+            <OpenShareLogo
+              className="w-8 h-8 shrink-0"
+              title="OpenShare"
+            />
+          ) : (
+            <OpenShareLogo
+              variant="lockup"
+              className="shrink-0 animate-in fade-in duration-200"
+              markClassName="w-8 h-8 shrink-0"
+              wordmarkClassName="text-xl"
+              title="OpenShare"
+            />
+          )}
         </div>
 
         <nav className="openshare-sidebar-nav flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden pt-2">

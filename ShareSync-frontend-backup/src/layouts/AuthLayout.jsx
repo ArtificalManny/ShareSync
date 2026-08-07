@@ -80,18 +80,18 @@ export function AuthLayout({ title, subtitle, children }) {
           transition={{ duration: 0.35, ease: "easeOut" }}
           className={AUTH_CARD}
         >
-          {/* Brand header */}
-          <div className="flex items-center justify-center gap-3 mb-6 select-none">
-            <div className="w-11 h-11 rounded-full bg-violet-50 ring-1 ring-violet-200/80 shadow-[0_8px_18px_rgba(139,92,246,0.14)] flex items-center justify-center shrink-0">
-              <OpenShareLogo className="w-5 h-5 text-violet-600" />
+            {/* OpenShare brand lockup */}
+            <div className="mb-7 flex justify-center select-none">
+              <OpenShareLogo
+                variant="lockup"
+                className="justify-center"
+                markClassName="w-12 h-12 shrink-0"
+                wordmarkClassName="text-[1.55rem] sm:text-[1.7rem]"
+                title="OpenShare"
+              />
             </div>
 
-            <div className="text-[1.05rem] font-semibold tracking-[-0.01em] text-slate-900 leading-none">
-              OpenShare
-            </div>
-          </div>
-
-          {/* Title */}
+            {/* Title */}
           <div className="text-center mb-6">
             <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.02em] text-slate-900">
               {title}

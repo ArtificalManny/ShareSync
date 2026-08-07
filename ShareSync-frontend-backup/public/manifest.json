@@ -1,6 +1,6 @@
 {
-  "name": "ShareSync - Stop Burning Out, Start Shipping",
-  "short_name": "ShareSync",
+  "name": "OpenShare",
+  "short_name": "OpenShare",
   "description": "The only project tracker that prevents burnout before it happens",
   "start_url": "/",
   "display": "standalone",
@@ -8,7 +8,11 @@
   "theme_color": "#a855f7",
   "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["productivity", "business", "utilities"],
+  "categories": [
+    "productivity",
+    "business",
+    "utilities"
+  ],
   "lang": "en-US",
   "dir": "ltr",
   "icons": [
@@ -127,7 +131,12 @@
       "files": [
         {
           "name": "file",
-          "accept": ["image/*", "video/*", "audio/*", ".pdf"]
+          "accept": [
+            "image/*",
+            "video/*",
+            "audio/*",
+            ".pdf"
+          ]
         }
       ]
     }

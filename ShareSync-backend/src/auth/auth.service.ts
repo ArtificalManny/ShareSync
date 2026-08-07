@@ -634,6 +634,14 @@ export class AuthService {
   ): Promise<void> {
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a">
+          <div style="text-align:center;margin:0 0 28px;">
+            <img
+              src="https://openshare.ca/brand/openshare-email-lockup.png"
+              width="240"
+              alt="OpenShare"
+              style="display:block;width:240px;max-width:100%;height:auto;margin:0 auto;border:0;"
+            />
+          </div>
         <h2>Your OpenShare verification code</h2>
         <p>Use this 6-digit code to verify your email:</p>
         <div style="font-size:32px;font-weight:800;letter-spacing:8px;margin:24px 0;color:#7c3aed">
@@ -740,6 +748,14 @@ export class AuthService {
 
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a">
+          <div style="text-align:center;margin:0 0 28px;">
+            <img
+              src="https://openshare.ca/brand/openshare-email-lockup.png"
+              width="240"
+              alt="OpenShare"
+              style="display:block;width:240px;max-width:100%;height:auto;margin:0 auto;border:0;"
+            />
+          </div>
         <h2>Reset your OpenShare password</h2>
         <p>Click the button below to reset your password:</p>
         <p>
