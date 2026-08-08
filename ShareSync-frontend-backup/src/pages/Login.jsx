@@ -14,6 +14,60 @@ import { useAuth } from "../context/AuthContext";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
+function getLoginErrorMessage({
+  status,
+  message,
+  networkError = false,
+} = {}) {
+  const rawMessage = String(message || "").trim();
+  const normalized = rawMessage.toLowerCase();
+
+  if (
+    normalized.includes("verify your email") ||
+    normalized.includes("email not verified")
+  ) {
+    return "Please verify your email before signing in.";
+  }
+
+  if (normalized.includes("account suspended")) {
+    return "Your account is temporarily suspended. Please try again later.";
+  }
+
+  if (normalized.includes("account disabled")) {
+    return "This account is currently disabled.";
+  }
+
+  if (normalized.includes("account banned")) {
+    return "This account is unavailable.";
+  }
+
+  if (
+    Number(status) === 429 ||
+    normalized.includes("too many")
+  ) {
+    return "Too many sign-in attempts. Please wait a moment and try again.";
+  }
+
+  if (
+    Number(status) === 401 ||
+    normalized === "unauthorized" ||
+    normalized.includes("invalid credentials") ||
+    normalized.includes("incorrect credentials")
+  ) {
+    return "Email or password is incorrect. Please try again.";
+  }
+
+  if (networkError) {
+    return "We couldn't reach OpenShare. Check your connection and try again.";
+  }
+
+  if (Number(status) >= 500) {
+    return "OpenShare is having trouble signing you in. Please try again in a moment.";
+  }
+
+  return "We couldn't sign you in. Please check your details and try again.";
+}
+
 function getGoogleOAuthUrl() {
   const rawBase = import.meta.env.VITE_API_URL || "http://localhost:5050/api";
   const base = String(rawBase).replace(/\/+$/, "");
@@ -130,7 +184,15 @@ export default function Login() {
         return;
       }
 
-      setError(result.error || result.message || "Login failed");
+      setError(
+        getLoginErrorMessage({
+          status: result.status || result.statusCode,
+          message:
+            result.error ||
+            result.message ||
+            "Login failed",
+        }),
+      );
     } catch (err) {
       const errorPayload = err?.response?.data?.data ?? err?.response?.data ?? {};
       const msg =
@@ -166,7 +228,15 @@ export default function Login() {
         return;
       }
 
-      setError(String(msg));
+      setError(
+        getLoginErrorMessage({
+          status:
+            err?.response?.status ||
+            errorPayload?.statusCode,
+          message: msg,
+          networkError: !err?.response,
+        }),
+      );
     } finally {
       setSubmitting(false);
     }
