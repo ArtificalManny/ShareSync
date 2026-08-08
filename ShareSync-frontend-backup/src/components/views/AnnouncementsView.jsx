@@ -1528,31 +1528,78 @@ function PollComposer({ enabled, setEnabled, question, setQuestion, options, set
 
 function AnnouncementPollBlock({ item, projectId, currentUser, onUpdate }) {
   const [votingOptionId, setVotingOptionId] = useState(null);
+
   const poll = item?.poll;
-  const options = Array.isArray(poll?.options) ? poll.options : [];
-  const currentUserId = getCurrentUserId(currentUser);
+  const options = Array.isArray(poll?.options)
+    ? poll.options
+    : [];
+
+  const currentUserId =
+    getCurrentUserId(currentUser);
+
   const totalVotes = options.reduce(
-    (sum, option) => sum + getPollOptionVotes(option).length,
+    (sum, option) =>
+      sum + getPollOptionVotes(option).length,
     0
   );
 
-  if (!poll?.question || options.length < 2) return null;
+  if (!poll?.question || options.length < 2) {
+    return null;
+  }
 
-  const selectedOptionId = options.find((option) =>
-    getPollOptionVotes(option).some((vote) => getPollVoteId(vote) === currentUserId)
-  )?.id;
+  /*
+   * The backend stores the authenticated user's ObjectId
+   * inside the votes array of their selected option.
+   *
+   * This means the participation indicator survives refreshes:
+   * we derive the user's current vote from persisted server data,
+   * rather than from temporary component state.
+   */
+  const selectedOptionId = currentUserId
+    ? options.find((option) =>
+        getPollOptionVotes(option).some(
+          (vote) =>
+            getPollVoteId(vote) === currentUserId
+        )
+      )?.id ?? null
+    : null;
+
+  const hasVoted = Boolean(selectedOptionId);
 
   const handleVote = async (optionId) => {
-    if (!projectId || !getId(item) || !optionId || votingOptionId) return;
+    if (
+      !projectId ||
+      !getId(item) ||
+      !optionId ||
+      votingOptionId
+    ) {
+      return;
+    }
 
     setVotingOptionId(optionId);
+
     try {
-      const response = await votePoll(projectId, getId(item), optionId);
-      const updated = unwrapAnnouncementPayload(response);
-      onUpdate?.(normalizeAnnouncementLikeState(updated, currentUser));
+      const response = await votePoll(
+        projectId,
+        getId(item),
+        optionId
+      );
+
+      const updated =
+        unwrapAnnouncementPayload(response);
+
+      onUpdate?.(
+        normalizeAnnouncementLikeState(
+          updated,
+          currentUser
+        )
+      );
     } catch (error) {
       toast({
-        title: error?.response?.data?.message || error?.message || 'Failed to vote',
+        title:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to vote',
         variant: 'error',
       });
     } finally {
@@ -1561,52 +1608,185 @@ function AnnouncementPollBlock({ item, projectId, currentUser, onUpdate }) {
   };
 
   return (
-    <div className="mt-5 rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-700">
+    <div className="mt-5 overflow-hidden rounded-2xl border border-violet-200/90 bg-gradient-to-br from-violet-50/80 via-white to-cyan-50/50 p-4 shadow-sm shadow-violet-500/[0.04]">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-700">
             Team Poll
-          </p>
-          <h4 className="mt-1 text-base font-black text-slate-950">{poll.question}</h4>
+          </span>
+
+          {hasVoted && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-white/90 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-violet-700 shadow-sm">
+              <span
+                aria-hidden="true"
+                className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-violet-600 text-[9px] leading-none text-white"
+              >
+                ✓
+              </span>
+              Participated
+            </span>
+          )}
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">
-          {totalVotes} vote{totalVotes === 1 ? '' : 's'}
+
+        <span className="shrink-0 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[10px] font-black text-slate-500 shadow-sm">
+          {totalVotes}{' '}
+          {totalVotes === 1 ? 'vote' : 'votes'}
         </span>
       </div>
 
-      <div className="mt-4 space-y-2">
-        {options.map((option) => {
-          const votes = getPollOptionVotes(option);
+      <p className="mb-3 text-sm font-black leading-snug text-slate-900">
+        {poll.question}
+      </p>
+
+      <div className="space-y-2">
+        {options.map((option, index) => {
+          const optionId = String(
+            option?.id || `option-${index + 1}`
+          );
+
+          const votes =
+            getPollOptionVotes(option);
+
           const voteCount = votes.length;
-          const percent = totalVotes ? Math.round((voteCount / totalVotes) * 100) : 0;
-          const selected = String(option.id) === String(selectedOptionId);
+
+          const percent = totalVotes > 0
+            ? Math.round(
+                (voteCount / totalVotes) * 100
+              )
+            : 0;
+
+          const isMyVote =
+            String(selectedOptionId || '') ===
+            optionId;
+
+          const isVoting =
+            String(votingOptionId || '') ===
+            optionId;
+
+          const voteInProgress =
+            Boolean(votingOptionId);
+
+          const canInteract =
+            Boolean(projectId) &&
+            !poll.closed &&
+            !voteInProgress;
 
           return (
             <button
-              key={option.id}
+              key={optionId}
               type="button"
-              disabled={Boolean(poll.closed) || Boolean(votingOptionId)}
-              onClick={() => handleVote(option.id)}
-              className={`relative w-full overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all ${
-                selected
-                  ? 'border-violet-300 bg-white text-violet-900 shadow-sm'
-                  : 'border-slate-200 bg-white/80 text-slate-700 hover:border-violet-200 hover:bg-white'
+              onClick={() => {
+                if (
+                  !canInteract ||
+                  isMyVote
+                ) {
+                  return;
+                }
+
+                handleVote(optionId);
+              }}
+              disabled={
+                !canInteract ||
+                isMyVote
+              }
+              aria-pressed={isMyVote}
+              aria-label={
+                isMyVote
+                  ? `${option.text}. Your vote. ${percent} percent, ${voteCount} votes.`
+                  : `${option.text}. ${percent} percent, ${voteCount} votes.`
+              }
+              title={
+                isMyVote
+                  ? 'This is your current vote'
+                  : poll.closed
+                    ? 'This poll is closed'
+                    : undefined
+              }
+              className={`group relative w-full overflow-hidden rounded-xl border text-left transition-all duration-200 ${
+                isMyVote
+                  ? 'border-violet-300 bg-violet-50/90 shadow-sm shadow-violet-500/10'
+                  : 'border-slate-200/90 bg-white/90 hover:border-violet-300 hover:bg-white hover:shadow-sm'
+              } ${
+                canInteract && !isMyVote
+                  ? 'cursor-pointer'
+                  : 'cursor-default'
               }`}
             >
+              {/* Result fill */}
               <span
-                className="absolute inset-y-0 left-0 bg-violet-200/50"
-                style={{ width: `${percent}%` }}
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-y-0 left-0 transition-[width] duration-500 ease-out ${
+                  isMyVote
+                    ? 'bg-violet-100/80'
+                    : 'bg-slate-100/70'
+                }`}
+                style={{
+                  width: `${percent}%`,
+                }}
               />
-              <span className="relative flex items-center justify-between gap-3">
-                <span className="font-black">{option.text}</span>
-                <span className="text-xs font-black text-slate-500">
+
+              <span className="relative z-10 flex min-h-[52px] items-center justify-between gap-4 px-4 py-3">
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-black transition-all ${
+                      isMyVote
+                        ? 'border-violet-600 bg-violet-600 text-white shadow-sm shadow-violet-500/30'
+                        : 'border-slate-300 bg-white text-transparent group-hover:border-violet-300'
+                    }`}
+                  >
+                    {isMyVote ? '✓' : ''}
+                  </span>
+
+                  <span
+                    className={`truncate text-sm font-black ${
+                      isMyVote
+                        ? 'text-violet-800'
+                        : 'text-slate-700'
+                    }`}
+                  >
+                    {option.text}
+                  </span>
+
+                  {isMyVote && (
+                    <span className="hidden shrink-0 rounded-full border border-violet-200 bg-white/90 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-violet-700 shadow-sm sm:inline-flex">
+                      Your vote
+                    </span>
+                  )}
+
+                  {isVoting && (
+                    <span className="shrink-0 text-[10px] font-bold text-violet-500">
+                      Saving…
+                    </span>
+                  )}
+                </span>
+
+                <span
+                  className={`shrink-0 text-xs font-black ${
+                    isMyVote
+                      ? 'text-violet-700'
+                      : 'text-slate-500'
+                  }`}
+                >
                   {percent}% · {voteCount}
                 </span>
               </span>
+
+              {isMyVote && (
+                <span className="relative z-10 -mt-2 block px-[46px] pb-2.5 text-[10px] font-bold text-violet-600 sm:hidden">
+                  Your vote
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+
+      {poll.closed && (
+        <div className="mt-3 text-[10px] font-bold text-slate-400">
+          Final results · Poll closed
+        </div>
+      )}
     </div>
   );
 }
