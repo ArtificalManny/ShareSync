@@ -268,8 +268,65 @@ export default function MoveTaskDetailDrawer({
   useEffect(() => {
     if (!open) return undefined;
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    /*
+     * Freeze the root document while Move Detail is open.
+     *
+     * iOS/WKWebView can rubber-band the page even when
+     * body overflow is hidden. Fixing the body at its
+     * current position prevents the underlying app from
+     * moving when a gesture begins on modal chrome.
+     */
+    const scrollY = window.scrollY;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    const previousBody = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+    };
+
+    const previousHtml = {
+      overflow: html.style.overflow,
+      overscrollBehavior: html.style.overscrollBehavior,
+    };
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+
+    return () => {
+      body.style.position = previousBody.position;
+      body.style.top = previousBody.top;
+      body.style.left = previousBody.left;
+      body.style.right = previousBody.right;
+      body.style.width = previousBody.width;
+      body.style.overflow = previousBody.overflow;
+      body.style.overscrollBehavior =
+        previousBody.overscrollBehavior;
+
+      html.style.overflow = previousHtml.overflow;
+      html.style.overscrollBehavior =
+        previousHtml.overscrollBehavior;
+
+      window.scrollTo(0, scrollY);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
 
     const handleKeyDown = (event) => {
       if (
@@ -285,7 +342,6 @@ export default function MoveTaskDetailDrawer({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open, saving, completing, disabled, onClose]);
@@ -469,7 +525,7 @@ export default function MoveTaskDetailDrawer({
   return (
     <>
       <div
-        className="fixed inset-0 z-[10000] bg-slate-950/45 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[10000] touch-none overscroll-none bg-slate-950/45 backdrop-blur-[2px]"
         onClick={() => {
           if (!isBusy) onClose?.();
         }}
@@ -477,12 +533,12 @@ export default function MoveTaskDetailDrawer({
       />
 
       <aside
-        className="fixed right-0 top-0 z-[10001] flex h-full w-full max-w-[680px] flex-col border-l border-slate-200 bg-white shadow-[-24px_0_80px_rgba(15,23,42,0.20)] dark:border-white/10 dark:bg-[#111116] dark:shadow-[-24px_0_90px_rgba(0,0,0,0.55)]"
+        className="fixed right-0 top-0 z-[10001] flex h-[100dvh] max-h-[100dvh] w-full max-w-[680px] flex-col overflow-hidden overscroll-none border-l border-slate-200 bg-white shadow-[-24px_0_80px_rgba(15,23,42,0.20)] dark:border-white/10 dark:bg-[#111116] dark:shadow-[-24px_0_90px_rgba(0,0,0,0.55)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="move-detail-title"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 dark:border-white/10 sm:px-7">
+        <header className="flex shrink-0 touch-none items-start justify-between gap-4 overscroll-none border-b border-slate-200 px-5 py-5 dark:border-white/10 sm:px-7">
           <div className="min-w-0">
             <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-300">
               Move detail
@@ -512,7 +568,7 @@ export default function MoveTaskDetailDrawer({
         </header>
 
         <div
-          className="flex-1 overflow-y-auto px-5 py-6 sm:px-7"
+          className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-6 sm:px-7"
           onKeyDown={(event) => {
             if (
               event.key === "Enter" &&
@@ -944,7 +1000,7 @@ export default function MoveTaskDetailDrawer({
           </div>
         </div>
 
-        <footer className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-white/10 dark:bg-black/20 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+        <footer className="flex shrink-0 touch-none flex-col gap-3 overscroll-none border-t border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-white/10 dark:bg-black/20 sm:flex-row sm:items-center sm:justify-between sm:px-7">
           <button
             type="button"
             onClick={handleComplete}
