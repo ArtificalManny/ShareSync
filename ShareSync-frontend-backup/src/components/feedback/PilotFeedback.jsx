@@ -244,30 +244,43 @@ export default function PilotFeedback({
         type="button"
         onClick={openFeedback}
         data-pilot-feedback-settings-trigger="true"
-        className="group flex w-full items-center justify-between gap-4 rounded-2xl border border-violet-200/80 bg-gradient-to-r from-violet-50/90 via-white to-cyan-50/80 px-5 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-400/15 dark:from-violet-500/10 dark:via-white/[0.04] dark:to-cyan-500/10"
+        aria-label="Send feedback"
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'auto minmax(0, 1fr) auto',
+          alignItems: 'center',
+          gap: '16px',
+          width: '100%',
+          minHeight: '84px',
+          padding: '16px 18px',
+          textAlign: 'left',
+        }}
+        className="pilot-feedback-settings-card-v2 !m-0 !w-full !appearance-none !rounded-2xl !border !border-violet-200/80 !bg-white !p-0 !text-left !shadow-sm transition-all duration-200 hover:!-translate-y-0.5 hover:!border-violet-300 hover:!shadow-md focus:!outline-none focus-visible:!ring-2 focus-visible:!ring-violet-500 dark:!border-violet-400/20 dark:!bg-white/[0.045] dark:hover:!border-violet-400/35"
       >
-        <span className="flex min-w-0 items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-500/20">
-            <MessageSquarePlus
-              className="h-5 w-5"
-              aria-hidden="true"
-            />
-          </span>
+        <div
+          aria-hidden="true"
+          className="!m-0 !grid !h-12 !w-12 !shrink-0 !place-items-center !rounded-2xl !border-0 !bg-gradient-to-br !from-violet-600 !via-fuchsia-500 !to-cyan-400 !p-0 !text-white !shadow-lg !shadow-violet-500/20"
+        >
+          <MessageSquarePlus
+            className="h-5 w-5"
+            aria-hidden="true"
+          />
+        </div>
 
-          <span className="min-w-0">
-            <span className="block text-sm font-black text-slate-900 dark:text-white">
-              Send feedback
-            </span>
+        <div className="!m-0 !min-w-0 !border-0 !bg-transparent !p-0 !shadow-none">
+          <div className="!m-0 !border-0 !bg-transparent !p-0 text-sm font-black leading-5 text-slate-900 !shadow-none dark:text-white">
+            Send feedback
+          </div>
 
-            <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-zinc-400">
-              Share an idea or report a problem. Technical context is attached automatically.
-            </span>
-          </span>
-        </span>
+          <div className="!m-0 !mt-1 !border-0 !bg-transparent !p-0 text-xs font-medium leading-5 text-slate-500 !shadow-none dark:text-zinc-400">
+            Share an idea or report a problem. Technical context is attached automatically.
+          </div>
+        </div>
 
-        <span className="shrink-0 text-xs font-black text-violet-600 dark:text-violet-300">
+        <div className="!m-0 !inline-flex !shrink-0 !items-center !rounded-full !border !border-violet-200 !bg-violet-50 !px-3 !py-1.5 text-xs font-black text-violet-700 !shadow-none transition group-hover:translate-x-0.5 dark:!border-violet-400/20 dark:!bg-violet-500/10 dark:text-violet-200">
           Open
-        </span>
+        </div>
       </button>
     ) : (
       <button

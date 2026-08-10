@@ -5,12 +5,9 @@
 // - Renders QuickShip, QuickAnnounce, and the new Frictionless Feedback Engine
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 import QuickShipFAB from './QuickShipFAB';
 import { useIsMobile } from '../../hooks/useMobile';
-import { LifeBuoy, Send, X, CheckCircle2, Bug, Lightbulb } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { track } from '../../utils/telemetry';
 
 import PilotFeedback from '../feedback/PilotFeedback';
 
