@@ -97,6 +97,8 @@ import { ModerationModule } from './moderation/moderation.module';
 import { ContentReportsModule } from './content-reports/content-reports.module';
 import { AccountEnforcementModule } from './account-enforcement/account-enforcement.module';
 import { SettingsModule } from './settings/settings.module';
+// pilot-feedback-backend-v1
+import { FeedbackModule } from './feedback/feedback.module';
 
 import { FlowRulesModule } from './flow-rules/flow-rules.module';
 import { IntakeFormsModule } from './intake-forms/intake-forms.module';
@@ -106,6 +108,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     FlowRulesModule,
     IntakeFormsModule,
     SettingsModule,
+    FeedbackModule,
     AccountEnforcementModule,
     // ─────────────────────────────────────────────────────────────────────────
     // GLOBAL CONFIGURATION

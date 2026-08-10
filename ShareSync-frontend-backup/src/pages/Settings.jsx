@@ -43,6 +43,7 @@ import PersonaPicker from "../components/settings/PersonaPicker";
 import CelebrationStylePicker from "../components/settings/CelebrationStylePicker";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useAuth } from "../context/AuthContext";
+import PilotFeedback from '../components/feedback/PilotFeedback';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLIDER COMPONENT - Adaptive
@@ -1695,7 +1696,12 @@ export default function Settings() {
 
 
           {/* Save Button */}
-          <div className="flex justify-center pt-4">
+                      {/* pilot-feedback-settings-v1 */}
+            <div className="pt-1">
+              <PilotFeedback variant="settings" />
+            </div>
+
+<div className="flex justify-center pt-4">
             <button
               type="submit"
               disabled={saving}
