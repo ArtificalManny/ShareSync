@@ -9,6 +9,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, Check, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/client';
 import { AuthLayout, AuthButton, AuthError } from '../layouts/AuthLayout';
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
@@ -25,6 +26,8 @@ export default function ResetPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [pageState, setPageState] = useState('form'); // 'form' | 'success'
+  const [tokenState, setTokenState] = useState('checking'); // 'checking' | 'valid' | 'invalid'
+  const [maskedEmail, setMaskedEmail] = useState('');
 
   // Redirect if already logged in
   useEffect(() => {
@@ -32,6 +35,47 @@ export default function ResetPassword() {
       navigate('/home', { replace: true });
     }
   }, [loading, user, navigate]);
+
+  // Validate the reset token before accepting a new password.
+  // The backend returns only a masked email address for privacy.
+  useEffect(() => {
+    if (loading || user) return;
+
+    let active = true;
+
+    const validateToken = async () => {
+      if (!token) {
+        if (active) setTokenState('invalid');
+        return;
+      }
+
+      try {
+        const response = await api.get(
+          `/auth/validate-reset-token/${encodeURIComponent(token)}`
+        );
+        const payload = response.data?.data ?? response.data;
+
+        if (!active) return;
+
+        if (payload?.valid) {
+          setMaskedEmail(String(payload.email || ''));
+          setTokenState('valid');
+        } else {
+          setTokenState('invalid');
+        }
+      } catch {
+        if (active) {
+          setTokenState('invalid');
+        }
+      }
+    };
+
+    void validateToken();
+
+    return () => {
+      active = false;
+    };
+  }, [loading, user, token]);
 
   // Check if passwords match
   const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
@@ -82,7 +126,7 @@ export default function ResetPassword() {
   };
 
   // Loading state
-  if (loading) {
+  if (loading || tokenState === 'checking') {
     return (
       <AuthLayout title="Loading..." subtitle="Please wait">
         <div className="flex justify-center py-8">
@@ -91,6 +135,39 @@ export default function ResetPassword() {
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"
           />
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  // Invalid / expired reset link
+  if (tokenState === 'invalid') {
+    return (
+      <AuthLayout
+        title="Reset link expired"
+        subtitle="Request a new password reset link to continue"
+      >
+        <div className="space-y-5 text-center">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+            <AlertTriangle className="mx-auto mb-2 h-6 w-6 text-amber-600" />
+            <p className="text-sm text-slate-700">
+              This password reset link is invalid or has expired.
+            </p>
+          </div>
+
+          <Link
+            to="/forgot-password"
+            className="inline-flex min-h-[46px] w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:bg-violet-700"
+          >
+            Request a new reset link
+          </Link>
+
+          <Link
+            to="/login"
+            className="inline-block text-sm text-violet-700 hover:text-violet-800"
+          >
+            Back to sign in
+          </Link>
         </div>
       </AuthLayout>
     );
@@ -137,6 +214,20 @@ export default function ResetPassword() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthError>{error || authError}</AuthError>
+
+        {maskedEmail ? (
+          <div
+            className="rounded-2xl border border-violet-200 bg-violet-50/80 px-4 py-3 text-center"
+            data-openshare-reset-identity="masked-email-v1"
+          >
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+              Resetting password for
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {maskedEmail}
+            </p>
+          </div>
+        ) : null}
 
         {/* New Password */}
         <div>
@@ -210,10 +301,21 @@ export default function ResetPassword() {
         </div>
 
         {/* Submit */}
-        <AuthButton 
-          type="submit" 
+        <AuthButton
+          type="submit"
           loading={submitting}
           disabled={!passwordsMatch}
+          className="min-h-[50px]"
+          style={{
+            backgroundColor: '#7c3aed',
+            backgroundImage:
+              'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 55%, #6d28d9 100%)',
+            color: '#ffffff',
+            border: '1px solid rgba(124,58,237,0.40)',
+            boxShadow:
+              '0 14px 34px rgba(124,58,237,0.28), inset 0 1px 0 rgba(255,255,255,0.20)',
+          }}
+          data-openshare-reset-submit="visible-v1"
         >
           Update Password
         </AuthButton>
