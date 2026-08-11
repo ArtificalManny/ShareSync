@@ -31,6 +31,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
+    // session-token-version-enforcement-v1
+    // Password resets and password changes increment the user's tokenVersion.
+    // Any JWT issued before that change must immediately stop authorizing
+    // protected requests, even if its signature and expiry are still valid.
+    const tokenVersion = Number(payload?.tokenVersion ?? 0);
+    const currentTokenVersion = Number((user as any)?.tokenVersion ?? 0);
+
+    if (
+      !Number.isFinite(tokenVersion) ||
+      !Number.isFinite(currentTokenVersion) ||
+      tokenVersion !== currentTokenVersion
+    ) {
+      throw new UnauthorizedException('Session expired');
+    }
+
     return {
       ...payload,
       ...(user as any),
