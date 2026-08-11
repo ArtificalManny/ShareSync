@@ -10,7 +10,6 @@ import QuickShipFAB from './QuickShipFAB';
 import { useIsMobile } from '../../hooks/useMobile';
 
 import PilotFeedback from '../feedback/PilotFeedback';
-import { touchActivation } from '../../api/activation';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. THE SILENT INTERCEPTOR (Captures last 3 console errors for context)
@@ -47,14 +46,6 @@ const FeedbackLifeline = () => (
 // ═══════════════════════════════════════════════════════════════════════════════
 const QuickActionsManager = ({ projectId }) => {
   const isMobile = useIsMobile();
-
-  // activation-funnel-return-touch-v1
-  // The server decides whether this authenticated visit
-  // qualifies as a later-day return. Fail silently because
-  // analytics must never interrupt the product.
-  useEffect(() => {
-    void touchActivation().catch(() => {});
-  }, []);
 
   useEffect(() => {
     // Keyboard shortcuts for Core Engine

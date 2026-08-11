@@ -6,6 +6,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/client";
+import { touchActivation } from "../api/activation";
 
 const AuthContext = createContext();
 
@@ -90,6 +91,24 @@ export function AuthProvider({ children }) {
 
     checkAuth();
   }, []);
+
+  // activation-funnel-return-touch-v2
+  // Record a return only after authentication has resolved.
+  // The backend decides whether this visit qualifies as a
+  // later-day return and stores the milestone only once.
+  useEffect(() => {
+    if (loading || !user) {
+      return;
+    }
+
+    void touchActivation().catch(() => {});
+  }, [
+    loading,
+    user?._id,
+    user?.id,
+    user?.userId,
+    user?.sub,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // IDENTITY HOT-SWAP (Zero-Latency Updates)
