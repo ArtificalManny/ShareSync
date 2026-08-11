@@ -4,8 +4,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
@@ -38,6 +38,8 @@ export class AnalyticsService {
     @InjectModel(DailySnapshot.name) private readonly snapshotModel: Model<DailySnapshotDocument>,
     @InjectModel(EventLog.name) private readonly eventLogModel: Model<EventLogDocument>,
     @InjectModel('Task') private readonly taskModel: Model<any>,
+    @InjectConnection()
+    private readonly connection: Connection,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -69,7 +71,131 @@ export class AnalyticsService {
     return event.save();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+    // activation-funnel-service-v1
+  // One-time lifecycle milestones. We keep these on User rather than
+  // relying on the detailed EventLog, which is intentionally short-lived.
+  async recordActivationMilestone(
+    userId: string,
+    field:
+      | 'projectCreatedAt'
+      | 'firstMoveCreatedAt'
+      | 'teammateInvitedAt'
+      | 'firstMoveCompletedAt'
+      | 'returnedAt',
+    occurredAt: Date = new Date(),
+  ): Promise<boolean> {
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      return false;
+    }
+
+    const key = `activationMilestones.${field}`;
+
+    const result =
+      await this.connection
+        .collection('users')
+        .updateOne(
+          {
+            _id: new Types.ObjectId(userId),
+            [key]: { $exists: false },
+          },
+          {
+            $set: {
+              [key]: occurredAt,
+            },
+          },
+        );
+
+    return result.modifiedCount === 1;
+  }
+
+  async touchActivation(
+    userId: string,
+    now: Date = new Date(),
+  ): Promise<{
+    eligible: boolean;
+    recorded: boolean;
+  }> {
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      return {
+        eligible: false,
+        recorded: false,
+      };
+    }
+
+    const user =
+      await this.connection
+        .collection('users')
+        .findOne(
+          {
+            _id: new Types.ObjectId(userId),
+          },
+          {
+            projection: {
+              createdAt: 1,
+              'activationMilestones.returnedAt': 1,
+            },
+          },
+        );
+
+    if (!user?.createdAt) {
+      return {
+        eligible: false,
+        recorded: false,
+      };
+    }
+
+    const createdAt =
+      new Date(user.createdAt);
+
+    if (Number.isNaN(createdAt.getTime())) {
+      return {
+        eligible: false,
+        recorded: false,
+      };
+    }
+
+    // Pilot definition:
+    // returned = authenticated app use on a later UTC calendar day
+    // than the day the account was created.
+    const createdDay =
+      createdAt.toISOString().slice(0, 10);
+
+    const currentDay =
+      now.toISOString().slice(0, 10);
+
+    const eligible =
+      currentDay > createdDay;
+
+    if (!eligible) {
+      return {
+        eligible: false,
+        recorded: false,
+      };
+    }
+
+    if (
+      user?.activationMilestones?.returnedAt
+    ) {
+      return {
+        eligible: true,
+        recorded: false,
+      };
+    }
+
+    const recorded =
+      await this.recordActivationMilestone(
+        userId,
+        'returnedAt',
+        now,
+      );
+
+    return {
+      eligible: true,
+      recorded,
+    };
+  }
+
+// ─────────────────────────────────────────────────────────────────────────────
   // PROJECT ANALYTICS
   // ─────────────────────────────────────────────────────────────────────────────
 

@@ -519,6 +519,22 @@ export class User extends Document {
   @Prop({ default: 0 })
   tokenVersion: number;
 
+  // activation-funnel-user-milestones-v1
+  // First occurrence only. These fields intentionally persist
+  // beyond the short-lived detailed analytics/event log.
+  @Prop({ type: Object, default: {} })
+  activationMilestones?: {
+    projectCreatedAt?: Date;
+    firstMoveCreatedAt?: Date;
+    teammateInvitedAt?: Date;
+    firstMoveCompletedAt?: Date;
+    returnedAt?: Date;
+  };
+
+  // ============================================
+  // ACTIVATION / RETENTION
+  // ============================================
+
   // ============================================
   // TRACKING (existing)
   // ============================================

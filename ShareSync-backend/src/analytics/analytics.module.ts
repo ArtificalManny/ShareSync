@@ -14,6 +14,9 @@ import { GrowthService } from './growth.service';
 import { AnalyticsService } from './analytics.service';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
 import { User, UserSchema } from '../user/schemas/user.schema';
+// activation-funnel-module-v1
+import { ActivationController } from './activation.controller';
+import { ActivationListener } from './activation.listener';
 
 @Module({
   imports: [
@@ -25,8 +28,10 @@ import { User, UserSchema } from '../user/schemas/user.schema';
     ]),
     ScheduleModule.forRoot(),
   ],
-  controllers: [AnalyticsController, GrowthController],
-  providers: [AnalyticsService, GrowthService],
+  controllers: [AnalyticsController, GrowthController,
+    ActivationController,],
+  providers: [AnalyticsService, GrowthService,
+    ActivationListener,],
   exports: [AnalyticsService, GrowthService],
 })
 export class AnalyticsModule {}
