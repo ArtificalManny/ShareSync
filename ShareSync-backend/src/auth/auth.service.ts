@@ -735,27 +735,16 @@ export class AuthService {
     resetUrl: string,
     expiresAt: Date,
   ): Promise<void> {
-    if (!this.isSmtpConfigured()) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('🔑 DEV PASSWORD RESET FOR', to);
-        console.log('🔑 RESET URL:', resetUrl);
-        console.log('🔑 EXPIRES:', expiresAt.toISOString());
-        console.log('═══════════════════════════════════════════════════════════');
-      }
-      return;
-    }
-
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a">
-          <div style="text-align:center;margin:0 0 28px;">
-            <img
-              src="https://openshare.ca/brand/openshare-email-lockup.png"
-              width="240"
-              alt="OpenShare"
-              style="display:block;width:240px;max-width:100%;height:auto;margin:0 auto;border:0;"
-            />
-          </div>
+        <div style="text-align:center;margin:0 0 28px;">
+          <img
+            src="https://openshare.ca/brand/openshare-email-lockup.png"
+            width="240"
+            alt="OpenShare"
+            style="display:block;width:240px;max-width:100%;height:auto;margin:0 auto;border:0;"
+          />
+        </div>
         <h2>Reset your OpenShare password</h2>
         <p>Click the button below to reset your password:</p>
         <p>
@@ -768,15 +757,95 @@ export class AuthService {
       </div>
     `;
 
+    const text =
+      `Reset your OpenShare password here: ${resetUrl}. ` +
+      `This link expires at ${expiresAt.toISOString()}.`;
+
+    // auth-password-reset-resend-v1
+    // Production auth email should use the same Resend transport
+    // as verification and the rest of OpenShare.
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const resendFrom = process.env.RESEND_FROM;
+
+    if (resendApiKey && resendFrom) {
+      try {
+        const response = await fetch(
+          'https://api.resend.com/emails',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: resendFrom,
+              to,
+              subject: 'Reset your OpenShare password',
+              html,
+              text,
+            }),
+          },
+        );
+
+        const body = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Resend API failed with ${response.status}: ${body}`,
+          );
+        }
+
+        console.log(
+          '🟢 Password reset email sent via Resend to',
+          to,
+        );
+        return;
+      } catch (error: any) {
+        console.error(
+          '❌ Resend password reset email failed:',
+          {
+            message: error?.message,
+            code: error?.code,
+            response: error?.response,
+            responseCode: error?.responseCode,
+          },
+        );
+
+        throw error;
+      }
+    }
+
+    if (!this.isSmtpConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          'Email is not configured: missing RESEND_API_KEY/RESEND_FROM or SMTP settings',
+        );
+      }
+
+      console.log(
+        '═══════════════════════════════════════════════════════════',
+      );
+      console.log('🔑 DEV PASSWORD RESET FOR', to);
+      console.log('🔑 RESET URL:', resetUrl);
+      console.log('🔑 EXPIRES:', expiresAt.toISOString());
+      console.log(
+        '═══════════════════════════════════════════════════════════',
+      );
+      return;
+    }
+
     await this.mailer.sendMail({
       from: this.getMailFrom(),
       to,
       subject: 'Reset your OpenShare password',
       html,
-      text: `Reset your OpenShare password here: ${resetUrl}. This link expires at ${expiresAt.toISOString()}.`,
+      text,
     });
 
-    console.log('🟢 Password reset email sent to', to);
+    console.log(
+      '🟢 Password reset email sent via SMTP to',
+      to,
+    );
   }
 
   private maskEmail(email: string): string {
