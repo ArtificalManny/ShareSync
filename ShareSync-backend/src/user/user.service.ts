@@ -1466,12 +1466,9 @@ export class UserService {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    try {
-      // ✅ Silenced TS Error using type casting
-      await (this.projects as any).deleteAllForUser(userId);
-    } catch (e) {
-      console.warn('Could not delete user projects:', e);
-    }
+    // Project/account cleanup is fail-closed:
+    // if project cleanup fails, DO NOT delete the User document.
+    await this.projects.deleteAllForUser(userId);
 
     await this.userModel.findByIdAndDelete(userId).exec();
   }

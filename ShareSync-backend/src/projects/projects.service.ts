@@ -7,8 +7,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger, Optional } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Project, ProjectDocument, ProjectStatus, ProjectVisibility,
   ProjectPublicAccessMode, MemberRole, ProjectMember, ProjectOutcomeStatus, ProjectClosureDecision } from './schemas/project.schema';
@@ -135,6 +135,8 @@ export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(
+    @InjectConnection()
+    private readonly connection: Connection,
     @InjectModel(Project.name)
     private readonly projectModel: Model<ProjectDocument>,
     @InjectModel(Task.name)
@@ -1984,6 +1986,242 @@ export class ProjectsService {
     });
 
     return updated;
+  }
+
+  // account-project-cascade-v1
+  //
+  // Account deletion cleanup for projects owned by a user.
+  //
+  // Strategy:
+  // 1. Find projects owned by the account, including legacy ownership aliases.
+  // 2. Inspect every live Mongoose model for project-scoped records.
+  // 3. Delete records directly attached to those projects.
+  // 4. Recursively delete records that reference records deleted in step 3.
+  // 5. Delete project documents last.
+  // 6. Remove the user from membership arrays of projects owned by others.
+  //
+  // IMPORTANT:
+  // User and Project are excluded from the generic cascade. If any required
+  // cleanup throws, the caller must abort account deletion rather than delete
+  // the User document and leave orphaned project data.
+  async deleteAllForUser(userId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+
+    const userObjectId = new Types.ObjectId(userId);
+
+    const ownedProjects = await this.projectModel
+      .find({
+        $or: [
+          { ownerId: userObjectId },
+          { owner: userObjectId },
+          { createdBy: userObjectId },
+          { createdById: userObjectId },
+        ],
+      })
+      .select('_id')
+      .lean()
+      .exec();
+
+    const projectIds = ownedProjects
+      .map((project: any) => project?._id)
+      .filter(Boolean);
+
+    if (projectIds.length > 0) {
+      const projectValues: any[] = [
+        ...projectIds,
+        ...projectIds.map((id: any) => String(id)),
+      ];
+
+      const protectedModels = new Set<string>([
+        Project.name,
+        'User',
+      ]);
+
+      // Maps model name -> ids deleted from that model.
+      // This lets us recursively remove dependent documents such as
+      // ThreadMessage -> Thread.
+      const deletedIdsByModel = new Map<string, any[]>();
+
+      const getRefName = (schemaType: any): string | null => {
+        const ref =
+          schemaType?.options?.ref ??
+          schemaType?.caster?.options?.ref ??
+          schemaType?.$embeddedSchemaType?.options?.ref;
+
+        return typeof ref === 'string' ? ref : null;
+      };
+
+      // ------------------------------------------------------------
+      // Pass 1: remove records directly scoped to an owned project.
+      // ------------------------------------------------------------
+      for (const modelName of this.connection.modelNames()) {
+        if (protectedModels.has(modelName)) continue;
+
+        const model = this.connection.model<any>(modelName);
+        const filters: any[] = [];
+
+        for (const [pathName, schemaType] of Object.entries(
+          model.schema.paths,
+        )) {
+          const refName = getRefName(schemaType);
+
+          if (pathName === 'projectId' || refName === Project.name) {
+            filters.push({
+              [pathName]: { $in: projectValues },
+            });
+          }
+        }
+
+        if (filters.length === 0) continue;
+
+        const docs = await model
+          .find({ $or: filters })
+          .select('_id')
+          .lean()
+          .exec();
+
+        const ids = docs
+          .map((doc: any) => doc?._id)
+          .filter(Boolean);
+
+        if (ids.length === 0) continue;
+
+        await model
+          .deleteMany({
+            _id: { $in: ids },
+          })
+          .exec();
+
+        deletedIdsByModel.set(modelName, ids);
+      }
+
+      // ------------------------------------------------------------
+      // Pass 2+: recursively remove records that reference something
+      // already deleted above.
+      //
+      // Example:
+      // Project -> Thread -> ThreadMessage
+      // Project -> IntakeForm -> IntakeSubmission
+      // Project -> Conversation -> Message
+      // ------------------------------------------------------------
+      let discoveredMore = true;
+
+      while (discoveredMore) {
+        discoveredMore = false;
+
+        for (const modelName of this.connection.modelNames()) {
+          if (protectedModels.has(modelName)) continue;
+
+          const model = this.connection.model<any>(modelName);
+          const dependencyFilters: any[] = [];
+
+          for (const [pathName, schemaType] of Object.entries(
+            model.schema.paths,
+          )) {
+            const refName = getRefName(schemaType);
+            if (!refName) continue;
+
+            const parentIds = deletedIdsByModel.get(refName);
+            if (!parentIds || parentIds.length === 0) continue;
+
+            dependencyFilters.push({
+              [pathName]: { $in: parentIds },
+            });
+          }
+
+          if (dependencyFilters.length === 0) continue;
+
+          const docs = await model
+            .find({ $or: dependencyFilters })
+            .select('_id')
+            .lean()
+            .exec();
+
+          const foundIds = docs
+            .map((doc: any) => doc?._id)
+            .filter(Boolean);
+
+          if (foundIds.length === 0) continue;
+
+          const existingIds = deletedIdsByModel.get(modelName) || [];
+          const existingIdSet = new Set(
+            existingIds.map((id: any) => String(id)),
+          );
+
+          const newIds = foundIds.filter(
+            (id: any) => !existingIdSet.has(String(id)),
+          );
+
+          if (newIds.length === 0) continue;
+
+          await model
+            .deleteMany({
+              _id: { $in: newIds },
+            })
+            .exec();
+
+          deletedIdsByModel.set(
+            modelName,
+            [...existingIds, ...newIds],
+          );
+
+          discoveredMore = true;
+        }
+      }
+
+      // Project rows are deliberately deleted LAST so that the cleanup
+      // above always has valid project ids to work from.
+      await this.projectModel
+        .deleteMany({
+          _id: { $in: projectIds },
+        })
+        .exec();
+
+      this.logger.log(
+        `Account project cleanup completed: user=${userId} ownedProjects=${projectIds.length} cascadedModels=${deletedIdsByModel.size}`,
+      );
+    }
+
+    // --------------------------------------------------------------
+    // The account may also be a MEMBER of projects owned by others.
+    // Those projects must survive; only this user's membership row
+    // should disappear.
+    // --------------------------------------------------------------
+    await this.projectModel
+      .updateMany(
+        { 'members.userId': userObjectId },
+        {
+          $pull: {
+            members: { userId: userObjectId },
+          },
+        } as any,
+      )
+      .exec();
+
+    await this.projectModel
+      .updateMany(
+        { 'members.memberId': userObjectId },
+        {
+          $pull: {
+            members: { memberId: userObjectId },
+          },
+        } as any,
+      )
+      .exec();
+
+    // Legacy member alias supported elsewhere in the project codebase.
+    await this.projectModel
+      .updateMany(
+        { 'members.user': userObjectId } as any,
+        {
+          $pull: {
+            members: { user: userObjectId },
+          },
+        } as any,
+      )
+      .exec();
   }
 
   async delete(projectId: string, userId: string): Promise<void> {
