@@ -1453,9 +1453,18 @@ export class UserService {
     };
   }
 
-  async deleteAccount(userId: string): Promise<void> {
-    const user = await this.userModel.findById(userId).exec();
+  async deleteAccount(userId: string, currentPassword: string): Promise<void> {
+    const user = await this.userModel.findById(userId).select('+password').exec();
     if (!user) throw new NotFoundException('User not found');
+
+    const storedPassword = String((user as any).password || '');
+    const isValidPassword =
+      storedPassword.length > 0 &&
+      await bcrypt.compare(currentPassword, storedPassword);
+
+    if (!isValidPassword) {
+      throw new BadRequestException('Current password is incorrect');
+    }
 
     try {
       // ✅ Silenced TS Error using type casting

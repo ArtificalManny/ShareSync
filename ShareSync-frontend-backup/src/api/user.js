@@ -338,8 +338,10 @@ export async function exportUserData() {
   return response.data;
 }
 
-export async function deleteAccount(confirmation) {
-  const response = await api.delete('/users/me', { data: { confirmation } });
+export async function deleteAccount(confirmation, password) {
+  const response = await api.delete('/users/me', {
+    data: { confirmation, password },
+  });
   return response.data;
 }
 

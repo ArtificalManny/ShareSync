@@ -621,7 +621,7 @@ export class UserController {
   @Delete('me')
   async deleteAccount(
     @Req() req: any,
-    @Body() body: { confirmation?: string },
+    @Body() body: { confirmation?: string; password?: string },
   ) {
     const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
 
@@ -629,7 +629,11 @@ export class UserController {
       throw new BadRequestException('Please confirm account deletion by sending { "confirmation": "DELETE" }');
     }
 
-    await this.users.deleteAccount(userId);
+    if (typeof body?.password !== 'string' || body.password.length === 0) {
+      throw new BadRequestException('Current password is required');
+    }
+
+    await this.users.deleteAccount(userId, body.password);
 
     return {
       success: true,

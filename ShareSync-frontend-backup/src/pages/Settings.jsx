@@ -633,8 +633,10 @@ export default function Settings() {
   const [activeSection, setActiveSection] = useState('preferences');
 
   // account-delete-danger-v1
+  // account-delete-password-v1
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState('');
 
@@ -660,13 +662,17 @@ export default function Settings() {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmation !== 'DELETE' || deletingAccount) return;
+    if (
+      deleteConfirmation !== 'DELETE' ||
+      deletePassword.length === 0 ||
+      deletingAccount
+    ) return;
 
     setDeletingAccount(true);
     setDeleteAccountError('');
 
     try {
-      await deleteAccount('DELETE');
+      await deleteAccount('DELETE', deletePassword);
       logout?.();
     } catch (error) {
       const message =
@@ -1438,6 +1444,7 @@ export default function Settings() {
                       onClick={() => {
                         setDeleteAccountOpen(true);
                         setDeleteConfirmation('');
+                        setDeletePassword('');
                         setDeleteAccountError('');
                       }}
                       className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-extrabold text-red-700 transition hover:border-red-400 hover:bg-red-100 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/15"
@@ -1486,6 +1493,36 @@ export default function Settings() {
                       className="mt-2 w-full rounded-xl border border-red-200 bg-white px-4 py-3 font-mono text-sm font-bold text-slate-900 outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/25 dark:bg-[#111116] dark:text-white"
                     />
 
+                    <label
+                      htmlFor="delete-account-password"
+                      className="mt-4 block text-sm font-bold text-slate-700 dark:text-zinc-300"
+                    >
+                      Current password
+                    </label>
+
+                    <input
+                      id="delete-account-password"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(event) => {
+                        setDeletePassword(event.target.value);
+                        if (deleteAccountError) setDeleteAccountError('');
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                        }
+                      }}
+                      disabled={deletingAccount}
+                      autoComplete="current-password"
+                      placeholder="Enter your current password"
+                      className="mt-2 w-full rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/25 dark:bg-[#111116] dark:text-white"
+                    />
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-zinc-500">
+                      For security, confirm the password you currently use to sign in.
+                    </p>
+
                     {deleteAccountError && (
                       <p
                         role="alert"
@@ -1502,6 +1539,7 @@ export default function Settings() {
                         onClick={() => {
                           setDeleteAccountOpen(false);
                           setDeleteConfirmation('');
+                          setDeletePassword('');
                           setDeleteAccountError('');
                         }}
                         className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
@@ -1512,7 +1550,9 @@ export default function Settings() {
                       <button
                         type="button"
                         disabled={
-                          deleteConfirmation !== 'DELETE' || deletingAccount
+                          deleteConfirmation !== 'DELETE' ||
+                          deletePassword.length === 0 ||
+                          deletingAccount
                         }
                         onClick={handleDeleteAccount}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
