@@ -1,10 +1,74 @@
 // src/components/settings/PrivacyCard.jsx - Week 7 Privacy Foundation
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, FileText, BarChart3, ChevronRight, CheckCircle } from 'lucide-react';
+import {
+  Shield,
+  Lock,
+  FileText,
+  BarChart3,
+  ChevronRight,
+  CheckCircle,
+  Download,
+  LoaderCircle,
+} from 'lucide-react';
+import api from '../../api/client';
 
 const PrivacyCard = () => {
   const navigate = useNavigate();
+  const [exporting, setExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState('');
+  const [exportFailed, setExportFailed] = useState(false);
+
+  const handleDownloadData = async () => {
+    if (exporting) return;
+
+    setExporting(true);
+    setExportMessage('');
+    setExportFailed(false);
+
+    try {
+      const response = await api.get('/users/me/export');
+      const payload = response?.data?.data ?? response?.data;
+
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('OpenShare returned an invalid data export.');
+      }
+
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], {
+        type: 'application/json;charset=utf-8',
+      });
+      const objectUrl = URL.createObjectURL(blob);
+
+      const date = new Date().toISOString().slice(0, 10);
+      const filename = `openshare-data-${date}.json`;
+
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      anchor.style.display = 'none';
+
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 1000);
+
+      setExportMessage(`Downloaded ${filename}`);
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Could not download your OpenShare data. Please try again.';
+
+      setExportFailed(true);
+      setExportMessage(String(message));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const privacyFeatures = [
     {
@@ -96,8 +160,64 @@ const PrivacyCard = () => {
         </div>
       </div>
 
+      {/* Account data export */}
+      <div
+        className="mb-6 rounded-xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-500/20 dark:bg-violet-500/[0.07]"
+        data-openshare-data-export="v1"
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/15">
+            <Download className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-slate-900 dark:text-white">
+              Your OpenShare data
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+              Download a JSON copy of your account, project, and activity data.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleDownloadData}
+              disabled={exporting}
+              className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-4 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400"
+              data-openshare-download-data="v1"
+            >
+              {exporting ? (
+                <>
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  Preparing download...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Download my data
+                </>
+              )}
+            </button>
+
+            {exportMessage ? (
+              <p
+                className={`mt-3 text-xs font-medium ${
+                  exportFailed
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-emerald-700 dark:text-emerald-400'
+                }`}
+                role={exportFailed ? 'alert' : 'status'}
+                aria-live="polite"
+              >
+                {exportMessage}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       {/* Learn More Button */}
       <button
+        type="button"
         onClick={() => navigate('/privacy-manifesto')}
         className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-slate-900 dark:text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group"
       >
