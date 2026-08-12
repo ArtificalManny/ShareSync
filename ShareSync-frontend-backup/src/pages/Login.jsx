@@ -110,6 +110,15 @@ export default function Login() {
   };
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem("openshare.accountDeleted") === "1") {
+        setAccountDeleted(true);
+        sessionStorage.removeItem("openshare.accountDeleted");
+      }
+    } catch {
+      // The deletion itself already succeeded; this banner is best-effort.
+    }
+
     const redirectTo = getPostLoginRedirect();
 
     if (redirectTo !== "/home") {
@@ -129,6 +138,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [accountDeleted, setAccountDeleted] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // LOGIN SUBMIT
@@ -246,6 +256,28 @@ export default function Login() {
     <AuthLayout title="Welcome back" subtitle="Sign in to continue shipping">
 
       <form onSubmit={onSubmit} className="space-y-5">
+        {accountDeleted && (
+          <div
+            role="status"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-left shadow-sm"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-700">
+                ✓
+              </div>
+
+              <div>
+                <p className="text-sm font-bold text-emerald-900">
+                  Your account has been deleted.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-emerald-800">
+                  Thanks for building with OpenShare. Take care — and you're always welcome back.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <AuthError>{error}</AuthError>
 
         {/* ══════════════════════════════════════════════════════════════════

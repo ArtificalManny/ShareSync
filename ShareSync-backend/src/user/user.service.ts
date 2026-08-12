@@ -22,6 +22,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { buildActivitySummary } from '../utils/activitySummary';
 import { SmsService } from '../notifications/sms.service';
+import { EmailService } from '../notifications/email.service';
 import { StreakService } from '../gamification/services/streak.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -99,6 +100,8 @@ export class UserService {
 
     // ✅ Phase 13: SMS for phone verification
     private readonly smsService: SmsService,
+
+    private readonly emailService: EmailService,
 
     // ✅ Optional to avoid boot failures if UserModule has not imported/exported the streak provider yet
     @Optional() private readonly streakService?: StreakService,
@@ -1466,10 +1469,29 @@ export class UserService {
       throw new BadRequestException('Current password is incorrect');
     }
 
+    const deletionEmail = String((user as any).email || '').trim();
+    const deletionFirstName = String((user as any).firstName || '').trim();
+
     // Project/account cleanup is fail-closed:
     // if project cleanup fails, DO NOT delete the User document.
     await this.projects.deleteAllForUser(userId);
 
     await this.userModel.findByIdAndDelete(userId).exec();
+
+    // account-deletion-farewell-v1
+    // The account is already deleted at this point. Email delivery is
+    // best-effort and must never turn a successful deletion into a failure.
+    if (deletionEmail) {
+      try {
+        await this.emailService.sendAccountDeletedEmail({
+          to: deletionEmail,
+          firstName: deletionFirstName || undefined,
+        });
+      } catch (error) {
+        console.warn(
+          'Account deleted successfully, but deletion confirmation email could not be sent.',
+        );
+      }
+    }
   }
 }

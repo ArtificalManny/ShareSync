@@ -18,6 +18,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ProjectFollowModule } from '../follows/project-follow.module';
 import { SmsModule } from '../notifications/sms.module';
+import { EmailService } from '../notifications/email.service';
 import { ModerationModule } from '../moderation/moderation.module';
 
 // ✅ Added so UserService can inject StreakService for streak protection endpoints
@@ -51,7 +52,7 @@ import { GamificationModule } from '../gamification/gamification.module';
     GamificationModule,
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, EmailService],
   exports: [UserService],
 })
 export class UserModule {}

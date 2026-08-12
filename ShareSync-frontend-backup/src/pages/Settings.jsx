@@ -673,6 +673,13 @@ export default function Settings() {
 
     try {
       await deleteAccount('DELETE', deletePassword);
+
+      try {
+        sessionStorage.setItem('openshare.accountDeleted', '1');
+      } catch {
+        // Storage failures must never interfere with successful deletion.
+      }
+
       logout?.();
     } catch (error) {
       const message =

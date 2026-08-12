@@ -119,6 +119,157 @@ export class EmailService {
   }
 
 
+  // account-deletion-farewell-v1
+  async sendAccountDeletedEmail(args: {
+    to: string;
+    firstName?: string;
+  }): Promise<void> {
+    const to = String(args?.to || '').trim().toLowerCase();
+    if (!to) return;
+
+    const rawFirstName = String(args?.firstName || '').trim();
+    const safeFirstName = rawFirstName
+      ? this.escapeHtml(rawFirstName)
+      : '';
+
+    const greeting = safeFirstName
+      ? `Hi ${safeFirstName},`
+      : 'Hi,';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Your OpenShare account has been deleted</title>
+      </head>
+
+      <body style="margin:0; padding:0; background-color:#f4f4f5; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+        <center style="width:100%; table-layout:fixed; background-color:#f4f4f5; padding:40px 0;">
+          <table
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            role="presentation"
+            style="max-width:600px; margin:0 auto; background:#ffffff; border-collapse:collapse; border-radius:16px; overflow:hidden; box-shadow:0 10px 25px -5px rgba(0,0,0,0.06);"
+          >
+            <tr>
+              <td
+                align="center"
+                style="padding:30px 40px; background-color:#0F172A;"
+              >
+                <img
+                  src="https://openshare.ca/brand/openshare-email-lockup.png"
+                  alt="OpenShare"
+                  width="180"
+                  style="display:block; margin:0 auto; border:0;"
+                />
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                align="center"
+                style="padding:38px 40px 32px; background-color:#1E1B4B; border-bottom:3px solid #06B6D4;"
+              >
+                <div
+                  style="width:48px; height:48px; line-height:48px; margin:0 auto 16px; border-radius:50%; background:#ecfdf5; color:#047857; font-size:24px; font-weight:700;"
+                >
+                  ✓
+                </div>
+
+                <h1
+                  style="margin:0; color:#ffffff; font-size:24px; line-height:1.25; font-weight:700; letter-spacing:-0.4px;"
+                >
+                  Your account has been deleted
+                </h1>
+
+                <p
+                  style="margin:10px 0 0; color:#C4B5FD; font-size:15px; line-height:1.5;"
+                >
+                  This confirms your OpenShare account deletion.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:40px 42px 34px;">
+                <p
+                  style="margin:0 0 20px; color:#0F172A; font-size:16px; line-height:1.7;"
+                >
+                  ${greeting}
+                </p>
+
+                <p
+                  style="margin:0 0 20px; color:#475569; font-size:15px; line-height:1.75;"
+                >
+                  Your OpenShare account has been permanently deleted as requested.
+                </p>
+
+                <p
+                  style="margin:0 0 20px; color:#475569; font-size:15px; line-height:1.75;"
+                >
+                  Thank you for building with OpenShare. We hope the work you shipped here helped move something meaningful forward.
+                </p>
+
+                <p
+                  style="margin:0 0 28px; color:#475569; font-size:15px; line-height:1.75;"
+                >
+                  If you ever decide to return, you're always welcome to create a new OpenShare account.
+                </p>
+
+                <p
+                  style="margin:0; color:#0F172A; font-size:15px; line-height:1.7;"
+                >
+                  Take care,<br />
+                  <strong>The OpenShare Team</strong>
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                align="center"
+                style="padding:26px 40px; background:#F8FAFC; border-top:1px solid #E2E8F0;"
+              >
+                <p
+                  style="margin:0; color:#64748B; font-size:12px; line-height:1.6;"
+                >
+                  This is a one-time transactional confirmation of your account deletion.
+                  You will not receive further account emails from OpenShare unless you create a new account.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </center>
+      </body>
+      </html>
+    `;
+
+    const text = [
+      greeting,
+      '',
+      'Your OpenShare account has been permanently deleted as requested.',
+      '',
+      'Thank you for building with OpenShare. We hope the work you shipped here helped move something meaningful forward.',
+      '',
+      "If you ever decide to return, you're always welcome to create a new OpenShare account.",
+      '',
+      'Take care,',
+      'The OpenShare Team',
+      '',
+      'This is a one-time transactional confirmation of your account deletion.',
+    ].join('\n');
+
+    await this.sendDirectEmail({
+      to,
+      subject: 'Your OpenShare account has been deleted',
+      html,
+      text,
+    });
+  }
+
   /**
    * Transactional project invitation.
    *
