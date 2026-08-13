@@ -768,6 +768,21 @@ export default function Settings() {
     }
   };
 
+  // google-account-delete-bfcache-reset-v1
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handlePageShow = () => {
+      setDeletingAccount(false);
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
+
   const handleGoogleDeleteAccount = async () => {
     if (
       deleteConfirmation !== 'DELETE' ||
@@ -1659,9 +1674,11 @@ export default function Settings() {
                       </div>
                     )}
 
-                    <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-zinc-500">
-                      For security, confirm the password you currently use to sign in.
-                    </p>
+                    {deleteAuthMethod === 'password' && (
+                      <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-zinc-500">
+                        For security, confirm the password you currently use to sign in.
+                      </p>
+                    )}
 
                     {deleteAccountError && (
                       <p
