@@ -75,6 +75,7 @@ interface StripeEvent {
 interface StripeClient {
   customers: {
     create: (params: any) => Promise<StripeCustomer>;
+    del: (id: string) => Promise<any>;
   };
   checkout: {
     sessions: {
@@ -83,6 +84,7 @@ interface StripeClient {
   };
   subscriptions: {
     update: (id: string, params: any) => Promise<StripeSubscription>;
+    cancel: (id: string, params?: any) => Promise<StripeSubscription>;
   };
   billingPortal: {
     sessions: {
@@ -701,6 +703,120 @@ export class SubscriptionsService {
       this.logger.error(`Stripe Resume Subscription Error: ${error.message}`, error.stack);
       throw new InternalServerErrorException(`Could not resume subscription: ${error.message}`);
     }
+  }
+
+  // account-delete-billing-cleanup-v1
+  /**
+   * Permanently detach billing before an OpenShare account is deleted.
+   *
+   * This is intentionally different from cancelSubscription(), which preserves
+   * paid access until the end of the current billing period.
+   *
+   * Account deletion must stop future billing immediately and is fail-closed:
+   * if Stripe cleanup fails, the caller must not delete the User document.
+   */
+  async cleanupBillingForAccountDeletion(userId: string): Promise<void> {
+    const subscription = await this.getByUserId(userId);
+
+    // Some older/free accounts may never have created a subscription record.
+    if (!subscription) return;
+
+    const stripeCustomerId = String(
+      subscription.stripeCustomerId || '',
+    ).trim();
+
+    const stripeSubscriptionId = String(
+      subscription.stripeSubscriptionId || '',
+    ).trim();
+
+    const hasRemoteBillingIdentity =
+      Boolean(stripeCustomerId || stripeSubscriptionId);
+
+    if (hasRemoteBillingIdentity && !this.isStripeAvailable()) {
+      throw new InternalServerErrorException(
+        'Payment system is temporarily unavailable. Account deletion was not completed.',
+      );
+    }
+
+    if (hasRemoteBillingIdentity) {
+      const isResourceMissing = (error: any): boolean =>
+        String(error?.code || '') === 'resource_missing';
+
+      const failBillingCleanup = (error: any): never => {
+        this.logger.error(
+          `Stripe account-deletion cleanup failed: ${error?.message || error}`,
+          error?.stack,
+        );
+
+        throw new InternalServerErrorException(
+          'Could not safely close the billing account. Account deletion was not completed.',
+        );
+      };
+
+      const cancelKnownSubscription = async (): Promise<void> => {
+        if (!stripeSubscriptionId) return;
+
+        try {
+          await this.stripe!.subscriptions.cancel(
+            stripeSubscriptionId,
+            {
+              invoice_now: false,
+              prorate: false,
+            },
+          );
+
+          this.logger.log(
+            `Canceled Stripe subscription ${stripeSubscriptionId} for account deletion`,
+          );
+        } catch (error: any) {
+          if (!isResourceMissing(error)) {
+            failBillingCleanup(error);
+          }
+
+          this.logger.warn(
+            `Stripe subscription ${stripeSubscriptionId} was already absent during account deletion`,
+          );
+        }
+      };
+
+      if (stripeCustomerId) {
+        try {
+          // Deleting the Stripe Customer immediately cancels active
+          // subscriptions and removes the reusable billing relationship.
+          await this.stripe!.customers.del(stripeCustomerId);
+
+          this.logger.log(
+            `Deleted Stripe customer ${stripeCustomerId} for account deletion`,
+          );
+        } catch (error: any) {
+          if (!isResourceMissing(error)) {
+            failBillingCleanup(error);
+          }
+
+          this.logger.warn(
+            `Stripe customer ${stripeCustomerId} was already absent during account deletion`,
+          );
+
+          // A stale customer ID must not allow a separately known Stripe
+          // subscription to survive permanent OpenShare account deletion.
+          await cancelKnownSubscription();
+        }
+      } else {
+        // Defensive fallback for a legacy/inconsistent local record that has
+        // a subscription ID without its corresponding Stripe Customer ID.
+        await cancelKnownSubscription();
+      }
+    }
+
+    // Account deletion removes OpenShare's local billing/customer linkage.
+    // Historical financial records retained by Stripe are not recreated here.
+    await this.subscriptionModel.deleteOne({
+      userId: new Types.ObjectId(userId),
+    });
+
+    this.logger.log(
+      `Removed local subscription record for deleted account ${userId}`,
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

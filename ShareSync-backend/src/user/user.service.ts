@@ -24,6 +24,7 @@ import { buildActivitySummary } from '../utils/activitySummary';
 import { SmsService } from '../notifications/sms.service';
 import { EmailService } from '../notifications/email.service';
 import { StreakService } from '../gamification/services/streak.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -102,6 +103,8 @@ export class UserService {
     private readonly smsService: SmsService,
 
     private readonly emailService: EmailService,
+
+    private readonly subscriptions: SubscriptionsService,
 
     // ✅ Optional to avoid boot failures if UserModule has not imported/exported the streak provider yet
     @Optional() private readonly streakService?: StreakService,
@@ -1462,6 +1465,11 @@ export class UserService {
   ): Promise<void> {
     const deletionEmail = String((user as any).email || '').trim();
     const deletionFirstName = String((user as any).firstName || '').trim();
+
+    // account-delete-billing-cleanup-v1
+    // Billing cleanup is fail-closed. A paid OpenShare account must never
+    // disappear while its Stripe billing relationship remains active.
+    await this.subscriptions.cleanupBillingForAccountDeletion(userId);
 
     // Project/account cleanup is fail-closed:
     // if project cleanup fails, DO NOT delete the User document.

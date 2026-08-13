@@ -1564,6 +1564,15 @@ export default function Settings() {
                     <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-zinc-400">
                       Permanently delete your account. This action cannot be undone.
                     </p>
+
+                    <div className="mt-3 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+                      <p className="text-xs font-semibold leading-5 text-amber-900 dark:text-amber-200">
+                        If you have a paid subscription, deleting your account cancels it immediately and stops future subscription renewals.
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-amber-800/90 dark:text-amber-300/80">
+                        Account deletion does not itself guarantee a refund; refund eligibility remains subject to OpenShare&apos;s refund policy and applicable law. Certain transaction and payment records may be retained by our payment processor where required or permitted for legal, tax, accounting, fraud-prevention, or dispute purposes.
+                      </p>
+                    </div>
                   </div>
 
                   {!deleteAccountOpen && (

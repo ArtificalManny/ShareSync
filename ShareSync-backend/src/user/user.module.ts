@@ -23,6 +23,7 @@ import { ModerationModule } from '../moderation/moderation.module';
 
 // ✅ Added so UserService can inject StreakService for streak protection endpoints
 import { GamificationModule } from '../gamification/gamification.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -50,6 +51,9 @@ import { GamificationModule } from '../gamification/gamification.module';
 
     // ✅ Streak protection / allowFreeze backend wiring
     GamificationModule,
+
+    // Billing must be safely closed before permanent account deletion.
+    SubscriptionsModule,
   ],
   controllers: [UserController],
   providers: [UserService, EmailService],
