@@ -111,6 +111,42 @@ export default function Login() {
 
   useEffect(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      const deletedFromBackend = params.get("accountDeleted") === "1";
+
+      if (deletedFromBackend) {
+        // google-account-delete-session-cleanup-v1
+        // Preserve the one-time farewell across the clean reload.
+        try {
+          sessionStorage.setItem("openshare.accountDeleted", "1");
+        } catch {}
+
+        // GoogleCallback and AuthContext have historically used several
+        // aliases. Remove all of them before reinitializing the app.
+        try {
+          [
+            "ss.jwt",
+            "ss.token",
+            "token",
+            "authToken",
+            "accessToken",
+            "ss.user",
+            "user",
+          ].forEach((key) => localStorage.removeItem(key));
+        } catch {}
+
+        params.delete("accountDeleted");
+
+        const query = params.toString();
+        const cleanUrl =
+          `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+
+        // Full reload guarantees AuthProvider starts with no stale deleted-user
+        // state or Authorization header in memory.
+        window.location.replace(cleanUrl);
+        return;
+      }
+
       if (sessionStorage.getItem("openshare.accountDeleted") === "1") {
         setAccountDeleted(true);
         sessionStorage.removeItem("openshare.accountDeleted");

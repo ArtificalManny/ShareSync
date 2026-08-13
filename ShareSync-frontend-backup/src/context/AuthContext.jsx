@@ -29,6 +29,7 @@ function writeTokenEverywhere(token) {
 function clearTokenEverywhere() {
   try {
     localStorage.removeItem("ss.jwt");
+    localStorage.removeItem("ss.token");
     localStorage.removeItem("token");
     localStorage.removeItem("authToken");
     localStorage.removeItem("accessToken");
@@ -250,6 +251,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearTokenEverywhere();
     localStorage.removeItem("ss.user");
+    localStorage.removeItem("user");
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
     setAuthError(null);

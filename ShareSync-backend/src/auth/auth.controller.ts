@@ -16,6 +16,7 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { InjectModel } from '@nestjs/mongoose';
@@ -24,6 +25,8 @@ import { User, UserDocument } from '../user/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
+import { UserService } from '../user/user.service';
+import { GoogleDeleteGuard } from './guards/google-delete.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -31,6 +34,7 @@ export class AuthController {
     private readonly authService: AuthService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
+    private readonly userService: UserService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -203,6 +207,167 @@ export class AuthController {
   // 3. Google redirects back to GET /api/auth/google/callback
   // 4. We issue JWT and redirect to frontend with token in URL
   // ═══════════════════════════════════════════════════════════════════════════
+
+  // google-account-delete-reauth-v1
+  // Determine which confirmation mechanism the current account must use.
+  @UseGuards(JwtAuthGuard)
+  @Get('account-deletion-method')
+  async accountDeletionMethod(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    const user = await this.userModel
+      .findById(userId)
+      .select('googleId')
+      .lean()
+      .exec();
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      method: String((user as any).googleId || '').trim()
+        ? 'google'
+        : 'password',
+    };
+  }
+
+  // Create a short-lived, signed deletion-purpose OAuth state.
+  @UseGuards(JwtAuthGuard)
+  @Post('google/delete-intent')
+  async googleDeleteIntent(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    const user = await this.userModel
+      .findById(userId)
+      .select('googleId')
+      .lean()
+      .exec();
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!String((user as any).googleId || '').trim()) {
+      throw new BadRequestException(
+        'This account requires current-password confirmation instead.',
+      );
+    }
+
+    const state = await this.jwtService.signAsync(
+      {
+        sub: String(userId),
+        purpose: 'account-delete-google',
+      },
+      {
+        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        expiresIn: '5m',
+      },
+    );
+
+    const rawBackendUrl =
+      process.env.PUBLIC_BACKEND_URL ||
+      process.env.API_PUBLIC_URL ||
+      process.env.BACKEND_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      'http://localhost:5050';
+
+    const backendRoot = String(rawBackendUrl)
+      .replace(/\/api\/?$/, '')
+      .replace(/\/$/, '');
+
+    return {
+      method: 'google',
+      authorizationUrl:
+        `${backendRoot}/api/auth/google/delete?state=${encodeURIComponent(state)}`,
+    };
+  }
+
+  // Starts the read-only Google identity-confirmation flow.
+  @Get('google/delete')
+  @UseGuards(GoogleDeleteGuard)
+  async googleDeleteAuth() {
+    // Passport redirects to Google.
+  }
+
+  // Google returns here. Successful identity confirmation deletes the account
+  // server-side; no destructive capability token is exposed to the browser.
+  @Get('google/delete/callback')
+  @UseGuards(GoogleDeleteGuard)
+  async googleDeleteCallback(@Req() req: any, @Res() res: any) {
+    const frontendUrl = String(
+      process.env.FRONTEND_URL || 'http://localhost:54693',
+    ).replace(/\/$/, '');
+
+    const returnToSettings = (reason: string) =>
+      res.redirect(
+        `${frontendUrl}/settings?section=account&googleDeleteError=${encodeURIComponent(reason)}`,
+      );
+
+    if (req?.googleDeleteOAuthError) {
+      return returnToSettings(
+        req.googleDeleteOAuthError === 'access_denied'
+          ? 'cancelled'
+          : 'google_confirmation_failed',
+      );
+    }
+
+    const state = String(req?.query?.state || '').trim();
+
+    let statePayload: any;
+    try {
+      statePayload = await this.jwtService.verifyAsync(state, {
+        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+      });
+    } catch {
+      return returnToSettings('expired_or_invalid_confirmation');
+    }
+
+    if (
+      statePayload?.purpose !== 'account-delete-google' ||
+      !statePayload?.sub
+    ) {
+      return returnToSettings('expired_or_invalid_confirmation');
+    }
+
+    const userId = String(statePayload.sub);
+    const confirmedGoogleId = String(req?.user?.googleId || '').trim();
+
+    if (!confirmedGoogleId) {
+      return returnToSettings('google_confirmation_failed');
+    }
+
+    const account = await this.userModel
+      .findById(userId)
+      .select('googleId')
+      .lean()
+      .exec();
+
+    if (!account) {
+      return returnToSettings('account_not_found');
+    }
+
+    const storedGoogleId = String((account as any).googleId || '').trim();
+
+    if (!storedGoogleId || storedGoogleId !== confirmedGoogleId) {
+      return returnToSettings('wrong_google_account');
+    }
+
+    try {
+      await this.userService.deleteAccountWithGoogleIdentity(
+        userId,
+        confirmedGoogleId,
+      );
+    } catch (error: any) {
+      console.error(
+        '❌ GOOGLE DELETE CALLBACK: Account deletion failed:',
+        error?.message || error,
+      );
+      return returnToSettings('account_deletion_failed');
+    }
+
+    return res.redirect(`${frontendUrl}/login?accountDeleted=1`);
+  }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))

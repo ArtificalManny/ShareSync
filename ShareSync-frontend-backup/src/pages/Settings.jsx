@@ -15,7 +15,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 // OLD: import { getMe, updateProfile, updateNotifications } from '../api/user';
 import { getSettings, updateSettings } from '../api/settings';
-import { deleteAccount } from '../api/user';
+import {
+  beginGoogleAccountDeletion,
+  deleteAccount,
+  getAccountDeletionAuthMethod,
+} from '../api/user';
 import { toast } from '../components/ui/Toaster.jsx';
 import { trackMentorSettings, trackProfileDiscoverToggle } from '../utils/telemetry';
 import { DISCOVERABILITY } from '../config/flags.js';
@@ -639,6 +643,74 @@ export default function Settings() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState('');
+  const [deleteAuthMethod, setDeleteAuthMethod] = useState('loading');
+
+  // google-account-delete-reauth-v1
+  useEffect(() => {
+    let cancelled = false;
+
+    getAccountDeletionAuthMethod()
+      .then((result) => {
+        if (cancelled) return;
+        const method = String(result?.method || '').toLowerCase();
+        setDeleteAuthMethod(
+          method === 'google' || method === 'password' ? method : 'error',
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setDeleteAuthMethod('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const requestedSection = params.get('section');
+    const googleDeleteError = params.get('googleDeleteError');
+
+    if (requestedSection === 'account') {
+      setActiveSection('account');
+    }
+
+    if (googleDeleteError) {
+      const messages = {
+        cancelled:
+          'Google confirmation was cancelled. Your account was not deleted.',
+        wrong_google_account:
+          'That Google account does not match this OpenShare account. Nothing was deleted.',
+        expired_or_invalid_confirmation:
+          'That Google confirmation expired or was invalid. Please try again.',
+        account_not_found:
+          'This OpenShare account could not be found.',
+        account_deletion_failed:
+          'Your identity was confirmed, but OpenShare could not complete account deletion. Nothing further was changed.',
+        google_confirmation_failed:
+          'OpenShare could not confirm your identity with Google. Your account was not deleted.',
+      };
+
+      setDeleteAccountOpen(true);
+      setDeleteAccountError(
+        messages[googleDeleteError] ||
+          'Google confirmation failed. Your account was not deleted.',
+      );
+    }
+
+    if (requestedSection || googleDeleteError) {
+      params.delete('section');
+      params.delete('googleDeleteError');
+
+      const query = params.toString();
+      const cleanUrl =
+        `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
+
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  }, []);
 
   // LAYER 1: Momentum Engine
   const [dailyShipsGoal, setDailyShipsGoal] = useState(5);
@@ -664,6 +736,7 @@ export default function Settings() {
   const handleDeleteAccount = async () => {
     if (
       deleteConfirmation !== 'DELETE' ||
+      deleteAuthMethod !== 'password' ||
       deletePassword.length === 0 ||
       deletingAccount
     ) return;
@@ -690,6 +763,39 @@ export default function Settings() {
 
       setDeleteAccountError(
         Array.isArray(message) ? message.join(' ') : String(message)
+      );
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleGoogleDeleteAccount = async () => {
+    if (
+      deleteConfirmation !== 'DELETE' ||
+      deleteAuthMethod !== 'google' ||
+      deletingAccount
+    ) return;
+
+    setDeletingAccount(true);
+    setDeleteAccountError('');
+
+    try {
+      const result = await beginGoogleAccountDeletion();
+      const authorizationUrl = String(result?.authorizationUrl || '').trim();
+
+      if (!authorizationUrl) {
+        throw new Error('Google confirmation URL was not returned.');
+      }
+
+      window.location.assign(authorizationUrl);
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Could not start Google confirmation. Please try again.';
+
+      setDeleteAccountError(
+        Array.isArray(message) ? message.join(' ') : String(message),
       );
       setDeletingAccount(false);
     }
@@ -1500,6 +1606,8 @@ export default function Settings() {
                       className="mt-2 w-full rounded-xl border border-red-200 bg-white px-4 py-3 font-mono text-sm font-bold text-slate-900 outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/25 dark:bg-[#111116] dark:text-white"
                     />
 
+                    {deleteAuthMethod === 'password' && (
+                      <>
                     <label
                       htmlFor="delete-account-password"
                       className="mt-4 block text-sm font-bold text-slate-700 dark:text-zinc-300"
@@ -1525,6 +1633,31 @@ export default function Settings() {
                       placeholder="Enter your current password"
                       className="mt-2 w-full rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/25 dark:bg-[#111116] dark:text-white"
                     />
+                      </>
+                    )}
+
+                    {deleteAuthMethod === 'google' && (
+                      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/20 dark:bg-blue-500/10">
+                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                          Confirm your identity with Google
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-blue-700/90 dark:text-blue-300/80">
+                          This account is linked to Google. After you type DELETE, OpenShare will ask Google to confirm that you control the matching Google account. Successful confirmation will permanently delete this account.
+                        </p>
+                      </div>
+                    )}
+
+                    {deleteAuthMethod === 'loading' && (
+                      <p className="mt-4 text-sm text-slate-500 dark:text-zinc-400">
+                        Checking your account sign-in method…
+                      </p>
+                    )}
+
+                    {deleteAuthMethod === 'error' && (
+                      <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+                        OpenShare could not determine how this account should confirm deletion. Please reload the page before trying again.
+                      </div>
+                    )}
 
                     <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-zinc-500">
                       For security, confirm the password you currently use to sign in.
@@ -1554,21 +1687,39 @@ export default function Settings() {
                         Cancel
                       </button>
 
-                      <button
-                        type="button"
-                        disabled={
-                          deleteConfirmation !== 'DELETE' ||
-                          deletePassword.length === 0 ||
-                          deletingAccount
-                        }
-                        onClick={handleDeleteAccount}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {deletingAccount
-                          ? 'Deleting account...'
-                          : 'Permanently delete my account'}
-                      </button>
+                      {deleteAuthMethod === 'google' ? (
+                        <button
+                          type="button"
+                          disabled={
+                            deleteConfirmation !== 'DELETE' ||
+                            deletingAccount
+                          }
+                          onClick={handleGoogleDeleteAccount}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          {deletingAccount
+                            ? 'Opening Google confirmation...'
+                            : 'Confirm with Google & delete account'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={
+                            deleteConfirmation !== 'DELETE' ||
+                            deleteAuthMethod !== 'password' ||
+                            deletePassword.length === 0 ||
+                            deletingAccount
+                          }
+                          onClick={handleDeleteAccount}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          {deletingAccount
+                            ? 'Deleting account...'
+                            : 'Permanently delete my account'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

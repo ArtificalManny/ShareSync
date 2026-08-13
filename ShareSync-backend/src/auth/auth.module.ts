@@ -9,16 +9,20 @@ import { DevAuthController } from './dev-auth.controller';
 import { AuthService } from './auth.service';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
+import { UserModule } from '../user/user.module';
 import { MailerConfigModule } from '../mailer/mailer.module';
 
 // IMPORTANT: use the REAL strategy file, not the barrel
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { GoogleDeleteStrategy } from './strategies/google-delete.strategy';
+import { GoogleDeleteGuard } from './guards/google-delete.guard';
 
 @Module({
   imports: [
     ConfigModule,
     MailerConfigModule,
+    forwardRef(() => UserModule),
     PassportModule,
 
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
@@ -35,7 +39,13 @@ import { GoogleStrategy } from './strategies/google.strategy';
     }),
   ],
   controllers: [AuthController, DevAuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    GoogleDeleteStrategy,
+    GoogleDeleteGuard,
+  ],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

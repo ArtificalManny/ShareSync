@@ -1456,19 +1456,10 @@ export class UserService {
     };
   }
 
-  async deleteAccount(userId: string, currentPassword: string): Promise<void> {
-    const user = await this.userModel.findById(userId).select('+password').exec();
-    if (!user) throw new NotFoundException('User not found');
-
-    const storedPassword = String((user as any).password || '');
-    const isValidPassword =
-      storedPassword.length > 0 &&
-      await bcrypt.compare(currentPassword, storedPassword);
-
-    if (!isValidPassword) {
-      throw new BadRequestException('Current password is incorrect');
-    }
-
+  private async performAccountDeletion(
+    userId: string,
+    user: any,
+  ): Promise<void> {
     const deletionEmail = String((user as any).email || '').trim();
     const deletionFirstName = String((user as any).firstName || '').trim();
 
@@ -1494,4 +1485,59 @@ export class UserService {
       }
     }
   }
+
+  async deleteAccount(
+    userId: string,
+    currentPassword: string,
+  ): Promise<void> {
+    const user = await this.userModel
+      .findById(userId)
+      .select('+password')
+      .exec();
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // Google-linked accounts must use Google confirmation rather than a
+    // password that may be randomly generated and unknowable to the user.
+    if (String((user as any).googleId || '').trim()) {
+      throw new BadRequestException(
+        'This account requires Google confirmation for deletion.',
+      );
+    }
+
+    const storedPassword = String((user as any).password || '');
+    const isValidPassword =
+      storedPassword.length > 0 &&
+      await bcrypt.compare(currentPassword, storedPassword);
+
+    if (!isValidPassword) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    await this.performAccountDeletion(userId, user);
+  }
+
+  // google-account-delete-reauth-v1
+  async deleteAccountWithGoogleIdentity(
+    userId: string,
+    confirmedGoogleId: string,
+  ): Promise<void> {
+    const user = await this.userModel.findById(userId).exec();
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const storedGoogleId = String((user as any).googleId || '').trim();
+    const normalizedConfirmedGoogleId = String(confirmedGoogleId || '').trim();
+
+    if (
+      !storedGoogleId ||
+      !normalizedConfirmedGoogleId ||
+      storedGoogleId !== normalizedConfirmedGoogleId
+    ) {
+      throw new BadRequestException('Google identity confirmation failed');
+    }
+
+    await this.performAccountDeletion(userId, user);
+  }
+
 }

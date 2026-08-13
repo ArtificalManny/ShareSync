@@ -338,6 +338,17 @@ export async function exportUserData() {
   return response.data;
 }
 
+// google-account-delete-reauth-v1
+export async function getAccountDeletionAuthMethod() {
+  const response = await api.get('/auth/account-deletion-method');
+  return response.data;
+}
+
+export async function beginGoogleAccountDeletion() {
+  const response = await api.post('/auth/google/delete-intent');
+  return response.data;
+}
+
 export async function deleteAccount(confirmation, password) {
   const response = await api.delete('/users/me', {
     data: { confirmation, password },
@@ -360,5 +371,7 @@ export default {
   deleteAvatar,
   changePassword,
   exportUserData,
+  getAccountDeletionAuthMethod,
+  beginGoogleAccountDeletion,
   deleteAccount,
 };
