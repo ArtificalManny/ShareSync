@@ -21,7 +21,30 @@ export type AccountStatus =
 //    in every API response that serializes a User document.
 //    Previously the 'name' virtual existed but was silently dropped from JSON.
 // ═══════════════════════════════════════════════════════════════════════════════
-@Schema({ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } })
+function stripSensitiveUserFields(_doc: any, ret: any) {
+  if (!ret || typeof ret !== 'object') return ret;
+
+  delete ret.password;
+  delete ret.passwordResetToken;
+  delete ret.passwordResetExpires;
+  delete ret.emailVerificationToken;
+  delete ret.verificationCode;
+  delete ret.verificationCodeExpiry;
+
+  return ret;
+}
+
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: stripSensitiveUserFields,
+  },
+  toObject: {
+    virtuals: true,
+    transform: stripSensitiveUserFields,
+  },
+})
 export class User extends Document {
   // ============================================
   // BASIC INFO (existing)
