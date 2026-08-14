@@ -42,7 +42,7 @@ export class User extends Document {
   @Prop()
   displayName?: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, select: false })
   password: string;
 
   // ✅ Google OAuth: links Google account to this user
@@ -502,7 +502,7 @@ export class User extends Document {
   @Prop()
   emailVerificationToken?: string;
 
-  @Prop()
+  @Prop({ select: false })
   passwordResetToken?: string;
 
   @Prop()
