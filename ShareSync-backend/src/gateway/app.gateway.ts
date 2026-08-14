@@ -18,6 +18,9 @@ import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { validateWsSession } from '../auth/ws-session.validator';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -78,6 +81,8 @@ export class AppGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectConnection()
+    private readonly connection: Connection,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -104,18 +109,18 @@ export class AppGateway
       // Verify JWT
       const secret = this.configService.get<string>('JWT_SECRET', 'sharesync-secret');
       const payload = this.jwtService.verify(token, { secret });
-      const userId = payload.sub || payload.userId;
 
-      if (!userId) {
-        this.logger.warn(`Client ${client.id} has invalid token payload`);
-        client.data = { rooms: new Set() };
-        return;
-      }
+      const session = await validateWsSession(
+        this.connection,
+        payload,
+      );
+
+      const userId = session.userId;
 
       // Store user info on socket
       client.data = {
         userId,
-        username: payload.username,
+        username: session.user?.username || payload.username,
         rooms: new Set(),
       };
 
@@ -132,9 +137,14 @@ export class AppGateway
       // Broadcast presence to friends/team
       this.broadcastPresence(userId, 'online');
 
-    } catch (error) {
-      this.logger.debug(`Client ${client.id} connection error: ${error.message}`);
+    } catch (error: any) {
+      // A client that supplied credentials but failed JWT/live-session
+      // validation must not be downgraded into an anonymous socket.
+      this.logger.debug(
+        `Client ${client.id} authentication rejected: ${error?.message || error}`,
+      );
       client.data = { rooms: new Set() };
+      client.disconnect(true);
     }
   }
 
@@ -175,6 +185,35 @@ export class AppGateway
 
     // Sanitize room name
     const sanitizedRoom = room.trim().slice(0, 100);
+    const userId = client.data?.userId;
+
+    // root-room-access-hardening-v1
+    //
+    // Anonymous root sockets are intentionally supported for public spectator
+    // streams, but they must never be able to join private application rooms.
+    const publicProjectPrefix = 'public:project:';
+    const isPublicProjectRoom =
+      sanitizedRoom.startsWith(publicProjectPrefix) &&
+      sanitizedRoom.length > publicProjectPrefix.length;
+
+    if (!userId && !isPublicProjectRoom) {
+      this.logger.warn(
+        `Anonymous socket ${client.id} rejected from private room: ${sanitizedRoom}`,
+      );
+      return { success: false, error: 'Authentication required' };
+    }
+
+    // A live authenticated account must never subscribe to another user's
+    // personal room simply by guessing or supplying the room name.
+    if (
+      sanitizedRoom.startsWith('user:') &&
+      sanitizedRoom !== `user:${userId}`
+    ) {
+      this.logger.warn(
+        `Socket ${client.id} rejected from user room: ${sanitizedRoom}`,
+      );
+      return { success: false, error: 'Not authorized for room' };
+    }
 
     client.join(sanitizedRoom);
     client.data.rooms?.add(sanitizedRoom);

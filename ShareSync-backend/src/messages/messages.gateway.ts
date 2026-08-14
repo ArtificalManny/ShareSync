@@ -17,6 +17,9 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { validateWsSession } from '../auth/ws-session.validator';
 import { MessagesService } from './messages.service';
 import { SendMessageDto } from './dto/message.dto';
 
@@ -56,6 +59,8 @@ export class MessagesGateway
   constructor(
     private readonly messagesService: MessagesService,
     private readonly jwtService: JwtService,
+    @InjectConnection()
+    private readonly connection: Connection,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -107,14 +112,19 @@ export class MessagesGateway
       }
 
       const payload = this.jwtService.verify(token);
-      client.userId = payload.sub || payload.userId || payload.id || payload._id;
-      client.user = payload;
+      const session = await validateWsSession(
+        this.connection,
+        payload,
+      );
 
-      if (!client.userId) {
-        this.logger.warn(`Connection rejected: invalid JWT payload for socket ${client.id}`);
-        client.disconnect();
-        return;
-      }
+      client.userId = session.userId;
+      client.user = {
+        ...payload,
+        ...session.user,
+        sub: session.userId,
+        userId: session.userId,
+        id: session.userId,
+      };
 
       this.addUserSocket(client.userId, client.id);
       client.join(`user:${client.userId}`);

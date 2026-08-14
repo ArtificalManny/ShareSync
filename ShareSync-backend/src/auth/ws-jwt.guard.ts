@@ -9,10 +9,17 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { validateWsSession } from './ws-session.validator';
 
 @Injectable()
 export class WsJwtGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @InjectConnection()
+    private readonly connection: Connection,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
@@ -30,11 +37,19 @@ export class WsJwtGuard implements CanActivate {
         secret: process.env.JWT_SECRET || 'dev_secret_change_me',
       });
 
-      // Attach user to socket
+      const session = await validateWsSession(
+        this.connection,
+        payload,
+      );
+
+      // Attach current live account state, not stale identity/roles copied into
+      // an older JWT.
       (client as any).user = {
-        id: payload.sub || payload.id || payload._id,
-        email: payload.email,
-        roles: payload.roles || [],
+        id: session.userId,
+        userId: session.userId,
+        email: session.user?.email || payload.email,
+        username: session.user?.username || payload.username,
+        roles: session.user?.roles || payload.roles || [],
       };
 
       return true;

@@ -26,6 +26,9 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { validateWsSession } from '../auth/ws-session.validator';
 import { OnEvent } from '@nestjs/event-emitter';
 import { NotificationDocument } from './schemas/notification.schema';
 
@@ -53,7 +56,11 @@ export class NotificationsGateway
   private readonly logger = new Logger(NotificationsGateway.name);
   private userSockets = new Map<string, Set<string>>();
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @InjectConnection()
+    private readonly connection: Connection,
+  ) {}
 
   afterInit(_server: Server) {
     this.logger.log('Notifications WebSocket Gateway initialized');
@@ -73,12 +80,12 @@ export class NotificationsGateway
       }
 
       const payload = this.jwtService.verify(token);
-      client.userId = payload.sub || payload.userId;
+      const session = await validateWsSession(
+        this.connection,
+        payload,
+      );
 
-      if (!client.userId) {
-        client.disconnect();
-        return;
-      }
+      client.userId = session.userId;
 
       // Track socket
       if (!this.userSockets.has(client.userId)) {
