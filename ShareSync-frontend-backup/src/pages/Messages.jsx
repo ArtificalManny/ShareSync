@@ -115,8 +115,37 @@ const extractId = (value) => {
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
+// account-deletion-deleted-user-presentation-v1
+//
+// Mongoose populate replaces a User ref with null when the referenced User
+// document no longer exists. Permanent account deletion deliberately retains
+// some historical shared content, so represent that state explicitly in the
+// UI without creating a fake/live User account.
+const DELETED_USER_PLACEHOLDER = Object.freeze({
+  firstName: 'Deleted',
+  lastName: 'user',
+  displayName: 'Deleted user',
+  username: null,
+  email: null,
+  avatar: null,
+  avatarUrl: null,
+  profilePicture: null,
+  deleted: true,
+});
+
 const unwrapParticipantUser = (participant) => {
   if (!participant) return null;
+
+  // A populated User reference becomes null when that User document has been
+  // permanently deleted. The participant wrapper survives in a direct
+  // conversation so the other person can retain the conversation history.
+  if (
+    typeof participant === 'object' &&
+    Object.prototype.hasOwnProperty.call(participant, 'userId') &&
+    participant.userId === null
+  ) {
+    return DELETED_USER_PLACEHOLDER;
+  }
 
   if (participant.userId && typeof participant.userId === 'object') return participant.userId;
   if (participant.user && typeof participant.user === 'object') return participant.user;
@@ -246,7 +275,18 @@ const getInitialsLocal = (user) => {
 };
 
 const getMessageSenderCandidate = (message) => {
-  return message?.senderId || message?.sender || message?.user || null;
+  if (!message) return null;
+
+  // Same populated-null rule as conversation participants. This is
+  // presentation-only and deliberately carries no deleted account identity.
+  if (
+    Object.prototype.hasOwnProperty.call(message, 'senderId') &&
+    message.senderId === null
+  ) {
+    return DELETED_USER_PLACEHOLDER;
+  }
+
+  return message.senderId || message.sender || message.user || null;
 };
 
 const isOwnMessageSafe = (message, currentUser) => {
