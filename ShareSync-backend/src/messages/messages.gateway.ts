@@ -19,6 +19,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { OnEvent } from '@nestjs/event-emitter';
 import { validateWsSession } from '../auth/ws-session.validator';
 import { MessagesService } from './messages.service';
 import { SendMessageDto } from './dto/message.dto';
@@ -151,6 +152,19 @@ export class MessagesGateway
     }
 
     this.logger.log(`Client disconnected: ${client.id}`);
+  }
+
+  // account-delete-established-socket-revocation-v1
+  @OnEvent('account.deleted')
+  handleAccountDeleted(payload: { userId?: string }) {
+    const userId = String(payload?.userId || '').trim();
+    if (!userId) return;
+
+    this.server.in(`user:${userId}`).disconnectSockets(true);
+
+    this.logger.log(
+      `Disconnected deleted account from messages sockets: ${userId}`,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

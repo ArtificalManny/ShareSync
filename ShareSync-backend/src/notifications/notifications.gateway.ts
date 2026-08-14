@@ -114,6 +114,19 @@ export class NotificationsGateway
     this.logger.log(`Client disconnected from notifications: ${client.id}`);
   }
 
+  // account-delete-established-socket-revocation-v1
+  @OnEvent('account.deleted')
+  handleAccountDeleted(payload: { userId?: string }) {
+    const userId = String(payload?.userId || '').trim();
+    if (!userId) return;
+
+    this.server.in(`user:${userId}`).disconnectSockets(true);
+
+    this.logger.log(
+      `Disconnected deleted account from notification sockets: ${userId}`,
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // ROOM JOIN / LEAVE (project:{projectId})
   // ─────────────────────────────────────────────────────────────────────────────

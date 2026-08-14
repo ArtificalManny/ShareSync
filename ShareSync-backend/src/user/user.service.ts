@@ -15,6 +15,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types} from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { User, UserDocument } from './schemas/user.schema';
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
@@ -109,6 +110,8 @@ export class UserService {
     private readonly subscriptions: SubscriptionsService,
     private readonly uploadsService: UploadsService,
     private readonly accountDataCleanup: AccountDataCleanupService,
+
+    private readonly eventEmitter: EventEmitter2,
 
     // ✅ Optional to avoid boot failures if UserModule has not imported/exported the streak provider yet
     @Optional() private readonly streakService?: StreakService,
@@ -1510,6 +1513,22 @@ export class UserService {
     await this.accountDataCleanup.cleanupForAccountDeletion(userId, user);
 
     await this.userModel.findByIdAndDelete(userId).exec();
+
+    // account-delete-websocket-revocation-v1
+    // The User document is gone before this event fires. Fresh/reconnecting
+    // sockets therefore fail live-session validation, while listeners below
+    // sever sockets that authenticated before permanent account deletion.
+    //
+    // Revocation is best-effort after the irreversible User deletion. A socket
+    // listener failure must not make a successfully deleted account look failed
+    // to the caller; reconnects are still blocked by live-session validation.
+    try {
+      await this.eventEmitter.emitAsync('account.deleted', { userId });
+    } catch (error) {
+      console.warn(
+        'Account deleted successfully, but established WebSocket revocation encountered an error.',
+      );
+    }
 
     // account-deletion-farewell-v1
     // The account is already deleted at this point. Email delivery is
