@@ -17,6 +17,7 @@ import {
 import { Message, MessageSchema } from '../message/message.schema';
 import { ModerationModule } from '../moderation/moderation.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { User, UserSchema } from '../user/schemas/user.schema';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     JwtModule,
     MongooseModule.forFeature([
       { name: Conversation.name, schema: ConversationSchema },
+      { name: User.name, schema: UserSchema },
       { name: DirectMessage.name, schema: DirectMessageSchema },
       { name: Message.name, schema: MessageSchema },
       { name: MessageAttachment.name, schema: MessageAttachmentSchema },

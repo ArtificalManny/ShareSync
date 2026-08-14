@@ -38,6 +38,7 @@ import {
 // ⭐ PHASE 2A: Import AppGateway for real-time emissions
 import { AppGateway } from '../gateway/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { User } from '../user/schemas/user.schema';
 import {
   NotificationPriority,
   NotificationType,
@@ -61,6 +62,8 @@ export class MessagesService {
     private readonly messageModel: Model<MessageDocument>,
     @InjectModel(Conversation.name)
     private readonly conversationModel: Model<ConversationDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<User>,
     private readonly eventEmitter: EventEmitter2,
     @Optional() private readonly appGateway?: AppGateway,
     @Optional() private readonly notifications?: NotificationsService,
@@ -99,6 +102,39 @@ export class MessagesService {
     if (value instanceof Types.ObjectId) return value.toString();
     if (typeof value?.toString === 'function') return value.toString();
     return String(value);
+  }
+
+  // conversation-participant-existence-v1
+  private async requireExistingUsers(userIds: string[]): Promise<void> {
+    const uniqueIds = Array.from(
+      new Set(
+        (userIds || [])
+          .map((value) => String(value || '').trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (uniqueIds.length === 0) return;
+
+    const objectIds = uniqueIds.map((id) => new Types.ObjectId(id));
+
+    const existing = await this.userModel
+      .find({ _id: { $in: objectIds } })
+      .select('_id')
+      .lean()
+      .exec();
+
+    const existingIds = new Set(
+      existing.map((user: any) => String(user?._id || '')),
+    );
+
+    const missing = uniqueIds.filter((id) => !existingIds.has(id));
+
+    if (missing.length > 0) {
+      throw new NotFoundException(
+        'One or more conversation participants no longer exist',
+      );
+    }
   }
 
   private participantMatchesUser(participant: any, userId: string): boolean {
@@ -240,6 +276,8 @@ export class MessagesService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   async createConversation(userId: string, dto: CreateConversationDto): Promise<ConversationDocument> {
+    await this.requireExistingUsers(dto.participantIds);
+
     if (dto.type === ConversationType.DIRECT && dto.participantIds.length === 1) {
       const existing = await this.conversationModel.findOne({
         type: ConversationType.DIRECT,
@@ -282,6 +320,8 @@ export class MessagesService {
   }
 
   async getOrCreateDirectConversation(userId: string, recipientId: string): Promise<ConversationDocument> {
+    await this.requireExistingUsers([recipientId]);
+
     const existing = await this.conversationModel.findOne({
       type: ConversationType.DIRECT,
       'participants.userId': { $all: [new Types.ObjectId(userId), new Types.ObjectId(recipientId)] },
@@ -335,6 +375,9 @@ export class MessagesService {
   async addParticipant(conversationId: string, userId: string, newParticipantId: string): Promise<ConversationDocument> {
     const conversation = await this.getConversationById(conversationId, userId);
     if (conversation.type === ConversationType.DIRECT) throw new BadRequestException('Cannot add participants to direct conversations');
+
+    await this.requireExistingUsers([newParticipantId]);
+
     this.addParticipantToConversation(conversation, newParticipantId);
     await this.sendSystemMessage(conversationId, `User was added to the conversation`);
     const saved = await conversation.save();
