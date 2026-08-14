@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable } from '@nestjs/common';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -17,6 +17,12 @@ export interface StoredFile {
   name: string;
   size: number;
   mime: string;
+}
+
+export interface StoredObjectReference {
+  url?: string | null;
+  storageKey?: string | null;
+  storageProvider?: string | null;
 }
 
 function trimSlash(value: string): string {
@@ -136,6 +142,185 @@ export class UploadsService {
     } else {
       console.warn('⚠️ R2 uploads are not fully configured. Falling back to local disk uploads.');
     }
+  }
+
+  private resolveR2KeyFromUrl(rawUrl: string): string | null {
+    const raw = String(rawUrl || '').trim();
+
+    if (!raw || !R2_PUBLIC_BASE_URL) {
+      return null;
+    }
+
+    const base = `${trimSlash(R2_PUBLIC_BASE_URL)}/`;
+
+    if (!raw.startsWith(base)) {
+      return null;
+    }
+
+    const key = raw
+      .slice(base.length)
+      .split(/[?#]/, 1)[0]
+      .replace(/^\/+/, '');
+
+    return key || null;
+  }
+
+  private resolveLocalKeyFromUrl(rawUrl: string): string | null {
+    const raw = String(rawUrl || '').trim();
+
+    if (!raw) {
+      return null;
+    }
+
+    if (raw.startsWith('uploads/')) {
+      return raw.slice('uploads/'.length).split(/[?#]/, 1)[0] || null;
+    }
+
+    if (raw.startsWith('/uploads/')) {
+      return raw.slice('/uploads/'.length).split(/[?#]/, 1)[0] || null;
+    }
+
+    if (!/^https?:\/\//i.test(raw)) {
+      return null;
+    }
+
+    try {
+      const candidate = new URL(raw);
+      const backendBase = new URL(UPLOADS_BASE_URL);
+
+      if (candidate.origin !== backendBase.origin) {
+        return null;
+      }
+
+      if (!candidate.pathname.startsWith('/uploads/')) {
+        return null;
+      }
+
+      return decodeURIComponent(
+        candidate.pathname.slice('/uploads/'.length),
+      ) || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async deleteR2Key(key: string): Promise<void> {
+    const normalizedKey = String(key || '')
+      .trim()
+      .replace(/^\/+/, '');
+
+    if (!normalizedKey) {
+      return;
+    }
+
+    if (!R2_ENABLED) {
+      throw new Error(
+        `Cannot delete remote upload "${normalizedKey}" because R2 is not configured`,
+      );
+    }
+
+    await getR2Client().send(
+      new DeleteObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: normalizedKey,
+      }),
+    );
+  }
+
+  private async deleteLocalKey(key: string): Promise<void> {
+    let normalizedKey = String(key || '')
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '');
+
+    if (normalizedKey.startsWith('uploads/')) {
+      normalizedKey = normalizedKey.slice('uploads/'.length);
+    }
+
+    if (!normalizedKey) {
+      return;
+    }
+
+    const root = path.resolve(UPLOADS_DIR);
+    const absolutePath = path.resolve(root, normalizedKey);
+
+    if (
+      absolutePath === root ||
+      !absolutePath.startsWith(`${root}${path.sep}`)
+    ) {
+      throw new Error(`Refusing unsafe upload deletion path: ${key}`);
+    }
+
+    try {
+      await fs.promises.unlink(absolutePath);
+    } catch (err: any) {
+      // Idempotent deletion: an already-absent object is already clean.
+      if (err?.code === 'ENOENT') {
+        return;
+      }
+
+      throw err;
+    }
+  }
+
+  async deleteStoredObject(
+    input: string | StoredObjectReference,
+  ): Promise<void> {
+    const reference: StoredObjectReference =
+      typeof input === 'string'
+        ? { url: input }
+        : input || {};
+
+    const url = String(reference.url || '').trim();
+    const storageKey = String(reference.storageKey || '').trim();
+    const storageProvider = String(reference.storageProvider || '')
+      .trim()
+      .toLowerCase();
+
+    // Explicit remote metadata wins when available.
+    if (
+      (storageProvider === 'r2' || storageProvider === 's3') &&
+      storageKey
+    ) {
+      await this.deleteR2Key(storageKey);
+      return;
+    }
+
+    // UploadsService R2 objects can always be recovered from their public URL.
+    const r2Key = this.resolveR2KeyFromUrl(url);
+
+    if (r2Key) {
+      await this.deleteR2Key(r2Key);
+      return;
+    }
+
+    // Canonical local File metadata stores paths relative to /uploads.
+    if (storageProvider === 'local' && storageKey) {
+      await this.deleteLocalKey(storageKey);
+      return;
+    }
+
+    const localKey = this.resolveLocalKeyFromUrl(url);
+
+    if (localKey) {
+      await this.deleteLocalKey(localKey);
+      return;
+    }
+
+    // A URL that still looks like one of our uploads must not silently survive
+    // because configuration changed or the provider could not be resolved.
+    if (
+      url.startsWith('uploads/') ||
+      url.startsWith('/uploads/') ||
+      url.includes('/uploads/')
+    ) {
+      throw new Error(
+        `Could not resolve managed upload for deletion: ${url}`,
+      );
+    }
+
+    // External URLs (Google avatars, remote images, etc.) are not OpenShare
+    // storage objects and must not be deleted.
   }
 
   async uploadFile(file: Express.Multer.File): Promise<StoredFile> {

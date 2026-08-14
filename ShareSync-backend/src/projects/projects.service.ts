@@ -40,6 +40,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationPriority, NotificationType } from '../notifications/schemas/notification.schema';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { ActivitiesService } from '../activities/activities.service';
+import { StoredObjectReference, UploadsService } from '../uploads/uploads.service';
 
 export const DEFAULT_PROJECT_NOTIFICATION_PREFERENCES = {
   taskAssigned: true,
@@ -153,6 +154,7 @@ export class ProjectsService {
     private readonly threadMessageModel: Model<ThreadMessageDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly uploadsService: UploadsService,
     @Optional() private readonly notifications?: NotificationsService,
     @Optional() private readonly activities?: ActivitiesService,
   ) {}
@@ -1988,6 +1990,109 @@ export class ProjectsService {
     return updated;
   }
 
+  private async cleanupOwnedProjectStorage(
+    ownedProjects: any[],
+    projectIds: any[],
+  ): Promise<void> {
+    if (!Array.isArray(projectIds) || projectIds.length === 0) {
+      return;
+    }
+
+    const references: StoredObjectReference[] = [];
+
+    // Project-owned branding does not have a separate File document.
+    for (const project of ownedProjects || []) {
+      for (const url of [
+        project?.logoUrl,
+        project?.bannerUrl,
+      ]) {
+        if (url) {
+          references.push({ url: String(url) });
+        }
+      }
+    }
+
+    // VaultFile is the primary current project upload model.
+    const vaultFiles = await this.vaultFileModel
+      .find({
+        projectId: { $in: projectIds },
+      })
+      .select('fileUrl')
+      .lean()
+      .exec();
+
+    for (const file of vaultFiles) {
+      if ((file as any)?.fileUrl) {
+        references.push({
+          url: String((file as any).fileUrl),
+        });
+      }
+    }
+
+    // The richer File model is registered by FilesModule in deployments that
+    // use it. It carries storageKey/storageProvider as well as version URLs.
+    if (this.connection.modelNames().includes('File')) {
+      const fileModel = this.connection.model<any>('File');
+
+      const files = await fileModel
+        .find({
+          projectId: { $in: projectIds },
+        })
+        .select(
+          'url thumbnailUrl storageKey storageProvider versions',
+        )
+        .lean()
+        .exec();
+
+      for (const file of files) {
+        references.push({
+          url: file?.url,
+          storageKey: file?.storageKey,
+          storageProvider: file?.storageProvider,
+        });
+
+        if (
+          file?.thumbnailUrl &&
+          file.thumbnailUrl !== file?.url
+        ) {
+          references.push({
+            url: file.thumbnailUrl,
+          });
+        }
+
+        for (const version of file?.versions || []) {
+          if (version?.url) {
+            references.push({
+              url: String(version.url),
+            });
+          }
+        }
+      }
+    }
+
+    const seen = new Set<string>();
+
+    for (const reference of references) {
+      const fingerprint = JSON.stringify([
+        String(reference.storageProvider || ''),
+        String(reference.storageKey || ''),
+        String(reference.url || ''),
+      ]);
+
+      if (seen.has(fingerprint)) {
+        continue;
+      }
+
+      seen.add(fingerprint);
+
+      await this.uploadsService.deleteStoredObject(reference);
+    }
+
+    this.logger.log(
+      `Account project storage cleanup completed: projects=${projectIds.length} objects=${seen.size}`,
+    );
+  }
+
   // account-project-cascade-v1
   //
   // Account deletion cleanup for projects owned by a user.
@@ -2020,7 +2125,7 @@ export class ProjectsService {
           { createdById: userObjectId },
         ],
       })
-      .select('_id')
+      .select('_id logoUrl bannerUrl')
       .lean()
       .exec();
 
@@ -2029,6 +2134,11 @@ export class ProjectsService {
       .filter(Boolean);
 
     if (projectIds.length > 0) {
+      // account-storage-cleanup-v1
+      // Physical objects are removed before their Mongo metadata.
+      // Any real storage failure aborts account deletion.
+      await this.cleanupOwnedProjectStorage(ownedProjects, projectIds);
+
       const projectValues: any[] = [
         ...projectIds,
         ...projectIds.map((id: any) => String(id)),

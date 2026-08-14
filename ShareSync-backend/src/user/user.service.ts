@@ -25,6 +25,7 @@ import { SmsService } from '../notifications/sms.service';
 import { EmailService } from '../notifications/email.service';
 import { StreakService } from '../gamification/services/streak.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -105,6 +106,7 @@ export class UserService {
     private readonly emailService: EmailService,
 
     private readonly subscriptions: SubscriptionsService,
+    private readonly uploadsService: UploadsService,
 
     // ✅ Optional to avoid boot failures if UserModule has not imported/exported the streak provider yet
     @Optional() private readonly streakService?: StreakService,
@@ -1465,6 +1467,30 @@ export class UserService {
   ): Promise<void> {
     const deletionEmail = String((user as any).email || '').trim();
     const deletionFirstName = String((user as any).firstName || '').trim();
+
+    // account-delete-avatar-cleanup-v1
+    // Delete OpenShare-managed avatar bytes before the User document disappears.
+    // External identity-provider images are ignored by UploadsService.
+    const avatarUrls = Array.from(
+      new Set(
+        [
+          (user as any).avatarUrl,
+          (user as any).profilePicture,
+          (user as any).profileImage,
+          (user as any).avatar,
+          (user as any).photoUrl,
+          (user as any).imageUrl,
+        ]
+          .map((value) => String(value || '').trim())
+          .filter(Boolean),
+      ),
+    );
+
+    for (const avatarUrl of avatarUrls) {
+      await this.uploadsService.deleteStoredObject({
+        url: avatarUrl,
+      });
+    }
 
     // account-delete-billing-cleanup-v1
     // Billing cleanup is fail-closed. A paid OpenShare account must never

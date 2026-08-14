@@ -23,6 +23,7 @@ import {
   UploadNewVersionDto,
 } from './dto/file.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -39,6 +40,7 @@ export class FilesService {
     private readonly folderModel: Model<FolderDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly activities: ActivitiesService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   private async recordFileActivity(data: {
@@ -302,7 +304,30 @@ export class FilesService {
     const file = await this.fileModel.findById(fileId);
     if (!file) return;
 
-    // TODO: Delete from storage provider
+    // Delete physical storage before discarding the metadata required to
+    // locate it. Real storage failures are fail-closed.
+    await this.uploadsService.deleteStoredObject({
+      url: (file as any).url,
+      storageKey: (file as any).storageKey,
+      storageProvider: (file as any).storageProvider,
+    });
+
+    if (
+      (file as any).thumbnailUrl &&
+      (file as any).thumbnailUrl !== (file as any).url
+    ) {
+      await this.uploadsService.deleteStoredObject({
+        url: (file as any).thumbnailUrl,
+      });
+    }
+
+    for (const version of (file as any).versions || []) {
+      if (version?.url) {
+        await this.uploadsService.deleteStoredObject({
+          url: version.url,
+        });
+      }
+    }
 
     await this.fileModel.findByIdAndDelete(fileId);
 

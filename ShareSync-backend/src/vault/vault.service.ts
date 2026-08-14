@@ -845,26 +845,10 @@ export class VaultService {
     return cleaned;
   }
 
-  private async removeLocalUploadIfSafe(fileUrl: string): Promise<void> {
-    if (!fileUrl || !fileUrl.startsWith('/uploads/')) {
-      return;
-    }
-
-    const fileName = path.basename(fileUrl);
-
-    if (!fileName || fileName === '.' || fileName === '..') {
-      return;
-    }
-
-    const absolutePath = path.resolve(process.cwd(), 'uploads', fileName);
-
-    try {
-      await fs.unlink(absolutePath);
-    } catch (err: any) {
-      if (err?.code !== 'ENOENT') {
-        this.logger.warn(`Could not remove local vault upload ${absolutePath}: ${err?.message || err}`);
-      }
-    }
+  private async removeStoredUpload(fileUrl: string): Promise<void> {
+    await this.uploadsService.deleteStoredObject({
+      url: fileUrl,
+    });
   }
 
   async renameFile(fileId: string, userId: string, originalName: string): Promise<VaultFileDocument> {
@@ -929,8 +913,9 @@ export class VaultService {
     const projectId = this.normalizeId((file as any).projectId);
     const originalName = String((file as any).originalName || 'File');
 
+    // Delete the actual R2/local object before removing the Mongo locator.
+    await this.removeStoredUpload(fileUrl);
     await this.fileModel.deleteOne({ _id: (file as any)._id }).exec();
-    await this.removeLocalUploadIfSafe(fileUrl);
 
     this.eventEmitter.emit('vault.file.deleted', {
       fileId,

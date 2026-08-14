@@ -38,6 +38,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { ActivitiesModule } from '../activities/activities.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { ActivitiesModule } from '../activities/activities.module';
       }
     ]),
     ProjectFollowModule,
+    UploadsModule,
     ModerationModule,
     forwardRef(() => RealtimeModule),
     forwardRef(() => NotificationsModule),
