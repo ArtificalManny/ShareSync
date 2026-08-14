@@ -26,6 +26,7 @@ import { EmailService } from '../notifications/email.service';
 import { StreakService } from '../gamification/services/streak.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { UploadsService } from '../uploads/uploads.service';
+import { AccountDataCleanupService } from './account-data-cleanup.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -107,6 +108,7 @@ export class UserService {
 
     private readonly subscriptions: SubscriptionsService,
     private readonly uploadsService: UploadsService,
+    private readonly accountDataCleanup: AccountDataCleanupService,
 
     // ✅ Optional to avoid boot failures if UserModule has not imported/exported the streak provider yet
     @Optional() private readonly streakService?: StreakService,
@@ -1500,6 +1502,12 @@ export class UserService {
     // Project/account cleanup is fail-closed:
     // if project cleanup fails, DO NOT delete the User document.
     await this.projects.deleteAllForUser(userId);
+
+    // account-delete-shared-data-cleanup-v1
+    // Delete account-owned records and remove/anonymize live identity from
+    // surviving collaborative records before the User document disappears.
+    // This cleanup is fail-closed just like billing and owned-project cleanup.
+    await this.accountDataCleanup.cleanupForAccountDeletion(userId, user);
 
     await this.userModel.findByIdAndDelete(userId).exec();
 

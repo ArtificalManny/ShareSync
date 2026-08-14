@@ -3,6 +3,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { UserService } from './user.service';
+import { AccountDataCleanupService } from './account-data-cleanup.service';
 import { UserController } from './user.controller';
 import { User, UserSchema } from './schemas/user.schema';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
@@ -56,7 +57,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     SubscriptionsModule,
   ],
   controllers: [UserController],
-  providers: [UserService, EmailService],
+  providers: [UserService, EmailService, AccountDataCleanupService],
   exports: [UserService],
 })
 export class UserModule {}
