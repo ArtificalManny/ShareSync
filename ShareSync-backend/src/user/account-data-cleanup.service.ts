@@ -694,6 +694,28 @@ export class AccountDataCleanupService {
     }
   }
 
+  private async cleanupVaultFolderRelationships(
+    userId: string,
+  ): Promise<void> {
+    const ids = this.idVariants(userId);
+
+    for (const collection of this.getCollections(['VaultFolder'])) {
+      // Private-folder access is a live relationship, not historical authorship.
+      // Preserve createdBy as a non-resolving historical creator ID, but remove
+      // the deleted account from every surviving folder's access list.
+      await collection.updateMany(
+        {
+          allowedUsers: { $in: ids },
+        },
+        {
+          $pull: {
+            allowedUsers: { $in: ids },
+          },
+        } as any,
+      );
+    }
+  }
+
   private async cleanupSuggestions(userId: string): Promise<void> {
     const ids = this.idVariants(userId);
 
@@ -760,6 +782,7 @@ export class AccountDataCleanupService {
     await this.cleanupConversations(userId);
     await this.cleanupMessages(userId);
     await this.cleanupTaskRelationships(userId);
+    await this.cleanupVaultFolderRelationships(userId);
     await this.cleanupSuggestions(userId);
 
     this.logger.log(
