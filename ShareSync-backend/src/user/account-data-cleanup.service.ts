@@ -366,10 +366,74 @@ export class AccountDataCleanupService {
   }
 
   private async cleanupFollows(userId: string): Promise<void> {
-    await this.deleteByUserId(
-      ['Follow', 'ProjectFollow'],
-      userId,
-    );
+    const ids = this.idVariants(userId);
+    const affectedProjectIds = new Set<string>();
+
+    // Follow rows maintain Project.followersCount. Capture every affected
+    // project before deleting the account's follows so surviving projects can
+    // have their cached follower count recomputed afterward.
+    const followCollections = this.getCollections(['Follow']);
+
+    for (const collection of followCollections) {
+      const follows = await collection
+        .find(
+          {
+            userId: { $in: ids },
+          },
+          {
+            projection: { projectId: 1 },
+          },
+        )
+        .toArray();
+
+      for (const follow of follows) {
+        const projectId = this.normalizeId(follow?.projectId);
+        if (projectId) {
+          affectedProjectIds.add(projectId);
+        }
+      }
+
+      await collection.deleteMany({
+        userId: { $in: ids },
+      });
+    }
+
+    // ProjectFollow is the notification/preferences relationship and does not
+    // maintain Project.followersCount.
+    await this.deleteByUserId(['ProjectFollow'], userId);
+
+    if (affectedProjectIds.size === 0) {
+      return;
+    }
+
+    const projectCollections = this.getCollections(['Project']);
+
+    for (const projectId of affectedProjectIds) {
+      if (!Types.ObjectId.isValid(projectId)) {
+        continue;
+      }
+
+      const projectIds = this.idVariants(projectId);
+
+      let followersCount = 0;
+
+      for (const collection of followCollections) {
+        followersCount += await collection.countDocuments({
+          projectId: { $in: projectIds },
+        });
+      }
+
+      for (const collection of projectCollections) {
+        await collection.updateOne(
+          {
+            _id: { $in: projectIds },
+          },
+          {
+            $set: { followersCount },
+          },
+        );
+      }
+    }
   }
 
   private async cleanupPersonalAnalyticsAndState(
