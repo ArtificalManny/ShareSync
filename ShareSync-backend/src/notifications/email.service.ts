@@ -521,66 +521,170 @@ export class EmailService {
       return acc;
     }, {});
 
-    const html = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, sans-serif;">
-        <center style="width: 100%; table-layout: fixed; background-color: #f4f4f5; padding: 40px 0;">
-          <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
-            <tr>
-              <td align="center" style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
-                <img src="https://openshare.ca/brand/openshare-email-lockup.png" alt="OpenShare" width="180" style="display: block; margin: 0 auto;">
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 40px 40px 30px; background-color: #1E1B4B; border-bottom: 3px solid #06B6D4; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;">Your Daily Digest</h1>
-                <p style="margin: 10px 0 0; color: #94A3B8; font-size: 15px;">${new Date().toLocaleDateString()} &bull; ${notifications?.length || 0} updates</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 40px;">
-                ${Object.entries(byProject)
-                  .map(([projectId, notifs]: [string, any]) => `
-                    <div style="margin-bottom: 32px;">
-                      <h2 style="margin: 0 0 16px; color: #0F172A; font-size: 14px; border-bottom: 2px solid #F1F5F9; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">${projectId === 'general' ? 'General' : 'Project Updates'}</h2>
-                      <ul style="margin: 0; padding: 0; list-style-type: none;">
-                        ${(notifs || []).map((n: any) => `
-                          <li style="margin-bottom: 16px; padding-left: 16px; border-left: 3px solid #7C3AED;">
-                            <strong style="color: #1E293B; display: block; font-size: 15px; margin-bottom: 4px;">${this.escapeHtml(n?.title || 'Update')}</strong>
-                            <span style="color: #64748B; font-size: 14px; line-height: 1.5;">${this.escapeHtml(n?.message || '')}</span>
-                          </li>
-                        `).join('')}
-                      </ul>
+    const updateCount = notifications?.length || 0;
+    const digestDate = this.escapeHtml(new Date().toLocaleDateString());
+
+    const settingsUrl = process.env.FRONTEND_URL
+      ? `${String(process.env.FRONTEND_URL).replace(/\/+$/, '')}/settings`
+      : '#';
+
+    const frontendUrl = String(process.env.FRONTEND_URL || '')
+      .replace(/\/+$/, '');
+
+    const digestSections = Object.entries(byProject)
+      .map(
+        ([projectId, notifs]: [string, any]) => `
+          <div style="margin:0 0 28px;">
+            <div
+              style="
+                margin:0 0 12px;
+                color:#7c3aed;
+                font-size:12px;
+                font-weight:800;
+                letter-spacing:1.2px;
+                text-transform:uppercase;
+              "
+            >
+              ${projectId === 'general' ? 'General' : 'Project Updates'}
+            </div>
+
+            ${(notifs || [])
+              .map(
+                (n: any) => `
+                  <div
+                    style="
+                      padding:16px 0;
+                      border-bottom:1px solid #e2e8f0;
+                    "
+                  >
+                    <div
+                      style="
+                        margin:0 0 5px;
+                        color:#0f172a;
+                        font-size:15px;
+                        font-weight:700;
+                        line-height:1.45;
+                      "
+                    >
+                      ${this.escapeHtml(n?.title || 'Update')}
                     </div>
-                  `)
-                  .join('')}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 30px 40px; background-color: #F8FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
-                <p style="margin: 0; font-size: 13px; color: #64748B;">
-                  <a href="${process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/settings` : '#'}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a> in OpenShare settings.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </center>
-      </body>
-      </html>
+
+                    <div
+                      style="
+                        color:#475569;
+                        font-size:14px;
+                        line-height:1.6;
+                      "
+                    >
+                      ${this.escapeHtml(n?.message || n?.body || '')}
+                    </div>
+                  </div>
+                `,
+              )
+              .join('')}
+          </div>
+        `,
+      )
+      .join('');
+
+    const openButton = frontendUrl
+      ? `
+        <p style="margin:28px 0 0;">
+          <a
+            href="${this.escapeAttr(frontendUrl)}"
+            style="
+              display:inline-block;
+              background:#7c3aed;
+              color:#ffffff;
+              text-decoration:none;
+              padding:12px 18px;
+              border-radius:10px;
+              font-weight:700;
+            "
+          >
+            Open OpenShare
+          </a>
+        </p>
+      `
+      : '';
+
+    // openshare-notification-email-style-v2
+    const html = `
+      <div
+        style="
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          line-height:1.5;
+          color:#0f172a;
+          max-width:600px;
+          margin:0 auto;
+        "
+      >
+        <div style="text-align:center;margin:0 0 28px;">
+          <img
+            src="https://openshare.ca/brand/openshare-email-lockup.png"
+            width="240"
+            alt="OpenShare"
+            style="
+              display:block;
+              width:240px;
+              max-width:100%;
+              height:auto;
+              margin:0 auto;
+              border:0;
+            "
+          />
+        </div>
+
+        <h2
+          style="
+            margin:0 0 8px;
+            color:#0f172a;
+            font-size:24px;
+            line-height:1.3;
+          "
+        >
+          Your Daily Digest
+        </h2>
+
+        <p
+          style="
+            margin:0 0 28px;
+            color:#64748b;
+            font-size:14px;
+          "
+        >
+          ${digestDate} &bull; ${updateCount} ${updateCount === 1 ? 'update' : 'updates'}
+        </p>
+
+        ${digestSections}
+
+        ${openButton}
+
+        <p
+          style="
+            margin:32px 0 0;
+            padding-top:20px;
+            border-top:1px solid #e2e8f0;
+            color:#64748b;
+            font-size:13px;
+            line-height:1.6;
+          "
+        >
+          You&apos;re receiving this because you opted in to email updates in OpenShare.
+          <a
+            href="${this.escapeAttr(settingsUrl)}"
+            style="color:#7c3aed;text-decoration:none;font-weight:600;"
+          >
+            Manage notification preferences
+          </a>
+        </p>
+      </div>
     `;
 
     if (this.resendApiKey && this.resendFromAddress) {
       await this.sendViaResend({
         to,
-        subject: `Daily Digest — ${notifications?.length || 0} updates`,
+        subject: `Daily Digest — ${updateCount} updates`,
         html,
       });
       return;
@@ -595,7 +699,7 @@ export class EmailService {
       await this.transporter.sendMail({
         from: this.fromAddress,
         to,
-        subject: `Daily Digest — ${notifications?.length || 0} updates`,
+        subject: `Daily Digest — ${updateCount} updates`,
         html,
       });
     } catch (error) {
@@ -687,87 +791,120 @@ export class EmailService {
   }
 
   private buildEmailTemplate(notification: any): string {
-    const emoji = this.getEmojiForType(notification?.type);
+    const title = this.escapeHtml(
+      notification?.title || 'OpenShare Update',
+    );
 
-    const title = this.escapeHtml(notification?.title || 'OpenShare Update');
-    const msg = this.escapeHtml(notification?.message || notification?.body || '');
+    const msg = this.escapeHtml(
+      notification?.message || notification?.body || '',
+    );
 
-    const actionUrl = this.buildFrontendUrl(notification?.actionData?.url);
+    const actionUrl = this.buildFrontendUrl(
+      notification?.actionData?.url,
+    );
+
     const button = actionUrl
-      ? `<table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td align="center"><a href="${this.escapeAttr(actionUrl)}" style="background-color: #7C3AED; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">View in OpenShare</a></td></tr></table>`
+      ? `
+        <p style="margin:24px 0 0;">
+          <a
+            href="${this.escapeAttr(actionUrl)}"
+            style="
+              display:inline-block;
+              background:#7c3aed;
+              color:#ffffff;
+              text-decoration:none;
+              padding:12px 18px;
+              border-radius:10px;
+              font-weight:700;
+            "
+          >
+            View in OpenShare
+          </a>
+        </p>
+      `
       : '';
 
     const settingsUrl = process.env.FRONTEND_URL
-      ? `${process.env.FRONTEND_URL}/settings`
+      ? `${String(process.env.FRONTEND_URL).replace(/\/+$/, '')}/settings`
       : '#';
 
+    // openshare-notification-email-style-v2
     return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; }
-          table { border-spacing: 0; }
-          td { padding: 0; }
-          img { border: 0; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <center style="width: 100%; table-layout: fixed; background-color: #f4f4f5; padding: 40px 0;">
-          <table width="100%" style="max-width: 600px; background-color: #ffffff; margin: 0 auto; border-radius: 12px; overflow: hidden; border-collapse: collapse; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);">
-            <tr>
-              <td align="center" style="padding: 30px 40px; text-align: center; background-color: #0F172A;">
-                <img src="https://openshare.ca/brand/openshare-mark-192.png" width="72" height="72" alt="OpenShare" style="display:block; margin: 0 auto; border:0; border-radius:16px;" />
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 40px 40px 30px; text-align: center; background-color: #1E1B4B; border-bottom: 3px solid #06B6D4;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.5px;">
-                  <span style="font-size: 26px;">${emoji}</span> &nbsp; ${title}
-                </h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 40px;">
-                <p style="margin: 0 0 32px; color: #334155; font-size: 16px; line-height: 1.6; text-align: center;">
-                  ${msg}
-                </p>
-                ${button}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 30px 40px; background-color: #F8FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
-                <p style="margin: 0 0 12px; color: #64748B; font-size: 13px; line-height: 1.5;">
-                  You're receiving this because you opted in to email updates in OpenShare.
-                </p>
-                <p style="margin: 0; font-size: 13px;">
-                  <a href="${this.escapeAttr(settingsUrl)}" style="color: #06B6D4; text-decoration: none; font-weight: 600;">Manage preferences</a>
-                </p>
-              </td>
-            </tr>
-          </table>
-        </center>
-      </body>
-      </html>
-    `;
-  }
+      <div
+        style="
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          line-height:1.5;
+          color:#0f172a;
+          max-width:600px;
+          margin:0 auto;
+        "
+      >
+        <div style="text-align:center;margin:0 0 28px;">
+          <img
+            src="https://openshare.ca/brand/openshare-email-lockup.png"
+            width="240"
+            alt="OpenShare"
+            style="
+              display:block;
+              width:240px;
+              max-width:100%;
+              height:auto;
+              margin:0 auto;
+              border:0;
+            "
+          />
+        </div>
 
-  private getEmojiForType(type: string): string {
-    const emojiMap: Record<string, string> = {
-      announcement_created: '📢',
-      mention: '@',
-      task_assigned: '📋',
-      file_uploaded: '📎',
-      deadline_reminder: '⏰',
-      project_invite: '👋',
-      comment_added: '💬',
-      follow_created: '⭐',
-      project_ship_update: '🚀',
-      project_milestone_reached: '🏁',
-    };
-    return emojiMap[type] || '🔔';
+        <h2
+          style="
+            margin:0 0 12px;
+            color:#0f172a;
+            font-size:24px;
+            line-height:1.3;
+          "
+        >
+          ${title}
+        </h2>
+
+        ${
+          msg
+            ? `
+              <p
+                style="
+                  margin:0;
+                  color:#334155;
+                  font-size:16px;
+                  line-height:1.65;
+                "
+              >
+                ${msg}
+              </p>
+            `
+            : ''
+        }
+
+        ${button}
+
+        <p
+          style="
+            margin:32px 0 0;
+            padding-top:20px;
+            border-top:1px solid #e2e8f0;
+            color:#64748b;
+            font-size:13px;
+            line-height:1.6;
+          "
+        >
+          You&apos;re receiving this because you opted in to email updates in OpenShare.
+          <a
+            href="${this.escapeAttr(settingsUrl)}"
+            style="color:#7c3aed;text-decoration:none;font-weight:600;"
+          >
+            Manage notification preferences
+          </a>
+        </p>
+      </div>
+    `;
   }
 
   private escapeHtml(s: string): string {
