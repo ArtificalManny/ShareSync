@@ -289,7 +289,7 @@ export default function PilotFeedback({
         aria-label="Send feedback"
         title="Send feedback"
         data-pilot-feedback-floating-trigger="true"
-        className="fixed bottom-24 right-4 z-[80] inline-flex h-11 items-center gap-2 rounded-full border border-violet-200/70 bg-white/95 px-3.5 text-xs font-black text-violet-700 shadow-xl shadow-violet-500/15 backdrop-blur-xl transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:bottom-6 sm:right-6 dark:border-white/[0.10] dark:bg-[#17131f]/95 dark:text-violet-200"
+        className="fixed bottom-24 right-20 z-[80] inline-flex h-11 items-center gap-2 rounded-full border border-violet-200/70 bg-white/95 px-3.5 text-xs font-black text-violet-700 shadow-xl shadow-violet-500/15 backdrop-blur-xl transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:bottom-6 sm:right-[6.5rem] dark:border-white/[0.10] dark:bg-[#17131f]/95 dark:text-violet-200"
       >
         <MessageSquarePlus
           className="h-4 w-4"
