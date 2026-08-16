@@ -32,6 +32,65 @@ const API_BASE_URL = (
 ).replace(/\/$/, "");
 
 
+function isOpenShareHealthPayload(payload) {
+  return (
+    payload?.ok === true ||
+    (
+      payload?.success === true &&
+      String(payload?.status || "").toLowerCase() === "ok"
+    )
+  );
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+// google-oauth-backend-warmup-v1
+// Keep users on OpenShare while Render wakes. Only enter OAuth after
+// OpenShare itself responds with its JSON health payload.
+async function waitForOpenShareBackendReady(apiBase, timeoutMs = 40000) {
+  const healthUrl = `${String(apiBase).replace(/\/+$/, "")}/health`;
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(`${healthUrl}?oauthWake=${Date.now()}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
+      const contentType = String(
+        response.headers.get("content-type") || ""
+      ).toLowerCase();
+
+      if (response.ok && contentType.includes("application/json")) {
+        const payload = await response.json();
+
+        if (isOpenShareHealthPayload(payload)) {
+          return true;
+        }
+      }
+    } catch {
+      // Render may still be waking or its temporary page may fail CORS.
+      // Stay inside OpenShare and retry until the bounded deadline.
+    } finally {
+      window.clearTimeout(timeout);
+    }
+
+    await sleep(1200);
+  }
+
+  return false;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PASSWORD STRENGTH METER
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -229,6 +288,7 @@ function VerificationStep({ email, userId, onVerify, onBack, error, submitting }
 import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
 
 export default function CreateAccount() {
+  const [googleConnecting, setGoogleConnecting] = useState(false);
   useDocumentTitle("OpenShare");
   const navigate = useNavigate();
 
@@ -420,8 +480,22 @@ export default function CreateAccount() {
             ══════════════════════════════════════════════════════════════ */}
              <button
           type="button"
-          onClick={() => {
+          disabled={googleConnecting}
+          onClick={async () => {
             markRegistrationStarted("google");
+            setError("");
+            setGoogleConnecting(true);
+
+            const backendReady =
+              await waitForOpenShareBackendReady(API_BASE_URL);
+
+            if (!backendReady) {
+              setError(
+                "OpenShare is taking a little longer to connect. Please try Google sign-in again."
+              );
+              setGoogleConnecting(false);
+              return;
+            }
 
             try {
               sessionStorage.setItem(
@@ -432,7 +506,7 @@ export default function CreateAccount() {
               // Analytics must never block authentication.
             }
 
-            window.location.href = `${API_BASE_URL}/auth/google`;
+            window.location.assign(`${API_BASE_URL}/auth/google`);
           }}
           className="
             w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl
@@ -450,7 +524,7 @@ export default function CreateAccount() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          Continue with Google
+          {googleConnecting ? "Connecting to Google…" : "Continue with Google"}
         </button>
 
             {/* ── "or" divider ── */}
