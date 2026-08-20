@@ -43,9 +43,17 @@ export default function SearchFilters({
   projectContextTitle,
   projectScopeAvailable = false,
 }) {
+  // mobile-search-filter-contrast-v1
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Search filters">
-      <span className="inline-flex items-center gap-1 text-xs text-muted">
+    <div
+      className="
+        mt-3 flex flex-wrap items-center gap-2
+        text-slate-700 dark:text-zinc-300
+      "
+      role="group"
+      aria-label="Search filters"
+    >
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-zinc-400">
         <Filter className="w-3.5 h-3.5" /> Filters
       </span>
 
@@ -58,7 +66,10 @@ export default function SearchFilters({
             key={t}
             type="button"
             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition
-              ${enabled ? "bg-indigo-50 border-indigo-200 text-indigo-700" : "bg-surface border-border text-muted hover:bg-slate-50 dark:hover:bg-slate-800/60"}`}
+              ${enabled
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm dark:border-indigo-500/25 dark:bg-indigo-500/10 dark:text-indigo-300"
+                : "border-slate-200 bg-white/70 text-slate-500 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.06]"
+              }`}
             onClick={() => onToggleType?.(t)}
             aria-pressed={enabled ? "true" : "false"}
           >
@@ -69,10 +80,13 @@ export default function SearchFilters({
       })}
 
       {/* Scope */}
-      <div className="ml-2 inline-flex items-center gap-1 text-xs" role="group" aria-label="Scope">
+      <div className="mt-1 flex w-full flex-wrap items-center gap-1 text-xs sm:ml-2 sm:mt-0 sm:w-auto" role="group" aria-label="Scope">
         <button
           type="button"
-          className={`rounded-full border px-2 py-0.5 ${scope === "all" ? "bg-slate-100 dark:bg-slate-800/60 border-slate-300" : "border-border text-muted"}`}
+          className={`rounded-full border px-2 py-0.5 ${scope === "all"
+            ? "border-slate-300 bg-white text-slate-900 shadow-sm dark:border-white/15 dark:bg-white/[0.08] dark:text-white"
+            : "border-slate-200 bg-white/60 text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
+          }`}
           onClick={() => onChangeScope?.("all")}
           aria-pressed={scope === "all" ? "true" : "false"}
         >
@@ -82,8 +96,8 @@ export default function SearchFilters({
           type="button"
           className={`rounded-full border px-2 py-0.5 disabled:cursor-not-allowed disabled:opacity-40 ${
             scope === "project"
-              ? "bg-slate-100 dark:bg-slate-800/60 border-slate-300"
-              : "border-border text-muted"
+              ? "border-slate-300 bg-white text-slate-900 shadow-sm dark:border-white/15 dark:bg-white/[0.08] dark:text-white"
+              : "border-slate-200 bg-white/60 text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
           }`}
           onClick={() => {
             if (projectScopeAvailable) {
@@ -105,7 +119,10 @@ export default function SearchFilters({
         </button>
         <button
           type="button"
-          className={`rounded-full border px-2 py-0.5 ${scope === "mine" ? "bg-slate-100 dark:bg-slate-800/60 border-slate-300" : "border-border text-muted"}`}
+          className={`rounded-full border px-2 py-0.5 ${scope === "mine"
+            ? "border-slate-300 bg-white text-slate-900 shadow-sm dark:border-white/15 dark:bg-white/[0.08] dark:text-white"
+            : "border-slate-200 bg-white/60 text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
+          }`}
           onClick={() => onChangeScope?.("mine")}
           aria-pressed={scope === "mine" ? "true" : "false"}
         >
@@ -114,14 +131,14 @@ export default function SearchFilters({
       </div>
 
       {/* Sort */}
-      <div className="inline-flex items-center gap-1 text-xs ml-auto">
-        <ArrowUpDown className="w-3.5 h-3.5 text-muted" />
+      <div className="mt-1 flex w-full items-center justify-end gap-1 text-xs sm:ml-auto sm:mt-0 sm:w-auto">
+        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
         <label htmlFor="search-sort" className="sr-only">Sort</label>
         <select
           id="search-sort"
           value={sort}
           onChange={(e) => onChangeSort?.(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
+          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm outline-none dark:border-white/10 dark:bg-[#18181d] dark:text-zinc-200"
           aria-label="Sort results"
         >
           <option value="relevance">Relevance</option>

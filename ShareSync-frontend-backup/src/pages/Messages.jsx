@@ -759,6 +759,7 @@ export default function Messages() {
   useDocumentTitle("Messages");
   const queryClient = useQueryClient();
   const messagesEndRef = useRef(null);
+  const messagesScrollRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
 
   useEffect(() => {
@@ -969,8 +970,15 @@ export default function Messages() {
   // ═══════════════════════════════════════════════════════════════════════
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const frame = window.requestAnimationFrame(() => {
+      const scroller = messagesScrollRef.current;
+      if (!scroller) return;
+
+      scroller.scrollTop = scroller.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, selectedConversationId]);
 
   useEffect(() => {
     if (selectedConversation && (selectedConversation.unreadCount || 0) > 0) {
@@ -1061,7 +1069,82 @@ export default function Messages() {
   const hasUnreadMessages = conversations.some(c => (c.unreadCount || 0) > 0);
 
   return (
-    <div className="h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] px-3 sm:px-6 lg:px-8 py-3 sm:py-4 bg-slate-50 dark:bg-[#09090B] transition-colors duration-300 overflow-hidden">
+    <div className="messages-page min-h-0 h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] px-3 sm:px-6 lg:px-8 py-3 sm:py-4 bg-slate-50 dark:bg-[#09090B] transition-colors duration-300 overflow-hidden">
+      <style>{`
+        /* messages-ios-viewport-shell-v1
+           The mobile app shell already owns 100dvh, header geometry,
+           bottom-nav spacing, and safe areas. Messages should consume
+           that available region rather than calculate another viewport. */
+        @media (max-width: 900px) {
+          /* messages-ios-explicit-shell-height-v2
+             Use the actual visible app region instead of percentage height.
+             MobileHeader = safe-area top + 62px.
+             ResponsiveLayout reserves 5.75rem + safe-area bottom for nav. */
+          .messages-page {
+            height: calc(
+              100dvh
+              - 62px
+              - env(safe-area-inset-top, 0px)
+              - 5.75rem
+              - env(safe-area-inset-bottom, 0px)
+            ) !important;
+            max-height: calc(
+              100dvh
+              - 62px
+              - env(safe-area-inset-top, 0px)
+              - 5.75rem
+              - env(safe-area-inset-bottom, 0px)
+            ) !important;
+          }
+
+          .messages-page input,
+          .messages-page textarea,
+          .messages-page select {
+            font-size: 16px !important;
+          }
+
+          /* messages-hide-global-assistant-v4
+             Messages owns the lower-right interaction area on mobile.
+             Hide the global Assistant launcher while this page is mounted
+             so it cannot cover the send control or conversation content. */
+          .mobile-assistant-shell {
+            display: none !important;
+          }
+
+          /* messages-ios-fixed-thread-surface-v3
+             A selected conversation behaves like a native messaging pane:
+             pinned between the OpenShare mobile header and bottom nav.
+             Only the message history inside this surface should scroll. */
+          .messages-mobile-thread:not(.messages-hide-on-mobile) {
+            position: fixed !important;
+
+            top: calc(
+              env(safe-area-inset-top, 0px)
+              + 62px
+              + 12px
+            ) !important;
+
+            right: 12px !important;
+
+            bottom: calc(
+              env(safe-area-inset-bottom, 0px)
+              + 60px
+              + 12px
+            ) !important;
+
+            left: 12px !important;
+
+            width: auto !important;
+            height: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            min-height: 0 !important;
+
+            z-index: 65 !important;
+            overflow: hidden !important;
+          }
+        }
+      `}</style>
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-4 h-full min-h-0">
 
         {/* LEFT: Conversation List */}
@@ -1115,7 +1198,7 @@ export default function Messages() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
             {loadingConversations ? (
               <ConversationSkeleton />
             ) : conversationsError ? (
@@ -1170,7 +1253,7 @@ export default function Messages() {
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-[#1f1f23] flex items-center justify-between bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
+              <div className="shrink-0 p-4 border-b border-slate-200 dark:border-[#1f1f23] flex items-center justify-between bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     type="button"
@@ -1208,7 +1291,10 @@ export default function Messages() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-[#111113] transition-colors duration-300">
+              <div
+                ref={messagesScrollRef}
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-white dark:bg-[#111113] transition-colors duration-300 [-webkit-overflow-scrolling:touch]"
+              >
                 {loadingMessages ? (
                   <MessagesSkeleton />
                 ) : messagesError ? (
@@ -1241,7 +1327,7 @@ export default function Messages() {
               <TypingIndicator users={typingUsers} />
 
               {/* Input */}
-              <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
+              <div className="shrink-0 p-3 sm:p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#1f1f23] rounded-lg transition-colors">
                     <Paperclip className="w-5 h-5 text-slate-500 dark:text-zinc-500" />

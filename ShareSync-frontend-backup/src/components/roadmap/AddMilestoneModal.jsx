@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import React, { useMemo, useState } from "react";
 import { X, Calendar, Flag, Loader2, AlertCircle, AlignLeft, Clock, Target, CheckCircle2, AlertTriangle } from "lucide-react";
 import { createMilestone } from "../../api/milestones";
@@ -91,7 +92,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="roadmap-create-milestone-clean-labels-v1 roadmap-add-milestone-contrast-final-v9 roadmap-add-milestone-modal-contrast-v1 roadmap-add-milestone-final-readable-v7 roadmap-create-milestone-modal-v2 roadmap-create-milestone-modal fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-md">
         <style>{`
           /* roadmap-create-milestone-clean-labels-v1 */
@@ -271,6 +272,66 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             border-color: rgba(255, 255, 255, 0.08) !important;
           }
 
+
+          /* openshare-roadmap-mobile-modal-v1 */
+          @media (max-width: 767px) {
+            .roadmap-create-milestone-modal {
+              align-items: flex-end !important;
+              justify-content: center !important;
+              padding-top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+              padding-right: 12px !important;
+              padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+              padding-left: 12px !important;
+            }
+
+            .roadmap-create-milestone-modal > .roadmap-create-milestone-sheet {
+              width: 100% !important;
+              max-width: none !important;
+              max-height:
+                calc(
+                  100dvh -
+                  env(safe-area-inset-top, 0px) -
+                  env(safe-area-inset-bottom, 0px) -
+                  16px
+                ) !important;
+              border-radius: 24px !important;
+            }
+
+            .roadmap-create-milestone-form {
+              min-height: 0 !important;
+              overflow-y: auto !important;
+              overscroll-behavior: contain;
+              -webkit-overflow-scrolling: touch;
+              scroll-padding-bottom:
+                calc(96px + env(safe-area-inset-bottom, 0px));
+            }
+
+            /*
+             * iOS Safari/WKWebView zooms focused form controls below 16px.
+             * Keep desktop typography unchanged while forcing a 16px mobile
+             * computed size for the title, description, and date controls.
+             */
+            .roadmap-create-milestone-modal input,
+            .roadmap-create-milestone-modal textarea {
+              min-width: 0 !important;
+              font-size: 16px !important;
+            }
+
+            .roadmap-create-milestone-footer {
+              flex-shrink: 0 !important;
+              padding-bottom:
+                calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+            }
+
+            /*
+             * This style exists only while AddMilestoneModal is mounted,
+             * so the mobile Assistant disappears only for this modal.
+             */
+            .mobile-assistant-shell {
+              display: none !important;
+            }
+          }
+
           .roadmap-create-button {
             position: relative;
             isolation: isolate;
@@ -319,7 +380,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
       />
 
       {/* Modal */}
-      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-white/[0.08] dark:bg-[#101827]">
+      <div className="roadmap-create-milestone-sheet relative flex max-h-[calc(100vh-3rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)] dark:border-white/[0.08] dark:bg-[#101827]">
         {/* Soft surface atmosphere */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.95),rgba(255,255,255,0.78)_35%,rgba(139,92,246,0.045)_Available)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.12),rgba(15,23,42,0)_58%)]" />
         <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-violet-300/10 blur-3xl dark:bg-violet-500/10" />
@@ -353,7 +414,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
+          <form onSubmit={handleSubmit} className="roadmap-create-milestone-form min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6">
             {/* Title */}
             <div>
               <label className="roadmap-field-label-plain-v1 block text-xs font-black uppercase tracking-[0.16em]">Title</label>
@@ -438,7 +499,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
             )}
 
             {/* Actions */}
-            <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-3 border-t border-slate-200 bg-white/95 px-6 pt-5 pb-1 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
+            <div className="roadmap-create-milestone-footer sticky bottom-0 -mx-6 flex items-center justify-end gap-3 border-t border-slate-200 bg-white/95 px-6 pt-5 pb-1 backdrop-blur-md dark:border-white/[0.06] dark:bg-[#101827]/95">
               <button
                 type="button"
                 onClick={() => onClose?.()}
@@ -474,6 +535,7 @@ export default function AddMilestoneModal({ projectId, onClose }) {
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

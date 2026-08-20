@@ -314,7 +314,9 @@ export default function StackPanel({
   title = "Top tasks to do next",
   milestoneIdFilter = null,
   finishLineFilter = null,
+  readOnly = false,
 } = {}) {
+  // historical-board-stack-readonly-v1
   const { tasks, loading, error, refresh, setTasks } = useStackTasks({
     projectId,
     assigneeId,
@@ -1203,6 +1205,18 @@ export default function StackPanel({
             color: #ffffff !important;
             stroke: #ffffff !important;
           }
+
+          /* moves-ios-form-focus-v1
+             Prevent iOS/WKWebView viewport zoom when a Moves composer
+             form control receives focus. Keep this scoped to the inline
+             composer so desktop and unrelated forms remain untouched. */
+          @media (max-width: 767px) {
+            .stack-task-composer input,
+            .stack-task-composer select,
+            .stack-task-composer textarea {
+              font-size: 16px !important;
+            }
+          }
         `}
       </style>
 
@@ -1247,7 +1261,7 @@ export default function StackPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            {projectId && !showAddForm ? (
+            {projectId && !showAddForm && !readOnly ? (
               <button
                 type="button"
                 onClick={handleOpenAddForm}
@@ -1329,7 +1343,7 @@ export default function StackPanel({
           </div>
         </div>
 
-        {showAddForm ? (
+        {!readOnly && showAddForm ? (
           <div className="stack-task-composer mt-5 rounded-3xl border border-violet-200 dark:border-violet-400/20 bg-gradient-to-br from-violet-50 via-white to-cyan-50 dark:from-violet-500/10 dark:via-white/[0.04] dark:to-cyan-500/10 p-4 shadow-inner">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -1513,7 +1527,7 @@ export default function StackPanel({
                 {emptyStateCopy}
               </p>
 
-              {!hasFilter && projectId && !showAddForm ? (
+              {!hasFilter && projectId && !showAddForm && !readOnly ? (
                 <button
                   type="button"
                   data-openshare-empty-cta="moves-first-task-v3"
@@ -1564,12 +1578,29 @@ export default function StackPanel({
                     key={id || Math.random()}
                     task={displayTask}
                     disabled={rowDisabled}
-                    onStart={handleStart}
-                    onMoveToReview={handleMoveToReview}
-                    onComplete={handleComplete}
-                    onEdit={handleEditTask}
+                    readOnly={readOnly}
+                    onStart={readOnly ? undefined : handleStart}
+                    onMoveToReview={
+                      readOnly
+                        ? undefined
+                        : handleMoveToReview
+                    }
+                    onComplete={
+                      readOnly
+                        ? undefined
+                        : handleComplete
+                    }
+                    onEdit={
+                      readOnly
+                        ? undefined
+                        : handleEditTask
+                    }
                     onOpenDetail={handleOpenTaskDetail}
-                    onDelete={handleDeleteTask}
+                    onDelete={
+                      readOnly
+                        ? undefined
+                        : handleDeleteTask
+                    }
                   />
                 );
               })}
@@ -1590,9 +1621,10 @@ export default function StackPanel({
           Boolean(selectedTask) &&
           actionBusyId === getTaskId(selectedTask)
         }
+        readOnly={readOnly}
         onClose={handleCloseTaskDetail}
-        onSave={handleEditTask}
-        onComplete={handleComplete}
+        onSave={readOnly ? undefined : handleEditTask}
+        onComplete={readOnly ? undefined : handleComplete}
       />
     </>
   );
