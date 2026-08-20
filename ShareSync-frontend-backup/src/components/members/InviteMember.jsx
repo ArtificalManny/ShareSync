@@ -64,19 +64,26 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
     : '';
 
   // invite-explicit-ready-state-v2
-  // One source of truth for both functional and visual button state.
+  // invite-email-validation-sync-v3
+  // Use the same normalized email validity for both the button state
+  // and submission validation.
+  const normalizedInviteEmail = email.trim();
+
+  const inviteEmailLooksValid =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedInviteEmail);
+
   const inviteReady =
-    Boolean(email.trim()) &&
+    inviteEmailLooksValid &&
     !inviting;
 
   const handleInvite = async () => {
-    if (!email.trim()) {
+    if (!normalizedInviteEmail) {
       toast({ title: 'Enter an email address', variant: 'error' });
       return;
     }
 
-    // Basic email validation
-    if (!email.includes('@')) {
+    // Keep submission validation identical to the button readiness rule.
+    if (!inviteEmailLooksValid) {
       toast({ title: 'Invalid email address', variant: 'error' });
       return;
     }
