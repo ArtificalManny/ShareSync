@@ -264,6 +264,34 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
           background: rgba(34, 211, 238, 0.10) !important;
         }
 
+        /* invite-email-label-visibility-v1
+           Keep "Invite by Email" visually consistent with the modal's
+           other section headings instead of inheriting input/label chrome. */
+        [data-invite-member-modal="true"] .invite-email-label {
+          display: block !important;
+
+          width: auto !important;
+          height: auto !important;
+          min-height: 0 !important;
+
+          margin-bottom: 0.75rem !important;
+          padding: 0 !important;
+
+          color: #f8fafc !important;
+          -webkit-text-fill-color: #f8fafc !important;
+
+          font-size: 0.875rem !important;
+          line-height: 1.25rem !important;
+          font-weight: 700 !important;
+
+          background: transparent !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+
+          opacity: 1 !important;
+        }
+
         [data-invite-member-modal="true"] input {
           width: 100% !important;
           min-width: 0 !important;
@@ -479,7 +507,7 @@ const InviteMember = ({ projectId, projectName, onInvite, onClose }) => {
             <section className="invite-section mb-6">
               <label
                 htmlFor="invite-member-email"
-                className="invite-label mb-3 block text-sm font-bold"
+                className="invite-label invite-email-label mb-3 block text-sm font-bold"
               >
                 Invite by Email
               </label>
