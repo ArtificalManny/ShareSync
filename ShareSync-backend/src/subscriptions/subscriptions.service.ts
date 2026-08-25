@@ -75,6 +75,7 @@ interface StripeEvent {
 interface StripeClient {
   customers: {
     create: (params: any) => Promise<StripeCustomer>;
+    retrieve: (id: string) => Promise<any>;
     del: (id: string) => Promise<any>;
   };
   checkout: {
@@ -544,9 +545,44 @@ export class SubscriptionsService {
 
     const subscription = await this.getOrCreateSubscription(userId);
 
+    // openshare-stripe-live-customer-self-heal-v1
+    // A customer ID created in Stripe test mode does not exist in live mode.
+    // Validate the stored customer against the currently configured Stripe
+    // account and transparently replace stale IDs before starting Checkout.
     let customerId = subscription.stripeCustomerId;
-    
+
     try {
+      if (customerId) {
+        try {
+          const existingCustomer =
+            await this.stripe!.customers.retrieve(customerId);
+
+          if (existingCustomer?.deleted === true) {
+            this.logger.warn(
+              `Stored Stripe customer ${customerId} is deleted; creating a replacement for user ${userId}`,
+            );
+            customerId = undefined;
+          }
+        } catch (error: any) {
+          const stripeErrorCode = String(error?.code || '');
+          const stripeErrorMessage = String(error?.message || '');
+
+          const isMissingCustomer =
+            stripeErrorCode === 'resource_missing' ||
+            /No such customer/i.test(stripeErrorMessage);
+
+          if (!isMissingCustomer) {
+            throw error;
+          }
+
+          this.logger.warn(
+            `Stored Stripe customer ${customerId} does not exist in the active Stripe environment; creating a replacement for user ${userId}`,
+          );
+
+          customerId = undefined;
+        }
+      }
+
       if (!customerId) {
         const customer = await this.stripe!.customers.create({
           metadata: {
@@ -554,16 +590,27 @@ export class SubscriptionsService {
             shareSync: 'true',
           },
         });
+
         customerId = customer.id;
 
         await this.subscriptionModel.updateOne(
           { userId: new Types.ObjectId(userId) },
           { stripeCustomerId: customerId },
         );
+
+        this.logger.log(
+          `Stored Stripe customer ${customerId} for user ${userId}`,
+        );
       }
     } catch (error: any) {
-      this.logger.error(`Stripe Customer Creation Error: ${error.message}`, error.stack);
-      throw new InternalServerErrorException(`Could not create billing account: ${error.message}`);
+      this.logger.error(
+        `Stripe Customer Resolution Error: ${error.message}`,
+        error.stack,
+      );
+
+      throw new InternalServerErrorException(
+        `Could not create billing account: ${error.message}`,
+      );
     }
 
     const priceId = this.getPriceId(dto.plan, dto.interval || CheckoutInterval.MONTHLY);
