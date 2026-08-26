@@ -159,6 +159,7 @@ export default function MoveCard({
 
   return (
     <div
+      data-move-root
       onClick={() => onClick?.(move)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -181,9 +182,10 @@ export default function MoveCard({
         relative z-10 hover:z-20
       `}
     >
-      <div className="flex items-start gap-4">
+      <div data-move-layout className="flex items-start gap-4">
         {rank ? (
           <div
+            data-move-rank
             className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center mt-0.5 ${
               moveDone
                 ? 'bg-emerald-100 text-emerald-700 shadow-inner dark:bg-emerald-500/15 dark:text-emerald-300'
@@ -197,7 +199,7 @@ export default function MoveCard({
             )}
           </div>
         ) : (
-          <div className={`shrink-0 p-2.5 rounded-xl ${moveDone ? 'bg-emerald-100 dark:bg-emerald-500/15' : typeConfig.bg} mt-0.5`}>
+          <div data-move-rank className={`shrink-0 p-2.5 rounded-xl ${moveDone ? 'bg-emerald-100 dark:bg-emerald-500/15' : typeConfig.bg} mt-0.5`}>
             {moveDone ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
             ) : (
@@ -206,7 +208,7 @@ export default function MoveCard({
           </div>
         )}
 
-        <div className={`flex-1 min-w-0 pr-2 transition-all duration-300 ${doneVisual ? 'opacity-75 grayscale-[0.15]' : ''}`}>
+        <div data-move-content className={`flex-1 min-w-0 pr-2 transition-all duration-300 ${doneVisual ? 'opacity-75 grayscale-[0.15]' : ''}`}>
           {showProject && move.project && (
             <div className="flex items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide border" style={{ backgroundColor: `${move.project.color || '#3b82f6'}10`, color: move.project.color || '#3b82f6', borderColor: `${move.project.color || '#3b82f6'}20` }}>
@@ -225,17 +227,17 @@ export default function MoveCard({
             className={`${rankStyle.titleSize} transition-colors ${
               moveDone
                 ? 'text-slate-500 line-through decoration-emerald-500/50 decoration-2 group-hover:text-slate-500 dark:text-zinc-400'
-                : 'text-text-primary group-hover:text-brand'
+                : 'text-slate-900 dark:text-white group-hover:text-brand'
             } ${isCompact ? 'line-clamp-1' : 'line-clamp-2'}`}
           >
             {move.title}
           </h4>
 
           {move.impact && !isCompact && (
-            <p className="text-[13px] text-text-tertiary mt-1.5 line-clamp-1">{move.impact}</p>
+            <p data-move-impact className="text-[13px] text-slate-600 dark:text-zinc-400 mt-1.5 line-clamp-1">{move.impact}</p>
           )}
 
-          <div className={`flex flex-wrap items-center gap-3.5 ${isCompact ? 'mt-2' : 'mt-3'}`}>
+          <div data-move-meta className={`flex flex-wrap items-center gap-3.5 ${isCompact ? 'mt-2' : 'mt-3'}`}>
             {moveDone && (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-[11px] font-black text-emerald-700 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                 <CheckCircle2 className="w-3 h-3" />
@@ -252,14 +254,14 @@ export default function MoveCard({
             </span>
             {move.unblocks > 0 && <UnblockIndicator count={move.unblocks} variant={isCompact ? 'compact' : 'default'} />}
             {timeLeft && (
-              <span className={`flex items-center gap-1.5 text-[11px] font-medium ${urgencyLevel === 'critical' ? 'text-error-500 bg-error-500/10 px-2 py-0.5 rounded-md' : urgencyLevel === 'high' ? 'text-warning' : 'text-text-tertiary'}`}>
+              <span className={`flex items-center gap-1.5 text-[11px] font-medium ${urgencyLevel === 'critical' ? 'text-error-500 bg-error-500/10 px-2 py-0.5 rounded-md' : urgencyLevel === 'high' ? 'text-warning' : 'text-slate-500 dark:text-zinc-400'}`}>
                 <Clock className="w-3 h-3" />{timeLeft}
               </span>
             )}
           </div>
         </div>
 
-        <div className="shrink-0 flex items-center gap-1.5">
+        <div data-move-actions className="shrink-0 flex items-center gap-1.5">
           {showActions && (
             <>
               <button
