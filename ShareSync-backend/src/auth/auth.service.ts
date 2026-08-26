@@ -246,7 +246,11 @@ export class AuthService {
   public async verifyEmail(
     userId: string,
     code: string,
-  ): Promise<{ user: any; token: string }> {
+  ): Promise<{
+    user: any;
+    token: string;
+    refresh_token: string;
+  }> {
     console.log('🔵 VERIFY EMAIL CALLED');
     console.log('🔵 userId:', userId, 'code:', code);
 
@@ -279,14 +283,17 @@ export class AuthService {
     user.verificationCodeExpiry = undefined;
     await user.save();
 
-    // Generate JWT
+    // Generate access JWT + persistent session.
     const token = await this.generateToken(user);
+    const refresh_token =
+      await this.createRefreshSession(String(user._id));
 
-    console.log('🟢 EMAIL VERIFIED - Token generated');
+    console.log('🟢 EMAIL VERIFIED - Persistent session generated');
 
     return {
       user: this.sanitizeUser(user),
       token,
+      refresh_token,
     };
   }
 

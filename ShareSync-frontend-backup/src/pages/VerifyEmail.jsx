@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Mail, Check, ArrowLeft, RefreshCw } from "lucide-react";
 import { AuthLayout, AuthButton, AuthError } from "../layouts/AuthLayout";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { setTokens } from "../utils/tokenUtils";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
@@ -39,17 +40,6 @@ function getPendingVerification(locationState) {
     userId: "",
     email: "",
   };
-}
-
-function writeTokenEverywhere(token) {
-  try {
-    localStorage.setItem("ss.jwt", token);
-    localStorage.setItem("token", token);
-    localStorage.setItem("authToken", token);
-    localStorage.setItem("accessToken", token);
-  } catch {
-    // Ignore storage failures.
-  }
 }
 
 function OTPInput({ value, onChange, length = 6 }) {
@@ -179,17 +169,39 @@ export default function VerifyEmail() {
         throw new Error(data.message || data.error || "Verification failed");
       }
 
-      const token = data.token || data.access_token;
+      const token =
+        data.access_token ||
+        data.token;
+
+      const refreshToken =
+        data.refresh_token;
+
       const user = data.user;
 
-      if (!token || !user) {
-        throw new Error("Verification succeeded, but login data was missing.");
+      if (!token || !refreshToken || !user) {
+        throw new Error(
+          "Verification succeeded, but persistent login data was missing.",
+        );
       }
 
-      writeTokenEverywhere(token);
-      localStorage.setItem("ss.user", JSON.stringify(user));
-      localStorage.setItem("user", JSON.stringify(user));
+      setTokens(
+        token,
+        refreshToken,
+        user,
+      );
+
       localStorage.removeItem(PENDING_KEY);
+
+      // Keep the already-mounted AuthContext in sync before
+      // navigating into the authenticated application.
+      window.dispatchEvent(
+        new CustomEvent(
+          "openshare:session-refreshed",
+          {
+            detail: { user },
+          },
+        ),
+      );
 
       navigate("/home", { replace: true });
     } catch (err) {

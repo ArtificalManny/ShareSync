@@ -145,6 +145,8 @@ export class AuthController {
       success: true,
       user: result.user,
       token: result.token,
+      access_token: result.token,
+      refresh_token: result.refresh_token,
     };
   }
 
@@ -437,6 +439,11 @@ export class AuthController {
         expiresIn: '7d',
       });
 
+        const refreshToken =
+          await this.authService.createRefreshSession(
+            String(user._id),
+          );
+
       // Build safe user object for frontend
       const safeUser = {
         _id: user._id,
@@ -451,14 +458,24 @@ export class AuthController {
         streakDays: user.streakDays || 0,
       };
 
-      const userParam = encodeURIComponent(JSON.stringify(safeUser));
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:54693';
 
-      console.log('🟢 GOOGLE CALLBACK: Redirecting to frontend with token');
+        console.log(
+          '🟢 GOOGLE CALLBACK: Redirecting with persistent session',
+        );
 
-      return res.redirect(
-        `${frontendUrl}/auth/google/callback?token=${token}&user=${userParam}`,
-      );
+        // openshare-google-persistent-session-v1
+        // Credentials use the URL fragment instead of the query string.
+        // The frontend scrubs the fragment immediately after reading it.
+        const fragment = new URLSearchParams({
+          access_token: token,
+          refresh_token: refreshToken,
+          user: JSON.stringify(safeUser),
+        }).toString();
+
+        return res.redirect(
+          `${frontendUrl}/auth/google/callback#${fragment}`,
+        );
     } catch (err) {
       console.error('❌ GOOGLE CALLBACK ERROR:', err.message);
       return res.redirect(

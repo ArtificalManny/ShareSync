@@ -233,7 +233,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [accountDeleted, setAccountDeleted] = useState(false);
@@ -495,25 +494,10 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Remember me */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="remember"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="
-              w-4 h-4 rounded
-              border border-slate-300
-              bg-white
-              text-[#8B5CF6]
-              focus:ring-[#8B5CF6]/30 focus:ring-offset-0
-            "
-          />
-          <label htmlFor="remember" className="text-sm text-slate-400">
-            Remember me for 30 days
-          </label>
-        </div>
+        <p className="text-xs leading-5 text-slate-400">
+          You’ll stay signed in on this device until you log out or the
+          session is revoked.
+        </p>
 
         {/* Submit */}
         <AuthButton type="submit" loading={submitting} className="btn-primary">
