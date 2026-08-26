@@ -61,14 +61,45 @@ export class AuthController {
 
     // Normal login success
     const access_token = result.access_token;
+    const refresh_token = result.refresh_token;
     const user = result.user;
 
-    if (!access_token || !user) {
-      console.error('❌ LOGIN RESPONSE MISSING TOKEN OR USER:', result);
+    if (!access_token || !refresh_token || !user) {
+      console.error('❌ LOGIN RESPONSE MISSING SESSION DATA:', result);
       throw new UnauthorizedException('Invalid login response format');
     }
 
-    return { success: true, access_token, user };
+    return {
+      success: true,
+      access_token,
+      refresh_token,
+      user,
+    };
+  }
+
+  // openshare-persistent-session-v1
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() body: { refresh_token?: string }) {
+    const result =
+      await this.authService.rotateRefreshSession(
+        body?.refresh_token || '',
+      );
+
+    return {
+      success: true,
+      ...result,
+    };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Body() body: { refresh_token?: string }) {
+    await this.authService.revokeRefreshSession(
+      body?.refresh_token || '',
+    );
+
+    return { success: true };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

@@ -19,6 +19,7 @@ function withApiPrefix(path) {
 
 function writeTokenEverywhere(token) {
   try {
+    localStorage.setItem("access_token", token);
     localStorage.setItem("ss.jwt", token);
     localStorage.setItem("token", token);
     localStorage.setItem("authToken", token);
@@ -26,13 +27,43 @@ function writeTokenEverywhere(token) {
   } catch {}
 }
 
+function writeRefreshToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem("refresh_token", token);
+    }
+  } catch {}
+}
+
+function readRefreshToken() {
+  try {
+    return localStorage.getItem("refresh_token") || "";
+  } catch {
+    return "";
+  }
+}
+
+function readCachedUser() {
+  try {
+    const raw =
+      localStorage.getItem("ss.user") ||
+      localStorage.getItem("user");
+
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function clearTokenEverywhere() {
   try {
+    localStorage.removeItem("access_token");
     localStorage.removeItem("ss.jwt");
     localStorage.removeItem("ss.token");
     localStorage.removeItem("token");
     localStorage.removeItem("authToken");
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("refresh_token");
   } catch {}
 }
 
@@ -45,52 +76,339 @@ export function AuthProvider({ children }) {
   const isLoading = loading;
 
   useEffect(() => {
+    // openshare-persistent-session-authcontext-v1
     async function checkAuth() {
-      const token =
+      const accessToken =
+        localStorage.getItem("access_token") ||
         localStorage.getItem("ss.jwt") ||
         localStorage.getItem("token") ||
         localStorage.getItem("authToken") ||
         localStorage.getItem("accessToken");
 
-      if (!token) {
-        setLoading(false);
+      const refreshToken =
+        readRefreshToken();
+
+      const cachedUser =
+        readCachedUser();
+
+      const applySession = (
+        token,
+        nextRefreshToken,
+        userData,
+      ) => {
+        writeTokenEverywhere(token);
+
+        if (nextRefreshToken) {
+          writeRefreshToken(nextRefreshToken);
+        }
+
+        api.defaults.headers.common["Authorization"] =
+          `Bearer ${token}`;
+
+        if (userData) {
+          setUser(userData);
+
+          try {
+            localStorage.setItem(
+              "ss.user",
+              JSON.stringify(userData),
+            );
+            localStorage.setItem(
+              "user",
+              JSON.stringify(userData),
+            );
+          } catch {}
+        }
+      };
+
+      const hydrateProfile = () => {
+        void api
+          .get(
+            withApiPrefix("/auth/me"),
+            { timeout: 8000 },
+          )
+          .then((response) => {
+            const payload =
+              response.data?.data ??
+              response.data;
+
+            if (
+              payload &&
+              typeof payload === "object" &&
+              (payload._id || payload.email)
+            ) {
+              setUser(payload);
+
+              try {
+                localStorage.setItem(
+                  "ss.user",
+                  JSON.stringify(payload),
+                );
+                localStorage.setItem(
+                  "user",
+                  JSON.stringify(payload),
+                );
+              } catch {}
+            }
+          })
+          .catch(() => {
+            console.warn(
+              "[AuthContext] Full profile hydration skipped",
+            );
+          });
+      };
+
+      const refreshStoredSession = async () => {
+        const currentRefreshToken =
+          readRefreshToken();
+
+        if (!currentRefreshToken) {
+          return false;
+        }
+
+        const response = await api.post(
+          withApiPrefix("/auth/refresh"),
+          {
+            refresh_token:
+              currentRefreshToken,
+          },
+          {
+            timeout: 10000,
+          },
+        );
+
+        const payload =
+          response.data?.data ??
+          response.data;
+
+        const nextAccessToken =
+          payload?.access_token ||
+          payload?.token;
+
+        const nextRefreshToken =
+          payload?.refresh_token;
+
+        const userData =
+          payload?.user ||
+          cachedUser;
+
+        if (
+          !nextAccessToken ||
+          !nextRefreshToken ||
+          !userData
+        ) {
+          throw new Error(
+            "Invalid persistent-session refresh response",
+          );
+        }
+
+        applySession(
+          nextAccessToken,
+          nextRefreshToken,
+          userData,
+        );
+
+        hydrateProfile();
+
+        return true;
+      };
+
+      // No access JWT but a persistent refresh session exists.
+      if (!accessToken) {
+        if (!refreshToken) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          await refreshStoredSession();
+        } catch (error) {
+          const status =
+            error?.response?.status;
+
+          if (
+            status === 400 ||
+            status === 401 ||
+            status === 403
+          ) {
+            clearTokenEverywhere();
+
+            localStorage.removeItem(
+              "ss.user",
+            );
+            localStorage.removeItem(
+              "user",
+            );
+          } else if (cachedUser) {
+            // Temporary backend/network failure must
+            // not erase a persistent login.
+            setUser(cachedUser);
+          }
+        } finally {
+          setLoading(false);
+        }
+
         return;
       }
 
       try {
-        const response = await api.post(withApiPrefix("/auth/verify"), { token });
-        const payload = response.data?.data ?? response.data;
+        const response = await api.post(
+          withApiPrefix("/auth/verify"),
+          {
+            token: accessToken,
+          },
+          {
+            timeout: 8000,
+          },
+        );
 
-        if (payload && payload.user) {
-          setUser(payload.user);
-          localStorage.setItem("ss.user", JSON.stringify(payload.user));
-          writeTokenEverywhere(token);
+        const payload =
+          response.data?.data ??
+          response.data;
 
-          try {
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            const meResponse = await api.get(withApiPrefix("/auth/me"));
-            const mePayload = meResponse.data?.data ?? meResponse.data;
+        if (payload?.user) {
+          applySession(
+            accessToken,
+            refreshToken,
+            payload.user,
+          );
 
-            if (mePayload && typeof mePayload === 'object' && (mePayload._id || mePayload.email)) {
-              setUser(mePayload);
-              localStorage.setItem("ss.user", JSON.stringify(mePayload));
-            }
-          } catch (meError) {
-            console.warn("[AuthContext] Could not fetch full profile, using JWT data");
-          }
-        } else {
-          clearTokenEverywhere();
-          localStorage.removeItem("ss.user");
+          setLoading(false);
+          hydrateProfile();
+
+          return;
         }
+
+        throw new Error(
+          "Token verification returned no user",
+        );
       } catch (error) {
-        clearTokenEverywhere();
-        localStorage.removeItem("ss.user");
+        const status =
+          error?.response?.status;
+
+        // Access JWT expired or became invalid.
+        // Try the persistent session before logging out.
+        if (
+          (status === 401 ||
+            status === 403) &&
+          refreshToken
+        ) {
+          try {
+            if (
+              await refreshStoredSession()
+            ) {
+              return;
+            }
+          } catch (refreshError) {
+            const refreshStatus =
+              refreshError?.response?.status;
+
+            if (
+              refreshStatus === 400 ||
+              refreshStatus === 401 ||
+              refreshStatus === 403
+            ) {
+              clearTokenEverywhere();
+
+              localStorage.removeItem(
+                "ss.user",
+              );
+              localStorage.removeItem(
+                "user",
+              );
+
+              return;
+            }
+
+            if (cachedUser) {
+              setUser(cachedUser);
+              return;
+            }
+          }
+        }
+
+        if (
+          status === 401 ||
+          status === 403
+        ) {
+          clearTokenEverywhere();
+
+          localStorage.removeItem(
+            "ss.user",
+          );
+          localStorage.removeItem(
+            "user",
+          );
+        } else if (cachedUser) {
+          // Offline/backend outage:
+          // preserve local authenticated shell.
+          setUser(cachedUser);
+        }
       } finally {
         setLoading(false);
       }
     }
 
     checkAuth();
+  }, []);
+
+  // Synchronize AuthContext with automatic Axios
+  // refresh-session rotation.
+  useEffect(() => {
+    const handleSessionRefreshed = (
+      event,
+    ) => {
+      const nextUser =
+        event?.detail?.user;
+
+      if (!nextUser) {
+        return;
+      }
+
+      setUser(nextUser);
+
+      try {
+        const serialized =
+          JSON.stringify(nextUser);
+
+        localStorage.setItem(
+          "ss.user",
+          serialized,
+        );
+
+        localStorage.setItem(
+          "user",
+          serialized,
+        );
+      } catch {}
+    };
+
+    const handleSessionExpired = () => {
+      setUser(null);
+      setAuthError(null);
+    };
+
+    window.addEventListener(
+      "openshare:session-refreshed",
+      handleSessionRefreshed,
+    );
+
+    window.addEventListener(
+      "openshare:session-expired",
+      handleSessionExpired,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "openshare:session-refreshed",
+        handleSessionRefreshed,
+      );
+
+      window.removeEventListener(
+        "openshare:session-expired",
+        handleSessionExpired,
+      );
+    };
   }, []);
 
   // activation-funnel-return-touch-v2
@@ -126,27 +444,82 @@ export function AuthProvider({ children }) {
   const login = async ({ email, password }) => {
     try {
       setAuthError(null);
-      const response = await api.post(withApiPrefix("/auth/login"), { email, password });
-      const payload = response.data?.data ?? response.data;
+
+      const response = await api.post(
+        withApiPrefix("/auth/login"),
+        {
+          email,
+          password,
+        },
+      );
+
+      const payload =
+        response.data?.data ??
+        response.data;
 
       if (payload?.needsVerification) {
-        return { success: false, needsVerification: true, userId: payload.userId, error: payload.message || "Please verify your email" };
+        return {
+          success: false,
+          needsVerification: true,
+          userId: payload.userId,
+          error:
+            payload.message ||
+            "Please verify your email",
+        };
       }
 
-      const token = payload?.access_token || payload?.token;
-      const userData = payload?.user;
+      const token =
+        payload?.access_token ||
+        payload?.token;
 
-      if (!token || !userData) throw new Error("Invalid response from server");
+      const refreshToken =
+        payload?.refresh_token;
+
+      const userData =
+        payload?.user;
+
+      if (!token || !userData) {
+        throw new Error(
+          "Invalid response from server",
+        );
+      }
 
       writeTokenEverywhere(token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      localStorage.setItem("ss.user", JSON.stringify(userData));
-      setUser(userData);
-      return { success: true };
-    } catch (error) {
-      const errorPayload = error.response?.data?.data ?? error.response?.data;
 
-      if (errorPayload?.needsVerification) {
+      if (refreshToken) {
+        writeRefreshToken(refreshToken);
+      }
+
+      api.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${token}`;
+
+      const serialized =
+        JSON.stringify(userData);
+
+      localStorage.setItem(
+        "ss.user",
+        serialized,
+      );
+
+      localStorage.setItem(
+        "user",
+        serialized,
+      );
+
+      setUser(userData);
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      const errorPayload =
+        error.response?.data?.data ??
+        error.response?.data;
+
+      if (
+        errorPayload?.needsVerification
+      ) {
         const message =
           errorPayload.message ||
           errorPayload.error ||
@@ -157,7 +530,8 @@ export function AuthProvider({ children }) {
         return {
           success: false,
           needsVerification: true,
-          userId: errorPayload.userId,
+          userId:
+            errorPayload.userId,
           error: message,
           message,
         };
@@ -170,7 +544,11 @@ export function AuthProvider({ children }) {
         "Login failed";
 
       setAuthError(errorMsg);
-      return { success: false, error: errorMsg };
+
+      return {
+        success: false,
+        error: errorMsg,
+      };
     }
   };
 
@@ -248,14 +626,47 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const refreshToken =
+      readRefreshToken();
+
+    try {
+      if (refreshToken) {
+        await api.post(
+          withApiPrefix("/auth/logout"),
+          {
+            refresh_token:
+              refreshToken,
+          },
+          {
+            timeout: 5000,
+          },
+        );
+      }
+    } catch {
+      // Local logout must still complete if
+      // the backend is temporarily unavailable.
+    }
+
     clearTokenEverywhere();
-    localStorage.removeItem("ss.user");
-    localStorage.removeItem("user");
-    delete api.defaults.headers.common['Authorization'];
+
+    localStorage.removeItem(
+      "ss.user",
+    );
+
+    localStorage.removeItem(
+      "user",
+    );
+
+    delete api.defaults.headers.common[
+      "Authorization"
+    ];
+
     setUser(null);
     setAuthError(null);
-    window.location.href = "/login";
+
+    window.location.href =
+      "/login";
   };
 
   const value = {

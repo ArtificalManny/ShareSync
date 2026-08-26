@@ -13,11 +13,17 @@ import * as crypto from 'crypto';
 import { MailerService } from '@nestjs-modules/mailer';
 
 import { User, UserDocument } from '../user/schemas/user.schema';
+import {
+  RefreshToken,
+  RefreshTokenDocument,
+} from './refresh-token.schema';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(RefreshToken.name)
+    private readonly refreshTokenModel: Model<RefreshTokenDocument>,
     private readonly jwt: JwtService,
     private readonly mailer: MailerService,
   ) {}
@@ -125,6 +131,9 @@ export class AuthService {
 
     console.log('🟢 LOGIN SUCCESS - Token generated');
 
+    // openshare-persistent-session-v1
+    const refresh_token = await this.createRefreshSession(String(user._id));
+
     // ═════════════════════════════════════════════════════════════════════════
     // ⭐ PHASE 1 FIX: Expanded user object in login response
     //    Previously only returned: _id, email, firstName, lastName, username, roles
@@ -135,6 +144,7 @@ export class AuthService {
     return {
       success: true,
       access_token,
+      refresh_token,
       user: {
         _id: user._id,
         email: user.email,
@@ -436,6 +446,8 @@ export class AuthService {
 
     await targetUser.save();
 
+    await this.revokeAllRefreshSessions(String(targetUser._id));
+
     console.log('🟢 PASSWORD RESET SUCCESSFUL for', targetUser.email);
   }
 
@@ -579,6 +591,161 @@ export class AuthService {
     }
 
     throw new ForbiddenException('Account banned');
+  }
+
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PERSISTENT REFRESH SESSIONS
+  // openshare-persistent-session-v1
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  private refreshSessionDays(): number {
+    const value = Number.parseInt(
+      process.env.AUTH_REFRESH_SESSION_DAYS || '365',
+      10,
+    );
+
+    return Number.isFinite(value) && value > 0 ? value : 365;
+  }
+
+  private refreshSessionExpiry(): Date {
+    const expiresAt = new Date();
+    expiresAt.setDate(
+      expiresAt.getDate() + this.refreshSessionDays(),
+    );
+    return expiresAt;
+  }
+
+  private hashRefreshToken(token: string): string {
+    return crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+  }
+
+  private generateRefreshTokenValue(): string {
+    return crypto.randomBytes(48).toString('base64url');
+  }
+
+  public async createRefreshSession(
+    userId: string,
+  ): Promise<string> {
+    const rawToken = this.generateRefreshTokenValue();
+
+    await this.refreshTokenModel.create({
+      userId: String(userId),
+      tokenHash: this.hashRefreshToken(rawToken),
+      expiresAt: this.refreshSessionExpiry(),
+    });
+
+    return rawToken;
+  }
+
+  public async rotateRefreshSession(
+    refreshToken: string,
+  ): Promise<{
+    access_token: string;
+    refresh_token: string;
+    user: Partial<User>;
+  }> {
+    const rawToken =
+      String(refreshToken || '').trim();
+
+    if (!rawToken) {
+      throw new UnauthorizedException(
+        'Missing refresh token',
+      );
+    }
+
+    const now = new Date();
+
+    const session =
+      await this.refreshTokenModel
+        .findOne({
+          tokenHash:
+            this.hashRefreshToken(rawToken),
+          revokedAt: { $exists: false },
+          expiresAt: { $gt: now },
+        })
+        .exec();
+
+    if (!session) {
+      throw new UnauthorizedException(
+        'Session expired or revoked',
+      );
+    }
+
+    const user = await this.userModel
+      .findById(session.userId)
+      .select('-password')
+      .exec();
+
+    if (!user) {
+      throw new UnauthorizedException(
+        'User not found',
+      );
+    }
+
+    this.enforceAccountAllowed(user);
+
+    // openshare-persistent-session-rolling-v2
+    // Keep one opaque session token per login/device.
+    // Every successful use renews the inactivity window.
+    session.lastUsedAt = now;
+    session.expiresAt =
+      this.refreshSessionExpiry();
+
+    await session.save();
+
+    const access_token =
+      await this.generateToken(
+        user,
+        '7d',
+      );
+
+    return {
+      access_token,
+      refresh_token: rawToken,
+      user: this.sanitizeUser(user),
+    };
+  }
+
+  public async revokeRefreshSession(
+    refreshToken: string,
+  ): Promise<void> {
+    const rawToken = String(refreshToken || '').trim();
+
+    if (!rawToken) {
+      return;
+    }
+
+    await this.refreshTokenModel.updateOne(
+      {
+        tokenHash: this.hashRefreshToken(rawToken),
+        revokedAt: { $exists: false },
+      },
+      {
+        $set: {
+          revokedAt: new Date(),
+        },
+      },
+    );
+  }
+
+  public async revokeAllRefreshSessions(
+    userId: string,
+  ): Promise<void> {
+    await this.refreshTokenModel.updateMany(
+      {
+        userId: String(userId),
+        revokedAt: { $exists: false },
+      },
+      {
+        $set: {
+          revokedAt: new Date(),
+        },
+      },
+    );
   }
 
   private async generateToken(

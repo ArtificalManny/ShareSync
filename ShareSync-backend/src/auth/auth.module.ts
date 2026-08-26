@@ -9,6 +9,7 @@ import { DevAuthController } from './dev-auth.controller';
 import { AuthService } from './auth.service';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
+import { RefreshToken, RefreshTokenSchema } from './refresh-token.schema';
 import { UserModule } from '../user/user.module';
 import { MailerConfigModule } from '../mailer/mailer.module';
 
@@ -25,7 +26,10 @@ import { GoogleDeleteGuard } from './guards/google-delete.guard';
     forwardRef(() => UserModule),
     PassportModule,
 
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: RefreshToken.name, schema: RefreshTokenSchema },
+    ]),
 
     JwtModule.registerAsync({
       imports: [ConfigModule],
