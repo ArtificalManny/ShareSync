@@ -726,11 +726,8 @@ export default function Settings() {
   const [showStreakTo, setShowStreakTo] = useState('friends');
   const [celebratePublicly, setCelebratePublicly] = useState(true);
   const [shareLiveActivity, setShareLiveActivity] = useState(true);
-  const handleMobileLogout = () => {
-    logout?.();
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
+  const handleMobileLogout = async () => {
+    await logout?.();
   };
 
   const handleDeleteAccount = async () => {
