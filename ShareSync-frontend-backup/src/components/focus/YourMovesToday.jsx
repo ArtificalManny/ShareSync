@@ -235,7 +235,7 @@ export default function YourMovesToday({
             <div className="your-moves-recommendation-card rounded-2xl border border-violet-100 dark:border-violet-500/15 bg-violet-50/40 dark:bg-violet-500/5 px-4 py-3">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-[var(--theme-accent-primary)]">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-violet-700 dark:text-violet-300">
                     Recommended from your active projects
                   </p>
                   <p className="text-sm font-medium text-slate-600 dark:text-zinc-400 mt-1">
