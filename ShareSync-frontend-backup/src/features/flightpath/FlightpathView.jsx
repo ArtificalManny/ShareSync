@@ -1116,6 +1116,79 @@ export default function FlightpathView({
     ]
   );
 
+  // openshare-mobile-flightpath-v1
+  // openshare-mobile-flightpath-v2-polish
+  // Mobile defaults to a readable Timeline. The existing
+  // full Gantt remains available on phones and unchanged
+  // as the standard desktop planning canvas.
+  const [mobileView, setMobileView] =
+    useState("timeline");
+
+  const getMobileFlightpathStatusMeta = (
+    status
+  ) => {
+    const normalized = String(
+      status || "backlog"
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, "");
+
+    const statuses = {
+      backlog: {
+        label: "Backlog",
+        dot: "bg-slate-400",
+        pill:
+          "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300",
+      },
+      todo: {
+        label: "To do",
+        dot: "bg-slate-400",
+        pill:
+          "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300",
+      },
+      inprogress: {
+        label: "In progress",
+        dot: "bg-cyan-500",
+        pill:
+          "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300",
+      },
+      ready: {
+        label: "Ready",
+        dot: "bg-violet-500",
+        pill:
+          "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300",
+      },
+      review: {
+        label: "Review",
+        dot: "bg-amber-500",
+        pill:
+          "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+      },
+      done: {
+        label: "Done",
+        dot: "bg-emerald-500",
+        pill:
+          "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
+      },
+      completed: {
+        label: "Done",
+        dot: "bg-emerald-500",
+        pill:
+          "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
+      },
+    };
+
+    return (
+      statuses[normalized] || {
+        label: status || "Backlog",
+        dot: "bg-slate-400",
+        pill:
+          "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300",
+      }
+    );
+  };
+
   const renderGuides = () => (
     <FlightpathGuides
       activeMilestonePoint={
@@ -1130,16 +1203,23 @@ export default function FlightpathView({
     <>
       <div
         data-project-id={projectId || ""}
-        className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-10"
+        className="mx-auto w-full max-w-[1680px] px-3 py-4 sm:px-6 sm:py-6 lg:px-10"
       >
-        <section className="overflow-hidden rounded-[32px] border border-violet-200/80 bg-white/88 shadow-[0_30px_90px_rgba(76,29,149,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-[#08111f]/90">
+        <section className="overflow-hidden rounded-[28px] border border-violet-200/80 sm:rounded-[32px] bg-white/88 shadow-[0_30px_90px_rgba(76,29,149,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-[#08111f]/90">
           <div className="border-b border-slate-200/80 bg-gradient-to-r from-violet-50 via-white to-cyan-50 px-6 py-6 dark:border-white/10 dark:from-violet-500/10 dark:via-[#08111f] dark:to-cyan-500/10 lg:px-8">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-violet-700 dark:border-violet-400/20 dark:bg-white/5 dark:text-violet-300">
                     <Route className="h-3.5 w-3.5" />
-                    Gantt-style planning
+                    <span className="md:hidden">
+                      {mobileView === "timeline"
+                        ? "Timeline planning"
+                        : "Gantt planning"}
+                    </span>
+                    <span className="hidden md:inline">
+                      Gantt-style planning
+                    </span>
                   </span>
 
                   {readOnly ? (
@@ -1154,13 +1234,47 @@ export default function FlightpathView({
                 </h2>
 
                 <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
-                  See how Moves travel across
-                  time toward milestones and the
-                  project&apos;s finish line.
+                  <span className="md:hidden">
+                    See Moves across time toward milestones.
+                  </span>
+                  <span className="hidden md:inline">
+                    See how Moves travel across time toward
+                    milestones and the project&apos;s finish line.
+                  </span>
                 </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+                <div className="grid grid-cols-2 rounded-2xl border border-violet-200 bg-white/85 p-1 shadow-sm dark:border-violet-400/20 dark:bg-white/5 md:hidden">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileView("timeline")
+                    }
+                    className={`rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                      mobileView === "timeline"
+                        ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                        : "text-slate-500 dark:text-zinc-400"
+                    }`}
+                  >
+                    Timeline
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileView("gantt")
+                    }
+                    className={`rounded-xl px-4 py-2.5 text-xs font-black transition ${
+                      mobileView === "gantt"
+                        ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                        : "text-slate-500 dark:text-zinc-400"
+                    }`}
+                  >
+                    Gantt
+                  </button>
+                </div>
+
                 <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-3 py-2 shadow-sm dark:border-white/10 dark:bg-white/5">
                   <Layers3 className="h-4 w-4 text-violet-500" />
 
@@ -1186,7 +1300,7 @@ export default function FlightpathView({
                   </select>
                 </label>
 
-                <div className="inline-flex rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
+                <div className={`${mobileView === "gantt" ? "inline-flex" : "hidden"} rounded-2xl border border-slate-200 bg-white/85 p-1 shadow-sm dark:border-white/10 dark:bg-white/5 md:inline-flex`}>
                   {Object.entries(
                     ZOOM_LEVELS
                   ).map(([value, config]) => (
@@ -1212,7 +1326,7 @@ export default function FlightpathView({
                   onClick={() =>
                     scrollToToday("smooth")
                   }
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-xs font-black text-cyan-800 transition hover:-translate-y-0.5 hover:shadow-lg dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200"
+                  className={`${mobileView === "gantt" ? "inline-flex" : "hidden"} items-center justify-center gap-2 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-xs font-black text-cyan-800 transition hover:-translate-y-0.5 hover:shadow-lg dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200 md:inline-flex`}
                 >
                   <Crosshair className="h-4 w-4" />
                   Today
@@ -1220,28 +1334,43 @@ export default function FlightpathView({
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                  Dated Moves
+            <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-2 py-3 text-center sm:px-4 sm:text-left dark:border-white/10 dark:bg-white/5">
+                <p className="text-[8px] font-black uppercase tracking-[0.08em] text-slate-400 sm:text-[10px] sm:tracking-[0.2em]">
+                  <span className="sm:hidden">
+                    Moves
+                  </span>
+                  <span className="hidden sm:inline">
+                    Dated Moves
+                  </span>
                 </p>
                 <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
                   {datedMoveCount}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                  Due-only markers
+              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-2 py-3 text-center sm:px-4 sm:text-left dark:border-white/10 dark:bg-white/5">
+                <p className="text-[8px] font-black uppercase tracking-[0.08em] text-slate-400 sm:text-[10px] sm:tracking-[0.2em]">
+                  <span className="sm:hidden">
+                    Due
+                  </span>
+                  <span className="hidden sm:inline">
+                    Due-only markers
+                  </span>
                 </p>
                 <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
                   {dueOnlyCount}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                  Dated milestones
+              <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-2 py-3 text-center sm:px-4 sm:text-left dark:border-white/10 dark:bg-white/5">
+                <p className="text-[8px] font-black uppercase tracking-[0.08em] text-slate-400 sm:text-[10px] sm:tracking-[0.2em]">
+                  <span className="sm:hidden">
+                    Milestones
+                  </span>
+                  <span className="hidden sm:inline">
+                    Dated milestones
+                  </span>
                 </p>
                 <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
                   {milestonePoints.length}
@@ -1249,6 +1378,153 @@ export default function FlightpathView({
               </div>
             </div>
           </div>
+
+            {localMoves.length > 0 &&
+            mobileView === "timeline" ? (
+              <div className="bg-gradient-to-b from-white via-violet-50/35 to-cyan-50/30 px-4 py-5 dark:from-[#08111f] dark:via-violet-500/[0.035] dark:to-cyan-500/[0.025] md:hidden">
+                <div className="flex items-end justify-between gap-4 border-b border-slate-200/80 pb-4 dark:border-white/10">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300">
+                      Timeline range
+                    </p>
+
+                    <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                      {formatShortDate(
+                        timelineRange.start
+                      )}{" "}
+                      –{" "}
+                      {formatShortDate(
+                        timelineRange.end
+                      )}
+                    </p>
+                  </div>
+
+                  <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1 text-[10px] font-black text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                    {localMoves.length} Moves
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-6">
+                  {groups.map((group) => (
+                    <section
+                      key={group.key}
+                      className="min-w-0"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-black uppercase tracking-[0.14em] text-slate-700 dark:text-zinc-200">
+                            {group.label}
+                          </p>
+
+                          <p className="mt-0.5 text-[10px] font-semibold text-slate-400 dark:text-zinc-500">
+                            {groupBy === "milestone"
+                              ? String(
+                                  group.label || ""
+                                ).trim().toLowerCase() ===
+                                "no milestone"
+                                ? "Unassigned Moves"
+                                : "Milestone path"
+                              : "Status group"}
+                          </p>
+                        </div>
+
+                        <span className="grid h-7 min-w-7 place-items-center rounded-full bg-white px-2 text-[10px] font-black text-slate-600 shadow-sm ring-1 ring-slate-200 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
+                          {group.moves.length}
+                        </span>
+                      </div>
+
+                      <div className="relative mt-3 space-y-2 pl-5">
+                        <span
+                          aria-hidden="true"
+                          className="absolute bottom-3 left-[5px] top-3 w-px bg-gradient-to-b from-violet-300 via-cyan-300 to-slate-200 dark:from-violet-500/40 dark:via-cyan-500/30 dark:to-white/10"
+                        />
+
+                        {group.moves.map((move) => {
+                          const title =
+                            getMoveTitle(move);
+
+                          const start =
+                            parseCalendarDate(
+                              move?.startDate
+                            );
+
+                          const due =
+                            parseCalendarDate(
+                              move?.dueDate
+                            );
+
+                          const meta =
+                            getMobileFlightpathStatusMeta(
+                              move?.status
+                            );
+
+                          const dateLabel =
+                            start && due
+                              ? `${formatShortDate(
+                                  start
+                                )} → ${formatShortDate(
+                                  due
+                                )}`
+                              : due
+                                ? `Due ${formatShortDate(
+                                    due
+                                  )}`
+                                : start
+                                  ? `Starts ${formatShortDate(
+                                      start
+                                    )}`
+                                  : "Unscheduled";
+
+                          return (
+                            <button
+                              key={
+                                normalizeId(move) ||
+                                `${group.key}-${title}`
+                              }
+                              type="button"
+                              onClick={() =>
+                                handleOpenMove(move)
+                              }
+                              className="relative w-full rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 text-left shadow-sm transition active:scale-[0.99] dark:border-white/10 dark:bg-white/[0.045]"
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={`absolute -left-5 top-[22px] h-2.5 w-2.5 rounded-full ring-4 ring-white dark:ring-[#0b1320] ${meta.dot}`}
+                              />
+
+                              <div className="flex items-start justify-between gap-3">
+                                <span className="min-w-0 flex-1 text-sm font-black leading-5 text-slate-900 dark:text-white">
+                                  {title}
+                                </span>
+
+                                <span
+                                  aria-hidden="true"
+                                  className="shrink-0 text-xl leading-5 text-slate-300 dark:text-zinc-600"
+                                >
+                                  ›
+                                </span>
+                              </div>
+
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.10em] ${meta.pill}`}
+                                >
+                                  {meta.label}
+                                </span>
+
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                                  {dateLabel}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
           {localMoves.length === 0 ? (
             <div className="px-6 py-20 text-center lg:px-8">
@@ -1269,7 +1545,7 @@ export default function FlightpathView({
           ) : (
             <div
               ref={scrollerRef}
-              className="overflow-x-auto overscroll-x-contain bg-white dark:bg-[#08111f]"
+              className={`${mobileView === "gantt" ? "block" : "hidden"} overflow-x-auto overscroll-x-contain bg-white dark:bg-[#08111f] md:block`}
             >
               <div
                 style={{
@@ -1845,7 +2121,7 @@ export default function FlightpathView({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-200/80 bg-slate-50/80 px-6 py-4 text-[10px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.025] dark:text-zinc-400 lg:px-8">
+          <div className={`${mobileView === "gantt" ? "flex" : "hidden"} flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-200/80 bg-slate-50/80 px-6 py-4 text-[10px] font-bold text-slate-500 dark:border-white/10 dark:bg-white/[0.025] dark:text-zinc-400 md:flex lg:px-8`}>
             <span className="inline-flex items-center gap-2">
               <span className="h-2.5 w-8 rounded-full bg-violet-300 dark:bg-violet-500/40" />
               Move duration
