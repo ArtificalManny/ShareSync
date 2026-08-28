@@ -705,17 +705,18 @@ const Projects = () => {
 
         <div className="flex items-center gap-3">
           {/* Search */}
-          <div className="relative min-w-0 flex-1 sm:flex-none">
+          <div className="relative min-w-0 flex-1 max-w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search project names..."
+              style={{ fontSize: "16px" }}
               className="
                 bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-lg
-                pl-10 pr-4 py-2.5 text-base sm:text-sm text-slate-700 dark:text-zinc-200
+                pl-10 pr-4 py-2.5 text-[16px] text-slate-700 dark:text-zinc-200
                 placeholder:text-slate-400 dark:placeholder:text-zinc-600
-                focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20
-                w-full transition-all sm:w-56 sm:focus:w-72
+                focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-0 focus:shadow-none
+                w-full transition-colors
               "
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
