@@ -1,10 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-// Merged: Using environment variable with a fallback to your current 5050/messages path
-const SOCKET_URL = import.meta.env.VITE_WS_URL 
-  ? `${import.meta.env.VITE_WS_URL}/messages` 
-  : 'http://localhost:5050/messages';
+// message-socket-production-url-v1
+// Accept the production socket variable already configured for OpenShare.
+// Never point a production browser/native WebView at its own localhost.
+const rawSocketBase =
+  import.meta.env.VITE_WS_URL ||
+  import.meta.env.VITE_SOCKET_URL ||
+  String(import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '') ||
+  (import.meta.env.DEV
+    ? 'http://localhost:5050'
+    : 'https://openshare-backend.onrender.com');
+
+const normalizedSocketBase =
+  String(rawSocketBase)
+    .replace(/\/api\/?$/, '')
+    .replace(/\/+$/, '');
+
+const isLocalhostSocketBase =
+  /^(?:https?|wss?):\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(
+    normalizedSocketBase
+  );
+
+// message-socket-production-localhost-guard-v2
+// A stale deployment env value must never send production users to localhost.
+const safeSocketBase =
+  import.meta.env.PROD && isLocalhostSocketBase
+    ? 'https://openshare-backend.onrender.com'
+    : normalizedSocketBase;
+
+const SOCKET_URL =
+  `${safeSocketBase}/messages`;
 
 export default function useMessageSocket(userId) {
   const socketRef = useRef(null);
