@@ -187,7 +187,9 @@ export async function getMe() {
 
 export async function getPublicUser(username) {
   try {
-    const response = await api.get(`/users/public/${username}`);
+    // public-profile-username-route-v1
+    // The backend resolves public profile routes by username here.
+    const response = await api.get(`/users/username/${username}`);
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Failed to get public user:', error);
