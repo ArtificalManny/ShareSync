@@ -542,8 +542,16 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
       null
   );
 
+  // public-profile-avatar-identity-v1
+  // Local storage belongs to the signed-in account, so never use its avatar
+  // as a fallback while rendering somebody else's public profile.
+  const ownerStoredAvatar = isOwnProfile ? storedAvatar : null;
+
   const displayUrl =
-    localAvatarUrl || backendAvatar || storedAvatar || "/default-profile.png";
+    localAvatarUrl ||
+    backendAvatar ||
+    ownerStoredAvatar ||
+    "/default-profile.png";
 
   const inputId = "profile-avatar-upload-input";
 
@@ -680,7 +688,9 @@ const ProfilePhotoEditor = ({ user, isOwnProfile, onPhotoUpdate }) => {
     } catch (error) {
       console.error("[ProfilePhotoEditor] avatar upload failed", error);
 
-      setLocalAvatarUrl(backendAvatar || storedAvatar || null);
+      setLocalAvatarUrl(
+        backendAvatar || (isOwnProfile ? storedAvatar : null) || null
+      );
 
       toast({
         title: "Update failed",
