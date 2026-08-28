@@ -11,7 +11,7 @@ import {
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
   ExternalLink, FileText, Link2, Search,
-  ListTodo, Target,
+  ListTodo, Target, Milestone,
 } from 'lucide-react';
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
@@ -2126,7 +2126,7 @@ function AnnouncementAffectedWorkInput({
     const isMove = kind === 'move';
     const Icon = isMove
       ? ListTodo
-      : Target;
+      : Milestone;
 
     const filteredItems =
       filterItems(
@@ -3485,11 +3485,21 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             <button onClick={load} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg transition-colors">Try again</button>
           </div>
         ) : sorted.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm"><Megaphone className="w-10 h-10 text-slate-400" /></div>
-            <p className="text-xl font-black text-slate-900 mb-2">No announcements yet</p>
-            <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm mx-auto">No broadcasts yet. Post the first high-signal update so the team knows what changed, what matters, and what happens next.</p>
-            <button onClick={openCreateModal} className={`${readOnly ? 'hidden ' : ''}px-6 py-3 text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:-translate-y-0.5 flex items-center gap-2 mx-auto`}>
+          <div className="flex flex-col items-center bg-white px-5 py-10 text-center rounded-2xl border border-slate-200 shadow-sm sm:block sm:px-0 sm:py-24">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-slate-50 shadow-sm sm:mb-6 sm:h-20 sm:w-20">
+              <Megaphone className="h-8 w-8 text-slate-400 sm:h-10 sm:w-10" />
+            </div>
+            <p className="mb-2 text-lg font-black text-slate-900 sm:text-xl">
+              No announcements yet
+            </p>
+            <p className="mx-auto mb-6 max-w-[20rem] text-sm font-medium leading-6 text-slate-500 sm:mb-8 sm:max-w-sm">
+              No broadcasts yet. Post the first high-signal update so the team
+              knows what changed, what matters, and what happens next.
+            </p>
+            <button
+              onClick={openCreateModal}
+              className={`${readOnly ? 'hidden ' : ''}mx-auto flex w-fit max-w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-violet-500/50 sm:px-6`}
+            >
               <Plus className="w-4 h-4" /> Post First Announcement
             </button>
           </div>
@@ -3511,7 +3521,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
       </div>
 
       {!readOnly && showCreate && (
-        <div className="pc-create-viewport fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+        <div className="pc-create-viewport fixed inset-0 z-[9999] flex items-stretch justify-center p-0 pointer-events-none sm:items-center sm:p-6">
           <button
             type="button"
             className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px] pointer-events-auto"
@@ -3519,11 +3529,11 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             aria-label="Close post announcement modal backdrop"
           />
 
-          <div className="announcement-create-modal pc-create-modal pointer-events-auto relative w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_rgba(139,92,246,0.16)]">
-            <div className="border-b border-slate-200/80 bg-white">
-              <div className="flex items-center justify-between gap-5 px-8 py-5">
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-500/25">
+          <div className="announcement-create-modal pc-create-modal pointer-events-auto relative flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-white pt-[calc(env(safe-area-inset-top)+4rem)] pb-[calc(env(safe-area-inset-bottom)+5rem)] shadow-[0_24px_80px_rgba(139,92,246,0.16)] sm:h-auto sm:max-h-[88vh] sm:rounded-[28px] sm:border sm:border-slate-200/80 sm:pt-0 sm:pb-0">
+            <div className="shrink-0 border-b border-slate-200/80 bg-white">
+              <div className="flex items-center justify-between gap-3 px-4 py-4 sm:gap-5 sm:px-8 sm:py-5">
+                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-lg shadow-violet-500/25 sm:h-11 sm:w-11">
                     <Megaphone className="h-5 w-5" />
                   </div>
 
@@ -3531,7 +3541,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-violet-700">
                       Team Broadcast
                     </p>
-                    <h2 className="mt-1 text-2xl font-black leading-none tracking-tight text-slate-950">
+                    <h2 className="mt-1 text-xl font-black leading-none tracking-tight text-slate-950 sm:text-2xl">
                       {editingAnnouncement ? 'Save Changes' : 'Post Announcement'}
                     </h2>
                   </div>
@@ -3548,19 +3558,19 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
               </div>
             </div>
 
-            <div className="flex-1 space-y-6 overflow-y-auto bg-white px-8 py-8">
-              <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-white px-4 py-4 [-webkit-overflow-scrolling:touch] sm:space-y-6 sm:px-8 sm:py-8">
+              <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-3 sm:p-4">
                 <label className="text-xs font-black uppercase tracking-[0.18em] text-slate-700">
                   Type Category
                 </label>
 
-                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                   {['info', 'warning', 'success', 'urgent'].map(t => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setType(t)}
-                      className={`rounded-2xl border px-4 py-3 text-sm font-black capitalize transition-all ${
+                      className={`rounded-2xl border px-3 py-2.5 text-sm font-black capitalize transition-all sm:px-4 sm:py-3 ${
                         type === t
                           ? `${TYPE_STYLES[t].chip} shadow-sm ring-4 ${TYPE_STYLES[t].ring}`
                           : 'border-slate-200 bg-white text-slate-500 hover:border-violet-200 hover:bg-white hover:text-slate-900'
@@ -3646,7 +3656,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                 onFilesChange={setUploadedFiles}
               />
 
-              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-amber-200 hover:bg-amber-50/60">
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-3 transition-colors hover:border-amber-200 hover:bg-amber-50/60 sm:gap-4 sm:p-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                     <Pin className="h-4 w-4" />
@@ -3671,10 +3681,10 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-4 border-t border-slate-200 bg-slate-50 px-6 py-5">
+            <div className="shrink-0 flex items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:justify-end sm:gap-4 sm:px-6 sm:py-5">
               <button
                 onClick={closeAnnouncementModal}
-                className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
+                className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:bg-slate-100 sm:flex-none sm:px-6"
               >
                 Cancel
               </button>
@@ -3682,7 +3692,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
               <button
                 onClick={handleCreate}
                 disabled={!title.trim() || !hasAnnouncementBody || posting || anyUploading}
-                className="announcements-primary-button relative isolate flex items-center gap-2 overflow-hidden rounded-2xl px-8 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-100"
+                className="announcements-primary-button relative isolate flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl px-4 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-100 sm:flex-none sm:px-8"
               >
                 <span
                   aria-hidden="true"
