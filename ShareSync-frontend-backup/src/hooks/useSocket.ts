@@ -19,10 +19,23 @@ function getSocketBaseUrl() {
   const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
 
   const raw = socketUrl || apiUrl || window.location.origin;
+  const normalized = raw
+    .replace(/\/api\/?$/, "")
+    .replace(/\/+$/, "");
 
-  // If someone only sets VITE_API_URL=http://localhost:5050/api,
-  // Socket.IO still needs the backend origin, not the /api path.
-  return raw.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+  // production-socket-localhost-guard-v1
+  //
+  // Vite may fall back to a tracked development .env when a deployment
+  // environment variable is missing. Never allow a production browser
+  // or native WebView to connect to its own localhost.
+  const isLocalhost =
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized);
+
+  if (import.meta.env.PROD && isLocalhost) {
+    return "https://openshare-backend.onrender.com";
+  }
+
+  return normalized;
 }
 
 function getTokenAny() {
