@@ -654,6 +654,54 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // GET/PUT /users/persona - Current user's workspace persona
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // user-persona-endpoints-v1
+  @UseGuards(JwtAuthGuard)
+  @Get('persona')
+  async getPersona(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const user: any = await this.users.findById(userId);
+
+    const validPersonas = ['student', 'creator', 'professional', 'teamlead'];
+    const persona = validPersonas.includes(user?.persona)
+      ? user.persona
+      : 'creator';
+
+    return {
+      success: true,
+      persona,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('persona')
+  async updatePersona(
+    @Req() req: any,
+    @Body() body: { persona?: string },
+  ) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+    const validPersonas = ['student', 'creator', 'professional', 'teamlead'];
+
+    if (!body?.persona || !validPersonas.includes(body.persona)) {
+      throw new BadRequestException(
+        `Invalid persona. Must be one of: ${validPersonas.join(', ')}`,
+      );
+    }
+
+    const updated: any = await this.users.update(
+      userId,
+      { persona: body.persona } as any,
+    );
+
+    return {
+      success: true,
+      persona: updated?.persona || body.persona,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // GET /users/activity-summary - Summary for Home dashboard
   // ─────────────────────────────────────────────────────────────────────────────
 

@@ -121,6 +121,14 @@ export class User extends Document {
   @Prop({ default: false })
   publicProfile?: boolean;
 
+  // user-persona-v1
+  @Prop({
+    type: String,
+    enum: ['student', 'creator', 'professional', 'teamlead'],
+    default: 'creator',
+  })
+  persona?: 'student' | 'creator' | 'professional' | 'teamlead';
+
   // ============================================
   // ACCOUNT ENFORCEMENT / MODERATION STATUS
   // ============================================

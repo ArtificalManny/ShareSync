@@ -18,7 +18,7 @@ function getHeaders() {
 // ── GET /api/users/persona ───────────────────────────────────────────────
 export async function getUserPersona() {
   try {
-    const res = await fetch(`${API}/api/users/persona`, {
+    const res = await fetch(`${API}/users/persona`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -30,14 +30,14 @@ export async function getUserPersona() {
 
     return res.json();
   } catch {
-    return { persona: 'strategist' };
+    return { persona: 'creator' };
   }
 }
 
 // ── PUT /api/users/persona ───────────────────────────────────────────────
 export async function updateUserPersona(persona) {
   try {
-    const res = await fetch(`${API}/api/users/persona`, {
+    const res = await fetch(`${API}/users/persona`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ persona }),
