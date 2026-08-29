@@ -231,6 +231,16 @@ export class ProjectsController {
     };
   }
 
+  // quiet-projects-endpoint-v1
+  @Get('quiet')
+  @ApiOperation({
+    summary: 'Get projects with no activity for at least 3 days',
+  })
+  async findQuietProjects(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.userId;
+    return this.projectsService.findQuietProjects(userId);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // OVERVIEW — MUST BE BEFORE :id
   // ─────────────────────────────────────────────────────────────────────────────

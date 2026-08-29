@@ -1319,6 +1319,116 @@ export class ProjectsService {
       .sort({ 'metrics.lastActivityAt': -1 });
   }
 
+  // quiet-projects-service-v1
+  async findQuietProjects(
+    userId: string,
+  ): Promise<{ count: number; projects: any[] }> {
+    const userObjectId = new Types.ObjectId(userId);
+
+    /*
+     * Historical OpenShare contract:
+     * A project becomes "quiet" after at least 3 days without activity.
+     *
+     * Use the current ownership/member aliases so this endpoint returns
+     * the same set of projects the signed-in user can see elsewhere.
+     */
+    const projects: any[] = await this.projectModel
+      .find({
+        $or: [
+          { ownerId: userObjectId },
+          { owner: userObjectId },
+          { 'members.userId': userObjectId },
+          { 'members.user': userObjectId },
+          { createdBy: userObjectId },
+          { createdById: userObjectId },
+          { 'members.memberId': userObjectId },
+        ],
+        isArchived: { $ne: true },
+        status: {
+          $nin: [
+            ProjectStatus.COMPLETED,
+            ProjectStatus.ARCHIVED,
+          ],
+        },
+      })
+      .lean()
+      .exec();
+
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const quietThresholdMs = 3 * oneDayMs;
+
+    // Preserve the original Phase 1 quick-win vocabulary.
+    const quickWins = [
+      'Update README (2 min)',
+      'Review pending tasks (5 min)',
+      'Add one small task (3 min)',
+      'Check in with team (1 min)',
+      'Document one decision (4 min)',
+      'Update project status (2 min)',
+    ];
+
+    const quietProjects: any[] = [];
+
+    for (const project of projects) {
+      /*
+       * metrics.lastActivityAt is today's canonical activity clock.
+       * Fall back through other real project timestamps for legacy data.
+       * Use the newest valid timestamp so a recent project edit/ship does
+       * not get incorrectly classified as quiet.
+       */
+      const activityCandidates = [
+        project?.metrics?.lastActivityAt,
+        project?.lastShipAt,
+        project?.updatedAt,
+        project?.createdAt,
+      ]
+        .map((value: any) => new Date(value || 0).getTime())
+        .filter((value: number) => Number.isFinite(value) && value > 0);
+
+      if (activityCandidates.length === 0) {
+        continue;
+      }
+
+      const lastActivityMs = Math.max(...activityCandidates);
+      const inactiveMs = now - lastActivityMs;
+
+      if (inactiveMs < quietThresholdMs) {
+        continue;
+      }
+
+      const daysSinceActivity = Math.floor(inactiveMs / oneDayMs);
+      const quickWin =
+        quickWins[Math.floor(Math.random() * quickWins.length)];
+
+      const title =
+        project?.title ||
+        project?.name ||
+        'Untitled Project';
+
+      quietProjects.push({
+        _id: project._id,
+        title,
+        name: project?.name || title,
+        emoji: project?.emoji || project?.icon || '📁',
+        daysSinceActivity,
+        quickWin,
+        lastActivityAt: new Date(lastActivityMs).toISOString(),
+      });
+    }
+
+    // Surface the longest-quiet projects first.
+    quietProjects.sort(
+      (left, right) =>
+        right.daysSinceActivity - left.daysSinceActivity,
+    );
+
+    return {
+      count: quietProjects.length,
+      projects: quietProjects,
+    };
+  }
+
   async update(projectId: string, userId: string, dto: UpdateProjectDto): Promise<ProjectDocument> {
     const project = await this.findByIdWithAccess(projectId, userId);
 
