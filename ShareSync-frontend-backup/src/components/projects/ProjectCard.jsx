@@ -50,10 +50,10 @@ const ProjectCard = ({
   const isNearComplete = !isComplete && progress >= 80;
   
   const getProgressGradient = () => {
-    if (isComplete) return 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 Available)';
-    if (livingState.state === 'completing') return 'linear-gradient(90deg, #06B6D4 0%, #22D3EE Available)';
-    if (livingState.state === 'blocked') return 'linear-gradient(90deg, #FCA5A5 0%, #F87171 Available)';
-    return 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)';
+    if (isComplete) return 'linear-gradient(90deg, #2DD4BF 0%, #14B8A6 100%)';
+    if (livingState.state === 'completing') return 'linear-gradient(90deg, #06B6D4 0%, #22D3EE 100%)';
+    if (livingState.state === 'blocked') return 'linear-gradient(90deg, #FCA5A5 0%, #F87171 100%)';
+    return 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)';
   };
 
   const getStatusText = () => {

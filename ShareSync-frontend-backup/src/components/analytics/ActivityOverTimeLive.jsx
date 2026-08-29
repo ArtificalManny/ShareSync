@@ -22,7 +22,7 @@ function MiniLine({ points = [], width = 640, height = 140, padding = 16 }) {
     .join(' ');
 
   return (
-    <svg width="Available" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Activity over time">
+    <svg width="100%" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Activity over time">
       <path d={d} fill="none" stroke="currentColor" strokeWidth="2" />
     </svg>
   );

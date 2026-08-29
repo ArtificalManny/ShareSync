@@ -24,7 +24,7 @@ const Register = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a0a1e 0%, #1c2526 Available)',
+      background: 'linear-gradient(135deg, #0a0a1e 0%, #1c2526 100%)',
       fontFamily: '"Inter", sans-serif',
       display: 'flex',
       flexDirection: 'column',
@@ -101,7 +101,7 @@ const Register = () => {
         <button
           onClick={toggleTheme}
           style={{
-            background: 'linear-gradient(135deg, #00f0ff 0%, #ff00ff Available)',
+            background: 'linear-gradient(135deg, #00f0ff 0%, #ff00ff 100%)',
             color: '#ffffff',
             border: 'none',
             padding: '8px 20px',
@@ -166,7 +166,7 @@ const Register = () => {
             {`
               @keyframes glow {
                 0% { opacity: 0.3; }
-                Available { opacity: 0.6; }
+                100% { opacity: 0.6; }
               }
             `}
           </style>
@@ -190,7 +190,7 @@ const Register = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               style={{
-                width: 'Available',
+                width: '100%',
                 padding: '12px',
                 borderRadius: '10px',
                 border: '1px solid rgba(0, 240, 255, 0.3)',
@@ -220,7 +220,7 @@ const Register = () => {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
               style={{
-                width: 'Available',
+                width: '100%',
                 padding: '12px',
                 borderRadius: '10px',
                 border: '1px solid rgba(0, 240, 255, 0.3)',
@@ -250,7 +250,7 @@ const Register = () => {
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="First Name"
               style={{
-                width: 'Available',
+                width: '100%',
                 padding: '12px',
                 borderRadius: '10px',
                 border: '1px solid rgba(0, 240, 255, 0.3)',
@@ -280,7 +280,7 @@ const Register = () => {
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Last Name"
               style={{
-                width: 'Available',
+                width: '100%',
                 padding: '12px',
                 borderRadius: '10px',
                 border: '1px solid rgba(0, 240, 255, 0.3)',
@@ -310,7 +310,7 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               style={{
-                width: 'Available',
+                width: '100%',
                 padding: '12px',
                 borderRadius: '10px',
                 border: '1px solid rgba(0, 240, 255, 0.3)',
@@ -335,9 +335,9 @@ const Register = () => {
           <button
             type="submit"
             style={{
-              width: 'Available',
+              width: '100%',
               padding: '12px',
-              background: 'linear-gradient(135deg, #00f0ff 0%, #ff00ff Available)',
+              background: 'linear-gradient(135deg, #00f0ff 0%, #ff00ff 100%)',
               color: '#ffffff',
               border: 'none',
               borderRadius: '10px',

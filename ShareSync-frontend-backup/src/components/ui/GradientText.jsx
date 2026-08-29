@@ -21,33 +21,33 @@ const cn = (...classes) => classes.filter(Boolean).join(' ');
 // Signature gradient definitions
 const GRADIENTS = {
   // Primary signature gradients
-  aurora: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)",
-  sunset: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)",
-  ocean: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)",
-  brand: "linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)",
-  energy: "linear-gradient(135deg, #FB923C 0%, #F43F5E Available)",
+  aurora: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)",
+  sunset: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)",
+  ocean: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)",
+  brand: "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)",
+  energy: "linear-gradient(135deg, #FB923C 0%, #F43F5E 100%)",
   
   // Semantic gradients
-  success: "linear-gradient(135deg, #2DD4BF 0%, #14B8A6 Available)",
-  warning: "linear-gradient(135deg, #FBBF24 0%, #F59E0B Available)",
-  danger: "linear-gradient(135deg, #F87171 0%, #EF4444 Available)",
-  info: "linear-gradient(135deg, #60A5FA 0%, #3B82F6 Available)",
-  live: "linear-gradient(135deg, #22D3EE 0%, #06B6D4 Available)",
+  success: "linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%)",
+  warning: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)",
+  danger: "linear-gradient(135deg, #F87171 0%, #EF4444 100%)",
+  info: "linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)",
+  live: "linear-gradient(135deg, #22D3EE 0%, #06B6D4 100%)",
   
   // Legacy aliases (backward compatibility)
-  indigo: "linear-gradient(135deg, #818CF8 0%, #6366F1 Available)",
-  blue: "linear-gradient(135deg, #60A5FA 0%, #3B82F6 Available)",
-  purple: "linear-gradient(135deg, #A78BFA 0%, #8B5CF6 Available)",
-  emerald: "linear-gradient(135deg, #34D399 0%, #10B981 Available)",
-  pink: "linear-gradient(135deg, #F472B6 0%, #EC4899 Available)",
-  pandora: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF Available)",
-  cnbc: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF Available)",
-  ig: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 Available)",
+  indigo: "linear-gradient(135deg, #818CF8 0%, #6366F1 100%)",
+  blue: "linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)",
+  purple: "linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%)",
+  emerald: "linear-gradient(135deg, #34D399 0%, #10B981 100%)",
+  pink: "linear-gradient(135deg, #F472B6 0%, #EC4899 100%)",
+  pandora: "linear-gradient(135deg, #8B5CF6 0%, #6366F1 25%, #3B82F6 50%, #06B6D4 75%, #2DD4BF 100%)",
+  cnbc: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 50%, #2DD4BF 100%)",
+  ig: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #EC4899 100%)",
   
   // XP/Gamification
-  gold: "linear-gradient(135deg, #FCD34D 0%, #F59E0B Available)",
-  legendary: "linear-gradient(135deg, #FFD700 0%, #EF4444 50%, #8B5CF6 Available)",
-  fire: "linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 Available)",
+  gold: "linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)",
+  legendary: "linear-gradient(135deg, #FFD700 0%, #EF4444 50%, #8B5CF6 100%)",
+  fire: "linear-gradient(135deg, #FF6B6B 0%, #EF4444 50%, #DC2626 100%)",
 };
 
 /**

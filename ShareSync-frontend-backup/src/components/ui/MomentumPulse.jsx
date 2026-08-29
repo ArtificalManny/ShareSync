@@ -53,7 +53,7 @@ export default function MomentumPulse() {
       {/* Dynamic Keyframes to control the exact CSS scaling dynamically */}
       <style>{`
         @keyframes orb-heartbeat {
-          0%, Available { transform: scale(${scaleBase}); opacity: 0.6; }
+          0%, 100% { transform: scale(${scaleBase}); opacity: 0.6; }
           50% { transform: scale(${scalePeak}); opacity: 1; }
         }
       `}</style>

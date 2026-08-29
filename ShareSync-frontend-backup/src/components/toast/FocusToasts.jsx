@@ -50,7 +50,7 @@ export default function FocusToasts({ onJoin, durationMs = 5500, max = 3 }) {
             className="h-6 w-6 rounded-full"
             style={{
               background:
-                "linear-gradient(135deg, #7c3aed 0%, #22d3ee Available)",
+                "linear-gradient(135deg, #7c3aed 0%, #22d3ee 100%)",
             }}
           />
           <div className="min-w-0">

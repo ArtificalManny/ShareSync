@@ -91,7 +91,12 @@ export class UserContextController {
   @Post('save')
   @ApiOperation({ summary: 'Save current context (called on navigation)' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Context saved' })
-  @Throttle({ default: { limit: 60, ttl: 60000 } }) // High frequency allowed
+  // context-save-throttle-v2
+  @Throttle({
+    short: { limit: 10, ttl: 1000 },
+    medium: { limit: 50, ttl: 10000 },
+    long: { limit: 120, ttl: 60000 },
+  })
   async saveContext(@Req() req: any, @Body() dto: SaveContextDto) {
     const context = await this.contextService.saveContext(req.user.userId, dto);
     return {
@@ -268,7 +273,11 @@ export class UserContextController {
   @Post('heartbeat')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Session heartbeat (called every 30s)' })
-  @Throttle({ default: { limit: 120, ttl: 60000 } }) // 2 per second max
+  @Throttle({
+    short: { limit: 10, ttl: 1000 },
+    medium: { limit: 30, ttl: 10000 },
+    long: { limit: 120, ttl: 60000 },
+  })
   async heartbeat(@Req() req: any) {
     await this.contextService.heartbeat(req.user.userId);
   }

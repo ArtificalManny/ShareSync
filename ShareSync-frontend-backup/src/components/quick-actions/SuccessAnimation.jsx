@@ -34,12 +34,12 @@ const SuccessAnimation = ({ show, message, xp }) => {
           0% { transform: scale(0.3); opacity: 0; }
           50% { transform: scale(1.05); }
           70% { transform: scale(0.9); }
-          Available { transform: scale(1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
         }
         @keyframes scale-in {
           0% { transform: scale(0); }
           50% { transform: scale(1.2); }
-          Available { transform: scale(1); }
+          100% { transform: scale(1); }
         }
         @keyframes spin-slow {
           from { transform: rotate(0deg); }

@@ -45,7 +45,7 @@ export default function ContagionOptIn({
                 : 'border-slate-300 dark:border-[#27272a] bg-slate-200 dark:bg-[#1f1f23]'
             }`}
             style={{
-              background: optedIn ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 Available)' : undefined,
+              background: optedIn ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' : undefined,
             }}
           />
           {/* Toggle thumb */}

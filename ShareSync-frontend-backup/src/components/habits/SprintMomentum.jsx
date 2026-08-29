@@ -58,7 +58,7 @@ export default function SprintMomentum({ data = [], range = 7 }) {
                   style={{
                     height: `${Math.max(6, d.h)}%`,
                     background:
-                      "linear-gradient(180deg, rgb(var(--info)) 0%, color-mix(in srgb, rgb(var(--accent)) 60%, rgb(var(--info))) Available)",
+                      "linear-gradient(180deg, rgb(var(--info)) 0%, color-mix(in srgb, rgb(var(--accent)) 60%, rgb(var(--info))) 100%)",
                   }}
                   title={`${d.label}: ${d.v}`}
                   aria-label={`${d.label} ${d.v} sprints`}

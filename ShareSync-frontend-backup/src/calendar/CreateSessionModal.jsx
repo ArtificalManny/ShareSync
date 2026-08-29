@@ -330,7 +330,7 @@ export default function CreateSessionModal({
 
         <div className="schedule-session-modal relative flex h-[100dvh] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-none border-0 bg-white shadow-none animate-in fade-in zoom-in-95 duration-200 dark:bg-[#101827] sm:h-auto sm:max-h-[calc(100dvh-3rem)] sm:rounded-[1.5rem] sm:border sm:border-white/80 sm:bg-white/95 sm:shadow-[0_22px_60px_rgba(15,23,42,0.18)] sm:backdrop-blur-xl dark:sm:border-white/[0.08] dark:sm:bg-[#101827]/95 dark:sm:shadow-black/40">
         {/* Pearl/glass atmosphere */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.92),rgba(255,255,255,0.68)_32%,rgba(139,92,246,0.08)_70%,rgba(34,211,238,0.04)_Available)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),rgba(15,23,42,0.08)_38%,rgba(15,23,42,0)_Available)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.92),rgba(255,255,255,0.68)_32%,rgba(139,92,246,0.08)_70%,rgba(34,211,238,0.04)_100%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.16),rgba(15,23,42,0.08)_38%,rgba(15,23,42,0)_100%)]" />
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl dark:bg-cyan-400/10" />
         <div className="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-violet-300/12 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/95 to-transparent" />

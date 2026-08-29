@@ -307,7 +307,7 @@ function FocusTogether() {
                   }}
                   whileHover={{ background: 'rgba(139, 92, 246, 0.1)' }}
                   style={{
-                    width: 'Available',
+                    width: '100%',
                     padding: '12px 16px',
                     background:
                       focusedUserId === cursor.userId

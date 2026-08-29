@@ -269,7 +269,7 @@ export default function FocusBlockScheduler({
             `}
             style={{
               background: selectedMinutes
-                ? 'linear-gradient(135deg, #3B82F6 0%, #7C3AED Available)'
+                ? 'linear-gradient(135deg, #3B82F6 0%, #7C3AED 100%)'
                 : undefined,
             }}
           >

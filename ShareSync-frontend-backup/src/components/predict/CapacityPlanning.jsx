@@ -73,17 +73,17 @@ function CapacityBar({ utilization, status }) {
         <div 
           className="absolute top-0 h-3 rounded-full bg-error-500/50"
           style={{ 
-            left: 'Available',
+            left: '100%',
             width: `${(displayWidth - 100) * 0.5}%`,
             maxWidth: '25%',
           }}
         />
       )}
       
-      {/* Available marker */}
+      {/* 100% marker */}
       <div 
         className="absolute top-0 bottom-0 w-0.5 bg-white/30"
-        style={{ left: 'Available' }}
+        style={{ left: '100%' }}
       />
     </div>
   );

@@ -268,7 +268,7 @@ const MentorDock = () => {
         .mentor-toggle.active .glow-aura { display: none; }
         .sparkle-icon { width: 28px; height: 28px; color: white; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .mentor-toggle:hover .sparkle-icon { transform: rotate(15deg) scale(1.1); }
-        @keyframes breathe { 0% { transform: scale(0.95); opacity: 0.4; } Available { transform: scale(1.1); opacity: 0.7; } }
+        @keyframes breathe { 0% { transform: scale(0.95); opacity: 0.4; } 100% { transform: scale(1.1); opacity: 0.7; } }
         .mentor-panel { position: absolute; bottom: 84px; right: 0; width: 400px; border-radius: 24px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05); overflow: hidden; transform: scale(0); transform-origin: bottom right; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease; opacity: 0; display: flex; flex-direction: column; }
         .mentor-dock.open .mentor-panel { transform: scale(1); opacity: 1; }
         .mentor-header { padding: 16px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -280,7 +280,7 @@ const MentorDock = () => {
         .chat-container { flex-grow: 1; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 16px; padding-right: 8px; }
         .chat-container::-webkit-scrollbar { width: 6px; }
         .chat-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .empty-state { height: Available; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #64748b; font-size: 14px; font-weight: 500; gap: 12px; opacity: 0.8; }
+        .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #64748b; font-size: 14px; font-weight: 500; gap: 12px; opacity: 0.8; }
         .empty-icon-wrap { width: 48px; height: 48px; border-radius: 50%; background: #f5f3ff; display: flex; align-items: center; justify-content: center; }
         .chat-bubble { max-width: 85%; padding: 14px 18px; font-size: 14.5px; line-height: 1.6; }
         .chat-bubble.user { align-self: flex-end; background: #f1f5f9; color: #1e293b; border-radius: 18px 18px 4px 18px; font-weight: 500; }
@@ -288,7 +288,7 @@ const MentorDock = () => {
         .loading .dot { display: inline-block; width: 6px; height: 6px; margin: 0 2px; background: #7c3aed; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
         .loading .dot:nth-child(1) { animation-delay: -0.32s; }
         .loading .dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, Available { transform: scale(0); opacity: 0.3;} 40% { transform: scale(1); opacity: 1; } }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); opacity: 0.3;} 40% { transform: scale(1); opacity: 1; } }
         .chat-controls { display: flex; flex-direction: column; gap: 12px; }
         .transcript-bubble { align-self: flex-end; background: rgba(124, 58, 237, 0.1); color: #7c3aed; padding: 8px 14px; border-radius: 12px; font-size: 13px; font-style: italic; animation: fadeIn 0.3s ease; }
         .input-arena { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
@@ -307,11 +307,11 @@ const MentorDock = () => {
         .outcomes li { margin: 8px 0; font-size: 14px; font-weight: 500; color: #334155; }
         .block { display: flex; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border-radius: 10px; font-size: 13.5px; font-weight: 500; margin: 8px 0; color: #334155; border: 1px solid #e2e8f0; }
         .block .time { color: #64748b; font-size: 13px; }
-        .btn-sprint { display: flex; align-items: center; justify-content: center; gap: 8px; width: Available; padding: 14px; background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 15px -3px rgba(124, 58, 237, 0.3); margin-top: 16px; }
+        .btn-sprint { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; border: none; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 15px -3px rgba(124, 58, 237, 0.3); margin-top: 16px; }
         .btn-sprint:hover { box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.4); transform: translateY(-2px); }
-        .generate-plan-btn { width: Available; padding: 14px; background: white; border: 2px solid #e2e8f0; color: #475569; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .generate-plan-btn { width: 100%; padding: 14px; background: white; border: 2px solid #e2e8f0; color: #475569; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
         .generate-plan-btn:hover { border-color: #cbd5e1; background: #f8fafc; color: #1e293b; }
-        @keyframes pulse-mic { 0%, Available { box-shadow: 0 0 0 0 rgba(236,72,153, 0.3); } 50% { box-shadow: 0 0 0 6px rgba(236,72,153, 0); } }
+        @keyframes pulse-mic { 0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153, 0.3); } 50% { box-shadow: 0 0 0 6px rgba(236,72,153, 0); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* openshare-native-mentor-position-v1 */

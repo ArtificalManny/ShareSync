@@ -70,9 +70,9 @@ export default function MomentumRing({ streakDays = 0, xp = 0, tier = "Newcomer"
         <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 100 100" aria-hidden="true">
           <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
           <defs>
-            <linearGradient id="tierGradient" x1="0%" y1="0%" x2="Available" y2="Available">
+            <linearGradient id="tierGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#8b5cf6" />
-              <stop offset="Available" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#38bdf8" />
             </linearGradient>
           </defs>
           <circle

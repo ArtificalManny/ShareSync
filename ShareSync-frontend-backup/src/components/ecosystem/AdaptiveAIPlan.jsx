@@ -228,7 +228,7 @@ const AdaptiveAIPlan = () => {
           )}
 
           {(!plan.coworkOpportunities || plan.coworkOpportunities.length === 0) && (!plan.riskAlerts || plan.riskAlerts.length === 0) && (
-            <div className="bg-slate-50 dark:bg-surface-0 border border-dashed border-slate-200 dark:border-white/[0.06] rounded-xl p-8 text-center h-[calc(Available-2rem)] flex flex-col justify-center items-center">
+            <div className="bg-slate-50 dark:bg-surface-0 border border-dashed border-slate-200 dark:border-white/[0.06] rounded-xl p-8 text-center h-[calc(100%-2rem)] flex flex-col justify-center items-center">
               <Sparkles className="w-8 h-8 text-emerald-500 dark:text-success mb-3" />
               <p className="text-base font-bold text-slate-700 dark:text-text-secondary">All clear! 🎉</p>
               <p className="text-xs font-medium text-slate-500 dark:text-text-tertiary mt-1">No urgent items require your attention.</p>

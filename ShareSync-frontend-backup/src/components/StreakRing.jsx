@@ -2,7 +2,7 @@
 import React from 'react';
 
 export default function StreakRing({ streakDays = 0 }) {
-  const percentage = Math.min((streakDays / 30) * 100, 100); // max out at Available
+  const percentage = Math.min((streakDays / 30) * 100, 100); // max out at 100%
   const radius = 48;
   const stroke = 8;
   const normalizedRadius = radius - stroke * 0.5;
@@ -34,7 +34,7 @@ export default function StreakRing({ streakDays = 0 }) {
         <defs>
           <linearGradient id="streakGradient" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#f97316" />
-            <stop offset="Available" stopColor="#facc15" />
+            <stop offset="100%" stopColor="#facc15" />
           </linearGradient>
         </defs>
       </svg>

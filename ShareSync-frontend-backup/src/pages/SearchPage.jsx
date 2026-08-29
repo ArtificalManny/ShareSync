@@ -850,7 +850,7 @@ export default function SearchPage() {
   );
 
   return (
-    <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown} className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_34%),linear-gradient(180deg,#F8FAFC_0%,#F5F7FF_46%,#F8FAFC_Available)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.12),transparent_34%),linear-gradient(180deg,#09090B_0%,#101014_48%,#09090B_Available)]">
+    <main id="main" role="main" tabIndex={-1} onKeyDown={onKeyDown} className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_34%),linear-gradient(180deg,#F8FAFC_0%,#F5F7FF_46%,#F8FAFC_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.12),transparent_34%),linear-gradient(180deg,#09090B_0%,#101014_48%,#09090B_100%)]">
       <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
         
         {/* Search Header */}

@@ -7,7 +7,7 @@
  * - Notification preferences
  * - Privacy presets
  * - Granular controls
- * * UPDATE: Removed hardcoded inline styles. Implemented adaptive 
+ * * UPDATE: Removed hardcoded inline styles. Implemented adaptive
  * Tailwind classes (slate-900/white) for seamless Light/Dark mode.
  */
 
@@ -65,7 +65,7 @@ export function PresenceSettings() {
   const savePrivacySettings = (newSettings) => {
     setPrivacySettings(newSettings);
     localStorage.setItem('cursor_privacy_settings', JSON.stringify(newSettings));
-    
+
     // Update presence based on visibility
     updateOwnPresence({
       mode: newSettings.visibility === 'nobody' ? 'ghost' : 'team',
@@ -343,13 +343,13 @@ function PresetButton({ icon: Icon, label, description, color, onClick, active }
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={`p-4 rounded-xl cursor-pointer text-left transition-all border ${
-        active 
+        active
           ? '' // Styles injected via inline for dynamic hex colors
           : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
       }`}
       style={
-        active 
-          ? { backgroundColor: `${color}15`, borderColor: color } 
+        active
+          ? { backgroundColor: `${color}15`, borderColor: color }
           : {}
       }
     >
@@ -385,9 +385,9 @@ function RadioOption({ icon: Icon, label, description, selected, onClick }) {
           : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'
       }`}
     >
-      <Icon 
-        size={18} 
-        className={selected ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-400'} 
+      <Icon
+        size={18}
+        className={selected ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-zinc-400'}
       />
       <div className="flex-1 text-left">
         <div className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -433,8 +433,8 @@ function ToggleOption({ icon: Icon, label, description, checked, onChange }) {
           checked ? '' : 'bg-slate-300 dark:bg-white/10'
         }`}
         style={
-          checked 
-            ? { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED Available)' } 
+          checked
+            ? { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' }
             : {}
         }
       >

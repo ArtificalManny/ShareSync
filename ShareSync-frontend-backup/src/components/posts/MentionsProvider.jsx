@@ -127,7 +127,7 @@ export function MentionsProvider({ children }) {
     <div
       role="listbox"
       aria-label="Mention suggestions"
-      className="z-50 mt-1 w-[min(320px,Available)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg"
+      className="z-50 mt-1 w-[min(320px,100%)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg"
       style={{ position: "absolute" }}
     >
       {items.map((u, i) => (

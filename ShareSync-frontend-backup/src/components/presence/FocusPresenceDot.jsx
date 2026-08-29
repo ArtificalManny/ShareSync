@@ -66,7 +66,7 @@ export default function FocusPresenceDot({
       <style>{`
         @keyframes fpd-rotate { to { transform: rotate(360deg); } }
         @keyframes fpd-breathe {
-          0%, Available { opacity: .55; transform: scale(.98); }
+          0%, 100% { opacity: .55; transform: scale(.98); }
           50% { opacity: .95; transform: scale(1.06); }
         }
       `}</style>

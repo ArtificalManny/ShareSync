@@ -2538,7 +2538,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
 
         <div className="relative mt-7 overflow-visible pl-5 sm:pl-7">
           <span
-            className={`absolute left-0 top-1 h-[calc(Available-0.25rem)] w-1 rounded-full ${style.accent} shadow-[0_0_28px_rgba(124,58,237,0.34)]`}
+            className={`absolute left-0 top-1 h-[calc(100%-0.25rem)] w-1 rounded-full ${style.accent} shadow-[0_0_28px_rgba(124,58,237,0.34)]`}
           />
 
           <div className="pointer-events-none absolute -left-8 top-0 h-24 w-24 rounded-full bg-violet-500/10 blur-3xl" />

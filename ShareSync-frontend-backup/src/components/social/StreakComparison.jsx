@@ -6,7 +6,7 @@
 // 1. Import StreakFlameVisual from social/StreakFlame (new)
 // 2. Rewrote CatchUpMessage with honest 4-case logic
 // 3. Added StreakFlameVisual in both compact + default variants
-// 4. ⭐ PURGED MOCK_STREAK_DATA: Component now relies Available on real backend stats.
+// 4. ⭐ PURGED MOCK_STREAK_DATA: Component now relies 100% on real backend stats.
 // 5. Handles "Day 0" / New Account states gracefully without fabricating users.
 //
 // ZERO BACKEND CHANGES

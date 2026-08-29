@@ -1069,7 +1069,7 @@ export default function Home() {
         @keyframes pulse-once {
           0% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0.3); }
           50% { box-shadow: 0 0 0 8px rgb(139 92 246 / 0); }
-          Available { box-shadow: 0 0 0 0 rgb(139 92 246 / 0); }
+          100% { box-shadow: 0 0 0 0 rgb(139 92 246 / 0); }
         }
         .animate-pulse-once {
           animation: pulse-once 600ms ease-out forwards;

@@ -124,7 +124,7 @@ export default function FocusSprint({
                   <defs>
                     <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="var(--accent)" />
-                      <stop offset="Available" stopColor="var(--info)" />
+                      <stop offset="100%" stopColor="var(--info)" />
                     </linearGradient>
                   </defs>
                 </svg>

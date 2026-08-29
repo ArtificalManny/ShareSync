@@ -57,7 +57,7 @@ export default function XpRing({
           <linearGradient id="xp-ring-grad" x1="0" y1="0" x2="1" y2="1">
             {/* Signature gradient from tokens.css; resolves at runtime */}
             <stop offset="0%"  style={{ stopColor: "rgb(var(--grad-pandora-a, 124 58 237))" }} />
-            <stop offset="Available" style={{ stopColor: "rgb(var(--grad-pandora-b, 34 211 238))" }} />
+            <stop offset="100%" style={{ stopColor: "rgb(var(--grad-pandora-b, 34 211 238))" }} />
           </linearGradient>
         </defs>
 

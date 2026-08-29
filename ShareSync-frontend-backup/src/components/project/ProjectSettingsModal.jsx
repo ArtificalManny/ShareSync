@@ -399,7 +399,7 @@ export default function ProjectSettingsModal({
       <TraceOutline radius={18} speedMs={3200}>
         <div
           ref={containerRef}
-          className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(720px,calc(Available-2rem))] rounded-2xl border border-border bg-surface shadow-[var(--shadow)] accent-bar shine"
+          className="fixed z-50 inset-x-4 top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 w-[min(720px,calc(100%-2rem))] rounded-2xl border border-border bg-surface shadow-[var(--shadow)] accent-bar shine"
           role="dialog"
           aria-modal="true"
           aria-labelledby="project-settings-title"

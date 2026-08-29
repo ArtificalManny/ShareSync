@@ -829,7 +829,7 @@ export default function RoadmapPanel({
             section.roadmap-command-map button.roadmap-add-milestone-button:disabled,
             section.roadmap-command-map button.roadmap-add-milestone-button[disabled] {
               background-color: #7c3aed !important;
-              background-image: linear-gradient(135deg, #a855f7 0%, #7c3aed 46%, #5b21b6 Available) !important;
+              background-image: linear-gradient(135deg, #a855f7 0%, #7c3aed 46%, #5b21b6 100%) !important;
               color: #ffffff !important;
               -webkit-text-fill-color: #ffffff !important;
               opacity: 1 !important;
@@ -858,7 +858,7 @@ export default function RoadmapPanel({
             section.roadmap-command-map button.roadmap-force-visible-button-v2:hover:not(:disabled),
             section.roadmap-command-map button.roadmap-add-milestone-button:hover:not(:disabled) {
               transform: translateY(-1px) !important;
-              background-image: linear-gradient(135deg, #9333ea 0%, #6d28d9 48%, #4c1d95 Available) !important;
+              background-image: linear-gradient(135deg, #9333ea 0%, #6d28d9 48%, #4c1d95 100%) !important;
               box-shadow:
                 0 22px 50px rgba(109, 40, 217, 0.54),
                 inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
@@ -893,7 +893,7 @@ export default function RoadmapPanel({
               position: relative !important;
               isolation: isolate !important;
               overflow: hidden !important;
-              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
               color: #ffffff !important;
               opacity: 1 !important;
               border: 1px solid rgba(221, 214, 254, 0.92) !important;
@@ -905,14 +905,14 @@ export default function RoadmapPanel({
 
             .roadmap-force-visible-button-v2:hover:not(:disabled) {
               transform: translateY(-1px) !important;
-              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
               box-shadow:
                 0 20px 44px rgba(109, 40, 217, 0.48),
                 inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
             }
 
             .roadmap-force-visible-button-v2:disabled {
-              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available) !important;
+              background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%) !important;
               color: #ffffff !important;
               opacity: 0.88 !important;
               cursor: not-allowed !important;
@@ -940,7 +940,7 @@ export default function RoadmapPanel({
               background:
                 radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
                 radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.15), transparent 32%),
-                radial-gradient(circle at 72% Available, rgba(52, 211, 153, 0.12), transparent 28%),
+                radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.12), transparent 28%),
                 linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.82)) !important;
               border-color: rgba(124, 58, 237, 0.22) !important;
               box-shadow:
@@ -952,7 +952,7 @@ export default function RoadmapPanel({
               background:
                 radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
                 radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.13), transparent 32%),
-                radial-gradient(circle at 72% Available, rgba(52, 211, 153, 0.10), transparent 28%),
+                radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.10), transparent 28%),
                 linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.92)) !important;
               border-color: rgba(255, 255, 255, 0.12) !important;
               box-shadow:
@@ -962,7 +962,7 @@ export default function RoadmapPanel({
 
             .roadmap-command-map > div:first-of-type > div:first-child {
               height: 5px !important;
-              background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 44%, #34d399 Available) !important;
+              background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 44%, #34d399 100%) !important;
               box-shadow:
                 0 0 24px rgba(139, 92, 246, 0.42),
                 0 0 28px rgba(34, 211, 238, 0.30);
@@ -1033,7 +1033,7 @@ export default function RoadmapPanel({
               position: relative;
               isolation: isolate;
               overflow: hidden;
-              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
               color: #ffffff !important;
               border-color: rgba(221, 214, 254, 0.84) !important;
               box-shadow:
@@ -1044,7 +1044,7 @@ export default function RoadmapPanel({
 
             .roadmap-add-milestone-button:hover {
               transform: translateY(-1px);
-              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 Available) !important;
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 48%, #5b21b6 100%) !important;
               box-shadow:
                 0 20px 44px rgba(109, 40, 217, 0.44),
                 inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
@@ -1343,7 +1343,7 @@ export default function RoadmapPanel({
               
                 style={{
                   background:
-                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)",
+                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)",
                   color: "#ffffff",
                   opacity: 1,
                   border: "1px solid rgba(221, 214, 254, 0.92)",

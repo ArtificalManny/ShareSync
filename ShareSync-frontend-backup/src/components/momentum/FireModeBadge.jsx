@@ -235,7 +235,7 @@ export default function FireModeBadge({
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
               animate={{
-                x: ['-Available', '200%'],
+                x: ['-100%', '200%'],
               }}
               transition={{
                 duration: 2,

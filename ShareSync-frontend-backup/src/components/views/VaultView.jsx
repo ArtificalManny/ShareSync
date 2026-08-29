@@ -725,7 +725,7 @@ export default function VaultView({ projectId, readOnly = false }) {
             position: relative;
             background:
               radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.10), transparent 30%),
-              radial-gradient(circle at Available 0%, rgba(34, 211, 238, 0.10), transparent 32%),
+              radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.10), transparent 32%),
               linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.62)) !important;
             border-color: rgba(148, 163, 184, 0.36) !important;
             box-shadow:
@@ -737,7 +737,7 @@ export default function VaultView({ projectId, readOnly = false }) {
           .dark .vault-folder-section {
             background:
               radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.12), transparent 30%),
-              radial-gradient(circle at Available 0%, rgba(34, 211, 238, 0.10), transparent 32%),
+              radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.10), transparent 32%),
               linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.72)) !important;
             border-color: rgba(255, 255, 255, 0.09) !important;
             box-shadow:

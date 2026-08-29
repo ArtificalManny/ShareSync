@@ -51,15 +51,15 @@ export default function MomentumPulse({
     <>
       <style>{`
         @keyframes momentum-pulse-subtle {
-          0%, Available { transform: scale(1); opacity: 1; }
+          0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.005); opacity: 0.95; }
         }
         @keyframes momentum-pulse-medium {
-          0%, Available { transform: scale(1); opacity: 1; }
+          0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.01); opacity: 0.92; }
         }
         @keyframes momentum-pulse-strong {
-          0%, Available { transform: scale(1); opacity: 1; }
+          0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.02); opacity: 0.9; }
         }
       `}</style>

@@ -239,7 +239,7 @@ function generateInsight(patterns, totalTasks) {
     });
   }
 
-  // Weekday warrior (Available weekdays)
+  // Weekday warrior (100% weekdays)
   if (patterns.weekdayCount === total && total >= 5) {
     insights.push({
       ...INSIGHT_TEMPLATES.weekdayWarrior,

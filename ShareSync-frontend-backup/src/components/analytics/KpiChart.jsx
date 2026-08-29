@@ -137,7 +137,7 @@ export default function KpiChart({
   return (
     <div className="rounded-xl border border-border bg-surface p-3 chart-fade-in kpi-card" role="img" aria-label={`Chart: ${title}`}>
       <div className="text-xs text-muted mb-2">{title}</div>
-      <div style={{ width: "Available", height }}>
+      <div style={{ width: "100%", height }}>
         <ResponsiveContainer>
           <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
             <defs>
@@ -149,7 +149,7 @@ export default function KpiChart({
               {/* Line stroke gradient */}
               <linearGradient id={`line-grad-${id}`} x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor={stops.from} />
-                <stop offset="Available" stopColor={stops.to} />
+                <stop offset="100%" stopColor={stops.to} />
               </linearGradient>
             </defs>
 

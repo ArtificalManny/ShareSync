@@ -139,14 +139,14 @@ export function ActivityTimeline({ projectId, days = 1 }) {
                 {/* Bar */}
                 <div
                   style={{
-                    width: 'Available',
+                    width: '100%',
                     height: `${heightPercent}%`,
                     minHeight: data.count > 0 ? 4 : 0,
                     background: isPeak
-                      ? 'linear-gradient(180deg, #10B981 0%, #059669 Available)'
+                      ? 'linear-gradient(180deg, #10B981 0%, #059669 100%)'
                       : isSelected
-                      ? 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED Available)'
-                      : 'linear-gradient(180deg, #475569 0%, #334155 Available)',
+                      ? 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED 100%)'
+                      : 'linear-gradient(180deg, #475569 0%, #334155 100%)',
                     borderRadius: '4px 4px 0 0',
                     position: 'relative',
                     boxShadow: isPeak
@@ -161,7 +161,7 @@ export function ActivityTimeline({ projectId, days = 1 }) {
                     <div
                       style={{
                         position: 'absolute',
-                        bottom: 'Available',
+                        bottom: '100%',
                         left: '50%',
                         transform: 'translateX(-50%)',
                         padding: '8px 12px',

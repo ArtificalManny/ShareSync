@@ -206,7 +206,7 @@ export function calculateEntropyScore(contributions) {
     return sum + Math.abs(member.percentage - idealPercentage);
   }, 0);
 
-  // Maximum possible deviation (one person has Available)
+  // Maximum possible deviation (one person has 100%)
   const maxDeviation = (100 - idealPercentage) + (idealPercentage * (n - 1));
 
   // Convert to 0-1 scale (higher = more balanced)

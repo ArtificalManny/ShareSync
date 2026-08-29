@@ -159,9 +159,9 @@ export default function SkillRadarChart({
 
         {/* Gradient Definition */}
         <defs>
-          <linearGradient id="skillGradient" x1="0%" y1="0%" x2="Available" y2="Available">
+          <linearGradient id="skillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.3" />
-            <stop offset="Available" stopColor="#06B6D4" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1" />
           </linearGradient>
         </defs>
 

@@ -327,7 +327,7 @@ export default function FlowBoard({
             background:
               radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
               radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.15), transparent 32%),
-              radial-gradient(circle at 72% Available, rgba(52, 211, 153, 0.12), transparent 28%),
+              radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.12), transparent 28%),
               linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.84)) !important;
             border-color: rgba(124, 58, 237, 0.22) !important;
             box-shadow:
@@ -339,7 +339,7 @@ export default function FlowBoard({
             background:
               radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.18), transparent 34%),
               radial-gradient(circle at 88% 4%, rgba(34, 211, 238, 0.13), transparent 32%),
-              radial-gradient(circle at 72% Available, rgba(52, 211, 153, 0.10), transparent 28%),
+              radial-gradient(circle at 72% 100%, rgba(52, 211, 153, 0.10), transparent 28%),
               linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.92)) !important;
             border-color: rgba(255, 255, 255, 0.12) !important;
             box-shadow:
@@ -349,7 +349,7 @@ export default function FlowBoard({
 
           .flow-board-rail {
             height: 5px !important;
-            background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 44%, #34d399 Available) !important;
+            background: linear-gradient(90deg, #8b5cf6 0%, #38bdf8 44%, #34d399 100%) !important;
             box-shadow:
               0 0 24px rgba(139, 92, 246, 0.42),
               0 0 28px rgba(34, 211, 238, 0.30);
@@ -655,7 +655,7 @@ export default function FlowBoard({
           }
 
           .flow-lane-submit-button {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available) !important;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%) !important;
             color: #ffffff !important;
             box-shadow:
               0 10px 22px rgba(109, 40, 217, 0.28),

@@ -115,7 +115,7 @@ function forecastCompletion({
     ((completedTasks + (tasksPerDay * 1.1 * daysRemaining)) / totalTasks) * 100
   );
   
-  // Required pace to finish Available
+  // Required pace to finish 100%
   const requiredVelocity = daysRemaining > 0 ? remainingTasks / daysRemaining : Infinity;
   
   // Projected completion date at current pace

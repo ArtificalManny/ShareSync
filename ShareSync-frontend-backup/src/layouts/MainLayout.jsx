@@ -45,7 +45,7 @@ function MainLayoutShell({
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)",
+              background: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)",
             }}
           />
           <div
@@ -69,7 +69,7 @@ function MainLayoutShell({
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b Available)",
+              background: "linear-gradient(180deg, #09090b 0%, #111113 50%, #09090b 100%)",
             }}
           />
           <div

@@ -44,7 +44,7 @@ const Notifications = () => {
     <div style={{ 
       padding: '20px', 
       color: 'white', 
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 Available)',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',
       minHeight: '100vh'
     }}>
       <h1 style={{ color: '#e94560', marginBottom: '20px', textAlign: 'center' }}>Notifications</h1>

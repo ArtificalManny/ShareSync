@@ -345,7 +345,7 @@ export default function TaskSheet({
 
       <aside
         ref={containerRef}
-        className="fixed right-0 top-0 bottom-0 z-50 w-[min(520px,Available)] bg-white dark:bg-slate-900 border-l border-slate-200/70 dark:border-slate-800 shadow-2xl flex flex-col"
+        className="fixed right-0 top-0 bottom-0 z-50 w-[min(520px,100%)] bg-white dark:bg-slate-900 border-l border-slate-200/70 dark:border-slate-800 shadow-2xl flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-sheet-title"

@@ -112,7 +112,7 @@ export default function XpRing({
         <defs>
           <linearGradient id="xp-ring-grad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#8B5CF6" />   {/* Violet 500 */}
-            <stop offset="Available" stopColor="#D946EF" /> {/* Fuchsia 500 */}
+            <stop offset="100%" stopColor="#D946EF" /> {/* Fuchsia 500 */}
           </linearGradient>
         </defs>
 
@@ -151,12 +151,12 @@ export default function XpRing({
       <style jsx>{`
         @keyframes xp-ring-pulse {
           0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); opacity: 0.5; }
-          Available { box-shadow: 0 0 0 12px rgba(139, 92, 246, 0); opacity: 0; }
+          100% { box-shadow: 0 0 0 12px rgba(139, 92, 246, 0); opacity: 0; }
         }
         @keyframes xp-ring-pulse-strong {
           0% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.7); opacity: 0.7; }
           50% { box-shadow: 0 0 20px 4px rgba(217, 70, 239, 0.5); opacity: 0.5; }
-          Available { box-shadow: 0 0 0 20px rgba(217, 70, 239, 0); opacity: 0; }
+          100% { box-shadow: 0 0 0 20px rgba(217, 70, 239, 0); opacity: 0; }
         }
         .xp-ring-pulse { animation: xp-ring-pulse 0.8s ease-out forwards; }
         .xp-ring-pulse-strong { animation: xp-ring-pulse-strong 1s ease-out forwards; }

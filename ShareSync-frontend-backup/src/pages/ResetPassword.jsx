@@ -197,7 +197,7 @@ export default function ResetPassword() {
           {/* Progress bar */}
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: 'Available' }}
+            animate={{ width: '100%' }}
             transition={{ duration: 2, ease: 'linear' }}
             className="h-1 bg-green-500 rounded-full mx-auto max-w-xs"
           />

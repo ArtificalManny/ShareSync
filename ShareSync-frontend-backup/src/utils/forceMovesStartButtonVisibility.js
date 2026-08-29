@@ -34,7 +34,7 @@ function styleStartButton(button) {
   button.style.setProperty("background-color", "#7c3aed", "important");
   button.style.setProperty(
     "background-image",
-    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)",
+    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)",
     "important"
   );
   button.style.setProperty("border", "1px solid rgba(196, 181, 253, 0.95)", "important");

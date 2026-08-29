@@ -16,10 +16,10 @@ const Logo = ({ className = "", size = 32 }) => {
       className={className}
     >
       <defs>
-        <linearGradient id="openShareGradient" x1="0%" y1="0%" x2="Available" y2="Available">
+        <linearGradient id="openShareGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#7C3AED" />   {/* Tailwind violet-600 */}
           <stop offset="50%" stopColor="#3B82F6" />  {/* Tailwind blue-500 */}
-          <stop offset="Available" stopColor="#06B6D4" /> {/* Tailwind cyan-500 */}
+          <stop offset="100%" stopColor="#06B6D4" /> {/* Tailwind cyan-500 */}
         </linearGradient>
       </defs>
       

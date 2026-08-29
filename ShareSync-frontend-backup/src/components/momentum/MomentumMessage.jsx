@@ -278,8 +278,8 @@ export default function MomentumMessage({
           >
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-              initial={{ x: '-Available' }}
-              animate={{ x: 'Available' }}
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
               transition={{ 
                 duration: 1.5, 
                 delay: 0.3,

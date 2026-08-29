@@ -25,7 +25,7 @@ const cn = (...classes) => classes.filter(Boolean).join(' ');
 const BACKGROUNDS = {
   // The signature "Gallery Walk" soft glow
   softGlow: {
-    gradient: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)",
+    gradient: "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)",
     glows: [
       { color: "rgba(139, 92, 246, 0.06)", position: "top-left", size: "50vw" },
       { color: "rgba(45, 212, 191, 0.04)", position: "bottom-right", size: "45vw" },
@@ -34,19 +34,19 @@ const BACKGROUNDS = {
   
   // Soft tinted backgrounds
   softViolet: {
-    gradient: "linear-gradient(180deg, #FFFFFF 0%, #F5F3FF Available)",
+    gradient: "linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%)",
     glows: [
       { color: "rgba(139, 92, 246, 0.08)", position: "top-right", size: "40vw" },
     ],
   },
   softBlue: {
-    gradient: "linear-gradient(180deg, #FFFFFF 0%, #EFF6FF Available)",
+    gradient: "linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%)",
     glows: [
       { color: "rgba(59, 130, 246, 0.08)", position: "top-left", size: "40vw" },
     ],
   },
   softTeal: {
-    gradient: "linear-gradient(180deg, #FFFFFF 0%, #F0FDFA Available)",
+    gradient: "linear-gradient(180deg, #FFFFFF 0%, #F0FDFA 100%)",
     glows: [
       { color: "rgba(45, 212, 191, 0.08)", position: "bottom-right", size: "40vw" },
     ],
@@ -54,7 +54,7 @@ const BACKGROUNDS = {
   
   // Special aurora effect
   aurora: {
-    gradient: "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 Available)",
+    gradient: "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)",
     glows: [
       { color: "rgba(139, 92, 246, 0.08)", position: "top-left", size: "50vw" },
       { color: "rgba(99, 102, 241, 0.06)", position: "top-center", size: "45vw" },

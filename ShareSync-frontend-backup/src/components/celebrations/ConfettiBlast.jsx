@@ -141,7 +141,7 @@ export default function ConfettiBlast({
           80% {
             opacity: 1;
           }
-          Available {
+          100% {
             opacity: 0;
             transform: translateY(100vh) rotate(${randomBetween(360, 1080)}deg) scale(0.3);
           }
@@ -159,7 +159,7 @@ export default function ConfettiBlast({
           80% {
             opacity: 0.8;
           }
-          Available {
+          100% {
             opacity: 0;
             transform: translateY(90vh) scale(0.6);
           }
@@ -167,7 +167,7 @@ export default function ConfettiBlast({
 
         @keyframes celebration-flash {
           0% { opacity: 1; }
-          Available { opacity: 0; }
+          100% { opacity: 0; }
         }
       `}</style>
     </div>

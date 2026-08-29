@@ -435,8 +435,8 @@ const SuggestionForm = ({
                 style={{
                   background:
                     suggestion.title.trim() && suggestion.content.trim() && !submitting && !anyUploading
-                      ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 Available)'
-                      : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed Available)',
+                      ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
+                      : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
                   boxShadow:
                     suggestion.title.trim() && suggestion.content.trim() && !submitting && !anyUploading
                       ? 'inset 0 1px 0 rgba(255,255,255,0.26), 0 16px 36px rgba(109,40,217,0.34)'

@@ -16,7 +16,7 @@ export default function PublicLayout() {
     <div 
       className="min-h-screen flex items-center justify-center p-4"
       style={{
-        background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 Available)'
+        background: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%)'
       }}
     >
       {/* Subtle violet glow */}

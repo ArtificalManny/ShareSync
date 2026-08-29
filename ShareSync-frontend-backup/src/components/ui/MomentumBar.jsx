@@ -24,18 +24,18 @@ import React from 'react';
 function getGradient(value) {
   if (value >= 80) {
     // On fire: violet → fuchsia
-    return 'linear-gradient(90deg, #8B5CF6 0%, #D946EF Available)';
+    return 'linear-gradient(90deg, #8B5CF6 0%, #D946EF 100%)';
   }
   if (value >= 60) {
     // Flowing: violet → cyan
-    return 'linear-gradient(90deg, #8B5CF6 0%, #06B6D4 Available)';
+    return 'linear-gradient(90deg, #8B5CF6 0%, #06B6D4 100%)';
   }
   if (value >= 30) {
     // Building: blue → violet
-    return 'linear-gradient(90deg, #3B82F6 0%, #8B5CF6 Available)';
+    return 'linear-gradient(90deg, #3B82F6 0%, #8B5CF6 100%)';
   }
   // Warming up: slate → blue
-  return 'linear-gradient(90deg, #94A3B8 0%, #3B82F6 Available)';
+  return 'linear-gradient(90deg, #94A3B8 0%, #3B82F6 100%)';
 }
 
 /**

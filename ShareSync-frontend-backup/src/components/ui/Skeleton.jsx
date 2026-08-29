@@ -15,7 +15,7 @@ export function Skeleton({ className, style, ...rest }) {
   return <div className={cn("sk sk-block animate-pulse bg-slate-200 dark:bg-[#1f1f23] rounded-md", className)} style={style} {...rest} />;
 }
 
-export function SkeletonLine({ width = "Available", className, style, height = 12, radius }) {
+export function SkeletonLine({ width = "100%", className, style, height = 12, radius }) {
   return (
     <div
       className={cn("sk sk-line animate-pulse bg-slate-200 dark:bg-[#1f1f23]", className)}
@@ -57,7 +57,7 @@ export function SkeletonText({
         <SkeletonLine
           key={i}
           height={lineHeight}
-          width={i === lines - 1 ? lastWidth : "Available"}
+          width={i === lines - 1 ? lastWidth : "100%"}
         />
       ))}
     </div>

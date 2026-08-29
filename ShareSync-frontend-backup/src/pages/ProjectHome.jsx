@@ -5364,7 +5364,7 @@ export default function ProjectHome() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.12),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_Available)] text-slate-800 dark:bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.22),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.16),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_Available)] dark:text-zinc-100" data-project-home-polish="safe-v5">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.12),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_18%_8%,rgba(124,58,237,0.22),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(45,212,191,0.16),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] dark:text-zinc-100" data-project-home-polish="safe-v5">
 
       <style className="project-home-safe-visual-polish-v5-style">{`
         /*

@@ -185,7 +185,7 @@ export function useElementCursor(elementRef, options = {}) {
 
     const rect = elementRef.current.getBoundingClientRect();
 
-    // Position relative to element (0-Available)
+    // Position relative to element (0-100%)
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
 

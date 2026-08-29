@@ -684,7 +684,7 @@ const Projects = () => {
     <div
       className="min-h-screen p-6 lg:p-10 max-w-[1400px] mx-auto"
       style={{
-        background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #FFFFFF Available))',
+        background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%))',
       }}
     >
       {/* ═══════════════════════════════════════════════════════════════════
@@ -734,7 +734,7 @@ const Projects = () => {
             "
             style={{
               backgroundColor: '#7C3AED',
-              backgroundImage: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 Available)',
+              backgroundImage: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 100%)',
               color: '#FFFFFF',
               opacity: 1,
               boxShadow: '0 12px 28px rgba(124, 58, 237, 0.35)',
@@ -745,13 +745,13 @@ const Projects = () => {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#6D28D9';
-              e.currentTarget.style.backgroundImage = 'linear-gradient(135deg, #6D28D9 0%, #7C3AED 55%, #9333EA Available)';
+              e.currentTarget.style.backgroundImage = 'linear-gradient(135deg, #6D28D9 0%, #7C3AED 55%, #9333EA 100%)';
               e.currentTarget.style.boxShadow = '0 16px 34px rgba(124, 58, 237, 0.42)';
               e.currentTarget.style.transform = 'translateY(-1px)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#7C3AED';
-              e.currentTarget.style.backgroundImage = 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 Available)';
+              e.currentTarget.style.backgroundImage = 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 55%, #A855F7 100%)';
               e.currentTarget.style.boxShadow = '0 12px 28px rgba(124, 58, 237, 0.35)';
               e.currentTarget.style.transform = 'translateY(0)';
             }}

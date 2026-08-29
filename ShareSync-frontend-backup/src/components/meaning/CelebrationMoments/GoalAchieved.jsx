@@ -23,8 +23,8 @@ function BurstRings() {
           key={i}
           className="absolute rounded-full border-2 border-cyan-500/50"
           style={{
-            width: 'Available',
-            height: 'Available',
+            width: '100%',
+            height: '100%',
             animation: `burst-ring 2s ease-out ${i * 0.3}s infinite`,
           }}
         />
@@ -36,7 +36,7 @@ function BurstRings() {
             transform: scale(0.5);
             opacity: 1;
           }
-          Available {
+          100% {
             transform: scale(2);
             opacity: 0;
           }

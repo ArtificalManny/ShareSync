@@ -76,7 +76,7 @@ export default function MessengerPanel() {
             role="dialog"
             aria-modal="true"
             aria-label="Messenger"
-            className="fixed z-[51] right-4 bottom-4 w-[min(900px,calc(Available-2rem))] h-[520px] rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl overflow-hidden"
+            className="fixed z-[51] right-4 bottom-4 w-[min(900px,calc(100%-2rem))] h-[520px] rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl overflow-hidden"
           >
             {/* Header */}
             <div className="h-11 px-3 border-b border-slate-200/70 dark:border-slate-700 flex items-center justify-between">

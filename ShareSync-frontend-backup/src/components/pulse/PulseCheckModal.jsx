@@ -267,7 +267,7 @@ export default function PulseCheckModal({
             `}
             style={{
               background: canSubmit
-                ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 Available)'
+                ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)'
                 : undefined,
             }}
           >

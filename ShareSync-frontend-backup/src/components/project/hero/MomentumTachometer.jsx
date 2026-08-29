@@ -172,9 +172,9 @@ export default function MomentumTachometer({
         <svg viewBox="0 0 200 140" className="w-full max-w-[280px]">
           {/* Gradient Definition */}
           <defs>
-            <linearGradient id="momentumGradient" x1="0%" y1="0%" x2="Available" y2="0%">
+            <linearGradient id="momentumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={config.gradient[0]} />
-              <stop offset="Available" stopColor={config.gradient[1]} />
+              <stop offset="100%" stopColor={config.gradient[1]} />
             </linearGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="3" result="coloredBlur"/>

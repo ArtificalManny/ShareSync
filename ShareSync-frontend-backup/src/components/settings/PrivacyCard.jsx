@@ -156,7 +156,7 @@ const PrivacyCard = () => {
             <div className="text-sm font-semibold text-emerald-300 mb-1">Privacy Controls</div>
             <div className="text-xs text-slate-400">Review your settings</div>
           </div>
-          <div className="text-3xl font-bold text-emerald-400">Available</div>
+          <div className="text-3xl font-bold text-emerald-400">100%</div>
         </div>
       </div>
 
@@ -237,7 +237,7 @@ const PrivacyCard = () => {
         </div>
         <div className="bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 p-3">
           <div className="text-xs text-slate-500 mb-1">User controls</div>
-          <div className="text-sm font-bold text-slate-900 dark:text-white">Available</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white">100%</div>
         </div>
       </div>
     </div>

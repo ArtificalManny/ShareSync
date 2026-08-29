@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // Triggered when user levels up:
-// 1. Ring fills completely (Available)
+// 1. Ring fills completely (100%)
 // 2. Flash effect pulses outward
 // 3. Level number scales up with glow
 // 4. Ring resets to 0% with new level
@@ -108,7 +108,7 @@ export default function LevelUpCelebration({
             transform: scale(1);
             opacity: 0.8;
           }
-          Available {
+          100% {
             transform: scale(1.5);
             opacity: 0;
           }
@@ -127,7 +127,7 @@ export default function LevelUpCelebration({
             transform: scale(1.2);
             opacity: 1;
           }
-          Available {
+          100% {
             transform: scale(1);
             opacity: 1;
           }

@@ -299,8 +299,8 @@ export default function VerifyEmail() {
             backgroundColor: code.length === 6 ? "#7c3aed" : "#ede9fe",
             backgroundImage:
               code.length === 6
-                ? "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 Available)"
-                : "linear-gradient(135deg, #f5f3ff 0%, #ede9fe Available)",
+                ? "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 34%, #7c3aed 68%, #6d28d9 100%)"
+                : "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
             color: code.length === 6 ? "#ffffff" : "#6d28d9",
             border: "1px solid rgba(139,92,246,0.35)",
             boxShadow:

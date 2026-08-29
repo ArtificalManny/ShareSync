@@ -95,7 +95,7 @@ export default function KpiDrilldownModal({
 
           {/* Chart */}
           <div className="h-72 px-5 pb-6 pt-2">
-            <ResponsiveContainer width="Available" height="Available">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={filtered}>
                 <defs>
                   <linearGradient id="cadenceFill" x1="0" y1="0" x2="0" y2="1">

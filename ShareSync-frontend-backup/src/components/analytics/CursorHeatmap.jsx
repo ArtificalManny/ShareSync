@@ -57,7 +57,7 @@ export function CursorHeatmap({ projectId, timeWindow = 3600, gridSize = 20 }) {
         if (value === 0) return;
         const intensity = value / maxValue;
         const hue = (1 - intensity) * 240; // Blue to red
-        ctx.fillStyle = `hsla(${hue}, Available, 50%, ${0.3 + intensity * 0.7})`;
+        ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${0.3 + intensity * 0.7})`;
         ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
       });
     });
@@ -94,7 +94,7 @@ export function CursorHeatmap({ projectId, timeWindow = 3600, gridSize = 20 }) {
       </div>
 
       <div style={{ background: '#0F172A', borderRadius: 12, padding: 24, marginBottom: 16 }}>
-        <canvas ref={canvasRef} style={{ width: 'Available', borderRadius: 8 }} />
+        <canvas ref={canvasRef} style={{ width: '100%', borderRadius: 8 }} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>

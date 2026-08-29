@@ -174,11 +174,11 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
           exit={{ scale: 0.9, y: 20 }}
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: 'linear-gradient(135deg, #1E293B 0%, #0F172A Available)',
+            background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
             borderRadius: 24,
             padding: 32,
             maxWidth: 600,
-            width: 'Available',
+            width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
             border: '1px solid rgba(139, 92, 246, 0.3)',
@@ -193,7 +193,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
                   width: 40,
                   height: 40,
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 Available)',
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -235,7 +235,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
           {thumbnail && (
             <div
               style={{
-                width: 'Available',
+                width: '100%',
                 height: 280,
                 borderRadius: 16,
                 overflow: 'hidden',
@@ -248,8 +248,8 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
                 src={thumbnail}
                 alt="Video preview"
                 style={{
-                  width: 'Available',
-                  height: 'Available',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
                 }}
               />
@@ -299,9 +299,9 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
               whileTap={{ scale: 0.98 }}
               onClick={handleExport}
               style={{
-                width: 'Available',
+                width: '100%',
                 padding: 16,
-                background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 Available)',
+                background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
                 border: 'none',
                 borderRadius: 12,
                 color: 'white',
@@ -340,7 +340,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
               </div>
               <div
                 style={{
-                  width: 'Available',
+                  width: '100%',
                   height: 8,
                   background: 'rgba(255, 255, 255, 0.1)',
                   borderRadius: 4,
@@ -351,8 +351,8 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
                   initial={{ width: 0 }}
                   animate={{ width: `${exportProgress}%` }}
                   style={{
-                    height: 'Available',
-                    background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 Available)',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%)',
                   }}
                 />
               </div>
@@ -392,7 +392,7 @@ export function ShareCursorClip({ frames, onClose, isOpen }) {
                 whileTap={{ scale: 0.98 }}
                 onClick={downloadVideo}
                 style={{
-                  width: 'Available',
+                  width: '100%',
                   padding: 14,
                   background: 'rgba(255, 255, 255, 0.1)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
