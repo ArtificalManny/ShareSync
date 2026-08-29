@@ -10,10 +10,9 @@ export default function CriticalInsights() {
     const fetchInsights = async () => {
       try {
         // Fetch from multiple endpoints
-        const [momentum, predictions, workBalance] = await Promise.all([
+        const [momentum, predictions] = await Promise.all([
           api.get('/users/momentum'),
-          api.get('/insights/predictions'),
-          api.get('/users/profile-analytics')
+          api.get('/insights/predictions')
         ]);
 
         const criticalInsights = [];
@@ -46,18 +45,8 @@ export default function CriticalInsights() {
           });
         }
 
-        // INSIGHT 3: Co-working multiplier
-        const coworkingMultiplier = workBalance.data?.collaborationStyle?.completionMultiplier || 1;
-        if (coworkingMultiplier > 1.5) {
-          criticalInsights.push({
-            type: 'success',
-            icon: Users,
-            color: 'emerald',
-            message: `You complete ${coworkingMultiplier.toFixed(1)}× more when co-working - schedule a session this week`,
-            action: 'Schedule co-work',
-            priority: 7
-          });
-        }
+        // Co-working multiplier insight is intentionally omitted until
+        // profile analytics has a real backend contract.
 
         // INSIGHT 4: Predictions from AI
         if (predictions.data?.length > 0) {

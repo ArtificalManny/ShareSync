@@ -120,7 +120,7 @@ export default function ProfileStrength({ onEditClick }) {
         <button
           onClick={onEditClick}
           className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all shadow-md hover:shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 Available)' }}
+          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}
         >
           Complete your profile
           <ChevronRight className="w-4 h-4" />

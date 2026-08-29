@@ -524,6 +524,89 @@ export class UserService {
     };
   }
 
+  // profile-strength-service-v1
+  async getProfileStrength(userId: string): Promise<any> {
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new BadRequestException(
+        'Invalid user ID',
+      );
+    }
+
+    const user: any = await this.findById(userId);
+
+    const hasText = (value: any) =>
+      typeof value === 'string' &&
+      value.trim().length > 0;
+
+    const hasName = Boolean(
+      hasText(user?.displayName) ||
+      hasText(user?.name) ||
+      hasText(user?.firstName) ||
+      hasText(user?.lastName)
+    );
+
+    const hasAvatar = Boolean(
+      user?.avatarUrl ||
+      user?.profilePicture ||
+      user?.profileImage ||
+      user?.avatar ||
+      user?.photoUrl ||
+      user?.imageUrl
+    );
+
+    const hasArchetype = Boolean(
+      user?.archetype ||
+      user?.workArchetype ||
+      user?.roleClassification ||
+      user?.mentor?.archetype ||
+      user?.mentor?.roleClassification
+    );
+
+    const hasProject =
+      Array.isArray(user?.projects) &&
+      user.projects.length > 0;
+
+    const completedTaskCount = Math.max(
+      Number(user?.totalTasksCompleted) || 0,
+      Number(user?.totalShips) || 0
+    );
+
+    const checks = {
+      hasName,
+      hasAvatar,
+      hasBio: hasText(user?.bio),
+      hasArchetype,
+      hasProject,
+      hasTask: completedTaskCount > 0,
+      hasLocation: hasText(user?.location),
+      hasWebsite: hasText(user?.website),
+    };
+
+    const completedFields = Object.entries(checks)
+      .filter(([, complete]) => Boolean(complete))
+      .map(([field]) => field);
+
+    const missingFields = Object.entries(checks)
+      .filter(([, complete]) => !complete)
+      .map(([field]) => field);
+
+    const totalFields = Object.keys(checks).length;
+
+    return {
+      percentage:
+        totalFields > 0
+          ? Math.round(
+              (completedFields.length / totalFields) * 100
+            )
+          : 0,
+      completedFields,
+      missingFields,
+    };
+  }
+
   async getMyStats(userId: string): Promise<any> {
     if (
       !userId ||

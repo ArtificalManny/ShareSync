@@ -1431,13 +1431,10 @@ export default function Profile() {
           : userData;
         setMe(merged);
 
-        try {
-          const analytics = await client.get("/users/profile-analytics");
-          setProfileAnalytics(analytics.data);
-        } catch (err) {
-          console.warn("[Profile] analytics load failed", err?.message || err);
-          setProfileAnalytics(null);
-        }
+        // profile-analytics-unsupported-endpoint-v1
+        // Collaboration/role analytics do not yet have a backend contract.
+        // Keep the optional cards hidden instead of issuing a broken request.
+        setProfileAnalytics(null);
 
         // Fetch real stats and merge into user object
         try {

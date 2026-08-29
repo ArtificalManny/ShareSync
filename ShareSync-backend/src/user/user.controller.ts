@@ -531,6 +531,18 @@ export class UserController {
   // ─────────────────────────────────────────────────────────────────────────────
 
 
+  // profile-strength-endpoint-v1
+  @UseGuards(JwtAuthGuard)
+  @Get('me/profile-strength')
+  async getMyProfileStrength(@Req() req: any) {
+    const userId = req?.user?.sub || req?.user?.userId || req?.user?.id;
+
+    return {
+      success: true,
+      data: await this.users.getProfileStrength(userId),
+    };
+  }
+
   @Get('me/stats')
   @UseGuards(JwtAuthGuard)
   async getMyStats(@Req() req: any) {
