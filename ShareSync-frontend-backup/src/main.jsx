@@ -65,8 +65,10 @@ if (typeof window !== "undefined" && posthogEnabled) {
         console.log("[Telemetry] Local dev detected. PostHog tracking paused.");
         ph.opt_out_capturing();
       }
-    }
-  );
+    },
+  });
+} else if (import.meta.env.DEV) {
+  console.log("[Telemetry] PostHog disabled: no valid project key configured.");
 }
 
 // ====================================================================
