@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-
-function getAuthToken() {
-  return (
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("authToken") ||
-    ""
-  );
-}
+import api from "../api/client";
 
 function normalizeProjectCount(payload) {
   const rawCount =
@@ -33,26 +25,9 @@ export function useProjectUsageCount({
 
   const refresh = useCallback(async () => {
     try {
-      const token = getAuthToken();
-
-      const response = await fetch(
-        "/api/subscriptions/current",
-        {
-          headers: token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : {},
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Project usage request failed with ${response.status}`,
-        );
-      }
-
-      const payload = await response.json();
+      // project-usage-api-client-v1
+      const response = await api.get("/subscriptions/current");
+      const payload = response?.data || {};
       const nextCount = normalizeProjectCount(payload);
 
       if (nextCount === null) {
