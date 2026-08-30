@@ -1324,13 +1324,31 @@ export function useProjectOverview(projectId, options = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // project-overview-reconnect-v1
+  const dataRef = useRef(null);
+  const loadedProjectIdRef = useRef("");
+
   const pulseIntervalRef = useRef(null);
 
   const fetchOverview = useCallback(async () => {
     if (!projectId) return;
 
+    const hasCurrentProjectData =
+      Boolean(dataRef.current) &&
+      loadedProjectIdRef.current === String(projectId);
+
     try {
       setError(null);
+
+      // Keep already-loaded content visible during an outage.
+      // Returning here still runs finally, so loading cannot stick.
+      if (
+        hasCurrentProjectData &&
+        typeof navigator !== "undefined" &&
+        navigator.onLine === false
+      ) {
+        return;
+      }
 
       let overviewPayload = {};
       try {
@@ -1350,13 +1368,57 @@ export function useProjectOverview(projectId, options = {}) {
       const rawProjectPayload = projectRes?.data ?? projectRes ?? {};
 
       const merged = normalizeProjectEnvelope(overviewPayload, rawProjectPayload);
+      dataRef.current = merged;
+      loadedProjectIdRef.current = String(projectId);
       setData(merged);
     } catch (err) {
       console.warn(
         "[useProjectOverview] Overview fetch failed:",
         err?.message || err
       );
-      setError(err?.message || "Failed to load project");
+      // project-overview-preserve-error-v1
+      const status = Number(
+        err?.response?.status ||
+          err?.status ||
+          err?.response?.data?.statusCode ||
+          err?.payload?.statusCode ||
+          0
+      );
+
+      const message = String(
+        err?.message || ""
+      );
+
+      const offline =
+        typeof navigator !== "undefined" &&
+        navigator.onLine === false;
+
+      const networkFailure =
+        !err?.response &&
+        (
+          /network error/i.test(message) ||
+          /failed to fetch/i.test(message) ||
+          /load failed/i.test(message) ||
+          /network request failed/i.test(message) ||
+          /timeout/i.test(message)
+        );
+
+      // If this project was already loaded, transient failures
+      // should not replace useful content with a full-screen state.
+      // 403 and 404 remain blocking so revoked/deleted projects
+      // are still represented accurately.
+      if (
+        hasCurrentProjectData &&
+        (
+          offline ||
+          networkFailure ||
+          status >= 500
+        )
+      ) {
+        return;
+      }
+
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -1364,6 +1426,13 @@ export function useProjectOverview(projectId, options = {}) {
 
   const fetchPulse = useCallback(async () => {
     if (!projectId || !includePulse) return;
+
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.onLine === false
+    ) {
+      return;
+    }
 
     try {
       const pulseData = await getProjectPulse(projectId);
@@ -1407,6 +1476,37 @@ export function useProjectOverview(projectId, options = {}) {
       includePulse ? fetchPulse() : Promise.resolve(),
     ]);
   }, [fetchOverview, fetchPulse, includePulse]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleOnline = () => {
+      if (!projectId) return;
+
+      if (error) {
+        void refresh();
+        return;
+      }
+
+      void refreshSilently();
+    };
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener(
+        "online",
+        handleOnline
+      );
+    };
+  }, [
+    projectId,
+    error,
+    refresh,
+    refreshSilently,
+  ]);
 
   const project = useMemo(() => data?.project || null, [data]);
 
