@@ -216,10 +216,16 @@ export default function StackTaskRow({
     const trimmed = String(editTitle || "").trim();
     if (!trimmed || disabled || completing) return;
 
-    await onEdit?.(task, {
+    const savedTask = await onEdit?.(task, {
       title: trimmed,
       priority: editPriority || "medium",
     });
+
+    // move-save-result-guard-v1
+    // Keep the inline draft open when the backend did not accept the save.
+    if (!savedTask) {
+      return;
+    }
 
     setEditing(false);
   }, [editTitle, editPriority, disabled, completing, onEdit, task]);
