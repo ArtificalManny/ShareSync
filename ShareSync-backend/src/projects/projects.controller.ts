@@ -309,6 +309,12 @@ export class ProjectsController {
 
 
   @Get(':id/overview')
+  // project-overview-read-throttle-v1
+  @Throttle({
+    short: { limit: 60, ttl: 1000 },
+    medium: { limit: 180, ttl: 10000 },
+    long: { limit: 600, ttl: 60000 },
+  })
   @ApiOperation({ summary: 'Get rich overview data for ProjectHome' })
   @ApiParam({ name: 'id', description: 'Project ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Overview data found' })

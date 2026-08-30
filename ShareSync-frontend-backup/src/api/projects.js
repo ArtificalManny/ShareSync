@@ -3,6 +3,7 @@
 // ⭐ FIX: Now safely includes the `members` array in the payload!
 // ⭐ LIFECYCLE: Added closure readiness / complete / reopen project APIs
 import api from './client';
+import { getSharedProjectOverview } from "./projectOverviewShared";
 
 // ============================================
 // HELPERS
@@ -501,7 +502,7 @@ export const getProjectClosureReadiness = async (projectId) => {
   // Home missions should use that same source first so the mini progress bar
   // matches the Finish Line readiness score.
   try {
-    const overviewResponse = await api.get(`/projects/${id}/overview`);
+    const overviewResponse = await getSharedProjectOverview(id);
 
     // IMPORTANT:
     // Do NOT use unwrap() here.

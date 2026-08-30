@@ -1,5 +1,6 @@
 // src/api/workloadIntelligence.js
 import client from "./client";
+import { getSharedProjectOverview } from "./projectOverviewShared";
 
 const MAX_OVERVIEW_PROJECTS = 10;
 const OVERVIEW_REQUEST_DELAY_MS = 80;
@@ -291,7 +292,7 @@ async function fetchProjects() {
 async function fetchProjectOverview(projectId) {
   if (!projectId) return null;
 
-  const response = await client.get(`/projects/${projectId}/overview`);
+  const response = await getSharedProjectOverview(projectId);
   return unwrapPayload(response);
 }
 
