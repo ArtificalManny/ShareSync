@@ -5,14 +5,14 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, Plus, Download } from 'lucide-react';
+import { Rocket, Plus } from 'lucide-react';
 import { OPENSHARE_MESSAGING } from '../../content/openShareMessaging';
 import {
   trackFirstRunExplanationViewed,
   trackFirstProjectStarted,
 } from '../../utils/telemetry';
 
-export default function EmptyProjects({ onCreateProject, onImport }) {
+export default function EmptyProjects({ onCreateProject }) {
   useEffect(() => {
     const storageKey =
       'openshare:first-run-explanation-viewed';
@@ -113,13 +113,6 @@ export default function EmptyProjects({ onCreateProject, onImport }) {
           Create your first project
         </button>
 
-        <button
-          onClick={onImport}
-          className="group flex items-center gap-2 text-sm font-medium text-text-tertiary transition-colors hover:text-brand-400"
-        >
-          <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
-          Import from Asana/Trello
-        </button>
       </div>
     </motion.section>
   );
