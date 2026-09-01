@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ShieldCheck,
   RefreshCw,
+  WalletCards,
 } from 'lucide-react';
 import api from '../../api/client';
 import PricingModal from './PricingModal';
@@ -200,83 +201,13 @@ function FeaturePill({ children }) {
   );
 }
 
-function FreePlanOrbitGlyph() {
+function SubscriptionPortalGlyph() {
   return (
     <div
-      className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[conic-gradient(from_155deg,#8b5cf6,#38bdf8,#14b8a6,#8b5cf6)] p-[1.5px] shadow-[0_14px_34px_rgba(139,92,246,0.22)]"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-[0_10px_28px_rgba(139,92,246,0.16)] dark:border-violet-400/25 dark:from-violet-500/15 dark:via-white/[0.05] dark:to-cyan-400/10 dark:text-violet-300"
       aria-hidden="true"
     >
-      <div className="absolute inset-[1.5px] rounded-[0.65rem] bg-white/95 dark:bg-[#0b1020]/95" />
-
-      <div className="absolute inset-0 bg-cyan-300/35 opacity-70 blur-xl" />
-
-      <svg
-        viewBox="0 0 48 48"
-        className="relative z-10 h-6 w-6"
-        fill="none"
-      >
-        <circle
-          cx="24"
-          cy="24"
-          r="12.5"
-          stroke="#8b5cf6"
-          strokeWidth="2"
-          strokeDasharray="3 4"
-          opacity="0.9"
-        />
-
-        <ellipse
-          cx="24"
-          cy="24"
-          rx="17"
-          ry="7.5"
-          stroke="#38bdf8"
-          strokeWidth="1.9"
-          opacity="0.8"
-          transform="rotate(-28 24 24)"
-        />
-
-        <ellipse
-          cx="24"
-          cy="24"
-          rx="7.5"
-          ry="17"
-          stroke="#14b8a6"
-          strokeWidth="1.9"
-          opacity="0.75"
-          transform="rotate(-28 24 24)"
-        />
-
-        <circle
-          cx="24"
-          cy="24"
-          r="4"
-          fill="#8b5cf6"
-        />
-
-        <circle
-          cx="35"
-          cy="15"
-          r="3.5"
-          fill="#38bdf8"
-        />
-
-        <path
-          d="M33.3 15.1L34.5 16.3L37 13.4"
-          stroke="white"
-          strokeWidth="1.35"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        <path
-          d="M14 34L18 30M30 18L34 14"
-          stroke="#14b8a6"
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.85"
-        />
-      </svg>
+      <WalletCards className="h-5 w-5" strokeWidth={2.2} />
     </div>
   );
 }
@@ -622,7 +553,7 @@ export default function SubscriptionButton() {
                     <Crown className="h-4 w-4" />
                   </div>
                 ) : (
-                  <FreePlanOrbitGlyph />
+                  <SubscriptionPortalGlyph />
                 )}
 
                 {isPremium ? (
