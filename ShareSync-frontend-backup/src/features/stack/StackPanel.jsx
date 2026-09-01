@@ -1378,7 +1378,7 @@ export default function StackPanel({
               onKeyDown={handleAddKeyDown}
               placeholder="Task title…"
               disabled={addingTask}
-              className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-4 py-3 text-base md:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 shadow-sm outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
+              className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-4 py-3 !text-[16px] md:!text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 shadow-sm outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
             />
 
             <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-[auto_1fr_auto] xl:items-center">
@@ -1409,7 +1409,7 @@ export default function StackPanel({
                       value={newAssigneeId}
                       onChange={(e) => setNewAssigneeId(e.target.value)}
                       disabled={addingTask}
-                      className="w-full appearance-none rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 py-3 pl-9 pr-9 text-base md:text-xs text-slate-900 dark:text-white outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
+                      className="w-full appearance-none rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 py-3 pl-9 pr-9 !text-[16px] md:!text-xs text-slate-900 dark:text-white outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
                     >
                       <option value="">Unassigned</option>
                       {memberOptions.map((member) => (
@@ -1431,7 +1431,7 @@ export default function StackPanel({
                       onKeyDown={handleAddKeyDown}
                       placeholder="Optional assignee ID"
                       disabled={addingTask}
-                      className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-9 py-3 text-base md:text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
+                      className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-9 py-3 !text-[16px] md:!text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/40 outline-none transition-all focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 disabled:opacity-50"
                     />
                   </>
                 )}

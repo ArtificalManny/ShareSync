@@ -325,7 +325,7 @@ export default function StackTaskRow({
                           cancelEdit();
                         }
                       }}
-                      className="min-w-[220px] flex-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-base md:text-sm font-bold text-slate-900 outline-none ring-2 ring-transparent transition focus:border-violet-400 focus:ring-violet-100 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:focus:border-violet-300/50 dark:focus:ring-violet-400/10"
+                      className="min-w-[220px] flex-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 !text-[16px] md:!text-sm font-bold text-slate-900 outline-none ring-2 ring-transparent transition focus:border-violet-400 focus:ring-violet-100 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:focus:border-violet-300/50 dark:focus:ring-violet-400/10"
                       autoFocus
                     />
                   ) : (
@@ -368,7 +368,7 @@ export default function StackTaskRow({
                     <select
                       value={editPriority}
                       onChange={(e) => setEditPriority(e.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-base md:text-xs font-bold text-slate-700 outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 !text-[16px] md:!text-xs font-bold text-slate-700 outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Med</option>
