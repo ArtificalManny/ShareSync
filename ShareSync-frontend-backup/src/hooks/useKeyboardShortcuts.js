@@ -37,40 +37,89 @@ function parseShortcut(shortcut) {
  * Check if an event matches a parsed shortcut
  */
 function eventMatchesShortcut(event, parsed) {
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  
-  // On Mac, cmd is metaKey. On Windows/Linux, we map cmd to ctrlKey
-  const cmdMatch = isMac 
-    ? (parsed.cmd ? event.metaKey : !event.metaKey)
-    : (parsed.cmd ? event.ctrlKey : !event.ctrlKey);
-  
-  const ctrlMatch = isMac
-    ? (parsed.ctrl ? event.ctrlKey : !event.ctrlKey)
-    : true; // Already handled by cmd on non-Mac
-  
+  // openshare-apple-shortcut-platform-v1
+  //
+  // "cmd" means the Apple Command/Meta key on every Apple platform,
+  // including iPhone/iPad WebViews — not only macOS.
+  //
+  // On Windows/Linux, "cmd" remains an alias for Ctrl so the same
+  // shortcut definitions work cross-platform.
+  const platform = String(navigator.platform || '');
+  const userAgent = String(navigator.userAgent || '');
+
+  const isApplePlatform =
+    /Mac|iPhone|iPad|iPod/i.test(platform) ||
+    /iPhone|iPad|iPod/i.test(userAgent);
+
+  const expectsMeta = parsed.cmd && isApplePlatform;
+  const expectsCtrl =
+    parsed.ctrl ||
+    (parsed.cmd && !isApplePlatform);
+
   return (
-    event.key.toLowerCase() === parsed.key &&
-    cmdMatch &&
-    ctrlMatch &&
-    (parsed.alt ? event.altKey : !event.altKey) &&
-    (parsed.shift ? event.shiftKey : !event.shiftKey)
+    String(event.key || '').toLowerCase() === parsed.key &&
+    event.metaKey === expectsMeta &&
+    event.ctrlKey === expectsCtrl &&
+    event.altKey === parsed.alt &&
+    event.shiftKey === parsed.shift
   );
 }
 
 /**
  * Global keyboard event handler
  */
+const EDITABLE_SHORTCUT_SELECTOR = [
+  'input',
+  'textarea',
+  'select',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="textbox"]',
+].join(', ');
+
+function isEditableShortcutTarget(node) {
+  if (!node || typeof node.matches !== 'function') {
+    return false;
+  }
+
+  return (
+    node.matches(EDITABLE_SHORTCUT_SELECTOR) ||
+    Boolean(node.closest?.(EDITABLE_SHORTCUT_SELECTOR))
+  );
+}
+
+function isEditingDuringShortcutEvent(event) {
+  // IME/composition input must never be interpreted as an app shortcut.
+  if (event.isComposing) {
+    return true;
+  }
+
+  const candidates = [
+    event.target,
+    document.activeElement,
+  ];
+
+  if (typeof event.composedPath === 'function') {
+    candidates.push(...event.composedPath());
+  }
+
+  return candidates.some(isEditableShortcutTarget);
+}
+
 function globalKeyHandler(event) {
-  // Don't trigger shortcuts when typing in inputs
-  const target = event.target;
-  const isInput = target.tagName === 'INPUT' || 
-                  target.tagName === 'TEXTAREA' || 
-                  target.isContentEditable;
+  // openshare-global-shortcuts-ignore-editing-v1
+  //
+  // Capacitor/WebKit may not always expose the focused form control as
+  // event.target. Check the event origin, active element, and composed path
+  // before allowing any normal global shortcut to run.
+  const isEditing = isEditingDuringShortcutEvent(event);
 
   for (const [id, { shortcut, handler, allowInInput }] of shortcutRegistry) {
-    if (isInput && !allowInInput) continue;
-    
+    if (isEditing && !allowInInput) {
+      continue;
+    }
+
     const parsed = parseShortcut(shortcut);
+
     if (eventMatchesShortcut(event, parsed)) {
       event.preventDefault();
       event.stopPropagation();

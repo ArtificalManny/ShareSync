@@ -567,17 +567,40 @@ export function CommandPaletteProvider({ children, projects = [], onAction }) {
     });
   }, [location.pathname]);
 
-  useKeyboardShortcut('cmd+k', () => setIsOpen(true), {
+  // openshare-command-palette-ignore-editables-v1
+  // The global command palette must never steal ordinary typing from
+  // inputs, textareas, or other editable controls.
+  const openFromKeyboardShortcut = useCallback((event) => {
+    const target = event?.target;
+
+    const isEditable =
+      target instanceof HTMLElement &&
+      (
+        target.matches?.(
+          'input, textarea, select, [contenteditable="true"], [role="textbox"]'
+        ) ||
+        target.closest?.(
+          'input, textarea, select, [contenteditable="true"], [role="textbox"]'
+        )
+      );
+
+    if (isEditable) {
+      return;
+    }
+
+    setIsOpen(true);
+  }, []);
+
+  // openshare-command-palette-single-cross-platform-shortcut-v1
+  //
+  // useKeyboardShortcuts maps "cmd" to Command/Meta on Apple devices
+  // and Ctrl on Windows/Linux. A separate ctrl+k registration is both
+  // redundant and unsafe on iOS/WKWebView.
+  useKeyboardShortcut('cmd+k', openFromKeyboardShortcut, {
     id: 'open-command-palette',
     description: 'Open command palette',
     category: 'General',
-    allowInInput: true,
-  });
-
-  useKeyboardShortcut('ctrl+k', () => setIsOpen(true), {
-    id: 'open-command-palette-alt',
-    hidden: true,
-    allowInInput: true,
+    allowInInput: false,
   });
 
   // ⭐ PHASE 8.2: Listen for custom event from MobileTabBar
