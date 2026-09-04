@@ -431,7 +431,7 @@ function AuthenticatedApp({ children, userData }) {
                                       userName={userData?.firstName || "there"}
                                       streakDays={userData?.streakDays || 0}
                                       enabled={true}
-                                      showWelcomeToast={true}
+                                      showWelcomeToast={false}
                                     >
                                       <HeartbeatProvider>
                                         <Suspense fallback={null}>
