@@ -216,3 +216,56 @@ export async function getDiscoveryPage(params = {}) {
 }
 
 export default { getDiscoveryFeed, getDiscoverySections, getDiscoveryPage, getAlgorithmicFeed, followProject, unfollowProject, getFollowStatus };
+
+
+// ============================================================
+// openshare-sponsorship-api-v1
+// Contextual sponsorship inventory + privacy-light analytics.
+// ============================================================
+
+export async function getActiveSponsorship({
+  placement = 'discover_sidebar',
+  signal,
+} = {}) {
+  const response = await client.get(
+    '/sponsorships/active',
+    {
+      params: { placement },
+      signal,
+    }
+  );
+
+  return response?.data?.data ?? null;
+}
+
+export async function trackSponsorshipImpression(
+  campaignId,
+  placement = 'discover_sidebar'
+) {
+  if (!campaignId) return null;
+
+  const response = await client.post(
+    `/sponsorships/${encodeURIComponent(
+      String(campaignId)
+    )}/impression`,
+    { placement }
+  );
+
+  return response?.data ?? null;
+}
+
+export async function trackSponsorshipClick(
+  campaignId,
+  placement = 'discover_sidebar'
+) {
+  if (!campaignId) return null;
+
+  const response = await client.post(
+    `/sponsorships/${encodeURIComponent(
+      String(campaignId)
+    )}/click`,
+    { placement }
+  );
+
+  return response?.data ?? null;
+}

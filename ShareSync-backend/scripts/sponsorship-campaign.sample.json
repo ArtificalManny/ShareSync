@@ -1,0 +1,16 @@
+{
+  "campaignId": "partner-spotlight-preview-001",
+  "status": "draft",
+  "placement": "discover_sidebar",
+  "type": "resource",
+  "sponsorName": "OpenShare",
+  "sponsorLogo": "",
+  "eyebrow": "Partner Spotlight",
+  "title": "Build your startup launch plan",
+  "description": "A practical resource for founders and small teams preparing their next launch.",
+  "ctaLabel": "Explore resource",
+  "destinationUrl": "https://openshare.ca",
+  "startsAt": "2026-09-04T00:00:00.000Z",
+  "endsAt": "2026-12-31T23:59:59.000Z",
+  "priority": 0
+}

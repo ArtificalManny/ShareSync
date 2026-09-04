@@ -24,6 +24,8 @@ import Achievements from '../components/ecosystem/Achievements';
 import ProjectsOverview from '../components/ecosystem/ProjectsOverview';
 import BurnoutAlert from '../components/ecosystem/BurnoutAlert';
 import FeaturedProjects from '../components/ecosystem/FeaturedProjects';
+// openshare-sponsored-spotlight-import-v1
+import SponsoredSpotlight from '../components/discover/SponsoredSpotlight';
 import { formatActivityItems } from '../utils/formatActivityText';
 import { useAuth } from '../context/AuthContext';
 import useDocumentTitle from "../hooks/useDocumentTitle";
@@ -401,6 +403,13 @@ export default function Discover() {
                   </p>
                 </div>
               </div>
+
+              {/* openshare-discover-partner-spotlight-v1
+                  Desktop: directly beneath Discovery Mode.
+                  Mobile/tablet: the aside naturally stacks after the
+                  organic main content, keeping sponsorship below the feed.
+              */}
+              <SponsoredSpotlight placement="discover_sidebar" />
             </aside>
           </div>
         )}

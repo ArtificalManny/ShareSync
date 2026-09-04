@@ -86,6 +86,8 @@ import { ReportsModule } from './reports/reports.module';
 import { AIModule } from './ai/ai.module';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+// openshare-sponsorships-module-v1
+import { SponsorshipsModule } from './sponsorships/sponsorships.module';
 // enterprise-sales-inquiry-backend-v1
 import { SalesModule } from './sales/sales.module';
 
@@ -245,6 +247,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     // ✅ DISCOVERY (Public project feed)
     DiscoveryModule,
     SubscriptionsModule,
+    SponsorshipsModule,
     SalesModule,
 
     // ─────────────────────────────────────────────────────────────────────────
