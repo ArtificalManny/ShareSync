@@ -1081,7 +1081,6 @@ export class NotificationsService {
       const recipientId = String(member?.userId || '');
 
       if (!recipientId) continue;
-      if (recipientId === actorId) continue;
       if (seenRecipients.has(recipientId)) continue;
       if (member?.notificationsEnabled === false) continue;
 
@@ -1090,8 +1089,8 @@ export class NotificationsService {
       await this.notify({
         userId: recipientId,
         type: NotificationType.PROJECT_UPDATE,
-        title: 'Project completed',
-        body: `${projectName} was marked complete.`,
+        title: 'Project complete',
+        body: `${projectName} is officially complete.`,
         icon: '🏁',
         priority: NotificationPriority.HIGH,
         triggeredBy: actorId,

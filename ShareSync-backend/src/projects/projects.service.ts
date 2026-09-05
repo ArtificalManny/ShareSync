@@ -1838,6 +1838,14 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to complete this project');
     }
 
+    // project-completion-idempotency-v1
+    // A retry or double-click must not emit another project.completed event.
+    // Reopening clears the completed state, so a later legitimate completion
+    // may notify participants again.
+    if (project.status === ProjectStatus.COMPLETED) {
+      return project;
+    }
+
     const tasks = await this.taskModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .lean()
