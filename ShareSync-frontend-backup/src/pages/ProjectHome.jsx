@@ -105,9 +105,6 @@ import GlobalPulseBar, { useGlobalPulse } from "../components/ui/GlobalPulseBar"
 import QuickActionsManager from "../components/quick-actions/QuickActionsManager";
 import KeyboardShortcuts from "../components/quick-actions/KeyboardShortcuts";
 
-// Suggestions
-import * as SuggestionsPanelModule from "../components/suggestions/SuggestionsPanel";
-
 // Realtime
 import { useSocketContext } from "../context/SocketContext";
 import { applyTaskUpdated } from "../utils/taskRealtime";
@@ -161,9 +158,6 @@ function notifyProjectLifecycleSubscriptionRefresh(detail = {}) {
   window.dispatchEvent(new CustomEvent("subscription:changed", { detail: payload }));
   window.dispatchEvent(new CustomEvent("subscription-usage-updated", { detail: payload }));
 }
-
-const SuggestionsPanel =
-  SuggestionsPanelModule.default || SuggestionsPanelModule.SuggestionsPanel;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW CONFIGURATION - Clearer top-level language
@@ -230,12 +224,6 @@ const PROJECT_VIEWS = [
     label: "Signals",
     icon: BarChart3,
     description: "Velocity & health",
-  },
-  {
-    id: "suggestions",
-    label: "Next Moves",
-    icon: Sparkles,
-    description: "AI guidance",
   },
 ];
 
@@ -1654,7 +1642,6 @@ function NextMoveSignalCard({
   title,
   caption,
   activeGoalCount = 0,
-  onOpenNextMoves,
 }) {
   const safeTitle = String(title || "").trim() || "No priority surfaced yet";
   const hasPriority = safeTitle.toLowerCase() !== "no priority surfaced yet";
@@ -1721,14 +1708,6 @@ function NextMoveSignalCard({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onOpenNextMoves}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 text-xs font-black text-violet-700 shadow-sm transition-all hover:-translate-y-[1px] hover:bg-violet-50 hover:shadow-md dark:border-violet-500/20 dark:bg-white/[0.04] dark:text-violet-300 dark:hover:bg-violet-500/10"
-            >
-              <span>Open Next Moves</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
           </div>
         </div>
       </div>
@@ -3708,7 +3687,6 @@ function OverviewView({
   loading,
   onObjectiveClick,
   onSprintAction,
-  onOpenNextMoves,
   onFinishLineAction,
   onFinishLineMetricAction,
   onReopenProject,
@@ -3951,7 +3929,6 @@ function OverviewView({
                 ? `${activeGoalCount} active goal${activeGoalCount === 1 ? "" : "s"} shaping priorities`
                 : "Surface the next action before opening deeper views"
             }
-            onOpenNextMoves={onOpenNextMoves}
           />
         </div>
 
@@ -4880,7 +4857,6 @@ export default function ProjectHome() {
               loading={loading}
               onObjectiveClick={handleObjectiveClick}
               onSprintAction={handleSprintAction}
-              onOpenNextMoves={() => setActiveView("suggestions")}
               onFinishLineAction={handleFinishLineAction}
               onFinishLineMetricAction={
                 handleFinishLineMetricAction
@@ -5335,11 +5311,6 @@ export default function ProjectHome() {
                     announcementCount={Array.isArray(announcements) ? announcements.length : 0}
                   />
             </div>
-          );
-
-        case "suggestions":
-          return (
-            <SuggestionsPanel projectId={id} project={project} />
           );
 
         default:
