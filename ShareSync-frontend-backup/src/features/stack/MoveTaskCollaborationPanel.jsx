@@ -1844,7 +1844,7 @@ export default function MoveTaskCollaborationPanel({
               ))}
             </ol>
           ) : (
-            <p <p className="move-detail-dark-empty-state rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500 dark:!border-white/10 dark:!text-zinc-300 dark:!bg-[#19191f]">
+            <p className="move-detail-dark-empty-state rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500 dark:!border-white/10 dark:!text-zinc-300 dark:!bg-[#19191f]">
               Activity will appear as this move changes.
             </p>
           )}
