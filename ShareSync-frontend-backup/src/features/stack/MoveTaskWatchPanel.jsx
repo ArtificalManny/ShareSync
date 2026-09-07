@@ -303,17 +303,17 @@ export default function MoveTaskWatchPanel({
     <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.035] sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:!text-white">
             <Bell className="h-4 w-4 text-violet-500" />
             Notifications
           </div>
 
-          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-200">
             Follow this Move without becoming its assignee.
           </p>
         </div>
 
-        <div className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
+        <div className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200">
           {loading
             ? "Loading…"
             : `${watcherCount.toLocaleString()} ${
@@ -324,7 +324,7 @@ export default function MoveTaskWatchPanel({
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#19191f]">
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:!bg-[#19191f]">
         <button
           type="button"
           onClick={handleFollowingChange}
@@ -333,11 +333,11 @@ export default function MoveTaskWatchPanel({
           className="flex w-full items-center justify-between gap-4 rounded-xl px-2 py-2 text-left transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/[0.04]"
         >
           <span className="min-w-0">
-            <span className="block text-sm font-black text-slate-900 dark:text-white">
+            <span className="block !bg-transparent text-sm font-black text-slate-900 dark:!text-white">
               Follow Move
             </span>
 
-            <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-zinc-400">
+            <span className="mt-0.5 block !bg-transparent text-xs leading-5 text-slate-500 dark:text-zinc-200">
               {following
                 ? "You will receive the selected updates."
                 : "Notifications are currently off for you."}
@@ -380,14 +380,14 @@ export default function MoveTaskWatchPanel({
                   !following
                 }
                 aria-pressed={enabled}
-                className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-violet-200 hover:bg-violet-50/40 disabled:cursor-not-allowed dark:border-white/10 dark:bg-[#19191f] dark:hover:border-violet-500/25 dark:hover:bg-violet-500/[0.05]"
+                className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-violet-200 hover:bg-violet-50/40 disabled:cursor-not-allowed dark:border-white/10 dark:!bg-[#19191f] dark:hover:border-violet-500/25 dark:hover:bg-violet-500/[0.05]"
               >
                 <span className="min-w-0">
-                  <span className="block text-sm font-bold text-slate-800 dark:text-zinc-100">
+                  <span className="block !bg-transparent text-sm font-bold text-slate-800 dark:!text-zinc-100">
                     {option.label}
                   </span>
 
-                  <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                  <span className="mt-0.5 block !bg-transparent text-xs leading-5 text-slate-500 dark:text-zinc-200">
                     {option.description}
                   </span>
                 </span>

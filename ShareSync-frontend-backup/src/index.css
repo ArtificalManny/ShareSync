@@ -3525,3 +3525,162 @@ html[data-theme="dark"] .quick-notes-list-toolbar button[title="Create new note"
 }
 
 /* END FINAL QUICK NOTES PLUS VISIBILITY FIX */
+
+/* ios-prevent-form-focus-zoom-v1
+ *
+ * iOS Safari / Capacitor WKWebView automatically zooms the viewport when a
+ * text-entry control smaller than 16px receives focus. This affects Move
+ * editing, Schedule Session notes, and any other mobile form field.
+ *
+ * Keep text-entry controls at a minimum 16px on iOS so focus never changes
+ * the viewport scale.
+ */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 900px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="color"]),
+    textarea,
+    select,
+    [contenteditable="true"] {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* move-detail-dark-surface-coherence-v2
+ *
+ * Move Detail uses a dark header/footer and dark-mode foreground colors,
+ * but parts of the editor body can retain light form surfaces.
+ *
+ * Keep the entire Move Detail editing surface coherent in dark mode on
+ * desktop, mobile Safari and the Capacitor WKWebView.
+ */
+
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] > div,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] > div {
+  background: #111116 !important;
+  color: #f4f4f5 !important;
+}
+
+/* Main Move Detail field cards */
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] label.block,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] label.block {
+  background: rgba(255, 255, 255, 0.035) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  color: #f4f4f5 !important;
+}
+
+/* TITLE / DESCRIPTION / STATUS / PRIORITY / ASSIGNEE labels */
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] label.block > span,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] label.block > span {
+  color: #d4d4d8 !important;
+}
+
+/* Actual editable fields */
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] textarea,
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] select,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] textarea,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] select {
+  background-color: #19191f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f4f4f5 !important;
+  -webkit-text-fill-color: #f4f4f5 !important;
+}
+
+/* Placeholder copy must remain readable without competing with entered text. */
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] input::placeholder,
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] textarea::placeholder,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] input::placeholder,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] textarea::placeholder {
+  color: #a1a1aa !important;
+  -webkit-text-fill-color: #a1a1aa !important;
+  opacity: 1 !important;
+}
+
+/* Native/select dropdown choices. */
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] option,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"] option {
+  background: #19191f;
+  color: #f4f4f5;
+}
+
+/* move-detail-dark-runtime-overrides-v6
+ *
+ * Some mobile/native surface rules carry enough specificity to override
+ * Tailwind dark utilities inside Move Detail. These semantic hooks keep
+ * the remaining empty states and attachment actions coherent without
+ * affecting any other OpenShare screen.
+ */
+
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-dark-empty-state,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-dark-empty-state {
+  background-color: #19191f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #d4d4d8 !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-dark-empty-state p,
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-dark-empty-state svg,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-dark-empty-state p,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-dark-empty-state svg {
+  color: #d4d4d8 !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-attachment-action--fuchsia,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-attachment-action--fuchsia {
+  background-color: rgba(217, 70, 239, 0.12) !important;
+  border-color: rgba(217, 70, 239, 0.32) !important;
+  color: #f0abfc !important;
+  -webkit-text-fill-color: #f0abfc !important;
+}
+
+html.dark body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-attachment-action--violet,
+html[data-theme="dark"] body.move-detail-open
+  [role="dialog"][aria-labelledby="move-detail-title"]
+  .move-detail-attachment-action--violet {
+  background-color: rgba(139, 92, 246, 0.14) !important;
+  border-color: rgba(139, 92, 246, 0.34) !important;
+  color: #c4b5fd !important;
+  -webkit-text-fill-color: #c4b5fd !important;
+}

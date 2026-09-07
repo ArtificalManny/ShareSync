@@ -1202,12 +1202,12 @@ export default function MoveTaskCollaborationPanel({
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 dark:border-white/10 dark:bg-black/15">
       <header className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-4 dark:border-white/10">
         <div>
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-300">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-200">
             <MessageSquare className="h-4 w-4 text-violet-500" />
             Discussion
           </div>
 
-          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
             Keep decisions and execution context attached to the move.
           </p>
         </div>
@@ -1241,13 +1241,13 @@ export default function MoveTaskCollaborationPanel({
             <div>
               <div
                 id="move-attachments-heading"
-                className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-300"
+                className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-200"
               >
                 <Paperclip className="h-4 w-4 text-fuchsia-500" />
                 Move attachments
               </div>
 
-              <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+              <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                 Upload a new file or link one already stored in project Files.
               </p>
             </div>
@@ -1265,7 +1265,7 @@ export default function MoveTaskCollaborationPanel({
                   collaborationBusy ||
                   !projectId
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-700 transition hover:border-fuchsia-300 hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-fuchsia-500/25 dark:bg-fuchsia-500/10 dark:text-fuchsia-200 dark:hover:bg-fuchsia-500/15"
+                className="move-detail-attachment-action move-detail-attachment-action--fuchsia inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-700 transition hover:border-fuchsia-300 hover:bg-fuchsia-100 disabled:cursor-not-allowed disabled:opacity-50 dark:!border-fuchsia-500/25 dark:!bg-fuchsia-500/10 dark:!text-fuchsia-200 dark:hover:!bg-fuchsia-500/15"
                 aria-expanded={filePickerOpen}
                 aria-controls="move-project-file-picker"
               >
@@ -1279,7 +1279,7 @@ export default function MoveTaskCollaborationPanel({
                   fileInputRef.current?.click()
                 }
                 disabled={collaborationBusy}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/15"
+                className="move-detail-attachment-action move-detail-attachment-action--violet inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:!border-violet-500/25 dark:!bg-violet-500/10 dark:!text-violet-200 dark:hover:!bg-violet-500/15"
               >
                 {uploadingAttachment ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1394,7 +1394,7 @@ export default function MoveTaskCollaborationPanel({
                                 {fileName}
                               </div>
 
-                              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+                              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] font-semibold text-slate-400 dark:text-zinc-400">
                                 <span>
                                   {formatFileSize(
                                     file?.size
@@ -1419,13 +1419,13 @@ export default function MoveTaskCollaborationPanel({
                   </div>
                 ) : (
                   <div className="px-4 py-8 text-center">
-                    <FileText className="mx-auto h-5 w-5 text-slate-300 dark:text-zinc-700" />
+                    <FileText className="mx-auto h-5 w-5 text-slate-300 dark:!text-zinc-400" />
 
                     <p className="mt-2 text-sm font-bold text-slate-600 dark:text-zinc-400">
                       No available project Files
                     </p>
 
-                    <p className="mt-1 text-xs text-slate-400 dark:text-zinc-600">
+                    <p className="mt-1 text-xs text-slate-400 dark:text-zinc-400">
                       Upload a File in the project Files area or try another search.
                     </p>
                   </div>
@@ -1490,7 +1490,7 @@ export default function MoveTaskCollaborationPanel({
                           href={fileUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="group inline-flex max-w-full items-center gap-1.5 text-sm font-black text-slate-800 hover:text-violet-700 dark:text-zinc-200 dark:hover:text-violet-300"
+                          className="group inline-flex max-w-full items-center gap-1.5 text-sm font-black text-slate-800 hover:text-violet-700 dark:text-zinc-100 dark:hover:text-violet-300"
                           title={`Open ${fileName}`}
                         >
                           <span className="truncate">
@@ -1499,12 +1499,12 @@ export default function MoveTaskCollaborationPanel({
                           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-50 transition group-hover:opacity-100" />
                         </a>
                       ) : (
-                        <div className="truncate text-sm font-black text-slate-800 dark:text-zinc-200">
+                        <div className="truncate text-sm font-black text-slate-800 dark:text-zinc-100">
                           {fileName}
                         </div>
                       )}
 
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400 dark:text-zinc-600">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400 dark:text-zinc-400">
                         <span>{formatFileSize(fileSize)}</span>
                         {fileType ? (
                           <>
@@ -1557,12 +1557,12 @@ export default function MoveTaskCollaborationPanel({
               })}
             </div>
           ) : (
-            <div className="mt-3 rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center dark:border-white/10">
-              <Paperclip className="mx-auto h-5 w-5 text-slate-300 dark:text-zinc-700" />
+            <div className="move-detail-dark-empty-state mt-3 rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center dark:!border-white/10 dark:!bg-[#19191f]">
+              <Paperclip className="mx-auto h-5 w-5 text-slate-300 dark:!text-zinc-400" />
               <p className="mt-2 text-sm font-bold text-slate-600 dark:text-zinc-400">
                 No attachments yet
               </p>
-              <p className="mt-1 text-xs text-slate-400 dark:text-zinc-600">
+              <p className="mt-1 text-xs text-slate-400 dark:text-zinc-400">
                 Files added here stay connected to this move.
               </p>
             </div>
@@ -1611,7 +1611,7 @@ export default function MoveTaskCollaborationPanel({
                     ? `move-comment-mention-${mentionCandidates[mentionIndex].id}`
                     : undefined
                 }
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200 dark:placeholder:text-zinc-600"
+                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-100 dark:placeholder:text-zinc-400"
               />
 
               {mentionMatch ? (
@@ -1621,7 +1621,7 @@ export default function MoveTaskCollaborationPanel({
                   aria-label="Project members"
                   className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 dark:border-white/10 dark:bg-[#202027] dark:shadow-black/40"
                 >
-                  <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:border-white/10 dark:text-zinc-500">
+                  <div className="border-b border-slate-100 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 dark:border-white/10 dark:text-zinc-400">
                     @ Mention a project member
                   </div>
 
@@ -1660,7 +1660,7 @@ export default function MoveTaskCollaborationPanel({
                               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
                                 active
                                   ? "bg-violet-50 text-violet-900 dark:bg-violet-500/15 dark:text-violet-100"
-                                  : "text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-white/[0.06]"
+                                  : "text-slate-700 hover:bg-slate-50 dark:text-zinc-100 dark:hover:bg-white/[0.06]"
                               }`}
                             >
                               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xs font-black text-white">
@@ -1674,7 +1674,7 @@ export default function MoveTaskCollaborationPanel({
                                   {member.name}
                                 </span>
 
-                                <span className="block truncate text-[11px] text-slate-400 dark:text-zinc-500">
+                                <span className="block truncate text-[11px] text-slate-400 dark:text-zinc-400">
                                   {secondary}
                                 </span>
                               </span>
@@ -1694,7 +1694,7 @@ export default function MoveTaskCollaborationPanel({
 
             {selectedMentions.length ? (
               <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-                <span className="font-semibold text-slate-400 dark:text-zinc-500">
+                <span className="font-semibold text-slate-400 dark:text-zinc-400">
                   Will notify:
                 </span>
 
@@ -1712,7 +1712,7 @@ export default function MoveTaskCollaborationPanel({
             ) : null}
 
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-[11px] text-slate-400 dark:text-zinc-600">
+              <span className="text-[11px] text-slate-400 dark:text-zinc-400">
                 Type @ to mention · Ctrl/⌘ + Enter to post
               </span>
 
@@ -1742,7 +1742,7 @@ export default function MoveTaskCollaborationPanel({
         ) : null}
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 py-8 text-sm font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-500">
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 py-8 text-sm font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading discussion…
           </div>
@@ -1766,11 +1766,11 @@ export default function MoveTaskCollaborationPanel({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-xs font-black text-slate-800 dark:text-zinc-200">
+                      <div className="text-xs font-black text-slate-800 dark:text-zinc-100">
                         {resolveCommentAuthor(comment)}
                       </div>
 
-                      <div className="mt-0.5 text-[11px] text-slate-400 dark:text-zinc-600">
+                      <div className="mt-0.5 text-[11px] text-slate-400 dark:text-zinc-400">
                         {formatRelativeTime(comment?.createdAt)}
                         {comment?.isEdited ? " · edited" : ""}
                       </div>
@@ -1796,7 +1796,7 @@ export default function MoveTaskCollaborationPanel({
                     ) : null}
                   </div>
 
-                  <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700 dark:text-zinc-300">
+                  <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700 dark:text-zinc-200">
                     {comment?.content}
                   </p>
                 </article>
@@ -1804,19 +1804,19 @@ export default function MoveTaskCollaborationPanel({
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-white/10">
-            <MessageSquare className="mx-auto h-5 w-5 text-slate-300 dark:text-zinc-700" />
+          <div className="move-detail-dark-empty-state rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:!border-white/10 dark:!bg-[#19191f]">
+            <MessageSquare className="mx-auto h-5 w-5 text-slate-300 dark:!text-zinc-400" />
             <p className="mt-2 text-sm font-bold text-slate-600 dark:text-zinc-400">
               No discussion yet
             </p>
-            <p className="mt-1 text-xs text-slate-400 dark:text-zinc-600">
+            <p className="mt-1 text-xs text-slate-400 dark:text-zinc-400">
               Add the first decision or progress note.
             </p>
           </div>
         )}
 
         <div className="border-t border-slate-200 pt-5 dark:border-white/10">
-          <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-300">
+          <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 dark:text-zinc-200">
             <History className="h-4 w-4 text-cyan-500" />
             Activity history
           </div>
@@ -1830,21 +1830,21 @@ export default function MoveTaskCollaborationPanel({
                 >
                   <span className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-violet-500 shadow-sm dark:border-[#111116]" />
 
-                  <div className="font-semibold text-slate-700 dark:text-zinc-300">
+                  <div className="font-semibold text-slate-700 dark:text-zinc-200">
                     <span className="font-black text-slate-900 dark:text-white">
                       {item.actor}
                     </span>{" "}
                     {item.message}
                   </div>
 
-                  <div className="mt-1 text-[11px] text-slate-400 dark:text-zinc-600">
+                  <div className="mt-1 text-[11px] text-slate-400 dark:text-zinc-400">
                     {formatRelativeTime(item.ts)}
                   </div>
                 </li>
               ))}
             </ol>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500 dark:border-white/10 dark:text-zinc-500">
+            <p <p className="move-detail-dark-empty-state rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500 dark:!border-white/10 dark:!text-zinc-300 dark:!bg-[#19191f]">
               Activity will appear as this move changes.
             </p>
           )}

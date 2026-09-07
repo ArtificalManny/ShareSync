@@ -551,7 +551,7 @@ export default function MoveTaskDetailDrawer({
               {task?.title || task?.name || "Untitled move"}
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+            <p className="mt-1 text-sm text-slate-500 dark:text-zinc-200">
               Update the work without losing your place in the queue.
             </p>
           </div>
@@ -560,7 +560,7 @@ export default function MoveTaskDetailDrawer({
             type="button"
             onClick={onClose}
             disabled={isBusy}
-            className="rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+            className="rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:text-white"
             aria-label="Close move detail"
           >
             <X className="h-5 w-5" />
@@ -581,7 +581,7 @@ export default function MoveTaskDetailDrawer({
         >
           <div className="space-y-6">
             <label className="block">
-              <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+              <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                 <CircleDot className="h-4 w-4 text-violet-500" />
                 Title
               </span>
@@ -598,7 +598,7 @@ export default function MoveTaskDetailDrawer({
             </label>
 
             <label className="block">
-              <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+              <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                 <AlignLeft className="h-4 w-4 text-violet-500" />
                 Description
               </span>
@@ -612,17 +612,17 @@ export default function MoveTaskDetailDrawer({
                 rows={8}
                 disabled={isBusy}
                 placeholder="Add context, acceptance criteria, links, or handoff notes…"
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200 dark:placeholder:text-zinc-600"
+                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-100 dark:placeholder:text-zinc-400"
               />
 
-              <div className="mt-1 text-right text-[11px] text-slate-400 dark:text-zinc-600">
+              <div className="mt-1 text-right text-[11px] text-slate-400 dark:text-zinc-400">
                 {description.length.toLocaleString()} / 10,000
               </div>
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                   <CircleDot className="h-4 w-4 text-cyan-500" />
                   Status
                 </span>
@@ -647,7 +647,7 @@ export default function MoveTaskDetailDrawer({
               </label>
 
               <label className="block">
-                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                   <Flag className="h-4 w-4 text-rose-500" />
                   Priority
                 </span>
@@ -674,7 +674,7 @@ export default function MoveTaskDetailDrawer({
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <label className="block">
-                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                   <UserRound className="h-4 w-4 text-emerald-500" />
                   Assignee
                 </span>
@@ -701,7 +701,7 @@ export default function MoveTaskDetailDrawer({
               <div className="min-w-0">
                 <label
                   htmlFor="move-start-date"
-                  className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400"
+                  className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200"
                 >
                   <CalendarDays className="h-4 w-4 shrink-0 text-cyan-500" />
                   Start date
@@ -719,7 +719,7 @@ export default function MoveTaskDetailDrawer({
                   className="block min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-[#19191f] dark:text-white"
                 />
 
-                <p className="mt-2 text-[11px] font-medium leading-4 text-slate-400 dark:text-zinc-500">
+                <p className="mt-2 text-[11px] font-medium leading-4 text-slate-400 dark:text-zinc-400">
                   Used to draw this Move across Flightpath.
                 </p>
               </div>
@@ -727,7 +727,7 @@ export default function MoveTaskDetailDrawer({
               <div className="min-w-0">
                 <label
                   htmlFor="move-due-date"
-                  className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400"
+                  className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200"
                 >
                   <CalendarDays className="h-4 w-4 shrink-0 text-amber-500" />
                   Due date
@@ -759,7 +759,7 @@ export default function MoveTaskDetailDrawer({
                     </span>
                   </div>
 
-                  <p className="max-w-full break-words text-[11px] font-medium leading-4 text-slate-400 dark:text-zinc-500">
+                  <p className="max-w-full break-words text-[11px] font-medium leading-4 text-slate-400 dark:text-zinc-400">
                     {dueDateMeta.detail}
                   </p>
                 </div>
@@ -774,7 +774,7 @@ export default function MoveTaskDetailDrawer({
                     Dependencies
                   </div>
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-200">
                     Choose the Moves that must finish before this one can begin.
                   </p>
                 </div>
@@ -806,7 +806,7 @@ export default function MoveTaskDetailDrawer({
 
               <div className="mt-5 grid gap-5 lg:grid-cols-2">
                 <div>
-                  <div className="mb-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                  <div className="mb-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                     Blocked by
                   </div>
 
@@ -929,7 +929,7 @@ export default function MoveTaskDetailDrawer({
                         }
                       )
                     ) : (
-                      <div className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-500">
+                      <div className="move-detail-dark-empty-state rounded-xl border border-dashed border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:!border-white/10 dark:!text-zinc-300 dark:!bg-[#19191f]">
                         No blockers. This Move is ready to begin.
                       </div>
                     )}
@@ -937,13 +937,13 @@ export default function MoveTaskDetailDrawer({
                 </div>
 
                 <div>
-                  <div className="mb-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-400">
+                  <div className="mb-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-zinc-200">
                     Blocking
                   </div>
 
                   <div className="space-y-2">
                     {dependenciesLoading ? (
-                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-400">
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-200">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         Loading dependent Moves…
                       </div>
@@ -972,7 +972,7 @@ export default function MoveTaskDetailDrawer({
                         }
                       )
                     ) : (
-                      <div className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:border-white/10 dark:text-zinc-500">
+                      <div className="move-detail-dark-empty-state rounded-xl border border-dashed border-slate-200 px-3 py-3 text-xs font-semibold text-slate-500 dark:!border-white/10 dark:!text-zinc-300 dark:!bg-[#19191f]">
                         This Move is not blocking another Move.
                       </div>
                     )}
