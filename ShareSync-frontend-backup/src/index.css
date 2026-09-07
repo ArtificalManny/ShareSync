@@ -3639,7 +3639,8 @@ html.dark
 html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state {
-  background-color: #19191f !important;
+  background: #19191f !important;
+  background-image: none !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   color: #d4d4d8 !important;
   -webkit-text-fill-color: currentColor;
