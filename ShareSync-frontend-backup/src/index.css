@@ -3555,18 +3555,18 @@ html[data-theme="dark"] .quick-notes-list-toolbar button[title="Create new note"
  * desktop, mobile Safari and the Capacitor WKWebView.
  */
 
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] > div,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] > div {
   background: #111116 !important;
   color: #f4f4f5 !important;
 }
 
 /* Main Move Detail field cards */
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] label.block,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] label.block {
   background: rgba(255, 255, 255, 0.035) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
@@ -3574,27 +3574,27 @@ html[data-theme="dark"] body.move-detail-open
 }
 
 /* TITLE / DESCRIPTION / STATUS / PRIORITY / ASSIGNEE labels */
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] label.block > span,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] label.block > span {
   color: #d4d4d8 !important;
 }
 
 /* Actual editable fields */
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"]
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] textarea,
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] select,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]),
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] textarea,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] select {
   background-color: #19191f !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
@@ -3603,13 +3603,13 @@ html[data-theme="dark"] body.move-detail-open
 }
 
 /* Placeholder copy must remain readable without competing with entered text. */
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] input::placeholder,
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] textarea::placeholder,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] input::placeholder,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] textarea::placeholder {
   color: #a1a1aa !important;
   -webkit-text-fill-color: #a1a1aa !important;
@@ -3617,9 +3617,9 @@ html[data-theme="dark"] body.move-detail-open
 }
 
 /* Native/select dropdown choices. */
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"] option,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"] option {
   background: #19191f;
   color: #f4f4f5;
@@ -3633,10 +3633,10 @@ html[data-theme="dark"] body.move-detail-open
  * affecting any other OpenShare screen.
  */
 
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state {
   background-color: #19191f !important;
@@ -3645,26 +3645,26 @@ html[data-theme="dark"] body.move-detail-open
   -webkit-text-fill-color: currentColor;
 }
 
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state p,
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state svg,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state p,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-dark-empty-state svg {
   color: #d4d4d8 !important;
   -webkit-text-fill-color: currentColor;
 }
 
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-attachment-action--fuchsia,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-attachment-action--fuchsia {
   background-color: rgba(217, 70, 239, 0.12) !important;
@@ -3673,10 +3673,10 @@ html[data-theme="dark"] body.move-detail-open
   -webkit-text-fill-color: #f0abfc !important;
 }
 
-html.dark body.move-detail-open
+html.dark
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-attachment-action--violet,
-html[data-theme="dark"] body.move-detail-open
+html[data-theme="dark"]
   [role="dialog"][aria-labelledby="move-detail-title"]
   .move-detail-attachment-action--violet {
   background-color: rgba(139, 92, 246, 0.14) !important;
