@@ -805,7 +805,7 @@ export class EmailService {
 
     const button = actionUrl
       ? `
-        <p style="margin:24px 0 0;">
+        <p style="margin:24px 0 0;text-align:center;">
           <a
             href="${this.escapeAttr(actionUrl)}"
             style="
