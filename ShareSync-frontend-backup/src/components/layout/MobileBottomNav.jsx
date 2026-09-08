@@ -72,7 +72,7 @@ export default function MobileBottomNav({
                   type="button"
                   onClick={() => handleTabPress(tab)}
                   data-mobile-nav-button="create"
-                  className="mx-auto grid h-11 w-11 appearance-none place-items-center rounded-2xl border-0 bg-[linear-gradient(135deg,#8b5cf6_0%,#d946ef_52%,#38bdf8_100%)] p-0 text-white shadow-[0_8px_20px_rgba(124,58,237,0.30)] ring-1 ring-white/70 transition duration-150 active:scale-95 dark:ring-white/15"
+                  className="relative left-[18px] mx-auto grid h-11 w-11 appearance-none place-items-center rounded-2xl border-0 bg-[linear-gradient(135deg,#8b5cf6_0%,#d946ef_52%,#38bdf8_100%)] p-0 text-white shadow-[0_8px_20px_rgba(124,58,237,0.30)] ring-1 ring-white/70 transition duration-150 active:scale-95 dark:ring-white/15"
                   aria-label={tab.label}
                 >
                   <Icon className="h-6 w-6" strokeWidth={2.5} />
