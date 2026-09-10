@@ -676,7 +676,7 @@ function AppRoutes() {
             <ScrollToHash />
             <PageTitleManager />
       <Routes>
-              <Route path="/" element={<RootRedirect />} />
+              <Route path="/" element={<RootRouteRedirect />} />
 
               <Route
                 path="/login"
@@ -735,7 +735,7 @@ function AppRoutes() {
                 }
               />
               <Route path="/auth/google/callback" element={<GoogleCallback />} />
-              <Route path="/landing" element={<Landing />} />
+              <Route path="/landing" element={<Navigate to="/" replace />} />
               <Route path="/invite/:token" element={<AcceptInvite />} />
               <Route path="/invite/accept" element={<AcceptInvite />} />
               {PUBLIC_PAGES_V1 && <Route path="/p/*" element={<PublicRoutes />} />}
