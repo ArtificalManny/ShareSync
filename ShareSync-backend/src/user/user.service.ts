@@ -958,7 +958,7 @@ export class UserService {
         emailActivity: (user as any).settings?.emailNotifications ?? true,
       },
       privacySettings: {
-        profilePublic: (user as any).publicProfile ?? true,
+        profilePublic: (user as any).publicProfile ?? false,
         showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
         allowDMs: true,
       },
@@ -974,7 +974,7 @@ export class UserService {
       legacy: { showEverywhere: true, yearlyVideo: false },
       security: { twoFA: false },
       preferences: (user as any).preferences || {},
-      publicProfile: (user as any).publicProfile ?? true,
+      publicProfile: (user as any).publicProfile ?? false,
       discoverable: (user as any).preferences?.privacy?.publicProfile ?? false,
     };
   }
