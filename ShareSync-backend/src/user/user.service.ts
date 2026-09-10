@@ -863,23 +863,29 @@ export class UserService {
 
   async findPublicByUsername(username: string): Promise<UserDocument | null> {
     const user = await this.userModel
-      .findOne({ username })
-      .select('-password -resetToken -verificationToken -verificationCode')
+      .findOne({
+        username,
+        publicProfile: true,
+      })
+      .select(
+        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile persona xp level streakDays totalShips createdAt updatedAt',
+      )
       .exec();
 
-    if (!user) return null;
-    if ((user as any).publicProfile === false) return null;
     return user as any;
   }
 
   async findPublicById(id: string): Promise<UserDocument | null> {
     const user = await this.userModel
-      .findById(id)
-      .select('-password -resetToken -verificationToken -verificationCode')
+      .findOne({
+        _id: id,
+        publicProfile: true,
+      })
+      .select(
+        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile persona xp level streakDays totalShips createdAt updatedAt',
+      )
       .exec();
 
-    if (!user) return null;
-    if ((user as any).publicProfile === false) return null;
     return user as any;
   }
 

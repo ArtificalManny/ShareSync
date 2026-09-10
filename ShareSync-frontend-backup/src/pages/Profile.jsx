@@ -1307,8 +1307,8 @@ export default function Profile() {
     setError(false);
     try {
       if (isPublicRoute) {
-        // ⭐ FIX: If we have an ID, grab that exact user from the database
-        const u = (id || routeUserId) ? await getUserById(id || routeUserId) : await getPublicUser(routeUsername);
+        // Public profile routes resolve only through the privacy-enforcing username endpoint.
+        const u = await getPublicUser(routeUsername);
         setPublicUser(u);
 
         // ⭐ Fetch public gamification stats for the viewed user so Impact

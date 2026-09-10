@@ -732,6 +732,7 @@ export class UserController {
   // GET /users/search?q=...&limit=10
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @UseGuards(JwtAuthGuard)
   @Get('search')
   async search(
     @Query('q') q: string,
@@ -761,6 +762,7 @@ export class UserController {
   // GET /users/username/:username - existing helper
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @UseGuards(JwtAuthGuard)
   @Get('username/:username')
   async getByUsername(@Param('username') username: string) {
     const user = await this.users.findByUsername(username);
@@ -789,6 +791,7 @@ export class UserController {
   // GET /users/:id
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async getById(@Param('id') id: string) {
     const user = await this.users.findById(id);

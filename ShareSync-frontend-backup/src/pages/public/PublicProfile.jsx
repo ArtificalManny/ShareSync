@@ -88,7 +88,6 @@ export default function PublicProfile() {
       try {
         const userEndpoints = [
           `/users/public/${encodeURIComponent(username)}`,
-          `/users/username/${encodeURIComponent(username)}`,
         ];
 
         let userData = null;
