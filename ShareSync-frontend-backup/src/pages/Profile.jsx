@@ -1313,30 +1313,9 @@ export default function Profile() {
         const u = await getPublicUser(routeUsername);
         setPublicUser(u);
 
-        // ⭐ Fetch public gamification stats for the viewed user so Impact
-        // Metrics and Operational Trust panels show real values instead of 0.
-        // Uses GET /api/gamification/stats/:userId (existing public-by-userId
-        // endpoint). Owner-only panels (Skill Profile, Growth Suggestions,
-        // Trends, Behavioral Analysis) remain gated behind isOwnProfile in JSX.
-        try {
-          const publicUserId = u?._id || u?.id;
-          if (publicUserId) {
-            const statsRes = await client.get(`/gamification/stats/${publicUserId}`);
-            const stats = statsRes.data?.data || statsRes.data;
-            if (stats) {
-              setPublicUser(prev => ({
-                ...prev,
-                totalShips: stats.totalShips ?? stats.ships ?? prev?.totalShips ?? 0,
-                currentStreak: stats.streakDays ?? prev?.currentStreak ?? 0,
-                weeklyShips: stats.weeklyShips ?? prev?.weeklyShips ?? 0,
-                completionRate: stats.completionRate ?? stats.focus ?? prev?.completionRate ?? 0,
-                efficiency: stats.efficiency ?? prev?.efficiency ?? 0,
-              }));
-            }
-          }
-        } catch (err) {
-          console.warn("[Profile] public stats load failed", err?.message || err);
-        }
+        // Public profiles rely only on the privacy-safe fields returned by
+        // /users/public/:username. Protected gamification analytics remain
+        // authenticated-only.
 
         // Ownership is derived from AuthContext below. Anonymous visitors do
         // not probe the protected /users/me endpoint.
