@@ -1514,7 +1514,8 @@ export default function Profile() {
   const userId = user?._id || user?.id;
   
   // Growth hook will silently return empty objects if it doesn't have permission to view private tasks
-  const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(userId);
+  const growthUserId = isOwnProfile ? userId : null;
+  const { skillProfile, evolution, suggestions, trends, loading: growthLoading } = useGrowthTrack(growthUserId);
   
   const impactMetrics = useMemo(
     () => getImpactMetricsSnapshot(skillProfile, user),
@@ -2138,7 +2139,9 @@ export default function Profile() {
           {/* ✅ Priority 1: Profile Strength */}
           {isOwnProfile && <ProfileStrength onEditClick={handleEditProfile} />}
 
-          {<EvolutionMoments moments={evolution} loading={growthLoading} />}
+          {isOwnProfile && (
+            <EvolutionMoments moments={evolution} loading={growthLoading} />
+          )}
         </div>
 
         {/* Middle Column */}
@@ -2222,6 +2225,7 @@ export default function Profile() {
 
 
           {/* Behavioral Analysis */}
+          {isOwnProfile && (
           <div
             className="p-6 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10"
             style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
@@ -2263,6 +2267,7 @@ export default function Profile() {
               )}
             </div>
           </div>
+          )}
         </div>
 
         {/* Right Column */}
@@ -2376,6 +2381,7 @@ export default function Profile() {
         )}
 
         {/* Export Button */}
+        {isOwnProfile && (
         <div className="col-span-12 flex justify-center pt-8">
           <button 
             className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-50 dark:hover:bg-white/5 hover:border-slate-300 dark:hover:border-white/20 transition-all duration-200 group"
@@ -2385,6 +2391,7 @@ export default function Profile() {
             <span className="text-sm">Export Profile Data</span>
           </button>
         </div>
+        )}
       </div>
     </div>
   );
