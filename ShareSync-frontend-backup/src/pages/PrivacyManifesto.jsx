@@ -10,7 +10,12 @@ import { useIsMobile } from '../hooks/useMobile';
 import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const PrivacyManifesto = () => {
-  useDocumentTitle("Privacy");
+  useDocumentTitle("Privacy", {
+    description:
+      "Read OpenShare's privacy principles and how OpenShare handles personal information, visibility, and user control.",
+    canonical: "https://openshare.ca/privacy-manifesto",
+    robots: "index,follow",
+  });
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 

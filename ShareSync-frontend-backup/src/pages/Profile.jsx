@@ -1273,7 +1273,6 @@ const buildProfileWorkspaceSnapshot = (
    MAIN PAGE - "The Personal Gallery"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
-  useDocumentTitle("Profile");
   // ⭐ FIX: Safely pull the ID directly from the URL if it exists
   const { username: routeUsername, id, userId: routeUserId } = useParams();
   const location = useLocation();
@@ -1533,6 +1532,70 @@ export default function Profile() {
     ? "Live analytics"
     : "Profile fallback";
   const name = useMemo(() => resolveUserName(user), [user]);
+
+  const seoUsername = String(
+    user?.username || routeUsername || ""
+  )
+    .replace(/^@+/, "")
+    .trim();
+
+  const seoDisplayName =
+    name?.fullName ||
+    user?.displayName ||
+    user?.name ||
+    seoUsername ||
+    "Profile";
+
+  const seoBio =
+    typeof user?.bio === "string"
+      ? user.bio.replace(/\s+/g, " ").trim()
+      : "";
+
+  const rawSeoDescription = seoBio
+    ? `${seoBio} — View ${seoDisplayName}${
+        seoUsername ? ` (@${seoUsername})` : ""
+      } on OpenShare.`
+    : `View ${seoDisplayName}${
+        seoUsername ? ` (@${seoUsername})` : ""
+      } on OpenShare.`;
+
+  const seoDescription =
+    rawSeoDescription.length > 160
+      ? `${rawSeoDescription.slice(0, 157).trimEnd()}…`
+      : rawSeoDescription;
+
+  const publicProfileIndexable = Boolean(
+    isPublicRoute &&
+      !loading &&
+      !error &&
+      user?.publicProfile === true &&
+      seoUsername
+  );
+
+  useDocumentTitle(
+    isPublicRoute && user
+      ? `${seoDisplayName}${
+          seoUsername ? ` (@${seoUsername})` : ""
+        }`
+      : "Profile",
+    isPublicRoute
+      ? {
+          description: publicProfileIndexable
+            ? seoDescription
+            : undefined,
+          canonical: publicProfileIndexable
+            ? `https://openshare.ca/profile/${encodeURIComponent(
+                seoUsername
+              )}`
+            : undefined,
+          robots: publicProfileIndexable
+            ? "index,follow"
+            : "noindex,nofollow",
+        }
+      : {
+          robots: "noindex,nofollow",
+        },
+  );
 
   const profileWorkspace = useMemo(
     () =>

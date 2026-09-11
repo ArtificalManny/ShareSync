@@ -6,19 +6,23 @@ import {
   Navigate,
   Route,
   Routes,
+  useParams,
 } from "react-router-dom";
 
 const PublicProject = lazy(() =>
   import("../pages/public/PublicProject.jsx")
 );
 
-const PublicProfile = lazy(() =>
-  import("../pages/public/PublicProfile.jsx")
-);
-
 const PublicIntakeForm = lazy(() =>
   import("../pages/PublicIntakeForm.jsx")
 );
+
+function PublicProfileAlias() {
+  const { username } = useParams();
+  const safeUsername = encodeURIComponent(username || "");
+
+  return <Navigate to={`/profile/${safeUsername}`} replace />;
+}
 
 export default function PublicRoutes() {
   return (
@@ -30,7 +34,7 @@ export default function PublicRoutes() {
 
       <Route
         path="u/:username"
-        element={<PublicProfile />}
+        element={<PublicProfileAlias />}
       />
 
       <Route

@@ -12,7 +12,12 @@ import useDocumentTitle from "../hooks/useDocumentTitle";
 import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
 
 export default function Landing() {
-  useDocumentTitle("OpenShare");
+  useDocumentTitle("OpenShare", {
+    description:
+      "The only project tracker that prevents burnout before it happens. Stop burning out, start shipping.",
+    canonical: "https://openshare.ca/",
+    robots: "index,follow",
+  });
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
