@@ -80,7 +80,10 @@ export default function PageTitleManager() {
   const location = useLocation();
 
   useEffect(() => {
-    const title = getPageTitle(location.pathname);
+    const title =
+      location.pathname === "/project-management"
+        ? "Project Management Software Without the Burnout — OpenShare"
+        : getPageTitle(location.pathname);
 
     // Set immediately.
     document.title = title;
