@@ -25,6 +25,7 @@ import { HealthModule } from './health/health.module';
 
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { SitemapModule } from './sitemap/sitemap.module';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PHASE 1: CORE MODULES
@@ -201,6 +202,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     // ─────────────────────────────────────────────────────────────────────────
     AuthModule,
     UserModule,
+    SitemapModule,
     ProjectsModule,
     TasksModule,
     DailyFocusModule,
