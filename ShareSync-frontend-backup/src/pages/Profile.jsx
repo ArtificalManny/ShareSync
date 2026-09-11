@@ -77,6 +77,7 @@ import { useGrowthTrack } from "../hooks/useGrowthTrack";
 import ProfileStrength from "../components/Profile/ProfileStrength";
 import { useAnalytics } from "../contexts/AnalyticsContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import "./Profile.css";
 
@@ -1273,6 +1274,8 @@ const buildProfileWorkspaceSnapshot = (
    MAIN PAGE - "The Personal Gallery"
 ───────────────────────────────────────────────────────────────────────── */
 export default function Profile() {
+  const { user: authUser } = useAuth();
+
   // ⭐ FIX: Safely pull the ID directly from the URL if it exists
   const { username: routeUsername, id, userId: routeUserId } = useParams();
   const location = useLocation();
@@ -1335,41 +1338,8 @@ export default function Profile() {
           console.warn("[Profile] public stats load failed", err?.message || err);
         }
 
-        // We still need to fetch "Me" silently to check if we happen to be viewing our own profile
-        try {
-          const rawResponse = await getMe();
-          let userData = null;
-          if (rawResponse?.user && typeof rawResponse.user === 'object') userData = rawResponse.user;
-          else if (rawResponse?.data?.user && typeof rawResponse.data.user === 'object') userData = rawResponse.data.user;
-          else if (rawResponse?.data && typeof rawResponse.data === 'object' && !Array.isArray(rawResponse.data)) userData = rawResponse.data;
-          else if (rawResponse && typeof rawResponse === 'object' && (rawResponse._id || rawResponse.id || rawResponse.email)) userData = rawResponse;
-          else userData = rawResponse || {};
-
-          const storedUser = readStoredUser();
-          const storedOverride = readAvatarOverride();
-          const backendAvatar = normalizeProfileAvatarUrl(
-            userData?.avatarUrl ||
-              userData?.profilePicture ||
-              userData?.profileImage ||
-              userData?.avatar ||
-              null
-          );
-          const storedAvatar = normalizeProfileAvatarUrl(
-            storedOverride || storedUser?.avatarUrl || storedUser?.profilePicture || null
-          );
-          const finalAvatar = backendAvatar || storedAvatar;
-          const merged = finalAvatar
-            ? {
-                ...userData,
-                avatarUrl: finalAvatar,
-                profilePicture: finalAvatar,
-                profileImage: userData?.profileImage || finalAvatar,
-              }
-            : userData;
-          setMe(merged);
-        } catch (e) {
-          // Ignore error silently. It just means edit privileges will default to false.
-        }
+        // Ownership is derived from AuthContext below. Anonymous visitors do
+        // not probe the protected /users/me endpoint.
 
       } else if (isViewingOtherUser) {
         const otherUser = await getUserById(id || routeUserId);
@@ -1502,9 +1472,20 @@ export default function Profile() {
   const user = isPublicRoute ? publicUser : me;
   
   // ⭐ FIX: Safely check if the profile we are viewing belongs to us
-  const myId = me?._id || me?.id;
+  const ownerIdentity = isPublicRoute ? authUser : me;
+  const myId =
+    ownerIdentity?._id ||
+    ownerIdentity?.id ||
+    ownerIdentity?.userId ||
+    ownerIdentity?.sub;
   const viewId = user?._id || user?.id;
-  const isOwnProfile = !isPublicRoute || (myId && viewId && String(myId) === String(viewId));
+  const isOwnProfile =
+    !isPublicRoute ||
+    Boolean(
+      myId &&
+        viewId &&
+        String(myId) === String(viewId)
+    );
   const { settings: appSettings } = useSettings?.() || {};
   const showStreakTo = appSettings?.social?.showStreakTo || 'friends';
   // Determine if streak should be visible to this viewer
