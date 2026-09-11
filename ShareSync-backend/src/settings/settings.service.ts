@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS = {
   security: { twoFA: false, trustedDevices: [], loginHistory: [] },
   privacy: { profilePublic: false, showActivity: true, allowDMs: true, hideFromSearch: false, anonymousMode: false },
   presence: { showCursor: true, showOnlineStatus: true, showTypingIndicator: true, cursorColor: '#7C3AED' },
-  emailNotifications: true, pushNotifications: true, publicProfile: false, discoverable: false, timezone: 'America/Los_Angeles',
+  emailNotifications: true, pushNotifications: true, publicProfile: false, searchEngineVisible: false, discoverable: false, timezone: 'America/Los_Angeles',
 };
 
 @Injectable()
@@ -51,13 +51,17 @@ export class SettingsService {
 
     const user = await this.userModel
       .findById(userId)
-      .select('publicProfile')
+      .select('publicProfile searchEngineVisible')
       .lean()
       .exec();
 
     const publicProfile = (user as any)?.publicProfile === true;
+    const searchEngineVisible =
+      publicProfile &&
+      (user as any)?.searchEngineVisible === true;
 
     plain.publicProfile = publicProfile;
+    plain.searchEngineVisible = searchEngineVisible;
     plain.social = {
       ...(plain.social || {}),
       publicProfile,
@@ -80,6 +84,38 @@ export class SettingsService {
       (update as any)?.publicProfile ??
       (update as any)?.social?.publicProfile ??
       (update as any)?.privacy?.profilePublic;
+
+    const requestedSearchEngineVisible =
+      (update as any)?.searchEngineVisible;
+
+    let effectiveSearchEngineVisible: boolean | undefined;
+
+    if (
+      requestedPublicProfile !== undefined ||
+      requestedSearchEngineVisible !== undefined
+    ) {
+      const visibilityUser = await this.userModel
+        .findById(userId)
+        .select('publicProfile searchEngineVisible')
+        .lean()
+        .exec();
+
+      const effectivePublicProfile =
+        requestedPublicProfile !== undefined
+          ? requestedPublicProfile === true
+          : (visibilityUser as any)?.publicProfile === true;
+
+      effectiveSearchEngineVisible =
+        effectivePublicProfile &&
+        (
+          requestedSearchEngineVisible !== undefined
+            ? requestedSearchEngineVisible === true
+            : (visibilityUser as any)?.searchEngineVisible === true
+        );
+
+      (update as any).searchEngineVisible =
+        effectiveSearchEngineVisible;
+    }
 
     if (requestedPublicProfile !== undefined) {
       const publicProfile = requestedPublicProfile === true;
@@ -119,6 +155,17 @@ export class SettingsService {
       await this.userModel.updateOne(
         { _id: new Types.ObjectId(userId) },
         { $set: { publicProfile: requestedPublicProfile === true } },
+      );
+    }
+
+    if (effectiveSearchEngineVisible !== undefined) {
+      await this.userModel.updateOne(
+        { _id: new Types.ObjectId(userId) },
+        {
+          $set: {
+            searchEngineVisible: effectiveSearchEngineVisible,
+          },
+        },
       );
     }
 
@@ -172,7 +219,28 @@ export class SettingsService {
   }
 
   async resetToDefaults(userId: string): Promise<SettingsDocument> {
-    return this.settingsModel.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, { $set: { ...DEFAULT_SETTINGS, lastSettingsUpdate: new Date() } }, { new: true, upsert: true });
+    const updated = await this.settingsModel.findOneAndUpdate(
+      { userId: new Types.ObjectId(userId) },
+      {
+        $set: {
+          ...DEFAULT_SETTINGS,
+          lastSettingsUpdate: new Date(),
+        },
+      },
+      { new: true, upsert: true },
+    );
+
+    await this.userModel.updateOne(
+      { _id: new Types.ObjectId(userId) },
+      {
+        $set: {
+          publicProfile: false,
+          searchEngineVisible: false,
+        },
+      },
+    );
+
+    return updated;
   }
 
   async deleteSettings(userId: string): Promise<void> {

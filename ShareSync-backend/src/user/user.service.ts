@@ -868,7 +868,7 @@ export class UserService {
         publicProfile: true,
       })
       .select(
-        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile persona xp level streakDays totalShips createdAt updatedAt',
+        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile searchEngineVisible persona xp level streakDays totalShips createdAt updatedAt',
       )
       .exec();
 
@@ -882,7 +882,7 @@ export class UserService {
         publicProfile: true,
       })
       .select(
-        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile persona xp level streakDays totalShips createdAt updatedAt',
+        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile searchEngineVisible persona xp level streakDays totalShips createdAt updatedAt',
       )
       .exec();
 

@@ -121,6 +121,9 @@ export class User extends Document {
   @Prop({ default: false })
   publicProfile?: boolean;
 
+  @Prop({ default: false })
+  searchEngineVisible?: boolean;
+
   // user-persona-v1
   @Prop({
     type: String,

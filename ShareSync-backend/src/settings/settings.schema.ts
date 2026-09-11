@@ -296,6 +296,9 @@ export class Settings {
   publicProfile: boolean;
 
   @Prop({ type: Boolean, default: false })
+  searchEngineVisible: boolean;
+
+  @Prop({ type: Boolean, default: false })
   discoverable: boolean;
 
   @Prop({ type: String, default: 'America/Los_Angeles' })

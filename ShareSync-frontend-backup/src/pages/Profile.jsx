@@ -1530,6 +1530,7 @@ export default function Profile() {
       !loading &&
       !error &&
       user?.publicProfile === true &&
+      user?.searchEngineVisible === true &&
       seoUsername
   );
 

@@ -814,6 +814,7 @@ export default function Settings() {
   };
 
   const [publicProfile, setPublicProfile] = useState(false);
+  const [searchEngineVisible, setSearchEngineVisible] = useState(false);
   const [discoverable, setDiscoverable] = useState(false);
 
   // LAYER 4: AI Mentor Personality
@@ -1224,7 +1225,17 @@ export default function Settings() {
           settings.discoverable ??
           false;
 
+        const resolvedSearchEngineVisible =
+          settings.searchEngineVisible ??
+          false;
+
         setPublicProfile(Boolean(resolvedPublicProfile));
+        setSearchEngineVisible(
+          Boolean(
+            resolvedPublicProfile &&
+            resolvedSearchEngineVisible
+          )
+        );
         setDiscoverable(Boolean(resolvedDiscoverable));
 
         // Mentor
@@ -1308,6 +1319,10 @@ export default function Settings() {
       const payload = {
         // legacy flat fields for backward compatibility
         publicProfile,
+        searchEngineVisible: Boolean(
+          publicProfile &&
+          searchEngineVisible
+        ),
         discoverable: Boolean(discoverable),
 
         appearance: {
@@ -1502,7 +1517,14 @@ export default function Settings() {
               <div className="flex items-start gap-4">
                 <button
                   type="button"
-                  onClick={() => setPublicProfile((current) => !current)}
+                  onClick={() => {
+                    const next = !publicProfile;
+                    setPublicProfile(next);
+
+                    if (!next) {
+                      setSearchEngineVisible(false);
+                    }
+                  }}
                   className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
                     publicProfile
                       ? "bg-violet-600"
@@ -1526,6 +1548,56 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
+
+              <div
+                className={`flex items-start gap-4 ${
+                  !publicProfile ? "opacity-60" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  disabled={!publicProfile}
+                  onClick={() =>
+                    setSearchEngineVisible(
+                      (current) => !current
+                    )
+                  }
+                  className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
+                    publicProfile && searchEngineVisible
+                      ? "bg-violet-600"
+                      : "bg-slate-200 dark:bg-white/[0.10]"
+                  } ${
+                    !publicProfile
+                      ? "cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                  aria-pressed={
+                    publicProfile &&
+                    searchEngineVisible
+                  }
+                  aria-label="Allow search engines to index your public profile"
+                >
+                  <span
+                    className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      publicProfile && searchEngineVisible
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+
+                <div>
+                  <div className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                    Search Engine Visibility
+                  </div>
+                  <div className="text-sm text-slate-500 dark:text-zinc-400">
+                    {publicProfile
+                      ? "Allow search engines like Google to index your public profile"
+                      : "Turn on Public Profile before enabling search engine visibility"}
+                  </div>
+                </div>
+              </div>
+
 <Toggle
                   label="Celebrate my ships publicly"
                   checked={celebratePublicly}
