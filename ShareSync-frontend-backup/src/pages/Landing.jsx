@@ -449,6 +449,7 @@ export default function Landing() {
             <div>
               <h4 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Product</h4>
               <ul className="space-y-2">
+                <li><a href="/project-management" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Project management</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Features</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Roadmap</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Changelog</a></li>
