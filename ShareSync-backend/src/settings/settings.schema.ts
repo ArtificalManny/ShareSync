@@ -59,7 +59,7 @@ export class SocialSettings {
   @Prop({ type: Boolean, default: true })
   celebrate: boolean;
 
-  @Prop({ type: Boolean, default: true })
+  @Prop({ type: Boolean, default: false })
   publicProfile: boolean;
 
   @Prop({ type: Boolean, default: false })
@@ -196,7 +196,7 @@ export const SecuritySettingsSchema = SchemaFactory.createForClass(SecuritySetti
 
 @Schema({ _id: false })
 export class PrivacySettings {
-  @Prop({ type: Boolean, default: true })
+  @Prop({ type: Boolean, default: false })
   profilePublic: boolean;
 
   @Prop({ type: Boolean, default: true })
@@ -292,7 +292,7 @@ export class Settings {
   @Prop({ type: Boolean, default: true })
   pushNotifications: boolean;
 
-  @Prop({ type: Boolean, default: true })
+  @Prop({ type: Boolean, default: false })
   publicProfile: boolean;
 
   @Prop({ type: Boolean, default: false })

@@ -8,27 +8,33 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Settings, SettingsDocument } from './settings.schema';
+import { User, UserDocument } from '../user/schemas/user.schema';
 
 const DEFAULT_SETTINGS = {
   momentum: { dailyGoal: 5, weekendCount: true, allowFreeze: true, freezesUsedThisMonth: 0 },
   focus: { dailyTarget: 4, autoStart: false, startTime: '09:00', blockedApps: [], emergencyBreaksLeft: 1 },
-  social: { showStreakTo: 'friends', celebrate: true, publicProfile: true, discoverable: false, allowDMs: true, showActivity: true },
+  social: { showStreakTo: 'friends', celebrate: true, publicProfile: false, discoverable: false, allowDMs: true, showActivity: true },
   mentor: { enabled: true, tone: 'wise', intensity: 3 },
   legacy: { showEverywhere: true, yearlyVideo: false },
   appearance: { theme: 'system', mode: 'pro', animations: true, sounds: true },
   projectDefaults: { visibility: 'private', inviteRole: 'member', requireApproval: true, notificationLevel: 'mentions' },
   notifications: { emailActivity: true, emailDigest: true, projectInvites: true, taskAssignments: true, billingAlerts: true, pushNotifications: true, mentionAlerts: true, weeklyReport: true, shipCelebrations: true, streakReminders: true, digestFrequency: 'daily' },
   security: { twoFA: false, trustedDevices: [], loginHistory: [] },
-  privacy: { profilePublic: true, showActivity: true, allowDMs: true, hideFromSearch: false, anonymousMode: false },
+  privacy: { profilePublic: false, showActivity: true, allowDMs: true, hideFromSearch: false, anonymousMode: false },
   presence: { showCursor: true, showOnlineStatus: true, showTypingIndicator: true, cursorColor: '#7C3AED' },
-  emailNotifications: true, pushNotifications: true, publicProfile: true, discoverable: false, timezone: 'America/Los_Angeles',
+  emailNotifications: true, pushNotifications: true, publicProfile: false, discoverable: false, timezone: 'America/Los_Angeles',
 };
 
 @Injectable()
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
 
-  constructor(@InjectModel(Settings.name) private readonly settingsModel: Model<SettingsDocument>) {}
+  constructor(
+    @InjectModel(Settings.name)
+    private readonly settingsModel: Model<SettingsDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
+  ) {}
 
   async getSettings(userId: string): Promise<SettingsDocument> {
     let settings = await this.settingsModel.findOne({ userId: new Types.ObjectId(userId) });
@@ -42,23 +48,81 @@ export class SettingsService {
   async getSettingsPlain(userId: string): Promise<Record<string, any>> {
     const settings = await this.getSettings(userId);
     const plain = settings.toObject();
-    delete plain._id; delete plain.__v;
+
+    const user = await this.userModel
+      .findById(userId)
+      .select('publicProfile')
+      .lean()
+      .exec();
+
+    const publicProfile = (user as any)?.publicProfile === true;
+
+    plain.publicProfile = publicProfile;
+    plain.social = {
+      ...(plain.social || {}),
+      publicProfile,
+    };
+    plain.privacy = {
+      ...(plain.privacy || {}),
+      profilePublic: publicProfile,
+    };
+
+    delete plain._id;
+    delete plain.__v;
+
     return plain;
   }
 
   async updateSettings(userId: string, update: Partial<Settings>): Promise<SettingsDocument> {
     const setObj: Record<string, any> = {};
+
+    const requestedPublicProfile =
+      (update as any)?.publicProfile ??
+      (update as any)?.social?.publicProfile ??
+      (update as any)?.privacy?.profilePublic;
+
+    if (requestedPublicProfile !== undefined) {
+      const publicProfile = requestedPublicProfile === true;
+
+      (update as any).publicProfile = publicProfile;
+      (update as any).social = {
+        ...((update as any).social || {}),
+        publicProfile,
+      };
+      (update as any).privacy = {
+        ...((update as any).privacy || {}),
+        profilePublic: publicProfile,
+      };
+    }
+
     const flattenObject = (obj: any, prefix = '') => {
       for (const [key, value] of Object.entries(obj)) {
         const fullKey = prefix ? `${prefix}.${key}` : key;
         if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
           flattenObject(value, fullKey);
-        } else { setObj[fullKey] = value; }
+        } else {
+          setObj[fullKey] = value;
+        }
       }
     };
+
     flattenObject(update);
     setObj['lastSettingsUpdate'] = new Date();
-    return this.settingsModel.findOneAndUpdate({ userId: new Types.ObjectId(userId) }, { $set: setObj }, { new: true, upsert: true });
+
+    const updated = await this.settingsModel.findOneAndUpdate(
+      { userId: new Types.ObjectId(userId) },
+      { $set: setObj },
+      { new: true, upsert: true },
+    );
+
+    if (requestedPublicProfile !== undefined) {
+      await this.userModel.updateOne(
+        { _id: new Types.ObjectId(userId) },
+        { $set: { publicProfile: requestedPublicProfile === true } },
+      );
+    }
+
+    return updated;
   }
 
   async updateSection(userId: string, section: string, update: Record<string, any>): Promise<SettingsDocument> {

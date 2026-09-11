@@ -813,7 +813,7 @@ export default function Settings() {
     }
   };
 
-  const [publicProfile, setPublicProfile] = useState(true);
+  const [publicProfile, setPublicProfile] = useState(false);
   const [discoverable, setDiscoverable] = useState(false);
 
   // LAYER 4: AI Mentor Personality
@@ -1218,7 +1218,7 @@ export default function Settings() {
         const resolvedPublicProfile =
           social.publicProfile ??
           settings.publicProfile ??
-          true;
+          false;
         const resolvedDiscoverable =
           social.discoverable ??
           settings.discoverable ??

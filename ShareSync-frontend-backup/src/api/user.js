@@ -166,7 +166,7 @@ export async function getMe() {
 
     return {
       ...user,
-      publicProfile: settings.social?.publicProfile ?? user.publicProfile ?? true,
+      publicProfile: settings.social?.publicProfile ?? user.publicProfile ?? false,
       discoverable: settings.social?.discoverable ?? user.discoverable ?? false,
       appearance: settings.appearance || user.appearance || { theme: 'system', mode: 'pro' },
       notifications: settings.notifications || user.notificationSettings || {},
