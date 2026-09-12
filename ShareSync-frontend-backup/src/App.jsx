@@ -678,7 +678,7 @@ function AppRoutes() {
             <ScrollToHash />
             <PageTitleManager />
       <Routes>
-              <Route path="/" element={<RootRouteRedirect />} />
+              <Route path="/" element={<RootRedirect />} />
 
               <Route
                 path="/login"
