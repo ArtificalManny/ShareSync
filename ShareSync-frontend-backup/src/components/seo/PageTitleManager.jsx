@@ -18,7 +18,9 @@ function cleanPath(pathname = "") {
 function getPageTitle(pathname) {
   const path = cleanPath(pathname);
 
-  if (path === "/") return APP_NAME;
+  if (path === "/") {
+    return `Project Management & Team Collaboration — ${APP_NAME}`;
+  }
   if (path === "/home") return `Home — ${APP_NAME}`;
 
   // Main app pages

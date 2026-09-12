@@ -12,13 +12,69 @@ import useDocumentTitle from "../hooks/useDocumentTitle";
 import { OPENSHARE_MESSAGING } from "../content/openShareMessaging";
 
 export default function Landing() {
-  useDocumentTitle("OpenShare", {
+  useDocumentTitle("Project Management & Team Collaboration", {
     description:
-      "The only project tracker that prevents burnout before it happens. Stop burning out, start shipping.",
+      "OpenShare is project management and team collaboration software for organizing projects, assigning Moves, tracking momentum, building accountability, and keeping work moving.",
     canonical: "https://openshare.ca/",
     robots: "index,follow",
   });
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const id = "openshare-homepage-structured-data";
+
+    document.getElementById(id)?.remove();
+
+    const script = document.createElement("script");
+    script.id = id;
+    script.type = "application/ld+json";
+
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://openshare.ca/#organization",
+          name: "OpenShare",
+          url: "https://openshare.ca/",
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://openshare.ca/#website",
+          name: "OpenShare",
+          url: "https://openshare.ca/",
+          publisher: {
+            "@id": "https://openshare.ca/#organization",
+          },
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://openshare.ca/#webapp",
+          name: "OpenShare",
+          url: "https://openshare.ca/",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web",
+          description:
+            "Project management and team collaboration software for organizing projects, assigning Moves, tracking momentum, building accountability, and keeping work moving.",
+          publisher: {
+            "@id": "https://openshare.ca/#organization",
+          },
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "CAD",
+            description: "OpenShare includes a free plan.",
+          },
+        },
+      ],
+    });
+
+    document.head.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, []);
   const isMobile = useIsMobile();
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [email, setEmail] = useState('');
@@ -442,6 +498,101 @@ export default function Landing() {
       </div>
 
       {/* Footer - Mobile optimized */}
+      <section
+        id="what-you-can-do"
+        className="border-y border-white/10 bg-slate-950"
+      >
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-violet-300">
+              One workspace for the work that matters
+            </p>
+
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">
+              What you can do with OpenShare
+            </h2>
+
+            <p className="mt-5 text-lg leading-8 text-slate-400">
+              OpenShare brings project management, collaboration,
+              accountability, and progress visibility into one shared
+              workspace so people can spend more time moving work forward.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+              <Target className="h-7 w-7 text-violet-300" />
+              <h3 className="mt-5 text-xl font-bold text-white">
+                Project Management
+              </h3>
+              <p className="mt-3 leading-7 text-slate-400">
+                Plan projects, organize work, coordinate priorities,
+                and keep the information needed to move a project forward
+                in one shared workspace.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+              <Users className="h-7 w-7 text-cyan-300" />
+              <h3 className="mt-5 text-xl font-bold text-white">
+                Team Accountability
+              </h3>
+              <p className="mt-3 leading-7 text-slate-400">
+                Make ownership, activity, and progress easier to see
+                without relying on constant status meetings or manual
+                follow-up.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+              <CheckCircle2 className="h-7 w-7 text-emerald-300" />
+              <h3 className="mt-5 text-xl font-bold text-white">
+                Task & Move Management
+              </h3>
+              <p className="mt-3 leading-7 text-slate-400">
+                Turn projects into concrete Moves and next actions so
+                important work has a clear place, priority, and owner.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+              <Zap className="h-7 w-7 text-fuchsia-300" />
+              <h3 className="mt-5 text-xl font-bold text-white">
+                Collaboration
+              </h3>
+              <p className="mt-3 leading-7 text-slate-400">
+                Keep discussions, updates, files, and project context
+                connected to the work instead of scattered across
+                disconnected tools.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+              <BarChart3 className="h-7 w-7 text-violet-300" />
+              <h3 className="mt-5 text-xl font-bold text-white">
+                Progress & Momentum
+              </h3>
+              <p className="mt-3 leading-7 text-slate-400">
+                See activity and momentum signals while a project is
+                happening so stalled or quiet work is easier to notice.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+              <Shield className="h-7 w-7 text-cyan-300" />
+              <h3 className="mt-5 text-xl font-bold text-white">
+                Workload Awareness
+              </h3>
+              <p className="mt-3 leading-7 text-slate-400">
+                Surface workload and project signals that can help teams
+                respond earlier when priorities pile up or work starts
+                losing momentum.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-6 sm:gap-8 mb-8 sm:mb-12`}>
@@ -449,7 +600,6 @@ export default function Landing() {
             <div>
               <h4 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Product</h4>
               <ul className="space-y-2">
-                <li><a href="/project-management" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Project management</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Features</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Roadmap</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Changelog</a></li>
