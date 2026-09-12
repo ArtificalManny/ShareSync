@@ -598,6 +598,32 @@ export default function ProjectManagement() {
           </div>
         </section>
 
+        <section className="border-y border-white/10 bg-white/[0.025]">
+          <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-violet-300">
+                Project management for small teams
+              </p>
+              <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+                Need coordination without enterprise overhead?
+              </h2>
+              <p className="mt-4 max-w-3xl leading-7 text-slate-400">
+                Small teams need clear ownership, shared context, and visible progress
+                without adding layers of process. See how OpenShare approaches project
+                management specifically for small teams.
+              </p>
+            </div>
+
+            <Link
+              to="/project-management-for-small-teams"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-6 py-3.5 font-bold text-violet-200 transition hover:bg-violet-500/20"
+            >
+              Project management for small teams
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </div>
+        </section>
+
         <section className="mx-auto max-w-4xl px-5 py-24 sm:px-8">
           <div className="text-center">
             <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-300">

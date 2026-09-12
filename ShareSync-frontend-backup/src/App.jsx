@@ -140,6 +140,7 @@ const Roadmap = lazy(() => import("./pages/Roadmap"));
 // ⭐ ALL other pages - lazy load
 const Landing = lazy(() => import("./pages/Landing"));
 const ProjectManagement = lazy(() => import("./pages/ProjectManagement"));
+const ProjectManagementForSmallTeams = lazy(() => import("./pages/ProjectManagementForSmallTeams"));
 const Home = lazy(() => import("./pages/Home"));
 const MyWork = lazy(() => import("./pages/MyWork.jsx"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -859,6 +860,7 @@ function AppRoutes() {
               />
               <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
               <Route path="/project-management" element={<ProjectManagement />} />
+              <Route path="/project-management-for-small-teams" element={<ProjectManagementForSmallTeams />} />
               <Route
                 path="/community"
                 element={

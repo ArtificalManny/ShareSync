@@ -3,6 +3,13 @@ import { useLocation } from "react-router-dom";
 
 const APP_NAME = "OpenShare";
 
+const SEO_ROUTE_TITLES = Object.freeze({
+  "/project-management":
+    "Project Management Software Without the Burnout — OpenShare",
+  "/project-management-for-small-teams":
+    "Project Management Software for Small Teams — OpenShare",
+});
+
 function cleanPath(pathname = "") {
   const cleaned = pathname.replace(/\/+$/, "");
   return cleaned || "/";
@@ -80,10 +87,10 @@ export default function PageTitleManager() {
   const location = useLocation();
 
   useEffect(() => {
+    const path = cleanPath(location.pathname);
     const title =
-      location.pathname === "/project-management"
-        ? "Project Management Software Without the Burnout — OpenShare"
-        : getPageTitle(location.pathname);
+      SEO_ROUTE_TITLES[path] ||
+      getPageTitle(path);
 
     // Set immediately.
     document.title = title;

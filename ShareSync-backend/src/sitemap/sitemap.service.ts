@@ -7,7 +7,7 @@ import {
 } from '../user/schemas/user.schema';
 
 const SITE_ORIGIN = 'https://openshare.ca';
-const MAX_PROFILE_URLS = 49_997;
+const MAX_PROFILE_URLS = 49_996;
 
 type SitemapEntry = {
   loc: string;
@@ -76,6 +76,9 @@ export class SitemapService {
       },
       {
         loc: `${SITE_ORIGIN}/project-management`,
+      },
+      {
+        loc: `${SITE_ORIGIN}/project-management-for-small-teams`,
       },
     ];
 
