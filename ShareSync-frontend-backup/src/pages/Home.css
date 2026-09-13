@@ -441,3 +441,52 @@
   background: #DDD6FE;
   color: #5B21B6;
 }
+
+/* openshare-desktop-home-tonal-hierarchy-v1
+   Light-mode desktop hierarchy:
+   - neutral canvas
+   - white elevated feature surfaces
+   - quiet secondary information surfaces
+   - brand/status colors remain semantic
+*/
+@media (min-width: 768px) {
+  html:not(.dark):not([data-theme="dark"]) .home-page {
+    background: var(--bg-secondary, #F5F5F7) !important;
+    box-shadow:
+      0 0 0 100vmax var(--bg-secondary, #F5F5F7);
+    clip-path: inset(0 -100vmax);
+  }
+
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .home-section-surface,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .your-moves-today-panel,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .weekly-motion-panel,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .streak-comparison-card,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .home-intelligence-panel > div {
+    background: var(--bg-elevated, #FFFFFF) !important;
+    border-color: var(--border-subtle, rgba(0, 0, 0, 0.06)) !important;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.025),
+      0 8px 28px rgba(15, 23, 42, 0.045),
+      0 4px 18px rgba(139, 92, 246, 0.025) !important;
+  }
+
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .your-moves-recommendation-card,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .home-intelligence-insight-card,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .weekly-motion-insight,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .weekly-motion-stat-chip,
+  html:not(.dark):not([data-theme="dark"])
+    .home-page .home-velocity-stat-grid .card-surface {
+    background: var(--slate-50, #F8FAFC) !important;
+    border-color: var(--slate-200, #E2E8F0) !important;
+    box-shadow: none !important;
+  }
+}
