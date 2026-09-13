@@ -143,8 +143,24 @@ async function waitForOpenShareBackendReady(timeoutMs = 40000) {
   return false;
 }
 
-export default function Login() {
-  useDocumentTitle("OpenShare");
+export default function Login({ rootSeo = false }) {
+  useDocumentTitle(
+    rootSeo
+      ? "Project Management & Team Collaboration"
+      : "Login",
+    rootSeo
+      ? {
+          description:
+            "OpenShare is project management and team collaboration software for organizing projects, assigning Moves, tracking momentum, building accountability, and keeping work moving.",
+          canonical: "https://openshare.ca/",
+          robots: "index,follow",
+        }
+      : {
+          description:
+            "Sign in to OpenShare to continue to your projects, Moves, messages, and team workspace.",
+          robots: "noindex,follow",
+        },
+  );
   const navigate = useNavigate();
   const [googleConnecting, setGoogleConnecting] = useState(false);
 

@@ -307,7 +307,11 @@ function RootRedirect() {
     return <LoadingSpinner />;
   }
 
-  return <Navigate to={user ? "/home" : "/login"} replace />;
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <Login rootSeo />;
 }
 
 function SidebarToggle({ sidebarOpen, setSidebarOpen }) {

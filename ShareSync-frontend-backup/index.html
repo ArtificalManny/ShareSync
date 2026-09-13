@@ -14,6 +14,50 @@
       content="OpenShare is project management and team collaboration software for organizing projects, assigning Moves, tracking momentum, building accountability, and keeping work moving."
     />
 
+    <script
+      id="openshare-entity-structured-data"
+      type="application/ld+json"
+    >
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://openshare.ca/#organization",
+            "name": "OpenShare",
+            "url": "https://openshare.ca/"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://openshare.ca/#website",
+            "name": "OpenShare",
+            "url": "https://openshare.ca/",
+            "publisher": {
+              "@id": "https://openshare.ca/#organization"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://openshare.ca/#webapp",
+            "name": "OpenShare",
+            "url": "https://openshare.ca/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "description": "Project management and team collaboration software for organizing projects, assigning Moves, tracking momentum, building accountability, and keeping work moving.",
+            "publisher": {
+              "@id": "https://openshare.ca/#organization"
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "CAD",
+              "description": "OpenShare includes a free plan."
+            }
+          }
+        ]
+      }
+    </script>
+
     <!-- ⭐ PWA Meta Tags -->
     <meta name="theme-color" content="#a855f7" />
     <meta name="color-scheme" content="light dark" />
