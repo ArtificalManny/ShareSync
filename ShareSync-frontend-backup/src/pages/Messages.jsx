@@ -36,6 +36,7 @@ import { useSocketContext, useSocketEvent } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import useDocumentTitle from "../hooks/useDocumentTitle";
+import CreateMoveFromMessageModal from "../components/moves/CreateMoveFromMessageModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
 
@@ -812,6 +813,7 @@ export default function Messages() {
   const [showComposer, setShowComposer] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [typingUsers, setTypingUsers] = useState([]);
+  const [moveConversionTarget, setMoveConversionTarget] = useState(null);
   const typingTimeoutRef = useRef(null);
   const lastTypingRef = useRef(0);
 
@@ -1301,16 +1303,47 @@ export default function Messages() {
                   <ErrorState message="Failed to load messages" onRetry={refetchMessages} />
                 ) : messages.length > 0 ? (
                   <>
-                    {messages.map((msg, i) => (
-                      <MessageBubble
-                        key={msg._id || msg.id || i}
-                        message={msg}
-                        isOwn={isOwnMessageSafe(msg, currentUser)}
-                        showAvatar={i === 0 || !isOwnMessageSafe(messages[i - 1], currentUser)}
-                        currentUser={currentUser}
-                        otherUser={selectedOtherUser}
-                      />
-                    ))}
+                    {messages.map((msg, i) => {
+                      const ownMessage = isOwnMessageSafe(msg, currentUser);
+                      const canCreateMove =
+                        !msg?.__optimistic &&
+                        !msg?.isDeleted &&
+                        String(msg?.content || "").trim();
+
+                      return (
+                        <div
+                          key={msg._id || msg.id || i}
+                          className="group relative"
+                        >
+                          <MessageBubble
+                            message={msg}
+                            isOwn={ownMessage}
+                            showAvatar={i === 0 || !isOwnMessageSafe(messages[i - 1], currentUser)}
+                            currentUser={currentUser}
+                            otherUser={selectedOtherUser}
+                          />
+
+                          {canCreateMove ? (
+                            <div
+                              className={`mt-1 flex ${
+                                ownMessage
+                                  ? "justify-end pr-11"
+                                  : "justify-start pl-11"
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setMoveConversionTarget(msg)}
+                                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold text-slate-400 opacity-100 transition hover:bg-violet-50 hover:text-violet-600 focus:opacity-100 focus:outline-none dark:text-zinc-500 dark:hover:bg-violet-500/10 dark:hover:text-violet-300 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Create Move
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                     <div ref={messagesEndRef} />
                   </>
                 ) : (
@@ -1325,6 +1358,28 @@ export default function Messages() {
 
               {/* Typing Indicator */}
               <TypingIndicator users={typingUsers} />
+
+              {/* openshare-message-to-move-v1 */}
+              {moveConversionTarget ? (
+                <CreateMoveFromMessageModal
+                  message={moveConversionTarget}
+                  currentUser={currentUser}
+                  messageIsOwn={isOwnMessageSafe(moveConversionTarget, currentUser)}
+                  conversationLabel={
+                    selectedConversation
+                      ? getSafeDisplayName(selectedConversation, currentUser)
+                      : "Conversation"
+                  }
+                  initialProjectId={extractId(
+                    moveConversionTarget?.linkedProjectId ||
+                      selectedConversation?.projectId ||
+                      selectedConversation?.linkedProjectId ||
+                      selectedConversation?.project
+                  )}
+                  onClose={() => setMoveConversionTarget(null)}
+                />
+              ) : null}
+
 
               {/* Input */}
               <div className="shrink-0 p-3 sm:p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
