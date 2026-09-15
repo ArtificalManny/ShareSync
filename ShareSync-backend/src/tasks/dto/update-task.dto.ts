@@ -16,6 +16,7 @@ import {
   IsNotEmpty,
   MaxLength,
   Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -105,6 +106,65 @@ export class UpdateTaskDto {
   @IsMongoId({ each: true })
   @IsOptional()
   blockedBy?: string[];
+
+  // openshare-blockers-escalation-v1
+  @ApiPropertyOptional({
+    description: 'Whether this Move is currently operationally blocked',
+  })
+  @IsBoolean()
+  @IsOptional()
+  isBlocked?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Reason the Move cannot currently progress',
+    maxLength: 2000,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  blockerReason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Project member expected to help resolve the blocker',
+  })
+  @IsMongoId()
+  @IsOptional()
+  blockerOwnerId?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Expected date the blocker will be cleared',
+  })
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  expectedUnblockDate?: Date | null;
+
+  @ApiPropertyOptional({
+    description: 'Manual escalation level',
+    minimum: 0,
+    maximum: 1,
+  })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  @IsOptional()
+  escalationLevel?: number;
+
+  @ApiPropertyOptional({
+    description: 'Project member the blocker is escalated to',
+  })
+  @IsMongoId()
+  @IsOptional()
+  escalatedToId?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Why the blocker needs escalated attention',
+    maxLength: 2000,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  escalationNote?: string;
 
   @ApiPropertyOptional()
   @IsNumber()

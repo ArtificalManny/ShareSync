@@ -1109,6 +1109,77 @@ export class NotificationsService {
     }
   }
 
+  // openshare-blockers-escalation-v1
+  @OnEvent('task.blocker.escalated')
+  async handleTaskBlockerEscalated(
+    payload: {
+      taskId: string;
+      taskTitle: string;
+      projectId: string;
+      projectName?: string;
+      escalatedToId: string;
+      escalatedBy: string;
+      blockerReason?: string;
+      escalationNote?: string;
+    },
+  ) {
+    const recipientId = String(
+      payload?.escalatedToId || '',
+    );
+
+    const actorId = String(
+      payload?.escalatedBy || '',
+    );
+
+    if (!recipientId) return;
+
+    if (recipientId === actorId) {
+      return;
+    }
+
+    const taskTitle =
+      payload?.taskTitle || 'Move';
+
+    const context =
+      String(
+        payload?.escalationNote ||
+          payload?.blockerReason ||
+          '',
+      ).trim();
+
+    await this.notify({
+      userId: recipientId,
+      type: NotificationType.TASK_UPDATED,
+      title: 'Blocker escalated',
+      body: context
+        ? `${taskTitle}: ${context}`
+        : `${taskTitle} has a blocker that needs your attention.`,
+      icon: '⚠️',
+      priority: NotificationPriority.URGENT,
+      triggeredBy: actorId,
+      data: {
+        taskId: payload.taskId,
+        taskTitle,
+        projectId: payload.projectId,
+        projectName:
+          payload.projectName ||
+          'Project',
+        blockerReason:
+          payload.blockerReason || '',
+        escalationNote:
+          payload.escalationNote || '',
+      } as any,
+      actions: [
+        {
+          label: 'View Move',
+          url: `/projects/${payload.projectId}/tasks/${payload.taskId}`,
+        },
+      ],
+      groupKey:
+        `blocker-escalated-${recipientId}-${payload.taskId}`,
+    });
+  }
+
   @OnEvent('message.sent')
   async handleMessageSent(payload: { conversationId: string; senderId: string; mentions: string[] }) {
     for (const userId of payload.mentions || []) {

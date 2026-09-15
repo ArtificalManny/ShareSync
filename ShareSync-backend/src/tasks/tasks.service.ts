@@ -127,6 +127,8 @@ export class TasksService {
     const values = [
       (dto as any)?.title,
       (dto as any)?.description,
+      (dto as any)?.blockerReason,
+      (dto as any)?.escalationNote,
     ]
       .filter(
         (value): value is string =>
@@ -780,6 +782,14 @@ export class TasksService {
       ? new Date(task.dueDate)
       : null;
 
+    // openshare-blockers-escalation-v1
+    const previousIsBlocked = !!(task as any).isBlocked;
+    const previousEscalationLevel = Number(
+      (task as any).escalationLevel || 0,
+    );
+    const previousEscalatedToId =
+      (task as any).escalatedToId?.toString?.() || null;
+
     if (dto.status && dto.status !== task.status) {
       if (dto.status === TaskStatus.DONE) {
         throw new BadRequestException('Use the complete endpoint to mark tasks as done');
@@ -800,6 +810,316 @@ export class TasksService {
       task.milestoneId = dto.milestoneId ? new Types.ObjectId(dto.milestoneId) : undefined;
       delete (dto as any).milestoneId;
     }
+
+    // openshare-blockers-escalation-v1
+    const requestedIsBlocked =
+      (dto as any).isBlocked;
+
+    const requestedBlockerReason =
+      (dto as any).blockerReason;
+
+    const requestedBlockerOwnerId =
+      (dto as any).blockerOwnerId;
+
+    const requestedExpectedUnblockDate =
+      (dto as any).expectedUnblockDate;
+
+    const requestedEscalationLevel =
+      (dto as any).escalationLevel;
+
+    const requestedEscalatedToId =
+      (dto as any).escalatedToId;
+
+    const requestedEscalationNote =
+      (dto as any).escalationNote;
+
+    const effectiveIsBlocked =
+      requestedIsBlocked !== undefined
+        ? !!requestedIsBlocked
+        : previousIsBlocked;
+
+    const normalizeProjectUserId = (
+      value: any,
+    ): string => {
+      if (!value) return '';
+
+      if (
+        typeof value === 'string' ||
+        typeof value === 'number'
+      ) {
+        return String(value);
+      }
+
+      if (
+        value instanceof Types.ObjectId
+      ) {
+        return value.toString();
+      }
+
+      return normalizeProjectUserId(
+        value?.userId ||
+          value?.user ||
+          value?.memberId ||
+          value?.member ||
+          value?._id ||
+          value?.id,
+      );
+    };
+
+    let blockerProject: any = null;
+
+    if (
+      requestedBlockerOwnerId !== undefined ||
+      requestedEscalatedToId !== undefined ||
+      requestedEscalationLevel !== undefined
+    ) {
+      blockerProject =
+        await this.projectsService.findByIdWithAccess(
+          task.projectId.toString(),
+          userId,
+        );
+
+      const participantIds =
+        new Set<string>();
+
+      [
+        (blockerProject as any)?.ownerId,
+        (blockerProject as any)?.owner,
+        (blockerProject as any)?.createdBy,
+        (blockerProject as any)?.createdById,
+      ].forEach((candidate) => {
+        const id =
+          normalizeProjectUserId(candidate);
+
+        if (id) participantIds.add(id);
+      });
+
+      const projectMembers =
+        Array.isArray(
+          (blockerProject as any)?.members,
+        )
+          ? (blockerProject as any).members
+          : [];
+
+      projectMembers.forEach(
+        (member: any) => {
+          const id =
+            normalizeProjectUserId(member);
+
+          if (id) participantIds.add(id);
+        },
+      );
+
+      const assertProjectParticipant = (
+        candidate: any,
+        label: string,
+      ) => {
+        if (
+          candidate === undefined ||
+          candidate === null ||
+          candidate === ''
+        ) {
+          return;
+        }
+
+        const id =
+          normalizeProjectUserId(candidate);
+
+        if (
+          !id ||
+          !participantIds.has(id)
+        ) {
+          throw new BadRequestException(
+            `${label} must be a member of this project`,
+          );
+        }
+      };
+
+      assertProjectParticipant(
+        requestedBlockerOwnerId,
+        'Blocker resolver',
+      );
+
+      assertProjectParticipant(
+        requestedEscalatedToId,
+        'Escalation recipient',
+      );
+    }
+
+    if (
+      requestedIsBlocked === true &&
+      !previousIsBlocked
+    ) {
+      const newReason = String(
+        requestedBlockerReason || '',
+      ).trim();
+
+      if (!newReason) {
+        throw new BadRequestException(
+          'A blocker reason is required when marking a Move blocked',
+        );
+      }
+
+      (task as any).isBlocked = true;
+      (task as any).blockedSince =
+        new Date();
+      (task as any).blockerResolvedAt =
+        null;
+
+      // A newly opened blocker starts a fresh escalation cycle.
+      (task as any).escalationLevel = 0;
+      (task as any).escalatedAt = null;
+      (task as any).escalatedToId = null;
+      (task as any).escalationNote = '';
+    }
+
+    if (
+      requestedIsBlocked === false &&
+      previousIsBlocked
+    ) {
+      (task as any).isBlocked = false;
+      (task as any).blockerResolvedAt =
+        new Date();
+
+      // Resolving a blocker closes its current escalation.
+      (task as any).escalationLevel = 0;
+      (task as any).escalatedAt = null;
+      (task as any).escalatedToId = null;
+      (task as any).escalationNote = '';
+    }
+
+    if (
+      requestedBlockerReason !== undefined
+    ) {
+      const reason = String(
+        requestedBlockerReason || '',
+      ).trim();
+
+      if (
+        effectiveIsBlocked &&
+        !reason
+      ) {
+        throw new BadRequestException(
+          'Blocked Moves must have a blocker reason',
+        );
+      }
+
+      (task as any).blockerReason =
+        reason;
+    }
+
+    if (
+      requestedBlockerOwnerId !== undefined
+    ) {
+      (task as any).blockerOwnerId =
+        requestedBlockerOwnerId
+          ? new Types.ObjectId(
+              requestedBlockerOwnerId,
+            )
+          : null;
+    }
+
+    if (
+      requestedExpectedUnblockDate !==
+      undefined
+    ) {
+      (task as any).expectedUnblockDate =
+        requestedExpectedUnblockDate
+          ? new Date(
+              requestedExpectedUnblockDate,
+            )
+          : null;
+    }
+
+    const effectiveEscalationLevel =
+      requestedEscalationLevel !== undefined
+        ? Number(
+            requestedEscalationLevel,
+          )
+        : Number(
+            (task as any)
+              .escalationLevel || 0,
+          );
+
+    const effectiveEscalatedToId =
+      requestedEscalatedToId !== undefined
+        ? normalizeProjectUserId(
+            requestedEscalatedToId,
+          )
+        : normalizeProjectUserId(
+            (task as any).escalatedToId,
+          );
+
+    if (
+      effectiveEscalationLevel === 1
+    ) {
+      if (!effectiveIsBlocked) {
+        throw new BadRequestException(
+          'Only blocked Moves can be escalated',
+        );
+      }
+
+      if (!effectiveEscalatedToId) {
+        throw new BadRequestException(
+          'An escalation recipient is required',
+        );
+      }
+
+      if (
+        requestedEscalatedToId !==
+        undefined
+      ) {
+        (task as any).escalatedToId =
+          new Types.ObjectId(
+            requestedEscalatedToId,
+          );
+      }
+
+      if (
+        requestedEscalationLevel === 1 &&
+        previousEscalationLevel !== 1
+      ) {
+        (task as any).escalatedAt =
+          new Date();
+      }
+
+      (task as any).escalationLevel = 1;
+    }
+
+    if (
+      requestedEscalationLevel === 0
+    ) {
+      (task as any).escalationLevel = 0;
+      (task as any).escalatedAt = null;
+      (task as any).escalatedToId = null;
+      (task as any).escalationNote = '';
+    }
+
+    if (
+      requestedEscalationNote !== undefined &&
+      effectiveEscalationLevel === 1
+    ) {
+      (task as any).escalationNote =
+        String(
+          requestedEscalationNote || '',
+        ).trim();
+    }
+
+    const blockerControlledFields = [
+      'isBlocked',
+      'blockerReason',
+      'blockerOwnerId',
+      'expectedUnblockDate',
+      'escalationLevel',
+      'escalatedToId',
+      'escalationNote',
+    ];
+
+    blockerControlledFields.forEach(
+      (field) => {
+        delete (dto as any)[field];
+      },
+    );
 
     const previousBlockedBy = Array.isArray(task.blockedBy)
       ? task.blockedBy.map(
@@ -836,6 +1156,61 @@ export class TasksService {
 
     Object.assign(task, dto);
     const updated = await task.save();
+
+    // openshare-blockers-escalation-v1
+    const updatedEscalationLevel =
+      Number(
+        (updated as any).escalationLevel ||
+          0,
+      );
+
+    const updatedEscalatedToId =
+      (updated as any).escalatedToId
+        ?.toString?.() || null;
+
+    const escalationTriggered =
+      updatedEscalationLevel === 1 &&
+      !!updatedEscalatedToId &&
+      (
+        previousEscalationLevel !== 1 ||
+        previousEscalatedToId !==
+          updatedEscalatedToId
+      );
+
+    if (escalationTriggered) {
+      blockerProject =
+        blockerProject ||
+        await this.projectsService.findByIdWithAccess(
+          task.projectId.toString(),
+          userId,
+        );
+
+      this.eventEmitter.emit(
+        'task.blocker.escalated',
+        {
+          taskId:
+            updated._id.toString(),
+          taskTitle:
+            updated.title,
+          projectId:
+            updated.projectId.toString(),
+          projectName:
+            (blockerProject as any)?.name ||
+            (blockerProject as any)?.title ||
+            'Project',
+          escalatedToId:
+            updatedEscalatedToId,
+          escalatedBy:
+            userId,
+          blockerReason:
+            (updated as any)
+              .blockerReason || '',
+          escalationNote:
+            (updated as any)
+              .escalationNote || '',
+        },
+      );
+    }
 
     if (dependencyChanges) {
       await this.updateBlockingRelationships(

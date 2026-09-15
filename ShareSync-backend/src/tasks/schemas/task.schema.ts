@@ -263,6 +263,49 @@ export class Task {
   @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
   blocks: Types.ObjectId[];
 
+  // openshare-blockers-escalation-v1
+  // Operational blocker state is intentionally separate from workflow status
+  // and from dependency relationships (blockedBy / isBlocking).
+  @ApiProperty({ description: 'Whether this Move is currently operationally blocked' })
+  @Prop({ type: Boolean, default: false, index: true })
+  isBlocked: boolean;
+
+  @ApiProperty({ description: 'Human-readable reason this Move cannot progress' })
+  @Prop({ type: String, trim: true, maxlength: 2000, default: '' })
+  blockerReason: string;
+
+  @ApiProperty({ description: 'When the current blocker began' })
+  @Prop({ type: Date, default: null })
+  blockedSince?: Date | null;
+
+  @ApiProperty({ description: 'Project member expected to help resolve the blocker' })
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null, index: true })
+  blockerOwnerId?: Types.ObjectId | null;
+
+  @ApiProperty({ description: 'Expected date for the blocker to be cleared' })
+  @Prop({ type: Date, default: null })
+  expectedUnblockDate?: Date | null;
+
+  @ApiProperty({ description: 'Manual blocker escalation level', minimum: 0, maximum: 1 })
+  @Prop({ type: Number, default: 0, min: 0, max: 1 })
+  escalationLevel: number;
+
+  @ApiProperty({ description: 'When the current blocker was escalated' })
+  @Prop({ type: Date, default: null })
+  escalatedAt?: Date | null;
+
+  @ApiProperty({ description: 'Project member the blocker was escalated to' })
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null, index: true })
+  escalatedToId?: Types.ObjectId | null;
+
+  @ApiProperty({ description: 'Context supplied with the escalation' })
+  @Prop({ type: String, trim: true, maxlength: 2000, default: '' })
+  escalationNote: string;
+
+  @ApiProperty({ description: 'When the latest blocker was resolved' })
+  @Prop({ type: Date, default: null })
+  blockerResolvedAt?: Date | null;
+
   @Prop({ type: Number, default: 1, min: 0 })
   storyPoints: number;
 
@@ -350,6 +393,7 @@ TaskSchema.index({ reporterId: 1, status: 1 });
 TaskSchema.index({ sprintId: 1, status: 1 });
 TaskSchema.index({ dueDate: 1, status: 1 });
 TaskSchema.index({ projectId: 1, priority: -1, isBlocking: -1, dueDate: 1 });
+TaskSchema.index({ projectId: 1, isBlocked: -1, expectedUnblockDate: 1 });
 TaskSchema.index({ title: 'text', description: 'text' });
 TaskSchema.index({ projectId: 1, milestoneId: 1, status: 1 });
 
