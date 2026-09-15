@@ -35,6 +35,7 @@ import {
 } from "../components/project/pulse/card";
 
 import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
+import OpenLoopsPanel from "../components/project/OpenLoopsPanel";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 import CompleteProjectModal from "../components/project/CompleteProjectModal";
 import ProjectAvatar from "../components/project/ProjectAvatar";
@@ -3979,6 +3980,15 @@ function OverviewView({
 
       <div className="mb-8">
         <OverviewPulseCard pulse={commandPulse} />
+      </div>
+
+      {/* openshare-project-open-loops-v1 */}
+      <div className="mb-8">
+        <OpenLoopsPanel
+          tasks={projectTasksForTeamCapacity}
+          project={project || overview?.project || null}
+          overview={overview}
+        />
       </div>
 
       <div className="grid grid-cols-12 gap-8 mb-8">
