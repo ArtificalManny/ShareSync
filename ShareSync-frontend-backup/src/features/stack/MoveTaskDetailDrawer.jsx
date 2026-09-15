@@ -24,6 +24,7 @@ import {
 } from "./dueDateIntelligence";
 
 import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
+import MoveBlockerPanel from "./MoveBlockerPanel";
 import MoveTaskWatchPanel from "./MoveTaskWatchPanel";
 
 const STATUS_OPTIONS = [
@@ -980,6 +981,19 @@ export default function MoveTaskDetailDrawer({
                 </div>
               </div>
             </section>
+
+            {/* openshare-move-blocker-panel-v1 */}
+            <MoveBlockerPanel
+              task={task}
+              members={safeMembers}
+              disabled={isBusy}
+              onUpdate={
+                !onSave
+                  ? undefined
+                  : (updates) =>
+                      onSave(task, updates)
+              }
+            />
 
             <MoveTaskWatchPanel
               taskId={selectedTaskId}
