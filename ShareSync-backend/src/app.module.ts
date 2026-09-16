@@ -32,6 +32,8 @@ import { SitemapModule } from './sitemap/sitemap.module';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { ProjectsModule } from './projects/projects.module';
+import { DecisionsModule } from './decisions/decisions.module';
+// openshare-decision-log-v1
 import { TasksModule } from './tasks/tasks.module';
 import { DailyFocusModule } from './daily-focus/daily-focus.module';
 import { MyWorkModule } from './my-work/my-work.module';
@@ -204,6 +206,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     UserModule,
     SitemapModule,
     ProjectsModule,
+    DecisionsModule,
     TasksModule,
     DailyFocusModule,
     MyWorkModule,
