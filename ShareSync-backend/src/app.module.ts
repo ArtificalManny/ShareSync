@@ -33,6 +33,8 @@ import { SitemapModule } from './sitemap/sitemap.module';
 
 import { ProjectsModule } from './projects/projects.module';
 import { DecisionsModule } from './decisions/decisions.module';
+import { CommitmentsModule } from './commitments/commitments.module';
+// openshare-commitments-v1
 // openshare-decision-log-v1
 import { TasksModule } from './tasks/tasks.module';
 import { DailyFocusModule } from './daily-focus/daily-focus.module';
@@ -207,6 +209,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     SitemapModule,
     ProjectsModule,
     DecisionsModule,
+    CommitmentsModule,
     TasksModule,
     DailyFocusModule,
     MyWorkModule,
