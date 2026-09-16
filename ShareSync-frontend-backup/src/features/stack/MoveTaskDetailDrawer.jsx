@@ -26,6 +26,7 @@ import {
 import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
 import MoveBlockerPanel from "./MoveBlockerPanel";
 import MoveTaskWatchPanel from "./MoveTaskWatchPanel";
+import CommitmentsPanel from "../../components/project/CommitmentsPanel";
 import MoveDecisionLogPanel from "./MoveDecisionLogPanel";
 
 const STATUS_OPTIONS = [
@@ -999,6 +1000,15 @@ export default function MoveTaskDetailDrawer({
 
             <MoveTaskWatchPanel
               taskId={selectedTaskId}
+              disabled={isBusy}
+            />
+
+            {/* openshare-move-commitments-v1 */}
+            <CommitmentsPanel
+              projectId={projectId}
+              task={task}
+              members={safeMembers}
+              compact
               disabled={isBusy}
             />
 
