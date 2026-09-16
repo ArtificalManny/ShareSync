@@ -36,6 +36,7 @@ import {
 
 import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import OpenLoopsPanel from "../components/project/OpenLoopsPanel";
+import DecisionLogPanel from "../components/project/DecisionLogPanel";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
 import CompleteProjectModal from "../components/project/CompleteProjectModal";
 import ProjectAvatar from "../components/project/ProjectAvatar";
@@ -3681,6 +3682,7 @@ function buildRoadmapPulseForCommand(milestones = []) {
 
 
 function OverviewView({
+  readOnly = false,
   project,
   overview,
   metrics,
@@ -3989,6 +3991,19 @@ function OverviewView({
           project={project || overview?.project || null}
           overview={overview}
         />
+
+        {/* openshare-decision-log-command-v1 */}
+        <DecisionLogPanel
+          projectId={
+            project?._id ||
+            project?.id ||
+            overview?.project?._id ||
+            overview?.project?.id ||
+            ""
+          }
+          readOnly={readOnly}
+        />
+
       </div>
 
       <div className="grid grid-cols-12 gap-8 mb-8">
@@ -4881,6 +4896,8 @@ export default function ProjectHome() {
               projectMomentum={projectMomentum}
               tasks={liveTasks}
               blockers={overview?.blockers || overview?.blockingReasons || overview?.finishLine?.blockers || []}
+
+              readOnly={String(project?.status || "").toLowerCase() === "completed"}
             />
           );
 
@@ -5016,7 +5033,7 @@ export default function ProjectHome() {
                 linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92)) !important;
               border-color: rgba(255, 255, 255, 0.08) !important;
             }
-          
+
 
               .moves-stack-workspace {
                 border-radius: 28px;

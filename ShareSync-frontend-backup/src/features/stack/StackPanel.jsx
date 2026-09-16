@@ -1613,6 +1613,7 @@ export default function StackPanel({
       <MoveTaskDetailDrawer
         open={Boolean(selectedTask)}
         task={selectedTask}
+        projectId={projectId}
         members={memberOptions}
         projectTasks={projectTasks}
         dependenciesLoading={dependenciesLoading}

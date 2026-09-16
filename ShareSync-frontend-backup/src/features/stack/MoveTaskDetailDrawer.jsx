@@ -26,6 +26,7 @@ import {
 import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
 import MoveBlockerPanel from "./MoveBlockerPanel";
 import MoveTaskWatchPanel from "./MoveTaskWatchPanel";
+import MoveDecisionLogPanel from "./MoveDecisionLogPanel";
 
 const STATUS_OPTIONS = [
   { value: "backlog", label: "Backlog" },
@@ -108,6 +109,7 @@ function toDateInputValue(value) {
 export default function MoveTaskDetailDrawer({
   open = false,
   task = null,
+  projectId = "",
   members = [],
   projectTasks = [],
   dependenciesLoading = false,
@@ -997,6 +999,13 @@ export default function MoveTaskDetailDrawer({
 
             <MoveTaskWatchPanel
               taskId={selectedTaskId}
+              disabled={isBusy}
+            />
+
+            {/* openshare-move-decision-log-panel-v1 */}
+            <MoveDecisionLogPanel
+              projectId={projectId}
+              task={task}
               disabled={isBusy}
             />
 
