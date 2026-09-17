@@ -4022,6 +4022,12 @@ function OverviewView({
             overview?.project?.id ||
             id
           }
+          /* openshare-handoffs-command-members-v1 */
+          members={projectPulseGetProjectMembers(
+            project ||
+              overview?.project ||
+              null
+          )}
           ownerName={getProjectOwnerDisplayName(
             project ||
               overview?.project ||
