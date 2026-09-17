@@ -71,6 +71,14 @@ export class ResponsibilityMapService {
       return String(value).trim();
     }
 
+    // openshare-responsibility-map-objectid-normalization-v1
+    if (
+      value instanceof
+      Types.ObjectId
+    ) {
+      return value.toString();
+    }
+
     return this.normalizeProjectUserId(
       value?.userId ||
         value?.user ||
