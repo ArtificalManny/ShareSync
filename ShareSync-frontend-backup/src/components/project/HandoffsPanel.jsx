@@ -483,11 +483,15 @@ function HandoffCard({
                     "accepted"
                   )
                 }
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2 text-xs font-black !text-white shadow-sm shadow-violet-500/20 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl !bg-violet-600 px-3 py-2 text-xs font-black !text-white shadow-sm shadow-violet-500/20 transition hover:!bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   color: "#ffffff",
+                  WebkitTextFillColor:
+                    "#ffffff",
+                  backgroundColor:
+                    "#7c3aed",
                 }}
-                data-openshare-handoff-primary="true"
+                data-openshare-handoff-primary="accept-card"
               >
                 <Check className="h-3.5 w-3.5" />
                 Accept
@@ -1506,8 +1510,9 @@ export default function HandoffsPanel({
 
       {showCreate ? (
         <div
-          className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[1200] overflow-y-auto bg-black/50 px-4 pb-8 pt-24 backdrop-blur-sm sm:px-6 sm:pt-28"
           role="presentation"
+          data-openshare-handoff-modal="create"
           onMouseDown={(event) => {
             if (
               event.target ===
@@ -1521,8 +1526,9 @@ export default function HandoffsPanel({
             onSubmit={
               handleCreate
             }
-            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#17171b]"
+            className="mx-auto flex max-h-[calc(100vh-8rem)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#17171b]"
           >
+            {/* openshare-handoffs-modal-actions-visibility-v2 */}
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-white/[0.08]">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white">
@@ -1551,7 +1557,7 @@ export default function HandoffsPanel({
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
               <label className="block">
                 <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-zinc-200">
                   Title
@@ -1678,7 +1684,7 @@ export default function HandoffsPanel({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-white/[0.08]">
+            <div className="sticky bottom-0 z-10 flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 dark:border-white/[0.08] dark:bg-[#17171b]">
               <button
                 type="button"
                 disabled={saving}
@@ -1693,10 +1699,15 @@ export default function HandoffsPanel({
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-black !text-white shadow-sm shadow-violet-500/20 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl !bg-violet-600 px-4 py-2.5 text-sm font-black !text-white shadow-sm shadow-violet-500/20 transition hover:!bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   color: "#ffffff",
+                  WebkitTextFillColor:
+                    "#ffffff",
+                  backgroundColor:
+                    "#7c3aed",
                 }}
+                data-openshare-handoff-primary="create"
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1715,8 +1726,9 @@ export default function HandoffsPanel({
 
       {decision ? (
         <div
-          className="fixed inset-0 z-[1210] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[1210] flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
           role="presentation"
+          data-openshare-handoff-modal="decision"
           onMouseDown={(event) => {
             if (
               event.target ===
@@ -1730,7 +1742,7 @@ export default function HandoffsPanel({
             onSubmit={
               handleDecision
             }
-            className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#17171b]"
+            className="flex max-h-[calc(100vh-4rem)] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#17171b]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-white/[0.08]">
               <div>
@@ -1765,7 +1777,7 @@ export default function HandoffsPanel({
               </button>
             </div>
 
-            <div className="p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
               <label className="block">
                 <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-zinc-200">
                   Response note{" "}
@@ -1805,7 +1817,7 @@ export default function HandoffsPanel({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-white/[0.08]">
+            <div className="sticky bottom-0 z-10 flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 dark:border-white/[0.08] dark:bg-[#17171b]">
               <button
                 type="button"
                 disabled={
@@ -1827,12 +1839,20 @@ export default function HandoffsPanel({
                 className={
                   decision?.status ===
                   "accepted"
-                    ? "inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-black !text-white shadow-sm shadow-violet-500/20 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-                    : "inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-black !text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    ? "inline-flex items-center justify-center gap-2 rounded-xl !bg-violet-600 px-4 py-2.5 text-sm font-black !text-white shadow-sm shadow-violet-500/20 transition hover:!bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    : "inline-flex items-center justify-center gap-2 rounded-xl !bg-rose-600 px-4 py-2.5 text-sm font-black !text-white transition hover:!bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 }
                 style={{
                   color: "#ffffff",
+                  WebkitTextFillColor:
+                    "#ffffff",
+                  backgroundColor:
+                    decision?.status ===
+                    "accepted"
+                      ? "#7c3aed"
+                      : "#e11d48",
                 }}
+                data-openshare-handoff-primary="decision"
               >
                 {busyId ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
