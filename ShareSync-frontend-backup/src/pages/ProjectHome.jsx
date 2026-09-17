@@ -36,6 +36,7 @@ import {
 
 import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import OpenLoopsPanel from "../components/project/OpenLoopsPanel";
+import ApprovalsPanel from "../components/project/ApprovalsPanel";
 import CommitmentsPanel from "../components/project/CommitmentsPanel";
 import DecisionLogPanel from "../components/project/DecisionLogPanel";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
@@ -3991,6 +3992,24 @@ function OverviewView({
           tasks={projectTasksForTeamCapacity}
           project={project || overview?.project || null}
           overview={overview}
+        />
+
+        {/* openshare-approvals-command-v1 */}
+        <ApprovalsPanel
+          projectId={
+            project?._id ||
+            project?.id ||
+            overview?.project?._id ||
+            overview?.project?.id ||
+            ""
+          }
+          ownerName={getProjectOwnerDisplayName(
+            project ||
+              overview?.project ||
+              null,
+            overview
+          )}
+          readOnly={readOnly}
         />
 
         {/* openshare-commitments-command-v1 */}
