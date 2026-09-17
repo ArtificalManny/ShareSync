@@ -243,8 +243,14 @@ export class ApprovalsService {
     const move =
       await this.taskModel
         .findOne({
-          _id: sourceMoveId,
-          projectId,
+          _id:
+            new Types.ObjectId(
+              sourceMoveId,
+            ),
+          projectId:
+            new Types.ObjectId(
+              projectId,
+            ),
         })
         .select({
           _id: 1,
@@ -485,8 +491,14 @@ export class ApprovalsService {
     const item =
       await this.approvalModel
         .findOne({
-          _id: approvalId,
-          projectId,
+          _id:
+            new Types.ObjectId(
+              approvalId,
+            ),
+          projectId:
+            new Types.ObjectId(
+              projectId,
+            ),
         })
         .exec();
 
