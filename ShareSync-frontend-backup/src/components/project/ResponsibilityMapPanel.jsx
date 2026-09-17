@@ -609,8 +609,9 @@ function ResponsibilityModal({
     Boolean(form.ownerId);
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#17171b]">
+    <div className="fixed inset-x-0 bottom-0 top-[68px] z-[110] flex items-start justify-center overflow-y-auto bg-slate-950/60 px-4 pb-6 pt-5 backdrop-blur-sm">
+      {/* openshare-responsibility-modal-position-v1 */}
+      <div className="max-h-[calc(100vh-7rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#17171b]">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 dark:border-white/[0.08] dark:bg-[#17171b]">
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white">
