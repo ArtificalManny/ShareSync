@@ -37,6 +37,7 @@ import {
 import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import OpenLoopsPanel from "../components/project/OpenLoopsPanel";
 import ApprovalsPanel from "../components/project/ApprovalsPanel";
+import HandoffsPanel from "../components/project/HandoffsPanel";
 import CommitmentsPanel from "../components/project/CommitmentsPanel";
 import DecisionLogPanel from "../components/project/DecisionLogPanel";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
@@ -4002,6 +4003,24 @@ function OverviewView({
             overview?.project?._id ||
             overview?.project?.id ||
             ""
+          }
+          ownerName={getProjectOwnerDisplayName(
+            project ||
+              overview?.project ||
+              null,
+            overview
+          )}
+          readOnly={readOnly}
+        />
+
+        {/* openshare-handoffs-command-v1 */}
+        <HandoffsPanel
+          projectId={
+            project?._id ||
+            project?.id ||
+            overview?.project?._id ||
+            overview?.project?.id ||
+            id
           }
           ownerName={getProjectOwnerDisplayName(
             project ||

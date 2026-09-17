@@ -27,6 +27,7 @@ import MoveTaskCollaborationPanel from "./MoveTaskCollaborationPanel";
 import MoveBlockerPanel from "./MoveBlockerPanel";
 import MoveTaskWatchPanel from "./MoveTaskWatchPanel";
 import ApprovalsPanel from "../../components/project/ApprovalsPanel";
+import HandoffsPanel from "../../components/project/HandoffsPanel";
 import CommitmentsPanel from "../../components/project/CommitmentsPanel";
 import MoveDecisionLogPanel from "./MoveDecisionLogPanel";
 
@@ -240,6 +241,69 @@ export default function MoveTaskDetailDrawer({
     setDependencyChoice("");
     setActionError("");
   }, [open, task]);
+
+  // openshare-move-handoff-live-assignee-v1
+  // A Move Handoff updates ownership on the server inside
+  // HandoffsPanel. Reflect an accepted transfer immediately
+  // in this already-open drawer without issuing a second write.
+  useEffect(() => {
+    if (
+      !open ||
+      !selectedTaskId
+    ) {
+      return undefined;
+    }
+
+    const handleHandoffUpdated =
+      (event) => {
+        const handoff =
+          event?.detail?.handoff;
+
+        const sourceMoveId =
+          normalizeId(
+            event?.detail
+              ?.sourceMoveId ||
+              handoff?.sourceMoveId
+          );
+
+        if (
+          sourceMoveId !==
+            selectedTaskId ||
+          handoff?.status !==
+            "accepted"
+        ) {
+          return;
+        }
+
+        const nextAssigneeId =
+          normalizeId(
+            handoff?.recipientId
+          );
+
+        if (!nextAssigneeId) {
+          return;
+        }
+
+        setAssigneeId(
+          nextAssigneeId
+        );
+      };
+
+    window.addEventListener(
+      "openshare:handoff-updated",
+      handleHandoffUpdated
+    );
+
+    return () => {
+      window.removeEventListener(
+        "openshare:handoff-updated",
+        handleHandoffUpdated
+      );
+    };
+  }, [
+    open,
+    selectedTaskId,
+  ]);
 
   useEffect(() => {
     if (
@@ -1006,6 +1070,15 @@ export default function MoveTaskDetailDrawer({
 
             {/* openshare-move-approvals-v1 */}
             <ApprovalsPanel
+              projectId={projectId}
+              task={task}
+              members={safeMembers}
+              compact
+              disabled={isBusy}
+            />
+
+            {/* openshare-move-handoffs-v1 */}
+            <HandoffsPanel
               projectId={projectId}
               task={task}
               members={safeMembers}
