@@ -35,6 +35,8 @@ import { ProjectsModule } from './projects/projects.module';
 import { DecisionsModule } from './decisions/decisions.module';
 import { CommitmentsModule } from './commitments/commitments.module';
 import { ApprovalsModule } from './approvals/approvals.module';
+import { HandoffsModule } from './handoffs/handoffs.module';
+// openshare-handoffs-v1
 // openshare-approvals-v1
 // openshare-commitments-v1
 // openshare-decision-log-v1
@@ -213,6 +215,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     DecisionsModule,
     CommitmentsModule,
     ApprovalsModule,
+    HandoffsModule,
     TasksModule,
     DailyFocusModule,
     MyWorkModule,

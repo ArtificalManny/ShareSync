@@ -28,6 +28,11 @@ export enum NotificationType {
   APPROVAL_REJECTED = 'approval_rejected',
   APPROVAL_CANCELLED = 'approval_cancelled',
 
+  HANDOFF_REQUESTED = 'handoff_requested',
+  HANDOFF_ACCEPTED = 'handoff_accepted',
+  HANDOFF_DECLINED = 'handoff_declined',
+  HANDOFF_CANCELLED = 'handoff_cancelled',
+
   MILESTONE_CREATED = 'milestone_created',
 
   // ✅ Phase 3: spectator followers / public loop
