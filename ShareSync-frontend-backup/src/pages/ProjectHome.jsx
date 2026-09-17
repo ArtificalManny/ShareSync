@@ -38,6 +38,7 @@ import FinishLineCard from "../components/project/pulse/card/FinishLineCard";
 import OpenLoopsPanel from "../components/project/OpenLoopsPanel";
 import ApprovalsPanel from "../components/project/ApprovalsPanel";
 import HandoffsPanel from "../components/project/HandoffsPanel";
+import AsyncCheckInsPanel from "../components/project/AsyncCheckInsPanel";
 import CommitmentsPanel from "../components/project/CommitmentsPanel";
 import DecisionLogPanel from "../components/project/DecisionLogPanel";
 import AddMilestoneModal from "../components/roadmap/AddMilestoneModal";
@@ -4023,6 +4024,32 @@ function OverviewView({
             id
           }
           /* openshare-handoffs-command-members-v1 */
+          members={projectPulseGetProjectMembers(
+            project ||
+              overview?.project ||
+              null
+          )}
+          ownerName={getProjectOwnerDisplayName(
+            project ||
+              overview?.project ||
+              null,
+            overview
+          )}
+          readOnly={readOnly}
+        />
+
+        {/* openshare-async-check-ins-command-v1 */}
+        <AsyncCheckInsPanel
+          projectId={
+            project?._id ||
+            project?.id ||
+            id
+          }
+          project={
+            project ||
+            overview?.project ||
+            null
+          }
           members={projectPulseGetProjectMembers(
             project ||
               overview?.project ||
