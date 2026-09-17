@@ -37,6 +37,8 @@ import { CommitmentsModule } from './commitments/commitments.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { HandoffsModule } from './handoffs/handoffs.module';
 import { AsyncCheckInsModule } from './async-check-ins/async-check-ins.module';
+import { ResponsibilityMapModule } from './responsibility-map/responsibility-map.module';
+// openshare-responsibility-map-v1
 // openshare-async-check-ins-v1
 // openshare-handoffs-v1
 // openshare-approvals-v1
@@ -219,6 +221,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
     ApprovalsModule,
     HandoffsModule,
     AsyncCheckInsModule,
+    ResponsibilityMapModule,
     TasksModule,
     DailyFocusModule,
     MyWorkModule,
