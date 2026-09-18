@@ -15,6 +15,15 @@ import {
 } from 'mongoose';
 
 import {
+  NotificationsService,
+} from '../notifications/notifications.service';
+
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
+
+import {
   ProjectsService,
 } from '../projects/projects.service';
 
@@ -44,7 +53,124 @@ export class ResponsibilityMapService {
 
     private readonly projectsService:
       ProjectsService,
+
+    private readonly notifications:
+      NotificationsService,
   ) {}
+
+  // openshare-responsibility-email-v1
+  private async notifyResponsibilityRecipients(
+    args: {
+      recipientIds:
+        Array<
+          string |
+          null |
+          undefined
+        >;
+      actorId: string;
+      projectId: string;
+      responsibilityId: string;
+      eventType: string;
+      title: string;
+      body: string;
+      icon?: string;
+    },
+  ): Promise<void> {
+    const recipients =
+      Array.from(
+        new Set(
+          (
+            args.recipientIds ||
+            []
+          )
+            .map(
+              (value) =>
+                String(
+                  value || '',
+                ).trim(),
+            )
+            .filter(
+              (value) =>
+                value &&
+                value !==
+                  args.actorId &&
+                Types.ObjectId
+                  .isValid(value),
+            ),
+        ),
+      );
+
+    for (
+      const recipientId
+      of recipients
+    ) {
+      try {
+        await this.notifications
+          .notify({
+            userId:
+              recipientId,
+
+            type:
+              NotificationType
+                .PROJECT_UPDATE,
+
+            title:
+              args.title,
+
+            body:
+              args.body,
+
+            icon:
+              args.icon ||
+              'users',
+
+            priority:
+              NotificationPriority
+                .NORMAL,
+
+            triggeredBy:
+              args.actorId,
+
+            data: {
+              projectId:
+                args.projectId,
+
+              emailFanoutEligible:
+                true,
+
+              projectMemberNotification:
+                true,
+
+              extra: {
+                eventType:
+                  args.eventType,
+
+                responsibilityId:
+                  args.responsibilityId,
+              },
+            },
+
+            actions: [
+              {
+                label:
+                  'View Project',
+
+                url:
+                  `/projects/${args.projectId}`,
+              },
+            ],
+
+            groupKey:
+              `${args.eventType}-` +
+              `${args.responsibilityId}-` +
+              `${recipientId}`,
+          });
+      } catch (_error) {
+        // Notification delivery must never roll back
+        // a successful Responsibility mutation.
+      }
+    }
+  }
 
   private cleanText(
     value: any,
@@ -502,6 +628,34 @@ export class ResponsibilityMapService {
           archivedAt: null,
         });
 
+    await this
+      .notifyResponsibilityRecipients({
+        recipientIds: [
+          ownerId,
+          backupOwnerId,
+        ],
+
+        actorId:
+          userId,
+
+        projectId,
+
+        responsibilityId:
+          item._id.toString(),
+
+        eventType:
+          'responsibility.created',
+
+        title:
+          'Responsibility assigned',
+
+        body:
+          title,
+
+        icon:
+          'users',
+      });
+
     return this.present(item);
   }
 
@@ -532,6 +686,14 @@ export class ResponsibilityMapService {
       this.normalizeProjectUserId(
         item?.ownerId,
       );
+
+    const currentBackupOwnerId =
+      this.normalizeProjectUserId(
+        item?.backupOwnerId,
+      );
+
+    const previousStatus =
+      item.status;
 
     const isManager =
       createdBy === userId ||
@@ -704,6 +866,126 @@ export class ResponsibilityMapService {
 
     const saved =
       await item.save();
+
+    const savedOwnerId =
+      this.normalizeProjectUserId(
+        saved.ownerId,
+      );
+
+    const savedBackupOwnerId =
+      this.normalizeProjectUserId(
+        saved.backupOwnerId,
+      );
+
+    if (
+      currentOwnerId !==
+      savedOwnerId
+    ) {
+      await this
+        .notifyResponsibilityRecipients({
+          recipientIds: [
+            currentOwnerId,
+            savedOwnerId,
+            createdBy,
+          ],
+
+          actorId:
+            userId,
+
+          projectId,
+
+          responsibilityId:
+            saved._id.toString(),
+
+          eventType:
+            'responsibility.primary_changed',
+
+          title:
+            'Primary responsibility owner changed',
+
+          body:
+            saved.title,
+
+          icon:
+            'users',
+        });
+    }
+
+    if (
+      currentBackupOwnerId !==
+      savedBackupOwnerId
+    ) {
+      await this
+        .notifyResponsibilityRecipients({
+          recipientIds: [
+            currentBackupOwnerId,
+            savedBackupOwnerId,
+            createdBy,
+          ],
+
+          actorId:
+            userId,
+
+          projectId,
+
+          responsibilityId:
+            saved._id.toString(),
+
+          eventType:
+            'responsibility.backup_changed',
+
+          title:
+            'Backup responsibility owner changed',
+
+          body:
+            saved.title,
+
+          icon:
+            'users',
+        });
+    }
+
+    if (
+      previousStatus !==
+      saved.status
+    ) {
+      const isArchived =
+        saved.status ===
+        ResponsibilityStatus.ARCHIVED;
+
+      await this
+        .notifyResponsibilityRecipients({
+          recipientIds: [
+            savedOwnerId,
+            savedBackupOwnerId,
+            createdBy,
+          ],
+
+          actorId:
+            userId,
+
+          projectId,
+
+          responsibilityId:
+            saved._id.toString(),
+
+          eventType:
+            isArchived
+              ? 'responsibility.archived'
+              : 'responsibility.reopened',
+
+          title:
+            isArchived
+              ? 'Responsibility archived'
+              : 'Responsibility reopened',
+
+          body:
+            saved.title,
+
+          icon:
+            'users',
+        });
+    }
 
     return this.present(saved);
   }

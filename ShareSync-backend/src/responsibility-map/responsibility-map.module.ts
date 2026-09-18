@@ -11,6 +11,10 @@ import {
 } from '../moderation/moderation.module';
 
 import {
+  NotificationsModule,
+} from '../notifications/notifications.module';
+
+import {
   ProjectsModule,
 } from '../projects/projects.module';
 
@@ -37,6 +41,7 @@ import {
     ]),
     ProjectsModule,
     ModerationModule,
+    NotificationsModule,
   ],
   controllers: [
     ResponsibilityMapController,

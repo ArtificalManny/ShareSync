@@ -14,6 +14,15 @@ import {
 } from 'mongoose';
 
 import {
+  NotificationsService,
+} from '../notifications/notifications.service';
+
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
+
+import {
   ProjectsService,
 } from '../projects/projects.service';
 
@@ -50,7 +59,124 @@ export class CommitmentsService {
 
     private readonly projectsService:
       ProjectsService,
+
+    private readonly notifications:
+      NotificationsService,
   ) {}
+
+  // openshare-commitment-email-v1
+  private async notifyCommitmentRecipients(
+    args: {
+      recipientIds:
+        Array<
+          string |
+          null |
+          undefined
+        >;
+      actorId: string;
+      projectId: string;
+      commitmentId: string;
+      eventType: string;
+      title: string;
+      body: string;
+      icon?: string;
+    },
+  ): Promise<void> {
+    const recipients =
+      Array.from(
+        new Set(
+          (
+            args.recipientIds ||
+            []
+          )
+            .map(
+              (value) =>
+                String(
+                  value || '',
+                ).trim(),
+            )
+            .filter(
+              (value) =>
+                value &&
+                value !==
+                  args.actorId &&
+                Types.ObjectId
+                  .isValid(value),
+            ),
+        ),
+      );
+
+    for (
+      const recipientId
+      of recipients
+    ) {
+      try {
+        await this.notifications
+          .notify({
+            userId:
+              recipientId,
+
+            type:
+              NotificationType
+                .PROJECT_UPDATE,
+
+            title:
+              args.title,
+
+            body:
+              args.body,
+
+            icon:
+              args.icon ||
+              'handshake',
+
+            priority:
+              NotificationPriority
+                .NORMAL,
+
+            triggeredBy:
+              args.actorId,
+
+            data: {
+              projectId:
+                args.projectId,
+
+              emailFanoutEligible:
+                true,
+
+              projectMemberNotification:
+                true,
+
+              extra: {
+                eventType:
+                  args.eventType,
+
+                commitmentId:
+                  args.commitmentId,
+              },
+            },
+
+            actions: [
+              {
+                label:
+                  'View Project',
+
+                url:
+                  `/projects/${args.projectId}`,
+              },
+            ],
+
+            groupKey:
+              `${args.eventType}-` +
+              `${args.commitmentId}-` +
+              `${recipientId}`,
+          });
+      } catch (_error) {
+        // Notification delivery must never roll back
+        // a successful Commitment mutation.
+      }
+    }
+  }
 
   private normalizeProjectUserId(
     value: any,
@@ -346,8 +472,9 @@ export class CommitmentsService {
         sourceMoveId,
       );
 
-    return this.commitmentModel
-      .create({
+    const created =
+      await this.commitmentModel
+        .create({
         projectId:
           new Types.ObjectId(
             projectId,
@@ -383,6 +510,35 @@ export class CommitmentsService {
               )
             : null,
       });
+
+    await this
+      .notifyCommitmentRecipients({
+        recipientIds: [
+          ownerId,
+        ],
+
+        actorId:
+          userId,
+
+        projectId,
+
+        commitmentId:
+          created._id.toString(),
+
+        eventType:
+          'commitment.created',
+
+        title:
+          'Commitment assigned',
+
+        body:
+          title,
+
+        icon:
+          'handshake',
+      });
+
+    return created;
   }
 
   async update(
@@ -425,6 +581,19 @@ export class CommitmentsService {
         'Commitment not found',
       );
     }
+
+    const previousOwnerId =
+      this.normalizeProjectUserId(
+        item.ownerId,
+      );
+
+    const previousStatus =
+      item.status;
+
+    const createdBy =
+      this.normalizeProjectUserId(
+        item.createdBy,
+      );
 
     if (
       dto.title !== undefined
@@ -539,6 +708,121 @@ export class CommitmentsService {
       }
     }
 
-    return item.save();
+    const saved =
+      await item.save();
+
+    const nextOwnerId =
+      this.normalizeProjectUserId(
+        saved.ownerId,
+      );
+
+    if (
+      previousOwnerId !==
+      nextOwnerId
+    ) {
+      await this
+        .notifyCommitmentRecipients({
+          recipientIds: [
+            previousOwnerId,
+            nextOwnerId,
+            createdBy,
+          ],
+
+          actorId:
+            userId,
+
+          projectId,
+
+          commitmentId:
+            saved._id.toString(),
+
+          eventType:
+            'commitment.reassigned',
+
+          title:
+            'Commitment reassigned',
+
+          body:
+            saved.title,
+
+          icon:
+            'users',
+        });
+    }
+
+    if (
+      previousStatus !==
+      saved.status
+    ) {
+      let eventType =
+        'commitment.updated';
+
+      let notificationTitle =
+        'Commitment updated';
+
+      if (
+        saved.status ===
+        CommitmentStatus.FULFILLED
+      ) {
+        eventType =
+          'commitment.fulfilled';
+
+        notificationTitle =
+          'Commitment completed';
+      }
+
+      if (
+        saved.status ===
+        CommitmentStatus.CANCELLED
+      ) {
+        eventType =
+          'commitment.cancelled';
+
+        notificationTitle =
+          'Commitment cancelled';
+      }
+
+      if (
+        saved.status ===
+          CommitmentStatus.ACTIVE &&
+        previousStatus !==
+          CommitmentStatus.ACTIVE
+      ) {
+        eventType =
+          'commitment.reopened';
+
+        notificationTitle =
+          'Commitment reopened';
+      }
+
+      await this
+        .notifyCommitmentRecipients({
+          recipientIds: [
+            nextOwnerId,
+            createdBy,
+          ],
+
+          actorId:
+            userId,
+
+          projectId,
+
+          commitmentId:
+            saved._id.toString(),
+
+          eventType,
+
+          title:
+            notificationTitle,
+
+          body:
+            saved.title,
+
+          icon:
+            'handshake',
+        });
+    }
+
+    return saved;
   }
 }
