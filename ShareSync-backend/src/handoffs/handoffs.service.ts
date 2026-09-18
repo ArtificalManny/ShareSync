@@ -487,6 +487,9 @@ export class HandoffsService {
       triggeredBy: userId,
 
       data: {
+        emailFanoutEligible: true,
+        projectMemberNotification:
+          true,
         projectId,
         taskId:
           sourceMoveId || undefined,
@@ -746,6 +749,9 @@ export class HandoffsService {
         triggeredBy: userId,
 
         data: {
+        emailFanoutEligible: true,
+        projectMemberNotification:
+          true,
           projectId,
           taskId:
             sourceMoveId || undefined,
@@ -797,6 +803,9 @@ export class HandoffsService {
         triggeredBy: userId,
 
         data: {
+        emailFanoutEligible: true,
+        projectMemberNotification:
+          true,
           projectId,
           taskId:
             sourceMoveId || undefined,
@@ -848,6 +857,9 @@ export class HandoffsService {
         triggeredBy: userId,
 
         data: {
+        emailFanoutEligible: true,
+        projectMemberNotification:
+          true,
           projectId,
           taskId:
             sourceMoveId || undefined,
