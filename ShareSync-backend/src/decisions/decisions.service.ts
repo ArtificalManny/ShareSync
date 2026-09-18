@@ -14,6 +14,15 @@ import {
 } from 'mongoose';
 
 import {
+  NotificationsService,
+} from '../notifications/notifications.service';
+
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
+
+import {
   ProjectsService,
 } from '../projects/projects.service';
 
@@ -34,6 +43,7 @@ import {
   Decision,
   DecisionDocument,
   DecisionSourceType,
+  DecisionStatus,
 } from './schemas/decision.schema';
 
 @Injectable()
@@ -49,7 +59,207 @@ export class DecisionsService {
 
     private readonly projectsService:
       ProjectsService,
+
+    private readonly notifications:
+      NotificationsService,
   ) {}
+
+  // openshare-decision-email-v1
+  private normalizeProjectUserId(
+    value: any,
+  ): string {
+    if (!value) return '';
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number'
+    ) {
+      return String(value).trim();
+    }
+
+    if (
+      value instanceof
+      Types.ObjectId
+    ) {
+      return value.toString();
+    }
+
+    return this.normalizeProjectUserId(
+      value?.userId ||
+        value?.user ||
+        value?.memberId ||
+        value?.member ||
+        value?._id ||
+        value?.id,
+    );
+  }
+
+  private getProjectParticipantIds(
+    project: any,
+  ): Set<string> {
+    const ids =
+      new Set<string>();
+
+    const add = (
+      value: any,
+    ) => {
+      const id =
+        this.normalizeProjectUserId(
+          value,
+        );
+
+      if (
+        id &&
+        Types.ObjectId.isValid(id)
+      ) {
+        ids.add(id);
+      }
+    };
+
+    add(project?.ownerId);
+    add(project?.owner);
+    add(project?.createdBy);
+    add(project?.createdById);
+
+    const collections = [
+      project?.members,
+      project?.teamMembers,
+      project?.participants,
+      project?.collaborators,
+    ];
+
+    for (
+      const collection
+      of collections
+    ) {
+      if (
+        !Array.isArray(
+          collection,
+        )
+      ) {
+        continue;
+      }
+
+      collection.forEach(
+        (member: any) => {
+          add(member);
+        },
+      );
+    }
+
+    return ids;
+  }
+
+  private async notifyDecisionRecipients(
+    args: {
+      recipientIds:
+        Array<
+          string |
+          null |
+          undefined
+        >;
+      actorId: string;
+      projectId: string;
+      decisionId: string;
+      eventType: string;
+      title: string;
+      body: string;
+    },
+  ): Promise<void> {
+    const recipients =
+      Array.from(
+        new Set(
+          (
+            args.recipientIds ||
+            []
+          )
+            .map(
+              (value) =>
+                String(
+                  value || '',
+                ).trim(),
+            )
+            .filter(
+              (value) =>
+                value &&
+                value !==
+                  args.actorId &&
+                Types.ObjectId
+                  .isValid(value),
+            ),
+        ),
+      );
+
+    for (
+      const recipientId
+      of recipients
+    ) {
+      try {
+        await this.notifications
+          .notify({
+            userId:
+              recipientId,
+
+            type:
+              NotificationType
+                .PROJECT_UPDATE,
+
+            title:
+              args.title,
+
+            body:
+              args.body,
+
+            icon:
+              'file-text',
+
+            priority:
+              NotificationPriority
+                .NORMAL,
+
+            triggeredBy:
+              args.actorId,
+
+            data: {
+              projectId:
+                args.projectId,
+
+              emailFanoutEligible:
+                true,
+
+              projectMemberNotification:
+                true,
+
+              extra: {
+                eventType:
+                  args.eventType,
+
+                decisionId:
+                  args.decisionId,
+              },
+            },
+
+            actions: [
+              {
+                label:
+                  'View Project',
+
+                url:
+                  `/projects/${args.projectId}`,
+              },
+            ],
+
+            groupKey:
+              `${args.eventType}-` +
+              `${args.decisionId}-` +
+              `${recipientId}`,
+          });
+      } catch (_error) {
+        // Notification delivery must never
+        // roll back a successful Decision mutation.
+      }
+    }
+  }
 
   private async assertProjectAccess(
     projectId: string,
@@ -134,10 +344,11 @@ export class DecisionsService {
     userId: string,
     dto: CreateDecisionDto,
   ) {
-    await this.assertProjectAccess(
-      projectId,
-      userId,
-    );
+    const project =
+      await this.assertProjectAccess(
+        projectId,
+        userId,
+      );
 
     if (
       !Types.ObjectId.isValid(userId)
@@ -246,6 +457,33 @@ export class DecisionsService {
             : null,
       });
 
+    await this
+      .notifyDecisionRecipients({
+        recipientIds:
+          Array.from(
+            this.getProjectParticipantIds(
+              project,
+            ),
+          ),
+
+        actorId:
+          userId,
+
+        projectId,
+
+        decisionId:
+          created._id.toString(),
+
+        eventType:
+          'decision.recorded',
+
+        title:
+          'Decision recorded',
+
+        body:
+          created.title,
+      });
+
     return created;
   }
 
@@ -255,10 +493,11 @@ export class DecisionsService {
     userId: string,
     dto: UpdateDecisionDto,
   ) {
-    await this.assertProjectAccess(
-      projectId,
-      userId,
-    );
+    const project =
+      await this.assertProjectAccess(
+        projectId,
+        userId,
+      );
 
     if (
       !Types.ObjectId.isValid(
@@ -288,6 +527,24 @@ export class DecisionsService {
         'Decision not found',
       );
     }
+
+    const previousTitle =
+      String(
+        item.title || '',
+      );
+
+    const previousDecision =
+      String(
+        item.decision || '',
+      );
+
+    const previousRationale =
+      String(
+        item.rationale || '',
+      );
+
+    const previousStatus =
+      item.status;
 
     if (
       dto.title !== undefined
@@ -336,6 +593,90 @@ export class DecisionsService {
       item.status = dto.status;
     }
 
-    return item.save();
+    const saved =
+      await item.save();
+
+    const statusChanged =
+      previousStatus !==
+      saved.status;
+
+    const contentChanged =
+      previousTitle !==
+        String(
+          saved.title || '',
+        ) ||
+      previousDecision !==
+        String(
+          saved.decision || '',
+        ) ||
+      previousRationale !==
+        String(
+          saved.rationale || '',
+        );
+
+    if (
+      statusChanged ||
+      contentChanged
+    ) {
+      let eventType =
+        'decision.updated';
+
+      let notificationTitle =
+        'Decision updated';
+
+      if (
+        statusChanged &&
+        saved.status ===
+          DecisionStatus.SUPERSEDED
+      ) {
+        eventType =
+          'decision.superseded';
+
+        notificationTitle =
+          'Decision superseded';
+      }
+
+      if (
+        statusChanged &&
+        saved.status ===
+          DecisionStatus.ACTIVE &&
+        previousStatus ===
+          DecisionStatus.SUPERSEDED
+      ) {
+        eventType =
+          'decision.reactivated';
+
+        notificationTitle =
+          'Decision reactivated';
+      }
+
+      await this
+        .notifyDecisionRecipients({
+          recipientIds:
+            Array.from(
+              this.getProjectParticipantIds(
+                project,
+              ),
+            ),
+
+          actorId:
+            userId,
+
+          projectId,
+
+          decisionId:
+            saved._id.toString(),
+
+          eventType,
+
+          title:
+            notificationTitle,
+
+          body:
+            saved.title,
+        });
+    }
+
+    return saved;
   }
 }

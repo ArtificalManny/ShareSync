@@ -15,6 +15,15 @@ import {
 } from 'mongoose';
 
 import {
+  NotificationsService,
+} from '../notifications/notifications.service';
+
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/schemas/notification.schema';
+
+import {
   ProjectsService,
 } from '../projects/projects.service';
 
@@ -56,7 +65,122 @@ export class AsyncCheckInsService {
 
     private readonly projectsService:
       ProjectsService,
+
+    private readonly notifications:
+      NotificationsService,
   ) {}
+
+  // openshare-async-check-in-email-v1
+  private async notifyCheckInRecipients(
+    args: {
+      recipientIds:
+        Array<
+          string |
+          null |
+          undefined
+        >;
+      actorId: string;
+      projectId: string;
+      checkInId: string;
+      eventType: string;
+      title: string;
+      body: string;
+    },
+  ): Promise<void> {
+    const recipients =
+      Array.from(
+        new Set(
+          (
+            args.recipientIds ||
+            []
+          )
+            .map(
+              (value) =>
+                String(
+                  value || '',
+                ).trim(),
+            )
+            .filter(
+              (value) =>
+                value &&
+                value !==
+                  args.actorId &&
+                Types.ObjectId
+                  .isValid(value),
+            ),
+        ),
+      );
+
+    for (
+      const recipientId
+      of recipients
+    ) {
+      try {
+        await this.notifications
+          .notify({
+            userId:
+              recipientId,
+
+            type:
+              NotificationType
+                .PROJECT_UPDATE,
+
+            title:
+              args.title,
+
+            body:
+              args.body,
+
+            icon:
+              'clipboard-check',
+
+            priority:
+              NotificationPriority
+                .NORMAL,
+
+            triggeredBy:
+              args.actorId,
+
+            data: {
+              projectId:
+                args.projectId,
+
+              emailFanoutEligible:
+                true,
+
+              projectMemberNotification:
+                true,
+
+              extra: {
+                eventType:
+                  args.eventType,
+
+                checkInId:
+                  args.checkInId,
+              },
+            },
+
+            actions: [
+              {
+                label:
+                  'View Project',
+
+                url:
+                  `/projects/${args.projectId}`,
+              },
+            ],
+
+            groupKey:
+              `${args.eventType}-` +
+              `${args.checkInId}-` +
+              `${recipientId}`,
+          });
+      } catch (_error) {
+        // Notification delivery must never
+        // roll back a successful Check-in mutation.
+      }
+    }
+  }
 
   private normalizeProjectUserId(
     value: any,
@@ -539,6 +663,29 @@ export class AsyncCheckInsService {
           closedAt: null,
         });
 
+    await this
+      .notifyCheckInRecipients({
+        recipientIds:
+          participantIds,
+
+        actorId:
+          userId,
+
+        projectId,
+
+        checkInId:
+          String(created._id),
+
+        eventType:
+          'async_check_in.created',
+
+        title:
+          'Async Check-in created',
+
+        body:
+          title,
+      });
+
     return this.findOne(
       projectId,
       String(created._id),
@@ -563,6 +710,9 @@ export class AsyncCheckInsService {
         projectId,
         checkInId,
       );
+
+    const previousStatus =
+      checkIn.status;
 
     this.assertCanManageCheckIn(
       project,
@@ -633,6 +783,47 @@ export class AsyncCheckInsService {
     }
 
     await checkIn.save();
+
+    if (
+      previousStatus !==
+      checkIn.status
+    ) {
+      const isClosed =
+        checkIn.status ===
+        AsyncCheckInStatus.CLOSED;
+
+      await this
+        .notifyCheckInRecipients({
+          recipientIds:
+            (
+              checkIn.participantIds ||
+              []
+            ).map(
+              (id: any) =>
+                String(id),
+            ),
+
+          actorId:
+            userId,
+
+          projectId,
+
+          checkInId,
+
+          eventType:
+            isClosed
+              ? 'async_check_in.closed'
+              : 'async_check_in.reopened',
+
+          title:
+            isClosed
+              ? 'Async Check-in closed'
+              : 'Async Check-in reopened',
+
+          body:
+            checkIn.title,
+        });
+    }
 
     return this.findOne(
       projectId,
@@ -714,6 +905,22 @@ export class AsyncCheckInsService {
       );
     }
 
+    const existingResponse =
+      await this.responseModel
+        .findOne({
+          checkInId:
+            new Types.ObjectId(
+              checkInId,
+            ),
+
+          userId:
+            new Types.ObjectId(
+              userId,
+            ),
+        })
+        .select('_id')
+        .lean();
+
     await this.responseModel
       .findOneAndUpdate(
         {
@@ -757,6 +964,35 @@ export class AsyncCheckInsService {
           runValidators: true,
         },
       );
+
+    await this
+      .notifyCheckInRecipients({
+        recipientIds: [
+          this.normalizeProjectUserId(
+            checkIn.createdBy,
+          ),
+        ],
+
+        actorId:
+          userId,
+
+        projectId,
+
+        checkInId,
+
+        eventType:
+          existingResponse
+            ? 'async_check_in.response_updated'
+            : 'async_check_in.response_submitted',
+
+        title:
+          existingResponse
+            ? 'Check-in response updated'
+            : 'Check-in response submitted',
+
+        body:
+          checkIn.title,
+      });
 
     return this.findOne(
       projectId,
