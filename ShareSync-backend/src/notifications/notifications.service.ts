@@ -1168,6 +1168,14 @@ export class NotificationsService {
           payload.blockerReason || '',
         escalationNote:
           payload.escalationNote || '',
+
+        emailFanoutEligible: true,
+        projectMemberNotification: true,
+
+        extra: {
+          eventType:
+            'task.blocker.escalated',
+        },
       } as any,
       actions: [
         {

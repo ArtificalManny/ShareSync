@@ -790,6 +790,10 @@ export class TasksService {
     const previousEscalatedToId =
       (task as any).escalatedToId?.toString?.() || null;
 
+    const previousBlockerOwnerId =
+      (task as any).blockerOwnerId
+        ?.toString?.() || null;
+
     if (dto.status && dto.status !== task.status) {
       if (dto.status === TaskStatus.DONE) {
         throw new BadRequestException('Use the complete endpoint to mark tasks as done');
@@ -1167,6 +1171,419 @@ export class TasksService {
     const updatedEscalatedToId =
       (updated as any).escalatedToId
         ?.toString?.() || null;
+
+    const updatedIsBlocked =
+      !!(updated as any).isBlocked;
+
+    const updatedBlockerOwnerId =
+      (updated as any).blockerOwnerId
+        ?.toString?.() || null;
+
+    const blockerOpened =
+      !previousIsBlocked &&
+      updatedIsBlocked;
+
+    const blockerResolved =
+      previousIsBlocked &&
+      !updatedIsBlocked;
+
+    const blockerOwnerChanged =
+      updatedIsBlocked &&
+      !blockerOpened &&
+      previousBlockerOwnerId !==
+        updatedBlockerOwnerId;
+
+    const escalationReassigned =
+      previousEscalationLevel === 1 &&
+      updatedEscalationLevel === 1 &&
+      !!updatedEscalatedToId &&
+      previousEscalatedToId !==
+        updatedEscalatedToId;
+
+    const escalationCleared =
+      updatedIsBlocked &&
+      previousEscalationLevel === 1 &&
+      updatedEscalationLevel === 0;
+
+    // openshare-blocker-email-v1
+    const notifyBlockerRecipients =
+      async (
+        args: {
+          eventType: string;
+          title: string;
+          body: string;
+          recipientIds?: any[];
+          excludeUserIds?: any[];
+          priority?:
+            NotificationPriority;
+          extra?:
+            Record<string, any>;
+        },
+      ) => {
+        try {
+          let notificationsService:
+            | NotificationsService
+            | null = null;
+
+          try {
+            notificationsService =
+              this.moduleRef.get(
+                NotificationsService,
+                { strict: false },
+              );
+          } catch (_error) {}
+
+          if (
+            !notificationsService
+              ?.notify
+          ) {
+            return;
+          }
+
+          blockerProject =
+            blockerProject ||
+            await this.projectsService
+              .findByIdWithAccess(
+                updated.projectId
+                  .toString(),
+                userId,
+              );
+
+          const watcherIds =
+            this
+              .getTaskWatcherIdsForPreference(
+                updated,
+                'statusChanges',
+              );
+
+          const projectOwnerIds = [
+            (blockerProject as any)
+              ?.ownerId,
+            (blockerProject as any)
+              ?.owner,
+            (blockerProject as any)
+              ?.createdBy,
+            (blockerProject as any)
+              ?.createdById,
+          ];
+
+          const excluded =
+            new Set(
+              [
+                userId,
+                ...(
+                  args.excludeUserIds ||
+                  []
+                ),
+              ]
+                .map(
+                  (value) =>
+                    normalizeProjectUserId(
+                      value,
+                    ),
+                )
+                .filter(Boolean),
+            );
+
+          const recipients =
+            [
+              ...new Set(
+                [
+                  ...projectOwnerIds,
+                  (updated as any)
+                    .assigneeId,
+                  (updated as any)
+                    .reporterId,
+                  updatedBlockerOwnerId,
+                  ...watcherIds,
+                  ...(
+                    args.recipientIds ||
+                    []
+                  ),
+                ]
+                  .map(
+                    (value) =>
+                      normalizeProjectUserId(
+                        value,
+                      ),
+                  )
+                  .filter(
+                    (id) =>
+                      id &&
+                      Types.ObjectId
+                        .isValid(id) &&
+                      !excluded.has(id),
+                  ),
+              ),
+            ];
+
+          if (!recipients.length) {
+            return;
+          }
+
+          const projectName =
+            String(
+              (blockerProject as any)
+                ?.name ||
+              (blockerProject as any)
+                ?.title ||
+              'Project',
+            );
+
+          const taskId =
+            updated._id.toString();
+
+          const taskTitle =
+            String(
+              updated.title ||
+              'Move',
+            );
+
+          for (
+            const recipientId
+            of recipients
+          ) {
+            try {
+              await notificationsService
+                .notify({
+                  userId:
+                    recipientId,
+
+                  type:
+                    NotificationType
+                      .TASK_UPDATED,
+
+                  title:
+                    args.title,
+
+                  body:
+                    args.body,
+
+                  icon:
+                    '⚠️',
+
+                  priority:
+                    args.priority ||
+                    NotificationPriority
+                      .NORMAL,
+
+                  triggeredBy:
+                    userId,
+
+                  data: {
+                    projectId:
+                      updated.projectId
+                        .toString(),
+
+                    projectName,
+
+                    taskId,
+
+                    taskTitle,
+
+                    emailFanoutEligible:
+                      true,
+
+                    projectMemberNotification:
+                      true,
+
+                    extra: {
+                      eventType:
+                        args.eventType,
+
+                      blockerReason:
+                        (updated as any)
+                          .blockerReason ||
+                        '',
+
+                      blockerOwnerId:
+                        updatedBlockerOwnerId,
+
+                      escalationLevel:
+                        updatedEscalationLevel,
+
+                      escalatedToId:
+                        updatedEscalatedToId,
+
+                      ...(
+                        args.extra ||
+                        {}
+                      ),
+                    },
+                  } as any,
+
+                  actions: [
+                    {
+                      label:
+                        'View Move',
+
+                      url:
+                        `/projects/` +
+                        `${updated.projectId.toString()}` +
+                        `/tasks/${taskId}`,
+                    },
+                  ],
+
+                  groupKey:
+                    `${args.eventType}-` +
+                    `${recipientId}-` +
+                    `${taskId}`,
+                });
+            } catch (
+              recipientError
+            ) {
+              this.logger.warn(
+                `Blocker notification failed for user ${recipientId}: ${
+                  (recipientError as any)
+                    ?.message ||
+                  recipientError
+                }`,
+              );
+            }
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Blocker email notification skipped: ${
+              (error as any)
+                ?.message ||
+              error
+            }`,
+          );
+        }
+      };
+
+    if (blockerOpened) {
+      const blockerReason =
+        String(
+          (updated as any)
+            .blockerReason ||
+          '',
+        ).trim();
+
+      await notifyBlockerRecipients({
+        eventType:
+          'task.blocker.opened',
+
+        title:
+          'Move blocked',
+
+        body:
+          blockerReason
+            ? `${updated.title}: ${blockerReason}`
+            : `${updated.title} is blocked.`,
+
+        recipientIds: [
+          updatedBlockerOwnerId,
+        ],
+
+        priority:
+          NotificationPriority.HIGH,
+      });
+    }
+
+    if (blockerResolved) {
+      await notifyBlockerRecipients({
+        eventType:
+          'task.blocker.resolved',
+
+        title:
+          'Blocker resolved',
+
+        body:
+          `${updated.title} is no longer blocked.`,
+
+        recipientIds: [
+          previousBlockerOwnerId,
+          previousEscalatedToId,
+        ],
+
+        priority:
+          NotificationPriority.NORMAL,
+      });
+    }
+
+    if (blockerOwnerChanged) {
+      await notifyBlockerRecipients({
+        eventType:
+          'task.blocker.owner_changed',
+
+        title:
+          'Blocker resolver changed',
+
+        body:
+          `The blocker resolver changed for ${updated.title}.`,
+
+        recipientIds: [
+          previousBlockerOwnerId,
+          updatedBlockerOwnerId,
+        ],
+
+        priority:
+          NotificationPriority.NORMAL,
+
+        extra: {
+          previousBlockerOwnerId,
+          newBlockerOwnerId:
+            updatedBlockerOwnerId,
+        },
+      });
+    }
+
+    if (escalationReassigned) {
+      await notifyBlockerRecipients({
+        eventType:
+          'task.blocker.escalation_reassigned',
+
+        title:
+          'Blocker escalation reassigned',
+
+        body:
+          `The escalation for ${updated.title} was reassigned.`,
+
+        recipientIds: [
+          previousEscalatedToId,
+        ],
+
+        // The new recipient receives the existing
+        // task.blocker.escalated URGENT notification.
+        excludeUserIds: [
+          updatedEscalatedToId,
+        ],
+
+        priority:
+          NotificationPriority.HIGH,
+
+        extra: {
+          previousEscalatedToId,
+          newEscalatedToId:
+            updatedEscalatedToId,
+        },
+      });
+    }
+
+    if (escalationCleared) {
+      await notifyBlockerRecipients({
+        eventType:
+          'task.blocker.escalation_cleared',
+
+        title:
+          'Blocker escalation cleared',
+
+        body:
+          `The escalation for ${updated.title} was cleared.`,
+
+        recipientIds: [
+          previousEscalatedToId,
+        ],
+
+        priority:
+          NotificationPriority.NORMAL,
+
+        extra: {
+          previousEscalatedToId,
+        },
+      });
+    }
 
     const escalationTriggered =
       updatedEscalationLevel === 1 &&
