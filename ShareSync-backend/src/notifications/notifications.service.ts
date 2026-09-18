@@ -827,6 +827,7 @@ export class NotificationsService {
             projectId: payload.projectId,
             projectName,
             emailFanoutEligible: true,
+            projectMemberNotification: true,
           } as any,
           actions: [
             {

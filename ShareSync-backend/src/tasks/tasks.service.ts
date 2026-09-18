@@ -2142,15 +2142,55 @@ export class TasksService {
         });
       };
 
-      const members = Array.isArray((projectForTaskCompletedNotification as any)?.members)
-        ? (projectForTaskCompletedNotification as any).members
-        : [];
+      // openshare-task-completion-membership-v2
+      const completionMemberSources = [
+        ...(Array.isArray(
+          (projectForTaskCompletedNotification as any)?.members,
+        )
+          ? (projectForTaskCompletedNotification as any).members
+          : []),
 
-      for (const member of members) {
+        ...(Array.isArray(
+          (projectForTaskCompletedNotification as any)?.sharedWith,
+        )
+          ? (projectForTaskCompletedNotification as any).sharedWith
+          : []),
+
+        ...(Array.isArray(
+          (projectForTaskCompletedNotification as any)?.participantIds,
+        )
+          ? (projectForTaskCompletedNotification as any).participantIds
+          : []),
+
+        ...(Array.isArray(
+          (projectForTaskCompletedNotification as any)?.collaborators,
+        )
+          ? (projectForTaskCompletedNotification as any).collaborators
+          : []),
+      ];
+
+      for (
+        const member
+        of completionMemberSources
+      ) {
+        const memberUserId =
+          member?.userId?._id ||
+          member?.userId ||
+          member?.user?._id ||
+          member?.user ||
+          member?._id ||
+          member;
+
+        const memberId =
+          member?.memberId?._id ||
+          member?.memberId ||
+          null;
+
         addProjectMember(
-          member?.userId,
-          member?.memberId,
-          member?.preferences?.notifications !== false,
+          memberUserId,
+          memberId,
+          member?.preferences
+            ?.notifications !== false,
         );
       }
 
