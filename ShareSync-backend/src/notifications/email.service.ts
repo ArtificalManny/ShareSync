@@ -18,6 +18,15 @@ type EmailChannelState = {
 
 type UserLike = {
   email?: string;
+
+  // Canonical account/settings fields.
+  isEmailVerified?: boolean;
+  emailOptOut?: boolean;
+  settings?: {
+    emailNotifications?: boolean;
+  };
+
+  // Legacy notification-channel fields kept for backward compatibility.
   notificationChannels?: {
     email?: EmailChannelState;
   };
@@ -761,14 +770,40 @@ export class EmailService {
   }
 
   private isEmailAllowed(user: UserLike): boolean {
-    const verified = Boolean(user?.notificationChannels?.email?.verified);
-    const optIn = Boolean(user?.notificationChannels?.email?.optIn);
+    // openshare-email-eligibility-v2
+    const verified =
+      user?.isEmailVerified === true ||
+      user?.notificationChannels?.email?.verified === true;
 
-    // Optional global/channel prefs (default true if undefined; gating already strict)
-    const channelEnabled = user?.notificationPrefs?.channels?.email;
-    const channelOk = channelEnabled === undefined ? true : Boolean(channelEnabled);
+    if (!verified) {
+      return false;
+    }
 
-    return verified && optIn && channelOk;
+    if (user?.emailOptOut === true) {
+      return false;
+    }
+
+    // The visible "Email activity updates" preference is canonical.
+    const activityEnabled =
+      user?.settings?.emailNotifications;
+
+    if (activityEnabled !== undefined) {
+      return activityEnabled !== false;
+    }
+
+    // Backward compatibility for older users that do not yet have the
+    // canonical settings field populated.
+    const legacyChannelEnabled =
+      user?.notificationPrefs
+        ?.channels
+        ?.email;
+
+    if (legacyChannelEnabled !== undefined) {
+      return legacyChannelEnabled !== false;
+    }
+
+    // A verified user with no explicit opt-out remains eligible.
+    return true;
   }
 
   private buildFrontendUrl(rawUrl?: string): string {

@@ -957,6 +957,20 @@ export class UserService {
         weeklyReport: (user as any).settings?.weeklyDigest ?? true,
         emailActivity: (user as any).settings?.emailNotifications ?? true,
       },
+
+      // openshare-notification-settings-v2
+      // Current Settings.jsx reads `settings.notifications`.
+      notifications: {
+        emailActivity:
+          (user as any).settings?.emailNotifications ?? true,
+        emailDigest:
+          (user as any).settings?.weeklyDigest ?? true,
+        projectInvites: true,
+        taskAssignments: true,
+        mentionAlerts: true,
+        billingAlerts: true,
+      },
+
       privacySettings: {
         profilePublic: (user as any).publicProfile ?? false,
         showActivity: (user as any).preferences?.privacy?.showActivity ?? true,
@@ -988,14 +1002,53 @@ export class UserService {
       if (settingsDto[field] !== undefined) { (user as any)[field] = settingsDto[field]; }
     }
 
-    if (settingsDto.notificationSettings) {
-      const ns = settingsDto.notificationSettings;
+    if (
+      settingsDto.notificationSettings ||
+      settingsDto.notifications
+    ) {
+      const ns = {
+        ...(settingsDto.notificationSettings || {}),
+        ...(settingsDto.notifications || {}),
+      };
+
       (user as any).settings = {
         ...((user as any).settings || {}),
-        emailNotifications: ns.emailActivity ?? (user as any).settings?.emailNotifications ?? true,
-        pushNotifications: ns.pushNotifications ?? (user as any).settings?.pushNotifications ?? true,
-        weeklyDigest: ns.weeklyReport ?? (user as any).settings?.weeklyDigest ?? true,
+
+        emailNotifications:
+          ns.emailActivity ??
+          (user as any).settings?.emailNotifications ??
+          true,
+
+        pushNotifications:
+          ns.pushNotifications ??
+          (user as any).settings?.pushNotifications ??
+          true,
+
+        weeklyDigest:
+          ns.emailDigest ??
+          ns.weeklyReport ??
+          (user as any).settings?.weeklyDigest ??
+          true,
       };
+
+      // Keep the older channel preference synchronized when the visible
+      // Email Activity setting is explicitly changed.
+      if (ns.emailActivity !== undefined) {
+        const existingPrefs =
+          (user as any).notificationPrefs || {};
+
+        const existingChannels =
+          existingPrefs.channels || {};
+
+        (user as any).notificationPrefs = {
+          ...existingPrefs,
+          channels: {
+            ...existingChannels,
+            email:
+              Boolean(ns.emailActivity),
+          },
+        };
+      }
     }
 
     if (settingsDto.privacySettings) { (user as any).publicProfile = settingsDto.privacySettings.profilePublic ?? (user as any).publicProfile; }
