@@ -426,21 +426,60 @@ const Avatar = ({ user, size = 'md', className = '' }) => {
    TYPING INDICATOR - Adaptive
 ───────────────────────────────────────────────────────────────────────── */
 const TypingIndicator = ({ users }) => {
-  if (!users || users.length === 0) return null;
+  if (!Array.isArray(users) || users.length === 0) {
+    return null;
+  }
 
-  const text = users.length === 1
-    ? `${users[0]} is typing...`
-    : users.length === 2
-    ? `${users[0]} and ${users[1]} are typing...`
-    : `${users[0]} and ${users.length - 1} others are typing...`;
+  const names = users
+    .map((user) => {
+      if (typeof user === 'string') {
+        return user.trim();
+      }
+
+      return String(
+        user?.name ||
+        user?.username ||
+        'Someone',
+      ).trim();
+    })
+    .filter(Boolean);
+
+  if (names.length === 0) {
+    return null;
+  }
+
+  const text =
+    names.length === 1
+      ? `${names[0]} is typing`
+      : names.length === 2
+        ? `${names[0]} and ${names[1]} are typing`
+        : `${names[0]} and ${names.length - 1} others are typing`;
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 text-xs text-slate-500 dark:text-zinc-400">
-      <div className="flex gap-1">
-        <span className="w-1.5 h-1.5 bg-violet-500 dark:bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-1.5 h-1.5 bg-violet-500 dark:bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-1.5 h-1.5 bg-violet-500 dark:bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+    <div
+      className="messages-typing-indicator flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-slate-500 dark:text-zinc-400"
+      role="status"
+      aria-live="polite"
+      aria-label={text}
+    >
+      <div
+        className="flex items-center gap-1"
+        aria-hidden="true"
+      >
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce dark:bg-violet-400"
+          style={{ animationDelay: '0ms' }}
+        />
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce dark:bg-violet-400"
+          style={{ animationDelay: '150ms' }}
+        />
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce dark:bg-violet-400"
+          style={{ animationDelay: '300ms' }}
+        />
       </div>
+
       <span>{text}</span>
     </div>
   );
@@ -830,6 +869,9 @@ export default function Messages() {
   const typingTimeoutRef = useRef(null);
   const lastTypingRef = useRef(0);
 
+  // messages-realtime-typing-indicator-v1
+  const remoteTypingTimeoutsRef = useRef({});
+
   useEffect(() => {
     if (!conversationMenuOpen) return undefined;
 
@@ -1063,20 +1105,115 @@ export default function Messages() {
     queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
   }, [selectedConversationId, queryClient]));
 
-  useSocketEvent?.('typing:user', useCallback((data) => {
-    if (String(data.conversationId) !== String(selectedConversationId)) return;
-
-    setTypingUsers(prev => {
-      if (data.isTyping) {
-        if (!prev.includes(data.username)) {
-          return [...prev, data.username];
+  useSocketEvent?.(
+    'typing:user',
+    useCallback(
+      (data) => {
+        if (
+          !data?.conversationId ||
+          String(data.conversationId) !==
+            String(selectedConversationId)
+        ) {
+          return;
         }
-      } else {
-        return prev.filter(u => u !== data.username);
-      }
-      return prev;
-    });
-  }, [selectedConversationId]));
+
+        const remoteUserId =
+          data?.userId != null
+            ? String(data.userId)
+            : '';
+
+        if (
+          !remoteUserId ||
+          (
+            currentUserId &&
+            remoteUserId === String(currentUserId)
+          )
+        ) {
+          return;
+        }
+
+        const remoteName =
+          String(
+            data?.username ||
+            getSafeDisplayName(
+              selectedConversation,
+              currentUser,
+            ) ||
+            'Someone',
+          ).trim() || 'Someone';
+
+        if (
+          remoteTypingTimeoutsRef.current[
+            remoteUserId
+          ]
+        ) {
+          clearTimeout(
+            remoteTypingTimeoutsRef.current[
+              remoteUserId
+            ],
+          );
+
+          delete remoteTypingTimeoutsRef.current[
+            remoteUserId
+          ];
+        }
+
+        if (data.isTyping) {
+          setTypingUsers((previous) => {
+            const withoutUser =
+              previous.filter(
+                (user) =>
+                  String(
+                    user?.userId || '',
+                  ) !== remoteUserId,
+              );
+
+            return [
+              ...withoutUser,
+              {
+                userId: remoteUserId,
+                name: remoteName,
+              },
+            ];
+          });
+
+          remoteTypingTimeoutsRef.current[
+            remoteUserId
+          ] = setTimeout(() => {
+            setTypingUsers((previous) =>
+              previous.filter(
+                (user) =>
+                  String(
+                    user?.userId || '',
+                  ) !== remoteUserId,
+              ),
+            );
+
+            delete remoteTypingTimeoutsRef.current[
+              remoteUserId
+            ];
+          }, 4500);
+
+          return;
+        }
+
+        setTypingUsers((previous) =>
+          previous.filter(
+            (user) =>
+              String(
+                user?.userId || '',
+              ) !== remoteUserId,
+          ),
+        );
+      },
+      [
+        selectedConversationId,
+        selectedConversation,
+        currentUser,
+        currentUserId,
+      ],
+    ),
+  );
 
   useSocketEvent?.('message:edited', useCallback((data) => {
     if (String(data.conversationId) === String(selectedConversationId)) {
@@ -1211,32 +1348,102 @@ export default function Messages() {
   });
 
   const handleSelectConversation = (conv) => {
-    setSelectedConversationId(conv._id || conv.id);
+    Object.values(
+      remoteTypingTimeoutsRef.current,
+    ).forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+
+    remoteTypingTimeoutsRef.current = {};
+
+    setSelectedConversationId(
+      conv._id || conv.id,
+    );
+
     setTypingUsers([]);
   };
 
   const handleInputChange = (e) => {
-    setMessageInput(e.target.value);
+    const nextValue = e.target.value;
 
-    if (sendTypingStart && selectedConversationId) {
-      const now = Date.now();
-      if (now - lastTypingRef.current > 2000) {
-        sendTypingStart(selectedConversationId);
-        lastTypingRef.current = now;
+    setMessageInput(nextValue);
+
+    if (!selectedConversationId) {
+      return;
+    }
+
+    if (!nextValue.trim()) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(
+          typingTimeoutRef.current,
+        );
+
+        typingTimeoutRef.current = null;
       }
 
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => {
-        if (sendTypingStop) sendTypingStop(selectedConversationId);
-      }, 3000);
+      lastTypingRef.current = 0;
+
+      if (sendTypingStop) {
+        sendTypingStop(
+          selectedConversationId,
+        );
+      }
+
+      return;
     }
+
+    if (sendTypingStart) {
+      const now = Date.now();
+
+      if (
+        now - lastTypingRef.current >
+        2000
+      ) {
+        sendTypingStart(
+          selectedConversationId,
+        );
+
+        lastTypingRef.current = now;
+      }
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(
+        typingTimeoutRef.current,
+      );
+    }
+
+    typingTimeoutRef.current =
+      setTimeout(() => {
+        if (sendTypingStop) {
+          sendTypingStop(
+            selectedConversationId,
+          );
+        }
+
+        lastTypingRef.current = 0;
+        typingTimeoutRef.current = null;
+      }, 2500);
   };
 
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedConversationId) return;
 
-    if (sendTypingStop) sendTypingStop(selectedConversationId);
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    if (sendTypingStop) {
+      sendTypingStop(
+        selectedConversationId,
+      );
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(
+        typingTimeoutRef.current,
+      );
+
+      typingTimeoutRef.current = null;
+    }
+
+    lastTypingRef.current = 0;
 
     sendMessageMutation.mutate({
       conversationId: selectedConversationId,
