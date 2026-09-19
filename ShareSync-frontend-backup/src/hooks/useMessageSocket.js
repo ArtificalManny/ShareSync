@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { getAccessToken } from '../utils/tokenUtils';
 
 // message-socket-production-url-v1
 // Accept the production socket variable already configured for OpenShare.
@@ -42,12 +43,26 @@ export default function useMessageSocket(userId) {
   useEffect(() => {
     if (!userId) return;
 
-    // Create socket connection
-    // Merged: Added withCredentials to ensure auth headers are passed correctly
+    // messages-dedicated-socket-v2
+    // MessagesGateway lives on /messages and authenticates during
+    // the Socket.IO handshake.
+    const token =
+      typeof getAccessToken === 'function'
+        ? getAccessToken()
+        : null;
+
+    if (!token) {
+      setIsConnected(false);
+      return undefined;
+    }
+
     const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
-      withCredentials: true, 
+      withCredentials: true,
+      auth: {
+        token,
+      },
     });
 
     socketRef.current = socket;
@@ -56,9 +71,6 @@ export default function useMessageSocket(userId) {
     socket.on('connect', () => {
       console.log('[WebSocket] Connected to:', SOCKET_URL);
       setIsConnected(true);
-      
-      // Identify user to backend
-      socket.emit('identify', { userId });
     });
 
     socket.on('disconnect', () => {
@@ -81,8 +93,8 @@ export default function useMessageSocket(userId) {
       setMessageRead(data);
     });
 
-    socket.on('user_typing', (data) => {
-      console.log('[WebSocket] User typing:', data);
+    socket.on('typing:user', (data) => {
+      console.log('[Messages WebSocket] User typing:', data);
       setUserTyping(data);
     });
 
@@ -93,13 +105,23 @@ export default function useMessageSocket(userId) {
   }, [userId]);
 
   // Helper functions - ALL LOGIC PRESERVED EXACTLY
-  const joinConversation = (conversationId) => {
-    socketRef.current?.emit('join_conversation', { conversationId });
-  };
+  const joinConversation = useCallback((conversationId) => {
+    if (!conversationId) return;
 
-  const leaveConversation = (conversationId) => {
-    socketRef.current?.emit('leave_conversation', { conversationId });
-  };
+    socketRef.current?.emit(
+      'conversation:join',
+      { conversationId },
+    );
+  }, []);
+
+  const leaveConversation = useCallback((conversationId) => {
+    if (!conversationId) return;
+
+    socketRef.current?.emit(
+      'conversation:leave',
+      { conversationId },
+    );
+  }, []);
 
   const sendMessage = (data) => {
     return new Promise((resolve, reject) => {
@@ -113,9 +135,19 @@ export default function useMessageSocket(userId) {
     });
   };
 
-  const sendTyping = (conversationId, isTyping) => {
-    socketRef.current?.emit('typing', { conversationId, userId, isTyping });
-  };
+  const sendTyping = useCallback(
+    (conversationId, isTyping) => {
+      if (!conversationId) return;
+
+      socketRef.current?.emit(
+        isTyping
+          ? 'typing:start'
+          : 'typing:stop',
+        { conversationId },
+      );
+    },
+    [],
+  );
 
   const markAsRead = (messageId) => {
     socketRef.current?.emit('mark_read', { messageId, userId });

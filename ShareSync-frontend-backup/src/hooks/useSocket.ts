@@ -77,22 +77,6 @@ function emitJoinForRoom(
     return;
   }
 
-  // messages-conversation-room-contract-v1
-  // MessagesGateway owns conversation rooms and expects the raw
-  // conversation id rather than the generic room-name aliases.
-  if (room.startsWith("conversation:")) {
-    const conversationId =
-      room.slice("conversation:".length);
-
-    if (!conversationId) return;
-
-    socket.emit("conversation:join", {
-      conversationId,
-    });
-
-    return;
-  }
-
   if (room.startsWith("user:")) {
     const targetUserId = room.split(":")[1];
     if (!targetUserId) return;
@@ -123,19 +107,6 @@ function emitLeaveForRoom(
       projectId,
       userId,
     });
-    return;
-  }
-
-  if (room.startsWith("conversation:")) {
-    const conversationId =
-      room.slice("conversation:".length);
-
-    if (!conversationId) return;
-
-    socket.emit("conversation:leave", {
-      conversationId,
-    });
-
     return;
   }
 

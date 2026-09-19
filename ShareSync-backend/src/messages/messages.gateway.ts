@@ -194,16 +194,58 @@ export class MessagesGateway
   // CONVERSATION EVENTS
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // messages-socket-conversation-access-v1
   @SubscribeMessage('conversation:join')
-  handleJoinConversation(
+  async handleJoinConversation(
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    client.join(`conversation:${data.conversationId}`);
-    this.logger.debug(
-      `User ${client.userId} joined conversation:${data.conversationId}`,
-    );
-    return { success: true };
+    if (!client.userId) {
+      return {
+        success: false,
+        error: 'Not authenticated',
+      };
+    }
+
+    const conversationId =
+      String(
+        data?.conversationId || '',
+      ).trim();
+
+    if (!conversationId) {
+      return {
+        success: false,
+        error: 'Invalid conversation',
+      };
+    }
+
+    try {
+      await this.messagesService.getConversationById(
+        conversationId,
+        client.userId,
+      );
+
+      client.join(
+        `conversation:${conversationId}`,
+      );
+
+      this.logger.debug(
+        `User ${client.userId} joined conversation:${conversationId}`,
+      );
+
+      return { success: true };
+    } catch (error: any) {
+      this.logger.warn(
+        `Rejected conversation join for user ${client.userId}: ${
+          error?.message || error
+        }`,
+      );
+
+      return {
+        success: false,
+        error: 'Not authorized for conversation',
+      };
+    }
   }
 
   @SubscribeMessage('conversation:leave')
@@ -211,10 +253,26 @@ export class MessagesGateway
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    client.leave(`conversation:${data.conversationId}`);
-    this.logger.debug(
-      `User ${client.userId} left conversation:${data.conversationId}`,
+    const conversationId =
+      String(
+        data?.conversationId || '',
+      ).trim();
+
+    if (!conversationId) {
+      return {
+        success: false,
+        error: 'Invalid conversation',
+      };
+    }
+
+    client.leave(
+      `conversation:${conversationId}`,
     );
+
+    this.logger.debug(
+      `User ${client.userId} left conversation:${conversationId}`,
+    );
+
     return { success: true };
   }
 
@@ -323,37 +381,125 @@ export class MessagesGateway
   // ─────────────────────────────────────────────────────────────────────────────
 
   @SubscribeMessage('typing:start')
-  handleTypingStart(
+  async handleTypingStart(
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    const payload = {
-      userId: client.userId,
-      username: this.getClientDisplayName(client),
-      conversationId: data.conversationId,
-      isTyping: true,
-    };
+    if (!client.userId) {
+      return {
+        success: false,
+        error: 'Not authenticated',
+      };
+    }
 
-    client.to(`conversation:${data.conversationId}`).emit('typing:user', payload);
-    client.to(`conversation:${data.conversationId}`).emit('typing:update', payload);
-    return { success: true };
+    const conversationId =
+      String(
+        data?.conversationId || '',
+      ).trim();
+
+    if (!conversationId) {
+      return {
+        success: false,
+        error: 'Invalid conversation',
+      };
+    }
+
+    try {
+      await this.messagesService.getConversationById(
+        conversationId,
+        client.userId,
+      );
+
+      const payload = {
+        userId: client.userId,
+        username:
+          this.getClientDisplayName(client),
+        conversationId,
+        isTyping: true,
+      };
+
+      client
+        .to(`conversation:${conversationId}`)
+        .emit('typing:user', payload);
+
+      client
+        .to(`conversation:${conversationId}`)
+        .emit('typing:update', payload);
+
+      return { success: true };
+    } catch (error: any) {
+      this.logger.warn(
+        `Rejected typing:start for user ${client.userId}: ${
+          error?.message || error
+        }`,
+      );
+
+      return {
+        success: false,
+        error: 'Not authorized for conversation',
+      };
+    }
   }
 
   @SubscribeMessage('typing:stop')
-  handleTypingStop(
+  async handleTypingStop(
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    const payload = {
-      userId: client.userId,
-      username: this.getClientDisplayName(client),
-      conversationId: data.conversationId,
-      isTyping: false,
-    };
+    if (!client.userId) {
+      return {
+        success: false,
+        error: 'Not authenticated',
+      };
+    }
 
-    client.to(`conversation:${data.conversationId}`).emit('typing:user', payload);
-    client.to(`conversation:${data.conversationId}`).emit('typing:update', payload);
-    return { success: true };
+    const conversationId =
+      String(
+        data?.conversationId || '',
+      ).trim();
+
+    if (!conversationId) {
+      return {
+        success: false,
+        error: 'Invalid conversation',
+      };
+    }
+
+    try {
+      await this.messagesService.getConversationById(
+        conversationId,
+        client.userId,
+      );
+
+      const payload = {
+        userId: client.userId,
+        username:
+          this.getClientDisplayName(client),
+        conversationId,
+        isTyping: false,
+      };
+
+      client
+        .to(`conversation:${conversationId}`)
+        .emit('typing:user', payload);
+
+      client
+        .to(`conversation:${conversationId}`)
+        .emit('typing:update', payload);
+
+      return { success: true };
+    } catch (error: any) {
+      this.logger.warn(
+        `Rejected typing:stop for user ${client.userId}: ${
+          error?.message || error
+        }`,
+      );
+
+      return {
+        success: false,
+        error: 'Not authorized for conversation',
+      };
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

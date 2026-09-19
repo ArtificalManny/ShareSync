@@ -34,8 +34,9 @@ import {
 } from '../lib/api/messages';
 
 // WebSocket & Auth context
-import { useSocketContext, useSocketEvent } from '../context/SocketContext';
+import { useSocketEvent } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import useMessageSocket from '../hooks/useMessageSocket';
 import axios from 'axios';
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import CreateMoveFromMessageModal from "../components/moves/CreateMoveFromMessageModal";
@@ -844,8 +845,14 @@ export default function Messages() {
   const currentUser = React.useMemo(() => resolveCurrentUser(authUser), [authUser]);
   const currentUserId = currentUser?._resolvedId || '';
 
-  // WebSocket integration
-  const { joinConversationRoom, leaveConversationRoom, sendTypingStart, sendTypingStop } = useSocketContext?.() || {};
+  // messages-dedicated-typing-socket-v1
+  // Typing belongs to the authenticated /messages namespace.
+  const {
+    userTyping: messageSocketTyping,
+    joinConversation,
+    leaveConversation,
+    sendTyping,
+  } = useMessageSocket(currentUserId);
 
   // Local state
   const [selectedConversationId, setSelectedConversationId] = useState(null);
@@ -1105,98 +1112,80 @@ export default function Messages() {
     queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
   }, [selectedConversationId, queryClient]));
 
-  useSocketEvent?.(
-    'typing:user',
-    useCallback(
-      (data) => {
-        if (
-          !data?.conversationId ||
-          String(data.conversationId) !==
-            String(selectedConversationId)
-        ) {
-          return;
-        }
+  useEffect(() => {
+    const data = messageSocketTyping;
 
-        const remoteUserId =
-          data?.userId != null
-            ? String(data.userId)
-            : '';
+    if (
+      !data?.conversationId ||
+      String(data.conversationId) !==
+        String(selectedConversationId)
+    ) {
+      return;
+    }
 
-        if (
-          !remoteUserId ||
-          (
-            currentUserId &&
-            remoteUserId === String(currentUserId)
-          )
-        ) {
-          return;
-        }
+    const remoteUserId =
+      data?.userId != null
+        ? String(data.userId)
+        : '';
 
-        const remoteName =
-          String(
-            data?.username ||
-            getSafeDisplayName(
-              selectedConversation,
-              currentUser,
-            ) ||
-            'Someone',
-          ).trim() || 'Someone';
+    if (
+      !remoteUserId ||
+      (
+        currentUserId &&
+        remoteUserId === String(currentUserId)
+      )
+    ) {
+      return;
+    }
 
-        if (
-          remoteTypingTimeoutsRef.current[
-            remoteUserId
-          ]
-        ) {
-          clearTimeout(
-            remoteTypingTimeoutsRef.current[
-              remoteUserId
-            ],
+    const remoteName =
+      String(
+        data?.username ||
+        getSafeDisplayName(
+          selectedConversation,
+          currentUser,
+        ) ||
+        'Someone',
+      ).trim() || 'Someone';
+
+    if (
+      remoteTypingTimeoutsRef.current[
+        remoteUserId
+      ]
+    ) {
+      clearTimeout(
+        remoteTypingTimeoutsRef.current[
+          remoteUserId
+        ],
+      );
+
+      delete remoteTypingTimeoutsRef.current[
+        remoteUserId
+      ];
+    }
+
+    if (data.isTyping) {
+      setTypingUsers((previous) => {
+        const withoutUser =
+          previous.filter(
+            (user) =>
+              String(
+                user?.userId || '',
+              ) !== remoteUserId,
           );
 
-          delete remoteTypingTimeoutsRef.current[
-            remoteUserId
-          ];
-        }
+        return [
+          ...withoutUser,
+          {
+            userId: remoteUserId,
+            name: remoteName,
+          },
+        ];
+      });
 
-        if (data.isTyping) {
-          setTypingUsers((previous) => {
-            const withoutUser =
-              previous.filter(
-                (user) =>
-                  String(
-                    user?.userId || '',
-                  ) !== remoteUserId,
-              );
-
-            return [
-              ...withoutUser,
-              {
-                userId: remoteUserId,
-                name: remoteName,
-              },
-            ];
-          });
-
-          remoteTypingTimeoutsRef.current[
-            remoteUserId
-          ] = setTimeout(() => {
-            setTypingUsers((previous) =>
-              previous.filter(
-                (user) =>
-                  String(
-                    user?.userId || '',
-                  ) !== remoteUserId,
-              ),
-            );
-
-            delete remoteTypingTimeoutsRef.current[
-              remoteUserId
-            ];
-          }, 4500);
-
-          return;
-        }
-
+      remoteTypingTimeoutsRef.current[
+        remoteUserId
+      ] = setTimeout(() => {
         setTypingUsers((previous) =>
           previous.filter(
             (user) =>
@@ -1205,15 +1194,30 @@ export default function Messages() {
               ) !== remoteUserId,
           ),
         );
-      },
-      [
-        selectedConversationId,
-        selectedConversation,
-        currentUser,
-        currentUserId,
-      ],
-    ),
-  );
+
+        delete remoteTypingTimeoutsRef.current[
+          remoteUserId
+        ];
+      }, 4500);
+
+      return;
+    }
+
+    setTypingUsers((previous) =>
+      previous.filter(
+        (user) =>
+          String(
+            user?.userId || '',
+          ) !== remoteUserId,
+      ),
+    );
+  }, [
+    messageSocketTyping,
+    selectedConversationId,
+    selectedConversation,
+    currentUser,
+    currentUserId,
+  ]);
 
   useSocketEvent?.('message:edited', useCallback((data) => {
     if (String(data.conversationId) === String(selectedConversationId)) {
@@ -1311,15 +1315,29 @@ export default function Messages() {
   }, [selectedConversationId]);
 
   useEffect(() => {
-    if (selectedConversationId && joinConversationRoom) {
-      joinConversationRoom(selectedConversationId);
-      return () => {
-        if (leaveConversationRoom) {
-          leaveConversationRoom(selectedConversationId);
-        }
-      };
+    if (
+      !selectedConversationId ||
+      !joinConversation
+    ) {
+      return undefined;
     }
-  }, [selectedConversationId, joinConversationRoom, leaveConversationRoom]);
+
+    joinConversation(
+      selectedConversationId,
+    );
+
+    return () => {
+      if (leaveConversation) {
+        leaveConversation(
+          selectedConversationId,
+        );
+      }
+    };
+  }, [
+    selectedConversationId,
+    joinConversation,
+    leaveConversation,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // HANDLERS
@@ -1383,24 +1401,26 @@ export default function Messages() {
 
       lastTypingRef.current = 0;
 
-      if (sendTypingStop) {
-        sendTypingStop(
+      if (sendTyping) {
+        sendTyping(
           selectedConversationId,
+          false,
         );
       }
 
       return;
     }
 
-    if (sendTypingStart) {
+    if (sendTyping) {
       const now = Date.now();
 
       if (
         now - lastTypingRef.current >
         2000
       ) {
-        sendTypingStart(
+        sendTyping(
           selectedConversationId,
+          true,
         );
 
         lastTypingRef.current = now;
@@ -1415,9 +1435,10 @@ export default function Messages() {
 
     typingTimeoutRef.current =
       setTimeout(() => {
-        if (sendTypingStop) {
-          sendTypingStop(
+        if (sendTyping) {
+          sendTyping(
             selectedConversationId,
+            false,
           );
         }
 
@@ -1427,11 +1448,17 @@ export default function Messages() {
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedConversationId) return;
+    if (
+      !messageInput.trim() ||
+      !selectedConversationId
+    ) {
+      return;
+    }
 
-    if (sendTypingStop) {
-      sendTypingStop(
+    if (sendTyping) {
+      sendTyping(
         selectedConversationId,
+        false,
       );
     }
 
