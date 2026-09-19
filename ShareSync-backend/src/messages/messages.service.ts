@@ -342,14 +342,31 @@ export class MessagesService {
 
     for (const conv of conversations) {
       const convAny = conv as any;
-      const participant = (convAny.participants || []).find((p: any) => this.participantMatchesUser(p, userId));
+      const participant = (convAny.participants || []).find((p: any) =>
+        this.participantMatchesUser(p, userId),
+      );
+
       if (!includeArchived && participant?.isArchived) continue;
-      convAny.unreadCount = participant?.unreadCount || 0;
-      convAny.isMuted = participant?.isMuted || false;
-      convAny.isPinned = participant?.isPinned || false;
-      convAny.isArchived = participant?.isArchived || false;
-      result.push(conv);
+
+      // messages-participant-settings-serialization-v1
+      //
+      // These are per-user participant settings, not Conversation schema
+      // fields. Attaching them directly to a Mongoose document means they can
+      // disappear during JSON serialization. Convert to a plain object first
+      // so the frontend receives the projected settings reliably.
+      const serialized =
+        typeof convAny.toObject === 'function'
+          ? convAny.toObject({ virtuals: true })
+          : { ...convAny };
+
+      serialized.unreadCount = participant?.unreadCount || 0;
+      serialized.isMuted = participant?.isMuted || false;
+      serialized.isPinned = participant?.isPinned || false;
+      serialized.isArchived = participant?.isArchived || false;
+
+      result.push(serialized as any);
     }
+
     return result;
   }
 
