@@ -872,7 +872,8 @@ export default function Messages() {
     refetch: refetchConversations,
   } = useQuery({
     queryKey: ['conversations'],
-    queryFn: () => messagesApi.getConversations(),
+    // messages-archived-tab-v1
+    queryFn: () => messagesApi.getConversations(true),
     staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
   });
@@ -936,10 +937,13 @@ export default function Messages() {
         Object.prototype.hasOwnProperty.call(
           settings,
           'isArchived',
-        ) &&
-        settings.isArchived === true
+        )
       ) {
-        setSelectedConversationId(null);
+        setFilter(
+          settings.isArchived === true
+            ? 'archived'
+            : 'all',
+        );
       }
     } catch (error) {
       console.error(
@@ -1124,8 +1128,18 @@ export default function Messages() {
       const lastMessage = (conv.lastMessage?.content || '').toLowerCase();
       if (!displayName.includes(searchLower) && !lastMessage.includes(searchLower)) return false;
     }
+
+    if (filter === 'archived') {
+      return Boolean(conv.isArchived);
+    }
+
+    if (conv.isArchived) {
+      return false;
+    }
+
     if (filter === 'unread') return (conv.unreadCount || 0) > 0;
-    if (filter === 'starred') return conv.isPinned;
+    if (filter === 'starred') return Boolean(conv.isPinned);
+
     return true;
   });
 
@@ -1299,7 +1313,7 @@ export default function Messages() {
             </div>
 
             <div className="flex gap-1 mt-3">
-              {['all', 'unread', 'starred'].map(f => (
+              {['all', 'unread', 'starred', 'archived'].map(f => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
