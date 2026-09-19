@@ -279,6 +279,15 @@ export const removeParticipant = async (conversationId, userId) => {
   return response.data?.data || response.data;
 };
 
+// Delete a conversation from the current user's view
+export const deleteConversation = async (conversationId) => {
+  const response = await client.delete(
+    `/messages/conversations/${conversationId}`
+  );
+
+  return response.data;
+};
+
 // Leave a conversation
 export const leaveConversation = async (conversationId) => {
   const response = await client.post(`/messages/conversations/${conversationId}/leave`);
@@ -486,6 +495,7 @@ export const messagesApi = {
   updateSettings: updateConversationSettings,
   addParticipant,
   removeParticipant,
+  deleteConversation,
   leaveConversation,
 
   // Messages

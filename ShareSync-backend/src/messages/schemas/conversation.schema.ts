@@ -37,6 +37,12 @@ export class ConversationParticipant {
   @Prop({ type: Boolean, default: false })
   isArchived: boolean;
 
+  // messages-delete-conversation-v1
+  // Per-user history cutoff. Deleting a conversation does not destroy the
+  // shared conversation or the other participant's copy.
+  @Prop({ type: Date })
+  deletedAt?: Date;
+
   @Prop({ type: Boolean, default: true })
   notificationsEnabled: boolean;
 }

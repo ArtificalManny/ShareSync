@@ -14,6 +14,7 @@ import {
   BellOff,
   Archive,
   ArchiveRestore,
+  Trash2,
   Send,
   Paperclip,
   MessageCircle,
@@ -822,6 +823,10 @@ export default function Messages() {
   const [conversationActionError, setConversationActionError] = useState('');
   const conversationMenuRef = useRef(null);
 
+  const [deleteConversationOpen, setDeleteConversationOpen] = useState(false);
+  const [deleteConversationPending, setDeleteConversationPending] = useState(false);
+  const [deleteConversationError, setDeleteConversationError] = useState('');
+
   const typingTimeoutRef = useRef(null);
   const lastTypingRef = useRef(0);
 
@@ -879,6 +884,68 @@ export default function Messages() {
   });
 
   const selectedConversation = conversations.find(c => String(c._id || c.id) === String(selectedConversationId));
+
+  const confirmDeleteConversation = async () => {
+    if (
+      !selectedConversationId ||
+      deleteConversationPending
+    ) {
+      return;
+    }
+
+    const conversationId =
+      selectedConversationId;
+
+    setDeleteConversationPending(true);
+    setDeleteConversationError('');
+
+    try {
+      await messagesApi.deleteConversation(
+        conversationId,
+      );
+
+      queryClient.setQueryData(
+        ['conversations'],
+        (old) => {
+          if (!Array.isArray(old)) {
+            return old;
+          }
+
+          return old.filter(
+            (conversation) =>
+              String(
+                conversation?._id ||
+                conversation?.id,
+              ) !==
+              String(conversationId),
+          );
+        },
+      );
+
+      await queryClient.invalidateQueries({
+        queryKey: ['conversations'],
+      });
+
+      setDeleteConversationOpen(false);
+      setConversationMenuOpen(false);
+      setSelectedConversationId(null);
+      setFilter('all');
+      setTypingUsers([]);
+    } catch (error) {
+      console.error(
+        '[Messages] Failed to delete conversation:',
+        error,
+      );
+
+      setDeleteConversationError(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Could not delete this conversation.',
+      );
+    } finally {
+      setDeleteConversationPending(false);
+    }
+  };
 
   const runConversationSettingAction = async (
     actionKey,
@@ -1532,6 +1599,26 @@ export default function Messages() {
                         </span>
                       </button>
 
+                      <div className="my-1 border-t border-slate-200 dark:border-[#27272a]" />
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={Boolean(conversationActionPending)}
+                        onClick={() => {
+                          setConversationMenuOpen(false);
+                          setDeleteConversationError('');
+                          setDeleteConversationOpen(true);
+                        }}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4 shrink-0" />
+
+                        <span>
+                          Delete conversation
+                        </span>
+                      </button>
+
                       {conversationActionError && (
                         <div className="mx-2 my-1 rounded-lg bg-red-50 px-2.5 py-2 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">
                           {conversationActionError}
@@ -1675,6 +1762,83 @@ export default function Messages() {
           )}
         </section>
       </div>
+
+      {deleteConversationOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4 dark:bg-black/60"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-conversation-title"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget &&
+              !deleteConversationPending
+            ) {
+              setDeleteConversationOpen(false);
+              setDeleteConversationError('');
+            }
+          }}
+        >
+          <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-md sm:rounded-2xl dark:border-[#27272a] dark:bg-[#111113]">
+            <div className="flex items-start gap-3 p-5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                <Trash2 className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0">
+                <h3
+                  id="delete-conversation-title"
+                  className="text-base font-semibold text-slate-900 dark:text-white"
+                >
+                  Delete conversation?
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-zinc-400">
+                  This removes this conversation and its current history
+                  from your Messages. It will not delete the other
+                  person's copy.
+                </p>
+              </div>
+            </div>
+
+            {deleteConversationError && (
+              <div className="mx-5 mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                {deleteConversationError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 border-t border-slate-200 p-4 dark:border-[#27272a]">
+              <button
+                type="button"
+                disabled={deleteConversationPending}
+                onClick={() => {
+                  setDeleteConversationOpen(false);
+                  setDeleteConversationError('');
+                }}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-[#1f1f23]"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={deleteConversationPending}
+                onClick={confirmDeleteConversation}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleteConversationPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+
+                Delete conversation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <NewMessageModal
         isOpen={showComposer}

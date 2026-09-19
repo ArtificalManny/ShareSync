@@ -346,6 +346,30 @@ export class MessagesService {
         this.participantMatchesUser(p, userId),
       );
 
+      const deletedAt =
+        participant?.deletedAt
+          ? new Date(participant.deletedAt)
+          : null;
+
+      const lastActivityAt =
+        convAny?.lastActivityAt
+          ? new Date(convAny.lastActivityAt)
+          : null;
+
+      // messages-delete-conversation-v1
+      //
+      // A user-deleted conversation stays hidden until new activity occurs
+      // after that user's deletion timestamp.
+      if (
+        deletedAt &&
+        (
+          !lastActivityAt ||
+          lastActivityAt.getTime() <= deletedAt.getTime()
+        )
+      ) {
+        continue;
+      }
+
       if (!includeArchived && participant?.isArchived) continue;
 
       // messages-participant-settings-serialization-v1
@@ -387,6 +411,53 @@ export class MessagesService {
       if (dto.notificationsEnabled !== undefined) participant.notificationsEnabled = dto.notificationsEnabled;
     }
     return conversation.save();
+  }
+
+  async deleteConversation(
+    conversationId: string,
+    userId: string,
+  ): Promise<void> {
+    const conversation =
+      await this.getConversationById(
+        conversationId,
+        userId,
+      );
+
+    const participant =
+      (conversation as any).participants?.find(
+        (p: any) =>
+          this.participantMatchesUser(
+            p,
+            userId,
+          ),
+      );
+
+    if (!participant) {
+      throw new ForbiddenException(
+        'You are not a participant in this conversation',
+      );
+    }
+
+    const deletedAt = new Date();
+
+    participant.deletedAt = deletedAt;
+    participant.unreadCount = 0;
+    participant.isPinned = false;
+    participant.isArchived = false;
+    participant.isMuted = false;
+    participant.notificationsEnabled = true;
+    participant.lastReadAt = deletedAt;
+
+    await conversation.save();
+
+    this.emitToUser(
+      userId,
+      'conversation:deleted',
+      {
+        conversationId,
+        deletedAt,
+      },
+    );
   }
 
   async addParticipant(conversationId: string, userId: string, newParticipantId: string): Promise<ConversationDocument> {
@@ -551,11 +622,64 @@ export class MessagesService {
   }
 
   async getMessages(conversationId: string, userId: string, options: MessagesQueryOptions = {}): Promise<{ messages: MessageDocument[]; hasMore: boolean }> {
-    await this.getConversationById(conversationId, userId);
+    const conversation =
+      await this.getConversationById(
+        conversationId,
+        userId,
+      );
+
+    const participant =
+      (conversation as any).participants?.find(
+        (p: any) =>
+          this.participantMatchesUser(
+            p,
+            userId,
+          ),
+      );
+
+    const deletedAt =
+      participant?.deletedAt
+        ? new Date(participant.deletedAt)
+        : null;
+
     const { limit = 50, before, after } = options;
-    const query: any = { conversationId: new Types.ObjectId(conversationId), isDeleted: { $ne: true } };
-    if (before) query.createdAt = { $lt: new Date(before) };
-    if (after) query.createdAt = { ...query.createdAt, $gt: new Date(after) };
+
+    const query: any = {
+      conversationId: new Types.ObjectId(
+        conversationId,
+      ),
+      isDeleted: { $ne: true },
+    };
+
+    if (deletedAt) {
+      query.createdAt = {
+        $gt: deletedAt,
+      };
+    }
+
+    if (before) {
+      query.createdAt = {
+        ...(query.createdAt || {}),
+        $lt: new Date(before),
+      };
+    }
+
+    if (after) {
+      const requestedAfter =
+        new Date(after);
+
+      const effectiveAfter =
+        deletedAt &&
+        deletedAt.getTime() >
+          requestedAfter.getTime()
+          ? deletedAt
+          : requestedAfter;
+
+      query.createdAt = {
+        ...(query.createdAt || {}),
+        $gt: effectiveAfter,
+      };
+    }
 
     const messages = await this.messageModel.find(query).populate('senderId', this.userPopulateFields).sort({ createdAt: -1 }).limit(limit + 1).exec();
     const hasMore = messages.length > limit;

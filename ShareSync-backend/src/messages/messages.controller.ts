@@ -183,6 +183,31 @@ export class MessagesController {
     };
   }
 
+  @Delete('conversations/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Delete a conversation from the current user view',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Conversation ID',
+  })
+  async deleteConversation(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    await this.messagesService.deleteConversation(
+      id,
+      this.getUserId(req),
+    );
+
+    return {
+      success: true,
+      message: 'Conversation deleted',
+    };
+  }
+
   @Post('conversations/:id/leave')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Leave a conversation' })
