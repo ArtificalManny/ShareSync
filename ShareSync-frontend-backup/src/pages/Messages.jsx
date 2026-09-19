@@ -9,7 +9,11 @@ import {
   Search,
   Plus,
   MoreHorizontal,
+  Star,
+  Bell,
+  BellOff,
   Archive,
+  ArchiveRestore,
   Send,
   Paperclip,
   MessageCircle,
@@ -811,8 +815,51 @@ export default function Messages() {
   const [messageInput, setMessageInput] = useState('');
   const [typingUsers, setTypingUsers] = useState([]);
   const [moveConversionTarget, setMoveConversionTarget] = useState(null);
+
+  // messages-conversation-options-menu-v1
+  const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
+  const [conversationActionPending, setConversationActionPending] = useState(null);
+  const [conversationActionError, setConversationActionError] = useState('');
+  const conversationMenuRef = useRef(null);
+
   const typingTimeoutRef = useRef(null);
   const lastTypingRef = useRef(0);
+
+  useEffect(() => {
+    if (!conversationMenuOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (
+        conversationMenuRef.current &&
+        !conversationMenuRef.current.contains(event.target)
+      ) {
+        setConversationMenuOpen(false);
+        setConversationActionError('');
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setConversationMenuOpen(false);
+        setConversationActionError('');
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [conversationMenuOpen]);
+
+  useEffect(() => {
+    setConversationMenuOpen(false);
+    setConversationActionError('');
+  }, [selectedConversationId]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // DATA FETCHING
@@ -831,6 +878,84 @@ export default function Messages() {
   });
 
   const selectedConversation = conversations.find(c => String(c._id || c.id) === String(selectedConversationId));
+
+  const runConversationSettingAction = async (
+    actionKey,
+    settings,
+  ) => {
+    if (
+      !selectedConversationId ||
+      conversationActionPending
+    ) {
+      return;
+    }
+
+    setConversationActionPending(actionKey);
+    setConversationActionError('');
+
+    try {
+      await messagesApi.updateSettings(
+        selectedConversationId,
+        settings,
+      );
+
+      queryClient.setQueryData(
+        ['conversations'],
+        (old) => {
+          if (!Array.isArray(old)) {
+            return old;
+          }
+
+          return old.map((conversation) => {
+            const conversationId =
+              conversation?._id ||
+              conversation?.id;
+
+            if (
+              String(conversationId) !==
+              String(selectedConversationId)
+            ) {
+              return conversation;
+            }
+
+            return {
+              ...conversation,
+              ...settings,
+            };
+          });
+        },
+      );
+
+      await queryClient.invalidateQueries({
+        queryKey: ['conversations'],
+      });
+
+      setConversationMenuOpen(false);
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          settings,
+          'isArchived',
+        ) &&
+        settings.isArchived === true
+      ) {
+        setSelectedConversationId(null);
+      }
+    } catch (error) {
+      console.error(
+        '[Messages] Failed to update conversation settings:',
+        error,
+      );
+
+      setConversationActionError(
+        error?.response?.data?.message ||
+        error?.message ||
+        'Could not update this conversation.',
+      );
+    } finally {
+      setConversationActionPending(null);
+    }
+  };
 
   const {
     data: messagesData,
@@ -1265,14 +1390,141 @@ export default function Messages() {
                   </div>
                 </div>
                 {/* messages-header-actions-cleanup-v1 */}
-                <div className="flex items-center">
+                <div
+                  ref={conversationMenuRef}
+                  className="relative flex items-center"
+                >
                   <button
                     type="button"
-                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"
+                    onClick={() => {
+                      setConversationMenuOpen((open) => !open);
+                      setConversationActionError('');
+                    }}
+                    className={`p-2 rounded-lg transition-colors ${
+                      conversationMenuOpen
+                        ? 'bg-slate-200 text-slate-700 dark:bg-[#27272a] dark:text-zinc-200'
+                        : 'hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500'
+                    }`}
                     aria-label="Conversation options"
+                    aria-haspopup="menu"
+                    aria-expanded={conversationMenuOpen}
                   >
                     <MoreHorizontal className="w-4 h-4" />
                   </button>
+
+                  {conversationMenuOpen && (
+                    <div
+                      role="menu"
+                      aria-label="Conversation options"
+                      className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-[#27272a] dark:bg-[#18181b]"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={Boolean(conversationActionPending)}
+                        onClick={() =>
+                          runConversationSettingAction(
+                            'pin',
+                            {
+                              isPinned:
+                                !selectedConversation?.isPinned,
+                            },
+                          )
+                        }
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:hover:bg-[#27272a]"
+                      >
+                        {conversationActionPending === 'pin' ? (
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                        ) : (
+                          <Star
+                            className={`h-4 w-4 shrink-0 ${
+                              selectedConversation?.isPinned
+                                ? 'fill-current'
+                                : ''
+                            }`}
+                          />
+                        )}
+
+                        <span>
+                          {selectedConversation?.isPinned
+                            ? 'Unstar conversation'
+                            : 'Star conversation'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={Boolean(conversationActionPending)}
+                        onClick={() => {
+                          const nextMuted =
+                            !selectedConversation?.isMuted;
+
+                          runConversationSettingAction(
+                            'mute',
+                            {
+                              isMuted: nextMuted,
+                              notificationsEnabled:
+                                !nextMuted,
+                            },
+                          );
+                        }}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:hover:bg-[#27272a]"
+                      >
+                        {conversationActionPending === 'mute' ? (
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                        ) : selectedConversation?.isMuted ? (
+                          <Bell className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <BellOff className="h-4 w-4 shrink-0" />
+                        )}
+
+                        <span>
+                          {selectedConversation?.isMuted
+                            ? 'Unmute notifications'
+                            : 'Mute notifications'}
+                        </span>
+                      </button>
+
+                      <div className="my-1 border-t border-slate-200 dark:border-[#27272a]" />
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={Boolean(conversationActionPending)}
+                        onClick={() =>
+                          runConversationSettingAction(
+                            'archive',
+                            {
+                              isArchived:
+                                !selectedConversation?.isArchived,
+                            },
+                          )
+                        }
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200 dark:hover:bg-[#27272a]"
+                      >
+                        {conversationActionPending === 'archive' ? (
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                        ) : selectedConversation?.isArchived ? (
+                          <ArchiveRestore className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <Archive className="h-4 w-4 shrink-0" />
+                        )}
+
+                        <span>
+                          {selectedConversation?.isArchived
+                            ? 'Unarchive conversation'
+                            : 'Archive conversation'}
+                        </span>
+                      </button>
+
+                      {conversationActionError && (
+                        <div className="mx-2 my-1 rounded-lg bg-red-50 px-2.5 py-2 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                          {conversationActionError}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
