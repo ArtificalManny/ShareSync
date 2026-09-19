@@ -9,12 +9,9 @@ import {
   Search,
   Plus,
   MoreHorizontal,
-  Star,
   Archive,
   Send,
   Paperclip,
-  Phone,
-  Video,
   MessageCircle,
   AlertCircle,
   RefreshCw,
@@ -959,14 +956,6 @@ export default function Messages() {
     },
   });
 
-  const toggleStarMutation = useMutation({
-    mutationFn: ({ conversationId, isPinned }) =>
-      messagesApi.updateSettings(conversationId, { isPinned: !isPinned }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-    },
-  });
-
   // ═══════════════════════════════════════════════════════════════════════
   // EFFECTS
   // ═══════════════════════════════════════════════════════════════════════
@@ -1275,20 +1264,15 @@ export default function Messages() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                {/* messages-header-actions-cleanup-v1 */}
+                <div className="flex items-center">
                   <button
-                    onClick={() => toggleStarMutation.mutate({ conversationId: selectedConversationId, isPinned: selectedConversation.isPinned })}
-                    className={`p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] transition-colors ${selectedConversation.isPinned ? 'text-amber-500' : 'text-slate-400 dark:text-zinc-500'}`}
+                    type="button"
+                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"
+                    aria-label="Conversation options"
                   >
-                    <Star className={`w-4 h-4 ${selectedConversation.isPinned ? 'fill-amber-500' : ''}`} />
+                    <MoreHorizontal className="w-4 h-4" />
                   </button>
-                  {!isMobileView && (
-                    <>
-                      <button className="max-[900px]:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Phone className="w-4 h-4" /></button>
-                      <button className="max-[900px]:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><Video className="w-4 h-4" /></button>
-                      <button className="max-[900px]:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1f1f23] text-slate-400 dark:text-zinc-500 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
-                    </>
-                  )}
                 </div>
               </div>
 
