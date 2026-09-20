@@ -17,6 +17,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -60,6 +61,7 @@ export class MessagesGateway
   constructor(
     private readonly messagesService: MessagesService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     @InjectConnection()
     private readonly connection: Connection,
   ) {}
@@ -112,7 +114,20 @@ export class MessagesGateway
         return;
       }
 
-      const payload = this.jwtService.verify(token);
+      // messages-gateway-jwt-secret-v1
+      // MessagesModule exposes an unconfigured JwtService, so verify with the
+      // same application secret used by the working root AppGateway.
+      const secret =
+        this.configService.get<string>(
+          'JWT_SECRET',
+          'sharesync-secret',
+        );
+
+      const payload =
+        this.jwtService.verify(
+          token,
+          { secret },
+        );
       const session = await validateWsSession(
         this.connection,
         payload,
