@@ -680,131 +680,534 @@ function Avatar({ author, size = 'md', currentUser = null }) {
 
 // ─── Attachment Components ──────────────────────────────────────────────────
 
-function AttachmentGallery({ attachments }) {
-  const urls = Array.isArray(attachments)
-    ? attachments.map(a => typeof a === 'string' ? a : (a?.url || a?.fileUrl || null)).filter(Boolean)
+// announcement-edit-attachments-v1
+function getAnnouncementAttachmentUrl(attachment) {
+  return String(
+    typeof attachment === 'string'
+      ? attachment
+      : (
+          attachment?.url ||
+          attachment?.fileUrl ||
+          ''
+        )
+  ).trim();
+}
+
+function getAnnouncementAttachmentName(
+  attachment,
+  index = 0
+) {
+  const explicitName = String(
+    typeof attachment === 'object'
+      ? (
+          attachment?.name ||
+          attachment?.fileName ||
+          attachment?.originalName ||
+          ''
+        )
+      : ''
+  ).trim();
+
+  if (explicitName) {
+    return explicitName;
+  }
+
+  const url =
+    getAnnouncementAttachmentUrl(
+      attachment
+    );
+
+  const cleanUrl =
+    url
+      .split('?')[0]
+      .split('#')[0];
+
+  const rawName =
+    cleanUrl
+      .split('/')
+      .filter(Boolean)
+      .pop();
+
+  if (rawName) {
+    try {
+      return decodeURIComponent(
+        rawName
+      );
+    } catch {
+      return rawName;
+    }
+  }
+
+  return `Attachment ${index + 1}`;
+}
+
+function isAnnouncementImageAttachment(
+  attachment
+) {
+  const mime = String(
+    attachment?.type ||
+    attachment?.mimeType ||
+    attachment?.fileType ||
+    attachment?.file?.type ||
+    ''
+  ).toLowerCase();
+
+  if (mime.startsWith('image/')) {
+    return true;
+  }
+
+  const url =
+    getAnnouncementAttachmentUrl(
+      attachment
+    ).toLowerCase();
+
+  return /\.(png|jpe?g|gif|webp|heic|heif|bmp|svg)(?:[?#]|$)/i.test(
+    url
+  );
+}
+
+function AttachmentGallery({
+  attachments,
+}) {
+  const items = Array.isArray(
+    attachments
+  )
+    ? attachments
+        .map(
+          (
+            attachment,
+            index
+          ) => {
+            const url =
+              getAnnouncementAttachmentUrl(
+                attachment
+              );
+
+            if (!url) {
+              return null;
+            }
+
+            return {
+              attachment,
+              url,
+              name:
+                getAnnouncementAttachmentName(
+                  attachment,
+                  index
+                ),
+              isImage:
+                isAnnouncementImageAttachment(
+                  attachment
+                ),
+            };
+          }
+        )
+        .filter(Boolean)
     : [];
 
-  if (urls.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
 
-  const isSingle = urls.length === 1;
+  const isSingle =
+    items.length === 1;
 
   return (
-    <div className={`mt-5 ${isSingle ? '' : 'grid grid-cols-2 gap-3'}`}>
-      {urls.map((url, i) => (
-        <a
-          key={i}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="announcement-attachment-card group block rounded-2xl border border-slate-200 bg-white p-1 shadow-sm hover:shadow-xl hover:shadow-violet-500/10 transition-all overflow-hidden"
-        >
-          <img
-            src={url}
-            alt={`Announcement attachment ${i + 1}`}
-            className={`w-full rounded-[1rem] object-cover transition-transform duration-500 group-hover:scale-[1.015] ${
-              isSingle ? 'max-h-[420px]' : 'aspect-[4/3]'
-            }`}
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-        </a>
-      ))}
+    <div
+      className={`mt-5 ${
+        isSingle
+          ? ''
+          : 'grid grid-cols-2 gap-3'
+      }`}
+    >
+      {items.map(
+        ({
+          url,
+          name,
+          isImage,
+        }, i) => (
+          <a
+            key={`${url}-${i}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="announcement-attachment-card group block overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm transition-all hover:shadow-xl hover:shadow-violet-500/10"
+          >
+            {isImage ? (
+              <img
+                src={url}
+                alt={
+                  name ||
+                  `Announcement attachment ${
+                    i + 1
+                  }`
+                }
+                className={`w-full rounded-[1rem] object-cover transition-transform duration-500 group-hover:scale-[1.015] ${
+                  isSingle
+                    ? 'max-h-[420px]'
+                    : 'aspect-[4/3]'
+                }`}
+              />
+            ) : (
+              <div className="flex min-h-[112px] items-center gap-3 rounded-[1rem] bg-slate-50 px-4 py-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                  <Paperclip className="h-5 w-5" />
+                </span>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-800">
+                    {name}
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    Open attachment
+                  </p>
+                </div>
+              </div>
+            )}
+          </a>
+        )
+      )}
     </div>
   );
 }
 
-function AttachmentInput({ uploadedFiles, onFilesChange }) {
-  const fileInputRef = useRef(null);
+function AttachmentInput({
+  uploadedFiles,
+  onFilesChange,
+}) {
+  const fileInputRef =
+    useRef(null);
 
-  const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  const allowedDocumentExtensions =
+    new Set([
+      'pdf',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'ppt',
+      'pptx',
+      'txt',
+      'csv',
+      'rtf',
+    ]);
 
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        toast({ title: 'Only image files are supported', variant: 'error' });
+  const isAllowedFile = (
+    file
+  ) => {
+    const mime =
+      String(
+        file?.type || ''
+      ).toLowerCase();
+
+    if (
+      mime.startsWith(
+        'image/'
+      ) ||
+      mime ===
+        'application/pdf' ||
+      mime.startsWith(
+        'text/'
+      )
+    ) {
+      return true;
+    }
+
+    const extension =
+      String(
+        file?.name || ''
+      )
+        .split('.')
+        .pop()
+        ?.toLowerCase();
+
+    return (
+      Boolean(extension) &&
+      allowedDocumentExtensions.has(
+        extension
+      )
+    );
+  };
+
+  const handleFileSelect = (
+    e
+  ) => {
+    const files =
+      Array.from(
+        e.target.files || []
+      );
+
+    if (
+      files.length === 0
+    ) {
+      return;
+    }
+
+    for (
+      const file of files
+    ) {
+      if (
+        !isAllowedFile(file)
+      ) {
+        toast({
+          title:
+            'Upload an image, PDF, Office document, or text file',
+          variant: 'error',
+        });
+
         continue;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        toast({ title: 'File must be under 10MB', variant: 'error' });
+
+      if (
+        file.size >
+        10 * 1024 * 1024
+      ) {
+        toast({
+          title:
+            'File must be under 10MB',
+          variant: 'error',
+        });
+
         continue;
       }
 
-      const preview = URL.createObjectURL(file);
+      const preview =
+        URL.createObjectURL(
+          file
+        );
 
-      onFilesChange((prev) => [
-        ...prev,
-        { file, preview, url: null, uploading: true, error: null },
-      ]);
+      onFilesChange(
+        (prev) => [
+          ...prev,
+          {
+            file,
+            preview,
+            url: null,
+            uploading: true,
+            error: null,
+            existing: false,
+            name:
+              file.name,
+            type:
+              file.type,
+          },
+        ]
+      );
 
-      uploadFileToServer(file)
+      uploadFileToServer(
+        file
+      )
         .then((url) => {
-          onFilesChange((prev) =>
-            prev.map((a) =>
-              a.preview === preview ? { ...a, url, uploading: false } : a
-            )
+          onFilesChange(
+            (prev) =>
+              prev.map(
+                (a) =>
+                  a.preview ===
+                  preview
+                    ? {
+                        ...a,
+                        url,
+                        uploading:
+                          false,
+                      }
+                    : a
+              )
           );
         })
         .catch((err) => {
           const errorMsg =
-            err?.response?.data?.message || err?.message || 'Upload failed';
-          onFilesChange((prev) =>
-            prev.map((a) =>
-              a.preview === preview
-                ? { ...a, uploading: false, error: errorMsg }
-                : a
-            )
+            err?.response
+              ?.data
+              ?.message ||
+            err?.message ||
+            'Upload failed';
+
+          onFilesChange(
+            (prev) =>
+              prev.map(
+                (a) =>
+                  a.preview ===
+                  preview
+                    ? {
+                        ...a,
+                        uploading:
+                          false,
+                        error:
+                          errorMsg,
+                      }
+                    : a
+              )
           );
-          toast({ title: errorMsg, variant: 'error' });
+
+          toast({
+            title:
+              errorMsg,
+            variant:
+              'error',
+          });
         });
     }
-    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    if (
+      fileInputRef.current
+    ) {
+      fileInputRef.current
+        .value = '';
+    }
   };
 
-  const removeFile = (preview) => {
-    URL.revokeObjectURL(preview);
-    onFilesChange((prev) => prev.filter((a) => a.preview !== preview));
+  const removeFile = (
+    preview
+  ) => {
+    if (
+      typeof preview ===
+        'string' &&
+      preview.startsWith(
+        'blob:'
+      )
+    ) {
+      URL.revokeObjectURL(
+        preview
+      );
+    }
+
+    onFilesChange(
+      (prev) =>
+        prev.filter(
+          (a) =>
+            a.preview !==
+            preview
+        )
+    );
   };
 
   return (
-    <div className="space-y-2 mt-4">
-      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-1.5">
-        <Paperclip className="w-4 h-4 text-slate-500" /> Attachments
+    <div className="mt-4 space-y-2">
+      <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-700">
+        <Paperclip className="h-4 w-4 text-slate-500" />
+        Attachments
       </label>
 
-      {uploadedFiles.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {uploadedFiles.map((a, i) => (
-            <div key={a.preview} className="relative rounded-xl overflow-hidden border border-slate-200 aspect-square shadow-sm">
-              <img src={a.preview} alt={'Attachment'} className={`w-full h-full object-cover ${a.error ? 'opacity-30' : ''}`} />
-              {a.uploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+      {uploadedFiles.length >
+        0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {uploadedFiles.map(
+            (a, i) => {
+              const isImage =
+                isAnnouncementImageAttachment(
+                  a
+                );
+
+              const name =
+                a?.name ||
+                a?.file
+                  ?.name ||
+                getAnnouncementAttachmentName(
+                  a,
+                  i
+                );
+
+              return (
+                <div
+                  key={
+                    a.preview ||
+                    a.url ||
+                    `${name}-${i}`
+                  }
+                  className="relative min-h-[120px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm"
+                >
+                  {isImage ? (
+                    <img
+                      src={
+                        a.preview ||
+                        a.url
+                      }
+                      alt={
+                        name ||
+                        'Attachment'
+                      }
+                      className={`h-full min-h-[120px] w-full object-cover ${
+                        a.error
+                          ? 'opacity-30'
+                          : ''
+                      }`}
+                    />
+                  ) : (
+                    <div className="flex h-full min-h-[120px] flex-col items-center justify-center gap-2 px-3 py-4 text-center">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                        <Paperclip className="h-5 w-5" />
+                      </span>
+
+                      <span className="max-w-full truncate text-xs font-bold text-slate-700">
+                        {name}
+                      </span>
+                    </div>
+                  )}
+
+                  {a.uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                    </div>
+                  )}
+
+                  {a.error && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-rose-500/20">
+                      <span className="rounded-lg bg-white/80 px-2 py-1 text-center text-[10px] font-bold leading-tight text-rose-700">
+                        Blocked
+                      </span>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeFile(
+                        a.preview ||
+                        a.url
+                      )
+                    }
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60 shadow-sm transition-colors hover:bg-rose-500"
+                    aria-label={`Remove ${
+                      name ||
+                      'attachment'
+                    }`}
+                  >
+                    <X className="h-3.5 w-3.5 text-white" />
+                  </button>
                 </div>
-              )}
-              {a.error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-rose-500/20">
-                  <span className="text-[10px] text-rose-700 font-bold px-2 py-1 bg-white/80 rounded-lg text-center leading-tight">Blocked</span>
-                </div>
-              )}
-              <button onClick={() => removeFile(a.preview)} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/60 flex items-center justify-center hover:bg-rose-500 transition-colors shadow-sm">
-                <X className="w-3.5 h-3.5 text-white" />
-              </button>
-            </div>
-          ))}
+              );
+            }
+          )}
         </div>
       )}
 
-      <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-slate-300 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-violet-400 hover:text-violet-600 transition-all">
-        <ImageIcon className="w-5 h-5" />
-        Upload Image
+      <button
+        type="button"
+        onClick={() =>
+          fileInputRef
+            .current
+            ?.click()
+        }
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-600 transition-all hover:border-violet-400 hover:bg-slate-50 hover:text-violet-600"
+      >
+        <Paperclip className="h-5 w-5" />
+        Upload image or document
       </button>
 
-      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf"
+        multiple
+        onChange={
+          handleFileSelect
+        }
+        className="hidden"
+      />
     </div>
   );
 }
-
 
 function normalizeAnnouncementFileReference(file) {
   const fileId = String(
@@ -2742,7 +3145,60 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     );
     setType(String(announcement?.type || 'info').toLowerCase());
     setPinned(Boolean(announcement?.pinned));
-    setUploadedFiles([]);
+
+    const existingUploadedFiles = (
+      Array.isArray(
+        announcement?.attachments
+      )
+        ? announcement.attachments
+        : []
+    )
+      .map(
+        (
+          attachment,
+          index
+        ) => {
+          const url =
+            getAnnouncementAttachmentUrl(
+              attachment
+            );
+
+          if (!url) {
+            return null;
+          }
+
+          return {
+            file: null,
+            preview: url,
+            url,
+            uploading: false,
+            error: null,
+            existing: true,
+            name:
+              getAnnouncementAttachmentName(
+                attachment,
+                index
+              ),
+            type: String(
+              typeof attachment ===
+                'object'
+                ? (
+                    attachment?.type ||
+                    attachment?.mimeType ||
+                    attachment?.fileType ||
+                    ''
+                  )
+                : ''
+            ).trim(),
+          };
+        }
+      )
+      .filter(Boolean);
+
+    setUploadedFiles(
+      existingUploadedFiles
+    );
+
     setLinkedProjectFiles(
       normalizeAnnouncementFileReferenceList(
         announcement?.fileReferences
@@ -2890,10 +3346,22 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
       return;
     }
 
-    if (!editingAnnouncement && anyUploading) {
+    if (anyUploading) {
       toast({ title: 'Please wait for uploads to finish', variant: 'error' });
       return;
     }
+
+    const attachmentUrls =
+      uploadedFiles
+        .filter(
+          (attachment) =>
+            attachment.url &&
+            !attachment.error
+        )
+        .map(
+          (attachment) =>
+            attachment.url
+        );
 
     setPosting(true);
 
@@ -2911,6 +3379,8 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
           message: cleanMessage,
           type,
           pinned,
+          attachments:
+            attachmentUrls,
           fileReferences:
             linkedProjectFiles.map(
               (file) => file.fileId
@@ -2937,6 +3407,12 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                       updated?.text ||
                       cleanMessage,
                     type: updated?.type || type,
+                    attachments:
+                      Array.isArray(
+                        updated?.attachments
+                      )
+                        ? updated.attachments
+                        : attachmentUrls,
                     fileReferences:
                       Array.isArray(
                         updated?.fileReferences
@@ -2972,10 +3448,6 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
         toast({ title: 'Announcement updated!', variant: 'success' });
         return;
       }
-
-      const attachmentUrls = uploadedFiles
-        .filter((a) => a.url && !a.error)
-        .map((a) => a.url);
 
         const response = await createAnnouncement(projectId, {
           title: title.trim(),
