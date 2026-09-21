@@ -105,21 +105,64 @@ export default function useMessageSocket(userId) {
   }, [userId]);
 
   // Helper functions - ALL LOGIC PRESERVED EXACTLY
+  // messages-socket-ack-trace-v1
   const joinConversation = useCallback((conversationId) => {
     if (!conversationId) return;
 
-    socketRef.current?.emit(
+    const socket = socketRef.current;
+
+    console.log(
+      '[Messages WebSocket] conversation:join EMIT',
+      {
+        socketId: socket?.id || null,
+        connected: Boolean(socket?.connected),
+        conversationId,
+      },
+    );
+
+    socket?.emit(
       'conversation:join',
       { conversationId },
+      (response) => {
+        console.log(
+          '[Messages WebSocket] conversation:join ACK',
+          {
+            socketId: socket?.id || null,
+            conversationId,
+            response,
+          },
+        );
+      },
     );
   }, []);
 
   const leaveConversation = useCallback((conversationId) => {
     if (!conversationId) return;
 
-    socketRef.current?.emit(
+    const socket = socketRef.current;
+
+    console.log(
+      '[Messages WebSocket] conversation:leave EMIT',
+      {
+        socketId: socket?.id || null,
+        connected: Boolean(socket?.connected),
+        conversationId,
+      },
+    );
+
+    socket?.emit(
       'conversation:leave',
       { conversationId },
+      (response) => {
+        console.log(
+          '[Messages WebSocket] conversation:leave ACK',
+          {
+            socketId: socket?.id || null,
+            conversationId,
+            response,
+          },
+        );
+      },
     );
   }, []);
 
@@ -139,11 +182,34 @@ export default function useMessageSocket(userId) {
     (conversationId, isTyping) => {
       if (!conversationId) return;
 
-      socketRef.current?.emit(
+      const socket = socketRef.current;
+      const eventName =
         isTyping
           ? 'typing:start'
-          : 'typing:stop',
+          : 'typing:stop';
+
+      console.log(
+        `[Messages WebSocket] ${eventName} EMIT`,
+        {
+          socketId: socket?.id || null,
+          connected: Boolean(socket?.connected),
+          conversationId,
+        },
+      );
+
+      socket?.emit(
+        eventName,
         { conversationId },
+        (response) => {
+          console.log(
+            `[Messages WebSocket] ${eventName} ACK`,
+            {
+              socketId: socket?.id || null,
+              conversationId,
+              response,
+            },
+          );
+        },
       );
     },
     [],
