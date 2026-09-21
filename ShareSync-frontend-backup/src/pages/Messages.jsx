@@ -848,6 +848,7 @@ export default function Messages() {
   // messages-dedicated-typing-socket-v1
   // Typing belongs to the authenticated /messages namespace.
   const {
+    isConnected: messageSocketConnected,
     userTyping: messageSocketTyping,
     joinConversation,
     leaveConversation,
@@ -1314,8 +1315,12 @@ export default function Messages() {
     }
   }, [selectedConversationId]);
 
+  // messages-rejoin-after-socket-reconnect-v1
+  // Socket.IO room membership belongs to the current socket connection.
+  // Rejoin the selected conversation whenever /messages reconnects.
   useEffect(() => {
     if (
+      !messageSocketConnected ||
       !selectedConversationId ||
       !joinConversation
     ) {
@@ -1327,13 +1332,17 @@ export default function Messages() {
     );
 
     return () => {
-      if (leaveConversation) {
+      if (
+        messageSocketConnected &&
+        leaveConversation
+      ) {
         leaveConversation(
           selectedConversationId,
         );
       }
     };
   }, [
+    messageSocketConnected,
     selectedConversationId,
     joinConversation,
     leaveConversation,
