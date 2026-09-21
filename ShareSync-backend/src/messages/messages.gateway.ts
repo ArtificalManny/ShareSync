@@ -117,11 +117,15 @@ export class MessagesGateway
       // messages-gateway-jwt-secret-v1
       // MessagesModule exposes an unconfigured JwtService, so verify with the
       // same application secret used by the working root AppGateway.
+      // messages-gateway-jwt-secret-alignment-v2
+      // Resolve the access-token secret exactly like the active AuthModule
+      // and token-signing paths.
       const secret =
         this.configService.get<string>(
           'JWT_SECRET',
-          'sharesync-secret',
-        );
+        ) ||
+        process.env.JWT_SECRET ||
+        'dev_secret_change_me';
 
       const payload =
         this.jwtService.verify(
