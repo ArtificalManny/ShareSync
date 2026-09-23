@@ -31,6 +31,7 @@ import {
 import {
   CreateConversationDto,
   SendMessageDto,
+  SendMessageAttachmentDto,
   EditMessageDto,
   ConversationSettingsDto,
 } from './dto/message.dto';
@@ -39,6 +40,10 @@ import {
 import { AppGateway } from '../gateway/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../user/schemas/user.schema';
+import {
+  MessageAttachmentReceiptPayload,
+  verifyMessageAttachmentReceipt,
+} from '../uploads/message-attachment-receipt';
 import {
   NotificationPriority,
   NotificationType,
@@ -102,6 +107,176 @@ export class MessagesService {
     if (value instanceof Types.ObjectId) return value.toString();
     if (typeof value?.toString === 'function') return value.toString();
     return String(value);
+  }
+
+  // messages-verified-attachments-v1
+  private verifyMessageAttachments(
+    userId: string,
+    attachments:
+      | SendMessageAttachmentDto[]
+      | undefined,
+  ): Array<{
+    fileId: string;
+    fileName: string;
+    fileUrl: string;
+    mimeType?: string;
+    fileSize?: number;
+    thumbnailUrl?: string;
+  }> {
+    if (
+      !Array.isArray(
+        attachments,
+      ) ||
+      attachments.length === 0
+    ) {
+      return [];
+    }
+
+    if (
+      attachments.length > 5
+    ) {
+      throw new BadRequestException(
+        'A message can contain at most 5 attachments.',
+      );
+    }
+
+    const normalizedUserId =
+      String(
+        userId || '',
+      ).trim();
+
+    return attachments.map(
+      (
+        attachment,
+        index,
+      ) => {
+        const payload:
+          MessageAttachmentReceiptPayload =
+        {
+          version: 1,
+
+          /*
+           * Reconstruct using the authenticated sender.
+           * The client never supplies uploaderId.
+           */
+          uploaderId:
+            normalizedUserId,
+
+          fileId: String(
+            attachment.fileId ||
+            '',
+          ).trim(),
+
+          fileName: String(
+            attachment.fileName ||
+            '',
+          ).trim(),
+
+          fileUrl: String(
+            attachment.fileUrl ||
+            '',
+          ).trim(),
+
+          mimeType: String(
+            attachment.mimeType ||
+            '',
+          ).trim(),
+
+          fileSize: Number(
+            attachment.fileSize,
+          ),
+
+          thumbnailUrl:
+            attachment.thumbnailUrl
+              ? String(
+                  attachment.thumbnailUrl,
+                ).trim()
+              : undefined,
+
+          expiresAt: Number(
+            attachment
+              .receiptExpiresAt,
+          ),
+        };
+
+        if (
+          !payload.fileId ||
+          !payload.fileName ||
+          !payload.fileUrl ||
+          !payload.mimeType
+        ) {
+          throw new BadRequestException(
+            `Attachment ${
+              index + 1
+            } is missing required information.`,
+          );
+        }
+
+        if (
+          !Number.isFinite(
+            payload.fileSize,
+          ) ||
+          Number(
+            payload.fileSize,
+          ) < 0
+        ) {
+          throw new BadRequestException(
+            `Attachment ${
+              index + 1
+            } has an invalid file size.`,
+          );
+        }
+
+        /*
+         * Phase 1 remains image-only.
+         * Documents stay blocked until their contents have
+         * an actual moderation pipeline.
+         */
+        if (
+          !payload.mimeType
+            .toLowerCase()
+            .startsWith(
+              'image/',
+            )
+        ) {
+          throw new BadRequestException(
+            'Messages currently supports image attachments only.',
+          );
+        }
+
+        const receiptIsValid =
+          verifyMessageAttachmentReceipt(
+            payload,
+            attachment.receipt,
+          );
+
+        if (
+          !receiptIsValid
+        ) {
+          throw new BadRequestException(
+            'This attachment authorization is invalid or expired.',
+          );
+        }
+
+        /*
+         * Receipt fields are deliberately stripped before Mongo.
+         */
+        return {
+          fileId:
+            payload.fileId,
+          fileName:
+            payload.fileName,
+          fileUrl:
+            payload.fileUrl,
+          mimeType:
+            payload.mimeType,
+          fileSize:
+            payload.fileSize,
+          thumbnailUrl:
+            payload.thumbnailUrl,
+        };
+      },
+    );
   }
 
   // conversation-participant-existence-v1
@@ -507,6 +682,12 @@ export class MessagesService {
       }
     }
 
+    const verifiedAttachments =
+      this.verifyMessageAttachments(
+        userId,
+        dto.attachments,
+      );
+
     const energy = dto.energy || MessageEnergy.NORMAL;
     const energyCost = ENERGY_COSTS[energy];
 
@@ -520,6 +701,8 @@ export class MessagesService {
       threadParentId: dto.threadParentId ? new Types.ObjectId(dto.threadParentId) : undefined,
       mentions: dto.mentions?.map((id) => new Types.ObjectId(id)) || [],
       linkedTaskId: dto.linkedTaskId ? new Types.ObjectId(dto.linkedTaskId) : undefined,
+      attachments:
+        verifiedAttachments,
       clientMessageId: dto.clientMessageId,
     });
 

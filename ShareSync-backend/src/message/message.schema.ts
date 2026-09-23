@@ -69,6 +69,45 @@ export class Message extends Document {
   @Prop()
   editedAt?: Date;
 
+  // messages-verified-attachments-v1
+  // This is the Message schema actually registered by MessagesModule.
+  @Prop({
+    type: [
+      {
+        fileId: {
+          type: String,
+          required: true,
+        },
+        fileName: {
+          type: String,
+          required: true,
+        },
+        fileUrl: {
+          type: String,
+          required: true,
+        },
+        mimeType: {
+          type: String,
+        },
+        fileSize: {
+          type: Number,
+        },
+        thumbnailUrl: {
+          type: String,
+        },
+      },
+    ],
+    default: [],
+  })
+  attachments: Array<{
+    fileId: string;
+    fileName: string;
+    fileUrl: string;
+    mimeType?: string;
+    fileSize?: number;
+    thumbnailUrl?: string;
+  }>;
+
   // Reactions (for later phases)
   @Prop({ type: Object, default: {} })
   reactions: Record<string, string[]>; // { '👍': ['userId1', 'userId2'] }

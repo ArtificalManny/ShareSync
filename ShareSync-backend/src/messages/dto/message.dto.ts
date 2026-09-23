@@ -14,6 +14,9 @@ import {
   MaxLength,
   IsBoolean,
   ValidateNested,
+  ArrayMaxSize,
+  IsNumber,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MessageType, MessageEnergy } from '../schemas/message.schema';
@@ -107,6 +110,87 @@ export class ConversationSettingsDto {
 // MESSAGE DTOs
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// messages-verified-attachments-v1
+export class SendMessageAttachmentDto {
+  @ApiProperty({
+    description:
+      'Server-issued attachment identifier',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2048)
+  fileId: string;
+
+  @ApiProperty({
+    description:
+      'Original attachment filename',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  fileName: string;
+
+  @ApiProperty({
+    description:
+      'Stored attachment URL',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(5000)
+  fileUrl: string;
+
+  @ApiProperty({
+    description:
+      'Attachment MIME type',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  mimeType: string;
+
+  @ApiProperty({
+    description:
+      'Attachment size in bytes',
+  })
+  @Type(() => Number)
+  @IsNumber({
+    allowNaN: false,
+    allowInfinity: false,
+  })
+  @Min(0)
+  fileSize: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional attachment thumbnail URL',
+  })
+  @IsString()
+  @MaxLength(5000)
+  @IsOptional()
+  thumbnailUrl?: string;
+
+  @ApiProperty({
+    description:
+      'Signed authorization proving this attachment passed the Messages upload boundary',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(512)
+  receipt: string;
+
+  @ApiProperty({
+    description:
+      'Signed attachment authorization expiry timestamp',
+  })
+  @Type(() => Number)
+  @IsNumber({
+    allowNaN: false,
+    allowInfinity: false,
+  })
+  @Min(1)
+  receiptExpiresAt: number;
+}
+
 export class SendMessageDto {
   @ApiProperty({ description: 'Conversation ID' })
   @IsMongoId()
@@ -143,6 +227,25 @@ export class SendMessageDto {
   @IsMongoId()
   @IsOptional()
   linkedTaskId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Moderated and server-authorized message attachments',
+    type: [SendMessageAttachmentDto],
+    maxItems: 5,
+  })
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ValidateNested({
+    each: true,
+  })
+  @Type(
+    () =>
+      SendMessageAttachmentDto,
+  )
+  @IsOptional()
+  attachments?:
+    SendMessageAttachmentDto[];
 
   @ApiPropertyOptional({ description: 'Client-generated message ID for deduplication' })
   @IsString()
