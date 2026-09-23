@@ -38,10 +38,46 @@ import { useSocketEvent } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import useMessageSocket from '../hooks/useMessageSocket';
 import axios from 'axios';
+import client from '../api/client';
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import CreateMoveFromMessageModal from "../components/moves/CreateMoveFromMessageModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+
+// messages-image-attachments-ui-v1
+const MESSAGE_ATTACHMENT_LIMIT = 5;
+
+const MESSAGE_ATTACHMENT_ORIGIN = String(
+  API_BASE_URL,
+)
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
+
+const resolveMessageAttachmentUrl = (
+  value,
+) => {
+  const raw = String(
+    value || '',
+  ).trim();
+
+  if (!raw) {
+    return '';
+  }
+
+  if (
+    /^https?:\/\//i.test(raw) ||
+    raw.startsWith('data:') ||
+    raw.startsWith('blob:')
+  ) {
+    return raw;
+  }
+
+  if (raw.startsWith('/')) {
+    return `${MESSAGE_ATTACHMENT_ORIGIN}${raw}`;
+  }
+
+  return `${MESSAGE_ATTACHMENT_ORIGIN}/${raw}`;
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    ⭐ LOCAL PURE HELPERS (safe current-user resolution + safe participant logic)
@@ -562,6 +598,80 @@ const ConversationItem = ({ conversation, isSelected, onClick, currentUser }) =>
 /* ─────────────────────────────────────────────────────────────────────────
    MESSAGE BUBBLE - Adaptive
 ───────────────────────────────────────────────────────────────────────── */
+const MessageAttachmentGallery = ({
+  attachments,
+  isOwn,
+}) => {
+  const items =
+    Array.isArray(attachments)
+      ? attachments.filter(
+          (item) =>
+            item &&
+            (
+              item.fileUrl ||
+              item.url
+            ),
+        )
+      : [];
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`mb-2 grid gap-2 ${
+        items.length > 1
+          ? 'grid-cols-2'
+          : 'grid-cols-1'
+      }`}
+    >
+      {items.map(
+        (
+          attachment,
+          index,
+        ) => {
+          const src =
+            resolveMessageAttachmentUrl(
+              attachment.fileUrl ||
+                attachment.url,
+            );
+
+          const name =
+            attachment.fileName ||
+            attachment.name ||
+            `Attachment ${index + 1}`;
+
+          return (
+            <a
+              key={
+                attachment.fileId ||
+                `${src}-${index}`
+              }
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className={`block overflow-hidden rounded-xl border ${
+                isOwn
+                  ? 'border-white/20 bg-white/10'
+                  : 'border-slate-200 bg-white dark:border-[#303036] dark:bg-[#151518]'
+              }`}
+              title={`Open ${name}`}
+            >
+              <img
+                src={src}
+                alt={name}
+                className="max-h-72 w-full object-cover"
+                loading="lazy"
+              />
+            </a>
+          );
+        },
+      )}
+    </div>
+  );
+};
+
 const MessageBubble = ({ message, isOwn, showAvatar, currentUser, otherUser }) => {
   const timeSource = message.createdAt || message.sentAt || message.timestamp || new Date().toISOString();
   const time = new Date(timeSource).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -576,6 +686,10 @@ const MessageBubble = ({ message, isOwn, showAvatar, currentUser, otherUser }) =
             bg-violet-600 text-white rounded-br-md shadow-sm
             ${message.__optimistic ? 'opacity-70' : ''}
           `}>
+            <MessageAttachmentGallery
+              attachments={message.attachments}
+              isOwn
+            />
             <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
           </div>
           <div className="flex items-center gap-2 mt-1 justify-end">
@@ -608,6 +722,10 @@ const MessageBubble = ({ message, isOwn, showAvatar, currentUser, otherUser }) =
           bg-slate-100 dark:bg-[#1f1f23] text-slate-800 dark:text-zinc-200 rounded-bl-md border border-slate-200 dark:border-[#27272a] shadow-sm dark:shadow-none
           ${message.__optimistic ? 'opacity-70' : ''}
         `}>
+          <MessageAttachmentGallery
+            attachments={message.attachments}
+            isOwn={false}
+          />
           <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -861,6 +979,13 @@ export default function Messages() {
   const [filter, setFilter] = useState('all');
   const [showComposer, setShowComposer] = useState(false);
   const [messageInput, setMessageInput] = useState('');
+
+  // messages-image-attachments-ui-v1
+  const [messageAttachments, setMessageAttachments] = useState([]);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState('');
+  const messageAttachmentInputRef = useRef(null);
+
   const [typingUsers, setTypingUsers] = useState([]);
   const [moveConversionTarget, setMoveConversionTarget] = useState(null);
 
@@ -879,6 +1004,17 @@ export default function Messages() {
 
   // messages-realtime-typing-indicator-v1
   const remoteTypingTimeoutsRef = useRef({});
+
+  useEffect(() => {
+    setMessageAttachments([]);
+    setAttachmentError('');
+
+    if (
+      messageAttachmentInputRef.current
+    ) {
+      messageAttachmentInputRef.current.value = '';
+    }
+  }, [selectedConversationId]);
 
   useEffect(() => {
     if (!conversationMenuOpen) return undefined;
@@ -1256,6 +1392,10 @@ export default function Messages() {
       const optimisticMessage = {
         _id: newMessage.clientMessageId,
         content: newMessage.content,
+        attachments:
+          Array.isArray(newMessage.attachments)
+            ? newMessage.attachments
+            : [],
         senderId: { _id: currentUserId },
         createdAt: new Date().toISOString(),
         __optimistic: true,
@@ -1277,12 +1417,34 @@ export default function Messages() {
       }));
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       setMessageInput('');
+      setMessageAttachments([]);
+      setAttachmentError('');
+
+      if (
+        messageAttachmentInputRef.current
+      ) {
+        messageAttachmentInputRef.current.value = '';
+      }
     },
     onError: (error, variables, context) => {
       queryClient.setQueryData(['messages', selectedConversationId], (old) => ({
         ...old,
         messages: (old?.messages || []).filter(m => String(m._id || m.id) !== String(variables.clientMessageId)),
       }));
+
+      const responseMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error?.message ||
+        error?.message;
+
+      setAttachmentError(
+        Array.isArray(responseMessage)
+          ? responseMessage.join(' ')
+          : String(
+              responseMessage ||
+                'Message could not be sent.',
+            ),
+      );
     },
   });
 
@@ -1456,10 +1618,197 @@ export default function Messages() {
       }, 2500);
   };
 
+  // messages-image-attachments-ui-v1
+  const handleMessageAttachmentSelect = async (
+    event,
+  ) => {
+    const files = Array.from(
+      event?.target?.files || [],
+    );
+
+    if (event?.target) {
+      event.target.value = '';
+    }
+
+    if (
+      !files.length ||
+      !selectedConversationId
+    ) {
+      return;
+    }
+
+    const remainingSlots =
+      MESSAGE_ATTACHMENT_LIMIT -
+      messageAttachments.length;
+
+    if (remainingSlots <= 0) {
+      setAttachmentError(
+        `You can attach up to ${MESSAGE_ATTACHMENT_LIMIT} images per message.`,
+      );
+      return;
+    }
+
+    if (files.length > remainingSlots) {
+      setAttachmentError(
+        `You can attach ${remainingSlots} more image${
+          remainingSlots === 1
+            ? ''
+            : 's'
+        } to this message.`,
+      );
+      return;
+    }
+
+    const invalidFile =
+      files.find(
+        (file) =>
+          !String(
+            file?.type || '',
+          )
+            .toLowerCase()
+            .startsWith('image/'),
+      );
+
+    if (invalidFile) {
+      setAttachmentError(
+        'Messages currently supports image attachments only.',
+      );
+      return;
+    }
+
+    setAttachmentError('');
+    setAttachmentUploading(true);
+
+    const uploadedAttachments = [];
+
+    try {
+      for (const file of files) {
+        const formData =
+          new FormData();
+
+        formData.append(
+          'file',
+          file,
+        );
+
+        const response =
+          await client.post(
+            '/uploads/message-attachment',
+            formData,
+          );
+
+        const payload =
+          response?.data?.data ??
+          response?.data;
+
+        const uploaded =
+          payload?.file ??
+          payload?.data?.file;
+
+        if (
+          !uploaded?.url ||
+          !uploaded?.receipt ||
+          !uploaded?.receiptExpiresAt
+        ) {
+          throw new Error(
+            'The server did not return a valid attachment authorization.',
+          );
+        }
+
+        uploadedAttachments.push({
+          fileId: String(
+            uploaded.id ||
+              uploaded.url,
+          ),
+
+          fileName: String(
+            uploaded.name ||
+              file.name ||
+              'image',
+          ),
+
+          fileUrl: String(
+            uploaded.url,
+          ),
+
+          mimeType: String(
+            uploaded.mime ||
+              file.type ||
+              'image/*',
+          ),
+
+          fileSize: Number(
+            uploaded.size ??
+              file.size ??
+              0,
+          ),
+
+          thumbnailUrl:
+            uploaded.thumbUrl
+              ? String(
+                  uploaded.thumbUrl,
+                )
+              : undefined,
+
+          receipt: String(
+            uploaded.receipt,
+          ),
+
+          receiptExpiresAt:
+            Number(
+              uploaded.receiptExpiresAt,
+            ),
+        });
+      }
+
+      if (uploadedAttachments.length) {
+        setMessageAttachments(
+          (current) => [
+            ...current,
+            ...uploadedAttachments,
+          ].slice(
+            0,
+            MESSAGE_ATTACHMENT_LIMIT,
+          ),
+        );
+      }
+    } catch (error) {
+      if (uploadedAttachments.length) {
+        setMessageAttachments(
+          (current) => [
+            ...current,
+            ...uploadedAttachments,
+          ].slice(
+            0,
+            MESSAGE_ATTACHMENT_LIMIT,
+          ),
+        );
+      }
+
+      const responseMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.data?.message ||
+        error?.message;
+
+      setAttachmentError(
+        Array.isArray(responseMessage)
+          ? responseMessage.join(' ')
+          : String(
+              responseMessage ||
+                'This attachment could not be uploaded.',
+            ),
+      );
+    } finally {
+      setAttachmentUploading(false);
+    }
+  };
+
   const handleSendMessage = () => {
     if (
       !messageInput.trim() ||
-      !selectedConversationId
+      !selectedConversationId ||
+      attachmentUploading
     ) {
       return;
     }
@@ -1485,6 +1834,32 @@ export default function Messages() {
       conversationId: selectedConversationId,
       content: messageInput.trim(),
       type: 'text',
+
+      attachments:
+        messageAttachments.map(
+          ({
+            fileId,
+            fileName,
+            fileUrl,
+            mimeType,
+            fileSize,
+            thumbnailUrl,
+            receipt,
+            receiptExpiresAt,
+          }) => ({
+            fileId,
+            fileName,
+            fileUrl,
+            mimeType,
+            fileSize,
+            ...(thumbnailUrl
+              ? { thumbnailUrl }
+              : {}),
+            receipt,
+            receiptExpiresAt,
+          }),
+        ),
+
       clientMessageId: generateClientMessageId(),
     });
   };
@@ -1963,9 +2338,98 @@ export default function Messages() {
 
               {/* Input */}
               <div className="shrink-0 p-3 sm:p-4 border-t border-slate-200 dark:border-[#1f1f23] bg-slate-50 dark:bg-[#09090B] transition-colors duration-300">
+                {(messageAttachments.length > 0 ||
+                  attachmentUploading ||
+                  attachmentError) && (
+                  <div className="mb-3">
+                    {(messageAttachments.length > 0 ||
+                      attachmentUploading) && (
+                      <div className="flex flex-wrap gap-2">
+                        {messageAttachments.map((attachment, index) => (
+                          <div
+                            key={attachment.fileId || `${attachment.fileUrl}-${index}`}
+                            className="group relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-[#27272a] dark:bg-[#111113]"
+                          >
+                            <img
+                              src={resolveMessageAttachmentUrl(
+                                attachment.thumbnailUrl ||
+                                  attachment.fileUrl,
+                              )}
+                              alt={attachment.fileName || 'Attachment'}
+                              className="h-full w-full object-cover"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMessageAttachments((current) =>
+                                  current.filter(
+                                    (_, itemIndex) =>
+                                      itemIndex !== index,
+                                  ),
+                                )
+                              }
+                              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white shadow-sm hover:bg-black"
+                              aria-label={`Remove ${attachment.fileName || 'attachment'}`}
+                              title="Remove attachment"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {attachmentUploading && (
+                          <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-violet-300 bg-violet-50 text-violet-600 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-300">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {attachmentError && (
+                      <div className="mt-2 flex items-start gap-2 text-xs text-red-600 dark:text-red-400">
+                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>{attachmentError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#1f1f23] rounded-lg transition-colors">
-                    <Paperclip className="w-5 h-5 text-slate-500 dark:text-zinc-500" />
+                  <input
+                    ref={messageAttachmentInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMessageAttachmentSelect}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttachmentError('');
+                      messageAttachmentInputRef.current?.click();
+                    }}
+                    disabled={
+                      attachmentUploading ||
+                      messageAttachments.length >=
+                        MESSAGE_ATTACHMENT_LIMIT
+                    }
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-[#1f1f23] rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label="Attach image"
+                    title={
+                      messageAttachments.length >=
+                      MESSAGE_ATTACHMENT_LIMIT
+                        ? `Maximum ${MESSAGE_ATTACHMENT_LIMIT} images`
+                        : 'Attach image'
+                    }
+                  >
+                    {attachmentUploading ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-violet-600 dark:text-violet-400" />
+                    ) : (
+                      <Paperclip className="w-5 h-5 text-slate-500 dark:text-zinc-500" />
+                    )}
                   </button>
                   <input
                     type="text"
@@ -1977,7 +2441,11 @@ export default function Messages() {
                   />
                   <button
                     onClick={handleSendMessage}
-                    disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                    disabled={
+                      !messageInput.trim() ||
+                      sendMessageMutation.isPending ||
+                      attachmentUploading
+                    }
                     className="p-2.5 rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
                   >
                     <Send className={`w-5 h-5 ${sendMessageMutation.isPending ? 'animate-pulse' : ''}`} />
