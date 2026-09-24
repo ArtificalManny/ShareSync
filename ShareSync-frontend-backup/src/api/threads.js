@@ -5,6 +5,11 @@ export const getProjectThreads = async (projectId, options = {}) => {
   const params = new URLSearchParams();
   if (options.category) params.append('category', options.category);
   if (options.isPinned !== undefined) params.append('isPinned', options.isPinned);
+
+  // team-room-thread-controls-api-v1
+  if (options.archived !== undefined) {
+    params.append('archived', options.archived);
+  }
   const response = await client.get(`/threads/project/${projectId}?${params.toString()}`);
   return response.data?.data || response.data || [];
 };
@@ -26,6 +31,42 @@ export const updateThread = async (threadId, data) => {
 
 export const deleteThread = async (threadId) => {
   const response = await client.delete(`/threads/${threadId}`);
+  return response.data?.data || response.data;
+};
+
+export const muteThread = async (threadId) => {
+  const response =
+    await client.post(
+      `/threads/${threadId}/mute`
+    );
+
+  return response.data?.data || response.data;
+};
+
+export const unmuteThread = async (threadId) => {
+  const response =
+    await client.delete(
+      `/threads/${threadId}/mute`
+    );
+
+  return response.data?.data || response.data;
+};
+
+export const archiveThread = async (threadId) => {
+  const response =
+    await client.post(
+      `/threads/${threadId}/archive`
+    );
+
+  return response.data?.data || response.data;
+};
+
+export const restoreThread = async (threadId) => {
+  const response =
+    await client.delete(
+      `/threads/${threadId}/archive`
+    );
+
   return response.data?.data || response.data;
 };
 
@@ -61,4 +102,16 @@ export const postThreadMessage = async (
   return res.data?.data || res.data;
 };
 
-export default { getProjectThreads, getThread, createThread, updateThread, deleteThread, getThreadMessages, postThreadMessage };
+export default {
+  getProjectThreads,
+  getThread,
+  createThread,
+  updateThread,
+  deleteThread,
+  muteThread,
+  unmuteThread,
+  archiveThread,
+  restoreThread,
+  getThreadMessages,
+  postThreadMessage,
+};
