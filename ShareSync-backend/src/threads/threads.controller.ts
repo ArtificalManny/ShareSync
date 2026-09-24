@@ -43,30 +43,66 @@ export class ThreadsController {
   @ApiParam({ name: 'projectId' })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'isPinned', required: false, type: Boolean })
+  @ApiQuery({ name: 'archived', required: false, type: Boolean })
   async findByProject(
     @Req() req: any,
     @Param('projectId') projectId: string,
     @Query('category') category?: string,
     @Query('isPinned') isPinned?: boolean,
+    @Query('archived') archived?: boolean,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    const isPinnedBool = isPinned !== undefined ? String(isPinned) === 'true' : undefined;
-    
-    // Pass the userId down so the service can auto-create "General" if empty
-    const threads = await this.threadsService.findByProject(
-      projectId, 
-      { category, isPinned: isPinnedBool }, 
-      userId
-    );
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const isPinnedBool =
+      isPinned !== undefined
+        ? String(isPinned) === 'true'
+        : undefined;
+
+    const archivedBool =
+      archived !== undefined
+        ? String(archived) === 'true'
+        : false;
+
+    const threads =
+      await this.threadsService
+        .findByProject(
+          projectId,
+          {
+            category,
+            isPinned:
+              isPinnedBool,
+            archived:
+              archivedBool,
+          },
+          userId,
+        );
     
     return { success: true, data: threads };
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get thread by ID' })
-  async findById(@Param('id') id: string) {
-    const thread = await this.threadsService.findById(id);
-    return { success: true, data: thread };
+  async findById(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const thread =
+      await this.threadsService
+        .findByIdWithAccess(
+          id,
+          userId,
+        );
+
+    return {
+      success: true,
+      data: thread,
+    };
   }
 
   @Put(':id')
@@ -76,6 +112,115 @@ export class ThreadsController {
     const userId = req.user?.sub || req.user?.userId;
     const thread = await this.threadsService.update(id, userId, dto);
     return { success: true, data: thread };
+  }
+
+  // team-room-thread-controls-v2
+  @Post(':id/mute')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mute a thread for the current user',
+  })
+  async mute(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const thread =
+      await this.threadsService
+        .setMuted(
+          id,
+          userId,
+          true,
+        );
+
+    return {
+      success: true,
+      data: thread,
+    };
+  }
+
+  @Delete(':id/mute')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Unmute a thread for the current user',
+  })
+  async unmute(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const thread =
+      await this.threadsService
+        .setMuted(
+          id,
+          userId,
+          false,
+        );
+
+    return {
+      success: true,
+      data: thread,
+    };
+  }
+
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Archive a thread for the current user',
+  })
+  async archive(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const thread =
+      await this.threadsService
+        .setArchived(
+          id,
+          userId,
+          true,
+        );
+
+    return {
+      success: true,
+      data: thread,
+    };
+  }
+
+  @Delete(':id/archive')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Restore an archived thread for the current user',
+  })
+  async restore(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const thread =
+      await this.threadsService
+        .setArchived(
+          id,
+          userId,
+          false,
+        );
+
+    return {
+      success: true,
+      data: thread,
+    };
   }
 
   @Delete(':id')

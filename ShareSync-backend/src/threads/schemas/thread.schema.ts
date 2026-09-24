@@ -46,6 +46,21 @@ export class Thread {
   @Prop({ type: [ThreadReadStatus], default: [] })
   readStatus: ThreadReadStatus[];
 
+  // team-room-thread-controls-v2
+  @Prop({
+    type: [Types.ObjectId],
+    ref: 'User',
+    default: [],
+  })
+  mutedBy: Types.ObjectId[];
+
+  @Prop({
+    type: [Types.ObjectId],
+    ref: 'User',
+    default: [],
+  })
+  archivedBy: Types.ObjectId[];
+
   @Prop({ type: [Types.ObjectId], ref: 'Task', default: [] })
   linkedTasks: Types.ObjectId[];
 

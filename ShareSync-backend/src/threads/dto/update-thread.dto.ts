@@ -1,6 +1,12 @@
 // src/threads/dto/update-thread.dto.ts
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import type { ThreadCategory } from './create-thread.dto';
 
 export class UpdateThreadDto {
@@ -17,4 +23,19 @@ export class UpdateThreadDto {
   @IsOptional()
   @IsEnum(['planning', 'design', 'ops', 'general'])
   category?: ThreadCategory;
+
+  // team-room-thread-controls-v2
+  @ApiPropertyOptional({
+    description: 'Whether this thread is pinned',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether this thread is locked',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isLocked?: boolean;
 }

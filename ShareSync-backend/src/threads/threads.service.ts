@@ -29,6 +29,9 @@ export interface GetMessagesOptions {
 export interface FindThreadsOptions {
   category?: string;
   isPinned?: boolean;
+
+  // team-room-thread-controls-v2
+  archived?: boolean;
 }
 
 const USER_POPULATE_FIELDS = 'firstName lastName username email profilePicture avatar avatarUrl';
@@ -44,7 +47,210 @@ export class ThreadsService {
     private readonly moduleRef: ModuleRef,
   ) {}
 
+  // team-room-thread-auth-v5
+  private normalizeProjectUserId(
+    value: any,
+  ): string {
+    if (!value) {
+      return '';
+    }
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number'
+    ) {
+      return String(
+        value,
+      ).trim();
+    }
+
+    if (
+      value instanceof
+      Types.ObjectId
+    ) {
+      return value.toString();
+    }
+
+    return this.normalizeProjectUserId(
+      value?.userId ||
+        value?.user ||
+        value?.memberId ||
+        value?.member ||
+        value?._id ||
+        value?.id,
+    );
+  }
+
+  private async requireProjectAccess(
+    projectIdValue: any,
+    userIdValue: any,
+  ): Promise<{
+    userObjectId: Types.ObjectId;
+    isOwner: boolean;
+  }> {
+    const projectId =
+      this.normalizeProjectUserId(
+        projectIdValue,
+      );
+
+    const userId =
+      this.normalizeProjectUserId(
+        userIdValue,
+      );
+
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(
+        projectId,
+      )
+    ) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(
+        userId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'Authenticated user is invalid',
+      );
+    }
+
+    const project =
+      await this.threadModel.db
+        .collection('projects')
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              projectId,
+            ),
+        });
+
+    if (!project) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    const ownerIds =
+      new Set<string>();
+
+    [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+    ].forEach(
+      (candidate) => {
+        const id =
+          this.normalizeProjectUserId(
+            candidate,
+          );
+
+        if (id) {
+          ownerIds.add(
+            id,
+          );
+        }
+      },
+    );
+
+    const participantIds =
+      new Set<string>(
+        ownerIds,
+      );
+
+    [
+      project.members,
+      project.sharedWith,
+      project.participantIds,
+    ].forEach(
+      (collection) => {
+        if (
+          !Array.isArray(
+            collection,
+          )
+        ) {
+          return;
+        }
+
+        collection.forEach(
+          (candidate: any) => {
+            const id =
+              this.normalizeProjectUserId(
+                candidate,
+              );
+
+            if (id) {
+              participantIds.add(
+                id,
+              );
+            }
+          },
+        );
+      },
+    );
+
+    if (
+      !participantIds.has(
+        userId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to this project',
+      );
+    }
+
+    return {
+      userObjectId:
+        new Types.ObjectId(
+          userId,
+        ),
+
+      isOwner:
+        ownerIds.has(
+          userId,
+        ),
+    };
+  }
+
+  private isThreadManager(
+    thread: ThreadDocument,
+    userIdValue: any,
+    isProjectOwner: boolean,
+  ): boolean {
+    if (isProjectOwner) {
+      return true;
+    }
+
+    const userId =
+      this.normalizeProjectUserId(
+        userIdValue,
+      );
+
+    const creatorId =
+      this.normalizeProjectUserId(
+        (thread as any)
+          ?.createdBy,
+      );
+
+    return Boolean(
+      userId &&
+      creatorId &&
+      userId === creatorId,
+    );
+  }
+
   async create(userId: string, dto: CreateThreadDto): Promise<ThreadDocument> {
+    await this.requireProjectAccess(
+      dto.projectId,
+      userId,
+    );
+
     if (
       !userId ||
       !Types.ObjectId.isValid(userId)
@@ -259,8 +465,50 @@ export class ThreadsService {
     return thread;
   }
 
+  async findByIdWithAccess(
+    id: string,
+    userId: string,
+  ): Promise<ThreadDocument> {
+    const thread =
+      await this.findById(
+        id,
+      );
+
+    await this.requireProjectAccess(
+      (thread as any).projectId,
+      userId,
+    );
+
+    return thread;
+  }
+
   async findByProject(projectId: string, options: FindThreadsOptions = {}, userId?: string): Promise<ThreadDocument[]> {
-    const query: any = { projectId: new Types.ObjectId(projectId) };
+    const {
+      userObjectId,
+    } =
+      await this.requireProjectAccess(
+        projectId,
+        userId,
+      );
+
+    const query: any = {
+      projectId:
+        new Types.ObjectId(
+          projectId,
+        ),
+    };
+
+    if (
+      options.archived === true
+    ) {
+      query.archivedBy =
+        userObjectId;
+    } else {
+      query.archivedBy = {
+        $ne:
+          userObjectId,
+      };
+    }
 
     if (options.category) {
       query.category = options.category;
@@ -277,30 +525,242 @@ export class ThreadsService {
       .sort({ isPinned: -1, lastReplyAt: -1, createdAt: -1 })
       .exec();
 
-    if (threads.length === 0 && !options.category && userId) {
-      const generalThread = await this.create(userId, {
-        projectId,
-        title: 'General',
-        category: 'general',
-        content: "Welcome to the project! This is the general discussion thread. Feel free to start chatting."
-      });
-      
-      threads = [await this.findById(generalThread._id.toString())] as any;
+    if (
+      threads.length === 0 &&
+      !options.category &&
+      options.archived !== true &&
+      userId
+    ) {
+      const totalProjectThreads =
+        await this.threadModel
+          .countDocuments({
+            projectId:
+              new Types.ObjectId(
+                projectId,
+              ),
+          });
+
+      if (
+        totalProjectThreads === 0
+      ) {
+        const generalThread =
+          await this.create(
+            userId,
+            {
+              projectId,
+              title: 'General',
+              category: 'general',
+              content:
+                "Welcome to the project! This is the general discussion thread. Feel free to start chatting.",
+            },
+          );
+
+        threads = [
+          await this.findById(
+            generalThread._id.toString(),
+          ),
+        ] as any;
+      }
     }
 
     return threads;
   }
 
   async update(id: string, userId: string, updates: Partial<Thread>): Promise<ThreadDocument> {
-    const thread = await this.findById(id);
-    Object.assign(thread, updates);
+    const thread =
+      await this.findById(
+        id,
+      );
+
+    const {
+      isOwner,
+    } =
+      await this.requireProjectAccess(
+        (thread as any).projectId,
+        userId,
+      );
+
+    const isManager =
+      this.isThreadManager(
+        thread,
+        userId,
+        isOwner,
+      );
+
+    const changesRestrictedState =
+      updates.title !== undefined ||
+      updates.category !== undefined ||
+      updates.isLocked !== undefined;
+
+    if (
+      changesRestrictedState &&
+      !isManager
+    ) {
+      throw new ForbiddenException(
+        'Only the thread creator or project owner can change these thread settings',
+      );
+    }
+
+    if (
+      updates.title !==
+      undefined
+    ) {
+      thread.title =
+        updates.title as string;
+    }
+
+    if (
+      updates.category !==
+      undefined
+    ) {
+      thread.category =
+        updates.category as any;
+    }
+
+    if (
+      updates.isPinned !==
+      undefined
+    ) {
+      thread.isPinned =
+        Boolean(
+          updates.isPinned,
+        );
+    }
+
+    if (
+      updates.isLocked !==
+      undefined
+    ) {
+      thread.isLocked =
+        Boolean(
+          updates.isLocked,
+        );
+    }
+
     return thread.save();
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    const thread = await this.findById(id);
-    await this.messageModel.deleteMany({ threadId: thread._id });
-    await this.threadModel.deleteOne({ _id: thread._id });
+    const thread =
+      await this.findById(
+        id,
+      );
+
+    const {
+      isOwner,
+    } =
+      await this.requireProjectAccess(
+        (thread as any).projectId,
+        userId,
+      );
+
+    if (
+      !this.isThreadManager(
+        thread,
+        userId,
+        isOwner,
+      )
+    ) {
+      throw new ForbiddenException(
+        'Only the thread creator or project owner can delete this thread',
+      );
+    }
+
+    await this.messageModel.deleteMany({
+      threadId:
+        thread._id,
+    });
+
+    await this.threadModel.deleteOne({
+      _id:
+        thread._id,
+    });
+  }
+
+  async setMuted(
+    id: string,
+    userId: string,
+    muted: boolean,
+  ): Promise<ThreadDocument> {
+    const thread =
+      await this.findById(
+        id,
+      );
+
+    const {
+      userObjectId,
+    } =
+      await this.requireProjectAccess(
+        (thread as any).projectId,
+        userId,
+      );
+
+    await this.threadModel.updateOne(
+      {
+        _id:
+          thread._id,
+      },
+      muted
+        ? {
+            $addToSet: {
+              mutedBy:
+                userObjectId,
+            },
+          }
+        : {
+            $pull: {
+              mutedBy:
+                userObjectId,
+            },
+          },
+    );
+
+    return this.findById(
+      id,
+    );
+  }
+
+  async setArchived(
+    id: string,
+    userId: string,
+    archived: boolean,
+  ): Promise<ThreadDocument> {
+    const thread =
+      await this.findById(
+        id,
+      );
+
+    const {
+      userObjectId,
+    } =
+      await this.requireProjectAccess(
+        (thread as any).projectId,
+        userId,
+      );
+
+    await this.threadModel.updateOne(
+      {
+        _id:
+          thread._id,
+      },
+      archived
+        ? {
+            $addToSet: {
+              archivedBy:
+                userObjectId,
+            },
+          }
+        : {
+            $pull: {
+              archivedBy:
+                userObjectId,
+            },
+          },
+    );
+
+    return this.findById(
+      id,
+    );
   }
 
   async addMessage(threadId: string, userId: string, dto: CreateMessageDto): Promise<ThreadMessageDocument> {
@@ -488,14 +948,51 @@ export class ThreadsService {
   }
 
   async togglePin(threadId: string, userId: string): Promise<ThreadDocument> {
-    const thread = await this.findById(threadId);
-    thread.isPinned = !thread.isPinned;
+    const thread =
+      await this.findById(
+        threadId,
+      );
+
+    await this.requireProjectAccess(
+      (thread as any).projectId,
+      userId,
+    );
+
+    thread.isPinned =
+      !thread.isPinned;
+
     return thread.save();
   }
 
   async toggleLock(threadId: string, userId: string): Promise<ThreadDocument> {
-    const thread = await this.findById(threadId);
-    thread.isLocked = !thread.isLocked;
+    const thread =
+      await this.findById(
+        threadId,
+      );
+
+    const {
+      isOwner,
+    } =
+      await this.requireProjectAccess(
+        (thread as any).projectId,
+        userId,
+      );
+
+    if (
+      !this.isThreadManager(
+        thread,
+        userId,
+        isOwner,
+      )
+    ) {
+      throw new ForbiddenException(
+        'Only the thread creator or project owner can lock this thread',
+      );
+    }
+
+    thread.isLocked =
+      !thread.isLocked;
+
     return thread.save();
   }
 
