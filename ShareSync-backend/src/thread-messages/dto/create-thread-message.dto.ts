@@ -3,12 +3,18 @@ import {
   IsArray,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   ApiProperty,
   ApiPropertyOptional,
 } from '@nestjs/swagger';
+import {
+  SendMessageAttachmentDto,
+} from '../../messages/dto/message.dto';
 
+// team-room-secure-message-pipeline-v1
 export class CreateThreadMessageDto {
   @ApiProperty({ description: 'Message content' })
   @IsString()
@@ -34,4 +40,23 @@ export class CreateThreadMessageDto {
   fileReferences?: Array<
     string | { fileId?: string }
   >;
+
+  @ApiPropertyOptional({
+    description:
+      'Moderated and server-authorized Team Room image attachments',
+    type: [SendMessageAttachmentDto],
+    maxItems: 5,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ValidateNested({
+    each: true,
+  })
+  @Type(
+    () =>
+      SendMessageAttachmentDto,
+  )
+  attachments?:
+    SendMessageAttachmentDto[];
 }

@@ -46,11 +46,24 @@ export class ThreadMessagesController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'before', required: false })
   async findByThread(
+    @Req() req: any,
     @Param('threadId') threadId: string,
     @Query('limit') limit?: number,
     @Query('before') before?: string,
   ) {
-    return this.threadMessagesService.findByThread(threadId, { limit, before });
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    return this.threadMessagesService
+      .findByThread(
+        threadId,
+        userId,
+        {
+          limit,
+          before,
+        },
+      );
   }
 
   @Put(':messageId')

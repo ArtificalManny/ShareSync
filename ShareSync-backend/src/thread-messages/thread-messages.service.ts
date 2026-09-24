@@ -13,6 +13,10 @@ import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.s
 import { NotificationsService } from '../notifications/notifications.service';
 import { VaultService } from '../vault/vault.service';
 import { CreateThreadMessageDto } from './dto/create-thread-message.dto';
+import {
+  MessageAttachmentReceiptPayload,
+  verifyMessageAttachmentReceipt,
+} from '../uploads/message-attachment-receipt';
 
 export interface GetThreadMessagesOptions {
   limit?: number;
@@ -31,6 +35,370 @@ export class ThreadMessagesService {
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
   ) {}
+
+  // team-room-secure-message-pipeline-v1
+  private normalizeProjectUserId(
+    value: any,
+  ): string {
+    if (!value) {
+      return '';
+    }
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number'
+    ) {
+      return String(
+        value,
+      ).trim();
+    }
+
+    if (
+      value instanceof
+      Types.ObjectId
+    ) {
+      return value.toString();
+    }
+
+    return this.normalizeProjectUserId(
+      value?.userId ||
+        value?.user ||
+        value?.memberId ||
+        value?.member ||
+        value?._id ||
+        value?.id,
+    );
+  }
+
+  private async requireThreadAccess(
+    threadId: string,
+    userId: string,
+  ): Promise<void> {
+    if (
+      !threadId ||
+      !Types.ObjectId.isValid(
+        threadId,
+      )
+    ) {
+      throw new NotFoundException(
+        'Thread not found',
+      );
+    }
+
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(
+        userId,
+      )
+    ) {
+      throw new BadRequestException(
+        'User ID is invalid',
+      );
+    }
+
+    const db =
+      this.messageModel.db;
+
+    const threadDoc: any =
+      await db
+        .collection(
+          'threads',
+        )
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              threadId,
+            ),
+        });
+
+    if (!threadDoc) {
+      throw new NotFoundException(
+        'Thread not found',
+      );
+    }
+
+    const projectId =
+      String(
+        threadDoc.projectId ||
+          '',
+      );
+
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(
+        projectId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Thread project is invalid',
+      );
+    }
+
+    const project: any =
+      await db
+        .collection(
+          'projects',
+        )
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              projectId,
+            ),
+        });
+
+    if (!project) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    const allowedUserIds =
+      new Set<string>();
+
+    [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+    ].forEach(
+      (candidate) => {
+        const id =
+          this.normalizeProjectUserId(
+            candidate,
+          );
+
+        if (id) {
+          allowedUserIds.add(
+            id,
+          );
+        }
+      },
+    );
+
+    [
+      project.members,
+      project.sharedWith,
+      project.participantIds,
+    ].forEach(
+      (collection) => {
+        if (
+          !Array.isArray(
+            collection,
+          )
+        ) {
+          return;
+        }
+
+        collection.forEach(
+          (candidate: any) => {
+            const id =
+              this.normalizeProjectUserId(
+                candidate,
+              );
+
+            if (id) {
+              allowedUserIds.add(
+                id,
+              );
+            }
+          },
+        );
+      },
+    );
+
+    if (
+      !allowedUserIds.has(
+        userId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to this project',
+      );
+    }
+  }
+
+  private verifyThreadMessageAttachments(
+    userId: string,
+    attachments:
+      CreateThreadMessageDto[
+        'attachments'
+      ],
+  ): Array<{
+    fileId: string;
+    fileName: string;
+    fileUrl: string;
+    mimeType?: string;
+    fileSize?: number;
+    thumbnailUrl?: string;
+  }> {
+    if (
+      !Array.isArray(
+        attachments,
+      ) ||
+      attachments.length === 0
+    ) {
+      return [];
+    }
+
+    if (
+      attachments.length > 5
+    ) {
+      throw new BadRequestException(
+        'A Team Room message can contain at most 5 attachments.',
+      );
+    }
+
+    const normalizedUserId =
+      String(
+        userId ||
+          '',
+      ).trim();
+
+    return attachments.map(
+      (
+        attachment,
+        index,
+      ) => {
+        const payload:
+          MessageAttachmentReceiptPayload =
+        {
+          version: 1,
+
+          /*
+           * Bind the receipt to the authenticated sender.
+           * uploaderId is never trusted from the client.
+           */
+          uploaderId:
+            normalizedUserId,
+
+          fileId:
+            String(
+              attachment.fileId ||
+                '',
+            ).trim(),
+
+          fileName:
+            String(
+              attachment.fileName ||
+                '',
+            ).trim(),
+
+          fileUrl:
+            String(
+              attachment.fileUrl ||
+                '',
+            ).trim(),
+
+          mimeType:
+            String(
+              attachment.mimeType ||
+                '',
+            ).trim(),
+
+          fileSize:
+            Number(
+              attachment.fileSize,
+            ),
+
+          thumbnailUrl:
+            attachment.thumbnailUrl
+              ? String(
+                  attachment.thumbnailUrl,
+                ).trim()
+              : undefined,
+
+          expiresAt:
+            Number(
+              attachment
+                .receiptExpiresAt,
+            ),
+        };
+
+        if (
+          !payload.fileId ||
+          !payload.fileName ||
+          !payload.fileUrl ||
+          !payload.mimeType
+        ) {
+          throw new BadRequestException(
+            `Attachment ${
+              index + 1
+            } is missing required information.`,
+          );
+        }
+
+        if (
+          !Number.isFinite(
+            payload.fileSize,
+          ) ||
+          Number(
+            payload.fileSize,
+          ) < 0
+        ) {
+          throw new BadRequestException(
+            `Attachment ${
+              index + 1
+            } has an invalid file size.`,
+          );
+        }
+
+        /*
+         * Team Room uses the proven Messages upload boundary.
+         * It remains image-only until documents have their own
+         * content-moderation pipeline.
+         */
+        if (
+          !payload.mimeType
+            .toLowerCase()
+            .startsWith(
+              'image/',
+            )
+        ) {
+          throw new BadRequestException(
+            'Team Room currently supports image attachments only.',
+          );
+        }
+
+        const receiptIsValid =
+          verifyMessageAttachmentReceipt(
+            payload,
+            attachment.receipt,
+          );
+
+        if (
+          !receiptIsValid
+        ) {
+          throw new BadRequestException(
+            'This attachment authorization is invalid or expired.',
+          );
+        }
+
+        /*
+         * Receipt material is deliberately discarded.
+         * Only clean display metadata reaches Mongo.
+         */
+        return {
+          fileId:
+            payload.fileId,
+
+          fileName:
+            payload.fileName,
+
+          fileUrl:
+            payload.fileUrl,
+
+          mimeType:
+            payload.mimeType,
+
+          fileSize:
+            payload.fileSize,
+
+          thumbnailUrl:
+            payload.thumbnailUrl,
+        };
+      },
+    );
+  }
 
   private async normalizeFileReferences(
     projectId: string,
@@ -140,6 +508,11 @@ export class ThreadMessagesService {
   }
 
   async create(threadId: string, userId: string, dto: CreateThreadMessageDto): Promise<ThreadMessageDocument> {
+    await this.requireThreadAccess(
+      threadId,
+      userId,
+    );
+
     if (
       !threadId ||
       !Types.ObjectId.isValid(threadId)
@@ -179,6 +552,15 @@ export class ThreadMessagesService {
       );
     }
 
+    if (
+      threadDoc.isLocked ===
+      true
+    ) {
+      throw new ForbiddenException(
+        'This thread is locked and cannot accept new messages',
+      );
+    }
+
     const projectId = String(
       threadDoc.projectId || '',
     );
@@ -202,6 +584,12 @@ export class ThreadMessagesService {
       );
     }
 
+    const verifiedAttachments =
+      this.verifyThreadMessageAttachments(
+        userId,
+        dto.attachments,
+      );
+
     const fileReferences =
       await this.normalizeFileReferences(
         projectId,
@@ -215,7 +603,8 @@ export class ThreadMessagesService {
       content,
       mentions: dto.mentions?.map((id) => new Types.ObjectId(id)) || [],
       reactions: [],
-      attachments: [],
+      attachments:
+        verifiedAttachments,
       fileReferences,
       isEdited: false,
     });
@@ -241,10 +630,34 @@ export class ThreadMessagesService {
             ...rawMembers.map((m: any) => m?.userId || m?._id || m)
           ];
 
+          const mutedUserIds =
+            new Set(
+              (
+                Array.isArray(
+                  threadDoc.mutedBy,
+                )
+                  ? threadDoc.mutedBy
+                  : []
+              )
+                .map(
+                  (id: any) =>
+                    String(
+                      id || '',
+                    ),
+                )
+                .filter(Boolean),
+            );
+
           const memberIdsToNotify: string[] = allAssociatedIds
             .filter(Boolean)
             .map(id => id.toString())
-            .filter(id => id !== userId);
+            .filter(
+              id =>
+                id !== userId &&
+                !mutedUserIds.has(
+                  id,
+                ),
+            );
 
           const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
           const safeProjectName = projectDoc.name || projectDoc.title || 'Project';
@@ -335,15 +748,63 @@ export class ThreadMessagesService {
     return msg;
   }
 
-  async findByThread(threadId: string, options: GetThreadMessagesOptions = {}): Promise<ThreadMessageDocument[]> {
-    const limit = options.limit ?? 50;
-    const query: any = { threadId: new Types.ObjectId(threadId) };
-    if (options.before) query.createdAt = { $lt: new Date(options.before) };
-    return this.messageModel.find(query).populate('userId', USER_POPULATE_FIELDS).sort({ createdAt: -1 }).limit(limit).exec();
+  async findByThread(
+    threadId: string,
+    userId: string,
+    options: GetThreadMessagesOptions = {},
+  ): Promise<ThreadMessageDocument[]> {
+    await this.requireThreadAccess(
+      threadId,
+      userId,
+    );
+
+    const limit =
+      options.limit ??
+      50;
+
+    const query: any = {
+      threadId:
+        new Types.ObjectId(
+          threadId,
+        ),
+    };
+
+    if (
+      options.before
+    ) {
+      query.createdAt = {
+        $lt:
+          new Date(
+            options.before,
+          ),
+      };
+    }
+
+    return this.messageModel
+      .find(
+        query,
+      )
+      .populate(
+        'userId',
+        USER_POPULATE_FIELDS,
+      )
+      .sort({
+        createdAt: -1,
+      })
+      .limit(
+        limit,
+      )
+      .exec();
   }
 
   async edit(messageId: string, userId: string, content: string): Promise<ThreadMessageDocument> {
     const msg = await this.findById(messageId);
+
+    await this.requireThreadAccess(
+      msg.threadId.toString(),
+      userId,
+    );
+
     if (!msg.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only edit your own messages');
     msg.content = content;
     msg.isEdited = true;
@@ -353,12 +814,24 @@ export class ThreadMessagesService {
 
   async delete(messageId: string, userId: string): Promise<void> {
     const msg = await this.findById(messageId);
+
+    await this.requireThreadAccess(
+      msg.threadId.toString(),
+      userId,
+    );
+
     if (!msg.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only delete your own messages');
     await this.messageModel.deleteOne({ _id: msg._id });
   }
 
   async addReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const msg = await this.findById(messageId);
+
+    await this.requireThreadAccess(
+      msg.threadId.toString(),
+      userId,
+    );
+
     const userObjectId = new Types.ObjectId(userId);
     const existing = msg.reactions.find((r: any) => r.emoji === emoji);
     if (existing) {
@@ -371,6 +844,12 @@ export class ThreadMessagesService {
 
   async removeReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const msg = await this.findById(messageId);
+
+    await this.requireThreadAccess(
+      msg.threadId.toString(),
+      userId,
+    );
+
     const userObjectId = new Types.ObjectId(userId);
     const reaction = msg.reactions.find((r: any) => r.emoji === emoji);
     if (reaction) {

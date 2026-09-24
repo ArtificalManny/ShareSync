@@ -62,8 +62,43 @@ export class ThreadMessage {
   @Prop({ type: [ThreadMessageReaction], default: [] })
   reactions: ThreadMessageReaction[];
 
-  @Prop({ type: [String], default: [] })
-  attachments: string[];
+  // team-room-secure-message-pipeline-v1
+  @Prop({
+    type: [
+      {
+        fileId: {
+          type: String,
+          required: true,
+        },
+        fileName: {
+          type: String,
+          required: true,
+        },
+        fileUrl: {
+          type: String,
+          required: true,
+        },
+        mimeType: {
+          type: String,
+        },
+        fileSize: {
+          type: Number,
+        },
+        thumbnailUrl: {
+          type: String,
+        },
+      },
+    ],
+    default: [],
+  })
+  attachments: Array<{
+    fileId: string;
+    fileName: string;
+    fileUrl: string;
+    mimeType?: string;
+    fileSize?: number;
+    thumbnailUrl?: string;
+  }>;
 
   @Prop({
     type: [ThreadMessageFileReference],
