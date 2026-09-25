@@ -6,10 +6,20 @@ import {
   Hash, Loader2, X, ChevronLeft, ArrowUp, Check,
   Paperclip, FileText, ExternalLink, Link2,
   MoreHorizontal, ListTodo, Megaphone,
+  PinOff, Bell, BellOff, Archive, ArchiveRestore,
+  Lock, Trash2,
 } from 'lucide-react';
 import {
-  getProjectThreads, createThread,
-  getThreadMessages, postThreadMessage,
+  getProjectThreads,
+  createThread,
+  getThreadMessages,
+  postThreadMessage,
+  updateThread,
+  deleteThread,
+  muteThread,
+  unmuteThread,
+  archiveThread,
+  restoreThread,
 } from '../../api/threads';
 import {
   fetchProjectFilesForReference,
@@ -53,6 +63,40 @@ function getEntityId(value) {
     value.user?._id ||
     value.user?.id ||
     null
+  );
+}
+
+// team-room-thread-controls-ui-v3a-r1
+function threadUserListIncludes(
+  values,
+  userId
+) {
+  if (
+    !Array.isArray(values) ||
+    !userId
+  ) {
+    return false;
+  }
+
+  const normalizedUserId =
+    String(userId);
+
+  return values.some(
+    (value) => {
+      const id =
+        getEntityId(value) ||
+        (
+          typeof value === 'string'
+            ? value
+            : null
+        );
+
+      return (
+        id &&
+        String(id) ===
+          normalizedUserId
+      );
+    }
   );
 }
 
@@ -794,7 +838,17 @@ function MessageBubble({
   );
 }
 
-function ConversationPanel({ projectId, thread, currentUserId, participants = [], onBack, readOnly = false }) {
+function ConversationPanel({
+  projectId,
+  project,
+  thread,
+  currentUserId,
+  participants = [],
+  onBack,
+  onThreadUpdated,
+  onThreadRemoved,
+  readOnly = false,
+}) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMsg, setNewMsg] = useState('');
@@ -802,8 +856,64 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
   const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [conversionTarget, setConversionTarget] = useState(null);
+
+  const [threadMenuOpen, setThreadMenuOpen] =
+    useState(false);
+
+  const [threadActionBusy, setThreadActionBusy] =
+    useState('');
+
   const scrollRef = useRef(null);
-  const threadId = thread?._id || thread?.id;
+  const threadMenuRef = useRef(null);
+
+  const threadId =
+    thread?._id ||
+    thread?.id;
+
+  const threadLocked =
+    Boolean(
+      thread?.isLocked
+    );
+
+  const isMutedForMe =
+    threadUserListIncludes(
+      thread?.mutedBy,
+      currentUserId
+    );
+
+  const isArchivedForMe =
+    threadUserListIncludes(
+      thread?.archivedBy,
+      currentUserId
+    );
+
+  const threadCreatorId =
+    getEntityId(
+      thread?.createdBy
+    );
+
+  const projectOwnerId =
+    getEntityId(
+      project?.ownerId ||
+        project?.owner ||
+        project?.createdBy ||
+        project?.createdById
+    );
+
+  const canManageThread =
+    Boolean(
+      currentUserId &&
+      (
+        String(
+          threadCreatorId || ''
+        ) ===
+          String(currentUserId) ||
+        String(
+          projectOwnerId || ''
+        ) ===
+          String(currentUserId)
+      )
+    );
 
   useEffect(() => {
     if (!threadId) return;
@@ -812,6 +922,9 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
     setLinkedFile(null);
     setFilePickerOpen(false);
     setConversionTarget(null);
+    setThreadMenuOpen(false);
+    setThreadActionBusy('');
+
     getThreadMessages(threadId)
       .then(data => { if (mounted) setMessages(Array.isArray(data) ? data : []); })
       .catch(() => {})
@@ -823,10 +936,45 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  useEffect(() => {
+    if (!threadMenuOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown =
+      (event) => {
+        if (
+          threadMenuRef.current &&
+          !threadMenuRef.current.contains(
+            event.target
+          )
+        ) {
+          setThreadMenuOpen(false);
+        }
+      };
+
+    document.addEventListener(
+      'mousedown',
+      handlePointerDown
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handlePointerDown
+      );
+    };
+  }, [threadMenuOpen]);
+
   const handleSend = useCallback(async () => {
     const content = newMsg.trim();
 
-    if (!content || !threadId || sending) {
+    if (
+      !content ||
+      !threadId ||
+      sending ||
+      threadLocked
+    ) {
       return;
     }
 
@@ -910,7 +1058,173 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
     linkedFile,
     threadId,
     sending,
+    threadLocked,
   ]);
+
+  const handleThreadAction =
+    useCallback(
+      async (action) => {
+        if (
+          !threadId ||
+          threadActionBusy ||
+          readOnly
+        ) {
+          return;
+        }
+
+        if (
+          action === 'delete'
+        ) {
+          const confirmed =
+            window.confirm(
+              `Delete "${thread?.title || 'this thread'}"? This permanently removes the shared thread and its messages.`
+            );
+
+          if (!confirmed) {
+            setThreadMenuOpen(
+              false
+            );
+            return;
+          }
+        }
+
+        setThreadActionBusy(
+          action
+        );
+
+        setThreadMenuOpen(
+          false
+        );
+
+        try {
+          let updated = null;
+
+          if (
+            action === 'pin'
+          ) {
+            updated =
+              await updateThread(
+                threadId,
+                {
+                  isPinned:
+                    !Boolean(
+                      thread?.isPinned
+                    ),
+                }
+              );
+          }
+
+          if (
+            action === 'mute'
+          ) {
+            updated =
+              isMutedForMe
+                ? await unmuteThread(
+                    threadId
+                  )
+                : await muteThread(
+                    threadId
+                  );
+          }
+
+          if (
+            action === 'archive'
+          ) {
+            if (
+              isArchivedForMe
+            ) {
+              await restoreThread(
+                threadId
+              );
+            } else {
+              await archiveThread(
+                threadId
+              );
+            }
+
+            onThreadRemoved?.(
+              threadId
+            );
+
+            return;
+          }
+
+          if (
+            action === 'lock'
+          ) {
+            updated =
+              await updateThread(
+                threadId,
+                {
+                  isLocked:
+                    !Boolean(
+                      thread?.isLocked
+                    ),
+                }
+              );
+          }
+
+          if (
+            action === 'delete'
+          ) {
+            await deleteThread(
+              threadId
+            );
+
+            onThreadRemoved?.(
+              threadId
+            );
+
+            return;
+          }
+
+          if (updated) {
+            onThreadUpdated?.({
+              ...thread,
+              ...updated,
+              id:
+                updated?._id ||
+                updated?.id ||
+                threadId,
+            });
+          }
+        } catch (error) {
+          const responseMessage =
+            error?.response?.data?.message ||
+            error?.response?.data?.error?.message ||
+            error?.message ||
+            'Thread action failed';
+
+          toast({
+            title:
+              Array.isArray(
+                responseMessage
+              )
+                ? responseMessage.join(
+                    ' '
+                  )
+                : String(
+                    responseMessage
+                  ),
+            variant: 'error',
+          });
+        } finally {
+          setThreadActionBusy(
+            ''
+          );
+        }
+      },
+      [
+        threadId,
+        thread,
+        threadActionBusy,
+        readOnly,
+        isMutedForMe,
+        isArchivedForMe,
+        onThreadUpdated,
+        onThreadRemoved,
+      ]
+    );
 
   if (!thread) return null;
 
@@ -919,8 +1233,8 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 px-5 py-3.5 border-b border-slate-100 dark:border-white/[0.06] flex items-center gap-3">
-        <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] lg:hidden">
+      <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-3 dark:border-white/[0.06] sm:gap-3 sm:px-5 sm:py-3.5">
+        <button onClick={onBack} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] lg:hidden">
           <ChevronLeft className="w-4 h-4 text-slate-500" />
         </button>
         <div className="flex-1 min-w-0">
@@ -939,11 +1253,142 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
           </div>
           <p className="text-[11px] text-slate-400 dark:text-white/30">
             {participantCount} member{participantCount === 1 ? '' : 's'}
+            {threadLocked ? ' • Locked' : ''}
           </p>
         </div>
+
+        {!readOnly ? (
+          <div
+            ref={threadMenuRef}
+            className="relative shrink-0"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setThreadMenuOpen(
+                  (current) =>
+                    !current
+                )
+              }
+              disabled={
+                Boolean(
+                  threadActionBusy
+                )
+              }
+              className="grid h-10 w-10 place-items-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white"
+              aria-label="Thread actions"
+              title="Thread actions"
+            >
+              {threadActionBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MoreHorizontal className="h-4 w-4" />
+              )}
+            </button>
+
+            {threadMenuOpen ? (
+              <div className="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl shadow-slate-900/15 dark:border-white/[0.1] dark:bg-[#17171b] dark:shadow-black/40">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleThreadAction(
+                      'pin'
+                    )
+                  }
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-white/75 dark:hover:bg-white/[0.06]"
+                >
+                  {thread?.isPinned ? (
+                    <PinOff className="h-4 w-4" />
+                  ) : (
+                    <Pin className="h-4 w-4" />
+                  )}
+
+                  {thread?.isPinned
+                    ? 'Unpin thread'
+                    : 'Pin thread'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleThreadAction(
+                      'mute'
+                    )
+                  }
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-white/75 dark:hover:bg-white/[0.06]"
+                >
+                  {isMutedForMe ? (
+                    <Bell className="h-4 w-4" />
+                  ) : (
+                    <BellOff className="h-4 w-4" />
+                  )}
+
+                  {isMutedForMe
+                    ? 'Unmute thread'
+                    : 'Mute thread'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleThreadAction(
+                      'archive'
+                    )
+                  }
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-white/75 dark:hover:bg-white/[0.06]"
+                >
+                  {isArchivedForMe ? (
+                    <ArchiveRestore className="h-4 w-4" />
+                  ) : (
+                    <Archive className="h-4 w-4" />
+                  )}
+
+                  {isArchivedForMe
+                    ? 'Restore thread'
+                    : 'Archive thread'}
+                </button>
+
+                {canManageThread ? (
+                  <>
+                    <div className="my-1 border-t border-slate-100 dark:border-white/[0.08]" />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleThreadAction(
+                          'lock'
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-white/75 dark:hover:bg-white/[0.06]"
+                    >
+                      <Lock className="h-4 w-4" />
+
+                      {threadLocked
+                        ? 'Unlock thread'
+                        : 'Lock thread'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleThreadAction(
+                          'delete'
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete thread
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4 [scrollbar-gutter:stable]">
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable] sm:px-5 sm:py-4">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-slate-400">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -988,7 +1433,7 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
         })}
       </div>
 
-      <div className="shrink-0 border-t border-slate-100 px-5 py-3 dark:border-white/[0.06]">
+      <div className="shrink-0 border-t border-slate-100 px-3 py-3 dark:border-white/[0.06] sm:px-5">
         {filePickerOpen ? (
           <ThreadProjectFilePicker
             projectId={projectId}
@@ -1038,14 +1483,18 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
         <div className="flex items-center gap-2">
           <button
             type="button"
-            disabled={sending || !projectId}
+            disabled={
+              sending ||
+              !projectId ||
+              threadLocked
+            }
             onClick={() =>
               setFilePickerOpen(
                 (current) => !current
               )
             }
             className={
-              'grid h-10 w-10 shrink-0 place-items-center rounded-xl border disabled:cursor-not-allowed disabled:opacity-40 ' +
+              'grid h-11 w-11 shrink-0 place-items-center rounded-xl border disabled:cursor-not-allowed disabled:opacity-40 ' +
               (
                 filePickerOpen || linkedFile
                   ? 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200'
@@ -1060,6 +1509,7 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
           <input
             type="text"
             value={newMsg}
+            disabled={threadLocked}
             onChange={(event) =>
               setNewMsg(event.target.value)
             }
@@ -1073,19 +1523,25 @@ function ConversationPanel({ projectId, thread, currentUserId, participants = []
               }
             }}
             placeholder={
-              linkedFile
-                ? 'Add a message to send this File...'
-                : 'Add to this thread...'
+              threadLocked
+                ? 'This thread is locked'
+                : linkedFile
+                  ? 'Add a message to send this File...'
+                  : 'Add to this thread...'
             }
             maxLength={5000}
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-white dark:placeholder-white/30"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 !text-[16px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-white dark:placeholder-white/30 sm:px-4 sm:!text-sm"
           />
 
           <button
             type="button"
             onClick={handleSend}
-            disabled={sending || !newMsg.trim()}
-            className="rounded-xl bg-violet-600 p-2.5 text-white shadow-sm hover:bg-violet-700 disabled:opacity-40"
+            disabled={
+              sending ||
+              threadLocked ||
+              !newMsg.trim()
+            }
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-600 text-white shadow-sm hover:bg-violet-700 disabled:opacity-40"
           >
             {sending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1444,16 +1900,16 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-4">
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="team room-create-modal-card relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-[#1f1f23] shadow-2xl overflow-hidden">
+      <div className="team room-create-modal-card relative max-h-[88svh] w-full max-w-md overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl dark:border-white/[0.10] dark:bg-[#1f1f23] sm:max-h-none sm:rounded-2xl">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">New Thread</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06]">
             <X className="w-4 h-4 text-slate-400" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="space-y-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5">
           <div>
             <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">To</label>
             <div className="mt-1.5 flex flex-wrap gap-1.5 p-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05]">
@@ -1484,7 +1940,7 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
                 value={memberSearch}
                 onChange={e => setMemberSearch(e.target.value)}
                 placeholder={selectedMembers.length === 0 ? 'Search members...' : ''}
-                className="flex-1 min-w-[100px] text-sm bg-transparent text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30 outline-none"
+                className="min-w-[100px] flex-1 bg-transparent !text-[16px] text-slate-800 outline-none placeholder-slate-400 dark:text-white dark:placeholder-white/30 sm:!text-sm"
               />
             </div>
             {members.length > 0 && (
@@ -1562,7 +2018,7 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Sprint Planning..."
               maxLength={100}
-              className="mt-1.5 w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.10] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 !text-[16px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/[0.10] dark:bg-white/[0.05] dark:text-white dark:placeholder-white/30 sm:!text-sm"
             />
           </div>
 
@@ -1760,6 +2216,9 @@ export default function ThreadsView({
   const [activeThread, setActiveThread] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
 
+  // team-room-archived-view-v3b-r2
+  const [showArchived, setShowArchived] = useState(false);
+
   const projectMembers = useMemo(() => extractMembers(project), [project]);
 
   // ⭐ ULTRA AGGRESSIVE USER ID EXTRACTION ⭐
@@ -1810,7 +2269,12 @@ export default function ThreadsView({
 
     setLoading(true);
 
-    getProjectThreads(projectId)
+    getProjectThreads(
+      projectId,
+      {
+        archived: showArchived,
+      }
+    )
       .then((data) => {
         if (!mounted) return;
 
@@ -1853,7 +2317,7 @@ export default function ThreadsView({
     return () => {
       mounted = false;
     };
-  }, [projectId]);
+  }, [projectId, showArchived]);
 
   // unified-project-search-navigation-v1
   useEffect(() => {
@@ -1907,7 +2371,7 @@ export default function ThreadsView({
   const regularThreads = filtered.filter(t => !t.isPinned);
 
   return (
-    <section className="team room-visual-scope relative mx-auto max-w-[1600px] px-4 py-5 pb-10 sm:px-6 lg:px-10">
+    <section className="team room-visual-scope relative mx-auto max-w-[1600px] px-2 py-3 pb-8 sm:px-6 sm:py-5 sm:pb-10 lg:px-10">
       <style className="team room-visual-strike-style">{`
         .team.room-visual-scope {
           --team room-purple: #7c3aed;
@@ -2531,54 +2995,54 @@ export default function ThreadsView({
           `}
         </style>
 
-<div className="team team-room-readable-v1 room-holo-shell relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30">
+<div className="team team-room-readable-v1 room-holo-shell relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30 sm:rounded-[2.25rem]">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:44px_44px] opacity-60 dark:opacity-20" />
 
-        <div className="relative p-4 sm:p-5 lg:p-6">
+        <div className="relative p-3 sm:p-5 lg:p-6">
           {/* Header */}
-          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="team room-command-orb relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-3xl border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300">
+          <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+              <div className="team room-command-orb relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-600 shadow-lg shadow-violet-500/10 dark:border-violet-400/20 dark:bg-white/[0.06] dark:text-violet-300 sm:h-14 sm:w-14 sm:rounded-3xl">
                 <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#111113]" />
-                <MessageCircle className="h-6 w-6" />
+                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
 
               <div className="min-w-0">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
                     Team Room
                   </h2>
 
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200 sm:px-3 sm:text-[10px] sm:tracking-[0.18em]">
                     Signal Room
                   </span>
 
-                  <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200">
+                  <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-200 sm:px-3 sm:text-[10px] sm:tracking-[0.18em]">
                     Team Threads
                   </span>
                 </div>
 
-                <p className="max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-zinc-400">
+                <p className="max-w-2xl text-xs font-medium leading-5 text-slate-600 dark:text-zinc-400 sm:text-sm sm:leading-6">
                   Centralize decisions, questions, and project context so the team can move from one shared room.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:justify-end xl:overflow-visible xl:pb-0">
+              <div className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200 sm:px-4 sm:py-2.5 sm:text-sm">
                 {threads.length} thread{threads.length === 1 ? '' : 's'}
               </div>
 
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+              <div className="shrink-0 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200 sm:px-4 sm:py-2.5 sm:text-sm">
                 {projectMembers.length} member{projectMembers.length === 1 ? '' : 's'}
               </div>
 
               <button
                 onClick={() => !readOnly && setShowCreate(true)}
-                className="team room-primary-button team room-force-purple inline-flex items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-5 py-2.5 text-sm font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed"
+                className="team room-primary-button team room-force-purple inline-flex shrink-0 items-center gap-2 rounded-2xl border border-violet-300 !bg-violet-700 px-4 py-2.5 text-xs font-black !text-white !opacity-100 shadow-[0_18px_40px_rgba(124,58,237,0.42)] ring-1 ring-white/40 transition-all hover:-translate-y-0.5 hover:!bg-violet-800 hover:shadow-[0_22px_50px_rgba(124,58,237,0.52)] disabled:!bg-violet-600 disabled:!text-white disabled:!opacity-95 disabled:cursor-not-allowed sm:px-5 sm:text-sm"
               >
                 <Plus className="h-4 w-4" />
                 <span>New Thread</span>
@@ -2587,8 +3051,8 @@ export default function ThreadsView({
           </div>
 
           {/* Signal stats */}
-          <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div className="team room-stat-card rounded-3xl border border-violet-200 bg-violet-50/80 p-3 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
+          <div className="mb-4 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible lg:pb-0">
+            <div className="team room-stat-card w-[7.25rem] shrink-0 rounded-2xl sm:rounded-3xl lg:w-auto border border-violet-200 bg-violet-50/80 p-3 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-200">
                 Threads
               </div>
@@ -2597,7 +3061,7 @@ export default function ThreadsView({
               </div>
             </div>
 
-            <div className="team room-stat-card rounded-3xl border border-amber-200 bg-amber-50/80 p-3 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
+            <div className="team room-stat-card w-[7.25rem] shrink-0 rounded-2xl sm:rounded-3xl lg:w-auto border border-amber-200 bg-amber-50/80 p-3 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200">
                 Pinned
               </div>
@@ -2606,7 +3070,7 @@ export default function ThreadsView({
               </div>
             </div>
 
-            <div className="team room-stat-card rounded-3xl border border-cyan-200 bg-cyan-50/80 p-3 shadow-sm dark:border-cyan-400/20 dark:bg-cyan-500/10">
+            <div className="team room-stat-card w-[7.25rem] shrink-0 rounded-2xl sm:rounded-3xl lg:w-auto border border-cyan-200 bg-cyan-50/80 p-3 shadow-sm dark:border-cyan-400/20 dark:bg-cyan-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-200">
                 Visible
               </div>
@@ -2615,7 +3079,7 @@ export default function ThreadsView({
               </div>
             </div>
 
-            <div className="team room-stat-card rounded-3xl border border-emerald-200 bg-emerald-50/80 p-3 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10">
+            <div className="team room-stat-card w-[7.25rem] shrink-0 rounded-2xl sm:rounded-3xl lg:w-auto border border-emerald-200 bg-emerald-50/80 p-3 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">
                 Members
               </div>
@@ -2626,7 +3090,14 @@ export default function ThreadsView({
           </div>
 
           {/* Main team room shell */}
-          <div className="team room-thread-stage grid h-[68vh] min-h-[520px] max-h-[720px] overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/30 lg:grid-cols-[340px_1fr]">
+          <div
+            className={
+              'team room-thread-stage grid overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.04] dark:shadow-black/30 sm:rounded-[2rem] lg:h-[68vh] lg:min-h-[520px] lg:max-h-[720px] lg:grid-cols-[340px_1fr] ' +
+              (activeThread
+                ? 'h-[62svh] min-h-[430px] max-h-[620px] sm:h-[64svh] sm:min-h-[480px] sm:max-h-[660px]'
+                : 'h-[42svh] min-h-[340px] max-h-[460px] sm:h-[50svh] sm:min-h-[400px] sm:max-h-[540px]')
+            }
+          >
             {/* Thread rail */}
             <aside
               className={
@@ -2641,7 +3112,7 @@ export default function ThreadsView({
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search team threads..."
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-11 py-3 text-sm font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-violet-400/30"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-11 py-3 !text-[16px] font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-violet-400/30 sm:!text-sm"
                   />
                 </div>
 
@@ -2674,7 +3145,47 @@ export default function ThreadsView({
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 [scrollbar-gutter:stable]">
+              <div className="shrink-0 border-b border-slate-200/70 px-3 py-2.5 dark:border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowArchived(
+                      (current) => !current
+                    );
+                    setActiveThread(null);
+                    setActiveChannel('all');
+                    setSearchQuery('');
+                  }}
+                  className={
+                    'flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-black transition-all ' +
+                    (
+                      showArchived
+                        ? 'border-violet-300 bg-violet-600 text-white shadow-sm shadow-violet-500/20 dark:border-violet-400/30 dark:bg-violet-500 dark:text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:border-violet-400/20 dark:hover:bg-violet-500/10 dark:hover:text-violet-200'
+                    )
+                  }
+                  aria-pressed={showArchived}
+                  title={
+                    showArchived
+                      ? 'Return to active threads'
+                      : 'View archived threads'
+                  }
+                >
+                  {showArchived ? (
+                    <ArchiveRestore className="h-3.5 w-3.5" />
+                  ) : (
+                    <Archive className="h-3.5 w-3.5" />
+                  )}
+
+                  <span>
+                    {showArchived
+                      ? 'Back to active'
+                      : 'Archived threads'}
+                  </span>
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5 [scrollbar-gutter:stable] sm:p-3">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
@@ -2690,10 +3201,14 @@ export default function ThreadsView({
                       <MessageCircle className="h-6 w-6" />
                     </div>
                     <p className="text-sm font-black text-slate-800 dark:text-white">
-                      No team threads found
+                      {showArchived
+                        ? 'No archived threads'
+                        : 'No team threads found'}
                     </p>
                     <p className="mt-1 text-xs font-medium leading-5 text-slate-500 dark:text-zinc-400">
-                      Start a new thread or adjust your filter.
+                      {showArchived
+                        ? 'Threads you archive will appear here until you restore them.'
+                        : 'Start a new thread or adjust your filter.'}
                     </p>
                     <button
                       onClick={() => !readOnly && setShowCreate(true)}
@@ -2757,13 +3272,81 @@ export default function ThreadsView({
               {activeThread ? (
                 <div className="flex h-full min-h-0 flex-col">
                   <ConversationPanel
-                    projectId={projectId}
-                    thread={activeThread}
-                    currentUserId={currentUserId}
-                    participants={getThreadParticipants(activeThread, projectMembers, currentUserId)}
-                    readOnly={readOnly}
-                    onBack={() => setActiveThread(null)}
-                  />
+                      projectId={projectId}
+                      project={project}
+                      thread={activeThread}
+                      currentUserId={currentUserId}
+                      participants={getThreadParticipants(activeThread, projectMembers, currentUserId)}
+                      readOnly={readOnly}
+                      onBack={() => setActiveThread(null)}
+                      onThreadUpdated={(updatedThread) => {
+                        const updatedId =
+                          String(
+                            updatedThread?._id ||
+                            updatedThread?.id ||
+                            ''
+                          );
+
+                        setThreads(
+                          (current) =>
+                            current.map(
+                              (item) =>
+                                String(
+                                  item?._id ||
+                                  item?.id ||
+                                  ''
+                                ) === updatedId
+                                  ? {
+                                      ...item,
+                                      ...updatedThread,
+                                      id:
+                                        updatedThread?._id ||
+                                        updatedThread?.id,
+                                    }
+                                  : item
+                            )
+                        );
+
+                        setActiveThread(
+                          (current) =>
+                            current &&
+                            String(
+                              current?._id ||
+                              current?.id ||
+                              ''
+                            ) === updatedId
+                              ? {
+                                  ...current,
+                                  ...updatedThread,
+                                }
+                              : current
+                        );
+                      }}
+                      onThreadRemoved={(removedThreadId) => {
+                        const normalizedId =
+                          String(
+                            removedThreadId ||
+                            ''
+                          );
+
+                        setThreads(
+                          (current) =>
+                            current.filter(
+                              (item) =>
+                                String(
+                                  item?._id ||
+                                  item?.id ||
+                                  ''
+                                ) !==
+                                normalizedId
+                            )
+                        );
+
+                        setActiveThread(
+                          null
+                        );
+                      }}
+                    />
                 </div>
               ) : (
                 <div className="flex h-full min-h-0 flex-1 items-center justify-center p-6">
