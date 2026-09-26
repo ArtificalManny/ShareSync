@@ -22,7 +22,7 @@ import {
 import {
   ThreadMessage,
   ThreadMessageSchema,
-} from '../threads/schemas/thread-message.schema';
+} from '../thread-messages/schemas/thread-message.schema';
 
 import { ProjectsController } from './projects.controller';
 import { ProjectShareController } from './share.controller';

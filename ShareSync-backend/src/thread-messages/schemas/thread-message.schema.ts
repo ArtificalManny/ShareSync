@@ -53,7 +53,8 @@ export class ThreadMessage {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
 
-  @Prop({ required: true })
+  // team-room-image-attachments-v1-r1
+  @Prop({ default: '' })
   content: string;
 
   @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })

@@ -2,7 +2,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Thread, ThreadSchema } from './schemas/thread.schema';
-import { ThreadMessage, ThreadMessageSchema } from './schemas/thread-message.schema';
+import { ThreadMessage, ThreadMessageSchema } from '../thread-messages/schemas/thread-message.schema';
 import { ThreadsService } from './threads.service';
 import { ThreadsController } from './threads.controller';
 import { ProjectsModule } from '../projects/projects.module';

@@ -13,7 +13,7 @@ import { Thread, ThreadSchema } from '../threads/schemas/thread.schema';
 import {
   ThreadMessage,
   ThreadMessageSchema,
-} from '../threads/schemas/thread-message.schema';
+} from '../thread-messages/schemas/thread-message.schema';
 import { VaultService } from './vault.service';
 import { VaultController } from './vault.controller';
 import { NotificationsModule } from '../notifications/notifications.module';

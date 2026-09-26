@@ -1,6 +1,7 @@
 // src/uploads/uploads.controller.ts
 import {
   BadRequestException,
+  ServiceUnavailableException,
   Controller,
   Post,
   Req,
@@ -32,6 +33,93 @@ const uploadsDiskStorage = diskStorage({
     cb(null, uniqueName);
   },
 });
+
+// team-room-image-attachments-v1-r1
+function detectMessageImageMime(
+  buffer: Buffer,
+):
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+  | null {
+  if (
+    buffer.length >= 3 &&
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff
+  ) {
+    return 'image/jpeg';
+  }
+
+  const pngSignature =
+    Buffer.from([
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a,
+    ]);
+
+  if (
+    buffer.length >= 8 &&
+    buffer
+      .subarray(0, 8)
+      .equals(
+        pngSignature,
+      )
+  ) {
+    return 'image/png';
+  }
+
+  if (
+    buffer.length >= 12 &&
+    buffer
+      .subarray(0, 4)
+      .toString('ascii') ===
+      'RIFF' &&
+    buffer
+      .subarray(8, 12)
+      .toString('ascii') ===
+      'WEBP'
+  ) {
+    return 'image/webp';
+  }
+
+  return null;
+}
+
+function messageImageExtensionMatches(
+  ext: string,
+  mime: string,
+): boolean {
+  const normalized =
+    String(ext || '')
+      .toLowerCase();
+
+  if (mime === 'image/jpeg') {
+    return (
+      normalized === 'jpg' ||
+      normalized === 'jpeg'
+    );
+  }
+
+  if (mime === 'image/png') {
+    return (
+      normalized === 'png'
+    );
+  }
+
+  if (mime === 'image/webp') {
+    return (
+      normalized === 'webp'
+    );
+  }
+
+  return false;
+}
 
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
@@ -157,9 +245,12 @@ export class UploadsController {
       .slice(1)
       .toLowerCase();
 
-    const mime =
+    const claimedMime =
       file.mimetype ||
       'application/octet-stream';
+
+    let mime =
+      claimedMime;
 
     const size =
       file.size || 0;
@@ -192,6 +283,99 @@ export class UploadsController {
         'Authenticated user is required.',
       );
     }
+
+    /*
+     * Fail closed for Messages / Team Room.
+     * Browser-provided MIME values are not trusted.
+     */
+    if (
+      !this.imageModerationService
+        .isServiceEnabled()
+    ) {
+      await this.moderationService
+        .logDecision({
+          kind: 'upload',
+          userId,
+          ext,
+          mime: claimedMime,
+          size,
+          decision: 'BLOCK',
+          reason:
+            'Image moderation service unavailable.',
+          meta: {
+            surface:
+              'messages',
+          },
+          ts: Date.now(),
+        });
+
+      await removeRejectedTempFile();
+
+      throw new ServiceUnavailableException(
+        'Image safety scanning is temporarily unavailable. Please try again later.',
+      );
+    }
+
+    let imageBuffer: Buffer;
+
+    try {
+      imageBuffer =
+        await fs.readFile(
+          fsPath,
+        );
+    } catch {
+      await removeRejectedTempFile();
+
+      throw new BadRequestException(
+        'This attachment could not be verified.',
+      );
+    }
+
+    const detectedMime =
+      detectMessageImageMime(
+        imageBuffer,
+      );
+
+    if (
+      !detectedMime ||
+      !messageImageExtensionMatches(
+        ext,
+        detectedMime,
+      )
+    ) {
+      await this.moderationService
+        .logDecision({
+          kind: 'upload',
+          userId,
+          ext,
+          mime: claimedMime,
+          size,
+          decision: 'BLOCK',
+          reason:
+            'Attachment failed image signature validation.',
+          meta: {
+            surface:
+              'messages',
+          },
+          ts: Date.now(),
+        });
+
+      await removeRejectedTempFile();
+
+      throw new BadRequestException(
+        'Team Room currently accepts JPG, PNG, and WebP images only.',
+      );
+    }
+
+    /*
+     * Persist and sign the server-detected MIME, not the
+     * browser's Content-Type declaration.
+     */
+    mime =
+      detectedMime;
+
+    file.mimetype =
+      detectedMime;
 
     /*
      * Do not silently allow PDFs/Office files yet.
@@ -234,7 +418,7 @@ export class UploadsController {
       const imgResult =
         await this.imageModerationService
           .moderateImage(
-            fsPath,
+            imageBuffer,
           );
 
       const image = {

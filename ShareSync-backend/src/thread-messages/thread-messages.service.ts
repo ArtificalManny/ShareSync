@@ -578,12 +578,7 @@ export class ThreadMessagesService {
       dto.content || '',
     ).trim();
 
-    if (!content) {
-      throw new BadRequestException(
-        'Message content is required',
-      );
-    }
-
+    // team-room-image-attachments-v1-r1
     const verifiedAttachments =
       this.verifyThreadMessageAttachments(
         userId,
@@ -596,6 +591,16 @@ export class ThreadMessagesService {
         userId,
         dto.fileReferences,
       );
+
+    if (
+      !content &&
+      verifiedAttachments.length === 0 &&
+      fileReferences.length === 0
+    ) {
+      throw new BadRequestException(
+        'Message content or an attachment is required',
+      );
+    }
 
     const message = new this.messageModel({
       threadId: threadObjectId,

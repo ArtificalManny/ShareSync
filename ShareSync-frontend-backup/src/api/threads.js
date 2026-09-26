@@ -102,6 +102,32 @@ export const postThreadMessage = async (
   return res.data?.data || res.data;
 };
 
+// team-room-image-attachments-v1-r1
+export const uploadThreadMessageAttachment = async (
+  file
+) => {
+  const formData = new FormData();
+
+  formData.append(
+    'file',
+    file,
+    file.name
+  );
+
+  const response =
+    await client.post(
+      '/uploads/message-attachment',
+      formData
+    );
+
+  const data =
+    response.data?.data ||
+    response.data ||
+    {};
+
+  return data?.file || data;
+};
+
 export default {
   getProjectThreads,
   getThread,
@@ -114,4 +140,5 @@ export default {
   restoreThread,
   getThreadMessages,
   postThreadMessage,
+  uploadThreadMessageAttachment,
 };

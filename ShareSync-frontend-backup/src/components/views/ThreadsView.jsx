@@ -14,6 +14,7 @@ import {
   createThread,
   getThreadMessages,
   postThreadMessage,
+  uploadThreadMessageAttachment,
   updateThread,
   deleteThread,
   muteThread,
@@ -693,9 +694,22 @@ function MessageBubble({
   // ⭐ AVATAR RESOLUTION CHAIN ⭐
   const avatarUrl = userObj.profilePicture || userObj.avatarUrl || userObj.avatar || userObj.photoUrl || null;
   const fileReferences =
-    normalizeThreadFileReferences(
-      msg?.fileReferences
-    );
+    normalizeThreadFileReferences([
+      ...(
+        Array.isArray(
+          msg?.fileReferences
+        )
+          ? msg.fileReferences
+          : []
+      ),
+      ...(
+        Array.isArray(
+          msg?.attachments
+        )
+          ? msg.attachments
+          : []
+      ),
+    ]);
 
   const isOptimistic =
     String(msg?._id || '')
@@ -854,6 +868,17 @@ function ConversationPanel({
   const [newMsg, setNewMsg] = useState('');
   const [linkedFile, setLinkedFile] = useState(null);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
+
+  // team-room-image-attachments-v1-r1
+  const [pendingAttachments, setPendingAttachments] =
+    useState([]);
+
+  const [uploadingAttachment, setUploadingAttachment] =
+    useState(false);
+
+  const attachmentInputRef =
+    useRef(null);
+
   const [sending, setSending] = useState(false);
   const [conversionTarget, setConversionTarget] = useState(null);
 
@@ -921,6 +946,13 @@ function ConversationPanel({
     setLoading(true);
     setLinkedFile(null);
     setFilePickerOpen(false);
+    setPendingAttachments([]);
+    setUploadingAttachment(false);
+
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = '';
+    }
+
     setConversionTarget(null);
     setThreadMenuOpen(false);
     setThreadActionBusy('');
@@ -966,100 +998,443 @@ function ConversationPanel({
     };
   }, [threadMenuOpen]);
 
-  const handleSend = useCallback(async () => {
-    const content = newMsg.trim();
+  const handleAttachmentUpload =
+    useCallback(
+      async (event) => {
+        const input =
+          event?.target;
 
-    if (
-      !content ||
-      !threadId ||
-      sending ||
-      threadLocked
-    ) {
-      return;
-    }
+        const selected =
+          Array.from(
+            input?.files || []
+          );
 
-    const normalizedFile =
-      normalizeThreadFileReference(
-        linkedFile
-      );
+        if (input) {
+          input.value = '';
+        }
 
-    const fileReferences =
-      normalizedFile
-        ? [normalizedFile]
-        : [];
+        if (
+          selected.length === 0 ||
+          uploadingAttachment ||
+          sending ||
+          threadLocked
+        ) {
+          return;
+        }
 
-    const optimistic = {
-      _id: 'temp-' + Date.now(),
-      content,
-      fileReferences,
-      authorName: 'You',
-      createdAt: new Date().toISOString(),
-      _isOwn: true,
-    };
+        const remaining =
+          Math.max(
+            0,
+            5 -
+              pendingAttachments.length
+          );
 
-    setMessages((previous) => [
-      ...previous,
-      optimistic,
-    ]);
+        if (remaining === 0) {
+          toast({
+            title:
+              'A Team Room message can contain at most 5 attachments.',
+            variant: 'error',
+          });
 
-    setNewMsg('');
-    setLinkedFile(null);
-    setFilePickerOpen(false);
-    setSending(true);
+          return;
+        }
 
-    try {
-      const created =
-        await postThreadMessage(
-          threadId,
-          {
-            content,
-            fileReferences:
-              normalizedFile
-                ? [normalizedFile.fileId]
-                : [],
-          }
+        const files =
+          selected.slice(
+            0,
+            remaining
+          );
+
+        if (
+          selected.length >
+          remaining
+        ) {
+          toast({
+            title:
+              `Only ${remaining} more attachment${
+                remaining === 1
+                  ? ''
+                  : 's'
+              } can be added.`,
+            variant: 'error',
+          });
+        }
+
+        const allowedTypes =
+          new Set([
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+          ]);
+
+        setUploadingAttachment(
+          true
         );
 
-      if (created) {
-        setMessages((previous) =>
-          previous.map((message) =>
-            message._id === optimistic._id
-              ? {
-                  ...created,
-                  _isOwn: true,
+        try {
+          for (const file of files) {
+            const clientMime =
+              String(
+                file?.type || ''
+              ).toLowerCase();
+
+            if (
+              !allowedTypes.has(
+                clientMime
+              )
+            ) {
+              toast({
+                title:
+                  'Team Room currently accepts JPG, PNG, and WebP images only.',
+                variant: 'error',
+              });
+
+              continue;
+            }
+
+            if (
+              Number(
+                file?.size || 0
+              ) >
+              50 * 1024 * 1024
+            ) {
+              toast({
+                title:
+                  'This image is larger than the 50 MB upload limit.',
+                variant: 'error',
+              });
+
+              continue;
+            }
+
+            try {
+              const uploaded =
+                await uploadThreadMessageAttachment(
+                  file
+                );
+
+              const attachment = {
+                fileId:
+                  String(
+                    uploaded?.id ||
+                      uploaded?.fileId ||
+                      ''
+                  ).trim(),
+
+                fileName:
+                  String(
+                    uploaded?.name ||
+                      uploaded?.fileName ||
+                      file.name ||
+                      'Image'
+                  ).trim(),
+
+                fileUrl:
+                  String(
+                    uploaded?.url ||
+                      uploaded?.fileUrl ||
+                      ''
+                  ).trim(),
+
+                mimeType:
+                  String(
+                    uploaded?.mime ||
+                      uploaded?.mimeType ||
+                      ''
+                  ).trim(),
+
+                fileSize:
+                  Number(
+                    uploaded?.size ??
+                      uploaded?.fileSize ??
+                      file.size ??
+                      0
+                  ),
+
+                // team-room-attachment-receipt-thumbnail-fix-v1
+                //
+                // Preserve the exact thumbnail value that was
+                // cryptographically signed by the backend.
+                // Do NOT substitute fileUrl here.
+                thumbnailUrl:
+                  String(
+                    uploaded?.thumbUrl ||
+                      uploaded?.thumbnailUrl ||
+                      ''
+                  ).trim(),
+
+                receipt:
+                  String(
+                    uploaded?.receipt ||
+                      ''
+                  ).trim(),
+
+                receiptExpiresAt:
+                  Number(
+                    uploaded
+                      ?.receiptExpiresAt
+                  ),
+              };
+
+              if (
+                !attachment.fileId ||
+                !attachment.fileName ||
+                !attachment.fileUrl ||
+                !attachment.mimeType ||
+                !attachment.receipt ||
+                !Number.isFinite(
+                  attachment
+                    .receiptExpiresAt
+                )
+              ) {
+                throw new Error(
+                  'Upload authorization was incomplete.'
+                );
+              }
+
+              setPendingAttachments(
+                (previous) => {
+                  if (
+                    previous.some(
+                      (item) =>
+                        item.fileId ===
+                        attachment.fileId
+                    )
+                  ) {
+                    return previous;
+                  }
+
+                  return [
+                    ...previous,
+                    attachment,
+                  ].slice(
+                    0,
+                    5
+                  );
                 }
-              : message
-          )
+              );
+            } catch (error) {
+              console.warn(
+                'Team Room attachment upload rejected:',
+                error
+              );
+
+              toast({
+                title:
+                  error?.response?.data?.message ||
+                  error?.message ||
+                  'This image could not be uploaded because it did not pass OpenShare safety checks.',
+                variant: 'error',
+              });
+            }
+          }
+        } finally {
+          setUploadingAttachment(
+            false
+          );
+        }
+      },
+      [
+        pendingAttachments.length,
+        uploadingAttachment,
+        sending,
+        threadLocked,
+      ]
+    );
+
+  const handleSend =
+    useCallback(async () => {
+      const content =
+        newMsg.trim();
+
+      const normalizedFile =
+        normalizeThreadFileReference(
+          linkedFile
         );
-      }
-    } catch (error) {
-      setMessages((previous) =>
-        previous.filter(
-          (message) =>
-            message._id !== optimistic._id
+
+      const fileReferences =
+        normalizedFile
+          ? [normalizedFile]
+          : [];
+
+      const attachments =
+        (
+          Array.isArray(
+            pendingAttachments
+          )
+            ? pendingAttachments
+            : []
         )
+          .filter(
+            (attachment) =>
+              attachment?.fileId &&
+              attachment?.fileName &&
+              attachment?.fileUrl &&
+              attachment?.mimeType &&
+              attachment?.receipt &&
+              Number.isFinite(
+                Number(
+                  attachment
+                    ?.receiptExpiresAt
+                )
+              )
+          )
+          .map(
+            (attachment) => ({
+              fileId:
+                attachment.fileId,
+
+              fileName:
+                attachment.fileName,
+
+              fileUrl:
+                attachment.fileUrl,
+
+              mimeType:
+                attachment.mimeType,
+
+              fileSize:
+                Number(
+                  attachment.fileSize ||
+                    0
+                ),
+
+              thumbnailUrl:
+                attachment.thumbnailUrl ||
+                undefined,
+
+              receipt:
+                attachment.receipt,
+
+              receiptExpiresAt:
+                Number(
+                  attachment
+                    .receiptExpiresAt
+                ),
+            })
+          );
+
+      if (
+        (
+          !content &&
+          !normalizedFile &&
+          attachments.length === 0
+        ) ||
+        !threadId ||
+        sending ||
+        uploadingAttachment ||
+        threadLocked
+      ) {
+        return;
+      }
+
+      const optimistic = {
+        _id:
+          'temp-' +
+          Date.now(),
+
+        content,
+        fileReferences,
+        attachments,
+
+        authorName:
+          'You',
+
+        createdAt:
+          new Date()
+            .toISOString(),
+
+        _isOwn:
+          true,
+      };
+
+      setMessages(
+        (previous) => [
+          ...previous,
+          optimistic,
+        ]
       );
 
-      setNewMsg(content);
-      setLinkedFile(normalizedFile);
+      setNewMsg('');
+      setLinkedFile(null);
+      setPendingAttachments([]);
+      setFilePickerOpen(false);
+      setSending(true);
 
-      toast({
-        title:
-          error?.response?.data?.message ||
-          error?.message ||
-          'Failed to send',
-        variant: 'error',
-      });
-    } finally {
-      setSending(false);
-    }
-  }, [
-    newMsg,
-    linkedFile,
-    threadId,
-    sending,
-    threadLocked,
-  ]);
+      try {
+        const created =
+          await postThreadMessage(
+            threadId,
+            {
+              content,
+
+              fileReferences:
+                normalizedFile
+                  ? [
+                      normalizedFile
+                        .fileId,
+                    ]
+                  : [],
+
+              attachments,
+            }
+          );
+
+        if (created) {
+          setMessages(
+            (previous) =>
+              previous.map(
+                (message) =>
+                  message._id ===
+                  optimistic._id
+                    ? {
+                        ...created,
+                        _isOwn:
+                          true,
+                      }
+                    : message
+              )
+          );
+        }
+      } catch (error) {
+        setMessages(
+          (previous) =>
+            previous.filter(
+              (message) =>
+                message._id !==
+                optimistic._id
+            )
+        );
+
+        setNewMsg(content);
+        setLinkedFile(
+          normalizedFile
+        );
+
+        setPendingAttachments(
+          attachments
+        );
+
+        toast({
+          title:
+            error?.response?.data
+              ?.message ||
+            error?.message ||
+            'Failed to send',
+          variant: 'error',
+        });
+      } finally {
+        setSending(false);
+      }
+    }, [
+      newMsg,
+      linkedFile,
+      pendingAttachments,
+      threadId,
+      sending,
+      uploadingAttachment,
+      threadLocked,
+    ]);
 
   const handleThreadAction =
     useCallback(
@@ -1450,6 +1825,74 @@ function ConversationPanel({
           />
         ) : null}
 
+        <input
+          ref={attachmentInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="hidden"
+          onChange={
+            handleAttachmentUpload
+          }
+        />
+
+        {pendingAttachments.length > 0 ? (
+          <div className="mb-2 grid gap-2 sm:grid-cols-2">
+            {pendingAttachments.map(
+              (attachment) => (
+                <div
+                  key={
+                    attachment.fileId
+                  }
+                  className="flex min-w-0 items-center gap-2 rounded-xl border border-violet-100 bg-violet-50/70 p-2 dark:border-violet-400/15 dark:bg-violet-500/10"
+                >
+                  <img
+                    src={
+                      attachment.thumbnailUrl ||
+                      attachment.fileUrl
+                    }
+                    alt=""
+                    className="h-11 w-11 shrink-0 rounded-lg object-cover"
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-black text-slate-900 dark:text-white">
+                      {
+                        attachment.fileName
+                      }
+                    </p>
+
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-white/40">
+                      {formatThreadFileSize(
+                        attachment.fileSize
+                      )}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onClick={() =>
+                      setPendingAttachments(
+                        (previous) =>
+                          previous.filter(
+                            (item) =>
+                              item.fileId !==
+                              attachment.fileId
+                          )
+                      )
+                    }
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-rose-600 disabled:opacity-50 dark:hover:bg-white/[0.08]"
+                    title="Remove attachment"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+        ) : null}
+
         {linkedFile ? (
           <div className="mb-2 flex items-center gap-2 rounded-xl border border-cyan-100 bg-cyan-50/70 px-3 py-2 dark:border-cyan-400/15 dark:bg-cyan-500/10">
             <FileText className="h-4 w-4 shrink-0 text-cyan-700 dark:text-cyan-200" />
@@ -1485,12 +1928,48 @@ function ConversationPanel({
             type="button"
             disabled={
               sending ||
+              uploadingAttachment ||
+              !projectId ||
+              threadLocked ||
+              pendingAttachments.length >= 5
+            }
+            onClick={() => {
+              setFilePickerOpen(
+                false
+              );
+
+              attachmentInputRef.current
+                ?.click();
+            }}
+            className={
+              'grid h-11 w-11 shrink-0 place-items-center rounded-xl border disabled:cursor-not-allowed disabled:opacity-40 ' +
+              (
+                pendingAttachments.length > 0
+                  ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200'
+                  : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-white/45'
+              )
+            }
+            title="Upload image"
+          >
+            {uploadingAttachment ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              sending ||
+              uploadingAttachment ||
               !projectId ||
               threadLocked
             }
             onClick={() =>
               setFilePickerOpen(
-                (current) => !current
+                (current) =>
+                  !current
               )
             }
             className={
@@ -1503,7 +1982,7 @@ function ConversationPanel({
             }
             title="Link project file"
           >
-            <Paperclip className="h-4 w-4" />
+            <Link2 className="h-4 w-4" />
           </button>
 
           <input
@@ -1525,9 +2004,11 @@ function ConversationPanel({
             placeholder={
               threadLocked
                 ? 'This thread is locked'
-                : linkedFile
-                  ? 'Add a message to send this File...'
-                  : 'Add to this thread...'
+                : pendingAttachments.length > 0
+                  ? 'Add a message (optional)...'
+                  : linkedFile
+                    ? 'Add a message to send this File...'
+                    : 'Add to this thread...'
             }
             maxLength={5000}
             className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 !text-[16px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-white dark:placeholder-white/30 sm:px-4 sm:!text-sm"
@@ -1538,8 +2019,13 @@ function ConversationPanel({
             onClick={handleSend}
             disabled={
               sending ||
+              uploadingAttachment ||
               threadLocked ||
-              !newMsg.trim()
+              (
+                !newMsg.trim() &&
+                !linkedFile &&
+                pendingAttachments.length === 0
+              )
             }
             className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-600 text-white shadow-sm hover:bg-violet-700 disabled:opacity-40"
           >
