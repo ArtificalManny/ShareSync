@@ -18,14 +18,27 @@ export class AIController {
     return user.sub || user.userId || user.id || null;
   }
 
-  private async chargeAiCall(req: Request, amount = 1): Promise<void> {
+  // openshare-ai-quota-preflight-v1
+  //
+  // Check quota before expensive AI work begins, then record usage only
+  // after the AI operation succeeds. This avoids generating paid AI work
+  // for an account whose current allowance is already exhausted.
+  private async assertAiCallAllowed(
+    req: Request,
+    amount = 1,
+  ): Promise<string | null> {
     const userId = this.getRequestUserId(req);
 
     if (!userId) {
-      return;
+      return null;
     }
 
-    const usageCheck = await this.subscriptionsService.checkLimit(userId, 'aiCalls', amount);
+    const usageCheck =
+      await this.subscriptionsService.checkLimit(
+        userId,
+        'aiCalls',
+        amount,
+      );
 
     if (!usageCheck.allowed) {
       throw new HttpException(
@@ -34,7 +47,22 @@ export class AIController {
       );
     }
 
-    await this.subscriptionsService.incrementUsage(userId, 'aiCalls', amount);
+    return userId;
+  }
+
+  private async recordAiCall(
+    userId: string | null,
+    amount = 1,
+  ): Promise<void> {
+    if (!userId) {
+      return;
+    }
+
+    await this.subscriptionsService.incrementUsage(
+      userId,
+      'aiCalls',
+      amount,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -43,6 +71,9 @@ export class AIController {
 
   @Post('chat')
   async chat(@Req() req: Request, @Body() body: any) {
+    const billingUserId =
+      await this.assertAiCallAllowed(req);
+
     const contextData = {
       scope: body.scope,
       projectId: body.projectId,
@@ -51,14 +82,25 @@ export class AIController {
     };
 
     const text = await this.aiService.generateChatResponse(body.prompt, contextData);
-    await this.chargeAiCall(req);
+
+    await this.recordAiCall(
+      billingUserId,
+    );
+
     return { text };
   }
 
   @Get('suggestion')
   async getSingleSuggestion(@Req() req: Request) {
+    const billingUserId =
+      await this.assertAiCallAllowed(req);
+
     const suggestion = await this.aiService.generateSingleSuggestion();
-    await this.chargeAiCall(req);
+
+    await this.recordAiCall(
+      billingUserId,
+    );
+
     // Wrap it in the exact JSON format your React AISuggestionCard expects
     return { suggestion };
   }
@@ -75,30 +117,88 @@ export class AIController {
     const userId = (req as any).user?.userId || (req as any).user?.id;
     const limit = query.limit ? Number(query.limit) : undefined;
 
+    const billingUserId =
+      await this.assertAiCallAllowed(req);
+
     const suggestions = await this.aiService.getSuggestions(userId, {
       type: query.type,
       projectId: query.projectId,
       limit,
     });
 
-    await this.chargeAiCall(req);
+    await this.recordAiCall(
+      billingUserId,
+    );
 
     return suggestions;
   }
 
   @Post('analyze-task')
-  async analyzeTask(@Body() body: { taskId: string }) {
-    return this.aiService.analyzeTask(body.taskId);
+  async analyzeTask(
+    @Req() req: Request,
+    @Body() body: { taskId: string },
+  ) {
+    const billingUserId =
+      await this.assertAiCallAllowed(req);
+
+    const result =
+      await this.aiService.analyzeTask(
+        body.taskId,
+      );
+
+    await this.recordAiCall(
+      billingUserId,
+    );
+
+    return result;
   }
 
   @Post('workload-analysis')
-  async analyzeWorkload(@Body() body: { projectId: string; userIds?: string[] }) {
-    return this.aiService.analyzeWorkload(body.projectId, body.userIds);
+  async analyzeWorkload(
+    @Req() req: Request,
+    @Body() body: {
+      projectId: string;
+      userIds?: string[];
+    },
+  ) {
+    const billingUserId =
+      await this.assertAiCallAllowed(req);
+
+    const result =
+      await this.aiService.analyzeWorkload(
+        body.projectId,
+        body.userIds,
+      );
+
+    await this.recordAiCall(
+      billingUserId,
+    );
+
+    return result;
   }
 
   @Post('smart-schedule')
-  async smartSchedule(@Body() body: { projectId: string; sprintId?: string }) {
-    return this.aiService.generateSmartSchedule(body.projectId, body.sprintId);
+  async smartSchedule(
+    @Req() req: Request,
+    @Body() body: {
+      projectId: string;
+      sprintId?: string;
+    },
+  ) {
+    const billingUserId =
+      await this.assertAiCallAllowed(req);
+
+    const result =
+      await this.aiService.generateSmartSchedule(
+        body.projectId,
+        body.sprintId,
+      );
+
+    await this.recordAiCall(
+      billingUserId,
+    );
+
+    return result;
   }
 
   @Get('suggestion-types')
