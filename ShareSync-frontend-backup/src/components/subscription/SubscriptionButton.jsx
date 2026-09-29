@@ -344,12 +344,14 @@ export default function SubscriptionButton() {
     };
   }, [loadSubscription]);
 
-  const handleUpgrade = async (planToUpgrade) => {
+  // openshare-checkout-interval-v1
+  const handleUpgrade = async (planToUpgrade, interval = 'monthly') => {
     setLoading(true);
 
     try {
       const response = await api.post('/subscriptions/checkout', {
         plan: planToUpgrade,
+        interval,
       });
 
       const url = response.data?.data?.url || response.data?.url;
@@ -391,8 +393,13 @@ export default function SubscriptionButton() {
   const storageUsed = getStorageBytesFromUsage(usage);
   const storageLimit = toNumber(limits.storageBytes, 1024 * 1024 * 1024);
 
+  // openshare-global-workspace-member-metric-v1
   const membersUsed = toNumber(
-    usage.maxMembersInProject ?? usage.membersPerProject ?? usage.activeMembers ?? subscription?.activeMembers,
+    usage.acceptedWorkspaceMemberCount ??
+      usage.maxMembersInProject ??
+      usage.membersPerProject ??
+      usage.activeMembers ??
+      subscription?.activeMembers,
     0
   );
   const membersLimit = toNumber(limits.membersPerProject, 10);

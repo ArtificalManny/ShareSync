@@ -485,6 +485,8 @@ export default function PricingModal({
                     <UsageMeter
                       label="Workspace Members"
                       current={
+                        // openshare-global-workspace-member-metric-v1
+                        usage.acceptedWorkspaceMemberCount ??
                         usage.maxMembersInProject ??
                         usage.membersPerProject ??
                         usage.activeMembers ??
