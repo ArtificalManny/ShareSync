@@ -284,6 +284,18 @@ export class MilestonesService {
       throw new BadRequestException('userId in token is not a valid ObjectId (cannot set createdBy)');
     }
 
+    // openshare-milestone-billing-enforcement-v1
+    await this.projectsService
+      .assertProjectEditableByUser(
+        dto.projectId,
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        dto.projectId,
+      );
+
     await this.assertMilestoneTextAllowed(userId, dto);
 
     // ✅ If schema requires order, always set it here.
@@ -598,6 +610,26 @@ export class MilestonesService {
   async update(id: string, userId: string, dto: UpdateMilestoneDto): Promise<MilestoneDocument> {
     const milestone = await this.findById(id);
 
+    const billingProjectId =
+      milestone.projectId?.toString?.();
+
+    if (!billingProjectId) {
+      throw new BadRequestException(
+        'Milestone project is missing',
+      );
+    }
+
+    await this.projectsService
+      .assertProjectEditableByUser(
+        billingProjectId,
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        billingProjectId,
+      );
+
     await this.assertMilestoneTextAllowed(userId, dto);
 
     const wasCompleted =
@@ -817,6 +849,27 @@ if (projectId) {
 
   async delete(id: string, userId: string): Promise<void> {
     const milestone = await this.findById(id);
+
+    const projectId =
+      milestone.projectId?.toString?.();
+
+    if (!projectId) {
+      throw new BadRequestException(
+        'Milestone project is missing',
+      );
+    }
+
+    await this.projectsService
+      .assertProjectEditableByUser(
+        projectId,
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     await this.milestoneModel.deleteOne({ _id: milestone._id });
   }
 
@@ -840,9 +893,14 @@ if (projectId) {
     }
 
     await this.projectsService
-      .findByIdWithAccess(
+      .assertProjectEditableByUser(
         projectId,
         userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
       );
 
     const fileId = String(
@@ -1001,9 +1059,14 @@ if (projectId) {
     }
 
     await this.projectsService
-      .findByIdWithAccess(
+      .assertProjectEditableByUser(
         projectId,
         userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
       );
 
     const normalizedFileId = String(
@@ -1097,31 +1160,105 @@ if (projectId) {
   // NOTE: Roadmap uses task.milestoneId primarily.
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  async linkTask(milestoneId: string, taskId: string): Promise<MilestoneDocument> {
-    const milestone = await this.findById(milestoneId);
+  async linkTask(
+    milestoneId: string,
+    taskId: string,
+    userId: string,
+  ): Promise<MilestoneDocument> {
+    const milestone =
+      await this.findById(
+        milestoneId,
+      );
 
-    const taskObjectId = new Types.ObjectId(taskId);
+    const projectId =
+      milestone.projectId?.toString?.();
 
-    // Check if already linked
-    if (milestone.taskIds.some(id => id.equals(taskObjectId))) {
+    if (!projectId) {
+      throw new BadRequestException(
+        'Milestone project is missing',
+      );
+    }
+
+    await this.projectsService
+      .assertProjectEditableByUser(
+        projectId,
+        userId,
+      );
+
+    const taskObjectId =
+      new Types.ObjectId(taskId);
+
+    // Preserve existing idempotent behavior:
+    // an already-linked task causes no mutation.
+    if (
+      milestone.taskIds.some(
+        id => id.equals(taskObjectId),
+      )
+    ) {
       return milestone;
     }
 
-    milestone.taskIds.push(taskObjectId);
-    milestone.totalTasks = milestone.taskIds.length;
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
+    milestone.taskIds.push(
+      taskObjectId,
+    );
+
+    milestone.totalTasks =
+      milestone.taskIds.length;
 
     return milestone.save();
   }
 
-  async unlinkTask(milestoneId: string, taskId: string): Promise<MilestoneDocument> {
-    const milestone = await this.findById(milestoneId);
+  async unlinkTask(
+    milestoneId: string,
+    taskId: string,
+    userId: string,
+  ): Promise<MilestoneDocument> {
+    const milestone =
+      await this.findById(
+        milestoneId,
+      );
 
-    const taskObjectId = new Types.ObjectId(taskId);
-    milestone.taskIds = milestone.taskIds.filter(id => !id.equals(taskObjectId));
-    milestone.totalTasks = milestone.taskIds.length;
+    const projectId =
+      milestone.projectId?.toString?.();
 
-    // Recalculate progress (legacy mode)
-    await this.recalculateProgress(milestoneId);
+    if (!projectId) {
+      throw new BadRequestException(
+        'Milestone project is missing',
+      );
+    }
+
+    await this.projectsService
+      .assertProjectEditableByUser(
+        projectId,
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
+    const taskObjectId =
+      new Types.ObjectId(taskId);
+
+    milestone.taskIds =
+      milestone.taskIds.filter(
+        id => !id.equals(taskObjectId),
+      );
+
+    milestone.totalTasks =
+      milestone.taskIds.length;
+
+    // Internal bookkeeping stays ungated because the user-facing mutation
+    // has already passed both authorization layers.
+    await this.recalculateProgress(
+      milestoneId,
+    );
 
     return milestone.save();
   }

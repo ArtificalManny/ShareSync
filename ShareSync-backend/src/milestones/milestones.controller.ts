@@ -137,14 +137,54 @@ export class MilestonesController {
   }
 
   @Post(':id/tasks')
-  async linkTask(@Param('id') id: string, @Body('taskId') taskId: string) {
-    const milestone = await this.milestonesService.linkTask(id, taskId);
-    return { success: true, data: milestone, timestamp: this.now() };
+  async linkTask(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body('taskId') taskId: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+
+    const milestone =
+      await this.milestonesService.linkTask(
+        id,
+        taskId,
+        userId,
+      );
+
+    return {
+      success: true,
+      data: milestone,
+      timestamp: this.now(),
+    };
   }
 
   @Delete(':id/tasks/:taskId')
-  async unlinkTask(@Param('id') id: string, @Param('taskId') taskId: string) {
-    const milestone = await this.milestonesService.unlinkTask(id, taskId);
-    return { success: true, data: milestone, timestamp: this.now() };
+  async unlinkTask(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId ||
+      req.user?.id ||
+      req.user?._id;
+
+    const milestone =
+      await this.milestonesService.unlinkTask(
+        id,
+        taskId,
+        userId,
+      );
+
+    return {
+      success: true,
+      data: milestone,
+      timestamp: this.now(),
+    };
   }
 }
