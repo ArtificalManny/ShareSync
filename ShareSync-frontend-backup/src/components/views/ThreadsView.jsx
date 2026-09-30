@@ -1110,7 +1110,8 @@ function ConversationPanel({
             try {
               const uploaded =
                 await uploadThreadMessageAttachment(
-                  file
+                  file,
+                  threadId
                 );
 
               const attachment = {

@@ -103,8 +103,10 @@ export const postThreadMessage = async (
 };
 
 // team-room-image-attachments-v1-r1
+// openshare-thread-upload-entitlement-v2
 export const uploadThreadMessageAttachment = async (
-  file
+  file,
+  threadId
 ) => {
   const formData = new FormData();
 
@@ -112,6 +114,11 @@ export const uploadThreadMessageAttachment = async (
     'file',
     file,
     file.name
+  );
+
+  formData.append(
+    'threadId',
+    String(threadId || '')
   );
 
   const response =
