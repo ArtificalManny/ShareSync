@@ -2,6 +2,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import NetworkStatusBanner from "./components/states/NetworkStatusBanner.jsx";
+// network-status-root-v1
 import ReactQueryProvider from "./context/ReactQueryProvider";
 import "./index.css";
 import "./theme.css";
@@ -165,6 +167,7 @@ function renderApp() {
 
   root.render(
     <ReactQueryProvider>
+      <NetworkStatusBanner />
       <App />
     </ReactQueryProvider>
   );
