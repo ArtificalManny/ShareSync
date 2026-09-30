@@ -26,7 +26,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // openshare-disable-webview-bounce-v1
+        // Keep the root WKWebView fixed like a native application surface.
+        disableWebViewBounce()
+    }
+
+    private func disableWebViewBounce() {
+        guard
+            let bridgeViewController =
+                window?.rootViewController as? CAPBridgeViewController,
+            let webView = bridgeViewController.bridge?.webView
+        else {
+            return
+        }
+
+        let scrollView = webView.scrollView
+
+        // Prevent the outer Capacitor WebView from rubber-banding.
+        // Inner HTML scroll regions remain scrollable.
+        scrollView.bounces = false
+        scrollView.alwaysBounceVertical = false
+        scrollView.alwaysBounceHorizontal = false
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
