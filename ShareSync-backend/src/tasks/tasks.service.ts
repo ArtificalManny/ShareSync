@@ -490,6 +490,14 @@ export class TasksService {
   async create(userId: string, dto: CreateTaskDto): Promise<TaskDocument> {
     const project = await this.projectsService.findByIdWithAccess(dto.projectId, userId);
 
+    // openshare-task-billing-enforcement-v1
+    // Preserve the existing Task permission model; this assertion adds only
+    // the owner's project-level billing read-only boundary.
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        dto.projectId,
+      );
+
     await this.assertTaskTextAllowed(userId, dto);
 
     if (dto.parentId) {
@@ -769,6 +777,11 @@ export class TasksService {
 
   async update(taskId: string, userId: string, dto: UpdateTaskDto, context?: TaskMutationContext): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
 
     await this.assertTaskTextAllowed(userId, dto);
 
@@ -1811,6 +1824,12 @@ export class TasksService {
 
   async move(taskId: string, userId: string, dto: MoveTaskDto, context?: TaskMutationContext): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
+
     const previousStatus = task.status;
 
     if (dto.status) {
@@ -2028,6 +2047,11 @@ export class TasksService {
     if (task.status === TaskStatus.DONE) {
       throw new BadRequestException('Task is already completed');
     }
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
 
     const variableRewards = this.calculateVariableRewards(task.xpValue);
 
@@ -2274,6 +2298,11 @@ export class TasksService {
       userId,
     );
 
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
+
     const wasCompleted =
       task.status === TaskStatus.DONE;
 
@@ -2447,6 +2476,11 @@ export class TasksService {
   async addComment(taskId: string, userId: string, dto: AddCommentDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
 
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
+
     const commentId =
       new Types.ObjectId();
 
@@ -2516,6 +2550,11 @@ export class TasksService {
       throw new ForbiddenException('You can only delete your own comments');
     }
 
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
+
     task.comments.splice(commentIndex, 1);
     return task.save();
   }
@@ -2529,6 +2568,11 @@ export class TasksService {
       taskId,
       userId,
     );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
 
     const fileId = String(dto.fileId || '').trim();
     const fileName = String(dto.fileName || '').trim();
@@ -2676,6 +2720,11 @@ export class TasksService {
       taskId,
       userId,
     );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
 
     const fileId = String(
       dto?.fileId || '',
@@ -2874,6 +2923,11 @@ export class TasksService {
       );
     }
 
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
+
     const removedFileName = String(
       attachment?.fileName ||
         attachment?.name ||
@@ -2910,6 +2964,11 @@ export class TasksService {
 
   async logTime(taskId: string, userId: string, dto: LogTimeDto): Promise<TaskDocument> {
     const task = await this.findByIdWithAccess(taskId, userId);
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        task.projectId.toString(),
+      );
 
     task.timeLogs.push({
       userId: new Types.ObjectId(userId),
