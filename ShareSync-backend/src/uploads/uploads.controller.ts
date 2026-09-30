@@ -2,15 +2,31 @@
 import {
   BadRequestException,
   ServiceUnavailableException,
+  Body,
   Controller,
+  ForbiddenException,
+  NotFoundException,
   Post,
   Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import {
+  InjectConnection,
+  InjectModel,
+} from '@nestjs/mongoose';
+import {
+  Connection,
+  Model,
+  Types,
+} from 'mongoose';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -21,8 +37,14 @@ import { policyForUpload } from '../moderation/policy';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   MessageAttachmentReceiptPayload,
+  ThreadMessageAttachmentReceiptPayload,
   signMessageAttachmentReceipt,
+  signThreadMessageAttachmentReceipt,
 } from './message-attachment-receipt';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import {
+  TeamRoomPendingUpload,
+} from './schemas/team-room-pending-upload.schema';
 
 // Multer disk storage — saves files to /uploads with unique names
 const uploadsDiskStorage = diskStorage({
@@ -128,7 +150,358 @@ export class UploadsController {
     private readonly uploadsService: UploadsService,
     private readonly moderationService: ModerationService,
     private readonly imageModerationService: ImageModerationService,
+    private readonly subscriptionsService: SubscriptionsService,
+    @InjectConnection()
+    private readonly connection: Connection,
+
+    // openshare-team-room-upload-registration-v1
+    @InjectModel(
+      TeamRoomPendingUpload.name,
+    )
+    private readonly teamRoomPendingUploadModel:
+      Model<any>,
   ) {}
+
+  // openshare-thread-upload-entitlement-v2
+  private normalizeProjectUserId(
+    value: any,
+  ): string {
+    if (!value) {
+      return '';
+    }
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number'
+    ) {
+      return String(
+        value,
+      ).trim();
+    }
+
+    if (
+      value instanceof Types.ObjectId
+    ) {
+      return value.toString();
+    }
+
+    return this.normalizeProjectUserId(
+      value?.userId ||
+        value?.user ||
+        value?.memberId ||
+        value?.member ||
+        value?._id ||
+        value?.id,
+    );
+  }
+
+  private async requireThreadMessageUploadAccess(
+    threadIdValue: any,
+    userIdValue: any,
+  ): Promise<{
+    threadId: string;
+    projectId: string;
+  }> {
+    const threadId =
+      this.normalizeProjectUserId(
+        threadIdValue,
+      );
+
+    const userId =
+      this.normalizeProjectUserId(
+        userIdValue,
+      );
+
+    if (
+      !threadId ||
+      !Types.ObjectId.isValid(
+        threadId,
+      )
+    ) {
+      throw new NotFoundException(
+        'Thread not found',
+      );
+    }
+
+    if (
+      !userId ||
+      !Types.ObjectId.isValid(
+        userId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'Authenticated user is invalid',
+      );
+    }
+
+    const thread: any =
+      await this.connection
+        .collection('threads')
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              threadId,
+            ),
+        });
+
+    if (!thread) {
+      throw new NotFoundException(
+        'Thread not found',
+      );
+    }
+
+    if (
+      thread.isLocked === true
+    ) {
+      throw new ForbiddenException(
+        'This thread is locked and cannot accept new messages',
+      );
+    }
+
+    const projectId =
+      this.normalizeProjectUserId(
+        thread.projectId,
+      );
+
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(
+        projectId,
+      )
+    ) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    const project: any =
+      await this.connection
+        .collection('projects')
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              projectId,
+            ),
+        });
+
+    if (!project) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    const allowedUserIds =
+      new Set<string>();
+
+    [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+    ].forEach(
+      (candidate) => {
+        const id =
+          this.normalizeProjectUserId(
+            candidate,
+          );
+
+        if (id) {
+          allowedUserIds.add(
+            id,
+          );
+        }
+      },
+    );
+
+    [
+      project.members,
+      project.sharedWith,
+      project.participantIds,
+    ].forEach(
+      (collection) => {
+        if (
+          !Array.isArray(
+            collection,
+          )
+        ) {
+          return;
+        }
+
+        collection.forEach(
+          (candidate: any) => {
+            const id =
+              this.normalizeProjectUserId(
+                candidate,
+              );
+
+            if (id) {
+              allowedUserIds.add(
+                id,
+              );
+            }
+          },
+        );
+      },
+    );
+
+    if (
+      !allowedUserIds.has(
+        userId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to this project',
+      );
+    }
+
+    // openshare-thread-upload-member-access-enforcement-v1
+    //
+    // This helper runs before durable upload persistence.
+    // Ordinary access succeeds first; billing then decides whether this
+    // preserved member remains active.
+    const memberAccess =
+      await this.subscriptionsService
+        .getProjectMemberAccess(
+          projectId,
+          userId,
+        );
+
+    if (
+      !memberAccess.active
+    ) {
+      const selectionRequired =
+        memberAccess.reason ===
+          'billing_member_selection_required';
+
+      throw new ForbiddenException({
+        code:
+          'BILLING_MEMBER_INACTIVE',
+
+        reason:
+          memberAccess.reason,
+
+        message:
+          selectionRequired
+            ? 'Your workspace membership is temporarily inactive until the project owner finishes choosing which members to keep active on the Free plan.'
+            : 'Your workspace membership is inactive under the project owner’s current plan. The project owner can change the retained-member selection or upgrade to restore access.',
+
+        projectId,
+
+        ownerUserId:
+          memberAccess.ownerUserId,
+
+        downgradeState:
+          memberAccess.downgradeState,
+
+        memberLimit:
+          memberAccess.memberLimit,
+
+        acceptedWorkspaceMemberCount:
+          memberAccess
+            .acceptedWorkspaceMemberCount,
+
+        overMemberLimit:
+          memberAccess.overMemberLimit,
+
+        retainedMember:
+          memberAccess.retainedMember,
+
+        selectionRequired:
+          memberAccess.selectionRequired,
+      });
+    }
+
+    return {
+      threadId,
+      projectId,
+    };
+  }
+
+  private async assertThreadMessageUploadWritable(
+    projectId: string,
+  ): Promise<void> {
+    const access =
+      await this.subscriptionsService
+        .getProjectWriteAccess(
+          projectId,
+        );
+
+    if (access.writable) {
+      return;
+    }
+
+    const selectionRequired =
+      access.reason ===
+      'billing_selection_required';
+
+    throw new ForbiddenException({
+      code:
+        'BILLING_PROJECT_READ_ONLY',
+      reason:
+        access.reason,
+      message:
+        selectionRequired
+          ? 'This project is temporarily read-only until the project owner chooses which projects to keep active on the Free plan.'
+          : 'This project is read-only under the project owner’s current plan. Upgrade or change the retained-project selection to restore editing.',
+      projectId,
+      ownerUserId:
+        access.ownerUserId,
+      downgradeState:
+        access.downgradeState,
+      projectLimit:
+        access.projectLimit,
+      ownedProjectCount:
+        access.ownedProjectCount,
+      overProjectLimit:
+        access.overProjectLimit,
+      retainedProject:
+        access.retainedProject,
+      selectionRequired:
+        access.selectionRequired,
+    });
+  }
+
+  private async assertThreadMessageUploadStorageAvailable(
+    projectId: string,
+    incomingFileBytes: number,
+  ): Promise<void> {
+    const usage =
+      await this.subscriptionsService
+        .checkProjectStorageLimit(
+          projectId,
+          incomingFileBytes,
+        );
+
+    if (usage.allowed) {
+      return;
+    }
+
+    throw new HttpException(
+      {
+        code:
+          'STORAGE_LIMIT_EXCEEDED',
+        message:
+          'Storage limit exceeded. Remove files or upgrade your plan to upload more.',
+        ownerUserId:
+          usage.ownerUserId,
+        currentUsedBytes:
+          usage.current,
+        incomingFileBytes:
+          Math.max(
+            0,
+            Number(
+              incomingFileBytes ||
+              0,
+            ),
+          ),
+        limitBytes:
+          usage.limit,
+        remainingBytes:
+          usage.remaining,
+      },
+      HttpStatus.PAYMENT_REQUIRED,
+    );
+  }
 
   /** Generic file upload */
   @Post('file')
@@ -223,6 +596,8 @@ export class UploadsController {
     @Req() req: any,
     @UploadedFile()
     file: Express.Multer.File,
+    @Body('threadId')
+    threadId?: string,
   ) {
     if (!file) {
       throw new BadRequestException(
@@ -282,6 +657,49 @@ export class UploadsController {
       throw new BadRequestException(
         'Authenticated user is required.',
       );
+    }
+
+    let threadUploadContext:
+      | {
+          threadId: string;
+          projectId: string;
+        }
+      | null = null;
+
+    const normalizedThreadId =
+      String(
+        threadId || '',
+      ).trim();
+
+    if (normalizedThreadId) {
+      try {
+        threadUploadContext =
+          await this
+            .requireThreadMessageUploadAccess(
+              normalizedThreadId,
+              userId,
+            );
+
+        await this
+          .assertThreadMessageUploadWritable(
+            threadUploadContext
+              .projectId,
+          );
+
+        // openshare-team-room-upload-registration-v1
+        // Exact incoming bytes are checked before moderation reaches durable
+        // R2/local persistence. Direct Messages omit threadId and are unchanged.
+        await this
+          .assertThreadMessageUploadStorageAvailable(
+            threadUploadContext
+              .projectId,
+            size,
+          );
+      } catch (error) {
+        await removeRejectedTempFile();
+
+        throw error;
+      }
     }
 
     /*
@@ -408,6 +826,17 @@ export class UploadsController {
       );
     }
 
+    let persistedThreadStored:
+      | any
+      | null = null;
+
+    let persistedThreadAssetId:
+      | Types.ObjectId
+      | null = null;
+
+    let threadUploadCompleted =
+      false;
+
     try {
       const virus =
         await this.moderationService
@@ -488,6 +917,11 @@ export class UploadsController {
             file,
           );
 
+      if (threadUploadContext) {
+        persistedThreadStored =
+          stored;
+      }
+
       const payload:
         MessageAttachmentReceiptPayload =
       {
@@ -538,10 +972,141 @@ export class UploadsController {
         );
       }
 
-      const receipt =
-        signMessageAttachmentReceipt(
-          payload,
-        );
+      if (threadUploadContext) {
+        const createdAsset =
+          await this
+            .teamRoomPendingUploadModel
+            .create({
+              fileId:
+                payload.fileId,
+
+              projectId:
+                new Types.ObjectId(
+                  threadUploadContext
+                    .projectId,
+                ),
+
+              threadId:
+                new Types.ObjectId(
+                  threadUploadContext
+                    .threadId,
+                ),
+
+              uploaderId:
+                new Types.ObjectId(
+                  userId,
+                ),
+
+              fileName:
+                payload.fileName,
+
+              fileUrl:
+                payload.fileUrl,
+
+              mimeType:
+                payload.mimeType ||
+                '',
+
+              sizeInBytes:
+                Math.max(
+                  0,
+                  Number(
+                    payload.fileSize ||
+                    0,
+                  ),
+                ),
+
+              thumbnailUrl:
+                payload.thumbnailUrl ||
+                '',
+
+              storageProvider:
+                String(
+                  stored
+                    ?.storageProvider ||
+                  '',
+                ),
+
+              storageKey:
+                String(
+                  stored
+                    ?.storageKey ||
+                  '',
+                ),
+
+              expiresAt:
+                new Date(
+                  payload.expiresAt,
+                ),
+
+              consumedMessageId:
+                null,
+
+              consumedAt:
+                null,
+            });
+
+        persistedThreadAssetId =
+          createdAsset._id;
+
+        /*
+         * Fail closed after registration too. The registry row is already
+         * included by authoritative storage accounting, so this catches the
+         * normal concurrent-upload case without manually incrementing a
+         * billing counter.
+         */
+        await this
+          .assertThreadMessageUploadStorageAvailable(
+            threadUploadContext
+              .projectId,
+            0,
+          );
+      }
+
+      let receipt: string;
+
+      if (threadUploadContext) {
+        const threadPayload:
+          ThreadMessageAttachmentReceiptPayload =
+        {
+          version: 2,
+          uploaderId:
+            payload.uploaderId,
+          threadId:
+            threadUploadContext
+              .threadId,
+          projectId:
+            threadUploadContext
+              .projectId,
+          fileId:
+            payload.fileId,
+          fileName:
+            payload.fileName,
+          fileUrl:
+            payload.fileUrl,
+          mimeType:
+            payload.mimeType,
+          fileSize:
+            payload.fileSize,
+          thumbnailUrl:
+            payload.thumbnailUrl,
+          expiresAt:
+            payload.expiresAt,
+        };
+
+        receipt =
+          signThreadMessageAttachmentReceipt(
+            threadPayload,
+          );
+      } else {
+        receipt =
+          signMessageAttachmentReceipt(
+            payload,
+          );
+      }
+
+      threadUploadCompleted =
+        true;
 
       return {
         ok: true,
@@ -566,9 +1131,88 @@ export class UploadsController {
         },
       };
     } catch (error) {
+      if (
+        threadUploadContext &&
+        persistedThreadStored &&
+        !threadUploadCompleted
+      ) {
+        let physicalObjectDeleted =
+          false;
+
+        try {
+          await this.uploadsService
+            .deleteStoredObject({
+              url:
+                String(
+                  persistedThreadStored
+                    ?.url ||
+                  '',
+                ),
+
+              storageProvider:
+                String(
+                  persistedThreadStored
+                    ?.storageProvider ||
+                  '',
+                ),
+
+              storageKey:
+                String(
+                  persistedThreadStored
+                    ?.storageKey ||
+                  '',
+                ),
+            });
+
+          physicalObjectDeleted =
+            true;
+        } catch (
+          cleanupError
+        ) {
+          /*
+           * Fail safe: when physical cleanup fails, retain any existing asset
+           * registry row so the bytes remain accounted and a later cleanup
+           * worker can retry instead of silently losing object metadata.
+           */
+          console.error(
+            'Team Room upload rollback could not delete stored object',
+            cleanupError,
+          );
+        }
+
+        if (
+          physicalObjectDeleted &&
+          persistedThreadAssetId
+        ) {
+          try {
+            await this
+              .teamRoomPendingUploadModel
+              .deleteOne({
+                _id:
+                  persistedThreadAssetId,
+                consumedMessageId:
+                  null,
+              })
+              .exec();
+          } catch (
+            metadataCleanupError
+          ) {
+            /*
+             * Leaving a metadata row after its physical object was removed is
+             * safer than deleting metadata before object cleanup. The later
+             * cleanup phase can reconcile it idempotently.
+             */
+            console.error(
+              'Team Room upload rollback could not delete asset metadata',
+              metadataCleanupError,
+            );
+          }
+        }
+      }
+
       /*
-       * If storage has not happened yet this removes the Multer temp file.
-       * If uploadFile() already moved/consumed it, unlink simply no-ops.
+       * If durable storage never happened, this removes the Multer temp file.
+       * After R2/local persistence it simply becomes a best-effort no-op.
        */
       await removeRejectedTempFile();
 

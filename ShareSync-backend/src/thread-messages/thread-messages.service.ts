@@ -12,10 +12,17 @@ import { ModuleRef } from '@nestjs/core';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { VaultService } from '../vault/vault.service';
+import { ProjectsService } from '../projects/projects.service';
+import {
+  TeamRoomPendingUpload,
+} from '../uploads/schemas/team-room-pending-upload.schema';
+import {
+  TeamRoomUploadCleanupService,
+} from '../uploads/team-room-upload-cleanup.service';
 import { CreateThreadMessageDto } from './dto/create-thread-message.dto';
 import {
-  MessageAttachmentReceiptPayload,
-  verifyMessageAttachmentReceipt,
+  ThreadMessageAttachmentReceiptPayload,
+  verifyThreadMessageAttachmentReceipt,
 } from '../uploads/message-attachment-receipt';
 
 export interface GetThreadMessagesOptions {
@@ -34,6 +41,18 @@ export class ThreadMessagesService {
     private readonly vaultService: VaultService,
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
+    private readonly projectsService: ProjectsService,
+
+    // openshare-team-room-asset-consumption-v1
+    @InjectModel(
+      TeamRoomPendingUpload.name,
+    )
+    private readonly teamRoomPendingUploadModel:
+      Model<any>,
+
+    // openshare-team-room-message-delete-cleanup-v1
+    private readonly teamRoomUploadCleanupService:
+      TeamRoomUploadCleanupService,
   ) {}
 
   // team-room-secure-message-pipeline-v1
@@ -73,7 +92,10 @@ export class ThreadMessagesService {
   private async requireThreadAccess(
     threadId: string,
     userId: string,
-  ): Promise<void> {
+    options: {
+      skipMemberBilling?: boolean;
+    } = {},
+  ): Promise<string> {
     if (
       !threadId ||
       !Types.ObjectId.isValid(
@@ -215,10 +237,28 @@ export class ThreadMessagesService {
         'You do not have access to this project',
       );
     }
+
+    // openshare-thread-message-member-access-enforcement-v1
+    //
+    // Raw project authorization succeeds first. Billing then determines
+    // whether this preserved workspace member is currently active.
+    if (
+      !options.skipMemberBilling
+    ) {
+      await this.projectsService
+        .assertProjectMemberActiveForBilling(
+          projectId,
+          userId,
+        );
+    }
+
+    return projectId;
   }
 
   private verifyThreadMessageAttachments(
     userId: string,
+    threadId: string,
+    projectId: string,
     attachments:
       CreateThreadMessageDto[
         'attachments'
@@ -260,9 +300,19 @@ export class ThreadMessagesService {
         index,
       ) => {
         const payload:
-          MessageAttachmentReceiptPayload =
+          ThreadMessageAttachmentReceiptPayload =
         {
-          version: 1,
+          version: 2,
+
+          threadId:
+            String(
+              threadId || '',
+            ).trim(),
+
+          projectId:
+            String(
+              projectId || '',
+            ).trim(),
 
           /*
            * Bind the receipt to the authenticated sender.
@@ -315,6 +365,8 @@ export class ThreadMessagesService {
         };
 
         if (
+          !payload.threadId ||
+          !payload.projectId ||
           !payload.fileId ||
           !payload.fileName ||
           !payload.fileUrl ||
@@ -360,7 +412,7 @@ export class ThreadMessagesService {
         }
 
         const receiptIsValid =
-          verifyMessageAttachmentReceipt(
+          verifyThreadMessageAttachmentReceipt(
             payload,
             attachment.receipt,
           );
@@ -398,6 +450,369 @@ export class ThreadMessagesService {
         };
       },
     );
+  }
+
+  private async releaseThreadMessageAttachmentClaims(
+    messageId: Types.ObjectId,
+    claimedAssetIds:
+      Types.ObjectId[],
+  ): Promise<void> {
+    if (
+      !Array.isArray(
+        claimedAssetIds,
+      ) ||
+      claimedAssetIds.length === 0
+    ) {
+      return;
+    }
+
+    await this
+      .teamRoomPendingUploadModel
+      .updateMany(
+        {
+          _id: {
+            $in:
+              claimedAssetIds,
+          },
+
+          consumedMessageId:
+            messageId,
+
+          consumedAt:
+            null,
+        },
+        {
+          $set: {
+            consumedMessageId:
+              null,
+          },
+        },
+      )
+      .exec();
+  }
+
+  private async claimThreadMessageAttachments(
+    messageId: Types.ObjectId,
+    userId: string,
+    threadId: string,
+    projectId: string,
+    attachments: Array<{
+      fileId: string;
+      fileName: string;
+      fileUrl: string;
+      mimeType?: string;
+      fileSize?: number;
+      thumbnailUrl?: string;
+    }>,
+  ): Promise<Types.ObjectId[]> {
+    if (
+      !Array.isArray(
+        attachments,
+      ) ||
+      attachments.length === 0
+    ) {
+      return [];
+    }
+
+    const normalizedUserId =
+      String(
+        userId || '',
+      ).trim();
+
+    const normalizedThreadId =
+      String(
+        threadId || '',
+      ).trim();
+
+    const normalizedProjectId =
+      String(
+        projectId || '',
+      ).trim();
+
+    if (
+      !Types.ObjectId.isValid(
+        normalizedUserId,
+      ) ||
+      !Types.ObjectId.isValid(
+        normalizedThreadId,
+      ) ||
+      !Types.ObjectId.isValid(
+        normalizedProjectId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Attachment context is invalid',
+      );
+    }
+
+    const fileIds =
+      attachments.map(
+        (attachment) =>
+          String(
+            attachment.fileId ||
+            '',
+          ).trim(),
+      );
+
+    if (
+      new Set(
+        fileIds,
+      ).size !==
+      fileIds.length
+    ) {
+      throw new BadRequestException(
+        'A Team Room attachment cannot be used more than once in the same message.',
+      );
+    }
+
+    const userObjectId =
+      new Types.ObjectId(
+        normalizedUserId,
+      );
+
+    const threadObjectId =
+      new Types.ObjectId(
+        normalizedThreadId,
+      );
+
+    const projectObjectId =
+      new Types.ObjectId(
+        normalizedProjectId,
+      );
+
+    const claimedAssetIds:
+      Types.ObjectId[] =
+      [];
+
+    try {
+      for (
+        let index = 0;
+        index < attachments.length;
+        index += 1
+      ) {
+        const attachment =
+          attachments[index];
+
+        const fileId =
+          String(
+            attachment.fileId ||
+            '',
+          ).trim();
+
+        /*
+         * Atomic claim:
+         * - exact file
+         * - exact project
+         * - exact thread
+         * - exact uploader
+         * - still unconsumed
+         * - registry authorization still live
+         */
+        const asset: any =
+          await this
+            .teamRoomPendingUploadModel
+            .findOneAndUpdate(
+              {
+                fileId,
+
+                projectId:
+                  projectObjectId,
+
+                threadId:
+                  threadObjectId,
+
+                uploaderId:
+                  userObjectId,
+
+                consumedMessageId:
+                  null,
+
+                consumedAt:
+                  null,
+
+                expiresAt: {
+                  $gt:
+                    new Date(),
+                },
+              },
+              {
+                $set: {
+                  consumedMessageId:
+                    messageId,
+                },
+              },
+              {
+                new: true,
+              },
+            )
+            .lean()
+            .exec();
+
+        if (!asset) {
+          throw new BadRequestException(
+            `Attachment ${
+              index + 1
+            } is expired, already used, or no longer available.`,
+          );
+        }
+
+        claimedAssetIds.push(
+          new Types.ObjectId(
+            String(
+              asset._id,
+            ),
+          ),
+        );
+
+        /*
+         * Receipt verification already authenticates these values.
+         * The registry independently confirms them as a server-side source
+         * of truth before message persistence.
+         */
+        const assetFileName =
+          String(
+            asset.fileName ||
+            '',
+          );
+
+        const assetFileUrl =
+          String(
+            asset.fileUrl ||
+            '',
+          );
+
+        const assetMime =
+          String(
+            asset.mimeType ||
+            '',
+          );
+
+        const assetSize =
+          Math.max(
+            0,
+            Number(
+              asset.sizeInBytes ||
+              0,
+            ),
+          );
+
+        const assetThumbnail =
+          String(
+            asset.thumbnailUrl ||
+            '',
+          );
+
+        const attachmentFileName =
+          String(
+            attachment.fileName ||
+            '',
+          );
+
+        const attachmentFileUrl =
+          String(
+            attachment.fileUrl ||
+            '',
+          );
+
+        const attachmentMime =
+          String(
+            attachment.mimeType ||
+            '',
+          );
+
+        const attachmentSize =
+          Math.max(
+            0,
+            Number(
+              attachment.fileSize ||
+              0,
+            ),
+          );
+
+        const attachmentThumbnail =
+          String(
+            attachment.thumbnailUrl ||
+            '',
+          );
+
+        if (
+          assetFileName !==
+            attachmentFileName ||
+          assetFileUrl !==
+            attachmentFileUrl ||
+          assetMime !==
+            attachmentMime ||
+          assetSize !==
+            attachmentSize ||
+          assetThumbnail !==
+            attachmentThumbnail
+        ) {
+          throw new BadRequestException(
+            `Attachment ${
+              index + 1
+            } does not match the stored upload asset.`,
+          );
+        }
+      }
+
+      return claimedAssetIds;
+    } catch (error) {
+      try {
+        await this
+          .releaseThreadMessageAttachmentClaims(
+            messageId,
+            claimedAssetIds,
+          );
+      } catch (
+        releaseError
+      ) {
+        this.logger.error(
+          'Failed to release Team Room attachment claims after claim failure',
+          releaseError as any,
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private async finalizeThreadMessageAttachmentClaims(
+    messageId: Types.ObjectId,
+    claimedAssetIds:
+      Types.ObjectId[],
+  ): Promise<void> {
+    if (
+      !Array.isArray(
+        claimedAssetIds,
+      ) ||
+      claimedAssetIds.length === 0
+    ) {
+      return;
+    }
+
+    await this
+      .teamRoomPendingUploadModel
+      .updateMany(
+        {
+          _id: {
+            $in:
+              claimedAssetIds,
+          },
+
+          consumedMessageId:
+            messageId,
+
+          consumedAt:
+            null,
+        },
+        {
+          $set: {
+            consumedAt:
+              new Date(),
+          },
+        },
+      )
+      .exec();
   }
 
   private async normalizeFileReferences(
@@ -574,6 +989,12 @@ export class ThreadMessagesService {
       );
     }
 
+    // openshare-thread-message-billing-enforcement-v1
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     const content = String(
       dto.content || '',
     ).trim();
@@ -582,6 +1003,8 @@ export class ThreadMessagesService {
     const verifiedAttachments =
       this.verifyThreadMessageAttachments(
         userId,
+        threadId,
+        projectId,
         dto.attachments,
       );
 
@@ -614,7 +1037,79 @@ export class ThreadMessagesService {
       isEdited: false,
     });
 
-    const saved = await message.save();
+    // openshare-team-room-asset-consumption-v1
+    //
+    // Mongoose assigns _id before save, so it can serve as the one-time
+    // claim token for every attachment in this message.
+    const messageObjectId =
+      new Types.ObjectId(
+        String(
+          (message as any)._id,
+        ),
+      );
+
+    const claimedAttachmentIds =
+      await this
+        .claimThreadMessageAttachments(
+          messageObjectId,
+          userId,
+          threadId,
+          projectId,
+          verifiedAttachments,
+        );
+
+    let saved:
+      ThreadMessageDocument;
+
+    try {
+      saved =
+        await message.save();
+    } catch (error) {
+      /*
+       * Message persistence failed. Release only this message's claims so the
+       * same still-valid uploads can be retried.
+       *
+       * No physical object is deleted here.
+       */
+      try {
+        await this
+          .releaseThreadMessageAttachmentClaims(
+            messageObjectId,
+            claimedAttachmentIds,
+          );
+      } catch (
+        releaseError
+      ) {
+        this.logger.error(
+          'Failed to release Team Room attachment claims after message save failure',
+          releaseError as any,
+        );
+      }
+
+      throw error;
+    }
+
+    /*
+     * Message persistence succeeded. consumedMessageId already protects
+     * against replay; consumedAt completes the durable lifecycle state.
+     *
+     * If this timestamp update fails, retain the successful message rather
+     * than deleting user data. Later reconciliation can repair consumedAt.
+     */
+    try {
+      await this
+        .finalizeThreadMessageAttachmentClaims(
+          messageObjectId,
+          claimedAttachmentIds,
+        );
+    } catch (
+      finalizeError
+    ) {
+      this.logger.error(
+        'Failed to finalize Team Room attachment consumption',
+        finalizeError as any,
+      );
+    }
 
     // ⭐ DIRECT REALTIME NOTIFICATIONS & LIVE ROOM OVERRIDE
     try {
@@ -805,37 +1300,407 @@ export class ThreadMessagesService {
   async edit(messageId: string, userId: string, content: string): Promise<ThreadMessageDocument> {
     const msg = await this.findById(messageId);
 
-    await this.requireThreadAccess(
-      msg.threadId.toString(),
-      userId,
-    );
+    const projectId =
+      await this.requireThreadAccess(
+        msg.threadId.toString(),
+        userId,
+      );
 
     if (!msg.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only edit your own messages');
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     msg.content = content;
     msg.isEdited = true;
     msg.editedAt = new Date();
     return msg.save();
   }
 
+  private async stageThreadMessageAttachmentDeletion(
+    msg: ThreadMessageDocument,
+    projectId: string,
+  ): Promise<void> {
+    const attachments =
+      Array.isArray(
+        (msg as any)
+          ?.attachments,
+      )
+        ? (
+            (msg as any)
+              .attachments
+          )
+        : [];
+
+    if (
+      attachments.length === 0
+    ) {
+      return;
+    }
+
+    const messageId =
+      this.normalizeProjectUserId(
+        (msg as any)._id,
+      );
+
+    const threadId =
+      this.normalizeProjectUserId(
+        (msg as any).threadId,
+      );
+
+    const uploaderId =
+      this.normalizeProjectUserId(
+        (msg as any).userId,
+      );
+
+    const normalizedProjectId =
+      String(
+        projectId || '',
+      ).trim();
+
+    if (
+      !Types.ObjectId.isValid(
+        messageId,
+      ) ||
+      !Types.ObjectId.isValid(
+        threadId,
+      ) ||
+      !Types.ObjectId.isValid(
+        uploaderId,
+      ) ||
+      !Types.ObjectId.isValid(
+        normalizedProjectId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Message attachment storage context is invalid.',
+      );
+    }
+
+    const messageObjectId =
+      new Types.ObjectId(
+        messageId,
+      );
+
+    const threadObjectId =
+      new Types.ObjectId(
+        threadId,
+      );
+
+    const uploaderObjectId =
+      new Types.ObjectId(
+        uploaderId,
+      );
+
+    const projectObjectId =
+      new Types.ObjectId(
+        normalizedProjectId,
+      );
+
+    const now =
+      new Date();
+
+    try {
+      for (
+        let index = 0;
+        index < attachments.length;
+        index += 1
+      ) {
+        const attachment: any =
+          attachments[index];
+
+        const rawFileId =
+          String(
+            attachment
+              ?.fileId ||
+            '',
+          ).trim();
+
+        /*
+         * Modern attachments have a real upload-generated fileId.
+         *
+         * The deterministic fallback is only for unusual historical rows that
+         * are missing one. It still preserves the object locator for deletion
+         * retry after the message row is removed.
+         */
+        const registryFileId =
+          rawFileId ||
+          [
+            'legacy-message',
+            messageId,
+            String(index),
+          ].join(':');
+
+        const fileName =
+          String(
+            attachment
+              ?.fileName ||
+            attachment
+              ?.name ||
+            'attachment',
+          );
+
+        const fileUrl =
+          String(
+            attachment
+              ?.fileUrl ||
+            attachment
+              ?.url ||
+            '',
+          ).trim();
+
+        const mimeType =
+          String(
+            attachment
+              ?.mimeType ||
+            attachment
+              ?.mime ||
+            '',
+          ).trim();
+
+        const sizeInBytes =
+          Math.max(
+            0,
+            Number(
+              attachment
+                ?.fileSize ??
+              attachment
+                ?.size ??
+              0,
+            ),
+          );
+
+        const thumbnailUrl =
+          String(
+            attachment
+              ?.thumbnailUrl ||
+            attachment
+              ?.thumbUrl ||
+            '',
+          ).trim();
+
+        /*
+         * Existing modern row:
+         *   update deletionRequestedAt only.
+         *
+         * Historical row:
+         *   upsert a synthetic consumed registry record.
+         *
+         * A conflicting same-fileId row cannot satisfy the exact context
+         * filter and therefore fails the unique fileId constraint rather than
+         * silently linking the wrong physical object to this deletion.
+         */
+        await this
+          .teamRoomPendingUploadModel
+          .updateOne(
+            {
+              fileId:
+                registryFileId,
+
+              projectId:
+                projectObjectId,
+
+              threadId:
+                threadObjectId,
+
+              uploaderId:
+                uploaderObjectId,
+
+              consumedMessageId:
+                messageObjectId,
+            },
+            {
+              $set: {
+                deletionRequestedAt:
+                  now,
+
+                deletionReason:
+                  'message_delete',
+              },
+
+              $setOnInsert: {
+                fileName,
+
+                fileUrl,
+
+                mimeType,
+
+                sizeInBytes,
+
+                thumbnailUrl,
+
+                storageProvider:
+                  '',
+
+                storageKey:
+                  '',
+
+                expiresAt:
+                  now,
+
+                consumedAt:
+                  now,
+
+                legacyBackfill:
+                  true,
+              },
+            },
+            {
+              upsert:
+                true,
+            },
+          )
+          .exec();
+      }
+    } catch (error) {
+      /*
+       * The message still exists because staging happens before message
+       * deletion. Reconciliation therefore safely rolls back:
+       *
+       * - modern deletionRequestedAt flags
+       * - synthetic legacy backfill rows
+       *
+       * It will NOT delete a physical object while the message exists.
+       */
+      try {
+        await this
+          .teamRoomUploadCleanupService
+          .reconcileDeletionRequestsForMessage(
+            messageId,
+          );
+      } catch (
+        rollbackError
+      ) {
+        this.logger.error(
+          'Failed to roll back Team Room attachment deletion staging',
+          rollbackError as any,
+        );
+      }
+
+      throw error;
+    }
+  }
+
   async delete(messageId: string, userId: string): Promise<void> {
-    const msg = await this.findById(messageId);
+    const msg =
+      await this.findById(
+        messageId,
+      );
 
-    await this.requireThreadAccess(
-      msg.threadId.toString(),
-      userId,
-    );
+    const projectId =
+      await this.requireThreadAccess(
+        msg.threadId.toString(),
+        userId,
+        {
+          // openshare-member-access-escape-v1
+          // A user may always delete their own Team Room message.
+          skipMemberBilling: true,
+        },
+      );
 
-    if (!msg.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only delete your own messages');
-    await this.messageModel.deleteOne({ _id: msg._id });
+    if (
+      !msg.userId.equals(
+        new Types.ObjectId(
+          userId,
+        ),
+      )
+    ) {
+      throw new ForbiddenException(
+        'You can only delete your own messages',
+      );
+    }
+
+    /*
+     * openshare-team-room-message-delete-cleanup-v1
+     *
+     * Deliberately NO billing write assertion here.
+     *
+     * A user may always delete their own message. This is both:
+     * - a privacy/data-control escape, and
+     * - potentially a storage-reduction action.
+     *
+     * Downgrade billing may make a project read-only, but it must not trap a
+     * user's own deletable content in place.
+     */
+    await this
+      .stageThreadMessageAttachmentDeletion(
+        msg,
+        projectId,
+      );
+
+    const normalizedMessageId =
+      this.normalizeProjectUserId(
+        (msg as any)._id,
+      );
+
+    try {
+      await this.messageModel
+        .deleteOne({
+          _id:
+            msg._id,
+        });
+    } catch (error) {
+      /*
+       * Database deletion failed and the message still exists.
+       * Roll deletion requests back. Physical objects remain untouched.
+       */
+      try {
+        await this
+          .teamRoomUploadCleanupService
+          .reconcileDeletionRequestsForMessage(
+            normalizedMessageId,
+          );
+      } catch (
+        rollbackError
+      ) {
+        this.logger.error(
+          'Failed to roll back Team Room attachment deletion request after message delete failure',
+          rollbackError as any,
+        );
+      }
+
+      throw error;
+    }
+
+    /*
+     * The message is gone, so explicit deletion requests are now eligible for
+     * physical cleanup.
+     *
+     * This is best-effort immediate cleanup. A failure does NOT resurrect the
+     * message or fail the user's deletion: the durable deletionRequestedAt
+     * state remains and the 15-minute cleanup cron retries later.
+     */
+    try {
+      await this
+        .teamRoomUploadCleanupService
+        .reconcileDeletionRequestsForMessage(
+          normalizedMessageId,
+        );
+    } catch (
+      cleanupError
+    ) {
+      this.logger.error(
+        'Immediate Team Room attachment cleanup failed after message deletion',
+        cleanupError as any,
+      );
+    }
   }
 
   async addReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const msg = await this.findById(messageId);
 
-    await this.requireThreadAccess(
-      msg.threadId.toString(),
-      userId,
-    );
+    const projectId =
+      await this.requireThreadAccess(
+        msg.threadId.toString(),
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
 
     const userObjectId = new Types.ObjectId(userId);
     const existing = msg.reactions.find((r: any) => r.emoji === emoji);
@@ -850,10 +1715,16 @@ export class ThreadMessagesService {
   async removeReaction(messageId: string, userId: string, emoji: string): Promise<ThreadMessageDocument> {
     const msg = await this.findById(messageId);
 
-    await this.requireThreadAccess(
-      msg.threadId.toString(),
-      userId,
-    );
+    const projectId =
+      await this.requireThreadAccess(
+        msg.threadId.toString(),
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
 
     const userObjectId = new Types.ObjectId(userId);
     const reaction = msg.reactions.find((r: any) => r.emoji === emoji);

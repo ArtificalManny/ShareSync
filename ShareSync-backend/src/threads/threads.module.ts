@@ -7,6 +7,7 @@ import { ThreadsService } from './threads.service';
 import { ThreadsController } from './threads.controller';
 import { ProjectsModule } from '../projects/projects.module';
 import { ModerationModule } from '../moderation/moderation.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
   imports: [
@@ -16,6 +17,9 @@ import { ModerationModule } from '../moderation/moderation.module';
     ]),
     forwardRef(() => ProjectsModule),
     ModerationModule,
+
+    // openshare-team-room-thread-delete-cleanup-v1
+    UploadsModule,
   ],
   controllers: [ThreadsController],
   providers: [ThreadsService],

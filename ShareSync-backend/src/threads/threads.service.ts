@@ -7,6 +7,10 @@ import { ModuleRef } from '@nestjs/core';
 import { Thread, ThreadDocument } from './schemas/thread.schema';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ProjectsService } from '../projects/projects.service';
+import {
+  TeamRoomUploadCleanupService,
+} from '../uploads/team-room-upload-cleanup.service';
 
 export interface CreateThreadDto {
   projectId: string;
@@ -45,6 +49,11 @@ export class ThreadsService {
     @InjectModel(ThreadMessage.name) private messageModel: Model<ThreadMessageDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
+    private readonly projectsService: ProjectsService,
+
+    // openshare-team-room-thread-delete-cleanup-v1
+    private readonly teamRoomUploadCleanupService:
+      TeamRoomUploadCleanupService,
   ) {}
 
   // team-room-thread-auth-v5
@@ -84,6 +93,9 @@ export class ThreadsService {
   private async requireProjectAccess(
     projectIdValue: any,
     userIdValue: any,
+    options: {
+      skipMemberBilling?: boolean;
+    } = {},
   ): Promise<{
     userObjectId: Types.ObjectId;
     isOwner: boolean;
@@ -205,6 +217,20 @@ export class ThreadsService {
       );
     }
 
+    // openshare-thread-member-access-enforcement-v1
+    //
+    // Ordinary Team Room authorization has already succeeded.
+    // Billing can restrict that preserved membership but can never grant it.
+    if (
+      !options.skipMemberBilling
+    ) {
+      await this.projectsService
+        .assertProjectMemberActiveForBilling(
+          projectId,
+          userId,
+        );
+    }
+
     return {
       userObjectId:
         new Types.ObjectId(
@@ -250,6 +276,14 @@ export class ThreadsService {
       dto.projectId,
       userId,
     );
+
+    // openshare-thread-billing-enforcement-v1
+    // Ordinary project access is resolved first. Billing then determines
+    // whether this shared project is currently writable.
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        dto.projectId,
+      );
 
     if (
       !userId ||
@@ -601,6 +635,13 @@ export class ThreadsService {
       );
     }
 
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        this.normalizeProjectUserId(
+          (thread as any).projectId,
+        ),
+      );
+
     if (
       updates.title !==
       undefined
@@ -666,15 +707,123 @@ export class ThreadsService {
       );
     }
 
-    await this.messageModel.deleteMany({
-      threadId:
-        thread._id,
-    });
+    const normalizedProjectId =
+      this.normalizeProjectUserId(
+        (thread as any).projectId,
+      );
 
-    await this.threadModel.deleteOne({
-      _id:
-        thread._id,
-    });
+    const normalizedThreadId =
+      this.normalizeProjectUserId(
+        (thread as any)._id,
+      );
+
+    /*
+     * openshare-team-room-thread-delete-cleanup-v1
+     *
+     * Keep the existing billing gate.
+     *
+     * Deleting an entire thread is destructive shared-content mutation and is
+     * intentionally different from a user deleting only their own message.
+     */
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        normalizedProjectId,
+      );
+
+    /*
+     * Preserve every attachment pointer before message documents disappear.
+     * No physical object is deleted during this staging step.
+     */
+    await this
+      .teamRoomUploadCleanupService
+      .stageDeletionRequestsForThread(
+        normalizedThreadId,
+        normalizedProjectId,
+      );
+
+    let messagesDeleted =
+      false;
+
+    try {
+      await this.messageModel
+        .deleteMany({
+          threadId:
+            thread._id,
+        });
+
+      messagesDeleted =
+        true;
+
+      await this.threadModel
+        .deleteOne({
+          _id:
+            thread._id,
+        });
+    } catch (error) {
+      /*
+       * If message deletion failed, surviving messages cause reconciliation
+       * to roll deletion requests back.
+       *
+       * If message deletion succeeded but thread deletion failed, the message
+       * content is already gone and cannot be restored here. Reconciliation
+       * therefore completes attachment cleanup for those deleted messages.
+       */
+      try {
+        await this
+          .teamRoomUploadCleanupService
+          .reconcileDeletionRequestsForThread(
+            normalizedThreadId,
+          );
+      } catch (
+        cleanupError
+      ) {
+        this.logger.error(
+          [
+            'Failed to reconcile Team Room attachment deletion after thread delete failure',
+            `threadId=${normalizedThreadId}`,
+            `messagesDeleted=${String(
+              messagesDeleted,
+            )}`,
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(
+                  cleanupError,
+                ),
+          ].join(' '),
+        );
+      }
+
+      throw error;
+    }
+
+    /*
+     * Thread + message deletion succeeded.
+     *
+     * Physical cleanup is best effort here. Durable deletionRequestedAt rows
+     * remain available to the 15-minute cleanup worker when storage deletion
+     * is temporarily unavailable.
+     */
+    try {
+      await this
+        .teamRoomUploadCleanupService
+        .reconcileDeletionRequestsForThread(
+          normalizedThreadId,
+        );
+    } catch (
+      cleanupError
+    ) {
+      this.logger.error(
+        [
+          'Immediate Team Room attachment cleanup failed after thread deletion',
+          `threadId=${normalizedThreadId}`,
+          cleanupError instanceof Error
+            ? cleanupError.message
+            : String(
+                cleanupError,
+              ),
+        ].join(' '),
+      );
+    }
   }
 
   async setMuted(
@@ -693,6 +842,11 @@ export class ThreadsService {
       await this.requireProjectAccess(
         (thread as any).projectId,
         userId,
+        {
+          // openshare-member-access-escape-v1
+          // Personal thread state remains user-controlled.
+          skipMemberBilling: true,
+        },
       );
 
     await this.threadModel.updateOne(
@@ -736,6 +890,11 @@ export class ThreadsService {
       await this.requireProjectAccess(
         (thread as any).projectId,
         userId,
+        {
+          // openshare-member-access-escape-v1
+          // Personal thread state remains user-controlled.
+          skipMemberBilling: true,
+        },
       );
 
     await this.threadModel.updateOne(

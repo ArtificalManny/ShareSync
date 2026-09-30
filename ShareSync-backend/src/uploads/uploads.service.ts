@@ -17,6 +17,12 @@ export interface StoredFile {
   name: string;
   size: number;
   mime: string;
+
+  // openshare-team-room-upload-registration-v1
+  // Optional persistent-object metadata lets higher layers reliably roll
+  // back a failed upload without changing existing UploadsService callers.
+  storageProvider?: 'r2' | 'local';
+  storageKey?: string;
 }
 
 export interface StoredObjectReference {
@@ -375,6 +381,8 @@ export class UploadsService {
         name: file.originalname || filename,
         size,
         mime,
+        storageProvider: 'r2',
+        storageKey: key,
       };
     }
 
@@ -400,6 +408,8 @@ export class UploadsService {
       name: file.originalname || localFilename,
       size,
       mime,
+      storageProvider: 'local',
+      storageKey: localFilename,
     };
   }
 
