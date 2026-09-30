@@ -263,6 +263,10 @@ export default function BillingSettings({
   const [checkoutInterval, setCheckoutInterval] = useState("monthly");
   const [checkoutError, setCheckoutError] = useState("");
 
+  // openshare-storekit-restore-ui-v1
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreMessage, setRestoreMessage] = useState("");
+
   const [lastLoadedAt, setLastLoadedAt] = useState(null);
   const mountedRef = useRef(false);
 
@@ -726,6 +730,266 @@ export default function BillingSettings({
     }
   };
 
+  const handleRestorePurchases = async () => {
+    if (!isNativeIOS || restoreLoading) {
+      return;
+    }
+
+    setRestoreLoading(true);
+    setRestoreMessage("");
+    setCheckoutError("");
+
+    try {
+      // openshare-storekit-restore-ui-v1
+      //
+      // AppStore.sync() runs inside the native restore method.
+      // The returned entitlement JWS is still sent to OpenShare's backend;
+      // the client never grants Team access by itself.
+      const result =
+        await OpenShareStore.restore();
+
+      const entitlements =
+        Array.isArray(result?.entitlements)
+          ? result.entitlements
+          : [];
+
+      const allowedProductIds =
+        new Set(
+          Object.values(
+            OPENSHARE_TEAM_STOREKIT_PRODUCTS
+          )
+        );
+
+      const teamEntitlements =
+        entitlements
+          .filter((entitlement) => {
+            const productId =
+              String(
+                entitlement?.productId ||
+                  ""
+              ).trim();
+
+            const signedTransaction =
+              String(
+                entitlement?.jwsRepresentation ||
+                  ""
+              ).trim();
+
+            return (
+              allowedProductIds.has(
+                productId
+              ) &&
+              Boolean(
+                signedTransaction
+              )
+            );
+          })
+          .sort((a, b) => {
+            const toTime = (value) => {
+              const parsed =
+                Date.parse(
+                  String(
+                    value || ""
+                  )
+                );
+
+              return Number.isFinite(
+                parsed
+              )
+                ? parsed
+                : 0;
+            };
+
+            return (
+              toTime(
+                b?.expirationDate ||
+                  b?.purchaseDate
+              ) -
+              toTime(
+                a?.expirationDate ||
+                  a?.purchaseDate
+              )
+            );
+          });
+
+      if (
+        teamEntitlements.length === 0
+      ) {
+        setRestoreMessage(
+          "No active OpenShare Team purchase was found for this Apple ID."
+        );
+
+        return;
+      }
+
+      let restoredEntitlement =
+        null;
+
+      let restoredVerification =
+        null;
+
+      let lastVerificationError =
+        null;
+
+      for (
+        const entitlement
+        of teamEntitlements
+      ) {
+        const signedTransaction =
+          String(
+            entitlement
+              ?.jwsRepresentation ||
+              ""
+          ).trim();
+
+        const transactionId =
+          String(
+            entitlement
+              ?.transactionId ||
+              ""
+          ).trim();
+
+        if (
+          !signedTransaction ||
+          !transactionId
+        ) {
+          continue;
+        }
+
+        try {
+          const verification =
+            await verifyAppleTransaction(
+              signedTransaction
+            );
+
+          const verifiedTransactionId =
+            String(
+              verification
+                ?.transactionId ||
+                ""
+            ).trim();
+
+          if (
+            verification?.verified !==
+              true ||
+            verification
+              ?.billingProvider !==
+              "apple"
+          ) {
+            throw new Error(
+              "OpenShare could not verify this restored Apple subscription."
+            );
+          }
+
+          if (
+            verifiedTransactionId !==
+            transactionId
+          ) {
+            throw new Error(
+              "Apple restore verification returned a different transaction."
+            );
+          }
+
+          restoredEntitlement =
+            entitlement;
+
+          restoredVerification =
+            verification;
+
+          break;
+        } catch (error) {
+          lastVerificationError =
+            error;
+        }
+      }
+
+      if (
+        !restoredEntitlement ||
+        !restoredVerification
+      ) {
+        throw (
+          lastVerificationError ||
+          new Error(
+            "No OpenShare Team purchase could be restored for this account."
+          )
+        );
+      }
+
+      const transactionId =
+        String(
+          restoredEntitlement
+            ?.transactionId ||
+            ""
+        ).trim();
+
+      if (transactionId) {
+        try {
+          const finishResult =
+            await OpenShareStore
+              .finishTransaction({
+                transactionId,
+              });
+
+          // finished:false is valid for restore: this transaction may
+          // already have been acknowledged during the original purchase.
+          if (
+            finishResult?.finished !==
+            true
+          ) {
+            console.info(
+              "Restored Apple entitlement was already finished or had no outstanding StoreKit transaction:",
+              transactionId
+            );
+          }
+        } catch (finishError) {
+          // Server verification already restored the entitlement.
+          // Acknowledgement retry is not the authority for Team access.
+          console.warn(
+            "Apple subscription restored, but StoreKit acknowledgement could not be retried:",
+            finishError
+          );
+        }
+      }
+
+      await loadSubscription({
+        silent: true,
+      });
+
+      await Promise.resolve(
+        refreshProjectCount()
+      );
+
+      window.dispatchEvent(
+        new Event(
+          "subscription:changed"
+        )
+      );
+
+      window.dispatchEvent(
+        new Event(
+          "subscription:refresh"
+        )
+      );
+
+      setRestoreMessage(
+        "Your Apple Team subscription has been restored."
+      );
+    } catch (error) {
+      console.error(
+        "Failed to restore Apple purchases:",
+        error
+      );
+
+      setRestoreMessage(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Could not restore Apple purchases."
+      );
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
   const handleManageBilling = async () => {
     setPortalLoading(true);
 
@@ -939,6 +1203,42 @@ export default function BillingSettings({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {isNativeIOS && (
+        <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-black text-slate-900 dark:text-white">
+                Apple purchases
+              </div>
+
+              <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500 dark:text-zinc-400">
+                Already subscribed through Apple? Restore your current OpenShare Team purchase.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRestorePurchases}
+              disabled={
+                restoreLoading ||
+                checkoutLoading
+              }
+              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-xs font-black text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-violet-400/25 dark:bg-violet-400/10 dark:text-violet-200 dark:hover:bg-violet-400/15"
+            >
+              {restoreLoading
+                ? "Restoring..."
+                : "Restore Purchases"}
+            </button>
+          </div>
+
+          {restoreMessage && (
+            <p className="mt-3 text-xs font-bold text-slate-600 dark:text-zinc-300">
+              {restoreMessage}
+            </p>
+          )}
         </div>
       )}
 
