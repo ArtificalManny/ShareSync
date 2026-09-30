@@ -5,6 +5,7 @@ import { SuggestionsController } from './suggestions.controller';
 import { Suggestion, SuggestionSchema } from './schemas/suggestion.schema';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { ModerationModule } from '../moderation/moderation.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -13,6 +14,9 @@ import { ModerationModule } from '../moderation/moderation.module';
       { name: Project.name, schema: ProjectSchema },
     ]),
     ModerationModule,
+
+    // openshare-suggestions-member-access-v1
+    SubscriptionsModule,
   ],
   controllers: [SuggestionsController],
   providers: [SuggestionsService],
