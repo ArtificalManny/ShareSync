@@ -6,6 +6,7 @@ import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { User, UserDocument } from '../user/schemas/user.schema';
 import { AuditService } from '../audit/audit.service';
+import { ProjectsService } from '../projects/projects.service';
 
 @Injectable()
 export class MomentumService {
@@ -14,6 +15,7 @@ export class MomentumService {
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private auditService: AuditService,
+    private readonly projectsService: ProjectsService,
   ) {}
 
   async getStreak(userId: string) {
@@ -110,7 +112,26 @@ export class MomentumService {
     return { score };
   }
 
+  // openshare-momentum-project-write-enforcement-v1
   async shipProject(projectId: string, userId: string) {
+    /*
+     * Shipping changes durable shared project state.
+     *
+     * Ordinary authorization and billing are intentionally separate:
+     * - canonical editor policy: owner/admin;
+     * - excess downgrade projects remain read-only even for the owner.
+     */
+    await this.projectsService
+      .assertProjectEditableByUser(
+        projectId,
+        userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     const project = await this.projectModel.findByIdAndUpdate(
       projectId,
       { status: 'shipped', shippedAt: new Date(), shippedBy: userId },

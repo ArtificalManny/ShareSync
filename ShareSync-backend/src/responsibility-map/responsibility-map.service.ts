@@ -548,6 +548,12 @@ export class ResponsibilityMapService {
         userId,
       );
 
+    // openshare-structured-work-billing-write-v1
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     const title =
       this.cleanText(
         dto?.title,
@@ -669,6 +675,11 @@ export class ResponsibilityMapService {
       await this.assertParticipantAccess(
         projectId,
         userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
       );
 
     const item =

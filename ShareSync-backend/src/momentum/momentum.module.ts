@@ -11,8 +11,12 @@ import { AuditService } from '../audit/audit.service';
 import { Audit, AuditSchema } from '../audit/schemas/audit.schema';
 import { PresenceService } from '../presence/presence.service';
 
+// openshare-momentum-projects-wiring-v1
+import { ProjectsModule } from '../projects/projects.module';
+
 @Module({
   imports: [
+    ProjectsModule,
     MongooseModule.forFeature([
       { name: Project.name, schema: ProjectSchema },
       { name: Task.name, schema: TaskSchema },

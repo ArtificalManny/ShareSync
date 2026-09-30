@@ -43,8 +43,11 @@ import {
   FlowRuleSchema,
 } from './schemas/flow-rule.schema';
 
+import { ProjectsModule } from '../projects/projects.module';
+
 @Module({
   imports: [
+    ProjectsModule,
     MongooseModule.forFeature([
       {
         name: FlowRule.name,

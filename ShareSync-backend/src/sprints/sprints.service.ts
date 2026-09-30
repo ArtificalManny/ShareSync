@@ -13,6 +13,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import {
   SprintStatus,
 } from './schemas/sprint.schema';
 import { CreateSprintDto, UpdateSprintDto } from './dto/create-sprint.dto';
+import { ProjectsService } from '../projects/projects.service';
 
 type SprintResponse = SprintDocument | Record<string, any> | null;
 
@@ -68,11 +70,343 @@ export class SprintsService {
   constructor(
     @InjectModel(Sprint.name)
     private readonly sprintModel: SprintModel,
+
+    private readonly projectsService:
+      ProjectsService,
   ) {}
+
+  // openshare-sprints-project-access-v1
+  //
+  // Sprint reads preserve durable owner/member access through downgrade.
+  // Public project visibility alone never exposes Sprint records.
+  //
+  // Sprint mutations use the canonical shared-project editor boundary
+  // (owner/admin), then separately enforce project writability so the owner
+  // cannot mutate an excess project merely because owner membership remains
+  // active.
+  private normalizeSprintProjectUserId(
+    value: any,
+  ): string {
+    if (!value) {
+      return '';
+    }
+
+    const resolved =
+      value?._id ??
+      value?.id ??
+      value;
+
+    if (
+      typeof resolved ===
+      'string'
+    ) {
+      return resolved;
+    }
+
+    if (
+      typeof resolved
+        ?.toHexString ===
+      'function'
+    ) {
+      return resolved.toHexString();
+    }
+
+    if (
+      typeof resolved
+        ?.toString ===
+      'function'
+    ) {
+      const result =
+        resolved.toString();
+
+      return result ===
+        '[object Object]'
+        ? ''
+        : result;
+    }
+
+    return '';
+  }
+
+  private async assertSprintReadable(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    const project =
+      await this.projectsService
+        .findById(
+          projectId,
+        );
+
+    const actorId =
+      this.normalizeSprintProjectUserId(
+        userId,
+      );
+
+    const ownerRefs = [
+      (project as any)?.ownerId,
+      (project as any)?.owner,
+      (project as any)?.createdBy,
+      (project as any)?.createdById,
+      (project as any)?.creatorId,
+      (project as any)?.userId,
+    ];
+
+    const isOwner =
+      ownerRefs.some(
+        (value: any) =>
+          this.normalizeSprintProjectUserId(
+            value,
+          ) === actorId,
+      );
+
+    const members =
+      Array.isArray(
+        (project as any)?.members,
+      )
+        ? (project as any).members
+        : [];
+
+    const isMember =
+      members.some(
+        (member: any) => {
+          const memberId =
+            this.normalizeSprintProjectUserId(
+              member?.userId ??
+              member?.user ??
+              member?.memberId ??
+              member?._id ??
+              member?.id ??
+              member,
+            );
+
+          return (
+            memberId ===
+            actorId
+          );
+        },
+      );
+
+    if (
+      !actorId ||
+      (
+        !isOwner &&
+        !isMember
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to this project sprint',
+      );
+    }
+  }
+
+  private async assertSprintWritable(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    /*
+     * Canonical ordinary project editor policy:
+     * owner or admin.
+     *
+     * assertProjectEditableByUser() also preserves the existing member
+     * billing restriction for accepted collaborators.
+     */
+    await this.projectsService
+      .assertProjectEditableByUser(
+        projectId,
+        userId,
+      );
+
+    /*
+     * Member access alone is insufficient because the workspace owner is
+     * always member-active. An excess project must still remain read-only.
+     */
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+  }
+
+  // openshare-sprints-reference-integrity-v1
+  //
+  // Sprint references must remain inside the Sprint's own project:
+  //
+  // - every taskId must resolve to a Task belonging to this project;
+  // - every teamMember must be the project owner or a durable project member.
+  //
+  // This helper performs data-integrity validation only. Existing Sprint
+  // authorization and downgrade-write enforcement remain separate.
+  private async validateSprintReferences(
+    projectId: string,
+    rawTaskIds?: string[],
+    rawTeamMembers?: string[],
+  ): Promise<{
+    taskIds: Types.ObjectId[];
+    teamMembers: Types.ObjectId[];
+  }> {
+    const projectObjectId =
+      toObjectId(
+        projectId,
+        'projectId',
+      );
+
+    const taskIds =
+      Array.isArray(
+        rawTaskIds,
+      )
+        ? rawTaskIds.map(
+            (taskId) =>
+              toObjectId(
+                taskId,
+                'taskId',
+              ),
+          )
+        : [];
+
+    const teamMembers =
+      Array.isArray(
+        rawTeamMembers,
+      )
+        ? rawTeamMembers.map(
+            (memberId) =>
+              toObjectId(
+                memberId,
+                'teamMemberId',
+              ),
+          )
+        : [];
+
+    if (taskIds.length > 0) {
+      const uniqueTaskIds =
+        Array.from(
+          new Map(
+            taskIds.map(
+              (taskId) => [
+                taskId.toString(),
+                taskId,
+              ],
+            ),
+          ).values(),
+        );
+
+      const matchingTaskCount =
+        await this.sprintModel.db
+          .collection(
+            'tasks',
+          )
+          .countDocuments({
+            _id: {
+              $in:
+                uniqueTaskIds,
+            },
+            projectId:
+              projectObjectId,
+          });
+
+      if (
+        matchingTaskCount !==
+        uniqueTaskIds.length
+      ) {
+        throw new BadRequestException(
+          'One or more sprint tasks do not belong to this project',
+        );
+      }
+    }
+
+    if (teamMembers.length > 0) {
+      const project =
+        await this.projectsService
+          .findById(
+            projectId,
+          );
+
+      const allowedUserIds =
+        new Set<string>();
+
+      const ownerRefs = [
+        (project as any)?.ownerId,
+        (project as any)?.owner,
+        (project as any)?.createdBy,
+        (project as any)?.createdById,
+        (project as any)?.creatorId,
+        (project as any)?.userId,
+      ];
+
+      for (
+        const ownerRef
+        of ownerRefs
+      ) {
+        const ownerId =
+          this.normalizeSprintProjectUserId(
+            ownerRef,
+          );
+
+        if (ownerId) {
+          allowedUserIds.add(
+            ownerId,
+          );
+        }
+      }
+
+      const members =
+        Array.isArray(
+          (project as any)?.members,
+        )
+          ? (project as any).members
+          : [];
+
+      for (
+        const member
+        of members
+      ) {
+        const memberId =
+          this.normalizeSprintProjectUserId(
+            member?.userId ??
+            member?.user ??
+            member?.memberId ??
+            member?._id ??
+            member?.id ??
+            member,
+          );
+
+        if (memberId) {
+          allowedUserIds.add(
+            memberId,
+          );
+        }
+      }
+
+      const invalidMember =
+        teamMembers.find(
+          (memberId) =>
+            !allowedUserIds.has(
+              memberId.toString(),
+            ),
+        );
+
+      if (invalidMember) {
+        throw new BadRequestException(
+          'One or more Sprint team members do not belong to this project',
+        );
+      }
+    }
+
+    return {
+      taskIds,
+      teamMembers,
+    };
+  }
 
   async create(dto: CreateSprintDto, userId: string): Promise<any> {
     const projectObjectId = toObjectId(dto.projectId, 'projectId');
     const createdByObjectId = toObjectId(userId, 'userId');
+
+    await this
+      .assertSprintWritable(
+        dto.projectId,
+        userId,
+      );
+
 
     const startDate = normalizeDate(dto.startDate, 'startDate');
     const endDate = normalizeDate(dto.endDate, 'endDate');
@@ -128,13 +462,16 @@ export class SprintsService {
             ]
           : [];
 
-    const taskIds = Array.isArray(dto.taskIds)
-      ? dto.taskIds.map((taskId) => toObjectId(taskId, 'taskId'))
-      : [];
-
-    const teamMembers = Array.isArray(dto.teamMembers)
-      ? dto.teamMembers.map((memberId) => toObjectId(memberId, 'teamMemberId'))
-      : [];
+    const {
+      taskIds,
+      teamMembers,
+    } =
+      await this
+        .validateSprintReferences(
+          dto.projectId,
+          dto.taskIds,
+          dto.teamMembers,
+        );
 
     const sprint = await this.sprintModel.create({
       name,
@@ -171,7 +508,16 @@ export class SprintsService {
     return serializeSprint(sprint);
   }
 
-  async findCurrentForProject(projectId: string): Promise<any> {
+  async findCurrentForProject(
+    projectId: string,
+    userId: string,
+  ): Promise<any> {
+    await this
+      .assertSprintReadable(
+        projectId,
+        userId,
+      );
+
     const projectObjectId = toObjectId(projectId, 'projectId');
 
     const activeSprint = await this.sprintModel
@@ -210,7 +556,16 @@ export class SprintsService {
     return serializeSprint(latestSprint);
   }
 
-  async findActiveForProject(projectId: string): Promise<any> {
+  async findActiveForProject(
+    projectId: string,
+    userId: string,
+  ): Promise<any> {
+    await this
+      .assertSprintReadable(
+        projectId,
+        userId,
+      );
+
     const projectObjectId = toObjectId(projectId, 'projectId');
 
     const sprint =
@@ -224,7 +579,16 @@ export class SprintsService {
     return serializeSprint(sprint);
   }
 
-  async findAllForProject(projectId: string): Promise<any[]> {
+  async findAllForProject(
+    projectId: string,
+    userId: string,
+  ): Promise<any[]> {
+    await this
+      .assertSprintReadable(
+        projectId,
+        userId,
+      );
+
     const projectObjectId = toObjectId(projectId, 'projectId');
 
     const sprints = await this.sprintModel
@@ -234,7 +598,10 @@ export class SprintsService {
     return sprints.map((sprint) => serializeSprint(sprint));
   }
 
-  async findById(sprintId: string): Promise<any> {
+  async findById(
+    sprintId: string,
+    userId: string,
+  ): Promise<any> {
     const sprintObjectId = toObjectId(sprintId, 'sprintId');
 
     const sprint = await this.sprintModel.findById(sprintObjectId);
@@ -243,16 +610,46 @@ export class SprintsService {
       throw new NotFoundException('Sprint not found');
     }
 
+    await this
+      .assertSprintReadable(
+        sprint.projectId.toString(),
+        userId,
+      );
+
     return serializeSprint(sprint);
   }
 
-  async update(sprintId: string, dto: UpdateSprintDto): Promise<any> {
+  async update(
+    sprintId: string,
+    userId: string,
+    dto: UpdateSprintDto,
+  ): Promise<any> {
     const sprintObjectId = toObjectId(sprintId, 'sprintId');
 
     const sprint = await this.sprintModel.findById(sprintObjectId);
 
     if (!sprint) {
       throw new NotFoundException('Sprint not found');
+    }
+
+    const projectId =
+      sprint.projectId.toString();
+
+    await this
+      .assertSprintWritable(
+        projectId,
+        userId,
+      );
+
+    if (
+      dto.projectId !==
+        undefined &&
+      String(dto.projectId) !==
+        projectId
+    ) {
+      throw new BadRequestException(
+        'Sprint projectId cannot be changed',
+      );
     }
 
     if (dto.startDate) {
@@ -293,6 +690,31 @@ export class SprintsService {
       sprint.status = dto.status;
     }
 
+    const validatedReferences =
+      (
+        Array.isArray(
+          dto.taskIds,
+        ) ||
+        Array.isArray(
+          dto.teamMembers,
+        )
+      )
+        ? await this
+            .validateSprintReferences(
+              projectId,
+              Array.isArray(
+                dto.taskIds,
+              )
+                ? dto.taskIds
+                : undefined,
+              Array.isArray(
+                dto.teamMembers,
+              )
+                ? dto.teamMembers
+                : undefined,
+            )
+        : null;
+
     if (Array.isArray(dto.goals)) {
       sprint.goals = dto.goals.map((goal) => ({
         title: goal.title?.trim() || '',
@@ -305,20 +727,36 @@ export class SprintsService {
       })) as any;
     }
 
-    if (Array.isArray(dto.taskIds)) {
-      sprint.taskIds = dto.taskIds.map((taskId) =>
-        toObjectId(taskId, 'taskId'),
-      ) as any;
+    if (
+      Array.isArray(
+        dto.taskIds,
+      )
+    ) {
+      sprint.taskIds =
+        (
+          validatedReferences
+            ?.taskIds ||
+          []
+        ) as any;
+
       sprint.metrics = {
         ...(sprint.metrics as any),
-        plannedTasks: sprint.taskIds.length,
+        plannedTasks:
+          sprint.taskIds.length,
       } as any;
     }
 
-    if (Array.isArray(dto.teamMembers)) {
-      sprint.teamMembers = dto.teamMembers.map((memberId) =>
-        toObjectId(memberId, 'teamMemberId'),
-      ) as any;
+    if (
+      Array.isArray(
+        dto.teamMembers,
+      )
+    ) {
+      sprint.teamMembers =
+        (
+          validatedReferences
+            ?.teamMembers ||
+          []
+        ) as any;
     }
 
     if (Number.isFinite(Number(dto.capacityHours))) {
@@ -330,7 +768,10 @@ export class SprintsService {
     return serializeSprint(sprint);
   }
 
-  async complete(sprintId: string): Promise<any> {
+  async complete(
+    sprintId: string,
+    userId: string,
+  ): Promise<any> {
     const sprintObjectId = toObjectId(sprintId, 'sprintId');
 
     const sprint = await this.sprintModel.findById(sprintObjectId);
@@ -338,6 +779,12 @@ export class SprintsService {
     if (!sprint) {
       throw new NotFoundException('Sprint not found');
     }
+
+    await this
+      .assertSprintWritable(
+        sprint.projectId.toString(),
+        userId,
+      );
 
     sprint.status = SprintStatus.COMPLETED;
     sprint.actualEndDate = new Date();
@@ -347,7 +794,10 @@ export class SprintsService {
     return serializeSprint(sprint);
   }
 
-  async cancel(sprintId: string): Promise<any> {
+  async cancel(
+    sprintId: string,
+    userId: string,
+  ): Promise<any> {
     const sprintObjectId = toObjectId(sprintId, 'sprintId');
 
     const sprint = await this.sprintModel.findById(sprintObjectId);
@@ -355,6 +805,12 @@ export class SprintsService {
     if (!sprint) {
       throw new NotFoundException('Sprint not found');
     }
+
+    await this
+      .assertSprintWritable(
+        sprint.projectId.toString(),
+        userId,
+      );
 
     sprint.status = SprintStatus.CANCELLED;
     sprint.actualEndDate = new Date();

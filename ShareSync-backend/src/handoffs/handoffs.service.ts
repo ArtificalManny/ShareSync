@@ -346,6 +346,12 @@ export class HandoffsService {
         userId,
       );
 
+    // openshare-structured-work-billing-write-v1
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     const title =
       this.cleanText(
         dto?.title,
@@ -528,6 +534,11 @@ export class HandoffsService {
       projectId,
       userId,
     );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
 
     if (
       !Types.ObjectId.isValid(

@@ -350,6 +350,12 @@ export class DecisionsService {
         userId,
       );
 
+    // openshare-structured-work-billing-write-v1
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
+      );
+
     if (
       !Types.ObjectId.isValid(userId)
     ) {
@@ -497,6 +503,11 @@ export class DecisionsService {
       await this.assertProjectAccess(
         projectId,
         userId,
+      );
+
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        projectId,
       );
 
     if (

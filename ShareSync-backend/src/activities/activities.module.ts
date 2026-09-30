@@ -1,5 +1,5 @@
 // src/activities/activities.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { ActivitiesController, ActivityFeedController } from './activities.controller';
@@ -12,8 +12,11 @@ import { Activity, ActivitySchema } from './schemas/activity.schema';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { ProjectAccessGuard } from '../common/guards/project-access.guard';
 
+import { ProjectsModule } from '../projects/projects.module';
+
 @Module({
   imports: [
+    forwardRef(() => ProjectsModule),
     MongooseModule.forFeature([
       { name: Activity.name, schema: ActivitySchema },
 

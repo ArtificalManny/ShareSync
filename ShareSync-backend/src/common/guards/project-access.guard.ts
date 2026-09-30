@@ -26,6 +26,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { ProjectsService } from '../../projects/projects.service';
 
 export type ProjectAccessOptions = {
   /**
@@ -82,6 +83,7 @@ type MinimalProjectDoc = {
 export class ProjectAccessGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
+    private readonly projectsService: ProjectsService,
     // We intentionally inject the model by string name to avoid importing your Project class.
     @InjectModel('Project') private readonly projectModel: Model<MinimalProjectDoc>,
   ) {}
@@ -137,6 +139,24 @@ export class ProjectAccessGuard implements CanActivate {
     const ok = this.hasAccess(project, userId, options.roles);
     if (!ok) {
       throw new ForbiddenException('You do not have access to this project');
+    }
+
+    // openshare-project-access-billing-write-v1
+    //
+    // Ordinary project authorization remains independent from billing.
+    // Reads retain their existing behavior. Durable project writes require
+    // both an active retained workspace member and a writable retained project.
+    if (intent === 'write') {
+      await this.projectsService
+        .assertProjectMemberActiveForBilling(
+          projectId,
+          userId,
+        );
+
+      await this.projectsService
+        .assertProjectWritableForBilling(
+          projectId,
+        );
     }
 
     // Attach for downstream use
