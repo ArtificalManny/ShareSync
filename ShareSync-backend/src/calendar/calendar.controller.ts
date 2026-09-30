@@ -75,11 +75,20 @@ export class CalendarController {
   @Get('events/project/:projectId')
   @ApiOperation({ summary: 'Get project events' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
+  // openshare-calendar-read-actor-v1
   async getProjectEvents(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Query() query: CalendarQueryDto,
   ) {
-    const events = await this.calendarService.findProjectEvents(projectId, query);
+    const events =
+      await this.calendarService
+        .findProjectEvents(
+          projectId,
+          req.user.userId,
+          query,
+        );
+
     return { success: true, data: events };
   }
 
@@ -90,15 +99,24 @@ export class CalendarController {
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
   async getProjectRhythm(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    const rhythm = await this.calendarService.getProjectRhythm(
-      projectId,
-      startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined
-    );
+    const rhythm =
+      await this.calendarService
+        .getProjectRhythm(
+          projectId,
+          req.user.userId,
+          startDate
+            ? new Date(startDate)
+            : undefined,
+          endDate
+            ? new Date(endDate)
+            : undefined,
+        );
+
     return { success: true, data: rhythm };
   }
 
@@ -129,8 +147,17 @@ export class CalendarController {
   @Get('events/:id')
   @ApiOperation({ summary: 'Get event by ID' })
   @ApiParam({ name: 'id', description: 'Event ID' })
-  async getEvent(@Param('id') id: string) {
-    const event = await this.calendarService.findById(id);
+  async getEvent(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    const event =
+      await this.calendarService
+        .findByIdForUser(
+          id,
+          req.user.userId,
+        );
+
     return { success: true, data: event };
   }
 
@@ -207,11 +234,20 @@ export class CalendarController {
   @ApiOperation({ summary: 'Remove an attendee from event' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiParam({ name: 'attendeeId', description: 'Attendee user ID' })
+  // openshare-calendar-remove-attendee-actor-v1
   async removeAttendee(
+    @Req() req: any,
     @Param('id') id: string,
     @Param('attendeeId') attendeeId: string,
   ) {
-    const event = await this.calendarService.removeAttendee(id, attendeeId);
+    const event =
+      await this.calendarService
+        .removeAttendee(
+          id,
+          req.user.userId,
+          attendeeId,
+        );
+
     return { success: true, data: event };
   }
 }

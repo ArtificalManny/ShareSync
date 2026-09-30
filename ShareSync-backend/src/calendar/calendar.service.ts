@@ -32,6 +32,7 @@ import { Task, TaskDocument } from '../tasks/schemas/task.schema';
 import { Sprint, SprintDocument } from '../sprints/schemas/sprint.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TextModerationService } from '../moderation/text-moderation.service';
+import { ProjectsService } from '../projects/projects.service';
 import {
   NotificationPriority,
   NotificationType,
@@ -51,6 +52,7 @@ export class CalendarService {
     private readonly sprintModel: Model<SprintDocument>,
     private readonly eventEmitter: EventEmitter2,
     private readonly textModerationService: TextModerationService,
+    private readonly projectsService: ProjectsService,
     private readonly moduleRef: ModuleRef,
   ) {}
 
@@ -154,8 +156,297 @@ export class CalendarService {
   // NEW: RHYTHM AGGREGATOR
   // ─────────────────────────────────────────────────────────────────────────────
 
-  async getProjectRhythm(projectId: string, startDate?: Date, endDate?: Date): Promise<any[]> {
-    const pId = new Types.ObjectId(projectId);
+  // openshare-calendar-read-authorization-v1
+  //
+  // Calendar read authorization is deliberately independent from billing.
+  //
+  // Downgrade may make a project/member read-only, but it must not erase
+  // durable historical read access. Public spectator access to a Project does
+  // not automatically expose its detailed Calendar / Rhythm data.
+  private async assertProjectScheduleReadable(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    const normalizedProjectId =
+      String(
+        projectId ||
+        '',
+      ).trim();
+
+    const normalizedUserId =
+      String(
+        userId ||
+        '',
+      ).trim();
+
+    if (
+      !Types.ObjectId.isValid(
+        normalizedProjectId,
+      ) ||
+      !Types.ObjectId.isValid(
+        normalizedUserId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid project or user ID',
+      );
+    }
+
+    const actorValues: any[] = [
+      normalizedUserId,
+      new Types.ObjectId(
+        normalizedUserId,
+      ),
+    ];
+
+    /*
+     * Match Calendar's durable project-participation compatibility fields.
+     *
+     * Intentionally:
+     *   - no public/spectator visibility fallback;
+     *   - no member billing check;
+     *   - no project-writable billing check.
+     */
+    const project =
+      await this.eventModel.db
+        .collection(
+          'projects',
+        )
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              normalizedProjectId,
+            ),
+
+          $or: [
+            {
+              owner:
+                { $in: actorValues },
+            },
+            {
+              ownerId:
+                { $in: actorValues },
+            },
+            {
+              createdBy:
+                { $in: actorValues },
+            },
+            {
+              userId:
+                { $in: actorValues },
+            },
+
+            {
+              members:
+                { $in: actorValues },
+            },
+            {
+              memberIds:
+                { $in: actorValues },
+            },
+            {
+              sharedWith:
+                { $in: actorValues },
+            },
+            {
+              participantIds:
+                { $in: actorValues },
+            },
+            {
+              collaborators:
+                { $in: actorValues },
+            },
+
+            {
+              'members.userId':
+                { $in: actorValues },
+            },
+            {
+              'members.user':
+                { $in: actorValues },
+            },
+            {
+              'members.memberId':
+                { $in: actorValues },
+            },
+            {
+              'sharedWith.userId':
+                { $in: actorValues },
+            },
+            {
+              'collaborators.userId':
+                { $in: actorValues },
+            },
+          ],
+        });
+
+    if (!project) {
+      throw new BadRequestException(
+        'You do not have access to this project schedule',
+      );
+    }
+  }
+
+  private async assertCalendarEventReadable(
+    event: any,
+    userId: string,
+  ): Promise<void> {
+    const toIdString =
+      (value: any): string => {
+        if (!value) {
+          return '';
+        }
+
+        if (
+          typeof value ===
+          'string'
+        ) {
+          return value;
+        }
+
+        if (
+          value instanceof
+          Types.ObjectId
+        ) {
+          return value.toHexString();
+        }
+
+        if (
+          typeof value
+            ?.toHexString ===
+          'function'
+        ) {
+          return value.toHexString();
+        }
+
+        if (
+          typeof value ===
+          'object'
+        ) {
+          if (
+            value._id &&
+            value._id !== value
+          ) {
+            return toIdString(
+              value._id,
+            );
+          }
+
+          if (
+            value.id &&
+            value.id !== value
+          ) {
+            return toIdString(
+              value.id,
+            );
+          }
+        }
+
+        if (
+          typeof value
+            ?.toString ===
+          'function'
+        ) {
+          const result =
+            value.toString();
+
+          return result ===
+            '[object Object]'
+            ? ''
+            : result;
+        }
+
+        return '';
+      };
+
+    const actorId =
+      toIdString(
+        userId,
+      );
+
+    if (
+      !actorId ||
+      !Types.ObjectId.isValid(
+        actorId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid user ID',
+      );
+    }
+
+    const creatorId =
+      toIdString(
+        event?.createdBy ??
+        event?.userId,
+      );
+
+    if (
+      creatorId === actorId
+    ) {
+      return;
+    }
+
+    const attendees =
+      Array.isArray(
+        event?.attendees,
+      )
+        ? event.attendees
+        : [];
+
+    const isAttendee =
+      attendees.some(
+        (attendee: any) =>
+          toIdString(
+            attendee?.userId,
+          ) === actorId,
+      );
+
+    /*
+     * An invited attendee may continue reading the specific event even if
+     * they are no longer a project member. This is the same durable invitation
+     * relationship used by findUserEvents().
+     */
+    if (isAttendee) {
+      return;
+    }
+
+    const projectId =
+      toIdString(
+        event?.projectId,
+      );
+
+    if (projectId) {
+      await this
+        .assertProjectScheduleReadable(
+          projectId,
+          actorId,
+        );
+
+      return;
+    }
+
+    throw new BadRequestException(
+      'You do not have access to this calendar event',
+    );
+  }
+
+  async getProjectRhythm(
+    projectId: string,
+    userId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<any[]> {
+    await this
+      .assertProjectScheduleReadable(
+        projectId,
+        userId,
+      );
+
+    const pId =
+      new Types.ObjectId(
+        projectId,
+      );
     const rhythmItems = [];
 
     // 1. Get Scheduled Events (Work sessions, meetings)
@@ -228,7 +519,221 @@ export class CalendarService {
   // CREATE
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // openshare-calendar-project-mutation-enforcement-v1
+  //
+  // Calendar project mutations have three independent requirements:
+  //
+  // 1. ordinary authorization must already recognize the actor as a current
+  //    project participant;
+  // 2. the project itself must remain writable after downgrade restriction;
+  // 3. a non-owner collaborator must remain billing-active.
+  //
+  // Personal events never enter this project billing path.
+  private async assertProjectScheduleMutationAllowed(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    const normalizedProjectId =
+      String(
+        projectId ||
+        '',
+      ).trim();
+
+    const normalizedUserId =
+      String(
+        userId ||
+        '',
+      ).trim();
+
+    if (
+      !Types.ObjectId.isValid(
+        normalizedProjectId,
+      ) ||
+      !Types.ObjectId.isValid(
+        normalizedUserId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid project or user ID',
+      );
+    }
+
+    const actorValues: any[] = [
+      normalizedUserId,
+      new Types.ObjectId(
+        normalizedUserId,
+      ),
+    ];
+
+    /*
+     * Preserve Calendar's existing broad ordinary project-participation
+     * compatibility while keeping billing completely separate.
+     */
+    const project =
+      await this.eventModel.db
+        .collection(
+          'projects',
+        )
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              normalizedProjectId,
+            ),
+
+          $or: [
+            {
+              owner:
+                { $in: actorValues },
+            },
+            {
+              ownerId:
+                { $in: actorValues },
+            },
+            {
+              createdBy:
+                { $in: actorValues },
+            },
+            {
+              userId:
+                { $in: actorValues },
+            },
+
+            {
+              members:
+                { $in: actorValues },
+            },
+            {
+              memberIds:
+                { $in: actorValues },
+            },
+            {
+              sharedWith:
+                { $in: actorValues },
+            },
+            {
+              participantIds:
+                { $in: actorValues },
+            },
+            {
+              collaborators:
+                { $in: actorValues },
+            },
+
+            {
+              'members.userId':
+                { $in: actorValues },
+            },
+            {
+              'members.user':
+                { $in: actorValues },
+            },
+            {
+              'members.memberId':
+                { $in: actorValues },
+            },
+            {
+              'sharedWith.userId':
+                { $in: actorValues },
+            },
+            {
+              'collaborators.userId':
+                { $in: actorValues },
+            },
+          ],
+        });
+
+    if (!project) {
+      throw new BadRequestException(
+        'Only a current project member can modify project schedule sessions',
+      );
+    }
+
+    /*
+     * Project restriction must be checked separately from member restriction.
+     * The workspace owner is always member-active, but an excess project may
+     * still be intentionally read-only.
+     */
+    await this.projectsService
+      .assertProjectWritableForBilling(
+        normalizedProjectId,
+      );
+
+    await this.projectsService
+      .assertProjectMemberActiveForBilling(
+        normalizedProjectId,
+        normalizedUserId,
+      );
+  }
+
+  /*
+   * Ordinary Calendar event-management policy:
+   *
+   * - personal event: creator only;
+   * - project event: current project participant, followed by project/member
+   *   billing enforcement above.
+   */
+  private async assertCalendarEventManageAllowed(
+    event: any,
+    userId: string,
+  ): Promise<void> {
+    const actorId =
+      String(
+        userId ||
+        '',
+      ).trim();
+
+    const rawProjectId =
+      event?.projectId;
+
+    const projectId =
+      rawProjectId
+        ? String(
+            rawProjectId?._id ??
+            rawProjectId,
+          )
+        : '';
+
+    if (projectId) {
+      await this
+        .assertProjectScheduleMutationAllowed(
+          projectId,
+          actorId,
+        );
+
+      return;
+    }
+
+    const rawCreatorId =
+      event?.createdBy ??
+      event?.userId;
+
+    const creatorId =
+      rawCreatorId
+        ? String(
+            rawCreatorId?._id ??
+            rawCreatorId,
+          )
+        : '';
+
+    if (
+      !actorId ||
+      creatorId !== actorId
+    ) {
+      throw new BadRequestException(
+        'Only event creator can modify this personal event',
+      );
+    }
+  }
+
   async create(userId: string, dto: CreateEventDto): Promise<CalendarEventDocument> {
+    if (dto.projectId) {
+      await this
+        .assertProjectScheduleMutationAllowed(
+          dto.projectId,
+          userId,
+        );
+    }
+
     await this.assertScheduleTextAllowed(userId, dto);
 
     if (new Date(dto.startTime) >= new Date(dto.endTime)) {
@@ -461,6 +966,25 @@ export class CalendarService {
     return event;
   }
 
+  async findByIdForUser(
+    eventId: string,
+    userId: string,
+  ): Promise<CalendarEventDocument> {
+    const event =
+      await this.findById(
+        eventId,
+      );
+
+    await this
+      .assertCalendarEventReadable(
+        event,
+        userId,
+      );
+
+    return event;
+  }
+
+
   async findUserEvents(
     userId: string,
     query: CalendarQueryDto = {},
@@ -495,8 +1019,15 @@ export class CalendarService {
 
   async findProjectEvents(
     projectId: string,
+    userId: string,
     query: CalendarQueryDto = {},
   ): Promise<CalendarEventDocument[]> {
+    await this
+      .assertProjectScheduleReadable(
+        projectId,
+        userId,
+      );
+
     const filter: any = {
       projectId: new Types.ObjectId(projectId),
       status: { $ne: EventStatus.CANCELLED },
@@ -632,48 +1163,16 @@ export class CalendarService {
       return '';
     };
 
-    const actorId = toIdString(userId);
-    const ownerId = toIdString((event as any).userId);
-    const projectId = toIdString((event as any).projectId);
+    const actorId =
+      toIdString(
+        userId,
+      );
 
-    let canUpdate = ownerId === actorId;
-
-    // Optional: allow project members to edit project schedule sessions.
-    if (!canUpdate && projectId && Types.ObjectId.isValid(projectId)) {
-      const actorValues: any[] = [actorId];
-
-      if (Types.ObjectId.isValid(actorId)) {
-        actorValues.push(new Types.ObjectId(actorId));
-      }
-
-      const project = await this.eventModel.db.collection('projects').findOne({
-        _id: new Types.ObjectId(projectId),
-        $or: [
-          { owner: { $in: actorValues } },
-          { ownerId: { $in: actorValues } },
-          { createdBy: { $in: actorValues } },
-          { userId: { $in: actorValues } },
-
-          { members: { $in: actorValues } },
-          { memberIds: { $in: actorValues } },
-          { sharedWith: { $in: actorValues } },
-          { participantIds: { $in: actorValues } },
-          { collaborators: { $in: actorValues } },
-
-          { 'members.userId': { $in: actorValues } },
-          { 'members.user': { $in: actorValues } },
-          { 'members.memberId': { $in: actorValues } },
-          { 'sharedWith.userId': { $in: actorValues } },
-          { 'collaborators.userId': { $in: actorValues } },
-        ],
-      });
-
-      canUpdate = Boolean(project);
-    }
-
-    if (!canUpdate) {
-      throw new BadRequestException('Only event owner or project member can update event');
-    }
+    await this
+      .assertCalendarEventManageAllowed(
+        event,
+        actorId,
+      );
 
     await this.assertScheduleTextAllowed(userId, dto);
 
@@ -845,6 +1344,13 @@ export class CalendarService {
   ): Promise<CalendarEventDocument> {
     const event = await this.findById(eventId);
 
+    await this
+      .assertCalendarEventManageAllowed(
+        event,
+        userId,
+      );
+
+
     if (event.attendees.some((a) => a.userId.toString() === attendeeId)) {
       throw new BadRequestException('User is already an attendee');
     }
@@ -869,9 +1375,17 @@ export class CalendarService {
 
   async removeAttendee(
     eventId: string,
+    userId: string,
     attendeeId: string,
   ): Promise<CalendarEventDocument> {
     const event = await this.findById(eventId);
+
+    await this
+      .assertCalendarEventManageAllowed(
+        event,
+        userId,
+      );
+
 
     event.attendees = event.attendees.filter(
       (a) => a.userId.toString() !== attendeeId,
@@ -889,6 +1403,20 @@ export class CalendarService {
 
     if (event.createdBy.toString() !== userId) {
       throw new BadRequestException('Only creator can cancel event');
+    }
+
+    const projectId =
+      (event as any)
+        .projectId
+        ?.toString?.() ||
+      '';
+
+    if (projectId) {
+      await this
+        .assertProjectScheduleMutationAllowed(
+          projectId,
+          userId,
+        );
     }
 
     event.status = EventStatus.CANCELLED;
@@ -944,50 +1472,21 @@ export class CalendarService {
       return '';
     };
 
-    const actorId = toIdString(userId);
-    const creatorId = toIdString((event as any).createdBy);
-    const projectId = toIdString((event as any).projectId);
-
-    let canDelete = creatorId === actorId;
-
-    // Match the existing update policy for project Schedule sessions.
-    if (!canDelete && projectId && Types.ObjectId.isValid(projectId)) {
-      const actorValues: any[] = [actorId];
-
-      if (Types.ObjectId.isValid(actorId)) {
-        actorValues.push(new Types.ObjectId(actorId));
-      }
-
-      const project = await this.eventModel.db.collection('projects').findOne({
-        _id: new Types.ObjectId(projectId),
-        $or: [
-          { owner: { $in: actorValues } },
-          { ownerId: { $in: actorValues } },
-          { createdBy: { $in: actorValues } },
-          { userId: { $in: actorValues } },
-
-          { members: { $in: actorValues } },
-          { memberIds: { $in: actorValues } },
-          { sharedWith: { $in: actorValues } },
-          { participantIds: { $in: actorValues } },
-          { collaborators: { $in: actorValues } },
-
-          { 'members.userId': { $in: actorValues } },
-          { 'members.user': { $in: actorValues } },
-          { 'members.memberId': { $in: actorValues } },
-          { 'sharedWith.userId': { $in: actorValues } },
-          { 'collaborators.userId': { $in: actorValues } },
-        ],
-      });
-
-      canDelete = Boolean(project);
-    }
-
-    if (!canDelete) {
-      throw new BadRequestException(
-        'Only event creator or project member can delete event',
+    const actorId =
+      toIdString(
+        userId,
       );
-    }
+
+    const projectId =
+      toIdString(
+        (event as any).projectId,
+      );
+
+    await this
+      .assertCalendarEventManageAllowed(
+        event,
+        actorId,
+      );
 
     if (event.isRecurring) {
       await this.eventModel.deleteMany({

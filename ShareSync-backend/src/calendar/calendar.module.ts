@@ -14,6 +14,7 @@ import { CalendarService } from './calendar.service';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
 import { Sprint, SprintSchema } from '../sprints/schemas/sprint.schema';
 import { ModerationModule } from '../moderation/moderation.module';
+import { ProjectsModule } from '../projects/projects.module';
 
 @Module({
   imports: [
@@ -24,6 +25,10 @@ import { ModerationModule } from '../moderation/moderation.module';
       { name: Sprint.name, schema: SprintSchema },
     ]),
     ModerationModule,
+
+    // openshare-calendar-member-access-enforcement-v1
+    ProjectsModule,
+
     ScheduleModule.forRoot(),
   ],
   controllers: [CalendarController],
