@@ -3497,7 +3497,12 @@ export class SubscriptionsService {
         this.getAppleEnvironment(),
       );
 
-    const alreadyActive =
+    // openshare-apple-activation-event-idempotency-v1
+    //
+    // A renewal legitimately receives a new transactionId. Persist that
+    // newer transaction below, but do not classify an already-active Apple
+    // Team lineage as a brand-new subscription activation.
+    const alreadyActiveAppleSubscription =
       existing.plan ===
         SubscriptionPlan.TEAM &&
       existing.status ===
@@ -3506,10 +3511,7 @@ export class SubscriptionsService {
         'apple' &&
       existing
         .appleOriginalTransactionId ===
-        originalTransactionId &&
-      existing
-        .appleLatestTransactionId ===
-        transactionId;
+        originalTransactionId;
 
     try {
       await this.subscriptionModel
@@ -3589,7 +3591,7 @@ export class SubscriptionsService {
       throw error;
     }
 
-    if (!alreadyActive) {
+    if (!alreadyActiveAppleSubscription) {
       this.eventEmitter.emit(
         'subscription.activated',
         {
@@ -4031,6 +4033,16 @@ export class SubscriptionsService {
 
     const subscription = await this.getOrCreateSubscription(userId);
 
+    // openshare-billing-provider-route-guard-v1
+    // Provider-specific billing actions must never cross billing systems.
+    // Apple subscriptions are managed by Apple, even if an old reusable
+    // Stripe customer identity is still retained on the OpenShare account.
+    if (subscription.billingProvider === 'apple') {
+      throw new ConflictException(
+        'App Store subscriptions must be managed through Apple.',
+      );
+    }
+
     if (!subscription.stripeCustomerId) {
       throw new BadRequestException('No billing account found. Please subscribe first.');
     }
@@ -4056,6 +4068,16 @@ export class SubscriptionsService {
     }
 
     const subscription = await this.getOrCreateSubscription(userId);
+
+    // openshare-billing-provider-route-guard-v1
+    // Provider-specific billing actions must never cross billing systems.
+    // Apple subscriptions are managed by Apple, even if an old reusable
+    // Stripe customer identity is still retained on the OpenShare account.
+    if (subscription.billingProvider === 'apple') {
+      throw new ConflictException(
+        'App Store subscriptions must be managed through Apple.',
+      );
+    }
 
     if (!subscription.stripeSubscriptionId) {
       throw new BadRequestException('No active subscription to cancel');
@@ -4118,6 +4140,16 @@ export class SubscriptionsService {
     }
 
     const subscription = await this.getOrCreateSubscription(userId);
+
+    // openshare-billing-provider-route-guard-v1
+    // Provider-specific billing actions must never cross billing systems.
+    // Apple subscriptions are managed by Apple, even if an old reusable
+    // Stripe customer identity is still retained on the OpenShare account.
+    if (subscription.billingProvider === 'apple') {
+      throw new ConflictException(
+        'App Store subscriptions must be managed through Apple.',
+      );
+    }
 
     if (!subscription.stripeSubscriptionId) {
       throw new BadRequestException('No subscription to resume');
