@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import api from "../../api/client";
 import { useProjectUsageCount } from "../../hooks/useProjectUsageCount";
+import DowngradeManager from "./DowngradeManager";
 
 const REFRESH_INTERVAL_MS = 30000;
 
@@ -242,7 +243,9 @@ function FeaturePill({ children }) {
   );
 }
 
-export default function BillingSettings() {
+export default function BillingSettings({
+  forceShowDowngradeManager = false,
+}) {
   const [subscription, setSubscription] = useState(FALLBACK_SUBSCRIPTION);
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -258,8 +261,97 @@ export default function BillingSettings() {
     if (!silent) setLoading(true);
 
     try {
-      const response = await api.get("/subscriptions/current");
-      const next = mergeSubscription(response);
+      // openshare-effective-downgrade-ui-v1
+      //
+      // /subscriptions/current remains the source for normal billing/usage
+      // display, while /subscriptions/entitlements supplies the effective
+      // lifecycle state used by backend enforcement. This prevents an expired
+      // persisted GRACE state from being shown after the server has already
+      // transitioned effective access to RESTRICTED.
+      const [
+        currentResult,
+        entitlementsResult,
+      ] = await Promise.allSettled([
+        api.get("/subscriptions/current"),
+        api.get("/subscriptions/entitlements"),
+      ]);
+
+      if (currentResult.status !== "fulfilled") {
+        throw currentResult.reason;
+      }
+
+      const current =
+        mergeSubscription(
+          currentResult.value
+        );
+
+      let next = current;
+
+      if (
+        entitlementsResult.status ===
+        "fulfilled"
+      ) {
+        const entitlementPayload =
+          entitlementsResult.value?.data
+            ?.data ??
+          entitlementsResult.value?.data ??
+          null;
+
+        const downgrade =
+          entitlementPayload?.downgrade ??
+          null;
+
+        if (downgrade) {
+          next = {
+            ...(current || {}),
+
+            // Effective server-authoritative lifecycle state.
+            downgradeState:
+              downgrade.state ??
+              current?.downgradeState ??
+              "none",
+
+            // Preserve the persisted value separately for diagnostics.
+            downgradePersistedState:
+              downgrade.persistedState ??
+              current?.downgradeState ??
+              "none",
+
+            downgradeTargetPlan:
+              downgrade.targetPlan ??
+              null,
+
+            downgradeEffectiveAt:
+              downgrade.effectiveAt ??
+              null,
+
+            downgradeGraceEndsAt:
+              downgrade.graceEndsAt ??
+              null,
+
+            downgradeGraceActive:
+              Boolean(
+                downgrade.graceActive
+              ),
+
+            downgradeRestricted:
+              Boolean(
+                downgrade.restricted
+              ),
+          };
+        }
+      } else {
+        /*
+         * Do not take the entire Billing page down if the entitlement
+         * endpoint is temporarily unavailable. /current still provides the
+         * existing billing experience; the next periodic refresh will retry.
+         */
+        console.warn(
+          "Failed to load server-authoritative subscription entitlements:",
+          entitlementsResult.reason
+        );
+      }
+
 
       if (!mountedRef.current) return;
 
@@ -321,7 +413,9 @@ export default function BillingSettings() {
   const storageUsed = getStorageBytesFromUsage(usage);
   const storageLimit = toNumber(limits.storageBytes, PLAN_LIMIT_DEFAULTS[plan].storageBytes);
 
+  // openshare-workspace-member-metric-v1
   const membersUsed = firstPositiveNumber(
+    usage.acceptedWorkspaceMemberCount,
     usage.membersPerProject,
     usage.maxMembersInProject,
     usage.activeMembers,
@@ -475,6 +569,12 @@ export default function BillingSettings() {
           premium={isPremium}
         />
       </div>
+
+      <DowngradeManager
+        subscription={subscription}
+        isPremium={isPremium}
+        forceShow={forceShowDowngradeManager}
+      />
 
       <button
         type="button"

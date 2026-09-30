@@ -630,11 +630,24 @@ function ComingSoonRow({ label, description }) {
 export default function Settings() {
   useDocumentTitle("Settings");
   const { logout } = useAuth();
+
+  // openshare-downgrade-settings-route-v1
+  // The dedicated URL reuses this same Settings page; it only selects the
+  // Billing section and asks BillingSettings to keep the retention planner
+  // visible even when no selection is currently required.
+  const isDowngradePlannerRoute =
+    typeof window !== 'undefined' &&
+    window.location.pathname === '/settings/billing/downgrade';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [ok, setOk] = useState('');
-  const [activeSection, setActiveSection] = useState('preferences');
+  const [activeSection, setActiveSection] = useState(
+    () =>
+      isDowngradePlannerRoute
+        ? 'billing'
+        : 'preferences',
+  );
 
   // account-delete-danger-v1
   // account-delete-password-v1
@@ -673,7 +686,9 @@ export default function Settings() {
     const requestedSection = params.get('section');
     const googleDeleteError = params.get('googleDeleteError');
 
-    if (requestedSection === 'account') {
+    if (isDowngradePlannerRoute) {
+      setActiveSection('billing');
+    } else if (requestedSection === 'account') {
       setActiveSection('account');
     }
 
@@ -2061,7 +2076,11 @@ export default function Settings() {
             title="Subscription & Billing"
           >
             <div className="settings-billing-contrast-fix">
-              <BillingSettings />
+              <BillingSettings
+                forceShowDowngradeManager={
+                  isDowngradePlannerRoute
+                }
+              />
             </div>
           </SectionCard>
 

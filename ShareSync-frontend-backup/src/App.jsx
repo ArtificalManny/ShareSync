@@ -851,6 +851,16 @@ function AppRoutes() {
                 element={
                   <ProtectedRoute>
                     <Community />
+
+              {/* openshare-downgrade-settings-route-v1 */}
+              <Route
+                path="/settings/billing/downgrade"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
                   </ProtectedRoute>
                 }
               />

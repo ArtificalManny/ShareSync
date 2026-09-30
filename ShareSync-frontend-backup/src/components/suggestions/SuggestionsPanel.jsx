@@ -18,39 +18,157 @@ const SuggestionsPanel = ({ projectId, project }) => {
   const [sortBy, setSortBy] = useState('votes');
   const [filter, setFilter] = useState('all');
 
-  const { isMember, canModerate, isPublicProject, isFollowing } = useMemo(() => {
-    if (!project || !user) return { isMember: false, canModerate: false, isPublicProject: false, isFollowing: false };
-
-    const userId = user.id || user._id;
-    const isOwner = project.ownerId === userId || project.owner?._id === userId;
-
-    let isMemberFlag = isOwner;
-    let isAdminFlag = isOwner;
-
-    if (project.members) {
-      project.members.forEach(m => {
-        const mId = m.userId?._id || m.userId || m._id || m;
-        if (mId === userId) {
-          isMemberFlag = true;
-          if (m.role === 'admin') isAdminFlag = true;
-        }
-      });
+  // openshare-suggestions-spectator-policy-v1
+  const {
+    isMember,
+    canModerate,
+    isPublicProject,
+    suggestionsEnabled,
+  } = useMemo(() => {
+    if (!project || !user) {
+      return {
+        isMember: false,
+        canModerate: false,
+        isPublicProject: false,
+        suggestionsEnabled: false,
+      };
     }
 
-    const isFollowingFlag = project.followers?.some(f => {
-      const fId = f.userId?._id || f.userId || f._id || f;
-      return fId === userId;
-    });
+    const userId =
+      String(
+        user.id ||
+        user._id ||
+        '',
+      );
+
+    const ownerId =
+      String(
+        project.ownerId?._id ||
+        project.ownerId ||
+        project.owner?._id ||
+        project.owner ||
+        '',
+      );
+
+    const isOwner =
+      Boolean(
+        userId &&
+        ownerId === userId
+      );
+
+    let isMemberFlag =
+      isOwner;
+
+    let isAdminFlag =
+      isOwner;
+
+    if (
+      Array.isArray(
+        project.members,
+      )
+    ) {
+      project.members.forEach(
+        (member) => {
+          const memberId =
+            String(
+              member?.userId?._id ||
+              member?.userId ||
+              member?.user?._id ||
+              member?.user ||
+              member?.memberId ||
+              member?._id ||
+              member?.id ||
+              '',
+            );
+
+          if (
+            memberId ===
+            userId
+          ) {
+            isMemberFlag =
+              true;
+
+            if (
+              String(
+                member?.role ||
+                '',
+              ).toLowerCase() ===
+              'admin'
+            ) {
+              isAdminFlag =
+                true;
+            }
+          }
+        },
+      );
+    }
+
+    const settings =
+      project.settings ||
+      {};
+
+    const visibility =
+      String(
+        project.visibility ||
+        project.privacy ||
+        '',
+      ).toLowerCase();
+
+    const publicProject =
+      visibility ===
+        'public' ||
+      visibility ===
+        'listed' ||
+      project.isPublic ===
+        true ||
+      project.public ===
+        true ||
+      settings.isPublic ===
+        true;
+
+    const publicAccessMode =
+      String(
+        project.publicAccessMode ||
+        project.spectatorMode ||
+        settings.publicAccessMode ||
+        settings.spectatorMode ||
+        '',
+      ).toLowerCase();
+
+    const projectSuggestionsEnabled =
+      publicProject &&
+      (
+        publicAccessMode ===
+          'suggest' ||
+        publicAccessMode ===
+          'suggestions' ||
+        project.suggestionsEnabled ===
+          true ||
+        settings.suggestionsEnabled ===
+          true
+      );
 
     return {
-      isMember: isMemberFlag,
-      canModerate: isAdminFlag,
-      isPublicProject: project.visibility === 'public',
-      isFollowing: isFollowingFlag
+      isMember:
+        isMemberFlag,
+
+      canModerate:
+        isAdminFlag,
+
+      isPublicProject:
+        publicProject,
+
+      suggestionsEnabled:
+        projectSuggestionsEnabled,
     };
   }, [project, user]);
 
-  const canSuggest = isMember || (isPublicProject && isFollowing);
+  const canSuggest =
+    isMember ||
+    (
+      isPublicProject &&
+      suggestionsEnabled
+    );
 
   useEffect(() => {
     let isMounted = true;

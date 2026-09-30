@@ -6,6 +6,53 @@ export async function getCurrentSubscription() {
   return response.data?.data || response.data;
 }
 
+// openshare-downgrade-selection-api-v1
+//
+// These helpers mirror the backend downgrade-selection endpoints.
+// They intentionally contain no lifecycle/business logic; the backend remains
+// authoritative for limits, ownership, accepted membership, and validation.
+export async function getDowngradeProjectSelection() {
+  const response = await api.get(
+    '/subscriptions/downgrade/projects'
+  );
+
+  return response.data?.data || response.data;
+}
+
+export async function updateDowngradeProjectSelection(
+  projectIds
+) {
+  const response = await api.patch(
+    '/subscriptions/downgrade/projects',
+    {
+      projectIds,
+    }
+  );
+
+  return response.data?.data || response.data;
+}
+
+export async function getDowngradeMemberSelection() {
+  const response = await api.get(
+    '/subscriptions/downgrade/members'
+  );
+
+  return response.data?.data || response.data;
+}
+
+export async function updateDowngradeMemberSelection(
+  memberUserIds
+) {
+  const response = await api.patch(
+    '/subscriptions/downgrade/members',
+    {
+      memberUserIds,
+    }
+  );
+
+  return response.data?.data || response.data;
+}
+
 export async function getUsage() {
   const response = await api.get('/subscriptions/usage');
   return response.data?.data || response.data;
@@ -51,4 +98,19 @@ export async function checkLimit(resource) {
   return response.data?.data || response.data;
 }
 
-export default { getCurrentSubscription, getUsage, getPlans, createCheckout, createPortalSession, cancelSubscription, resumeSubscription, updateBudgetCap, updateBillingDetails, checkLimit };
+export default {
+  getCurrentSubscription,
+  getDowngradeProjectSelection,
+  updateDowngradeProjectSelection,
+  getDowngradeMemberSelection,
+  updateDowngradeMemberSelection,
+  getUsage,
+  getPlans,
+  createCheckout,
+  createPortalSession,
+  cancelSubscription,
+  resumeSubscription,
+  updateBudgetCap,
+  updateBillingDetails,
+  checkLimit,
+};

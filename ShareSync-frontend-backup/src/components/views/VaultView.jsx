@@ -555,7 +555,12 @@ function FolderSection({ folder, files, folders, viewMode, isExpanded, onToggle,
 
 export default function VaultView({ projectId, readOnly = false }) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ folders: [], files: [], storage: { usedBytes: 0, limitBytes: 5 * 1024 * 1024 * 1024 } });
+  // openshare-vault-spectator-storage-privacy-ui-v1
+  const [data, setData] = useState({
+    folders: [],
+    files: [],
+    storage: null,
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFolders, setExpandedFolders] = useState([]);
   
@@ -669,7 +674,35 @@ export default function VaultView({ projectId, readOnly = false }) {
 
   const filteredFiles = data.files.filter(f => f.originalName.toLowerCase().includes(searchQuery.toLowerCase()));
   const rootFiles = filteredFiles.filter(f => !f.folderId);
-  const usagePercentage = Math.min((data.storage.usedBytes / data.storage.limitBytes) * 100, 100);
+  const hasStorageIntelligence =
+    Boolean(
+      data?.storage &&
+      typeof data.storage === 'object'
+    );
+
+  const storageUsedBytes =
+    Number(
+      data?.storage?.usedBytes ??
+      0
+    );
+
+  const storageLimitBytes =
+    Number(
+      data?.storage?.limitBytes ??
+      0
+    );
+
+  const usagePercentage =
+    hasStorageIntelligence &&
+    storageLimitBytes > 0
+      ? Math.min(
+          (
+            storageUsedBytes /
+            storageLimitBytes
+          ) * 100,
+          100,
+        )
+      : 0;
 
   return (
     <div className="relative mx-auto max-w-[1500px] px-4 py-8 pb-32 sm:px-6 lg:px-10">
@@ -865,7 +898,10 @@ export default function VaultView({ projectId, readOnly = false }) {
           </div>
         </div>
 
-        <div className="relative mt-7 rounded-[1.75rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]">
+        <div
+          hidden={!hasStorageIntelligence}
+          className="relative mt-7 rounded-[1.75rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.04]"
+        >
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-1 flex items-center gap-2">
@@ -879,7 +915,7 @@ export default function VaultView({ projectId, readOnly = false }) {
               </div>
 
               <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
-                Using {formatBytes(data.storage.usedBytes)} of {formatBytes(data.storage.limitBytes)}
+                Using {formatBytes(storageUsedBytes)} of {formatBytes(storageLimitBytes)}
               </p>
             </div>
 
