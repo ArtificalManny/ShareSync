@@ -1,0 +1,10 @@
+{
+  "appId": "ca.openshare.app",
+  "appName": "OpenShare",
+  "webDir": "dist",
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": []
+    }
+  }
+}
