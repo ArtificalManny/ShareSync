@@ -29,9 +29,9 @@ import {
 } from '../threads/schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UploadsService } from '../uploads/uploads.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
-// Standard Free Tier Limit: 5GB (in bytes)
-const PROJECT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
+// openshare-vault-subscription-wiring-v1
 
 type VaultBacklinkCounts = {
   moves: number;
@@ -72,7 +72,9 @@ export class VaultService {
     private readonly eventEmitter: EventEmitter2,
     private readonly moduleRef: ModuleRef,
   
-    private readonly uploadsService: UploadsService,) {}
+    private readonly uploadsService: UploadsService,
+    private readonly subscriptionsService: SubscriptionsService,
+  ) {}
 
   private async recordProjectActivity(data: {
     userId: string;
@@ -130,24 +132,402 @@ export class VaultService {
   // STORAGE CALCULATION
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  async checkStorageQuota(projectId: string, incomingFileBytes: number): Promise<void> {
-    const projId = new Types.ObjectId(projectId);
-    
-    // Aggregate total size of all files in this project
-    const result = await this.fileModel.aggregate([
-      { $match: { projectId: projId } },
-      { $group: { _id: null, totalBytes: { $sum: '$sizeInBytes' } } }
-    ]);
+  // openshare-vault-project-read-access-v1
+  //
+  // Mirror the ordinary project read contract without importing ProjectsService:
+  //
+  // - current owners/members may read private or archived projects;
+  // - public/listed projects may be read by spectators while active;
+  // - archived/deleted projects never become spectator-readable;
+  // - billing write restrictions do not remove preserved read access here.
+  private async assertVaultProjectReadable(
+    projectId: string,
+    userId: string,
+  ): Promise<{
+    project: any;
+    isParticipant: boolean;
+    isSpectator: boolean;
+  }> {
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(projectId) ||
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to this project Vault',
+      );
+    }
 
-    const currentUsedBytes = result.length > 0 ? result[0].totalBytes : 0;
+    const project =
+      await this.fileModel.db
+        .collection('projects')
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              projectId,
+            ),
+        });
 
-    if (currentUsedBytes + incomingFileBytes > PROJECT_STORAGE_LIMIT_BYTES) {
-      // HTTP 402 Payment Required -> Triggers frontend upgrade modal
-      throw new HttpException({
-        message: 'Storage limit exceeded. Please upgrade your plan.',
-        currentUsedBytes,
-        limitBytes: PROJECT_STORAGE_LIMIT_BYTES
-      }, HttpStatus.PAYMENT_REQUIRED);
+    if (!project) {
+      throw new ForbiddenException(
+        'You do not have access to this project Vault',
+      );
+    }
+
+    const userIdString =
+      new Types.ObjectId(
+        userId,
+      ).toString();
+
+    const ownerRefs = [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+      project.creatorId,
+      project.userId,
+    ];
+
+    const isOwner =
+      ownerRefs.some(
+        (ref: any) =>
+          this.normalizeId(ref) ===
+          userIdString,
+      );
+
+    const members =
+      Array.isArray(project.members)
+        ? project.members
+        : [];
+
+    const isMember =
+      members.some(
+        (candidate: any) =>
+          this.normalizeId(
+            candidate?.userId ||
+            candidate?.user ||
+            candidate?._id ||
+            candidate?.id ||
+            candidate,
+          ) === userIdString,
+      );
+
+    if (isOwner || isMember) {
+      return {
+        project,
+        isParticipant: true,
+        isSpectator: false,
+      };
+    }
+
+    const status =
+      String(
+        project.status ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    const archived =
+      project.isArchived === true ||
+      status === 'archived' ||
+      status === 'deleted';
+
+    const visibility =
+      String(
+        project.visibility ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    const settings =
+      project.settings &&
+      typeof project.settings === 'object'
+        ? project.settings
+        : {};
+
+    const publicReadable =
+      !archived &&
+      (
+        visibility === 'public' ||
+        visibility === 'listed' ||
+        project.isPublic === true ||
+        project.public === true ||
+        settings.isPublic === true
+      );
+
+    if (publicReadable) {
+      return {
+        project,
+        isParticipant: false,
+        isSpectator: true,
+      };
+    }
+
+    throw new ForbiddenException(
+      'You do not have access to this project Vault',
+    );
+  }
+
+  // openshare-vault-project-membership-v1
+  //
+  // Ordinary authorization boundary for Vault project mutations.
+  //
+  // Billing state is intentionally handled separately. This helper answers
+  // only whether the authenticated actor is currently the project owner or a
+  // current project member. Public/spectator visibility never grants writes.
+  private async assertVaultProjectParticipant(
+    projectId: string,
+    userId: string,
+  ): Promise<{
+    project: any;
+    userIdString: string;
+    isOwner: boolean;
+    member: any | null;
+  }> {
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(projectId) ||
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this project Vault',
+      );
+    }
+
+    const project =
+      await this.fileModel.db
+        .collection('projects')
+        .findOne({
+          _id:
+            new Types.ObjectId(
+              projectId,
+            ),
+        });
+
+    if (!project) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this project Vault',
+      );
+    }
+
+    const userIdString =
+      new Types.ObjectId(
+        userId,
+      ).toString();
+
+    const ownerRefs = [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+      project.creatorId,
+      project.userId,
+    ];
+
+    const isOwner =
+      ownerRefs.some(
+        (ref: any) =>
+          this.normalizeId(ref) ===
+          userIdString,
+      );
+
+    const members =
+      Array.isArray(project.members)
+        ? project.members
+        : [];
+
+    const member =
+      members.find(
+        (candidate: any) => {
+          const candidateId =
+            this.normalizeId(
+              candidate?.userId ||
+              candidate?.user ||
+              candidate?._id ||
+              candidate?.id ||
+              candidate,
+            );
+
+          return (
+            candidateId ===
+            userIdString
+          );
+        },
+      ) || null;
+
+    if (!isOwner && !member) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this project Vault',
+      );
+    }
+
+    return {
+      project,
+      userIdString,
+      isOwner,
+      member,
+    };
+  }
+
+  // openshare-vault-billing-write-enforcement-v1
+  //
+  // Billing overlay only. Ordinary project/file authorization must already
+  // succeed independently. A Vault write requires both:
+  //
+  // 1. the project to remain writable under project retention, and
+  // 2. the actor to remain active under member retention.
+  //
+  // Reads/downloads remain unaffected, and deletion is intentionally handled
+  // separately because removing stored data can resolve a storage overage.
+  private async assertVaultWriteAllowedForBilling(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    const projectAccess =
+      await this.subscriptionsService
+        .getProjectWriteAccess(
+          projectId,
+        );
+
+    if (!projectAccess.writable) {
+      const selectionRequired =
+        projectAccess.reason ===
+        'billing_selection_required';
+
+      throw new ForbiddenException({
+        code:
+          'BILLING_PROJECT_READ_ONLY',
+
+        reason:
+          projectAccess.reason,
+
+        message:
+          selectionRequired
+            ? 'This project is temporarily read-only until the workspace owner finishes choosing which projects to keep active on the Free plan.'
+            : 'This project is read-only under the workspace owner current plan. The project owner can change the retained-project selection or upgrade to restore write access.',
+
+        projectId,
+
+        ownerUserId:
+          projectAccess.ownerUserId,
+
+        downgradeState:
+          projectAccess.downgradeState,
+
+        projectLimit:
+          projectAccess.projectLimit,
+
+        ownedProjectCount:
+          projectAccess.ownedProjectCount,
+
+        overProjectLimit:
+          projectAccess.overProjectLimit,
+
+        retainedProject:
+          projectAccess.retainedProject,
+
+        selectionRequired:
+          projectAccess.selectionRequired,
+      });
+    }
+
+    const memberAccess =
+      await this.subscriptionsService
+        .getProjectMemberAccess(
+          projectId,
+          userId,
+        );
+
+    if (!memberAccess.active) {
+      const selectionRequired =
+        memberAccess.reason ===
+        'billing_member_selection_required';
+
+      throw new ForbiddenException({
+        code:
+          'BILLING_MEMBER_INACTIVE',
+
+        reason:
+          memberAccess.reason,
+
+        message:
+          selectionRequired
+            ? 'Your workspace membership is temporarily inactive until the project owner finishes choosing which members to keep active on the Free plan.'
+            : 'Your workspace membership is inactive under the project owner current plan. The project owner can change the retained-member selection or upgrade to restore access.',
+
+        projectId,
+
+        ownerUserId:
+          memberAccess.ownerUserId,
+
+        downgradeState:
+          memberAccess.downgradeState,
+
+        memberLimit:
+          memberAccess.memberLimit,
+
+        acceptedWorkspaceMemberCount:
+          memberAccess.acceptedWorkspaceMemberCount,
+
+        overMemberLimit:
+          memberAccess.overMemberLimit,
+
+        retainedMember:
+          memberAccess.retainedMember,
+
+        selectionRequired:
+          memberAccess.selectionRequired,
+      });
+    }
+  }
+
+  // openshare-vault-storage-enforcement-v1
+  // Enforce the project owner's account-wide storage entitlement.
+  // Existing stored files are never deleted or modified by this check.
+  async checkStorageQuota(
+    projectId: string,
+    incomingFileBytes: number,
+  ): Promise<void> {
+    const numericBytes =
+      Number(incomingFileBytes);
+
+    const safeIncomingBytes =
+      Number.isFinite(numericBytes)
+        ? Math.max(
+            0,
+            numericBytes,
+          )
+        : 0;
+
+    const usage =
+      await this.subscriptionsService
+        .checkProjectStorageLimit(
+          projectId,
+          safeIncomingBytes,
+        );
+
+    if (!usage.allowed) {
+      // Preserve HTTP 402 so the existing frontend upgrade flow
+      // continues to recognize a storage-capacity rejection.
+      throw new HttpException(
+        {
+          message:
+            'Storage limit exceeded. Remove files or upgrade your plan to upload more.',
+          currentUsedBytes:
+            usage.current,
+          incomingFileBytes:
+            safeIncomingBytes,
+          limitBytes:
+            usage.limit,
+          remainingBytes:
+            usage.remaining,
+        },
+        HttpStatus.PAYMENT_REQUIRED,
+      );
     }
   }
 
@@ -156,8 +536,47 @@ export class VaultService {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async uploadFile(projectId: string, userId: string, file: Express.Multer.File, folderId?: string) {
-    // 1. Verify Quota
-    await this.checkStorageQuota(projectId, file.size);
+    // openshare-vault-storage-consistency-v1
+    // 1. Verify quota before persistence. If quota rejects this request,
+    // remove only the Multer temp file that has not yet become stored data.
+    try {
+      await this.assertVaultProjectParticipant(
+        projectId,
+        userId,
+      );
+
+      await this.assertVaultWriteAllowedForBilling(
+        projectId,
+        userId,
+      );
+
+      await this.checkStorageQuota(
+        projectId,
+        file.size,
+      );
+    } catch (error) {
+      const tempPath =
+        String(
+          (file as any)?.path || '',
+        ).trim();
+
+      if (tempPath) {
+        try {
+          await fs.unlink(tempPath);
+        } catch (cleanupError: any) {
+          if (
+            cleanupError?.code !==
+            'ENOENT'
+          ) {
+            this.logger.warn(
+              `Could not remove rejected Vault upload temp file: ${cleanupError?.message || cleanupError}`,
+            );
+          }
+        }
+      }
+
+      throw error;
+    }
 
     // 2. Persist file through the shared uploads pipeline.
     // In production this stores to Cloudflare R2 when R2 env vars are configured.
@@ -367,6 +786,16 @@ export class VaultService {
   }
 
   async createFolder(projectId: string, userId: string, name: string, accessLevel: 'public' | 'private', allowedUserIds: string[] = []) {
+    await this.assertVaultProjectParticipant(
+      projectId,
+      userId,
+    );
+
+    await this.assertVaultWriteAllowedForBilling(
+      projectId,
+      userId,
+    );
+
     const folder = new this.folderModel({
       projectId: new Types.ObjectId(projectId),
       name,
@@ -573,6 +1002,12 @@ export class VaultService {
   }
 
   async getProjectVault(projectId: string, userId: string) {
+    const readAccess =
+      await this.assertVaultProjectReadable(
+        projectId,
+        userId,
+      );
+
     const projId = new Types.ObjectId(projectId);
     const userObjId = new Types.ObjectId(userId);
 
@@ -631,20 +1066,36 @@ export class VaultService {
         };
       });
 
-    // Get current usage stats for the UI progress bar
-    const result = await this.fileModel.aggregate([
-      { $match: { projectId: projId } },
-      { $group: { _id: null, totalBytes: { $sum: '$sizeInBytes' } } }
-    ]);
-    const storageUsedBytes = result.length > 0 ? result[0].totalBytes : 0;
+    // openshare-vault-storage-consistency-v1
+    // openshare-vault-spectator-storage-privacy-v1
+    //
+    // Public spectators may read permitted Vault content, but account-wide
+    // storage usage and plan allowance remain private to workspace participants.
+    let storage: {
+      usedBytes: number;
+      limitBytes: number;
+    } | null = null;
+
+    if (!readAccess.isSpectator) {
+      const storageUsage =
+        await this.subscriptionsService
+          .checkProjectStorageLimit(
+            projectId,
+            0,
+          );
+
+      storage = {
+        usedBytes:
+          storageUsage.current,
+        limitBytes:
+          storageUsage.limit,
+      };
+    }
 
     return {
       folders: accessibleFolders,
       files: filesWithBacklinks,
-      storage: {
-        usedBytes: storageUsedBytes,
-        limitBytes: PROJECT_STORAGE_LIMIT_BYTES
-      }
+      storage,
     };
   }
   private toObjectId(value: string, label: string): Types.ObjectId {
@@ -681,6 +1132,11 @@ export class VaultService {
     projectId: string,
     userId: string,
   ): Promise<VaultFileDocument> {
+    await this.assertVaultProjectReadable(
+      projectId,
+      userId,
+    );
+
     const file =
       await this.findVaultFileOrThrow(
         fileId,
@@ -765,57 +1221,73 @@ export class VaultService {
     return file;
   }
 
-  private async assertCanManageFile(file: VaultFileDocument, userId: string): Promise<void> {
-    const userObjectId = this.toObjectId(userId, 'User');
-    const userIdString = userObjectId.toString();
-
-    const uploadedById = this.normalizeId((file as any).uploadedBy);
-
-    if (uploadedById === userIdString) {
-      return;
-    }
-
-    const projectId = this.normalizeId((file as any).projectId);
-
-    if (!projectId || !Types.ObjectId.isValid(projectId)) {
-      throw new ForbiddenException('You do not have permission to manage this file');
-    }
-
-    const projectDoc = await this.fileModel.db
-      .collection('projects')
-      .findOne({ _id: new Types.ObjectId(projectId) });
-
-    if (!projectDoc) {
-      throw new ForbiddenException('You do not have permission to manage this file');
-    }
-
-    const ownerId = this.normalizeId(projectDoc.ownerId || projectDoc.owner);
-
-    if (ownerId === userIdString) {
-      return;
-    }
-
-    const members = Array.isArray(projectDoc.members) ? projectDoc.members : [];
-    const manageableRoles = new Set(['owner', 'admin', 'moderator', 'manager']);
-
-    const matchingMember = members.find((member: any) => {
-      const memberUserId = this.normalizeId(
-        member?.userId ||
-        member?.user ||
-        member?._id ||
-        member?.id
+  private async assertCanManageFile(
+    file: VaultFileDocument,
+    userId: string,
+  ): Promise<void> {
+    const projectId =
+      this.normalizeId(
+        (file as any).projectId,
       );
 
-      return memberUserId === userIdString;
-    });
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(
+        projectId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to manage this file',
+      );
+    }
 
-    const role = String(matchingMember?.role || '').toLowerCase();
+    const access =
+      await this.assertVaultProjectParticipant(
+        projectId,
+        userId,
+      );
 
-    if (manageableRoles.has(role)) {
+    const uploadedById =
+      this.normalizeId(
+        (file as any).uploadedBy,
+      );
+
+    if (
+      uploadedById ===
+      access.userIdString
+    ) {
       return;
     }
 
-    throw new ForbiddenException('You do not have permission to manage this file');
+    if (access.isOwner) {
+      return;
+    }
+
+    const manageableRoles =
+      new Set([
+        'owner',
+        'admin',
+        'moderator',
+        'manager',
+      ]);
+
+    const role =
+      String(
+        access.member?.role ||
+        '',
+      ).toLowerCase();
+
+    if (
+      manageableRoles.has(
+        role,
+      )
+    ) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'You do not have permission to manage this file',
+    );
   }
 
   private validateVaultFileName(originalName: string): string {
@@ -855,6 +1327,16 @@ export class VaultService {
     const file = await this.findVaultFileOrThrow(fileId);
     await this.assertCanManageFile(file, userId);
 
+    const projectId =
+      this.normalizeId(
+        (file as any).projectId,
+      );
+
+    await this.assertVaultWriteAllowedForBilling(
+      projectId,
+      userId,
+    );
+
     file.originalName = this.validateVaultFileName(originalName);
 
     const saved = await file.save();
@@ -872,6 +1354,16 @@ export class VaultService {
   async moveFile(fileId: string, userId: string, folderId?: string | null): Promise<VaultFileDocument> {
     const file = await this.findVaultFileOrThrow(fileId);
     await this.assertCanManageFile(file, userId);
+
+    const projectId =
+      this.normalizeId(
+        (file as any).projectId,
+      );
+
+    await this.assertVaultWriteAllowedForBilling(
+      projectId,
+      userId,
+    );
 
     if (folderId) {
       const folderObjectId = this.toObjectId(folderId, 'Folder');

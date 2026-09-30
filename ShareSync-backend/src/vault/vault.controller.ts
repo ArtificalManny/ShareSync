@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { VaultService } from './vault.service';
 import * as path from 'node:path';
+import * as fs from 'node:fs/promises';
 
 // Multer disk storage — saves vault files to /uploads with unique names
 const vaultDiskStorage = diskStorage({
@@ -86,8 +87,39 @@ export class VaultController {
     const size = file.size || 0;
     const fsPath = (file as any).path || '';
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // FULL MODERATION PIPELINE (matches /api/uploads/file)
+    // openshare-vault-moderation-cleanup-v1
+    // This helper is used only before VaultService persistence begins.
+    // Once VaultService takes ownership of the file, cleanup is handled
+    // by the storage pipeline instead.
+    const removeRejectedTempFile =
+      async (): Promise<void> => {
+        const tempPath =
+          String(
+            (file as any)?.path || '',
+          ).trim();
+
+        if (!tempPath) {
+          return;
+        }
+
+        try {
+          await fs.unlink(tempPath);
+        } catch (cleanupError: any) {
+          // Missing is expected if another pre-persist guard already
+          // cleaned the same Multer file. Cleanup must never hide the
+          // original moderation error.
+          if (
+            cleanupError?.code !==
+            'ENOENT'
+          ) {
+            // Intentionally non-fatal.
+          }
+        }
+      };
+
+    try {
+      // ═══════════════════════════════════════════════════════════════════════
+      // FULL MODERATION PIPELINE (matches /api/uploads/file)
     // ═══════════════════════════════════════════════════════════════════════
 
     // 1) Virus scan
@@ -124,10 +156,17 @@ export class VaultController {
       throw new BadRequestException(decision.reason || 'This file is not allowed.');
     }
 
+    } catch (error) {
+      await removeRejectedTempFile();
+      throw error;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // STORAGE QUOTA + PERSIST
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Deliberately outside the moderation catch:
+    // VaultService owns quota cleanup and persistence from this point on.
     const uploadedFile = await this.vaultService.uploadFile(projectId, userId, file, folderId);
     return { success: true, data: uploadedFile };
   }

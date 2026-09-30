@@ -18,6 +18,9 @@ import { VaultService } from './vault.service';
 import { VaultController } from './vault.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UploadsModule } from '../uploads/uploads.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+
+// openshare-vault-subscription-wiring-v1
 
 @Module({
   imports: [
@@ -39,6 +42,7 @@ import { UploadsModule } from '../uploads/uploads.module';
     ModerationModule,
     NotificationsModule,
     UploadsModule,
+    SubscriptionsModule,
   ],
   controllers: [VaultController],
   providers: [VaultService],
