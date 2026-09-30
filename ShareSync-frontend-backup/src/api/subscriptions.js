@@ -63,6 +63,40 @@ export async function getPlans() {
   return response.data?.data || response.data;
 }
 
+// openshare-storekit-server-activation-v1
+// Server remains authoritative for App Store account binding and entitlement.
+export async function getApplePurchaseContext() {
+  const response = await api.get(
+    '/subscriptions/apple/purchase-context'
+  );
+
+  return response.data?.data || response.data;
+}
+
+export async function verifyAppleTransaction(
+  signedTransaction
+) {
+  const normalized =
+    String(
+      signedTransaction || ''
+    ).trim();
+
+  if (!normalized) {
+    throw new Error(
+      'Apple signed transaction is required.'
+    );
+  }
+
+  const response = await api.post(
+    '/subscriptions/apple/verify',
+    {
+      signedTransaction: normalized,
+    }
+  );
+
+  return response.data?.data || response.data;
+}
+
 export async function createCheckout({ plan, interval = 'monthly' }) {
   const response = await api.post('/subscriptions/checkout', { plan, interval });
   return response.data?.data || response.data;
@@ -106,6 +140,8 @@ export default {
   updateDowngradeMemberSelection,
   getUsage,
   getPlans,
+  getApplePurchaseContext,
+  verifyAppleTransaction,
   createCheckout,
   createPortalSession,
   cancelSubscription,

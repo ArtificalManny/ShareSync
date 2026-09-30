@@ -11,6 +11,14 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import api from "../../api/client";
+import {
+  getApplePurchaseContext,
+  verifyAppleTransaction,
+} from "../../api/subscriptions";
+import OpenShareStore, {
+  OPENSHARE_APPLE_SUBSCRIPTIONS_MANAGE_URL,
+  OPENSHARE_TEAM_STOREKIT_PRODUCTS,
+} from "../../native/openShareStore";
 import { useProjectUsageCount } from "../../hooks/useProjectUsageCount";
 import DowngradeManager from "./DowngradeManager";
 
@@ -249,6 +257,12 @@ export default function BillingSettings({
   const [subscription, setSubscription] = useState(FALLBACK_SUBSCRIPTION);
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+
+  // openshare-billing-acquisition-v1
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutInterval, setCheckoutInterval] = useState("monthly");
+  const [checkoutError, setCheckoutError] = useState("");
+
   const [lastLoadedAt, setLastLoadedAt] = useState(null);
   const mountedRef = useRef(false);
 
@@ -352,7 +366,6 @@ export default function BillingSettings({
         );
       }
 
-
       if (!mountedRef.current) return;
 
       setSubscription(next);
@@ -396,6 +409,17 @@ export default function BillingSettings({
   const plan = getPlanKey(subscription?.plan);
   const planLabel = getPlanLabel(plan);
   const isPremium = isActivePaidPlan(subscription);
+
+  // openshare-storekit-server-activation-v1
+  const billingProvider =
+    String(
+      subscription?.billingProvider || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const isAppleBilling =
+    billingProvider === "apple";
 
   const usage = subscription?.usage || {};
   const limits = subscription?.limits || {};
@@ -445,10 +469,279 @@ export default function BillingSettings({
     window.dispatchEvent(new Event("subscription:refresh"));
   };
 
+  const isNativeIOS =
+    typeof window !== "undefined" &&
+    window.Capacitor?.isNativePlatform?.() === true &&
+    window.Capacitor?.getPlatform?.() === "ios";
+
+  const handleStartCheckout = async () => {
+    setCheckoutError("");
+
+    // openshare-storekit-purchase-ui-v1
+    // Native iOS purchases through StoreKit. Web continues through Stripe.
+    if (isNativeIOS) {
+      setCheckoutLoading(true);
+
+      try {
+        // openshare-storekit-server-activation-v1
+        //
+        // The backend generates the appAccountToken for the authenticated
+        // OpenShare account. StoreKit writes that UUID into the transaction,
+        // and the backend requires the same token before granting Team.
+        const purchaseContext =
+          await getApplePurchaseContext();
+
+        const appAccountToken =
+          String(
+            purchaseContext?.appAccountToken ||
+              ""
+          ).trim();
+
+        const productKey =
+          checkoutInterval === "yearly"
+            ? "yearly"
+            : "monthly";
+
+        const expectedProductId =
+          OPENSHARE_TEAM_STOREKIT_PRODUCTS[
+            productKey
+          ];
+
+        const productId =
+          String(
+            purchaseContext?.products?.[
+              productKey
+            ] || ""
+          ).trim();
+
+        if (!appAccountToken) {
+          throw new Error(
+            "OpenShare could not prepare your Apple purchase account."
+          );
+        }
+
+        if (!productId) {
+          throw new Error(
+            "OpenShare could not resolve the Apple subscription product."
+          );
+        }
+
+        // Both sides must agree on the exact App Store product before
+        // presenting Apple's purchase sheet.
+        if (
+          productId !==
+          expectedProductId
+        ) {
+          throw new Error(
+            "Apple subscription configuration is out of sync."
+          );
+        }
+
+        const result =
+          await OpenShareStore.purchase({
+            productId,
+            appAccountToken,
+          });
+
+        if (
+          result?.status ===
+          "cancelled"
+        ) {
+          setCheckoutError("");
+          return;
+        }
+
+        if (
+          result?.status ===
+          "pending"
+        ) {
+          setCheckoutError(
+            "Your Apple subscription purchase is pending approval."
+          );
+          return;
+        }
+
+        if (
+          result?.status ===
+          "purchased"
+        ) {
+          const signedTransaction =
+            String(
+              result?.jwsRepresentation ||
+                ""
+            ).trim();
+
+          const transactionId =
+            String(
+              result?.transactionId ||
+                ""
+            ).trim();
+
+          if (
+            !signedTransaction ||
+            !transactionId
+          ) {
+            throw new Error(
+              "Apple returned an incomplete subscription transaction."
+            );
+          }
+
+          // Security boundary:
+          // Never finish the StoreKit transaction before OpenShare's
+          // backend verifies Apple's JWS and persists Team entitlement.
+          const verification =
+            await verifyAppleTransaction(
+              signedTransaction
+            );
+
+          if (
+            verification?.verified !==
+              true ||
+            verification?.billingProvider !==
+              "apple"
+          ) {
+            throw new Error(
+              "OpenShare could not verify the Apple subscription."
+            );
+          }
+
+          const verifiedTransactionId =
+            String(
+              verification?.transactionId ||
+                ""
+            ).trim();
+
+          if (
+            verifiedTransactionId !==
+            transactionId
+          ) {
+            throw new Error(
+              "Apple transaction verification returned a different transaction."
+            );
+          }
+
+          let finishConfirmed = false;
+
+          try {
+            const finishResult =
+              await OpenShareStore
+                .finishTransaction({
+                  transactionId,
+                });
+
+            finishConfirmed =
+              finishResult?.finished ===
+              true;
+          } catch (finishError) {
+            console.warn(
+              "Team activated, but StoreKit transaction acknowledgement failed:",
+              finishError
+            );
+          }
+
+          if (!finishConfirmed) {
+            console.warn(
+              "Team entitlement is active, but the StoreKit transaction was not confirmed as finished:",
+              transactionId
+            );
+          }
+
+          // Refresh this panel and the rest of the app only after the
+          // authoritative backend entitlement has been persisted.
+          await loadSubscription({
+            silent: true,
+          });
+
+          await Promise.resolve(
+            refreshProjectCount()
+          );
+
+          window.dispatchEvent(
+            new Event(
+              "subscription:changed"
+            )
+          );
+
+          window.dispatchEvent(
+            new Event(
+              "subscription:refresh"
+            )
+          );
+
+          setCheckoutError(
+            finishConfirmed
+              ? ""
+              : "Your Team subscription is active, but Apple purchase acknowledgement could not be confirmed."
+          );
+
+          return;
+        }
+
+        setCheckoutError(
+          "Apple did not return a completed subscription purchase."
+        );
+      } catch (error) {
+        console.error(
+          "Failed to activate Apple subscription:",
+          error
+        );
+
+        setCheckoutError(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Could not complete the Apple subscription purchase."
+        );
+      } finally {
+        setCheckoutLoading(false);
+      }
+
+      return;
+    }
+
+    setCheckoutLoading(true);
+
+    try {
+      const response = await api.post("/subscriptions/checkout", {
+        plan: "team",
+        interval: checkoutInterval,
+      });
+
+      const url = response?.data?.data?.url || response?.data?.url;
+
+      if (!url) {
+        throw new Error("Checkout URL was not returned.");
+      }
+
+      window.location.href = url;
+    } catch (error) {
+      console.error("Failed to start subscription checkout:", error);
+
+      setCheckoutError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Could not start checkout."
+      );
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   const handleManageBilling = async () => {
     setPortalLoading(true);
 
     try {
+      // openshare-storekit-server-activation-v1
+      // Apple-billed subscriptions are managed by Apple, never Stripe.
+      if (isAppleBilling) {
+        window.open(
+          OPENSHARE_APPLE_SUBSCRIPTIONS_MANAGE_URL,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
+        return;
+      }
+
       const response = await api.post("/subscriptions/portal");
       const url = response?.data?.data?.url || response?.data?.url;
 
@@ -534,6 +827,121 @@ export default function BillingSettings({
         )}
       </div>
 
+      {!isPremium && (
+        <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-5 shadow-sm dark:border-violet-400/20 dark:from-violet-500/10 dark:via-white/[0.04] dark:to-fuchsia-500/10">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-black text-slate-950 dark:text-white">
+                  Upgrade to Team
+                </h3>
+
+                {checkoutInterval === "yearly" && (
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    Save 2 months
+                  </span>
+                )}
+              </div>
+
+              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-zinc-400">
+                50 projects, 25 workspace members, 10GB storage, 1,000 AI calls/month,
+                priority support, org dashboard, and custom branding.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <FeaturePill>50 projects</FeaturePill>
+                <FeaturePill>25 members</FeaturePill>
+                <FeaturePill>10GB storage</FeaturePill>
+                <FeaturePill>1,000 AI calls/mo</FeaturePill>
+              </div>
+            </div>
+
+            <div className="w-full shrink-0 lg:w-[290px]">
+              <div className="grid grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.05]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCheckoutInterval("monthly");
+                    setCheckoutError("");
+                  }}
+                  className={
+                    "rounded-xl px-3 py-2 text-xs font-black transition " +
+                    (checkoutInterval === "monthly"
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-violet-700 dark:text-zinc-400")
+                  }
+                >
+                  Monthly
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCheckoutInterval("yearly");
+                    setCheckoutError("");
+                  }}
+                  className={
+                    "rounded-xl px-3 py-2 text-xs font-black transition " +
+                    (checkoutInterval === "yearly"
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-violet-700 dark:text-zinc-400")
+                  }
+                >
+                  Annual
+                </button>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-end gap-1">
+                  <span className="text-3xl font-black text-slate-950 dark:text-white">
+                    {checkoutInterval === "yearly" ? "$390" : "$39"}
+                  </span>
+
+                  <span className="pb-1 text-sm font-bold text-slate-400 dark:text-zinc-500">
+                    /{checkoutInterval === "yearly" ? "year" : "month"}
+                  </span>
+                </div>
+
+                {checkoutInterval === "yearly" && (
+                  <div className="mt-1 text-xs font-bold text-emerald-600 dark:text-emerald-300">
+                    Equivalent to $32.50/month
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleStartCheckout}
+                disabled={checkoutLoading}
+                className="openshare-subscribe-cta mt-4 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {checkoutLoading
+                  ? isNativeIOS
+                    ? "Contacting Apple..."
+                    : "Opening checkout..."
+                  : isNativeIOS
+                    ? "Subscribe with Apple"
+                    : checkoutInterval === "yearly"
+                      ? "Upgrade — $390/year"
+                      : "Upgrade — $39/month"}
+              </button>
+
+              {isNativeIOS && (
+                <p className="mt-2 text-center text-[11px] font-semibold leading-relaxed text-slate-500 dark:text-zinc-400">
+                  Apple In-App Purchase will handle subscriptions in the iOS app.
+                </p>
+              )}
+
+              {checkoutError && (
+                <p className="mt-2 text-center text-xs font-bold text-amber-600 dark:text-amber-300">
+                  {checkoutError}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <UsageMetric
           icon={Folder}
@@ -576,16 +984,40 @@ export default function BillingSettings({
         forceShow={forceShowDowngradeManager}
       />
 
-      <button
-        type="button"
-        onClick={handleManageBilling}
-        disabled={portalLoading}
-        className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold text-slate-600 transition-colors hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:text-violet-300"
-      >
-        <CreditCard className="h-4 w-4" />
-        <span>{portalLoading ? "Opening billing..." : "Manage Billing"}</span>
-        <ExternalLink className="h-4 w-4" />
-      </button>
+      {/* openshare-billing-manage-paid-only-v1 */}
+      {/* openshare-ios-subscribe-button-visibility-v1 */}
+      <style>{`
+        .settings-billing-live-sync .openshare-subscribe-cta {
+          background: linear-gradient(90deg, #7c3aed, #d946ef) !important;
+          color: #ffffff !important;
+          border-color: transparent !important;
+          min-height: 48px !important;
+          opacity: 1 !important;
+        }
+
+        .settings-billing-live-sync .openshare-subscribe-cta:disabled {
+          opacity: 0.65 !important;
+        }
+      `}</style>
+
+      {isPremium && (
+        <button
+          type="button"
+          onClick={handleManageBilling}
+          disabled={portalLoading}
+          className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold text-slate-600 transition-colors hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:text-violet-300"
+        >
+          <CreditCard className="h-4 w-4" />
+          <span>
+            {portalLoading
+              ? "Opening billing..."
+              : isAppleBilling
+                ? "Manage in Apple"
+                : "Manage Billing"}
+          </span>
+          <ExternalLink className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 }
