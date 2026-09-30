@@ -32,6 +32,7 @@ import { SocketProvider } from "./context/SocketContext";
 
 // ⭐ PHASE N: Notifications shared state (global unread + realtime)
 import { NotificationsProvider } from "./context/NotificationsContext";
+import NativeNotificationBannerHost from "./components/notifications/NativeNotificationBannerHost.jsx";
 
 // ⭐ DAY 7: Context Tracking Hook
 import { useContextTracking } from "./hooks/useContextTracking";
@@ -416,6 +417,8 @@ function AuthenticatedApp({ children, userData }) {
       <PersonaProvider>
         <SocketProvider>
           <NotificationsProvider>
+            {/* openshare-native-notification-banner-mount-v1 */}
+            <NativeNotificationBannerHost />
             <UserProvider>
               <MessageProvider>
                 <SprintProvider>

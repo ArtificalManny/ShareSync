@@ -174,8 +174,10 @@ export default function NotificationsDropdown({
     notifications,
     unreadCount,
     loading,
+    error,
     hasMore,
     loadMore,
+    refreshNotifications,
     markAsRead,
     markAllAsRead,
     removeNotification,
@@ -452,7 +454,33 @@ export default function NotificationsDropdown({
         className="max-h-[400px] overflow-y-auto bg-white"
         onScroll={handleScroll}
       >
-        {notifications.length === 0 && !loading ? (
+        {/* notifications-error-state-v1 */}
+        {error && notifications.length === 0 && !loading ? (
+          <div
+            role="alert"
+            className="flex flex-col items-center justify-center px-6 py-12 text-center"
+          >
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+              <AlertTriangle className="h-6 w-6 text-amber-500" />
+            </div>
+
+            <p className="text-sm font-semibold text-slate-700">
+              Couldn't load notifications
+            </p>
+
+            <p className="mt-1 max-w-[280px] text-xs leading-5 text-slate-400">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => refreshNotifications?.()}
+              className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
+            >
+              Try again
+            </button>
+          </div>
+        ) : notifications.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
               <Bell className="w-6 h-6 text-slate-300" />
@@ -480,7 +508,22 @@ export default function NotificationsDropdown({
               </div>
             )}
 
-            {!loading && hasMore && (
+            {error && notifications.length > 0 && !loading && (
+              <div className="mx-2 my-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center">
+                <p className="text-xs text-amber-700">
+                  Some notifications couldn't be refreshed.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => refreshNotifications?.()}
+                  className="mt-1 text-xs font-semibold text-amber-800 underline-offset-2 hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {!loading && hasMore && !error && (
               <button
                 onClick={loadMore}
                 className="w-full py-2 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded transition-colors"

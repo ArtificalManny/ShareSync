@@ -24,10 +24,18 @@ export function NotificationsProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  // notifications-recoverable-error-v1
+  const [error, setError] = useState("");
   const [hasMore, setHasMore] = useState(true);
 
   const offsetRef = useRef(0);
   const mountedRef = useRef(true);
+
+  // openshare-native-banner-live-dedupe-v1
+  // The backend may emit the same logical notification under multiple
+  // socket event aliases. Keep a short-lived fingerprint cache so one
+  // notification produces one unread increment and one foreground banner.
+  const recentLiveNotificationKeysRef = useRef(new Map());
 
   // ─────────────────────────────────────────────────────────────────────────────
   // INITIAL LOAD
@@ -38,6 +46,7 @@ export function NotificationsProvider({ children }) {
     if (loading) return;
 
     setLoading(true);
+    setError("");
 
     try {
       const offset = reset ? 0 : offsetRef.current;
@@ -75,6 +84,23 @@ export function NotificationsProvider({ children }) {
       }
     } catch (error) {
       console.error('[NotificationsContext] loadNotifications error:', error);
+
+      if (mountedRef.current) {
+        const offline =
+          typeof navigator !== 'undefined' &&
+          navigator.onLine === false;
+
+        const status = error?.response?.status;
+
+        const message = offline
+          ? "You're offline. Notifications will refresh when you're back online."
+          : status >= 500
+            ? "Notifications are temporarily unavailable."
+            : error?.response?.data?.message ||
+              "We couldn't load your notifications.";
+
+        setError(message);
+      }
     } finally {
       if (mountedRef.current) {
         setLoading(false);
@@ -147,23 +173,149 @@ export function NotificationsProvider({ children }) {
   // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    // openshare-notification-runtime-probe-v1
+    if (typeof window !== "undefined") {
+      window.__openshareNotificationContextProbe = {
+        effectRan: true,
+        checkedAt: new Date().toISOString(),
+        isAuthenticated: Boolean(isAuthenticated),
+        hasSubscribe: typeof subscribe === "function",
+        isConnected: Boolean(isConnected),
+        subscribedEvents: [],
+      };
+    }
+
     if (!isAuthenticated || !subscribe) return;
 
     // ⭐ THE SURGICAL FIX: A unified handler that catches everything
+    // openshare-native-banner-live-bridge-v1
     const handleIncomingNotification = (data) => {
-      console.log('🔔 [NotificationsContext] Live notification caught!', data);
+      if (!data || typeof data !== "object") return;
+
+      const rawId =
+        data._id ||
+        data.id ||
+        null;
+
+      const fingerprint = rawId
+        ? `id:${String(rawId)}`
+        : [
+            String(data.type || ""),
+            String(data.title || ""),
+            String(data.body || data.message || ""),
+            String(data.createdAt || data.timestamp || ""),
+          ].join("|");
+
+      const now = Date.now();
+      const previousSeenAt =
+        recentLiveNotificationKeysRef.current.get(
+          fingerprint
+        );
+
+      // notification:new / new_notification /
+      // notificationCreated can all represent the same event.
+      if (
+        previousSeenAt &&
+        now - previousSeenAt < 15000
+      ) {
+        console.log(
+          "🔕 [NotificationsContext] Duplicate live notification suppressed",
+          fingerprint
+        );
+        return;
+      }
+
+      recentLiveNotificationKeysRef.current.set(
+        fingerprint,
+        now
+      );
+
+      // Keep the dedupe cache bounded.
+      for (
+        const [key, seenAt]
+        of recentLiveNotificationKeysRef.current
+      ) {
+        if (now - seenAt > 60000) {
+          recentLiveNotificationKeysRef.current.delete(
+            key
+          );
+        }
+      }
+
+      console.log(
+        "🔔 [NotificationsContext] Live notification caught!",
+        data
+      );
+
       setNotifications((prev) => {
-        const exists = prev.some((n) => (n._id || n.id) === (data._id || data.id));
+        const exists = prev.some(
+          (n) =>
+            (n._id || n.id) ===
+            (data._id || data.id)
+        );
+
         if (exists) return prev;
+
         return [data, ...prev];
       });
+
       setUnreadCount((prev) => prev + 1);
+
+      // Foreground custom banner belongs to the native app only.
+      // Background/closed-app delivery will later be handled by APNs.
+      const nativeForeground =
+        typeof window !== "undefined" &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        window.Capacitor?.isNativePlatform?.() === true;
+
+      if (nativeForeground) {
+        window.dispatchEvent(
+          new CustomEvent(
+            "openshare:notification-banner",
+            {
+              detail: data,
+            }
+          )
+        );
+      }
     };
 
-    // We listen to the gateway roof AND the root lobby to ensure nothing is missed
-    const unsub1 = subscribe('notification:new', handleIncomingNotification);
-    const unsub2 = subscribe('new_notification', handleIncomingNotification);
-    const unsub3 = subscribe('notificationCreated', handleIncomingNotification);
+    // openshare-notification-event-aliases-v2
+    // Funnel every notification event name currently used by OpenShare
+    // through the same deduplicated foreground-notification handler.
+    const notificationEventNames = [
+      "notification:new",
+      "notifications:new",
+      "notification",
+      "new_notification",
+      "notificationCreated",
+      "message_notification",
+    ];
+
+    const unsubscribeNotificationEvents =
+      notificationEventNames.map((eventName) => {
+        console.log(
+          `[NotificationsContext] subscribing: ${eventName}`
+        );
+
+        return subscribe(
+          eventName,
+          handleIncomingNotification
+        );
+      });
+
+    if (
+      typeof window !== "undefined" &&
+      window.__openshareNotificationContextProbe
+    ) {
+      window.__openshareNotificationContextProbe = {
+        ...window.__openshareNotificationContextProbe,
+        subscribedEvents: [...notificationEventNames],
+        subscriptionCount: notificationEventNames.length,
+        subscriptionsInstalledAt: new Date().toISOString(),
+      };
+    }
 
     // Listen for read updates
     const unsubRead = subscribe('notification:read', (data) => {
@@ -195,9 +347,11 @@ export function NotificationsProvider({ children }) {
     });
 
     return () => {
-      unsub1?.();
-      unsub2?.();
-      unsub3?.();
+      unsubscribeNotificationEvents.forEach(
+        (unsubscribe) => {
+          unsubscribe?.();
+        }
+      );
       unsubRead?.();
       unsubCount?.();
       unsubDeleted?.();
@@ -216,6 +370,7 @@ export function NotificationsProvider({ children }) {
     } else {
       setNotifications([]);
       setUnreadCount(0);
+      setError("");
       offsetRef.current = 0;
     }
 
@@ -232,6 +387,7 @@ export function NotificationsProvider({ children }) {
     notifications,
     unreadCount,
     loading,
+    error,
     hasMore,
     isConnected,
     refreshNotifications,
