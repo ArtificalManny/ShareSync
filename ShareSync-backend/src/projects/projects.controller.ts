@@ -515,13 +515,52 @@ export class ProjectsController {
 
     const url = `/uploads/${file.filename}`;
 
-    const project = await this.projectsService.update(
-      id,
-      userId,
-      normalizedKind === 'banner'
-        ? ({ bannerUrl: url } as UpdateProjectDto)
-        : ({ logoUrl: url } as UpdateProjectDto),
-    );
+    let project;
+
+    try {
+      project =
+        await this.projectsService.update(
+          id,
+          userId,
+          normalizedKind === 'banner'
+            ? ({
+                bannerUrl: url,
+              } as UpdateProjectDto)
+            : ({
+                logoUrl: url,
+              } as UpdateProjectDto),
+        );
+    } catch (error) {
+      // openshare-project-generic-update-billing-v1
+      // The uploaded branding file has not been associated with the Project
+      // because update() failed. Remove only this newly-uploaded file.
+      const uploadedPath =
+        String(
+          file?.path || '',
+        ).trim();
+
+      if (uploadedPath) {
+        try {
+          await fs.promises.unlink(
+            uploadedPath,
+          );
+        } catch (cleanupError: any) {
+          if (
+            cleanupError?.code !==
+            'ENOENT'
+          ) {
+            this.logger.warn(
+              `Failed to clean rejected project branding upload: ${
+                cleanupError?.message ||
+                cleanupError
+              }`,
+            );
+          }
+        }
+      }
+
+      throw error;
+    }
 
     return {
       success: true,
@@ -563,10 +602,12 @@ export class ProjectsController {
   async toggleStar(@Req() req: any, @Param('id', ParseObjectIdPipe) id: string) {
     const userId = req.user?.sub || req.user?.userId;
 
-    const project = await this.projectsService.findByIdWithAccess(id, userId);
-    const updated = await this.projectsService.update(id, userId, {
-      isStarred: !project.isStarred,
-    });
+    const updated =
+      await this.projectsService
+        .toggleStar(
+          id,
+          userId,
+        );
 
     return {
       success: true,

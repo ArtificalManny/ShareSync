@@ -112,6 +112,14 @@ export class SubscriptionsController {
         userId,
       );
 
+    // openshare-workspace-member-metric-v1
+    // "Workspace Members" means unique accepted people across the owner's
+    // workspace projects, not the largest individual project's member count.
+    const realAcceptedWorkspaceMemberCount =
+      await this.subscriptionsService.getAcceptedWorkspaceMemberCount(
+        userId,
+      );
+
     const storageRows = realProjectIds.length
       ? await this.vaultFileModel.aggregate([
           { $match: { projectId: { $in: realProjectIds } } },
@@ -207,6 +215,8 @@ return {
           storageUsedBytes: realStorageBytes,
           aiCalls: baseUsage.aiCalls || 0,
           aiCallsThisMonth: baseUsage.aiCallsThisMonth || 0,
+          acceptedWorkspaceMemberCount:
+            realAcceptedWorkspaceMemberCount,
           membersPerProject: realMaxMembersInProject,
           maxMembersInProject: realMaxMembersInProject,
           activeMembers: realMaxMembersInProject,
@@ -215,6 +225,17 @@ return {
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAt: subscription.cancelAt,
+
+        // openshare-downgrade-lifecycle-v1
+        downgradeState:
+          subscription.downgradeState || 'none',
+        downgradeTargetPlan:
+          subscription.downgradeTargetPlan,
+        downgradeEffectiveAt:
+          subscription.downgradeEffectiveAt,
+        downgradeGraceEndsAt:
+          subscription.downgradeGraceEndsAt,
+
         budgetCapCents: subscription.budgetCapCents,
         budgetCapEnabled: subscription.budgetCapEnabled,
         activeMembers: subscription.activeMembers,
@@ -223,8 +244,176 @@ return {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // SERVER-AUTHORITATIVE ENTITLEMENTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // openshare-entitlements-api-v1
+  @Get('entitlements')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current server-authoritative account entitlements',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns plan, downgrade state, grace status, and current resource entitlements',
+  })
+  async getEntitlements(@Req() req: any) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const entitlements =
+      await this.subscriptionsService.getEntitlements(
+        userId,
+      );
+
+    return {
+      success: true,
+      data: entitlements,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // GET USAGE
   // ─────────────────────────────────────────────────────────────────────────────
+
+  // openshare-downgrade-project-selection-v1
+  @Get('downgrade/projects')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get downgrade project retention selection',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns owned projects and the projects selected to remain writable after downgrade',
+  })
+  async getDowngradeProjectSelection(
+    @Req() req: any,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const data =
+      await this.subscriptionsService
+        .getDowngradeProjectSelection(
+          userId,
+        );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Patch('downgrade/projects')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Choose projects to retain as writable after downgrade',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Validates ownership and stores the retained project selection without modifying project data',
+  })
+  async updateDowngradeProjectSelection(
+    @Req() req: any,
+    @Body()
+    body: {
+      projectIds?: unknown;
+    },
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const data =
+      await this.subscriptionsService
+        .updateDowngradeProjectSelection(
+          userId,
+          body?.projectIds,
+        );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  // openshare-downgrade-member-selection-v1
+  @Get('downgrade/members')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get downgrade member retention selection',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns accepted workspace members and the users selected to remain active after downgrade',
+  })
+  async getDowngradeMemberSelection(
+    @Req() req: any,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const data =
+      await this.subscriptionsService
+        .getDowngradeMemberSelection(
+          userId,
+        );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Patch('downgrade/members')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Choose workspace members to retain as active after downgrade',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Validates accepted workspace membership and stores the retained-member selection without modifying project memberships',
+  })
+  async updateDowngradeMemberSelection(
+    @Req() req: any,
+    @Body()
+    body: {
+      memberUserIds?: unknown;
+    },
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const data =
+      await this.subscriptionsService
+        .updateDowngradeMemberSelection(
+          userId,
+          body?.memberUserIds,
+        );
+
+    return {
+      success: true,
+      data,
+    };
+  }
 
   @Get('usage')
   @UseGuards(JwtAuthGuard)

@@ -33,6 +33,15 @@ export enum BillingInterval {
   YEARLY = 'yearly',
 }
 
+// openshare-downgrade-lifecycle-v1
+// Payment status and OpenShare access-transition state are separate.
+export enum DowngradeState {
+  NONE = 'none',
+  SCHEDULED = 'scheduled',
+  GRACE = 'grace',
+  RESTRICTED = 'restricted',
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // NESTED SCHEMAS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,7 +71,7 @@ export class SubscriptionLimits {
   @Prop({ type: Number, default: 10 })
   projects: number; // -1 = unlimited
 
-  @Prop({ type: Number, default: 5 })
+  @Prop({ type: Number, default: 10 })
   membersPerProject: number; // -1 = unlimited
 
   @Prop({ type: Number, default: 1073741824 }) // 1GB default
@@ -174,6 +183,42 @@ export class Subscription {
 
   @Prop({ type: Date })
   cancelAt?: Date; // Scheduled cancellation
+
+  // openshare-downgrade-lifecycle-v1
+  // Billing transitions may change access, but never authorize deletion
+  // of projects, files, messages, memberships, or other customer data.
+  @Prop({
+    type: String,
+    enum: DowngradeState,
+    default: DowngradeState.NONE,
+  })
+  downgradeState: DowngradeState;
+
+  @Prop({ type: String, enum: SubscriptionPlan })
+  downgradeTargetPlan?: SubscriptionPlan;
+
+  @Prop({ type: Date })
+  downgradeEffectiveAt?: Date;
+
+  @Prop({ type: Date })
+  downgradeGraceEndsAt?: Date;
+
+  // openshare-project-write-entitlement-v1
+  // Projects explicitly retained as writable when a downgraded account is
+  // above its Free project allowance. Billing state never archives or deletes
+  // the underlying Project documents.
+  @Prop({ type: [String], default: [] })
+  downgradeRetainedProjectIds: string[];
+
+  // openshare-downgrade-member-selection-v1
+  //
+  // Accepted workspace users explicitly retained as active after the
+  // downgrade grace period when the workspace exceeds the Free member limit.
+  //
+  // Billing never deletes or rewrites Project.members. This is a
+  // subscription-side access overlay only.
+  @Prop({ type: [String], default: [] })
+  downgradeRetainedMemberUserIds: string[];
 
   @Prop({ type: Date })
   trialStart?: Date;

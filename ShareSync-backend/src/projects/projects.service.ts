@@ -381,6 +381,11 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to enable public sharing');
     }
 
+    // openshare-project-lifecycle-billing-enforcement-v1
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
+
     const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
     (project as any).publicEnabled = true;
     (project as any).publicToken = publicToken;
@@ -390,7 +395,16 @@ export class ProjectsService {
   }
 
   async disablePublic(projectId: string, userId: string): Promise<void> {
-    const project = await this.findByIdWithAccess(projectId, userId);
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+        {
+          // openshare-member-access-escape-v1
+          // Privacy reduction remains available even when billing-inactive.
+          skipMemberBilling: true,
+        },
+      );
 
     if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
       throw new ForbiddenException('You do not have permission to disable public sharing');
@@ -407,6 +421,10 @@ export class ProjectsService {
     if (!this.canManageMembers(project, userId) && project.ownerId.toString() !== userId) {
       throw new ForbiddenException('You do not have permission to regenerate public token');
     }
+
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
 
     const publicToken = `${new Types.ObjectId().toString()}${new Types.ObjectId().toString()}`;
     (project as any).publicEnabled = true;
@@ -502,7 +520,7 @@ export class ProjectsService {
       const planLimit = projectUsageCheck.limit === -1 ? 'unlimited' : projectUsageCheck.limit;
 
       throw new ForbiddenException(
-        `Project limit reached. Your current plan allows ${planLimit} owned projects. Completed and archived projects still count. Permanently delete a project or upgrade to create more projects.`,
+        `Project limit reached. Your current plan allows ${planLimit} unarchived owned projects. Archive or permanently delete a project, or upgrade to create more projects.`,
       );
     }
 
@@ -623,11 +641,48 @@ export class ProjectsService {
     return project;
   }
 
-  async findByIdWithAccess(projectId: string, userId: string): Promise<ProjectDocument> {
-    const project = await this.findById(projectId);
-    if (!this.hasAccess(project, userId)) {
-      throw new ForbiddenException('You do not have access to this project');
+  // openshare-project-member-access-enforcement-v1
+  async findByIdWithAccess(
+    projectId: string,
+    userId: string,
+    options: {
+      skipMemberBilling?: boolean;
+    } = {},
+  ): Promise<ProjectDocument> {
+    const project =
+      await this.findById(
+        projectId,
+      );
+
+    /*
+     * Ordinary authorization must succeed before billing is considered.
+     * Billing can restrict an existing membership but can never grant access.
+     */
+    if (
+      !this.hasAccess(
+        project,
+        userId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'You do not have access to this project',
+      );
     }
+
+    /*
+     * Privacy / membership-reduction escape paths explicitly opt out below.
+     * All ordinary project access is member-billing enforced by default.
+     */
+    if (
+      !options.skipMemberBilling
+    ) {
+      await this
+        .assertProjectMemberActiveForBilling(
+          projectId,
+          userId,
+        );
+    }
+
     return project;
   }
 
@@ -1436,6 +1491,14 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to edit this project');
     }
 
+    // openshare-project-generic-update-billing-v1
+    // Generic project edits mutate shared project state and therefore obey
+    // the owner's billing read-only state. Personal/reduction actions use
+    // dedicated methods that intentionally bypass this assertion.
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
+
     const patch: Record<string, any> = {};
     const now = new Date();
 
@@ -1535,6 +1598,68 @@ export class ProjectsService {
     return updated;
   }
 
+  async toggleStar(
+    projectId: string,
+    userId: string,
+  ): Promise<ProjectDocument> {
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+      );
+
+    if (!this.canEdit(project, userId)) {
+      throw new ForbiddenException(
+        'You do not have permission to edit this project',
+      );
+    }
+
+    const nextIsStarred =
+      !Boolean(
+        (project as any).isStarred,
+      );
+
+    const updated =
+      await this.projectModel
+        .findByIdAndUpdate(
+          projectId,
+          {
+            $set: {
+              isStarred:
+                nextIsStarred,
+              updatedAt:
+                new Date(),
+            },
+          },
+          {
+            new: true,
+            runValidators: false,
+          },
+        )
+        .exec();
+
+    if (!updated) {
+      throw new NotFoundException(
+        'Project not found',
+      );
+    }
+
+    this.eventEmitter.emit(
+      'project.updated',
+      {
+        projectId:
+          updated._id,
+        userId,
+        changes: {
+          isStarred:
+            nextIsStarred,
+        },
+      },
+    );
+
+    return updated;
+  }
+
   async updateMetrics(projectId: string, metrics: Partial<Project['metrics']>): Promise<void> {
     const set: Record<string, any> = {};
 
@@ -1603,6 +1728,10 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to post updates for this project');
     }
 
+    await this.assertProjectWritableForBilling(
+      args.projectId,
+    );
+
     await this.projectModel.updateOne(
       { _id: new Types.ObjectId(args.projectId) },
       {
@@ -1650,6 +1779,10 @@ export class ProjectsService {
     if (!this.canEdit(project, args.userId)) {
       throw new ForbiddenException('You do not have permission to post milestones for this project');
     }
+
+    await this.assertProjectWritableForBilling(
+      args.projectId,
+    );
 
     await this.projectModel.updateOne(
       { _id: new Types.ObjectId(args.projectId) },
@@ -1846,6 +1979,10 @@ export class ProjectsService {
       return project;
     }
 
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
+
     const tasks = await this.taskModel
       .find({ projectId: new Types.ObjectId(projectId) })
       .lean()
@@ -2017,6 +2154,10 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to reopen this project');
     }
 
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
+
     const now = new Date();
 
     project.status = ProjectStatus.ACTIVE;
@@ -2063,6 +2204,10 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to archive this project');
     }
 
+    // openshare-downgrade-archive-escape-v1
+    // Archiving reduces the active project footprint and must remain
+    // available even when this excess project is billing-read-only.
+
     const now = new Date();
     const previousStatus = project.status;
 
@@ -2087,6 +2232,27 @@ export class ProjectsService {
 
     if (!this.canEdit(project, userId)) {
       throw new ForbiddenException('You do not have permission to restore this project');
+    }
+
+    // openshare-project-restore-capacity-v1
+    // Restoring consumes one project slot. Check the owner's projected
+    // capacity rather than the archived project's current write state.
+    const projectUsageCheck =
+      await this.subscriptionsService
+        .checkProjectActivationLimit(
+          projectId,
+          1,
+        );
+
+    if (!projectUsageCheck.allowed) {
+      const planLimit =
+        projectUsageCheck.limit === -1
+          ? 'unlimited'
+          : projectUsageCheck.limit;
+
+      throw new ForbiddenException(
+        `Project limit reached. Your current plan allows ${planLimit} unarchived owned projects. Archive or permanently delete another project, or upgrade to restore this project.`,
+      );
     }
 
     const now = new Date();
@@ -2474,6 +2640,11 @@ export class ProjectsService {
       throw new ForbiddenException('You do not have permission to add members');
     }
 
+    // openshare-project-member-billing-enforcement-v1
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
+
     const existingMember = project.members.find((m) => m.userId.toString() === dto.userId);
     if (existingMember) throw new BadRequestException('User is already a member of this project');
     if (project.ownerId.toString() === dto.userId) {
@@ -2525,7 +2696,16 @@ export class ProjectsService {
   }
 
   async removeMember(projectId: string, userId: string, memberUserId: string): Promise<ProjectDocument> {
-    const project = await this.findByIdWithAccess(projectId, userId);
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+        {
+          // openshare-member-access-escape-v1
+          // Removing another member reduces workspace access/overage.
+          skipMemberBilling: true,
+        },
+      );
 
     if (!this.canManageMembers(project, userId)) {
       throw new ForbiddenException('You do not have permission to remove members');
@@ -2587,6 +2767,10 @@ export class ProjectsService {
       throw new ForbiddenException('Only the project owner can change member roles');
     }
 
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
+
     if (project.ownerId.toString() === memberUserId) {
       throw new BadRequestException('Cannot change owner role');
     }
@@ -2635,6 +2819,10 @@ export class ProjectsService {
     if (!this.canManageMembers(project, userId)) {
       throw new ForbiddenException('You do not have permission to manage member roles');
     }
+
+    await this.assertProjectWritableForBilling(
+      projectId,
+    );
 
     if (project.ownerId.toString() === memberUserId) {
       throw new BadRequestException('Owner display role is controlled by ownership');
@@ -2868,7 +3056,15 @@ export class ProjectsService {
     projectId: string,
     userId: string,
   ): Promise<ProjectNotificationPreferences> {
-    const project = await this.findByIdWithAccess(projectId, userId);
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+        {
+          // openshare-member-access-escape-v1
+          skipMemberBilling: true,
+        },
+      );
     const memberIndex = this.getProjectPreferenceMemberIndex(project, userId);
 
     if (memberIndex >= 0) {
@@ -2890,7 +3086,15 @@ export class ProjectsService {
     userId: string,
     preferences: Partial<ProjectNotificationPreferences>,
   ): Promise<ProjectNotificationPreferences> {
-    const project = await this.findByIdWithAccess(projectId, userId);
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+        {
+          // openshare-member-access-escape-v1
+          skipMemberBilling: true,
+        },
+      );
     let memberIndex = this.getProjectPreferenceMemberIndex(project, userId);
 
     if (memberIndex === -1) {
@@ -2933,10 +3137,16 @@ export class ProjectsService {
     projectId: string,
     userId: string,
   ): Promise<void> {
-    const project = await this.findByIdWithAccess(
-      projectId,
-      userId,
-    );
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+        {
+          // openshare-member-access-escape-v1
+          // Self-removal must never be blocked by billing inactivity.
+          skipMemberBilling: true,
+        },
+      );
 
     const ownerId =
       project.ownerId?.toString?.() ||
@@ -4402,6 +4612,142 @@ export class ProjectsService {
     // canManageMembers(), or owner checks after this, so this does not grant
     // write permissions.
     return this.isPublicProjectForAccess(project);
+  }
+
+  // openshare-project-billing-write-assertion-v1
+  // Billing restriction is independent from ordinary project membership and
+  // role permissions. It applies to every actor writing into a project whose
+  // owner's downgraded subscription has made that project read-only.
+  //
+  // This helper never archives, deletes, or otherwise mutates project data.
+  // openshare-downgrade-member-access-v1
+  //
+  // Billing overlay only. Ordinary authorization must already have succeeded.
+  // This assertion never removes or rewrites project membership.
+  async assertProjectMemberActiveForBilling(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    const access =
+      await this.subscriptionsService
+        .getProjectMemberAccess(
+          projectId,
+          userId,
+        );
+
+    if (access.active) {
+      return;
+    }
+
+    const selectionRequired =
+      access.reason ===
+        'billing_member_selection_required';
+
+    throw new ForbiddenException({
+      code:
+        'BILLING_MEMBER_INACTIVE',
+
+      reason:
+        access.reason,
+
+      message:
+        selectionRequired
+          ? 'Your workspace membership is temporarily inactive until the project owner finishes choosing which members to keep active on the Free plan.'
+          : 'Your workspace membership is inactive under the project owner’s current plan. The project owner can change the retained-member selection or upgrade to restore access.',
+
+      projectId,
+
+      ownerUserId:
+        access.ownerUserId,
+
+      downgradeState:
+        access.downgradeState,
+
+      memberLimit:
+        access.memberLimit,
+
+      acceptedWorkspaceMemberCount:
+        access.acceptedWorkspaceMemberCount,
+
+      overMemberLimit:
+        access.overMemberLimit,
+
+      retainedMember:
+        access.retainedMember,
+
+      selectionRequired:
+        access.selectionRequired,
+    });
+  }
+
+  async assertProjectWritableForBilling(
+    projectId: string,
+  ): Promise<void> {
+    const access =
+      await this.subscriptionsService
+        .getProjectWriteAccess(
+          projectId,
+        );
+
+    if (access.writable) {
+      return;
+    }
+
+    const selectionRequired =
+      access.reason ===
+        'billing_selection_required';
+
+    throw new ForbiddenException({
+      code:
+        'BILLING_PROJECT_READ_ONLY',
+      reason:
+        access.reason,
+      message:
+        selectionRequired
+          ? 'This project is temporarily read-only until the project owner chooses which projects to keep active on the Free plan.'
+          : 'This project is read-only under the project owner’s current plan. Upgrade or change the retained-project selection to restore editing.',
+      projectId:
+        String(projectId),
+      ownerUserId:
+        access.ownerUserId,
+      downgradeState:
+        access.downgradeState,
+      projectLimit:
+        access.projectLimit,
+      ownedProjectCount:
+        access.ownedProjectCount,
+      overProjectLimit:
+        access.overProjectLimit,
+      retainedProject:
+        access.retainedProject,
+      selectionRequired:
+        access.selectionRequired,
+    });
+  }
+
+  // openshare-project-editor-assertion-v1
+  // Shared child-resource authorization boundary.
+  //
+  // This intentionally handles ordinary project-role authorization only.
+  // Billing read-only remains a separate assertion so callers can preserve
+  // privacy, cleanup, personal-state, and quota-reduction exceptions.
+  async assertProjectEditableByUser(
+    projectId: string,
+    userId: string,
+  ): Promise<ProjectDocument> {
+    const project =
+      await this.findByIdWithAccess(
+        projectId,
+        userId,
+      );
+
+    if (!this.canEdit(project, userId)) {
+      throw new ForbiddenException(
+        'You do not have permission to edit this project',
+      );
+    }
+
+    return project;
   }
 
   private canEdit(project: ProjectDocument, userId: string): boolean {
