@@ -10,6 +10,9 @@ import {
   BadRequestException,
   Logger,
   InternalServerErrorException,
+  ConflictException,
+  ForbiddenException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -18,6 +21,13 @@ import { ThreadMessage } from '../thread-messages/schemas/thread-message.schema'
 import { TeamRoomPendingUpload } from '../uploads/schemas/team-room-pending-upload.schema';
 import { User } from '../user/schemas/user.schema';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { createHash } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import {
+  Environment,
+  SignedDataVerifier,
+} from '@apple/app-store-server-library';
 import {
   Subscription,
   SubscriptionDocument,
@@ -106,6 +116,17 @@ interface StripeClient {
 // PLAN CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// openshare-apple-subscription-verification-v1
+const APPLE_TEAM_STOREKIT_PRODUCTS = {
+  monthly:
+    'ca.openshare.team.monthly',
+  yearly:
+    'ca.openshare.team.yearly',
+} as const;
+
+const APPLE_DEFAULT_BUNDLE_ID =
+  'ca.openshare.app';
+
 export interface PlanConfig {
   name: string;
   description: string;
@@ -193,6 +214,10 @@ export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
   private stripe: StripeClient | null = null;
   private stripeAvailable = false;
+
+  // openshare-apple-subscription-verification-v1
+  private appleSignedDataVerifier:
+    SignedDataVerifier | null = null;
 
   constructor(
     @InjectModel(Subscription.name)
@@ -3159,8 +3184,716 @@ export class SubscriptionsService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // STRIPE CHECKOUT (requires Stripe)
+  // APP STORE PURCHASE VERIFICATION
   // ═══════════════════════════════════════════════════════════════════════════
+
+  // openshare-apple-subscription-verification-v1
+  getApplePurchaseContext(
+    userId: string,
+  ): {
+    appAccountToken: string;
+    products: {
+      monthly: string;
+      yearly: string;
+    };
+  } {
+    if (
+      !Types.ObjectId.isValid(
+        userId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid authenticated user.',
+      );
+    }
+
+    return {
+      appAccountToken:
+        this.getAppleAppAccountToken(
+          userId,
+        ),
+
+      products: {
+        ...APPLE_TEAM_STOREKIT_PRODUCTS,
+      },
+    };
+  }
+
+  async verifyAppleTransaction(
+    userId: string,
+    signedTransaction: string,
+  ): Promise<{
+    verified: true;
+    plan: 'team';
+    billingInterval:
+      'monthly' |
+      'yearly';
+    billingProvider: 'apple';
+    productId: string;
+    transactionId: string;
+    originalTransactionId: string;
+    currentPeriodEnd: string;
+  }> {
+    if (
+      !Types.ObjectId.isValid(
+        userId,
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid authenticated user.',
+      );
+    }
+
+    const normalizedJws =
+      String(
+        signedTransaction || '',
+      ).trim();
+
+    if (!normalizedJws) {
+      throw new BadRequestException(
+        'signedTransaction is required.',
+      );
+    }
+
+    const verifier =
+      this.getAppleSignedDataVerifier();
+
+    let transaction: any;
+
+    try {
+      transaction =
+        await verifier
+          .verifyAndDecodeTransaction(
+            normalizedJws,
+          );
+    } catch (error: any) {
+      this.logger.warn(
+        'Apple signed transaction verification failed: '
+        + String(
+          error?.message ||
+          error,
+        ),
+      );
+
+      throw new BadRequestException(
+        'Apple transaction verification failed.',
+      );
+    }
+
+    const productId =
+      String(
+        transaction?.productId ||
+        '',
+      ).trim();
+
+    let billingInterval:
+      BillingInterval;
+
+    if (
+      productId ===
+      APPLE_TEAM_STOREKIT_PRODUCTS
+        .monthly
+    ) {
+      billingInterval =
+        BillingInterval.MONTHLY;
+    } else if (
+      productId ===
+      APPLE_TEAM_STOREKIT_PRODUCTS
+        .yearly
+    ) {
+      billingInterval =
+        BillingInterval.YEARLY;
+    } else {
+      throw new BadRequestException(
+        'Apple transaction product is not an OpenShare Team subscription.',
+      );
+    }
+
+    const transactionId =
+      String(
+        transaction?.transactionId ||
+        '',
+      ).trim();
+
+    const originalTransactionId =
+      String(
+        transaction
+          ?.originalTransactionId ||
+        '',
+      ).trim();
+
+    if (
+      !transactionId ||
+      !originalTransactionId
+    ) {
+      throw new BadRequestException(
+        'Apple transaction identity is incomplete.',
+      );
+    }
+
+    const expectedAppAccountToken =
+      this.getAppleAppAccountToken(
+        userId,
+      );
+
+    const actualAppAccountToken =
+      String(
+        transaction
+          ?.appAccountToken ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    if (!actualAppAccountToken) {
+      throw new ForbiddenException(
+        'Apple transaction is not bound to an OpenShare account.',
+      );
+    }
+
+    if (
+      actualAppAccountToken !==
+      expectedAppAccountToken
+    ) {
+      throw new ForbiddenException(
+        'Apple transaction belongs to a different OpenShare account.',
+      );
+    }
+
+    if (
+      transaction?.revocationDate !=
+      null
+    ) {
+      throw new BadRequestException(
+        'Apple transaction has been revoked.',
+      );
+    }
+
+    const purchaseDateMs =
+      Number(
+        transaction?.purchaseDate,
+      );
+
+    const expiresDateMs =
+      Number(
+        transaction?.expiresDate,
+      );
+
+    if (
+      !Number.isFinite(
+        purchaseDateMs,
+      ) ||
+      purchaseDateMs <= 0
+    ) {
+      throw new BadRequestException(
+        'Apple transaction purchase date is invalid.',
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        expiresDateMs,
+      ) ||
+      expiresDateMs <= Date.now()
+    ) {
+      throw new BadRequestException(
+        'Apple subscription is not currently active.',
+      );
+    }
+
+    const oid =
+      new Types.ObjectId(
+        userId,
+      );
+
+    const existing =
+      await this
+        .getOrCreateSubscription(
+          userId,
+        );
+
+    const existingProvider =
+      existing.billingProvider ||
+      (
+        existing.stripeSubscriptionId
+          ? 'stripe'
+          : undefined
+      );
+
+    const existingIsPaid =
+      existing.plan !==
+        SubscriptionPlan.FREE &&
+      [
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.TRIALING,
+      ].includes(
+        existing.status,
+      );
+
+    // openshare-apple-subscription-verification-v1
+    //
+    // Fail closed whenever a Stripe subscription identifier still exists,
+    // even if its local payment state is past_due, incomplete, paused, etc.
+    // Apple activation must never orphan a remotely existing Stripe
+    // subscription by clearing its local identifier.
+    const hasStripeBillingRelationship =
+      Boolean(
+        existing.stripeSubscriptionId
+      ) ||
+      (
+        existingIsPaid &&
+        existingProvider ===
+          'stripe'
+      );
+
+    if (
+      hasStripeBillingRelationship
+    ) {
+      throw new ConflictException(
+        'An existing Stripe subscription must be resolved before using App Store billing for this OpenShare account.',
+      );
+    }
+
+    const ownedElsewhere =
+      await this.subscriptionModel
+        .findOne({
+          appleOriginalTransactionId:
+            originalTransactionId,
+
+          userId: {
+            $ne: oid,
+          },
+        })
+        .select({
+          _id: 1,
+          userId: 1,
+        })
+        .lean();
+
+    if (ownedElsewhere) {
+      throw new ConflictException(
+        'This App Store subscription is already attached to another OpenShare account.',
+      );
+    }
+
+    const limits =
+      PLAN_CONFIGS[
+        SubscriptionPlan.TEAM
+      ].limits;
+
+    const currentPeriodStart =
+      new Date(
+        purchaseDateMs,
+      );
+
+    const currentPeriodEnd =
+      new Date(
+        expiresDateMs,
+      );
+
+    const appleEnvironment =
+      String(
+        transaction?.environment ||
+        this.getAppleEnvironment(),
+      );
+
+    const alreadyActive =
+      existing.plan ===
+        SubscriptionPlan.TEAM &&
+      existing.status ===
+        SubscriptionStatus.ACTIVE &&
+      existing.billingProvider ===
+        'apple' &&
+      existing
+        .appleOriginalTransactionId ===
+        originalTransactionId &&
+      existing
+        .appleLatestTransactionId ===
+        transactionId;
+
+    try {
+      await this.subscriptionModel
+        .updateOne(
+          {
+            userId: oid,
+          },
+          {
+            $set: {
+              plan:
+                SubscriptionPlan.TEAM,
+
+              billingInterval,
+
+              status:
+                SubscriptionStatus.ACTIVE,
+
+              limits,
+
+              billingProvider:
+                'apple',
+
+              appleProductId:
+                productId,
+
+              appleOriginalTransactionId:
+                originalTransactionId,
+
+              appleLatestTransactionId:
+                transactionId,
+
+              appleAppAccountToken:
+                expectedAppAccountToken,
+
+              appleEnvironment,
+
+              currentPeriodStart,
+
+              currentPeriodEnd,
+
+              downgradeState:
+                DowngradeState.NONE,
+
+              downgradeRetainedProjectIds:
+                [],
+
+              downgradeRetainedMemberUserIds:
+                [],
+            },
+
+            $unset: {
+              // An inactive legacy Stripe customer may remain reusable,
+              // but the provider-specific subscription/payment identifiers
+              // must not drive Apple lifecycle actions.
+              stripeSubscriptionId: 1,
+              stripePriceId: 1,
+              stripePaymentMethodId: 1,
+
+              canceledAt: 1,
+              cancelAt: 1,
+              downgradeTargetPlan: 1,
+              downgradeEffectiveAt: 1,
+              downgradeGraceEndsAt: 1,
+            },
+          },
+        );
+    } catch (error: any) {
+      if (
+        Number(error?.code) ===
+        11000
+      ) {
+        throw new ConflictException(
+          'This App Store subscription is already attached to another OpenShare account.',
+        );
+      }
+
+      throw error;
+    }
+
+    if (!alreadyActive) {
+      this.eventEmitter.emit(
+        'subscription.activated',
+        {
+          userId,
+          plan:
+            SubscriptionPlan.TEAM,
+          billingInterval,
+          billingProvider:
+            'apple',
+        },
+      );
+
+      this.logger.log(
+        `Activated Apple Team subscription for user ${userId}`,
+      );
+    }
+
+    return {
+      verified: true,
+      plan: 'team',
+      billingInterval:
+        billingInterval ===
+        BillingInterval.YEARLY
+          ? 'yearly'
+          : 'monthly',
+      billingProvider:
+        'apple',
+      productId,
+      transactionId,
+      originalTransactionId,
+      currentPeriodEnd:
+        currentPeriodEnd
+          .toISOString(),
+    };
+  }
+
+  private getAppleAppAccountToken(
+    userId: string,
+  ): string {
+    const digest =
+      createHash('sha256')
+        .update(
+          'openshare-apple-app-account-token-v1:'
+          + String(userId),
+        )
+        .digest();
+
+    const bytes =
+      Buffer.from(
+        digest.subarray(
+          0,
+          16,
+        ),
+      );
+
+    // Deterministic RFC-4122-compatible UUID.
+    bytes[6] =
+      (bytes[6] & 0x0f) |
+      0x50;
+
+    bytes[8] =
+      (bytes[8] & 0x3f) |
+      0x80;
+
+    const hex =
+      bytes.toString('hex');
+
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20, 32),
+    ]
+      .join('-')
+      .toLowerCase();
+  }
+
+  private getAppleEnvironment():
+    Environment {
+    const raw =
+      String(
+        process.env
+          .APPLE_STOREKIT_ENVIRONMENT ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    if (raw === 'sandbox') {
+      return Environment.SANDBOX;
+    }
+
+    if (raw === 'production') {
+      return Environment.PRODUCTION;
+    }
+
+    throw new ServiceUnavailableException(
+      'APPLE_STOREKIT_ENVIRONMENT must be sandbox or production.',
+    );
+  }
+
+  private getAppleRootCertificates():
+    Buffer[] {
+    const certificates:
+      Buffer[] = [];
+
+    const encodedJson =
+      String(
+        process.env
+          .APPLE_ROOT_CA_CERTS_BASE64_JSON ||
+        '',
+      ).trim();
+
+    if (encodedJson) {
+      let parsed: unknown;
+
+      try {
+        parsed =
+          JSON.parse(
+            encodedJson,
+          );
+      } catch {
+        throw new ServiceUnavailableException(
+          'APPLE_ROOT_CA_CERTS_BASE64_JSON must be valid JSON.',
+        );
+      }
+
+      if (
+        !Array.isArray(parsed)
+      ) {
+        throw new ServiceUnavailableException(
+          'APPLE_ROOT_CA_CERTS_BASE64_JSON must be a JSON array.',
+        );
+      }
+
+      for (
+        const item
+        of parsed
+      ) {
+        const encoded =
+          String(
+            item || '',
+          ).trim();
+
+        if (!encoded) {
+          continue;
+        }
+
+        const buffer =
+          Buffer.from(
+            encoded,
+            'base64',
+          );
+
+        if (
+          buffer.length < 64
+        ) {
+          throw new ServiceUnavailableException(
+            'An Apple root certificate is invalid.',
+          );
+        }
+
+        certificates.push(
+          buffer,
+        );
+      }
+    }
+
+    const configuredPaths =
+      String(
+        process.env
+          .APPLE_ROOT_CA_PATHS ||
+        '',
+      )
+        .split(',')
+        .map(
+          (value) =>
+            value.trim(),
+        )
+        .filter(Boolean);
+
+    for (
+      const certificatePath
+      of configuredPaths
+    ) {
+      try {
+        certificates.push(
+          readFileSync(
+            resolve(
+              certificatePath,
+            ),
+          ),
+        );
+      } catch {
+        throw new ServiceUnavailableException(
+          `Could not read Apple root certificate: ${certificatePath}`,
+        );
+      }
+    }
+
+    if (
+      certificates.length === 0
+    ) {
+      throw new ServiceUnavailableException(
+        'Apple root certificates are not configured.',
+      );
+    }
+
+    return certificates;
+  }
+
+  private getAppleSignedDataVerifier():
+    SignedDataVerifier {
+    if (
+      this.appleSignedDataVerifier
+    ) {
+      return this
+        .appleSignedDataVerifier;
+    }
+
+    const environment =
+      this.getAppleEnvironment();
+
+    const bundleId =
+      String(
+        process.env
+          .APPLE_BUNDLE_ID ||
+        APPLE_DEFAULT_BUNDLE_ID,
+      ).trim();
+
+    if (!bundleId) {
+      throw new ServiceUnavailableException(
+        'APPLE_BUNDLE_ID is not configured.',
+      );
+    }
+
+    let appAppleId:
+      number | undefined;
+
+    if (
+      environment ===
+      Environment.PRODUCTION
+    ) {
+      const parsed =
+        Number(
+          process.env
+            .APPLE_APP_ID,
+        );
+
+      if (
+        !Number.isSafeInteger(
+          parsed,
+        ) ||
+        parsed <= 0
+      ) {
+        throw new ServiceUnavailableException(
+          'APPLE_APP_ID must be configured for production.',
+        );
+      }
+
+      appAppleId =
+        parsed;
+    }
+
+    const onlineChecks =
+      String(
+        process.env
+          .APPLE_ENABLE_ONLINE_CHECKS ??
+        'true',
+      )
+        .trim()
+        .toLowerCase() !==
+      'false';
+
+    try {
+      this.appleSignedDataVerifier =
+        new SignedDataVerifier(
+          this.getAppleRootCertificates(),
+          onlineChecks,
+          environment,
+          bundleId,
+          appAppleId,
+        );
+    } catch (error: any) {
+      this.logger.error(
+        'Could not initialize Apple signed-data verifier: '
+        + String(
+          error?.message ||
+          error,
+        ),
+      );
+
+      throw new ServiceUnavailableException(
+        'Apple transaction verification is not configured correctly.',
+      );
+    }
+
+    return this
+      .appleSignedDataVerifier;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STRIPE CHECKOUT (requires Stripe)  // ═══════════════════════════════════════════════════════════════════════════
 
   async createCheckoutSession(
     userId: string,
@@ -3958,6 +4691,10 @@ export class SubscriptionsService {
           plan,
           billingInterval,
           status: SubscriptionStatus.ACTIVE,
+
+          // openshare-apple-subscription-verification-v1
+          billingProvider: 'stripe',
+
           stripeSubscriptionId,
           limits,
           downgradeState: 'none',
@@ -3974,6 +4711,13 @@ export class SubscriptionsService {
           downgradeTargetPlan: 1,
           downgradeEffectiveAt: 1,
           downgradeGraceEndsAt: 1,
+
+          // Preserve appleOriginalTransactionId as historical ownership,
+          // but clear provider-current Apple transaction detail.
+          appleProductId: 1,
+          appleLatestTransactionId: 1,
+          appleAppAccountToken: 1,
+          appleEnvironment: 1,
         },
       },
     );

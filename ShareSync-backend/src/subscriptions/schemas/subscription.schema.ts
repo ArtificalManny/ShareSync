@@ -168,6 +168,30 @@ export class Subscription {
   @Prop({ type: String })
   stripePaymentMethodId?: string;
 
+  // openshare-apple-subscription-verification-v1
+  // Billing-provider identity is explicit so Stripe and Apple lifecycles
+  // cannot accidentally share provider-specific identifiers.
+  @Prop({
+    type: String,
+    enum: ['stripe', 'apple'],
+  })
+  billingProvider?: 'stripe' | 'apple';
+
+  @Prop({ type: String })
+  appleProductId?: string;
+
+  @Prop({ type: String })
+  appleOriginalTransactionId?: string;
+
+  @Prop({ type: String })
+  appleLatestTransactionId?: string;
+
+  @Prop({ type: String })
+  appleAppAccountToken?: string;
+
+  @Prop({ type: String })
+  appleEnvironment?: string;
+
   // ─────────────────────────────────────────────────────────────────────────────
   // BILLING PERIOD
   // ─────────────────────────────────────────────────────────────────────────────
@@ -277,4 +301,13 @@ export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);
 SubscriptionSchema.index({ userId: 1 }, { unique: true });
 SubscriptionSchema.index({ stripeCustomerId: 1 }, { sparse: true });
 SubscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
+
+// openshare-apple-subscription-verification-v1
+// One App Store subscription lineage may belong to only one OpenShare
+// subscription record.
+SubscriptionSchema.index(
+  { appleOriginalTransactionId: 1 },
+  { unique: true, sparse: true },
+);
+
 SubscriptionSchema.index({ plan: 1, status: 1 });

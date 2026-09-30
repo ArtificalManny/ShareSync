@@ -12,6 +12,8 @@
     "subscription:inspect": "node dist/scripts/manage-enterprise-subscription.js inspect",
     "subscription:grant-enterprise": "node dist/scripts/manage-enterprise-subscription.js grant-enterprise",
     "subscription:revoke-enterprise": "node dist/scripts/manage-enterprise-subscription.js revoke-enterprise",
+    "subscription:check-apple-index": "node scripts/ensure-apple-subscription-index.js",
+    "subscription:apply-apple-index": "node scripts/ensure-apple-subscription-index.js --apply",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -25,6 +27,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@apple/app-store-server-library": "3.1.0",
     "@aws-sdk/client-rekognition": "^3.1003.0",
     "@aws-sdk/client-s3": "^3.1074.0",
     "@google/genai": "^2.7.0",

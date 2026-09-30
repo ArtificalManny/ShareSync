@@ -207,6 +207,15 @@ return {
         plan: subscription.plan,
         status: subscription.status,
         billingInterval: subscription.billingInterval,
+
+        // openshare-apple-subscription-verification-v1
+        billingProvider:
+          subscription.billingProvider ||
+          (subscription.stripeSubscriptionId
+            ? 'stripe'
+            : undefined),
+        appleProductId:
+          subscription.appleProductId,
         usage: {
           ...baseUsage,
           projects: realProjectCount,
@@ -559,6 +568,88 @@ return {
     return {
       success: true,
       message: 'Billing details updated',
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // APP STORE PURCHASE VERIFICATION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // openshare-apple-subscription-verification-v1
+  @Get('apple/purchase-context')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get authenticated App Store purchase context',
+  })
+  async getApplePurchaseContext(
+    @Req() req: any,
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const result =
+      this.subscriptionsService
+        .getApplePurchaseContext(
+          userId,
+        );
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Post('apple/verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Verify App Store transaction and activate entitlement',
+  })
+  async verifyAppleTransaction(
+    @Req() req: any,
+    @Body()
+    body: {
+      signedTransaction?: string;
+    },
+  ) {
+    const userId =
+      req.user?.sub ||
+      req.user?.userId;
+
+    const signedTransaction =
+      String(
+        body?.signedTransaction ||
+        '',
+      ).trim();
+
+    if (!signedTransaction) {
+      throw new BadRequestException(
+        'signedTransaction is required.',
+      );
+    }
+
+    if (
+      signedTransaction.length >
+      100_000
+    ) {
+      throw new BadRequestException(
+        'signedTransaction is too large.',
+      );
+    }
+
+    const result =
+      await this.subscriptionsService
+        .verifyAppleTransaction(
+          userId,
+          signedTransaction,
+        );
+
+    return {
+      success: true,
+      data: result,
     };
   }
 
