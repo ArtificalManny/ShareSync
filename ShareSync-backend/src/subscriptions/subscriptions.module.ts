@@ -23,6 +23,9 @@ import {
   TeamRoomPendingUploadSchema,
 } from '../uploads/schemas/team-room-pending-upload.schema';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+import { SubscriptionLifecycleNotificationListener } from './listeners/subscription-lifecycle-notification.listener';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -45,9 +48,13 @@ import {
         schema: TeamRoomPendingUploadSchema,
       },
     ]),
+    NotificationsModule,
   ],
   controllers: [SubscriptionsController],
-  providers: [SubscriptionsService],
+  providers: [
+    SubscriptionsService,
+    SubscriptionLifecycleNotificationListener,
+  ],
   exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {}

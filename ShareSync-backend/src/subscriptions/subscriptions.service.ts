@@ -4424,6 +4424,21 @@ export class SubscriptionsService {
           },
         );
 
+      if (applied) {
+        this.eventEmitter.emit(
+          'subscription.downgrade_scheduled',
+          {
+            userId:
+              subscription.userId.toString(),
+            effectiveAt,
+            cycleKey:
+              effectiveAt.toISOString(),
+            billingProvider:
+              'apple',
+          },
+        );
+      }
+
       return {
         applied,
         reason:
@@ -4742,6 +4757,36 @@ export class SubscriptionsService {
           wasActiveAppleTeam &&
           transactionMayMutateCurrentState
         ) {
+          const restorationCycleKey =
+            subscription
+              .downgradeEffectiveAt
+              ? new Date(
+                  subscription
+                    .downgradeEffectiveAt,
+                ).toISOString()
+              : subscription.cancelAt
+                ? new Date(
+                    subscription
+                      .cancelAt,
+                  ).toISOString()
+                : subscription
+                    .currentPeriodEnd
+                  ? new Date(
+                      subscription
+                        .currentPeriodEnd,
+                    ).toISOString()
+                  : undefined;
+
+          const wasScheduledForDowngrade =
+            subscription
+              .downgradeState ===
+              DowngradeState.SCHEDULED ||
+            Boolean(
+              subscription.cancelAt ||
+              subscription
+                .downgradeEffectiveAt,
+            );
+
           const applied =
             await applyUpdate(
               {
@@ -4765,6 +4810,26 @@ export class SubscriptionsService {
                 downgradeGraceEndsAt: 1,
               },
             );
+
+          if (
+            applied &&
+            wasScheduledForDowngrade &&
+            restorationCycleKey
+          ) {
+            this.eventEmitter.emit(
+              'subscription.restored',
+              {
+                userId:
+                  subscription
+                    .userId
+                    .toString(),
+                cycleKey:
+                  restorationCycleKey,
+                billingProvider:
+                  'apple',
+              },
+            );
+          }
 
           outcome = {
             applied,
@@ -5422,6 +5487,25 @@ export class SubscriptionsService {
         },
       );
 
+      // openshare-downgrade-lifecycle-notification-events-v1
+      // Immediate notification event for a newly scheduled Stripe downgrade.
+      // The listener re-reads the persisted subscription and atomically claims
+      // the lifecycle marker, so duplicate delivery remains safe.
+      this.eventEmitter.emit(
+        'subscription.downgrade_scheduled',
+        {
+          userId,
+          effectiveAt:
+            cancelAt,
+          cycleKey:
+            cancelAt
+              ? cancelAt.toISOString()
+              : undefined,
+          billingProvider:
+            'stripe',
+        },
+      );
+
       this.logger.log(`Subscription ${subscription.stripeSubscriptionId} scheduled for cancellation`);
 
       return { cancelAt };
@@ -5453,6 +5537,31 @@ export class SubscriptionsService {
     }
 
     try {
+      const restorationCycleKey =
+        subscription.downgradeEffectiveAt
+          ? new Date(
+              subscription.downgradeEffectiveAt,
+            ).toISOString()
+          : subscription.cancelAt
+            ? new Date(
+                subscription.cancelAt,
+              ).toISOString()
+            : subscription.currentPeriodEnd
+              ? new Date(
+                  subscription.currentPeriodEnd,
+                ).toISOString()
+              : undefined;
+
+      const hadPendingDowngrade =
+        String(
+          subscription.downgradeState ||
+          '',
+        ) !== 'none' ||
+        Boolean(
+          subscription.cancelAt ||
+          subscription.downgradeEffectiveAt,
+        );
+
       await this.stripe!.subscriptions.update(
         subscription.stripeSubscriptionId,
         { cancel_at_period_end: false },
@@ -5479,6 +5588,22 @@ export class SubscriptionsService {
           },
         },
       );
+
+      if (
+        hadPendingDowngrade &&
+        restorationCycleKey
+      ) {
+        this.eventEmitter.emit(
+          'subscription.restored',
+          {
+            userId,
+            cycleKey:
+              restorationCycleKey,
+            billingProvider:
+              'stripe',
+          },
+        );
+      }
 
       this.logger.log(`Subscription ${subscription.stripeSubscriptionId} resumed`);
     } catch (error: any) {

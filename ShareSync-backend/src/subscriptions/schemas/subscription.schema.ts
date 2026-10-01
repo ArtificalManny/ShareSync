@@ -262,6 +262,27 @@ export class Subscription {
   @Prop({ type: [String], default: [] })
   downgradeRetainedMemberUserIds: string[];
 
+  // openshare-downgrade-lifecycle-notifications-v1
+  //
+  // Each value stores the downgrade-cycle key for which that lifecycle
+  // notification has already been claimed. Using the cycle key instead of
+  // a Boolean lets later cancel/resume cycles notify normally without
+  // deleting historical customer data.
+  @Prop({ type: String })
+  downgradeScheduledNotificationKey?: string;
+
+  @Prop({ type: String })
+  downgradeGraceStartedNotificationKey?: string;
+
+  @Prop({ type: String })
+  downgradeGraceEndingNotificationKey?: string;
+
+  @Prop({ type: String })
+  downgradeRestrictedNotificationKey?: string;
+
+  @Prop({ type: String })
+  downgradeRestoredNotificationKey?: string;
+
   @Prop({ type: Date })
   trialStart?: Date;
 

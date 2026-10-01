@@ -22,6 +22,9 @@ export enum NotificationType {
   PROJECT_MEMBER_JOINED = 'project_member_joined',
   PROJECT_MEMBER_LEFT = 'project_member_left',
 
+  // openshare-downgrade-lifecycle-notifications-v1
+  SUBSCRIPTION_UPDATE = 'subscription_update',
+
   MESSAGE_NEW = 'message_new',
   MESSAGE_MENTION = 'message_mention',
   MESSAGE_REACTION = 'message_reaction',
