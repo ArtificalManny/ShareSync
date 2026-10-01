@@ -5489,19 +5489,32 @@ export class SubscriptionsService {
 
   // account-delete-billing-cleanup-v1
   /**
-   * Permanently detach billing before an OpenShare account is deleted.
+   * Permanently detach OpenShare billing state before account deletion.
    *
-   * This is intentionally different from cancelSubscription(), which preserves
-   * paid access until the end of the current billing period.
+   * Stripe-billed accounts are closed remotely and fail-closed before the
+   * OpenShare account disappears.
    *
-   * Account deletion must stop future billing immediately and is fail-closed:
-   * if Stripe cleanup fails, the caller must not delete the User document.
+   * openshare-apple-account-delete-billing-v1
+   * App Store billing is controlled by Apple. Deleting an OpenShare account
+   * removes the local Apple entitlement binding but cannot cancel, refund, or
+   * otherwise modify the user's App Store subscription.
    */
   async cleanupBillingForAccountDeletion(userId: string): Promise<void> {
     const subscription = await this.getByUserId(userId);
 
     // Some older/free accounts may never have created a subscription record.
     if (!subscription) return;
+
+    const billingProvider =
+      String(
+        subscription.billingProvider ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    const isAppleBilling =
+      billingProvider === 'apple';
 
     const stripeCustomerId = String(
       subscription.stripeCustomerId || '',
@@ -5511,8 +5524,16 @@ export class SubscriptionsService {
       subscription.stripeSubscriptionId || '',
     ).trim();
 
+    // Apple subscriptions are managed externally by Apple. A historical
+    // Stripe customer ID may remain reusable on the OpenShare record, but it
+    // must never make Apple account deletion depend on Stripe availability or
+    // delete an unrelated historical Stripe customer.
     const hasRemoteBillingIdentity =
-      Boolean(stripeCustomerId || stripeSubscriptionId);
+      !isAppleBilling &&
+      Boolean(
+        stripeCustomerId ||
+        stripeSubscriptionId,
+      );
 
     if (hasRemoteBillingIdentity && !this.isStripeAvailable()) {
       throw new InternalServerErrorException(
@@ -5590,8 +5611,10 @@ export class SubscriptionsService {
       }
     }
 
-    // Account deletion removes OpenShare's local billing/customer linkage.
-    // Historical financial records retained by Stripe are not recreated here.
+    // Account deletion always removes OpenShare's local billing linkage.
+    // External processors may independently retain transaction records.
+    // For Apple billing, the App Store subscription itself remains under
+    // Apple's control after this local binding is removed.
     await this.subscriptionModel.deleteOne({
       userId: new Types.ObjectId(userId),
     });

@@ -1650,11 +1650,26 @@ export default function Settings() {
                     </p>
 
                     <div className="mt-3 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+                      {/* openshare-apple-account-delete-warning-v1 */}
                       <p className="text-xs font-semibold leading-5 text-amber-900 dark:text-amber-200">
-                        If you have a paid subscription, deleting your account cancels it immediately and stops future subscription renewals.
+                        If you subscribed through Apple, deleting your OpenShare account does not cancel your App Store subscription or stop Apple from renewing it. Cancel or manage that subscription with Apple before deleting if you do not want it to renew.
                       </p>
+
+                      <a
+                        href="https://apps.apple.com/account/subscriptions"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-flex text-xs font-extrabold text-amber-950 underline decoration-amber-500/60 underline-offset-2 hover:text-amber-700 dark:text-amber-100 dark:hover:text-amber-300"
+                      >
+                        Manage Apple Subscription
+                      </a>
+
+                      <p className="mt-2 text-xs leading-5 text-amber-800/90 dark:text-amber-300/80">
+                        An Apple subscription tied to this OpenShare account may not be restorable to a newly created OpenShare account after deletion. Subscriptions billed directly by OpenShare are closed through OpenShare&apos;s billing system during account deletion.
+                      </p>
+
                       <p className="mt-1 text-xs leading-5 text-amber-800/90 dark:text-amber-300/80">
-                        Account deletion does not itself guarantee a refund; refund eligibility remains subject to OpenShare&apos;s refund policy and applicable law. Certain transaction and payment records may be retained by our payment processor where required or permitted for legal, tax, accounting, fraud-prevention, or dispute purposes.
+                        Account deletion does not itself guarantee a refund; refund eligibility remains subject to OpenShare&apos;s refund policy and applicable law. Certain transaction and payment records may be retained by a payment processor where required or permitted for legal, tax, accounting, fraud-prevention, or dispute purposes.
                       </p>
                     </div>
                   </div>
