@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.0"),
-        .package(name: "CapacitorPushNotifications", path: "../../../../../../../Users/realmannyrivas/Documents/ShareSync/ShareSync-frontend-backup/node_modules/@capacitor/push-notifications")
+        .package(name: "CapacitorPushNotifications", path: "../../../node_modules/@capacitor/push-notifications")
     ],
     targets: [
         .target(
