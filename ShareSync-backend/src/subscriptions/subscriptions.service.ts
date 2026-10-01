@@ -44,6 +44,12 @@ import {
   UpdateBillingDetailsDto,
 } from './dto';
 
+import {
+  AutoRenewStatus,
+  NotificationTypeV2,
+  Subtype,
+} from '@apple/app-store-server-library';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // STRIPE TYPE DEFINITIONS (so we don't need the package installed)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3668,6 +3674,1297 @@ export class SubscriptionsService {
     ]
       .join('-')
       .toLowerCase();
+  }
+
+  // openshare-apple-server-notifications-v2
+  //
+  // App Store Server Notifications are intentionally unauthenticated at the
+  // HTTP/JWT layer. Authenticity comes from Apple's signedPayload and the
+  // embedded transaction / renewal JWS values. An Apple callback may update
+  // only an already-bound OpenShare Apple lineage; it can never create a new
+  // OpenShare account-to-purchase binding.
+  async handleAppleServerNotification(
+    signedPayload: string,
+  ): Promise<{
+    received: true;
+    verified: true;
+    notificationType: string;
+    subtype: string | null;
+    notificationUUID: string;
+    matched: boolean;
+    applied: boolean;
+    reason: string;
+  }> {
+    const normalizedPayload =
+      String(
+        signedPayload || '',
+      ).trim();
+
+    if (!normalizedPayload) {
+      throw new BadRequestException(
+        'signedPayload is required.',
+      );
+    }
+
+    const verifier =
+      this.getAppleSignedDataVerifier();
+
+    let notification: any;
+
+    try {
+      notification =
+        await verifier
+          .verifyAndDecodeNotification(
+            normalizedPayload,
+          );
+    } catch (error: any) {
+      this.logger.warn(
+        'Apple server notification verification failed: '
+        + String(
+          error?.message ||
+          error,
+        ),
+      );
+
+      throw new BadRequestException(
+        'Apple server notification verification failed.',
+      );
+    }
+
+    const notificationType =
+      String(
+        notification
+          ?.notificationType ||
+        '',
+      ).trim();
+
+    const subtype =
+      String(
+        notification?.subtype ||
+        '',
+      ).trim();
+
+    const notificationUUID =
+      String(
+        notification
+          ?.notificationUUID ||
+        '',
+      ).trim();
+
+    const signedDateMs =
+      Number(
+        notification?.signedDate,
+      );
+
+    if (
+      !notificationType ||
+      !notificationUUID ||
+      !Number.isFinite(
+        signedDateMs,
+      ) ||
+      signedDateMs <= 0
+    ) {
+      throw new BadRequestException(
+        'Apple notification identity is incomplete.',
+      );
+    }
+
+    // Apple's TEST callback proves endpoint/JWS configuration only.
+    // It has no subscription entitlement to mutate.
+    if (
+      notificationType ===
+      NotificationTypeV2.TEST
+    ) {
+      return {
+        received: true,
+        verified: true,
+        notificationType,
+        subtype:
+          subtype || null,
+        notificationUUID,
+        matched: false,
+        applied: false,
+        reason: 'test_notification',
+      };
+    }
+
+    const data =
+      notification?.data || {};
+
+    const signedTransactionInfo =
+      String(
+        data
+          ?.signedTransactionInfo ||
+        '',
+      ).trim();
+
+    const signedRenewalInfo =
+      String(
+        data
+          ?.signedRenewalInfo ||
+        '',
+      ).trim();
+
+    const lifecycleNotificationTypes =
+      new Set<string>([
+        NotificationTypeV2.SUBSCRIBED,
+        NotificationTypeV2
+          .DID_CHANGE_RENEWAL_STATUS,
+        NotificationTypeV2.DID_RENEW,
+        NotificationTypeV2
+          .DID_FAIL_TO_RENEW,
+        NotificationTypeV2.EXPIRED,
+        NotificationTypeV2
+          .GRACE_PERIOD_EXPIRED,
+        NotificationTypeV2.REFUND,
+        NotificationTypeV2.REVOKE,
+        NotificationTypeV2
+          .REFUND_REVERSED,
+        NotificationTypeV2
+          .RENEWAL_EXTENDED,
+        NotificationTypeV2
+          .RENEWAL_EXTENSION,
+        NotificationTypeV2
+          .OFFER_REDEEMED,
+      ]);
+
+    if (!signedTransactionInfo) {
+      if (
+        lifecycleNotificationTypes
+          .has(
+            notificationType,
+          )
+      ) {
+        throw new BadRequestException(
+          'Apple lifecycle notification is missing signed transaction information.',
+        );
+      }
+
+      return {
+        received: true,
+        verified: true,
+        notificationType,
+        subtype:
+          subtype || null,
+        notificationUUID,
+        matched: false,
+        applied: false,
+        reason:
+          'verified_non_transaction_notification',
+      };
+    }
+
+    let transaction: any;
+
+    try {
+      transaction =
+        await verifier
+          .verifyAndDecodeTransaction(
+            signedTransactionInfo,
+          );
+    } catch (error: any) {
+      this.logger.warn(
+        'Apple notification transaction verification failed: '
+        + String(
+          error?.message ||
+          error,
+        ),
+      );
+
+      throw new BadRequestException(
+        'Apple notification transaction verification failed.',
+      );
+    }
+
+    let renewal: any = null;
+
+    if (signedRenewalInfo) {
+      try {
+        renewal =
+          await verifier
+            .verifyAndDecodeRenewalInfo(
+              signedRenewalInfo,
+            );
+      } catch (error: any) {
+        this.logger.warn(
+          'Apple notification renewal verification failed: '
+          + String(
+            error?.message ||
+            error,
+          ),
+        );
+
+        throw new BadRequestException(
+          'Apple notification renewal verification failed.',
+        );
+      }
+    }
+
+    const productId =
+      String(
+        transaction?.productId ||
+        '',
+      ).trim();
+
+    const isMonthly =
+      productId ===
+      APPLE_TEAM_STOREKIT_PRODUCTS
+        .monthly;
+
+    const isYearly =
+      productId ===
+      APPLE_TEAM_STOREKIT_PRODUCTS
+        .yearly;
+
+    // This app may eventually contain other IAP products. A cryptographically
+    // valid callback for a non-Team product must not touch Team billing state.
+    if (
+      !isMonthly &&
+      !isYearly
+    ) {
+      return {
+        received: true,
+        verified: true,
+        notificationType,
+        subtype:
+          subtype || null,
+        notificationUUID,
+        matched: false,
+        applied: false,
+        reason:
+          'non_team_product',
+      };
+    }
+
+    const billingInterval =
+      isYearly
+        ? BillingInterval.YEARLY
+        : BillingInterval.MONTHLY;
+
+    const transactionId =
+      String(
+        transaction
+          ?.transactionId ||
+        '',
+      ).trim();
+
+    const originalTransactionId =
+      String(
+        transaction
+          ?.originalTransactionId ||
+        '',
+      ).trim();
+
+    const appAccountToken =
+      String(
+        transaction
+          ?.appAccountToken ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    const transactionEnvironment =
+      String(
+        transaction?.environment ||
+        data?.environment ||
+        '',
+      ).trim();
+
+    const purchaseDateMs =
+      Number(
+        transaction?.purchaseDate,
+      );
+
+    const expiresDateMs =
+      Number(
+        transaction?.expiresDate,
+      );
+
+    const revocationDateMs =
+      Number(
+        transaction?.revocationDate,
+      );
+
+    if (
+      !transactionId ||
+      !originalTransactionId
+    ) {
+      throw new BadRequestException(
+        'Apple notification transaction identity is incomplete.',
+      );
+    }
+
+    if (!appAccountToken) {
+      throw new ForbiddenException(
+        'Apple notification transaction is not bound to an OpenShare account.',
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        expiresDateMs,
+      ) ||
+      expiresDateMs <= 0
+    ) {
+      throw new BadRequestException(
+        'Apple notification subscription expiration is invalid.',
+      );
+    }
+
+    const renewalOriginalTransactionId =
+      String(
+        renewal
+          ?.originalTransactionId ||
+        '',
+      ).trim();
+
+    if (
+      renewalOriginalTransactionId &&
+      renewalOriginalTransactionId !==
+        originalTransactionId
+    ) {
+      throw new BadRequestException(
+        'Apple transaction and renewal lineage do not match.',
+      );
+    }
+
+    const renewalAppAccountToken =
+      String(
+        renewal
+          ?.appAccountToken ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      renewalAppAccountToken &&
+      renewalAppAccountToken !==
+        appAccountToken
+    ) {
+      throw new BadRequestException(
+        'Apple transaction and renewal account bindings do not match.',
+      );
+    }
+
+    const subscription =
+      await this.subscriptionModel
+        .findOne({
+          appleOriginalTransactionId:
+            originalTransactionId,
+        })
+        .lean();
+
+    // Notifications never establish ownership. The authenticated purchase or
+    // restore path is responsible for attaching a lineage to OpenShare first.
+    if (!subscription) {
+      this.logger.warn(
+        `Verified Apple notification ${notificationUUID} has no bound OpenShare lineage ${originalTransactionId}`,
+      );
+
+      return {
+        received: true,
+        verified: true,
+        notificationType,
+        subtype:
+          subtype || null,
+        notificationUUID,
+        matched: false,
+        applied: false,
+        reason:
+          'unbound_lineage',
+      };
+    }
+
+    // An Apple lineage can remain as historical ownership after another
+    // provider becomes current. Never let an old Apple callback mutate Stripe.
+    if (
+      subscription
+        .billingProvider !==
+      'apple'
+    ) {
+      return {
+        received: true,
+        verified: true,
+        notificationType,
+        subtype:
+          subtype || null,
+        notificationUUID,
+        matched: true,
+        applied: false,
+        reason:
+          'inactive_apple_provider',
+      };
+    }
+
+    const storedAppAccountToken =
+      String(
+        subscription
+          .appleAppAccountToken ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      !storedAppAccountToken ||
+      storedAppAccountToken !==
+        appAccountToken
+    ) {
+      throw new ForbiddenException(
+        'Apple notification account binding does not match the stored OpenShare subscription.',
+      );
+    }
+
+    const storedEnvironment =
+      String(
+        subscription
+          .appleEnvironment ||
+        '',
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      storedEnvironment &&
+      transactionEnvironment &&
+      storedEnvironment !==
+        transactionEnvironment
+          .toLowerCase()
+    ) {
+      throw new BadRequestException(
+        'Apple notification environment does not match the stored subscription.',
+      );
+    }
+
+    const processedUUIDs =
+      Array.isArray(
+        subscription
+          .appleProcessedNotificationUUIDs
+      )
+        ? subscription
+            .appleProcessedNotificationUUIDs
+        : [];
+
+    if (
+      processedUUIDs.includes(
+        notificationUUID,
+      )
+    ) {
+      return {
+        received: true,
+        verified: true,
+        notificationType,
+        subtype:
+          subtype || null,
+        notificationUUID,
+        matched: true,
+        applied: false,
+        reason:
+          'duplicate_notification',
+      };
+    }
+
+    const nowMs =
+      Date.now();
+
+    const now =
+      new Date(
+        nowMs,
+      );
+
+    const transactionExpiresAt =
+      new Date(
+        expiresDateMs,
+      );
+
+    const transactionPurchaseAt =
+      (
+        Number.isFinite(
+          purchaseDateMs,
+        ) &&
+        purchaseDateMs > 0
+      )
+        ? new Date(
+            purchaseDateMs,
+          )
+        : null;
+
+    const storedPeriodEndMs =
+      subscription.currentPeriodEnd
+        ? new Date(
+            subscription
+              .currentPeriodEnd,
+          ).getTime()
+        : 0;
+
+    const transactionIsLatest =
+      String(
+        subscription
+          .appleLatestTransactionId ||
+        '',
+      ).trim() ===
+      transactionId;
+
+    // Transaction time, not notification arrival order, is the primary
+    // anti-rewind boundary. A late notification for an older billing period
+    // cannot replace a period already advanced by a renewal.
+    const transactionCanAdvancePeriod =
+      storedPeriodEndMs <= 0 ||
+      expiresDateMs >=
+        storedPeriodEndMs;
+
+    const transactionMayMutateCurrentState =
+      transactionIsLatest ||
+      transactionCanAdvancePeriod;
+
+    const wasActiveAppleTeam =
+      subscription.plan ===
+        SubscriptionPlan.TEAM &&
+      subscription.status ===
+        SubscriptionStatus.ACTIVE &&
+      subscription.billingProvider ===
+        'apple';
+
+    const freeLimits =
+      PLAN_CONFIGS[
+        SubscriptionPlan.FREE
+      ].limits;
+
+    const teamLimits =
+      PLAN_CONFIGS[
+        SubscriptionPlan.TEAM
+      ].limits;
+
+    // openshare-apple-server-notifications-v2-lifecycle-correction
+    const notificationCursorSet = {
+      appleLastNotificationUUID:
+        notificationUUID,
+
+      appleEnvironment:
+        transactionEnvironment ||
+        subscription
+          .appleEnvironment ||
+        String(
+          this.getAppleEnvironment(),
+        ),
+    };
+
+    const applyUpdate = async (
+      setFields:
+        Record<string, any>,
+      unsetFields:
+        Record<string, number> = {},
+    ): Promise<boolean> => {
+      const orderingClauses:
+        Record<string, any>[] = [
+          {
+            appleLastNotificationSignedDate:
+              {
+                $exists: false,
+              },
+          },
+          {
+            appleLastNotificationSignedDate:
+              {
+                $lte:
+                  signedDateMs,
+              },
+          },
+        ];
+
+      // A renewal transaction is allowed to advance entitlement even when its
+      // notification itself arrives after a newer-signed notification about an
+      // older transaction.
+      if (
+        Number.isFinite(
+          expiresDateMs,
+        ) &&
+        expiresDateMs > 0
+      ) {
+        orderingClauses.push(
+          {
+            currentPeriodEnd: {
+              $exists: false,
+            },
+          },
+          {
+            currentPeriodEnd: {
+              $lt:
+                transactionExpiresAt,
+            },
+          },
+        );
+      }
+
+      const update:
+        Record<string, any> = {
+          $set: {
+            ...notificationCursorSet,
+            ...setFields,
+          },
+
+          // Never move the ASSN chronological cursor backward. A newer
+          // entitlement period is allowed to reconcile even if notification
+          // delivery order is unusual, but its older signedDate must not
+          // weaken future stale-event protection.
+          $max: {
+            appleLastNotificationSignedDate:
+              signedDateMs,
+          },
+
+          $push: {
+            appleProcessedNotificationUUIDs:
+              {
+                $each: [
+                  notificationUUID,
+                ],
+
+                // Keep enough retry history for normal Apple redelivery
+                // without allowing an unbounded subscription document.
+                $slice: -32,
+              },
+          },
+        };
+
+      if (
+        Object.keys(
+          unsetFields,
+        ).length > 0
+      ) {
+        update.$unset =
+          unsetFields;
+      }
+
+      const result =
+        await this.subscriptionModel
+          .updateOne(
+            {
+              _id:
+                subscription._id,
+
+              billingProvider:
+                'apple',
+
+              appleOriginalTransactionId:
+                originalTransactionId,
+
+              appleProcessedNotificationUUIDs:
+                {
+                  $ne:
+                    notificationUUID,
+                },
+
+              $or:
+                orderingClauses,
+            },
+            update,
+          );
+
+      return (
+        result.modifiedCount ===
+        1
+      );
+    };
+
+    const scheduleDowngrade = async (
+      effectiveAt: Date,
+      reason: string,
+    ) => {
+      if (
+        !wasActiveAppleTeam
+      ) {
+        const applied =
+          await applyUpdate(
+            {},
+          );
+
+        return {
+          applied,
+          reason:
+            applied
+              ? `${reason}_metadata_only`
+              : 'duplicate_or_stale_notification',
+        };
+      }
+
+      const graceEndsAt =
+        new Date(
+          effectiveAt.getTime() +
+          7 * 24 * 60 * 60 * 1000,
+        );
+
+      const applied =
+        await applyUpdate(
+          {
+            status:
+              SubscriptionStatus.ACTIVE,
+
+            cancelAt:
+              effectiveAt,
+
+            downgradeState:
+              DowngradeState.SCHEDULED,
+
+            downgradeTargetPlan:
+              SubscriptionPlan.FREE,
+
+            downgradeEffectiveAt:
+              effectiveAt,
+
+            downgradeGraceEndsAt:
+              graceEndsAt,
+
+            appleProductId:
+              productId,
+
+            appleLatestTransactionId:
+              transactionId,
+          },
+        );
+
+      return {
+        applied,
+        reason:
+          applied
+            ? reason
+            : 'duplicate_or_stale_notification',
+      };
+    };
+
+    const endPaidAccess = async (
+      effectiveAt: Date,
+      reason: string,
+    ) => {
+      // If Apple reports an end date that has not actually arrived yet, retain
+      // Team until that verified boundary instead of terminating it early.
+      if (
+        effectiveAt.getTime() >
+        nowMs
+      ) {
+        return scheduleDowngrade(
+          effectiveAt,
+          `${reason}_scheduled`,
+        );
+      }
+
+      if (
+        !transactionMayMutateCurrentState
+      ) {
+        const applied =
+          await applyUpdate(
+            {},
+          );
+
+        return {
+          applied,
+          reason:
+            applied
+              ? `${reason}_older_transaction_ignored`
+              : 'duplicate_or_stale_notification',
+        };
+      }
+
+      const graceEndsAt =
+        new Date(
+          effectiveAt.getTime() +
+          7 * 24 * 60 * 60 * 1000,
+        );
+
+      const previouslyPaid =
+        subscription.plan !==
+        SubscriptionPlan.FREE;
+
+      const applied =
+        await applyUpdate(
+          {
+            plan:
+              SubscriptionPlan.FREE,
+
+            status:
+              SubscriptionStatus.ACTIVE,
+
+            limits:
+              freeLimits,
+
+            canceledAt:
+              now,
+
+            downgradeState:
+              DowngradeState.GRACE,
+
+            downgradeTargetPlan:
+              SubscriptionPlan.FREE,
+
+            downgradeEffectiveAt:
+              effectiveAt,
+
+            downgradeGraceEndsAt:
+              graceEndsAt,
+
+            appleProductId:
+              productId,
+
+            appleLatestTransactionId:
+              transactionId,
+
+            // Preserve the last verified Apple period as a monotonic anti-rewind
+            // boundary even after the OpenShare plan has moved to Free.
+            currentPeriodEnd:
+              transactionExpiresAt,
+          },
+          {
+            cancelAt: 1,
+          },
+        );
+
+      if (
+        applied &&
+        previouslyPaid
+      ) {
+        this.eventEmitter.emit(
+          'subscription.canceled',
+          {
+            userId:
+              subscription
+                .userId
+                .toString(),
+
+            previousPlan:
+              subscription.plan,
+
+            billingProvider:
+              'apple',
+          },
+        );
+      }
+
+      return {
+        applied,
+        reason:
+          applied
+            ? reason
+            : 'duplicate_or_stale_notification',
+      };
+    };
+
+    const activateCurrentEntitlement =
+      async (
+        reason: string,
+      ) => {
+        if (
+          transaction?.revocationDate !=
+            null ||
+          expiresDateMs <= nowMs ||
+          !transactionMayMutateCurrentState
+        ) {
+          const applied =
+            await applyUpdate(
+              {},
+            );
+
+          return {
+            applied,
+            reason:
+              applied
+                ? `${reason}_inactive_transaction_ignored`
+                : 'duplicate_or_stale_notification',
+          };
+        }
+
+        const applied =
+          await applyUpdate(
+            {
+              plan:
+                SubscriptionPlan.TEAM,
+
+              billingInterval,
+
+              status:
+                SubscriptionStatus.ACTIVE,
+
+              limits:
+                teamLimits,
+
+              billingProvider:
+                'apple',
+
+              appleProductId:
+                productId,
+
+              appleOriginalTransactionId:
+                originalTransactionId,
+
+              appleLatestTransactionId:
+                transactionId,
+
+              appleAppAccountToken:
+                storedAppAccountToken,
+
+              currentPeriodStart:
+                transactionPurchaseAt ||
+                subscription
+                  .currentPeriodStart ||
+                now,
+
+              currentPeriodEnd:
+                transactionExpiresAt,
+
+              downgradeState:
+                DowngradeState.NONE,
+
+              downgradeRetainedProjectIds:
+                [],
+
+              downgradeRetainedMemberUserIds:
+                [],
+            },
+            {
+              canceledAt: 1,
+              cancelAt: 1,
+              downgradeTargetPlan: 1,
+              downgradeEffectiveAt: 1,
+              downgradeGraceEndsAt: 1,
+            },
+          );
+
+        if (
+          applied &&
+          !wasActiveAppleTeam
+        ) {
+          this.eventEmitter.emit(
+            'subscription.activated',
+            {
+              userId:
+                subscription
+                  .userId
+                  .toString(),
+
+              plan:
+                SubscriptionPlan.TEAM,
+
+              billingInterval,
+
+              billingProvider:
+                'apple',
+            },
+          );
+        }
+
+        return {
+          applied,
+          reason:
+            applied
+              ? reason
+              : 'duplicate_or_stale_notification',
+        };
+      };
+
+    let outcome: {
+      applied: boolean;
+      reason: string;
+    };
+
+    switch (
+      notificationType
+    ) {
+      case NotificationTypeV2
+        .DID_RENEW:
+
+      case NotificationTypeV2
+        .SUBSCRIBED:
+
+      case NotificationTypeV2
+        .OFFER_REDEEMED:
+
+      case NotificationTypeV2
+        .RENEWAL_EXTENDED:
+
+      case NotificationTypeV2
+        .RENEWAL_EXTENSION:
+
+      case NotificationTypeV2
+        .REFUND_REVERSED:
+        outcome =
+          await activateCurrentEntitlement(
+            'active_entitlement_reconciled',
+          );
+        break;
+
+      case NotificationTypeV2
+        .DID_CHANGE_RENEWAL_STATUS: {
+        const autoRenewStatus =
+          Number(
+            renewal?.autoRenewStatus,
+          );
+
+        const autoRenewDisabled =
+          subtype ===
+            Subtype
+              .AUTO_RENEW_DISABLED ||
+          autoRenewStatus ===
+            Number(
+              AutoRenewStatus.OFF,
+            );
+
+        const autoRenewEnabled =
+          subtype ===
+            Subtype
+              .AUTO_RENEW_ENABLED ||
+          autoRenewStatus ===
+            Number(
+              AutoRenewStatus.ON,
+            );
+
+        if (
+          autoRenewDisabled &&
+          transactionMayMutateCurrentState
+        ) {
+          if (
+            expiresDateMs <=
+            nowMs
+          ) {
+            outcome =
+              await endPaidAccess(
+                transactionExpiresAt,
+                'auto_renew_disabled_after_expiration',
+              );
+          } else {
+            outcome =
+              await scheduleDowngrade(
+                transactionExpiresAt,
+                'auto_renew_disabled',
+              );
+          }
+        } else if (
+          autoRenewEnabled &&
+          wasActiveAppleTeam &&
+          transactionMayMutateCurrentState
+        ) {
+          const applied =
+            await applyUpdate(
+              {
+                status:
+                  SubscriptionStatus.ACTIVE,
+
+                appleProductId:
+                  productId,
+
+                appleLatestTransactionId:
+                  transactionId,
+
+                downgradeState:
+                  DowngradeState.NONE,
+              },
+              {
+                canceledAt: 1,
+                cancelAt: 1,
+                downgradeTargetPlan: 1,
+                downgradeEffectiveAt: 1,
+                downgradeGraceEndsAt: 1,
+              },
+            );
+
+          outcome = {
+            applied,
+            reason:
+              applied
+                ? 'auto_renew_enabled'
+                : 'duplicate_or_stale_notification',
+          };
+        } else {
+          const applied =
+            await applyUpdate(
+              {},
+            );
+
+          outcome = {
+            applied,
+            reason:
+              applied
+                ? 'renewal_status_no_access_change'
+                : 'duplicate_or_stale_notification',
+          };
+        }
+
+        break;
+      }
+
+      case NotificationTypeV2
+        .DID_FAIL_TO_RENEW: {
+        if (
+          !transactionMayMutateCurrentState
+        ) {
+          const applied =
+            await applyUpdate(
+              {},
+            );
+
+          outcome = {
+            applied,
+            reason:
+              applied
+                ? 'renewal_failure_older_transaction_ignored'
+                : 'duplicate_or_stale_notification',
+          };
+
+          break;
+        }
+
+        const gracePeriodExpiresMs =
+          Number(
+            renewal
+              ?.gracePeriodExpiresDate,
+          );
+
+        if (
+          Number.isFinite(
+            gracePeriodExpiresMs,
+          ) &&
+          gracePeriodExpiresMs >
+            nowMs
+        ) {
+          outcome =
+            await scheduleDowngrade(
+              new Date(
+                gracePeriodExpiresMs,
+              ),
+              'apple_billing_grace_period',
+            );
+        } else if (
+          expiresDateMs >
+          nowMs
+        ) {
+          outcome =
+            await scheduleDowngrade(
+              transactionExpiresAt,
+              'renewal_failure_pending_expiration',
+            );
+        } else {
+          outcome =
+            await endPaidAccess(
+              transactionExpiresAt,
+              'renewal_failed_paid_access_ended',
+            );
+        }
+
+        break;
+      }
+
+      case NotificationTypeV2
+        .EXPIRED:
+        outcome =
+          await endPaidAccess(
+            transactionExpiresAt,
+            'apple_paid_access_expired',
+          );
+        break;
+
+      case NotificationTypeV2
+        .GRACE_PERIOD_EXPIRED: {
+        const gracePeriodExpiresMs =
+          Number(
+            renewal
+              ?.gracePeriodExpiresDate,
+          );
+
+        const graceEffectiveAt =
+          (
+            Number.isFinite(
+              gracePeriodExpiresMs,
+            ) &&
+            gracePeriodExpiresMs > 0
+          )
+            ? new Date(
+                gracePeriodExpiresMs,
+              )
+            : transactionExpiresAt;
+
+        outcome =
+          await endPaidAccess(
+            graceEffectiveAt,
+            'apple_billing_grace_expired',
+          );
+
+        break;
+      }
+
+      case NotificationTypeV2
+        .REFUND:
+
+      case NotificationTypeV2
+        .REVOKE: {
+        const hasVerifiedRevocation =
+          Number.isFinite(
+            revocationDateMs,
+          ) &&
+          revocationDateMs > 0;
+
+        if (
+          hasVerifiedRevocation &&
+          transactionMayMutateCurrentState
+        ) {
+          outcome =
+            await endPaidAccess(
+              new Date(
+                revocationDateMs,
+              ),
+              'apple_entitlement_revoked',
+            );
+        } else {
+          const applied =
+            await applyUpdate(
+              {},
+            );
+
+          outcome = {
+            applied,
+            reason:
+              applied
+                ? 'refund_or_revoke_without_current_verified_revocation'
+                : 'duplicate_or_stale_notification',
+          };
+        }
+
+        break;
+      }
+
+      default: {
+        // Other verified ASSN V2 notifications are acknowledged and cursor-
+        // recorded but do not invent an entitlement transition.
+        const applied =
+          await applyUpdate(
+            {},
+          );
+
+        outcome = {
+          applied,
+          reason:
+            applied
+              ? 'verified_notification_no_access_change'
+              : 'duplicate_or_stale_notification',
+        };
+      }
+    }
+
+    this.logger.log(
+      `Processed Apple notification ${notificationUUID} type=${notificationType} subtype=${subtype || 'none'} applied=${outcome.applied} reason=${outcome.reason}`,
+    );
+
+    return {
+      received: true,
+      verified: true,
+      notificationType,
+      subtype:
+        subtype || null,
+      notificationUUID,
+      matched: true,
+      applied:
+        outcome.applied,
+      reason:
+        outcome.reason,
+    };
   }
 
   private getAppleEnvironment():

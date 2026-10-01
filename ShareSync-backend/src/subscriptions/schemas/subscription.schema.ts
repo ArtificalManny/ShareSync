@@ -192,6 +192,24 @@ export class Subscription {
   @Prop({ type: String })
   appleEnvironment?: string;
 
+  // openshare-apple-server-notifications-v2
+  //
+  // App Store Server Notifications may be delivered more than once and may
+  // arrive out of order. The last cursor is diagnostic/order metadata, while
+  // the bounded UUID window prevents normal Apple retry delivery from applying
+  // the same lifecycle mutation twice.
+  @Prop({ type: String })
+  appleLastNotificationUUID?: string;
+
+  @Prop({ type: Number })
+  appleLastNotificationSignedDate?: number;
+
+  @Prop({
+    type: [String],
+    default: [],
+  })
+  appleProcessedNotificationUUIDs: string[];
+
   // ─────────────────────────────────────────────────────────────────────────────
   // BILLING PERIOD
   // ─────────────────────────────────────────────────────────────────────────────

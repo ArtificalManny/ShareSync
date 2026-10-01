@@ -654,6 +654,56 @@ return {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // APP STORE SERVER NOTIFICATIONS V2
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // openshare-apple-server-notifications-v2
+  @Post('apple/server-notifications')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'App Store Server Notifications V2 callback',
+  })
+  async handleAppleServerNotification(
+    @Body()
+    body: {
+      signedPayload?: string;
+    },
+  ) {
+    const signedPayload =
+      String(
+        body?.signedPayload ||
+        '',
+      ).trim();
+
+    if (!signedPayload) {
+      throw new BadRequestException(
+        'signedPayload is required.',
+      );
+    }
+
+    if (
+      signedPayload.length >
+      250_000
+    ) {
+      throw new BadRequestException(
+        'signedPayload is too large.',
+      );
+    }
+
+    const result =
+      await this.subscriptionsService
+        .handleAppleServerNotification(
+          signedPayload,
+        );
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // STRIPE WEBHOOK
   // ─────────────────────────────────────────────────────────────────────────────
 
