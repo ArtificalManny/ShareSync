@@ -1285,6 +1285,9 @@ export class UserService {
 
     const users = await this.userModel
       .find({
+        // global-user-search-public-profile-filter-v1
+        // Only return people whose public profile can actually be opened.
+        publicProfile: true,
         $or: [
           { username: regex },
           { firstName: regex },
