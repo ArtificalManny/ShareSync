@@ -1096,7 +1096,7 @@ export default function BillingSettings({
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-black text-slate-950 dark:text-white">
+                <h3 className="text-lg font-black text-slate-950 dark:text-white dark:[text-shadow:0_1px_1px_rgba(0,0,0,0.72)]">
                   Upgrade to Team
                 </h3>
 
@@ -1107,7 +1107,7 @@ export default function BillingSettings({
                 )}
               </div>
 
-              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-zinc-400">
+              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-zinc-200 dark:[text-shadow:0_1px_1px_rgba(0,0,0,0.62)]">
                 50 projects, 25 workspace members, 10GB storage, 1,000 AI calls/month,
                 priority support, org dashboard, and custom branding.
               </p>
