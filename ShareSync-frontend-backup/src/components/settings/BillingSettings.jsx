@@ -1287,15 +1287,23 @@ export default function BillingSettings({
       {/* openshare-billing-manage-paid-only-v1 */}
       {/* openshare-ios-subscribe-button-visibility-v1 */}
       <style>{`
-        .settings-billing-live-sync .openshare-subscribe-cta {
-          background: linear-gradient(90deg, #7c3aed, #d946ef) !important;
-          color: #ffffff !important;
-          border-color: transparent !important;
-          min-height: 48px !important;
-          opacity: 1 !important;
-        }
+        .settings-billing-live-sync button.openshare-subscribe-cta {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            background-color: #7c3aed !important;
+            background-image: linear-gradient(
+              90deg,
+              #7c3aed 0%,
+              #d946ef 100%
+            ) !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            border-color: transparent !important;
+            min-height: 48px !important;
+            opacity: 1 !important;
+          }
 
-        .settings-billing-live-sync .openshare-subscribe-cta:disabled {
+        .settings-billing-live-sync button.openshare-subscribe-cta:disabled {
           opacity: 0.65 !important;
         }
       `}</style>
