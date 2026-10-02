@@ -197,6 +197,25 @@ export async function getPublicUser(username) {
   }
 }
 
+
+export async function getProfileUserByUsername(username) {
+  const encoded = encodeURIComponent(username);
+
+  try {
+    // member-profile-username-route-v1
+    // Logged-in OpenShare members may view the safe member profile shape.
+    const response = await api.get(`/users/member/${encoded}`);
+    return response.data?.data || response.data;
+  } catch (error) {
+    if (error?.response?.status !== 401) {
+      throw error;
+    }
+
+    // Signed-out visitors retain the existing public-profile privacy boundary.
+    return getPublicUser(username);
+  }
+}
+
 export async function updateProfile(updates) {
   try {
     if (updates instanceof FormData) {
@@ -361,6 +380,7 @@ export async function deleteAccount(confirmation, password) {
 export default {
   getMe,
   getPublicUser,
+  getProfileUserByUsername,
   updateProfile,
   updateNotifications,
   updatePrivacy,

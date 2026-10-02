@@ -771,6 +771,26 @@ export class UserController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // member-profile-safe-endpoint-v1
+  // GET /users/member/:username - authenticated, privacy-safe member profile
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('member/:username')
+  async getMemberProfile(@Param('username') username: string) {
+    const user = await this.users.findMemberProfileByUsername(username);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      success: true,
+      data: user,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // GET /users/public/:username - PUBLIC PROFILE ENDPOINT (NEW)
   // ─────────────────────────────────────────────────────────────────────────────
 

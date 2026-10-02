@@ -861,6 +861,20 @@ export class UserService {
     return result as any;
   }
 
+  // member-profile-safe-lookup-v1
+  async findMemberProfileByUsername(
+    username: string,
+  ): Promise<UserDocument | null> {
+    const user = await this.userModel
+      .findOne({ username })
+      .select(
+        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile persona xp level streakDays totalShips createdAt updatedAt',
+      )
+      .exec();
+
+    return user as any;
+  }
+
   async findPublicByUsername(username: string): Promise<UserDocument | null> {
     const user = await this.userModel
       .findOne({
@@ -1285,9 +1299,6 @@ export class UserService {
 
     const users = await this.userModel
       .find({
-        // global-user-search-public-profile-filter-v1
-        // Only return people whose public profile can actually be opened.
-        publicProfile: true,
         $or: [
           { username: regex },
           { firstName: regex },

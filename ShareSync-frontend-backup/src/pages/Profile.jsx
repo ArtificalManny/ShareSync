@@ -26,7 +26,7 @@ import {
 import client from "../api/client";
 // ⭐ NEW: Imported getUserById
 import { getMe,
-  getPublicUser,
+  getProfileUserByUsername,
   updateProfile,
   getUserById } from "../api/user";
 import {
@@ -1309,16 +1309,13 @@ export default function Profile() {
     setError(false);
     try {
       if (isPublicRoute) {
-        // Public profile routes resolve only through the privacy-enforcing username endpoint.
-        const u = await getPublicUser(routeUsername);
+        // Authenticated viewers use the member-safe profile endpoint; signed-out
+        // visitors fall back to the existing public-profile endpoint.
+        const u = await getProfileUserByUsername(routeUsername);
         setPublicUser(u);
 
-        // Public profiles rely only on the privacy-safe fields returned by
-        // /users/public/:username. Protected gamification analytics remain
-        // authenticated-only.
-
-        // Ownership is derived from AuthContext below. Anonymous visitors do
-        // not probe the protected /users/me endpoint.
+        // Both endpoints return deliberately limited profile fields. Private
+        // account data and authenticated-only analytics remain protected.
 
       } else if (isViewingOtherUser) {
         const otherUser = await getUserById(id || routeUserId);
