@@ -49,9 +49,12 @@ const SURFACE_HIERARCHY = {
     hover:
       'hover:border-slate-300/90 hover:shadow-md dark:hover:border-white/[0.10]',
   },
+  // global-surface-hierarchy-v1-quiet-opaque
+  // Quiet surfaces stay neutral and opaque so page-level atmospheric
+  // gradients cannot read as decoration inside informational cards.
   quiet: {
-    background: 'bg-slate-50/75 dark:bg-white/[0.03]',
-    border: 'border border-slate-200/70 dark:border-white/[0.06]',
+    background: 'bg-slate-50 dark:bg-[#0F0F14]',
+    border: 'border border-slate-200 dark:border-white/[0.06]',
     shadow: 'shadow-none',
     hover: 'hover:border-slate-300/80 dark:hover:border-white/[0.09]',
   },
