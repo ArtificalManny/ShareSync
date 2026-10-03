@@ -29,6 +29,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Zap, Clock, TrendingUp, Flame, Rocket, X, Wifi, WifiOff } from "lucide-react";
 import "./Home.css";
+import Card from "../components/common/Card";
 
 import { useRenovation } from "../context/RenovationContext";
 import TeamBalancePanel from "../components/home/TeamBalancePanel";
@@ -675,10 +676,13 @@ export default function Home() {
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         {/* Missions */}
         <div className={hasRightRail ? "col-span-12 xl:col-span-8" : "col-span-12"}>
-          <div
+          {/* global-surface-hierarchy-v1-home-missions */}
+          <Card
+            surface="secondary"
+            hover={false}
+            padding={false}
             className={`
-              ${sectionCardClasses}
-              transition-all duration-300
+              p-6 transition-all duration-300
               ${
                 showEntranceHighlight
                   ? "ring-2 ring-violet-300 dark:ring-violet-500/50 animate-pulse-once"
@@ -757,7 +761,7 @@ export default function Home() {
                 you're back online.
               </div>
             )}
-          </div>
+          </Card>
 
 
           <WeekInMotion className="mt-6" onShipNow={() => refreshAll?.()} />
