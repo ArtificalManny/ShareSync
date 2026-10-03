@@ -4123,6 +4123,25 @@ function OverviewView({
 
       </div>
 
+      {/* progressive-disclosure-v1-project-insights */}
+      <details className="group mb-8">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-5 py-4 text-left transition hover:border-slate-300 hover:bg-slate-100/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 dark:border-white/10 dark:bg-white/[0.035] dark:hover:border-white/15 dark:hover:bg-white/[0.05]">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100">
+              Project insights
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+              Momentum, priorities, sprint, foresight, activity, team capacity, and active goals.
+            </p>
+          </div>
+
+          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
+            <span className="group-open:hidden">Show</span>
+            <span className="hidden group-open:inline">Hide</span>
+          </span>
+        </summary>
+
+        <div className="mt-6">
       <div className="grid grid-cols-12 gap-8 mb-8">
         <div className="col-span-12 lg:col-span-4">
           <MomentumCard
@@ -4161,6 +4180,9 @@ function OverviewView({
           />
         </div>
       </div>
+        </div>
+      </details>
+
     </div>
   );
 }
