@@ -580,9 +580,8 @@ export default function Home() {
         summary?.currentStreak ??
         0
     ) > 0 ||
-    Number(streakComparison?.userStreakDays || 0) > 0 ||
-      Number(streakComparison?.teamAvgDays || 0) > 0 ||
-      (streakComparison?.rankText && streakComparison.rankText !== "--")
+      Number(streakComparison?.userStreakDays || 0) > 0 ||
+      Number(streakComparison?.teamAvgDays || 0) > 0
   );
   const hasMeaningfulVelocity = Boolean(
     Number(summary?.ships || 0) > 0 ||
@@ -645,6 +644,7 @@ export default function Home() {
           PRIMARY ACTION ZONE
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="home-focus-shell mb-8">
+        {/* home-ux-polish-v1 */}
         <YourMovesToday
           variant="default"
           maxMoves={3}
@@ -652,7 +652,9 @@ export default function Home() {
           showFooter={true}
           showRefresh={true}
           onMoveClick={handleFocusMoveClick}
-          onViewAll={() => console.log("View all daily focus moves")}
+          onViewAll={() => {
+            window.location.href = "/my-work";
+          }}
         />
       </div>
 
