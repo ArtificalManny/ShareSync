@@ -438,7 +438,7 @@ export default function ProjectCardV2({
 
     if (livingState?.isBlocked || blockerCount > 0) {
       return {
-        label: 'Blocked',
+        label: 'Next Move',
         value: firstBlocker || project?.blockedReason || 'Resolve blockers to move this project forward.',
         tone: 'red',
       };
@@ -454,7 +454,7 @@ export default function ProjectCardV2({
 
     if (livingState?.state === 'stale') {
       return {
-        label: 'Quiet',
+        label: 'Next Move',
         value: 'No recent movement — define the next move to restart momentum.',
         tone: 'slate',
       };
@@ -462,14 +462,14 @@ export default function ProjectCardV2({
 
     if (openTasks > 0) {
       return {
-        label: 'Ready',
+        label: 'Next Move',
         value: `${pluralize(openTasks, 'active task', 'active tasks')} waiting for a push.`,
         tone: 'blue',
       };
     }
 
     return {
-      label: 'Ready',
+      label: 'Next Move',
       value: 'Set the first meaningful move to activate this project.',
       tone: 'blue',
     };
@@ -611,20 +611,7 @@ export default function ProjectCardV2({
                 <h3 className="text-lg font-semibold text-slate-900 truncate group-hover:text-violet-700 transition-colors">
                   {name}
                 </h3>
-                {streak > 0 && (
-                  <div
-                    className={`
-                      hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium shrink-0
-                      ${isImpressiveStreak
-                        ? 'bg-violet-100 text-violet-700'
-                        : 'bg-slate-100 text-slate-500'
-                      }
-                    `}
-                  >
-                    <Flame className="w-3 h-3" />
-                    <span>{streak}d</span>
-                  </div>
-                )}
+                {/* project-card-simplification-v1: project identity + health only */}
               </div>
 
               <p className="text-sm text-slate-500 truncate mt-1">
@@ -674,27 +661,7 @@ export default function ProjectCardV2({
           </div>
         </div>
 
-        {/* Signal row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
-          <SignalChip
-            icon={Zap}
-            label={momentumSignal.label}
-            value={momentumSignal.value}
-            tone={momentumSignal.tone}
-          />
-          <SignalChip
-            icon={ShieldAlert}
-            label={riskSignal.label}
-            value={riskSignal.value}
-            tone={riskSignal.tone}
-          />
-          <SignalChip
-            icon={activitySignal.icon}
-            label={activitySignal.label}
-            value={activitySignal.value}
-            tone={activitySignal.tone}
-          />
-        </div>
+        {/* Simplified hierarchy: health → next move → progress */}
 
         {/* project-card-visible-progress-fill-v2 */}
         <div
