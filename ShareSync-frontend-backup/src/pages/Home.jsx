@@ -843,7 +843,7 @@ export default function Home() {
               surface="quiet"
               hover={false}
               padding={false}
-              className="home-velocity-metrics-panel p-6"
+              className="p-6"
               data-momentum={glowLevel}
             >
               <SectionHeader
