@@ -30,9 +30,37 @@ const ACCENT_GRADIENTS = {
   danger: 'linear-gradient(180deg, #F87171 0%, #EF4444 100%)',
 };
 
+// global-surface-hierarchy-v1
+// Three semantic strengths for new / migrated surfaces.
+// Existing Card behavior remains unchanged unless `surface` is supplied.
+const SURFACE_HIERARCHY = {
+  primary: {
+    background: 'bg-white dark:bg-[#111113]',
+    border: 'border border-slate-200/90 dark:border-white/[0.08]',
+    shadow:
+      'shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)]',
+    hover:
+      'hover:border-slate-300 hover:shadow-[0_14px_38px_rgba(15,23,42,0.10)] dark:hover:border-white/[0.12]',
+  },
+  secondary: {
+    background: 'bg-white dark:bg-[#111113]',
+    border: 'border border-slate-200/80 dark:border-white/[0.07]',
+    shadow: 'shadow-sm dark:shadow-none',
+    hover:
+      'hover:border-slate-300/90 hover:shadow-md dark:hover:border-white/[0.10]',
+  },
+  quiet: {
+    background: 'bg-slate-50/75 dark:bg-white/[0.03]',
+    border: 'border border-slate-200/70 dark:border-white/[0.06]',
+    shadow: 'shadow-none',
+    hover: 'hover:border-slate-300/80 dark:hover:border-white/[0.09]',
+  },
+};
+
 export default function Card({
   children,
   className = '',
+  surface = null,
   gradient = 'none',
   accentBar = null,
   hover = true,
@@ -54,20 +82,26 @@ export default function Card({
 
   const gradientBackground = GRADIENT_BACKGROUNDS[gradient] || '';
   const accentGradient = accentBar ? (ACCENT_GRADIENTS[accentBar] || ACCENT_GRADIENTS.brand) : null;
+  const surfaceStyle = surface ? SURFACE_HIERARCHY[surface] || null : null;
 
   return (
     <div
       className={cn(
         'relative overflow-hidden transition-all duration-200',
-        !gradientBackground && 'bg-white',
-        border && 'border border-slate-200/60 ring-1 ring-white/50',
-        shadow && 'shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]',
+        !gradientBackground && !surfaceStyle && 'bg-white',
+        surfaceStyle && !gradientBackground && surfaceStyle.background,
+        !surfaceStyle && border && 'border border-slate-200/60 ring-1 ring-white/50',
+        surfaceStyle && border && surfaceStyle.border,
+        !surfaceStyle && shadow && 'shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]',
+        surfaceStyle && shadow && surfaceStyle.shadow,
         roundedClasses[rounded] || roundedClasses.xl,
-        hover && 'hover:shadow-[0_8px_24px_rgba(139,92,246,0.08),0_2px_8px_rgba(139,92,246,0.04)] hover:border-violet-200/80',
+        !surfaceStyle && hover && 'hover:shadow-[0_8px_24px_rgba(139,92,246,0.08),0_2px_8px_rgba(139,92,246,0.04)] hover:border-violet-200/80',
+        surfaceStyle && hover && surfaceStyle.hover,
         onClick && 'cursor-pointer',
         className
       )}
       style={gradientBackground ? { background: gradientBackground } : {}}
+      data-surface={surfaceStyle ? surface : undefined}
       onClick={onClick}
       {...rest}
     >
