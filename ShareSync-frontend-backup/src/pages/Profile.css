@@ -1522,3 +1522,40 @@ body.dark .profile-visual-shell .profile-context-row:hover {
   background-color: rgba(139, 92, 246, 0.08) !important;
   border-color: rgba(139, 92, 246, 0.30) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIEWED MEMBER PROFILE POLISH V2A
+   Compact read-only member hero without changing the owner profile.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.profile-visual-shell--member {
+  padding-bottom: 8rem !important;
+}
+
+.profile-visual-shell
+  > section.profile-hero-surface.profile-hero-surface--member:first-of-type {
+  min-height: 340px !important;
+  margin-bottom: 2.5rem !important;
+  padding: 2.25rem 2rem 2rem !important;
+}
+
+.profile-visual-shell
+  > section.profile-hero-surface.profile-hero-surface--member:first-of-type
+  .profile-hero-copy {
+  margin-top: 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+  .profile-visual-shell
+    > section.profile-hero-surface.profile-hero-surface--member:first-of-type {
+    min-height: 320px !important;
+    margin-bottom: 2rem !important;
+    padding: 2rem 1.25rem 1.75rem !important;
+  }
+
+  .profile-visual-shell
+    > section.profile-hero-surface.profile-hero-surface--member:first-of-type
+    .profile-hero-copy {
+    margin-top: 1.25rem !important;
+  }
+}

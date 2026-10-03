@@ -1621,7 +1621,9 @@ export default function Profile() {
 
   return (
     <div 
-      className="profile-visual-shell min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto"
+      className={`profile-visual-shell min-h-screen p-6 lg:p-12 max-w-[1400px] mx-auto ${
+        isOwnProfile ? "" : "profile-visual-shell--member"
+      }`}
       style={{ background: 'var(--bg-page, linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F1F5F9 100%))' }}
     >
       {/* Phase 7: Edit Modal */}
@@ -1635,7 +1637,14 @@ export default function Profile() {
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="profile-hero-surface flex flex-col items-center mb-16">
+      {/* viewed-member-profile-polish-v2a */}
+      <section
+        className={`profile-hero-surface flex flex-col items-center ${
+          isOwnProfile
+            ? "mb-16"
+            : "profile-hero-surface--member mb-10"
+        }`}
+      >
         <ProfilePhotoEditor user={user} isOwnProfile={isOwnProfile} onPhotoUpdate={load} />
 
         <div className="profile-hero-copy text-center mt-8">
