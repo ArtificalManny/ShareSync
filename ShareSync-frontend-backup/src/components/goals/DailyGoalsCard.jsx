@@ -70,7 +70,7 @@ export default function DailyGoalsCard() {
   // Loading State
   if (loading) {
     return (
-      <Card variant="ambient" padding="md">
+      <Card surface="secondary" hover={false} padding="md">
         <div className="h-4 w-28 bg-surface-2 rounded mb-3 animate-pulse" />
         <div className="space-y-2">
           <div className="h-3 w-48 bg-surface-2 rounded animate-pulse" />
@@ -81,7 +81,7 @@ export default function DailyGoalsCard() {
   }
 
   return (
-    <Card variant="ambient" padding="md">
+    <Card surface="secondary" hover={false} padding="md">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Target className="w-4 h-4 text-success" />

@@ -64,7 +64,7 @@ export default function AISuggestionCard() {
   };
 
   return (
-    <Card variant="elevated" padding="md">
+    <Card surface="quiet" hover={false} padding="md">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">

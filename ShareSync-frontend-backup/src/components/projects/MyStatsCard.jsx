@@ -56,7 +56,8 @@ function MyStatsCardBase({ stats }) {
 
   return (
     <Card 
-      variant="ambient" 
+      surface="quiet"
+      hover={false}
       padding="md"
       as="section"
       aria-labelledby="mystats-title"

@@ -56,7 +56,7 @@ export default function PendingInvitesCard() {
 
   if (loading) {
     return (
-      <Card variant="ambient" padding="md">
+      <Card surface="quiet" hover={false} padding="md">
         <div className="flex items-center justify-between mb-4">
           <div className="h-4 w-28 bg-slate-100 rounded animate-pulse" />
         </div>
@@ -69,7 +69,7 @@ export default function PendingInvitesCard() {
   }
 
   return (
-    <Card variant="ambient" padding="md">
+    <Card surface={invites.length > 0 ? "secondary" : "quiet"} hover={false} padding="md">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Mail strokeWidth={1.5} className="w-4 h-4 text-violet-500" />
