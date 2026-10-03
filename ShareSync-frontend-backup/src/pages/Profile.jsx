@@ -2146,57 +2146,79 @@ export default function Profile() {
                   </span>
                 </div>
 
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.035]">
-                  <p className="text-sm leading-6 text-slate-700 dark:text-zinc-300">
-                    {user?.bio?.trim()
-                      ? user.bio
-                      : "This member hasn’t added a bio yet."}
-                  </p>
-                </div>
+                {/* viewed-member-profile-about-v2b */}
+                {user?.bio?.trim() && (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.035]">
+                    <p className="text-sm leading-6 text-slate-700 dark:text-zinc-300">
+                      {user.bio}
+                    </p>
+                  </div>
+                )}
+
+                {!user?.bio?.trim() &&
+                  !user?.jobTitle &&
+                  !user?.company &&
+                  !user?.location &&
+                  !user?.website && (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 dark:border-white/10 dark:bg-white/[0.025]">
+                      <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                        No additional profile details yet
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                        This member has not added a bio, work information, location, or website.
+                      </p>
+                    </div>
+                  )}
 
                 <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
-                      Work
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
-                      {user?.jobTitle && user?.company
-                        ? `${user.jobTitle} · ${user.company}`
-                        : user?.jobTitle || user?.company || "Not added"}
-                    </p>
-                  </div>
+                  {(user?.jobTitle || user?.company) && (
+                    <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                        Work
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                        {user?.jobTitle && user?.company
+                          ? `${user.jobTitle} · ${user.company}`
+                          : user?.jobTitle || user?.company}
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
-                      Location
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
-                      {user?.location || "Not added"}
-                    </p>
-                  </div>
+                  {user?.location && (
+                    <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                        Location
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                        {user.location}
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
-                      Website
-                    </p>
-                    <p className="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-zinc-100">
-                      {user?.website || "Not added"}
-                    </p>
-                  </div>
+                  {user?.website && (
+                    <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                        Website
+                      </p>
+                      <p className="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                        {user.website}
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
-                      Member since
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
-                      {user?.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                            month: "long",
-                            year: "numeric",
-                          })
-                        : "Not available"}
-                    </p>
-                  </div>
+                  {user?.createdAt && (
+                    <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                        Member since
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                        {new Date(user.createdAt).toLocaleDateString(undefined, {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
