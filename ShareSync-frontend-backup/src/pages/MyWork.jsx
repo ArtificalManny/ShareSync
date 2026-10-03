@@ -452,8 +452,9 @@ export default function MyWork() {
           <div className="border-b border-slate-200 px-4 py-5 dark:border-white/10 sm:px-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
+                {/* my-work-execution-center-v1 */}
                 <h2 className="text-lg font-black text-slate-950 dark:text-white">
-                  All My Work
+                  Execution Queue
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-slate-500 dark:text-zinc-400">
@@ -577,6 +578,19 @@ export default function MyWork() {
                 />
               ))}
             </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="px-5 py-12 text-center">
+              <ClipboardList
+                className="mx-auto h-8 w-8 text-slate-300 dark:text-zinc-600"
+                aria-hidden="true"
+              />
+              <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">
+                No work matches these filters
+              </h3>
+              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-zinc-400">
+                Adjust the filters above to return to your execution queue.
+              </p>
+            </div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-white/10">
               {SECTION_ORDER.map((sectionKey) => {
@@ -595,6 +609,12 @@ export default function MyWork() {
                   completedExpanded;
 
                 const isEmpty = items.length === 0;
+
+                // Keep the execution view focused: sections with no work
+                // should not consume vertical space.
+                if (isEmpty) {
+                  return null;
+                }
 
                 const sectionDescription =
                   isCompletedSection &&
