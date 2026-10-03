@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import YourMovesToday from '../components/focus/YourMovesToday';
+import Card from '../components/common/Card';
 import { getMyWork } from '../api/myWork';
 
 const SECTION_ORDER = [
@@ -448,7 +449,14 @@ export default function MyWork() {
           />
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#151519]">
+        {/* global-surface-hierarchy-v1-my-work */}
+        <Card
+          as="section"
+          surface="secondary"
+          hover={false}
+          padding={false}
+          className="overflow-hidden"
+        >
           <div className="border-b border-slate-200 px-4 py-5 dark:border-white/10 sm:px-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -708,7 +716,7 @@ export default function MyWork() {
               })}
             </div>
           )}
-        </section>
+        </Card>
       </div>
     </main>
   );
