@@ -1657,30 +1657,32 @@ export default function Profile() {
               ID: {user?.username || user?.handle || user?.email?.split('@')[0] || user?._id?.slice(-8) || "..."}
             </span>
 
-            {/* profile-core-verified-contrast-v1 */}
-            <span
-              className="
-                inline-flex items-center gap-1.5
-                rounded-full border border-teal-200
-                bg-teal-50 px-2.5 py-1
-                text-xs font-semibold text-teal-800
-                shadow-sm shadow-teal-500/10
-                ring-1 ring-white/60
-                dark:border-teal-400/30
-                dark:bg-teal-400/10
-                dark:text-teal-200
-                dark:ring-teal-300/10
-              "
-            >
-              <ShieldCheck
+            {/* viewed-member-profile-verification-v2d */}
+            {isOwnProfile && (
+              <span
                 className="
-                  h-3.5 w-3.5 shrink-0
-                  text-teal-600
-                  dark:text-teal-300
+                  inline-flex items-center gap-1.5
+                  rounded-full border border-teal-200
+                  bg-teal-50 px-2.5 py-1
+                  text-xs font-semibold text-teal-800
+                  shadow-sm shadow-teal-500/10
+                  ring-1 ring-white/60
+                  dark:border-teal-400/30
+                  dark:bg-teal-400/10
+                  dark:text-teal-200
+                  dark:ring-teal-300/10
                 "
-              />
-              <span>Core Verified</span>
-            </span>
+              >
+                <ShieldCheck
+                  className="
+                    h-3.5 w-3.5 shrink-0
+                    text-teal-600
+                    dark:text-teal-300
+                  "
+                />
+                <span>Core Verified</span>
+              </span>
+            )}
 
             {skillProfile?.archetype?.current && (
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 text-xs font-medium border border-violet-200 dark:border-violet-500/20">
