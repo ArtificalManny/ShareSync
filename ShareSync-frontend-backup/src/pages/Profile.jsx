@@ -2042,7 +2042,9 @@ export default function Profile() {
               </div>
 
               <span className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
-                {growthLoading ? "Refreshing" : impactMetrics.source}
+                {isOwnProfile
+                  ? (growthLoading ? "Refreshing" : impactMetrics.source)
+                  : "Member activity"}
               </span>
             </div>
 
@@ -2055,7 +2057,9 @@ export default function Profile() {
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
-                  {impactMetrics.growthPercent >= 0 ? "+" : ""}{impactMetrics.growthPercent || 0}% recent growth
+                  {!isOwnProfile && Number(impactMetrics.growthPercent || 0) === 0
+                    ? "No recent growth recorded"
+                    : `${impactMetrics.growthPercent >= 0 ? "+" : ""}${impactMetrics.growthPercent || 0}% recent growth`}
                 </span>
               </div>
             </div>
@@ -2073,17 +2077,23 @@ export default function Profile() {
               </div>
 
               <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
-                {operationalTrustSource}
+                {isOwnProfile ? operationalTrustSource : "Member activity"}
               </span>
             </div>
             <div className="flex items-end gap-2 mb-4">
-              <span className="text-4xl font-semibold text-slate-800 dark:text-white">{operationalTrust}%</span>
+              <span className="text-4xl font-semibold text-slate-800 dark:text-white">
+                {!isOwnProfile && operationalTrust === 0 ? "—" : `${operationalTrust}%`}
+              </span>
               <span className="text-xs text-teal-600 dark:text-teal-400 font-medium mb-1">
-                {operationalTrustLabel}
+                {!isOwnProfile && operationalTrust === 0
+                  ? "No signal yet"
+                  : operationalTrustLabel}
               </span>
             </div>
             <p className="mb-4 text-xs leading-5 text-slate-500 dark:text-zinc-500">
-              {operationalTrustDescription}
+              {!isOwnProfile && operationalTrust === 0
+                ? "Not enough member activity has been recorded to calculate a trust signal yet."
+                : operationalTrustDescription}
             </p>
 
             <SkillBar value={operationalTrust} />
@@ -2104,6 +2114,143 @@ export default function Profile() {
 
         {/* Middle Column */}
         <div className={`col-span-12 ${isOwnProfile ? "lg:col-span-5" : "lg:col-span-7"} space-y-6`}>
+          {/* viewed-member-profile-polish-v1 */}
+          {!isOwnProfile && (
+            <>
+              {/* About this member */}
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f23]"
+                style={{ boxShadow: '0 4px 24px rgba(139, 92, 246, 0.06)' }}
+              >
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">
+                      Member Profile
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                      About {name?.firstName || user?.firstName || "this member"}
+                    </h3>
+                  </div>
+
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+                    Read only
+                  </span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 dark:border-white/[0.07] dark:bg-white/[0.035]">
+                  <p className="text-sm leading-6 text-slate-700 dark:text-zinc-300">
+                    {user?.bio?.trim()
+                      ? user.bio
+                      : "This member hasn’t added a bio yet."}
+                  </p>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                      Work
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                      {user?.jobTitle && user?.company
+                        ? `${user.jobTitle} · ${user.company}`
+                        : user?.jobTitle || user?.company || "Not added"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                      Location
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                      {user?.location || "Not added"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                      Website
+                    </p>
+                    <p className="mt-1 break-all text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                      {user?.website || "Not added"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 p-4 dark:border-white/10">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-zinc-500">
+                      Member since
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+                      {user?.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString(undefined, {
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Not available"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Member activity snapshot */}
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f23]"
+                style={{ boxShadow: '0 4px 24px rgba(20, 184, 166, 0.05)' }}
+              >
+                <div className="mb-5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-600 dark:text-teal-300">
+                    OpenShare Activity
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                    Member snapshot
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                    A lightweight view of activity this member has built on OpenShare.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+                    <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                      {Number(user?.level || 1)}
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
+                      Level
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+                    <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                      {Number(user?.xp || 0)}
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
+                      XP
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+                    <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                      {Number(user?.totalShips || 0)}
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
+                      Ships
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
+                    <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                      {streakVisible
+                        ? `${Number(user?.currentStreak ?? user?.streakDays ?? 0)}d`
+                        : "—"}
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
+                      Momentum
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Skill Profile - with radar chart */}
           {isOwnProfile && (skillProfileSnapshot || growthLoading) && (
             <div
