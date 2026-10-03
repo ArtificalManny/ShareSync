@@ -532,17 +532,6 @@ export default function Home() {
     ]
   );
 
-  const sectionCardClasses = useMemo(() => {
-    const base =
-      "home-section-surface p-6 rounded-xl bg-white/95 dark:bg-[#121216]/95 border border-slate-200/80 dark:border-white/[0.08] momentum-responsive-card momentum-card";
-    const shadow =
-      "shadow-[0_4px_24px_rgba(139,92,246,0.06)] hover:shadow-[0_8px_32px_rgba(139,92,246,0.12)] dark:shadow-[0_18px_55px_rgba(0,0,0,0.28)] dark:hover:shadow-[0_22px_65px_rgba(0,0,0,0.34)]";
-
-    if (isFireMode) return `${base} ${shadow} border-orange-200 dark:border-orange-500/30`;
-    if (glowLevel >= 4) return `${base} ${shadow} border-violet-200 dark:border-violet-500/30`;
-    return `${base} ${shadow}`;
-  }, [glowLevel, isFireMode]);
-
   const LivePill = useMemo(() => {
     const live = Boolean(isConnected);
 
@@ -849,7 +838,14 @@ export default function Home() {
 
         {hasMeaningfulVelocity && (
           <div className="col-span-12">
-            <div className={`home-velocity-metrics-panel ${sectionCardClasses}`} data-momentum={glowLevel}>
+            {/* global-surface-hierarchy-v1-home-velocity */}
+            <Card
+              surface="quiet"
+              hover={false}
+              padding={false}
+              className="home-velocity-metrics-panel p-6"
+              data-momentum={glowLevel}
+            >
               <SectionHeader
                 icon={TrendingUp}
                 iconColor="text-violet-600 dark:text-violet-400"
@@ -879,7 +875,7 @@ export default function Home() {
                     useHomeRealtime. Restore when backend activity endpoint
                     is wired up. See dev journal entry of 2026-04-30. */}
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
