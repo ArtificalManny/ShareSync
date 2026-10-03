@@ -2239,7 +2239,8 @@ export default function Profile() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {/* viewed-member-profile-snapshot-v2c */}
+                <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
                     <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
                       {Number(user?.level || 1)}
@@ -2255,26 +2256,6 @@ export default function Profile() {
                     </p>
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
                       XP
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
-                    <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-                      {Number(user?.totalShips || 0)}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
-                      Ships
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.035]">
-                    <p className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-                      {streakVisible
-                        ? `${Number(user?.currentStreak ?? user?.streakDays ?? 0)}d`
-                        : "—"}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
-                      Momentum
                     </p>
                   </div>
                 </div>
