@@ -138,7 +138,7 @@ const MentorDock = () => {
     <>
       <div className={`mentor-dock ${isOpen ? "open" : ""}`}>
         <button 
-          className={`mentor-toggle ${isOpen ? 'active' : ''}`} 
+          className={`mentor-toggle mentor-desktop-toggle ${isOpen ? 'active' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle AI Coach"
         >
@@ -269,6 +269,32 @@ const MentorDock = () => {
         .sparkle-icon { width: 28px; height: 28px; color: white; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .mentor-toggle:hover .sparkle-icon { transform: rotate(15deg) scale(1.1); }
         @keyframes breathe { 0% { transform: scale(0.95); opacity: 0.4; } 100% { transform: scale(1.1); opacity: 0.7; } }
+
+        /* decorative-layer-quiet-v2-desktop-mentor */
+        .mentor-desktop-toggle {
+          box-shadow:
+            0 10px 22px -10px rgba(79, 70, 229, 0.28),
+            inset 0 1px 2px rgba(255, 255, 255, 0.18);
+        }
+
+        .mentor-desktop-toggle .glow-aura {
+          inset: -4px;
+          background: linear-gradient(
+            135deg,
+            #7c3aed,
+            #6366f1
+          );
+          filter: blur(10px);
+          opacity: 0.22;
+          animation: none;
+        }
+
+        .mentor-desktop-toggle:hover {
+          transform: translateY(-2px) scale(1.03);
+          box-shadow:
+            0 14px 24px -12px rgba(79, 70, 229, 0.32),
+            inset 0 1px 2px rgba(255, 255, 255, 0.22);
+        }
         .mentor-panel { position: absolute; bottom: 84px; right: 0; width: 400px; border-radius: 24px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05); overflow: hidden; transform: scale(0); transform-origin: bottom right; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease; opacity: 0; display: flex; flex-direction: column; }
         .mentor-dock.open .mentor-panel { transform: scale(1); opacity: 1; }
         .mentor-header { padding: 16px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; display: flex; justify-content: space-between; align-items: center; }
