@@ -57,9 +57,12 @@ function getAvatarOverride() {
   try { return localStorage.getItem("ss.avatarOverride") || null; } catch { return null; }
 }
 
-function resolveAvatarUrl(u) {
-  const override = getAvatarOverride();
-  if (override) return override;
+function resolveAvatarUrl(u, allowOverride = false) {
+  // announcement-comment-author-avatar-v1
+  if (allowOverride) {
+    const override = getAvatarOverride();
+    if (override) return override;
+  }
   return u?.avatarUrl || u?.profilePicture || u?.avatar || u?.photoUrl || u?.profile?.avatarUrl || u?.profile?.photoUrl || null;
 }
 
@@ -662,7 +665,7 @@ function Avatar({ author, size = 'md', currentUser = null }) {
   const isMe = currentUserIdStr && authorIdStr === currentUserIdStr;
   const effectiveAuthor = isMe && currentUser ? currentUser : author;
 
-  const url = isMe ? resolveAvatarUrl(currentUser) : resolveAvatarUrl(author);
+  const url = isMe ? resolveAvatarUrl(currentUser, true) : resolveAvatarUrl(author);
   const name = getAuthorName(effectiveAuthor);
   const color = getAvatarColor(name);
   const sizes = { sm: 'w-8 h-8 text-[10px]', md: 'w-10 h-10 text-xs', lg: 'w-12 h-12 text-sm' };

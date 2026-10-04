@@ -219,6 +219,10 @@ export class AnnouncementsService {
         this.userPopulateFields,
       )
       .populate(
+        'comments.authorId',
+        this.userPopulateFields,
+      )
+      .populate(
         'affectedMoveIds',
         'title status priority dueDate milestoneId',
       )
@@ -547,6 +551,10 @@ export class AnnouncementsService {
         select: this.userPopulateFields,
       },
       {
+        path: 'comments.authorId',
+        select: this.userPopulateFields,
+      },
+      {
         path: 'affectedMoveIds',
         select:
           'title status priority dueDate milestoneId',
@@ -765,6 +773,10 @@ export class AnnouncementsService {
         this.userPopulateFields,
       )
       .populate(
+        'comments.authorId',
+        this.userPopulateFields,
+      )
+      .populate(
         'affectedMoveIds',
         'title status priority dueDate milestoneId',
       )
@@ -792,6 +804,7 @@ export class AnnouncementsService {
         { new: true },
       )
       .populate('authorId', this.userPopulateFields)
+      .populate('comments.authorId', this.userPopulateFields)
       .exec();
 
     if (!updated) throw new NotFoundException('Announcement not found');
@@ -807,6 +820,7 @@ export class AnnouncementsService {
     (existing as any).pinned = !(existing as any).pinned;
     await existing.save();
     await existing.populate('authorId', this.userPopulateFields);
+    await existing.populate('comments.authorId', this.userPopulateFields);
 
     return existing;
   }
@@ -867,6 +881,7 @@ export class AnnouncementsService {
 
     await ann.save();
     await ann.populate('authorId', this.userPopulateFields);
+    await ann.populate('comments.authorId', this.userPopulateFields);
     return ann;
   }
 
@@ -924,6 +939,7 @@ export class AnnouncementsService {
 
     await ann.save();
     await ann.populate('authorId', this.userPopulateFields);
+    await ann.populate('comments.authorId', this.userPopulateFields);
     return ann;
   }
 
@@ -975,6 +991,7 @@ export class AnnouncementsService {
         },
       )
       .populate('authorId', this.userPopulateFields)
+      .populate('comments.authorId', this.userPopulateFields)
       .exec();
 
     if (!updated) {
@@ -1018,7 +1035,9 @@ export class AnnouncementsService {
 
     const comment = doc.comments[commentIndex];
     const announcementAuthorId = this.normalizeId(doc.authorId);
-    const commentAuthorId = this.normalizeId(comment?.userId);
+    const commentAuthorId = this.normalizeId(
+      comment?.authorId || comment?.userId,
+    );
     const actorId = userObjectId.toString();
 
     const canDelete =
@@ -1035,6 +1054,7 @@ export class AnnouncementsService {
 
     await ann.save();
     await ann.populate('authorId', this.userPopulateFields);
+    await ann.populate('comments.authorId', this.userPopulateFields);
     return ann;
   }
 }
