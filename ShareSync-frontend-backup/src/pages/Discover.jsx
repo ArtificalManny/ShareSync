@@ -206,9 +206,10 @@ export default function Discover() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50 dark:bg-[#09090B] pb-24 transition-colors">
       {/* Ambient network glows — quiet, not loud */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-violet-200/40 blur-3xl dark:bg-violet-900/20" />
-      <div className="pointer-events-none absolute top-40 right-[-12rem] h-80 w-80 rounded-full bg-cyan-200/35 blur-3xl dark:bg-cyan-900/10" />
-      <div className="pointer-events-none absolute bottom-20 left-[-10rem] h-80 w-80 rounded-full bg-emerald-200/30 blur-3xl dark:bg-emerald-900/10" />
+      {/* decorative-layer-quiet-v1-discover-ambient */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-violet-200/20 blur-3xl dark:bg-violet-900/10" />
+      <div className="pointer-events-none absolute top-40 right-[-12rem] h-80 w-80 rounded-full bg-cyan-200/20 blur-3xl dark:bg-cyan-900/10" />
+      <div className="pointer-events-none absolute bottom-20 left-[-10rem] h-80 w-80 rounded-full bg-emerald-200/20 blur-3xl dark:bg-emerald-900/10" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
         {/* Network hero */}
