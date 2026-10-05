@@ -182,7 +182,11 @@ const SortableCheckpointRow = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center gap-2 rounded-xl bg-white/85 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08] dark:text-zinc-200 ${
+      className={`group w-full min-w-0 items-center gap-2 rounded-xl bg-white/85 px-2.5 py-2 text-xs text-slate-700 dark:bg-white/[0.08] dark:text-zinc-200 ${
+        isEditing
+          ? "grid grid-cols-[minmax(0,1fr)_2.75rem_2.75rem] sm:grid-cols-[auto_auto_minmax(0,1fr)_1.5rem_1.5rem]"
+          : "flex"
+      } ${
         isDragging
           ? "shadow-xl ring-2 ring-violet-300/60 dark:ring-violet-400/40"
           : ""
@@ -194,7 +198,7 @@ const SortableCheckpointRow = ({
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex h-6 w-5 shrink-0 touch-none cursor-grab items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-violet-600 active:cursor-grabbing dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-violet-200"
+          className={`${isEditing ? "hidden sm:inline-flex" : "inline-flex"} h-6 w-5 shrink-0 touch-none cursor-grab items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-violet-600 active:cursor-grabbing dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-violet-200`}
           aria-label={`Move checkpoint ${checkpoint.title}`}
           title="Drag to reorder"
         >
@@ -205,7 +209,7 @@ const SortableCheckpointRow = ({
       <button
         type="button"
         onClick={onToggle}
-        className="shrink-0 text-violet-600 dark:text-violet-100"
+        className={`${isEditing ? "hidden sm:inline-flex" : "inline-flex"} shrink-0 items-center justify-center text-violet-600 dark:text-violet-100`}
         aria-label={
           checkpoint.completed
             ? `Mark ${checkpoint.title} incomplete`
@@ -234,7 +238,8 @@ const SortableCheckpointRow = ({
               onCancelEdit(e);
             }
           }}
-          className="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-2 py-1 text-xs text-slate-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-200/60 dark:border-violet-400/30 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-400/20"
+          /* openshare-ios-checkpoint-input-v3 */
+          className="col-span-3 h-11 w-full min-w-0 rounded-xl border border-violet-200 bg-white px-3 py-2 text-[16px] text-slate-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-200/60 sm:col-span-1 sm:h-auto sm:rounded-lg sm:px-2 sm:py-1 sm:text-xs dark:border-violet-400/30 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-400/20"
           aria-label="Edit checkpoint title"
         />
       ) : (
@@ -254,7 +259,7 @@ const SortableCheckpointRow = ({
           <button
             type="button"
             onClick={onSaveEdit}
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+            className="col-start-2 row-start-2 inline-flex h-11 w-11 shrink-0 items-center justify-center justify-self-end rounded-xl text-emerald-600 transition hover:bg-emerald-50 sm:col-auto sm:row-auto sm:h-6 sm:w-6 sm:justify-self-auto sm:rounded-md dark:text-emerald-300 dark:hover:bg-emerald-500/10"
             aria-label="Save checkpoint title"
             title="Save"
           >
@@ -264,7 +269,7 @@ const SortableCheckpointRow = ({
           <button
             type="button"
             onClick={onCancelEdit}
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200"
+            className="col-start-3 row-start-2 inline-flex h-11 w-11 shrink-0 items-center justify-center justify-self-end rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 sm:col-auto sm:row-auto sm:h-6 sm:w-6 sm:justify-self-auto sm:rounded-md dark:text-zinc-500 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200"
             aria-label="Cancel checkpoint editing"
             title="Cancel"
           >
@@ -553,7 +558,7 @@ const MilestoneCard = ({
   return (
     <div
       onClick={handleClick}
-      className={`roadmap-milestone-card 
+      className={`roadmap-milestone-card
         group relative overflow-hidden p-5 rounded-[1.5rem] cursor-pointer
         border bg-white text-slate-900 shadow-sm transition-all duration-200
         dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-white dark:shadow-none
@@ -593,7 +598,7 @@ const MilestoneCard = ({
       )}
 
         <div
-          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 shadow-sm shadow-violet-100/40 dark:border-white/[0.12] dark:bg-slate-950/55 dark:shadow-inner dark:shadow-black/20" 
+          className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 shadow-sm shadow-violet-100/40 dark:border-white/[0.12] dark:bg-slate-950/55 dark:shadow-inner dark:shadow-black/20"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -660,16 +665,19 @@ const MilestoneCard = ({
           )}
 
           {onUpdate && (
-            <form onSubmit={handleAddCheckpoint} className="flex items-center gap-2">
+            <form
+              onSubmit={handleAddCheckpoint}
+              className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_2.75rem] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_2rem]"
+            >
               <input
                 value={newCheckpointTitle}
                 onChange={(e) => setNewCheckpointTitle(e.target.value)}
                 placeholder="Add checkpoint..."
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 dark:border-white/[0.14] dark:bg-slate-950/75 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-violet-300/40 dark:focus:ring-violet-400/15"
+                className="h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[16px] text-slate-700 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 sm:h-auto sm:text-xs dark:border-white/[0.14] dark:bg-slate-950/75 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-violet-300/40 dark:focus:ring-violet-400/15"
               />
               <button
                 type="submit"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40" 
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 sm:h-8 sm:w-8"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
