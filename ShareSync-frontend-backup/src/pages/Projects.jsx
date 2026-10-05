@@ -362,7 +362,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
       onKeyDown={handleKeyDown}
       className="
         group relative grid cursor-pointer grid-cols-1 gap-4 overflow-hidden
-        rounded-2xl border border-slate-200 bg-white px-4 py-4
+        rounded-[var(--radius-card)] border border-slate-200 bg-white px-4 py-4
         transition-all duration-200
         hover:border-violet-200 hover:bg-violet-50/20
         focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40
@@ -509,7 +509,7 @@ function ProjectRow({ project, onProjectClick, onStartSprint }) {
           onClick={handleAction}
           className={`
             inline-flex min-w-[92px] items-center justify-center gap-1.5
-            rounded-lg border px-3 py-2 text-xs font-semibold
+            rounded-[var(--radius-control)] border px-3 py-2 text-xs font-semibold
             transition-colors
             ${action.kind === 'sprint'
               ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300 dark:hover:bg-violet-500/20'
@@ -712,7 +712,7 @@ const Projects = () => {
               placeholder="Search project names..."
               style={{ fontSize: "16px" }}
               className="
-                bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-lg
+                bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10 rounded-[var(--radius-control)]
                 pl-10 pr-4 py-2.5 text-[16px] text-slate-700 dark:text-zinc-200
                 placeholder:text-slate-400 dark:placeholder:text-zinc-600
                 focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-0 focus:shadow-none
@@ -728,7 +728,7 @@ const Projects = () => {
             type="button"
             onClick={() => openCreateProjectModal()}
             className="
-              relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-xl shrink-0 whitespace-nowrap
+              relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-control)] shrink-0 whitespace-nowrap
               text-sm font-semibold
               transition-all duration-200
             "
@@ -777,7 +777,7 @@ const Projects = () => {
               key={filter}
               onClick={() => setSelectedFilter(filter)}
               className={`
-                px-3 py-1.5 rounded-lg text-xs font-medium capitalize
+                px-3 py-1.5 rounded-[var(--radius-control)] text-xs font-medium capitalize
                 transition-all duration-200
                 ${selectedFilter === filter
                   ? 'bg-violet-500 text-white shadow-sm'
@@ -791,7 +791,7 @@ const Projects = () => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-transparent dark:border-white/5">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-800 rounded-[var(--radius-control)] border border-transparent dark:border-white/5">
           <button
             onClick={() => setViewMode('grid')}
             className={`

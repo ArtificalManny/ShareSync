@@ -442,6 +442,251 @@
   color: #5B21B6;
 }
 
+/* openshare-mobile-home-surface-simplification-v1
+   Mobile hierarchy:
+   - one primary surface
+   - one subtle elevation
+   - borders reserved for interaction / state
+*/
+@media (max-width: 767px) {
+  .home-page .home-section-surface,
+  .home-page .home-section-surface:hover,
+  .home-page .card-surface,
+  .home-page .card-surface:hover,
+  .home-page .streak-comparison-card,
+  .home-page .streak-comparison-card:hover,
+  .home-page .your-moves-today-panel,
+  .home-page .your-moves-today-panel:hover,
+  .home-page .your-moves-recommendation-card,
+  .home-page .your-moves-recommendation-card:hover,
+  .home-page .home-intelligence-panel > div,
+  .home-page .home-intelligence-panel > div:hover,
+  .home-page .home-intelligence-panel > div > .space-y-4 > *,
+  .home-page .home-intelligence-panel > div > .space-y-4 > *:hover {
+    border-color: transparent !important;
+  }
+
+  /* Inner information regions should not look like cards inside cards. */
+  .home-page .your-moves-recommendation-card {
+    box-shadow: none !important;
+  }
+
+  .home-page .home-velocity-stat-grid .card-surface,
+  .home-page .home-velocity-stat-grid .card-surface:hover {
+    box-shadow: none !important;
+  }
+
+  /* Footer separators are decorative, not structural. */
+  .home-page .your-moves-footer,
+  .home-page .streak-comparison-card--compact > .border-t {
+    border-top-color: transparent !important;
+  }
+}
+
+/* openshare-mobile-home-surface-simplification-v2
+   Final mobile nested-surface cleanup.
+   Preserve status/interactive controls; flatten decorative containers.
+*/
+@media (max-width: 767px) {
+  /* High Workload remains clickable, but should read as content
+     inside Intelligence instead of another elevated card. */
+  .home-page .home-intelligence-insight-card,
+  .home-page .home-intelligence-insight-card:hover {
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Rhythm visualization belongs directly to the parent surface. */
+  .home-page .weekly-motion-rhythm-map {
+    background: transparent !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0.25rem 0 0 !important;
+  }
+
+  /* Weekly narrative is content, not another card. */
+  .home-page .weekly-motion-insight {
+    background: transparent !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0.25rem 0 !important;
+  }
+
+  /* Mobile metrics become lightweight information rows. */
+  .home-page .weekly-motion-stat-chip,
+  .home-page .weekly-motion-stat-chip:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    padding: 0.75rem 0.25rem !important;
+  }
+
+  .home-page .weekly-motion-stat-chip > .absolute {
+    display: none !important;
+  }
+}
+
+/* openshare-mobile-home-contrast-v1
+   Mobile light-mode contrast hierarchy:
+   primary   -> unchanged
+   secondary -> slate-600
+   tertiary  -> slate-500
+   truly disabled/placeholder states stay lighter
+*/
+@media (max-width: 767px) {
+  html:not(.dark):not([data-theme="dark"]) .home-page [class*="text-text-secondary"],
+  html:not(.dark):not([data-theme="dark"]) .home-page [class*="text-slate-500"] {
+    color: #475569 !important;
+  }
+
+  html:not(.dark):not([data-theme="dark"]) .home-page [class*="text-text-tertiary"],
+  html:not(.dark):not([data-theme="dark"]) .home-page [class*="text-slate-400"],
+  html:not(.dark):not([data-theme="dark"]) .home-page .text-muted,
+  html:not(.dark):not([data-theme="dark"]) .home-page .muted {
+    color: #64748B !important;
+  }
+
+  /* Secondary icons should remain soft, but no longer disappear. */
+  html:not(.dark):not([data-theme="dark"]) .home-page svg[class*="text-text-tertiary"],
+  html:not(.dark):not([data-theme="dark"]) .home-page svg[class*="text-slate-400"] {
+    color: #64748B !important;
+  }
+
+  /* Structural dividers should be perceptible without becoming prominent. */
+  html:not(.dark):not([data-theme="dark"]) .home-page .divide-y > * + * {
+    border-color: #CBD5E1;
+  }
+
+  /* The primary Week in Motion CTA must retain proper foreground contrast. */
+  html:not(.dark):not([data-theme="dark"]) .home-page [data-home-primary-action] {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+  }
+}
+
+/* openshare-mobile-home-typography-v1
+   OpenShare mobile typography hierarchy:
+   - product/interface copy = Plus Jakarta Sans
+   - major personality moments = serif
+*/
+@media (max-width: 767px) {
+  .home-page {
+    font-family: var(--font-ui);
+  }
+
+  .home-page :where(button, input, select, textarea) {
+    font-family: var(--font-ui);
+  }
+
+  /* Page-level and major section personality moments. */
+  .home-page h1,
+  .home-page h2,
+  .home-page .home-personality-serif {
+    font-family: var(--font-personality);
+  }
+
+  /* Keep the personality serif deliberate rather than decorative. */
+  .home-page h1,
+  .home-page .home-personality-serif {
+    letter-spacing: -0.015em;
+  }
+
+  /* Utility copy should always read as software UI. */
+  .home-page :where(
+    button,
+    [role="button"],
+    [class*="uppercase"],
+    [class*="tracking-widest"]
+  ):not(.home-personality-serif) {
+    font-family: var(--font-ui);
+  }
+}
+
+/* openshare-mobile-home-radius-spacing-v1
+   Controls     = 14px
+   Normal cards = 20px
+   Feature cards = 26px
+*/
+@media (max-width: 767px) {
+  /* Major feature surfaces */
+  .home-page .home-section-surface,
+  .home-page .your-moves-today-panel,
+  .home-page .weekly-motion-panel,
+  .home-page .streak-comparison-card,
+  .home-page .home-intelligence-panel > div {
+    border-radius: var(--radius-feature) !important;
+    padding: var(--space-feature) !important;
+  }
+
+  /* Ordinary cards / information surfaces */
+  .home-page .your-moves-recommendation-card,
+  .home-page .home-velocity-stat-grid .card-surface,
+  .home-page .home-intelligence-panel > div > .space-y-4 > *,
+  .home-page .home-intelligence-insight-card,
+  .home-page .weekly-motion-insight,
+  .home-page .weekly-motion-stat-chip {
+    border-radius: var(--radius-card) !important;
+  }
+
+  .home-page .your-moves-recommendation-card,
+  .home-page .home-velocity-stat-grid .card-surface {
+    padding: var(--space-card) !important;
+  }
+
+  /* Major action controls */
+  .home-page [data-home-primary-action] {
+    border-radius: var(--radius-control) !important;
+  }
+
+  /* 32px section gaps were visually too loose on mobile. */
+  .home-page .home-focus-shell {
+    margin-bottom: var(--space-section) !important;
+  }
+}
+
+/* openshare-mobile-home-move-density-safe-v2
+   Collision-proof compact Daily Focus layout.
+   Data attributes deliberately avoid the legacy [class*="card"] selector. */
+@media (max-width: 767px) {
+  .home-page .your-moves-move-card-wrap [data-move-root] {
+    padding: 12px !important;
+  }
+
+  .home-page .your-moves-move-card-wrap [data-move-layout] {
+    gap: 12px !important;
+  }
+
+  .home-page .your-moves-move-card-wrap [data-move-rank] {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .home-page .your-moves-move-card-wrap [data-move-content] {
+    padding-right: 0 !important;
+  }
+
+  .home-page .your-moves-move-card-wrap [data-move-impact] {
+    margin-top: 4px !important;
+  }
+
+  .home-page .your-moves-move-card-wrap [data-move-meta] {
+    margin-top: 8px !important;
+    gap: 8px !important;
+  }
+
+  .home-page .your-moves-move-card-wrap [data-move-actions] {
+    gap: 4px !important;
+  }
+}
+
 /* openshare-desktop-home-tonal-hierarchy-v1
    Light-mode desktop hierarchy:
    - neutral canvas

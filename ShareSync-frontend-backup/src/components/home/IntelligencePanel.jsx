@@ -28,7 +28,7 @@ function InsightCard({
   return (
     <div
       className={`
-        relative p-5 rounded-2xl cursor-pointer group
+        home-intelligence-insight-card relative p-5 rounded-2xl cursor-pointer group
         bg-white dark:bg-[#1f1f23] border border-slate-200/80 dark:border-white/10
         transition-all duration-300 ease-out
         ${isLive && variant === "warning" ? "insight-breathing" : ""}

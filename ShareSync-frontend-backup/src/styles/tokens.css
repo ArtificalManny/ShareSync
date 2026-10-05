@@ -9,6 +9,26 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
+  /* openshare-typography-system-v1
+     UI = polished SaaS/product typography.
+     Personality = deliberately rare editorial accent. */
+  --font-ui: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: var(--font-ui);
+  --font-display: var(--font-ui);
+  --font-personality: Georgia, 'Times New Roman', Times, serif;
+
+  /* openshare-radius-spacing-system-v1
+     Three-level surface hierarchy + compact spacing rhythm. */
+  --radius-control: 14px;
+  --radius-card: 20px;
+  --radius-feature: 26px;
+
+  --space-tight: 8px;
+  --space-control: 12px;
+  --space-card: 16px;
+  --space-feature: 20px;
+  --space-section: 24px;
+
   /* ═══════════════════════════════════════════════════════════════════════════
      MASTER COLOR SCALES (Hardcoded to Blueprint)
      ═══════════════════════════════════════════════════════════════════════════ */

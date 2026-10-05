@@ -150,8 +150,9 @@ export default function YourMovesToday({
       className={`
         your-moves-today-panel card-action
         ${isCompact ? 'p-5' : 'p-6'} rounded-xl
-        bg-white dark:bg-[#1f1f23] border border-slate-200 dark:border-white/10
-        shadow-[0_4px_24px_rgba(139,92,246,0.04)]
+        bg-white dark:bg-[#1f1f23] border border-transparent md:border-slate-200 md:dark:border-white/10
+        shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:shadow-[0_12px_34px_rgba(0,0,0,0.18)]
+        md:shadow-[0_4px_24px_rgba(139,92,246,0.04)]
         ${hasUrgentMoves ? 'border-l-4 border-l-amber-500' : ''}
         ${className}
       `}
@@ -162,7 +163,7 @@ export default function YourMovesToday({
             <MovesMomentumGlyph urgent={hasUrgentMoves} />
 
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              <h3 className="home-personality-serif text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
                 Your 3 Moves Today
               </h3>
               <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 mt-1 normal-case tracking-normal">
@@ -232,7 +233,7 @@ export default function YourMovesToday({
       ) : displayMoves.length > 0 ? (
         <div className="space-y-4">
           {!isCompact && (
-            <div className="your-moves-recommendation-card rounded-2xl border border-violet-100 dark:border-violet-500/15 bg-violet-50/40 dark:bg-violet-500/5 px-4 py-3">
+            <div className="your-moves-recommendation-card rounded-2xl border border-transparent md:border-violet-100 md:dark:border-violet-500/15 bg-violet-50/50 dark:bg-violet-500/[0.06] px-4 py-3">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-widest text-violet-700 dark:text-violet-300">
@@ -243,7 +244,7 @@ export default function YourMovesToday({
                   </p>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-zinc-900 border border-violet-100 dark:border-violet-500/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 shadow-sm">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/85 dark:bg-zinc-900/85 border border-transparent md:border-violet-100 md:dark:border-violet-500/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 md:shadow-sm">
                   <Zap className="w-3.5 h-3.5 text-[var(--theme-accent-primary)]" />
                   Daily focus
                 </span>
@@ -276,7 +277,7 @@ export default function YourMovesToday({
       )}
 
       {showFooter && displayMoves.length > 0 && (
-        <div className="your-moves-footer mt-5 pt-4 border-t border-slate-100 dark:border-white/10">
+        <div className="your-moves-footer mt-5 pt-4 border-t-0 md:border-t md:border-slate-100 md:dark:border-white/10">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-widest">
               Complete all{' '}

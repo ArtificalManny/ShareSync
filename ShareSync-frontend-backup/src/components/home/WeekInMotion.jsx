@@ -718,7 +718,7 @@ function StatChip({ icon: Icon, label, value, tone = "violet" }) {
   return (
     <div
       className={`
-        relative overflow-hidden rounded-2xl border bg-gradient-to-br px-4 py-3
+        weekly-motion-stat-chip relative overflow-hidden rounded-2xl border bg-gradient-to-br px-4 py-3
         shadow-[0_10px_26px_rgba(15,23,42,0.06)]
         transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)]
         dark:bg-white/[0.045] dark:shadow-[0_18px_42px_rgba(0,0,0,0.22)]
@@ -838,9 +838,9 @@ export default function WeekInMotion({ className = "", onShipNow }) {
     return (
       <div
         className={`
-          relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6
-          shadow-[0_18px_60px_rgba(139,92,246,0.10)]
-          dark:border-white/12 dark:bg-[#11131c]
+          relative overflow-hidden rounded-[2rem] border border-transparent bg-white p-6
+          shadow-[0_14px_34px_rgba(15,23,42,0.08)] md:shadow-[0_18px_60px_rgba(139,92,246,0.10)]
+          md:border-slate-200 md:dark:border-white/12 dark:bg-[#11131c]
           ${className}
         `}
       >
@@ -866,19 +866,20 @@ export default function WeekInMotion({ className = "", onShipNow }) {
   return (
     <div
       className={`
-        weekly-motion-panel relative overflow-hidden rounded-[2rem] border border-slate-200/80
-        bg-white p-6 shadow-[0_18px_60px_rgba(139,92,246,0.10)]
+        weekly-motion-panel relative overflow-hidden rounded-[2rem] border border-transparent
+        bg-white p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)] md:shadow-[0_18px_60px_rgba(139,92,246,0.10)]
         transition-all duration-300
-        hover:border-violet-200 hover:shadow-[0_24px_72px_rgba(139,92,246,0.16)]
-        dark:border-white/[0.12] dark:bg-[#11131c]
+        hover:shadow-[0_16px_40px_rgba(15,23,42,0.10)] md:hover:shadow-[0_24px_72px_rgba(139,92,246,0.16)]
+        md:border-slate-200/80 md:hover:border-violet-200
+        dark:bg-[#11131c]
         dark:shadow-[0_24px_80px_rgba(0,0,0,0.40)]
-        dark:hover:border-violet-300/30
+        md:dark:border-white/[0.12] md:dark:hover:border-violet-300/30
         ${className}
       `}
     >
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
-      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-500/12 blur-3xl dark:bg-violet-500/18" />
-      <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-400/12 blur-3xl dark:bg-cyan-400/14" />
+      <div className="pointer-events-none absolute -left-24 -top-24 hidden h-72 w-72 rounded-full bg-violet-500/12 blur-3xl md:block dark:bg-violet-500/18" />
+      <div className="pointer-events-none absolute -right-24 top-10 hidden h-72 w-72 rounded-full bg-cyan-400/12 blur-3xl md:block dark:bg-cyan-400/14" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:44px_44px] opacity-50 dark:opacity-25" />
 
       <div className="relative mb-5 flex items-center justify-between gap-3">
@@ -887,7 +888,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
+              <h3 className="home-personality-serif text-base font-black text-slate-900 dark:text-white">
                 Your Week in Motion
               </h3>
 
@@ -909,7 +910,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
         />
       </div>
 
-      <div className="relative rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-br from-white/90 via-slate-50/80 to-cyan-50/50 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-white/[0.14] dark:from-white/[0.07] dark:via-white/[0.045] dark:to-cyan-400/[0.06] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+      <div className="weekly-motion-rhythm-map relative rounded-[1.75rem] border border-transparent bg-gradient-to-br from-white/90 via-slate-50/80 to-cyan-50/50 p-4 shadow-none md:border-slate-200/80 md:shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:from-white/[0.07] dark:via-white/[0.045] dark:to-cyan-400/[0.06] md:dark:border-white/[0.14] md:dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-violet-600 dark:text-violet-200" />
@@ -941,7 +942,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
 
       <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1">
-          <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 shadow-sm dark:border-white/[0.10] dark:bg-white/[0.045]">
+          <div className="weekly-motion-insight rounded-2xl border border-transparent bg-white/70 px-4 py-3 shadow-none md:border-slate-200/80 md:shadow-sm dark:bg-white/[0.045] md:dark:border-white/[0.10]">
             <p className="text-sm font-semibold leading-relaxed text-slate-700 dark:text-white/75">
               {displayData.insight}
             </p>
@@ -975,6 +976,7 @@ export default function WeekInMotion({ className = "", onShipNow }) {
           <button
             type="button"
             onClick={handleRhythmAction}
+            data-home-primary-action="weekly-motion"
             className="group inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-300/70 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_38px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-95 dark:border-cyan-300/35 dark:from-violet-500 dark:via-fuchsia-500 dark:to-cyan-400 dark:text-white dark:shadow-[0_0_28px_rgba(34,211,238,0.22),0_18px_42px_rgba(139,92,246,0.30)]"
             title="Open your projects to choose your next update"
           >
