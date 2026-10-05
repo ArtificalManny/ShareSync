@@ -1,6 +1,7 @@
 // src/components/views/ThreadsView.jsx
 // Split-panel project thread view with Messenger-style member picker
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MessageCircle, Pin, Search, Plus, Clock, Users,
   Hash, Loader2, X, ChevronLeft, ArrowUp, Check,
@@ -2386,20 +2387,109 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-4">
+  // team-room-new-thread-portal-v2
+  // Escape ProjectHome stacking contexts so the sheet truly owns the viewport.
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="team-room-new-thread-mobile-v1 fixed inset-0 z-[100000] flex items-end justify-center overflow-hidden p-0 sm:items-center sm:p-4">
+      <style>
+        {`
+          /* team-room-new-thread-mobile-v1 */
+          @media (max-width: 639px) {
+            .team-room-new-thread-mobile-v1 .room-create-modal-card {
+              max-height:
+                calc(
+                  100dvh -
+                  env(safe-area-inset-top, 0px) -
+                  0.75rem
+                ) !important;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-member-search {
+              width: 100% !important;
+              min-width: 0 !important;
+              flex: 0 0 100% !important;
+              border: 0 !important;
+              border-radius: 0 !important;
+              background: transparent !important;
+              padding: 0.625rem 0.5rem !important;
+              box-shadow: none !important;
+              outline: none !important;
+              -webkit-appearance: none !important;
+              appearance: none !important;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-member-search:focus {
+              border: 0 !important;
+              box-shadow: none !important;
+              outline: none !important;
+              ring: 0 !important;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-member-results {
+              max-height: min(27dvh, 13rem) !important;
+              overscroll-behavior: contain;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-title {
+              min-height: 3rem !important;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-channel-grid {
+              display: grid !important;
+              grid-template-columns:
+                repeat(2, minmax(0, 1fr)) !important;
+              gap: 0.5rem !important;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-channel-grid > button {
+              width: 100% !important;
+              min-width: 0 !important;
+              min-height: 2.75rem !important;
+              justify-content: center !important;
+            }
+
+            .team-room-new-thread-mobile-v1
+            .team-room-create-actions > button {
+              min-height: 3rem !important;
+            }
+          }
+        `}
+      </style>
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="team room-create-modal-card relative max-h-[88svh] w-full max-w-md overflow-y-auto rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl dark:border-white/[0.10] dark:bg-[#1f1f23] sm:max-h-none sm:rounded-2xl">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">New Thread</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06]">
+      <div
+        className="team room-create-modal-card relative flex max-h-[88svh] w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl dark:border-white/[0.10] dark:bg-[#1f1f23] sm:max-h-none sm:rounded-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="team-room-new-thread-title"
+      >
+        <div className="sticky top-0 z-20 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#1f1f23]/95">
+          <h2
+            id="team-room-new-thread-title"
+            className="text-base font-semibold text-slate-900 dark:text-white"
+          >
+            New Thread
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] sm:h-auto sm:w-auto sm:p-2"
+            aria-label="Close new thread"
+          >
             <X className="w-4 h-4 text-slate-400" />
           </button>
         </div>
-        <div className="space-y-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:overflow-visible sm:p-5">
           <div>
             <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">To</label>
-            <div className="mt-1.5 flex flex-wrap gap-1.5 p-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05]">
+            <div className="mt-1.5 flex min-h-12 flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-white p-2 dark:border-white/[0.10] dark:bg-white/[0.05]">
               {selectedMembers.map(m => (
                 <span key={m.id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 text-xs font-medium">
                   <span className="relative h-4 w-4 overflow-hidden rounded-full bg-white/70 ring-1 ring-violet-200 dark:bg-white/[0.08] dark:ring-violet-400/20">
@@ -2427,11 +2517,11 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
                 value={memberSearch}
                 onChange={e => setMemberSearch(e.target.value)}
                 placeholder={selectedMembers.length === 0 ? 'Search members...' : ''}
-                className="min-w-[100px] flex-1 bg-transparent !text-[16px] text-slate-800 outline-none placeholder-slate-400 dark:text-white dark:placeholder-white/30 sm:!text-sm"
+                className="team-room-create-member-search w-full min-w-0 flex-1 bg-transparent !text-[16px] text-slate-800 outline-none placeholder-slate-400 dark:text-white dark:placeholder-white/30 sm:min-w-[100px] sm:w-auto sm:!text-sm"
               />
             </div>
             {members.length > 0 && (
-              <div className="mt-2 max-h-[160px] overflow-y-auto rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#1f1f23]">
+              <div className="team-room-create-member-results mt-2 max-h-[160px] overflow-y-auto rounded-xl border border-slate-200 bg-white dark:border-white/[0.08] dark:bg-[#1f1f23]">
                 {filteredMembers.length === 0 ? (
                   <p className="px-3 py-2 text-xs text-slate-400">No members found</p>
                 ) : filteredMembers.map(m => {
@@ -2505,13 +2595,13 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Sprint Planning..."
               maxLength={100}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 !text-[16px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/[0.10] dark:bg-white/[0.05] dark:text-white dark:placeholder-white/30 sm:!text-sm"
+              className="team-room-create-title mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 !text-[16px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/[0.10] dark:bg-white/[0.05] dark:text-white dark:placeholder-white/30 sm:!text-sm"
             />
           </div>
 
           <div>
             <label className="text-xs font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">Channel</label>
-            <div className="flex gap-2 mt-2 flex-wrap">
+            <div className="team-room-create-channel-grid mt-2 flex flex-wrap gap-2">
               {['general', 'planning', 'design', 'ops'].map(ch => (
                 <button
                   key={ch}
@@ -2529,7 +2619,10 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
+        </div>
+
+        {/* team-room-new-thread-footer-v3 */}
+        <div className="team-room-create-actions flex shrink-0 gap-3 border-t border-slate-200/80 bg-white px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 dark:border-white/[0.08] dark:bg-[#1f1f23] sm:border-t-0 sm:px-5 sm:pb-5 sm:pt-2">
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-white/60">
               Cancel
             </button>
@@ -2540,10 +2633,10 @@ function CreateThreadModal({ projectId, members, onClose, onCreated }) {
             >
               {creating ? 'Creating...' : 'Create Thread'}
             </button>
-          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -3482,7 +3575,128 @@ export default function ThreadsView({
           `}
         </style>
 
-<div className="team team-room-readable-v1 room-holo-shell relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30 sm:rounded-[2.25rem]">
+        <style className="team-room-mobile-directory-v1">
+          {`
+            /*
+              team-room-mobile-directory-v1
+
+              Phone directory only:
+              - 2x2 signal stats instead of horizontal clipping
+              - natural page height instead of nested 42svh scrolling
+              - two-column filter grid
+              - lighter thread-directory shell
+              - selected-thread conversation remains untouched
+            */
+            @media (max-width: 1023px) {
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-signal-stats {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 0.625rem !important;
+                overflow: visible !important;
+                padding-bottom: 0 !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-signal-stats
+              .room-stat-card {
+                width: auto !important;
+                min-width: 0 !important;
+                flex: none !important;
+                border-radius: 1rem !important;
+                padding: 0.75rem !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .room-thread-stage {
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                border-radius: 1.25rem !important;
+                background: rgba(255, 255, 255, 0.94) !important;
+                border-color: rgba(203, 213, 225, 0.82) !important;
+                box-shadow:
+                  0 10px 30px rgba(15, 23, 42, 0.07),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .room-thread-rail {
+                min-height: 0 !important;
+                overflow: visible !important;
+                border-right: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-directory-controls {
+                padding: 0.75rem !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-directory-filters {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 0.5rem !important;
+                overflow: visible !important;
+                padding-bottom: 0 !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-directory-filters > button {
+                width: 100% !important;
+                min-width: 0 !important;
+                justify-content: space-between !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-directory-archive {
+                padding: 0.5rem 0.75rem !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-directory-list {
+                flex: none !important;
+                overflow: visible !important;
+                overscroll-behavior: auto !important;
+                padding: 0.625rem !important;
+                scrollbar-gutter: auto !important;
+              }
+
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .team-room-directory-list > .space-y-3 {
+                display: flex;
+                flex-direction: column;
+                gap: 0.625rem;
+              }
+            }
+
+            @media (max-width: 1023px) {
+              .dark
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .room-thread-stage {
+                background: rgba(17, 17, 19, 0.96) !important;
+                border-color: rgba(255, 255, 255, 0.08) !important;
+                box-shadow:
+                  0 12px 34px rgba(0, 0, 0, 0.28),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+              }
+
+              .dark
+              .team-room-readable-v1[data-team-room-mode="directory"]
+              .room-thread-rail {
+                background: transparent !important;
+              }
+            }
+          `}
+        </style>
+
+        <div
+          className="team team-room-readable-v1 room-holo-shell relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111113]/90 dark:shadow-black/30 sm:rounded-[2.25rem]"
+          data-team-room-mode={activeThread ? "thread" : "directory"}
+        >
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-cyan-400 to-emerald-400" />
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-500/10" />
         <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" />
@@ -3538,7 +3752,7 @@ export default function ThreadsView({
           </div>
 
           {/* Signal stats */}
-          <div className="mb-4 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible lg:pb-0">
+          <div className="team-room-signal-stats mb-4 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible lg:pb-0">
             <div className="team room-stat-card w-[7.25rem] shrink-0 rounded-2xl sm:rounded-3xl lg:w-auto border border-violet-200 bg-violet-50/80 p-3 shadow-sm dark:border-violet-400/20 dark:bg-violet-500/10">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-600 dark:text-violet-200">
                 Threads
@@ -3592,7 +3806,7 @@ export default function ThreadsView({
                 (activeThread ? 'hidden lg:flex lg:flex-col' : 'flex flex-col')
               }
             >
-              <div className="shrink-0 border-b border-slate-200/80 p-3 dark:border-white/[0.08]">
+              <div className="team-room-directory-controls shrink-0 border-b border-slate-200/80 p-3 dark:border-white/[0.08]">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   <input
@@ -3603,7 +3817,7 @@ export default function ThreadsView({
                   />
                 </div>
 
-                <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                <div className="team-room-directory-filters mt-3 flex gap-2 overflow-x-auto pb-1">
                   {CHANNELS.map((channel) => {
                     const active = activeChannel === channel.id;
                     const count =
@@ -3632,7 +3846,7 @@ export default function ThreadsView({
                 </div>
               </div>
 
-              <div className="shrink-0 border-b border-slate-200/70 px-3 py-2.5 dark:border-white/[0.06]">
+              <div className="team-room-directory-archive shrink-0 border-b border-slate-200/70 px-3 py-2.5 dark:border-white/[0.06]">
                 <button
                   type="button"
                   onClick={() => {
@@ -3672,7 +3886,7 @@ export default function ThreadsView({
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5 [scrollbar-gutter:stable] sm:p-3">
+              <div className="team-room-directory-list min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5 [scrollbar-gutter:stable] sm:p-3">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
