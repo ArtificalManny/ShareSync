@@ -22,7 +22,7 @@ import {
   Flame,
   Grid,
   List,
-  LayoutGrid,
+  Terminal,
   ChevronRight,
   Clock3,
   Play,
@@ -693,7 +693,7 @@ const Projects = () => {
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <LayoutGrid className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            <Terminal className="w-4 h-4 text-sky-600 dark:text-sky-300" />
             <span className="text-xs text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
               Projects workspace
             </span>
