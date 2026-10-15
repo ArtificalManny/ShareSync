@@ -236,7 +236,7 @@ function EditMilestoneModal({ milestone, onClose, onSave, saving, error: saveErr
 
     const data = {
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim(),
       targetDate: targetDate || undefined,
       status,
     };
