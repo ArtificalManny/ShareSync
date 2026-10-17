@@ -62,6 +62,7 @@ describe('UserService password-security integration', () => {
       expect(
         await bcrypt.compare(newPassword, user.password),
       ).toBe(true);
+      expect(bcrypt.getRounds(user.password)).toBe(12);
       expect(user.tokenVersion).toBe(3);
       expect(user.save).toHaveBeenCalledTimes(1);
     });
@@ -80,7 +81,50 @@ describe('UserService password-security integration', () => {
       expect(
         await bcrypt.compare(newPassword, user.password),
       ).toBe(true);
+      expect(bcrypt.getRounds(user.password)).toBe(12);
       expect(user.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects passwords exceeding 72 UTF-8 bytes', async () => {
+      const hash = await bcrypt.hash(currentPassword, 12);
+      const user = makeUser(hash);
+      const { service } = makeService(user);
+
+      const oversized = String.fromCodePoint(0x1F600).repeat(19);
+
+      await expect(
+        service.changePassword(
+          'test-user-id',
+          currentPassword,
+          oversized,
+        ),
+      ).rejects.toThrow(
+        'New password must be between 1 and 72 UTF-8 bytes',
+      );
+
+      expect(user.password).toBe(hash);
+      expect(user.tokenVersion).toBe(2);
+      expect(user.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects an empty replacement password', async () => {
+      const hash = await bcrypt.hash(currentPassword, 12);
+      const user = makeUser(hash);
+      const { service } = makeService(user);
+
+      await expect(
+        service.changePassword(
+          'test-user-id',
+          currentPassword,
+          '',
+        ),
+      ).rejects.toThrow(
+        'New password must be between 1 and 72 UTF-8 bytes',
+      );
+
+      expect(user.password).toBe(hash);
+      expect(user.tokenVersion).toBe(2);
+      expect(user.save).not.toHaveBeenCalled();
     });
 
     it('rejects an incorrect current password', async () => {

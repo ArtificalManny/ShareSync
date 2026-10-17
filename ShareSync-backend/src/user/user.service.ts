@@ -14,8 +14,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types} from 'mongoose';
-import * as bcrypt from 'bcrypt';
-import { verifyPasswordHash } from '../auth/password-security';
+import { hashPassword, verifyPasswordHash } from '../auth/password-security';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { User, UserDocument } from './schemas/user.schema';
@@ -1178,7 +1177,17 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
     const isValid = await verifyPasswordHash(currentPassword, (user as any).password);
     if (!isValid) throw new BadRequestException('Current password is incorrect');
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    let hashedPassword: string;
+    try {
+      hashedPassword = await hashPassword(newPassword);
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof RangeError) {
+        throw new BadRequestException(
+          'New password must be between 1 and 72 UTF-8 bytes',
+        );
+      }
+      throw error;
+    }
     (user as any).password = hashedPassword;
     (user as any).tokenVersion = ((user as any).tokenVersion || 0) + 1;
     await user.save();
