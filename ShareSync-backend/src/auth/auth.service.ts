@@ -249,7 +249,6 @@ export class AuthService {
     refresh_token: string;
   }> {
     console.log('🔵 VERIFY EMAIL CALLED');
-    console.log('🔵 userId:', userId, 'code:', code);
 
     const user = await this.userModel
       .findById(userId)
@@ -880,11 +879,7 @@ export class AuthService {
         throw new Error('Email is not configured: missing RESEND_API_KEY/RESEND_FROM or SMTP settings');
       }
 
-      console.log('═══════════════════════════════════════════════════════════');
-      console.log('📧 DEV VERIFICATION CODE FOR', to);
-      console.log('📧 CODE:', code);
-      console.log('📧 EXPIRES:', expiresAt.toISOString());
-      console.log('═══════════════════════════════════════════════════════════');
+      console.info('Development verification email not delivered: mail transport unavailable');
       return;
     }
 
@@ -1003,15 +998,7 @@ export class AuthService {
         );
       }
 
-      console.log(
-        '═══════════════════════════════════════════════════════════',
-      );
-      console.log('🔑 DEV PASSWORD RESET FOR', to);
-      console.log('🔑 RESET URL:', resetUrl);
-      console.log('🔑 EXPIRES:', expiresAt.toISOString());
-      console.log(
-        '═══════════════════════════════════════════════════════════',
-      );
+      console.info('Development password-reset email not delivered: mail transport unavailable');
       return;
     }
 

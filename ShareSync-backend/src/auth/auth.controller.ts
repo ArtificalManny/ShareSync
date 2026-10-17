@@ -65,7 +65,7 @@ export class AuthController {
     const user = result.user;
 
     if (!access_token || !refresh_token || !user) {
-      console.error('❌ LOGIN RESPONSE MISSING SESSION DATA:', result);
+      console.error('❌ LOGIN RESPONSE MISSING SESSION DATA');
       throw new UnauthorizedException('Invalid login response format');
     }
 
