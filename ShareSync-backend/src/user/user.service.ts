@@ -15,6 +15,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types} from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import { verifyPasswordHash } from '../auth/password-security';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { User, UserDocument } from './schemas/user.schema';
@@ -1175,7 +1176,7 @@ export class UserService {
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this.userModel.findById(userId).select('+password').exec();
     if (!user) throw new NotFoundException('User not found');
-    const isValid = await bcrypt.compare(currentPassword, (user as any).password);
+    const isValid = await verifyPasswordHash(currentPassword, (user as any).password);
     if (!isValid) throw new BadRequestException('Current password is incorrect');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     (user as any).password = hashedPassword;
@@ -1725,7 +1726,7 @@ export class UserService {
     const storedPassword = String((user as any).password || '');
     const isValidPassword =
       storedPassword.length > 0 &&
-      await bcrypt.compare(currentPassword, storedPassword);
+      await verifyPasswordHash(currentPassword, storedPassword);
 
     if (!isValidPassword) {
       throw new BadRequestException('Current password is incorrect');
