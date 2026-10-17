@@ -9,7 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { verifyPasswordHash } from './password-security';
+import { hashPassword, verifyPasswordHash } from './password-security';
 import * as crypto from 'crypto';
 import { MailerService } from '@nestjs-modules/mailer';
 
@@ -188,8 +188,18 @@ export class AuthService {
       throw new BadRequestException('Username already taken');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(dto.password, 12);
+    // Hash and validate the new account password.
+    let hashedPassword: string;
+    try {
+      hashedPassword = await hashPassword(dto.password);
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof RangeError) {
+        throw new BadRequestException(
+          'Password must be between 1 and 72 UTF-8 bytes',
+        );
+      }
+      throw error;
+    }
 
     // Generate 6-digit verification code
     const verificationCode = crypto.randomInt(100000, 999999).toString();
@@ -427,8 +437,18 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    // Hash and validate before consuming the reset token.
+    let hashedPassword: string;
+    try {
+      hashedPassword = await hashPassword(newPassword);
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof RangeError) {
+        throw new BadRequestException(
+          'New password must be between 1 and 72 UTF-8 bytes',
+        );
+      }
+      throw error;
+    }
 
     // Update user - ⭐ Using EXISTING field names
     targetUser.password = hashedPassword;
