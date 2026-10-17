@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import { verifyPasswordHash } from './password-security';
 import * as crypto from 'crypto';
 import { MailerService } from '@nestjs-modules/mailer';
 
@@ -53,9 +54,9 @@ export class AuthService {
 
   /** Validate email/password and return the user (without password) */
   public async validateUser(email: string, password: string) {
-    console.log('🔵 VALIDATE USER CALLED');
-    console.log('🔵 email type:', typeof email, 'value:', email);
-    console.log('🔵 password type:', typeof password, 'length:', password?.length);
+    if (typeof password !== 'string' || password.length === 0) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     const user = await this.userModel
       .findOne({ email: email.toLowerCase() })
@@ -64,19 +65,19 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const stored = user.password || '';
-    let ok = false;
+    const stored =
+      typeof user.password === 'string' ? user.password : '';
 
-    // If hashed with bcrypt, compare; else plain compare (dev-only).
-    if (
+    const bcryptCandidate =
       stored.startsWith('$2a$') ||
       stored.startsWith('$2b$') ||
-      stored.startsWith('$2y$')
-    ) {
-      ok = await bcrypt.compare(password, stored);
-    } else {
-      ok = stored === password;
-    }
+      stored.startsWith('$2y$');
+
+    // Temporary legacy compatibility. Remove only after a
+    // database inventory and affected-account migration.
+    const ok = bcryptCandidate
+      ? await verifyPasswordHash(password, stored)
+      : stored.length > 0 && stored === password;
 
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
@@ -88,10 +89,6 @@ export class AuthService {
 
   /** Issue JWT and return it along with the safe user object */
   public async login(email: string, password: string) {
-    console.log('🔵 LOGIN SERVICE CALLED');
-    console.log('🔵 email type:', typeof email, 'value:', email);
-    console.log('🔵 password type:', typeof password, 'length:', password?.length);
-
     const user = await this.validateUser(email, password);
 
     // ⭐ Check if user is verified (using isEmailVerified - existing field)
