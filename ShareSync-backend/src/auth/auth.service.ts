@@ -65,19 +65,9 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const stored =
-      typeof user.password === 'string' ? user.password : '';
-
-    const bcryptCandidate =
-      stored.startsWith('$2a$') ||
-      stored.startsWith('$2b$') ||
-      stored.startsWith('$2y$');
-
-    // Temporary legacy compatibility. Remove only after a
-    // database inventory and affected-account migration.
-    const ok = bcryptCandidate
-      ? await verifyPasswordHash(password, stored)
-      : stored.length > 0 && stored === password;
+    // Password-based login requires a recognized bcrypt hash.
+    // Non-bcrypt stored values are never accepted as credentials.
+    const ok = await verifyPasswordHash(password, user.password);
 
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 

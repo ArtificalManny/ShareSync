@@ -75,14 +75,15 @@ describe('AuthService password login hardening', () => {
     expect(enforceAccountAllowed).not.toHaveBeenCalled();
   });
 
-  it('temporarily supports a nonempty legacy plaintext password', async () => {
-    const { service } = makeService(mockUser(password));
+  it('rejects a matching nonempty plaintext stored password', async () => {
+    const { service, enforceAccountAllowed } =
+      makeService(mockUser(password));
 
     await expect(
       service.validateUser('test@example.com', password),
-    ).resolves.toMatchObject({
-      email: 'test@example.com',
-    });
+    ).rejects.toThrow('Invalid credentials');
+
+    expect(enforceAccountAllowed).not.toHaveBeenCalled();
   });
 
   it('rejects an incorrect legacy plaintext password', async () => {
