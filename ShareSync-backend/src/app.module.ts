@@ -24,6 +24,7 @@ import { HealthModule } from './health/health.module';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { AuthModule } from './auth/auth.module';
+import { validateJwtSecretEnvironment } from './auth/jwt-secret-validation';
 import { UserModule } from './user/user.module';
 import { SitemapModule } from './sitemap/sitemap.module';
 
@@ -132,6 +133,7 @@ import { IntakeFormsModule } from './intake-forms/intake-forms.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
       cache: true,
+      validate: validateJwtSecretEnvironment,
     }),
 
     // ─────────────────────────────────────────────────────────────────────────
