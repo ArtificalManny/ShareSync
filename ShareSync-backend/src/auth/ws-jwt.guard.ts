@@ -54,7 +54,7 @@ export class WsJwtGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      console.error('WebSocket auth failed:', error);
+      console.error('WebSocket authentication failed');
       throw new WsException('Authentication failed');
     }
   }
@@ -91,7 +91,7 @@ export class WsJwtGuard implements CanActivate {
 
       return null;
     } catch (error) {
-      console.error('Failed to extract token:', error);
+      console.error('WebSocket token extraction failed');
       return null;
     }
   }

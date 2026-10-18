@@ -392,10 +392,7 @@ export class AuthController {
         confirmedGoogleId,
       );
     } catch (error: any) {
-      console.error(
-        '❌ GOOGLE DELETE CALLBACK: Account deletion failed:',
-        error?.message || error,
-      );
+      console.error('Google account deletion failed');
       return returnToSettings('account_deletion_failed');
     }
 
@@ -477,9 +474,9 @@ export class AuthController {
           `${frontendUrl}/auth/google/callback#${fragment}`,
         );
     } catch (err) {
-      console.error('❌ GOOGLE CALLBACK ERROR:', err.message);
+      console.error('Google callback failed');
       return res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:54693'}/auth/google/callback?error=${encodeURIComponent(err.message)}`,
+        `${process.env.FRONTEND_URL || 'http://localhost:54693'}/auth/google/callback?error=Authentication+failed`,
       );
     }
   }

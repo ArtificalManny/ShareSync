@@ -43,13 +43,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       profilePicture: photos?.[0]?.value || '',
     };
 
-    console.log('🔵 GOOGLE STRATEGY: Validating profile for', googleProfile.email);
+    console.log('Google strategy profile validation started');
 
     try {
       const user = await this.authService.validateOrCreateGoogleUser(googleProfile);
       done(null, user);
     } catch (err) {
-      console.error('❌ GOOGLE STRATEGY: Validation failed:', err.message);
+      console.error('Google strategy validation failed');
       done(err, null);
     }
   }
