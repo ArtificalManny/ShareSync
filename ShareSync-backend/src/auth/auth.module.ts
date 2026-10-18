@@ -5,7 +5,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { AuthController } from './auth.controller';
-import { DevAuthController } from './dev-auth.controller';
 import { AuthService } from './auth.service';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
@@ -42,7 +41,7 @@ import { GoogleDeleteGuard } from './guards/google-delete.guard';
       }),
     }),
   ],
-  controllers: [AuthController, DevAuthController],
+  controllers: [AuthController],
   providers: [
     AuthService,
     JwtStrategy,
