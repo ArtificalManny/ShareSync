@@ -85,13 +85,7 @@ export class AuthService {
     if (user.isEmailVerified === false) {
       // User exists but not verified - resend code and return special response
       void this.resendVerificationCode(String(user._id)).catch((error: any) => {
-        console.error('❌ Auto resend verification failed during login:', {
-          message: error?.message,
-          code: error?.code,
-          command: error?.command,
-          response: error?.response,
-          responseCode: error?.responseCode,
-        });
+        console.error('Automatic verification resend failed');
       });
       return {
         success: false,
@@ -171,7 +165,6 @@ export class AuthService {
     lastName: string;
   }): Promise<{ userId: string }> {
     console.log('🔵 REGISTER SERVICE CALLED');
-    console.log('🔵 email:', dto.email, 'username:', dto.username);
 
     // Check if email/username already exists
     const existing = await this.userModel.findOne({
@@ -228,7 +221,7 @@ export class AuthService {
     } catch (error) {
       // Avoid trapping a new user in "email already registered" if production email fails.
       await this.userModel.findByIdAndDelete(user._id).catch(() => undefined);
-      console.error('❌ Failed to send verification email:', (error as Error)?.message || error);
+      console.error('Registration verification email failed');
       throw new BadRequestException('Could not send verification email. Please try again later.');
     }
 
@@ -320,13 +313,7 @@ export class AuthService {
     try {
       await this.sendVerificationEmail(user.email, verificationCode, codeExpiry);
     } catch (error: any) {
-      console.error('❌ Could not send verification email on resend:', {
-        message: error?.message,
-        code: error?.code,
-        command: error?.command,
-        response: error?.response,
-        responseCode: error?.responseCode,
-      });
+      console.error('Verification resend delivery failed');
 
       // IMPORTANT:
       // Do not let SMTP failure turn login into a 500.
@@ -342,18 +329,16 @@ export class AuthService {
 
   /**
    * Request password reset
-   * ⚠️ Does NOT send actual email — logs reset URL to console for testing
+   * Sends a reset link using the configured email transport
    * Always returns success (security: don't reveal if email exists)
    */
   public async forgotPassword(email: string): Promise<void> {
     console.log('🔵 FORGOT PASSWORD CALLED');
-    console.log('🔵 email:', email);
 
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
 
     // Silently return if user doesn't exist (security)
     if (!user) {
-      console.log('🟡 User not found, returning silently for security');
       return;
     }
 
@@ -372,7 +357,7 @@ export class AuthService {
       await this.sendPasswordResetEmail(user.email, resetUrl, tokenExpiry);
     } catch (error) {
       // Keep forgot-password response silent for account-enumeration safety.
-      console.error('❌ Failed to send password reset email:', (error as Error)?.message || error);
+      console.error('Password-reset email delivery failed');
     }
 
   }
@@ -461,7 +446,7 @@ export class AuthService {
 
     await this.revokeAllRefreshSessions(String(targetUser._id));
 
-    console.log('🟢 PASSWORD RESET SUCCESSFUL for', targetUser.email);
+    console.log('Password reset completed');
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -497,14 +482,14 @@ export class AuthService {
     lastName: string;
     profilePicture: string;
   }) {
-    console.log('🔵 GOOGLE AUTH: validateOrCreateGoogleUser for', profile.email);
+    console.log('Google account lookup started');
 
     // 1. Check if user already linked via googleId
     let user = await this.userModel.findOne({ googleId: profile.googleId }).lean();
 
     if (user) {
       this.enforceAccountAllowed(user);
-      console.log('🟢 GOOGLE AUTH: Existing Google-linked user found:', user.email);
+      console.log('Existing Google-linked account found');
       const { password: _pw, ...safe } = user as any;
       return safe;
     }
@@ -565,7 +550,7 @@ export class AuthService {
       tokenVersion: 0,
     });
 
-    console.log('🟢 GOOGLE AUTH: New user created:', newUser.email, '(username:', username, ')');
+    console.log('Google-linked account created');
 
     const obj = newUser.toObject();
     delete obj.password;
@@ -860,15 +845,10 @@ export class AuthService {
           throw new Error(`Resend API failed with ${response.status}: ${body}`);
         }
 
-        console.log('🟢 Verification email sent via Resend to', to);
+        console.log('Verification email sent via Resend');
         return;
       } catch (error: any) {
-        console.error('❌ Resend verification email failed:', {
-          message: error?.message,
-          code: error?.code,
-          response: error?.response,
-          responseCode: error?.responseCode,
-        });
+        console.error('Resend verification transport failed');
 
         throw error;
       }
@@ -892,15 +872,9 @@ export class AuthService {
         text,
       });
 
-      console.log('🟢 Verification email sent via SMTP to', to);
+      console.log('Verification email sent via SMTP');
     } catch (error: any) {
-      console.error('❌ SMTP verification email failed:', {
-        message: error?.message,
-        code: error?.code,
-        command: error?.command,
-        response: error?.response,
-        responseCode: error?.responseCode,
-      });
+      console.error('SMTP verification transport failed');
 
       throw error;
     }
@@ -971,21 +945,10 @@ export class AuthService {
           );
         }
 
-        console.log(
-          '🟢 Password reset email sent via Resend to',
-          to,
-        );
+        console.log('Password-reset email sent via Resend');
         return;
       } catch (error: any) {
-        console.error(
-          '❌ Resend password reset email failed:',
-          {
-            message: error?.message,
-            code: error?.code,
-            response: error?.response,
-            responseCode: error?.responseCode,
-          },
-        );
+        console.error('Resend password-reset transport failed');
 
         throw error;
       }
@@ -1010,10 +973,7 @@ export class AuthService {
       text,
     });
 
-    console.log(
-      '🟢 Password reset email sent via SMTP to',
-      to,
-    );
+    console.log('Password-reset email sent via SMTP');
   }
 
   private maskEmail(email: string): string {
