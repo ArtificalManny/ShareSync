@@ -18,6 +18,7 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { requireValidatedJwtSecret } from '../auth/jwt-secret-validation';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -120,12 +121,9 @@ export class MessagesGateway
       // messages-gateway-jwt-secret-alignment-v2
       // Resolve the access-token secret exactly like the active AuthModule
       // and token-signing paths.
-      const secret =
-        this.configService.get<string>(
-          'JWT_SECRET',
-        ) ||
-        process.env.JWT_SECRET ||
-        'dev_secret_change_me';
+      const secret = requireValidatedJwtSecret(
+        this.configService.get<string>('JWT_SECRET'),
+      );
 
       const payload =
         this.jwtService.verify(
