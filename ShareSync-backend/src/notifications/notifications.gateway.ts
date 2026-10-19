@@ -26,9 +26,10 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { validateWsSession } from '../auth/ws-session.validator';
+import { Project } from '../projects/schemas/project.schema';
 import { OnEvent } from '@nestjs/event-emitter';
 import { NotificationDocument } from './schemas/notification.schema';
 
@@ -60,6 +61,8 @@ export class NotificationsGateway
     private readonly jwtService: JwtService,
     @InjectConnection()
     private readonly connection: Connection,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<Project>,
   ) {}
 
   afterInit(_server: Server) {
@@ -131,16 +134,59 @@ export class NotificationsGateway
   // ROOM JOIN / LEAVE (project:{projectId})
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // Resolve room access against the current database state.
+  // Invalid identifiers, missing projects and database failures deny access.
+  private async resolveRoomProject(projectId: unknown): Promise<any | null> {
+    if (
+      typeof projectId !== 'string' ||
+      !/^[a-f0-9]{24}$/i.test(projectId)
+    ) {
+      return null;
+    }
+
+    try {
+      return await this.projectModel.findById(projectId).lean();
+    } catch {
+      return null;
+    }
+  }
+
   @SubscribeMessage('project:join')
-  handleProjectJoin(
+  async handleProjectJoin(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { projectId?: string },
   ) {
     const projectId = body?.projectId;
-    if (!client.userId || !projectId) return;
+    const userId = client.userId;
 
-    client.join(`project:${projectId}`);
-    this.logger.log(`user:${client.userId} joined project:${projectId}`);
+    if (!userId) return;
+
+    const project = await this.resolveRoomProject(projectId);
+    if (!project) return;
+
+    const ownerIds = [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+    ];
+
+    const isOwner = ownerIds.some(
+      (id) => id?.toString?.() === userId,
+    );
+
+    const isMember =
+      Array.isArray(project.members) &&
+      project.members.some((member: any) =>
+        [member?.userId, member?.memberId, member?.user].some(
+          (id) => id?.toString?.() === userId,
+        ),
+      );
+
+    if (!isOwner && !isMember) return;
+
+    await client.join(`project:${projectId}`);
+    this.logger.log(`User ${userId} joined project room ${projectId}`);
   }
 
   @SubscribeMessage('project:leave')
@@ -160,21 +206,28 @@ export class NotificationsGateway
   // ─────────────────────────────────────────────────────────────────────────────
 
   @SubscribeMessage('public:project:join')
-  handlePublicProjectJoin(
+  async handlePublicProjectJoin(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { projectId?: string },
   ) {
-    const projectId = body?.projectId;
-    if (!projectId) return;
+    // This namespace already requires a validated JWT session.
+    // Anonymous spectators require a separate, explicit design.
+    if (!client.userId) return;
 
-    client.join(`public:project:${projectId}`);
-    if (client.userId) {
-      this.logger.log(
-        `user:${client.userId} joined public:project:${projectId}`,
-      );
-    } else {
-      this.logger.log(`anonymous joined public:project:${projectId}`);
+    const projectId = body?.projectId;
+    const project = await this.resolveRoomProject(projectId);
+
+    if (
+      !project ||
+      String(project.visibility ?? '').toLowerCase() !== 'public'
+    ) {
+      return;
     }
+
+    await client.join(`public:project:${projectId}`);
+    this.logger.log(
+      `User ${client.userId} joined public project room ${projectId}`,
+    );
   }
 
   @SubscribeMessage('public:project:leave')
