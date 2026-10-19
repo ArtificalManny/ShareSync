@@ -7,6 +7,7 @@
 import { Injectable, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
+import { requireValidatedJwtSecret } from './jwt-secret-validation';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { hashPassword, verifyPasswordHash } from './password-security';
@@ -106,7 +107,7 @@ export class AuthService {
     };
 
     const access_token = await this.jwt.signAsync(payload, {
-      secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+      secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
       expiresIn: '7d',
     });
 
@@ -760,7 +761,7 @@ export class AuthService {
     };
 
     return this.jwt.signAsync(payload, {
-      secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+      secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
       expiresIn,
     });
   }

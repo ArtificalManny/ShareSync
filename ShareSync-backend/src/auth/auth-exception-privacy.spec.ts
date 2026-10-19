@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { AuthController } from './auth.controller';
@@ -158,9 +159,11 @@ describe('V2F1-R2B authentication exception privacy', () => {
       redirect: jest.fn((url: string) => url),
     };
 
+    const previousJwtSecret = process.env.JWT_SECRET;
     const spy = capture();
 
     try {
+      process.env.JWT_SECRET = randomBytes(48).toString('base64url');
       const redirect = await controller.googleCallback(
         {
           user: {
@@ -200,6 +203,11 @@ describe('V2F1-R2B authentication exception privacy', () => {
       expect(spy.output()).not.toContain(token);
       expect(spy.output()).not.toContain(refresh);
     } finally {
+      if (previousJwtSecret === undefined) {
+        delete process.env.JWT_SECRET;
+      } else {
+        process.env.JWT_SECRET = previousJwtSecret;
+      }
       spy.restore();
     }
   });

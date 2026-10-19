@@ -23,6 +23,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
+import { requireValidatedJwtSecret } from './jwt-secret-validation';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { UserService } from '../user/user.service';
@@ -293,7 +294,7 @@ export class AuthController {
         purpose: 'account-delete-google',
       },
       {
-        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
         expiresIn: '5m',
       },
     );
@@ -350,7 +351,7 @@ export class AuthController {
     let statePayload: any;
     try {
       statePayload = await this.jwtService.verifyAsync(state, {
-        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
       });
     } catch {
       return returnToSettings('expired_or_invalid_confirmation');
@@ -432,7 +433,7 @@ export class AuthController {
       };
 
       const token = await this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
         expiresIn: '7d',
       });
 
@@ -489,7 +490,7 @@ export class AuthController {
   verify(@Body() body: { token: string }) {
     try {
       const decoded = this.jwtService.verify(body.token, {
-        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
       });
       return { valid: true, user: decoded };
     } catch (error) {
