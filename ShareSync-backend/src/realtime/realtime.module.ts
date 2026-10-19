@@ -11,6 +11,8 @@
 
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { requireValidatedJwtSecret } from '../auth/jwt-secret-validation';
 import { MongooseModule } from '@nestjs/mongoose';
 
 // ============================================
@@ -46,11 +48,15 @@ import { WsJwtGuard } from './ws-jwt.guard';
 @Module({
   imports: [
     // JWT module for WebSocket authentication
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev_secret_change_me',
-      signOptions: {
-        expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-      },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: requireValidatedJwtSecret(config.get<string>('JWT_SECRET')),
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d'),
+        },
+      }),
     }),
 
     // MongoDB schemas for data persistence

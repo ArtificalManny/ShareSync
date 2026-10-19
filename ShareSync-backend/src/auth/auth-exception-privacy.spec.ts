@@ -298,9 +298,11 @@ describe('V2F1-R2B authentication exception privacy', () => {
       }),
     };
 
+    const previousJwtSecret = process.env.JWT_SECRET;
     const spy = capture();
 
     try {
+      process.env.JWT_SECRET = randomBytes(48).toString('base64url');
       await expect(
         guard.canActivate(context as any),
       ).rejects.toThrow('Authentication failed');
@@ -309,6 +311,11 @@ describe('V2F1-R2B authentication exception privacy', () => {
       expect(spy.output()).not.toContain(secret);
       expect(spy.output()).not.toContain(token);
     } finally {
+      if (previousJwtSecret === undefined) {
+        delete process.env.JWT_SECRET;
+      } else {
+        process.env.JWT_SECRET = previousJwtSecret;
+      }
       spy.restore();
     }
   });

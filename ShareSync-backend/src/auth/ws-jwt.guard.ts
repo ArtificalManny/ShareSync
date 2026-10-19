@@ -7,6 +7,7 @@
 
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { requireValidatedJwtSecret } from './jwt-secret-validation';
 import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -34,7 +35,7 @@ export class WsJwtGuard implements CanActivate {
 
       // Verify and decode token
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET || 'dev_secret_change_me',
+        secret: requireValidatedJwtSecret(process.env.JWT_SECRET),
       });
 
       const session = await validateWsSession(
