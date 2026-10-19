@@ -8,6 +8,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { requireValidatedJwtSecret } from '../auth/jwt-secret-validation';
 
 // Controllers
 import { NotificationsController } from './notifications.controller';
@@ -68,13 +69,9 @@ try {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const secret =
-          config.get<string>('JWT_SECRET') ||
-          config.get<string>('JWT_ACCESS_SECRET') ||
-          config.get<string>('JWT_ACCESS_TOKEN_SECRET') ||
-          process.env.JWT_SECRET ||
-          process.env.JWT_ACCESS_SECRET ||
-          'dev_jwt_secret_change_me';
+        const secret = requireValidatedJwtSecret(
+          config.get<string>('JWT_SECRET'),
+        );
 
         return {
           secret,
