@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { requireValidatedJwtSecret } from './jwt-secret-validation';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -34,7 +35,7 @@ import { GoogleDeleteGuard } from './guards/google-delete.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'dev_secret_change_me'),
+        secret: requireValidatedJwtSecret(config.get<string>('JWT_SECRET')),
         signOptions: {
           expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d'),
         },

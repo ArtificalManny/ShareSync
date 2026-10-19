@@ -49,3 +49,13 @@ export function validateJwtSecretEnvironment(
 
   return environment;
 }
+
+/**
+ * Return the configured signing secret only after applying the
+ * same validation enforced during application startup.
+ * Never log or include the secret in an exception.
+ */
+export function requireValidatedJwtSecret(secret: unknown): string {
+  validateJwtSecretEnvironment({ JWT_SECRET: secret });
+  return secret as string;
+}
