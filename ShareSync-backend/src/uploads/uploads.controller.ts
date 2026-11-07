@@ -34,6 +34,7 @@ import { UploadsService } from './uploads.service';
 import { ModerationService, ModerationDecision, ModerationCategory } from '../moderation/moderation.service';
 import { ImageModerationService } from '../moderation/image-moderation.service';
 import { policyForUpload } from '../moderation/policy';
+import { detectUploadImageSignature } from '../common/upload-image-signature';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   MessageAttachmentReceiptPayload,
@@ -514,59 +515,83 @@ export class UploadsController {
     const size = file.size || 0;
     const fsPath = (file as any).path || '';
 
-    // 1) Safety pipeline
-    const virus = await this.moderationService.virusScan(fsPath);
-
-    // Real AI image moderation via OpenAI Vision
-    let image = null;
-    if (mime.startsWith('image/') && fsPath) {
-      const imgResult = await this.imageModerationService.moderateImage(fsPath);
-      if (imgResult.action === 'block') {
-        throw new BadRequestException(imgResult.reason || 'Image rejected by AI moderation safety filters.');
+    const removeRejectedTempFile = async () => {
+      if (!fsPath) return;
+      try {
+        await fs.unlink(fsPath);
+      } catch {
+        // Best-effort cleanup of the rejected upload.
       }
-      // Map to policy-compatible format
-      image = {
-        decision: (imgResult.action === 'allow' ? 'ALLOW' : imgResult.action === 'review' ? 'REVIEW' : 'BLOCK') as ModerationDecision,
-        reason: imgResult.reason,
-        categories: imgResult.labels.map(l => l.name) as ModerationCategory[],
-      };
-    }
-
-    const decision = policyForUpload({ ext, sizeBytes: size, mime, virus, image });
-
-    await this.moderationService.logDecision({
-      kind: 'upload',
-      ext,
-      size,
-      mime,
-      decision: decision.decision,
-      reason: decision.reason,
-      ts: Date.now(),
-    });
-
-    if (decision.decision === 'BLOCK') {
-      throw new BadRequestException(decision.reason || 'This file is not allowed.');
-    }
-
-    // 2) Persist file — file is already on disk via Multer diskStorage
-    const stored: any = await this.uploadsService.uploadFile(file);
-    const moderationStatus: 'allowed' | 'pending' =
-      decision.decision === 'REVIEW' ? 'pending' : 'allowed';
-
-    // 3) Response
-    return {
-      ok: true,
-      url: String(stored?.url),
-      file: {
-        id: String(stored?.id ?? stored?._id ?? stored?.url ?? Date.now()),
-        url: String(stored?.url),
-        thumbUrl: stored?.thumbUrl,
-        name: stored?.name ?? file.originalname,
-        size: Number(stored?.size ?? size),
-        mime: stored?.mime ?? mime,
-        moderationStatus,
-      },
     };
+
+    try {
+      // Decide whether this really is an image from its bytes, not the client's
+      // Content-Type, so a mislabeled image cannot skip AI image moderation.
+      const detectedImageMime = await detectUploadImageSignature(fsPath);
+      const effectiveMime = detectedImageMime || mime;
+
+      // 1) Safety pipeline
+      const virus = await this.moderationService.virusScan(fsPath);
+
+      // Real AI image moderation via OpenAI Vision — gated on the detected bytes.
+      let image = null;
+      if (detectedImageMime && fsPath) {
+        const imgResult = await this.imageModerationService.moderateImage(fsPath);
+        if (imgResult.action === 'block') {
+          throw new BadRequestException(imgResult.reason || 'Image rejected by AI moderation safety filters.');
+        }
+        // Map to policy-compatible format
+        image = {
+          decision: (imgResult.action === 'allow' ? 'ALLOW' : imgResult.action === 'review' ? 'REVIEW' : 'BLOCK') as ModerationDecision,
+          reason: imgResult.reason,
+          categories: imgResult.labels.map(l => l.name) as ModerationCategory[],
+        };
+      }
+
+      const decision = policyForUpload({ ext, sizeBytes: size, mime: effectiveMime, virus, image });
+
+      await this.moderationService.logDecision({
+        kind: 'upload',
+        ext,
+        size,
+        mime: effectiveMime,
+        decision: decision.decision,
+        reason: decision.reason,
+        ts: Date.now(),
+      });
+
+      if (decision.decision === 'BLOCK') {
+        throw new BadRequestException(decision.reason || 'This file is not allowed.');
+      }
+
+      // Persist the server-detected image type rather than the client's claim.
+      if (detectedImageMime) {
+        file.mimetype = detectedImageMime;
+      }
+
+      // 2) Persist file — file is already on disk via Multer diskStorage
+      const stored: any = await this.uploadsService.uploadFile(file);
+      const moderationStatus: 'allowed' | 'pending' =
+        decision.decision === 'REVIEW' ? 'pending' : 'allowed';
+
+      // 3) Response
+      return {
+        ok: true,
+        url: String(stored?.url),
+        file: {
+          id: String(stored?.id ?? stored?._id ?? stored?.url ?? Date.now()),
+          url: String(stored?.url),
+          thumbUrl: stored?.thumbUrl,
+          name: stored?.name ?? file.originalname,
+          size: Number(stored?.size ?? size),
+          mime: stored?.mime ?? effectiveMime,
+          moderationStatus,
+        },
+      };
+    } catch (error) {
+      await removeRejectedTempFile();
+      throw error;
+    }
   }
 
   // messages-fail-closed-attachment-upload-v1
@@ -1227,7 +1252,7 @@ export class UploadsController {
     if (!file) throw new BadRequestException('Missing avatar file.');
 
     const ext = path.extname(file.originalname || '').slice(1).toLowerCase();
-    const mime = file.mimetype || 'application/octet-stream';
+    let mime = file.mimetype || 'application/octet-stream';
     const size = file.size || 0;
 
     if (!mime.startsWith('image/')) {
@@ -1236,49 +1261,72 @@ export class UploadsController {
 
     const fsPath = (file as any).path || '';
 
-    // 1) Safety pipeline
-    const virus = await this.moderationService.virusScan(fsPath);
-
-    // Real AI image moderation via OpenAI Vision
-    const imgResult = await this.imageModerationService.moderateImage(fsPath);
-    if (imgResult.action === 'block') {
-      throw new BadRequestException(imgResult.reason || 'Avatar rejected by AI moderation safety filters.');
-    }
-    const image = {
-      decision: (imgResult.action === 'allow' ? 'ALLOW' : imgResult.action === 'review' ? 'REVIEW' : 'BLOCK') as ModerationDecision,
-      reason: imgResult.reason,
-      categories: imgResult.labels.map(l => l.name) as ModerationCategory[],
+    const removeRejectedTempFile = async () => {
+      if (!fsPath) return;
+      try {
+        await fs.unlink(fsPath);
+      } catch {
+        // Best-effort cleanup of the rejected upload.
+      }
     };
 
-    const decision = policyForUpload({ ext, sizeBytes: size, mime, virus, image });
+    try {
+      // Verify the bytes are a real raster image; reject a disguised non-image,
+      // and persist/moderate the server-detected type, not the client's claim.
+      const detectedImageMime = await detectUploadImageSignature(fsPath);
+      if (!detectedImageMime) {
+        throw new BadRequestException('Avatar must be a valid image file.');
+      }
+      mime = detectedImageMime;
+      file.mimetype = detectedImageMime;
 
-    await this.moderationService.logDecision({
-      kind: 'upload',
-      ext,
-      size,
-      mime,
-      decision: decision.decision,
-      reason: decision.reason,
-      ts: Date.now(),
-    });
+      // 1) Safety pipeline
+      const virus = await this.moderationService.virusScan(fsPath);
 
-    if (decision.decision === 'BLOCK') {
-       throw new BadRequestException(decision.reason || 'This avatar is not allowed.');
+      // Real AI image moderation via OpenAI Vision
+      const imgResult = await this.imageModerationService.moderateImage(fsPath);
+      if (imgResult.action === 'block') {
+        throw new BadRequestException(imgResult.reason || 'Avatar rejected by AI moderation safety filters.');
+      }
+      const image = {
+        decision: (imgResult.action === 'allow' ? 'ALLOW' : imgResult.action === 'review' ? 'REVIEW' : 'BLOCK') as ModerationDecision,
+        reason: imgResult.reason,
+        categories: imgResult.labels.map(l => l.name) as ModerationCategory[],
+      };
+
+      const decision = policyForUpload({ ext, sizeBytes: size, mime, virus, image });
+
+      await this.moderationService.logDecision({
+        kind: 'upload',
+        ext,
+        size,
+        mime,
+        decision: decision.decision,
+        reason: decision.reason,
+        ts: Date.now(),
+      });
+
+      if (decision.decision === 'BLOCK') {
+        throw new BadRequestException(decision.reason || 'This avatar is not allowed.');
+      }
+
+      // 2) Persist avatar — file is already on disk via Multer diskStorage
+      const stored: any = await this.uploadsService.uploadFile(file);
+
+      const moderationStatus: 'allowed' | 'pending' =
+        decision.decision === 'REVIEW' ? 'pending' : 'allowed';
+
+      const url = String(stored?.url);
+      return {
+        ok: true,
+        url,
+        avatarUrl: url,
+        thumbUrl: stored?.thumbUrl,
+        moderationStatus,
+      };
+    } catch (error) {
+      await removeRejectedTempFile();
+      throw error;
     }
-
-    // 2) Persist avatar — file is already on disk via Multer diskStorage
-    const stored: any = await this.uploadsService.uploadFile(file);
-
-    const moderationStatus: 'allowed' | 'pending' =
-      decision.decision === 'REVIEW' ? 'pending' : 'allowed';
-
-    const url = String(stored?.url);
-    return {
-      ok: true,
-      url,
-      avatarUrl: url,
-      thumbUrl: stored?.thumbUrl,
-      moderationStatus,
-    };
   }
 }

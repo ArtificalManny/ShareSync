@@ -25,6 +25,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import * as path from 'node:path';
+import * as fs from 'node:fs/promises';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ActivitiesService } from '../activities/activities.service';
@@ -37,6 +38,7 @@ import { TextModerationInterceptor } from '../moderation/moderation.interceptor'
 import { ModerationService, ModerationDecision, ModerationCategory } from '../moderation/moderation.service';
 import { ImageModerationService } from '../moderation/image-moderation.service';
 import { policyForUpload } from '../moderation/policy';
+import { detectUploadImageSignature } from '../common/upload-image-signature';
 
 // ⚠️ If your UploadService lives somewhere else, update this import path.
 import { UploadsService } from '../uploads/uploads.service';
@@ -460,70 +462,93 @@ export class UserController {
 
   private async assertAvatarImageAllowed(file: Express.Multer.File) {
     const ext = path.extname(file.originalname || '').slice(1).toLowerCase();
-    const mime = file.mimetype || 'application/octet-stream';
+    let mime = file.mimetype || 'application/octet-stream';
     const size = Number(file.size || 0);
     const fsPath = (file as any).path || '';
 
-    if (!mime.startsWith('image/')) {
-      throw new BadRequestException('Avatar must be an image.');
-    }
-
-    if (!this.moderationService || !this.imageModerationService) {
-      throw new BadRequestException(
-        'Image safety moderation is not configured for avatar uploads.',
-      );
-    }
-
-    const virus = await this.moderationService.virusScan(fsPath);
-
-    const imgResult = await this.imageModerationService.moderateImage(fsPath);
-
-    if (imgResult.action === 'block') {
-      throw new BadRequestException(
-        imgResult.reason || 'This profile photo is not allowed.',
-      );
-    }
-
-    const image = {
-      decision: (
-        imgResult.action === 'allow'
-          ? 'ALLOW'
-          : imgResult.action === 'review'
-            ? 'REVIEW'
-            : 'BLOCK'
-      ) as ModerationDecision,
-      reason: imgResult.reason,
-      categories: imgResult.labels.map((label) => label.name) as ModerationCategory[],
+    const removeRejectedTempFile = async () => {
+      if (!fsPath) return;
+      try {
+        await fs.unlink(fsPath);
+      } catch {
+        // Best-effort cleanup of the rejected upload.
+      }
     };
 
-    const decision = policyForUpload({
-      ext,
-      sizeBytes: size,
-      mime,
-      virus,
-      image,
-    });
+    try {
+      if (!mime.startsWith('image/')) {
+        throw new BadRequestException('Avatar must be an image.');
+      }
 
-    await this.moderationService.logDecision({
-      kind: 'avatar',
-      ext,
-      size,
-      mime,
-      decision: decision.decision,
-      reason: decision.reason,
-      ts: Date.now(),
-    });
+      if (!this.moderationService || !this.imageModerationService) {
+        throw new BadRequestException(
+          'Image safety moderation is not configured for avatar uploads.',
+        );
+      }
 
-    if (decision.decision === 'BLOCK') {
-      throw new BadRequestException(
-        decision.reason || 'This profile photo is not allowed.',
-      );
-    }
+      // Verify the bytes are a real raster image, not a disguised non-image, and
+      // moderate the server-detected type rather than the client's declaration.
+      const detectedImageMime = await detectUploadImageSignature(fsPath);
+      if (!detectedImageMime) {
+        throw new BadRequestException('Profile photo must be a valid image file.');
+      }
+      mime = detectedImageMime;
+      file.mimetype = detectedImageMime;
 
-    if (decision.decision === 'REVIEW') {
-      throw new BadRequestException(
-        decision.reason || 'This profile photo needs review and cannot be used yet.',
-      );
+      const virus = await this.moderationService.virusScan(fsPath);
+
+      const imgResult = await this.imageModerationService.moderateImage(fsPath);
+
+      if (imgResult.action === 'block') {
+        throw new BadRequestException(
+          imgResult.reason || 'This profile photo is not allowed.',
+        );
+      }
+
+      const image = {
+        decision: (
+          imgResult.action === 'allow'
+            ? 'ALLOW'
+            : imgResult.action === 'review'
+              ? 'REVIEW'
+              : 'BLOCK'
+        ) as ModerationDecision,
+        reason: imgResult.reason,
+        categories: imgResult.labels.map((label) => label.name) as ModerationCategory[],
+      };
+
+      const decision = policyForUpload({
+        ext,
+        sizeBytes: size,
+        mime,
+        virus,
+        image,
+      });
+
+      await this.moderationService.logDecision({
+        kind: 'avatar',
+        ext,
+        size,
+        mime,
+        decision: decision.decision,
+        reason: decision.reason,
+        ts: Date.now(),
+      });
+
+      if (decision.decision === 'BLOCK') {
+        throw new BadRequestException(
+          decision.reason || 'This profile photo is not allowed.',
+        );
+      }
+
+      if (decision.decision === 'REVIEW') {
+        throw new BadRequestException(
+          decision.reason || 'This profile photo needs review and cannot be used yet.',
+        );
+      }
+    } catch (error) {
+      await removeRejectedTempFile();
+      throw error;
     }
   }
 
