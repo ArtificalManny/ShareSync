@@ -52,6 +52,13 @@ import { ProjectFollowService } from '../follows/project-follow.service';
 import { FollowProjectDto } from '../follows/dto/follow-project.dto';
 import { UpdateFollowPrefsDto } from '../follows/dto/update-follow-prefs.dto';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
+import {
+  ModerationService,
+  ModerationDecision,
+  ModerationCategory,
+} from '../moderation/moderation.service';
+import { ImageModerationService } from '../moderation/image-moderation.service';
+import { policyForUpload } from '../moderation/policy';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'node:path';
@@ -122,6 +129,8 @@ export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
     private readonly projectFollowService: ProjectFollowService,
+    private readonly moderationService: ModerationService,
+    private readonly imageModerationService: ImageModerationService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -562,6 +571,75 @@ export class ProjectsController {
       file.filename = renamedFilename;
     }
     file.mimetype = detectedImageMime;
+
+    // openshare-project-branding-moderation-v1
+    // Only someone who can edit the project may upload its branding, and the image
+    // goes through the same moderation pipeline as profile photos before it is saved.
+    // Branding is public as soon as it is saved, so an image held for review is
+    // rejected rather than published.
+    try {
+      await this.projectsService.assertProjectEditableByUser(id, userId);
+
+      const brandingExt = path.extname(file.filename || '').slice(1).toLowerCase();
+      const brandingSize = Number(file.size || 0);
+
+      const virus = await this.moderationService.virusScan(file.path);
+      const imgResult = await this.imageModerationService.moderateImage(file.path);
+
+      if (imgResult.action === 'block') {
+        throw new BadRequestException(
+          imgResult.reason || 'This branding image is not allowed.',
+        );
+      }
+
+      const image = {
+        decision: (
+          imgResult.action === 'allow'
+            ? 'ALLOW'
+            : imgResult.action === 'review'
+              ? 'REVIEW'
+              : 'BLOCK'
+        ) as ModerationDecision,
+        reason: imgResult.reason,
+        categories: imgResult.labels.map((label) => label.name) as ModerationCategory[],
+      };
+
+      const decision = policyForUpload({
+        ext: brandingExt,
+        sizeBytes: brandingSize,
+        mime: detectedImageMime,
+        virus,
+        image,
+      });
+
+      await this.moderationService.logDecision({
+        kind: 'image',
+        projectId: id,
+        userId,
+        ext: brandingExt,
+        size: brandingSize,
+        mime: detectedImageMime,
+        decision: decision.decision,
+        reason: decision.reason,
+        meta: { surface: 'project-branding', brandingKind: normalizedKind },
+        ts: Date.now(),
+      });
+
+      if (decision.decision === 'BLOCK') {
+        throw new BadRequestException(
+          decision.reason || 'This branding image is not allowed.',
+        );
+      }
+
+      if (decision.decision === 'REVIEW') {
+        throw new BadRequestException(
+          decision.reason || 'This branding image needs review and cannot be used yet.',
+        );
+      }
+    } catch (error) {
+      await removeRejectedBrandingFile();
+      throw error;
+    }
 
     const url = `/uploads/${file.filename}`;
 
