@@ -56,6 +56,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import {
+  detectUploadImageSignature,
+  imageExtensionMatches,
+  canonicalImageExtension,
+} from '../common/upload-image-signature';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLLER
@@ -512,6 +517,51 @@ export class ProjectsController {
     const normalizedKind = String(kind || 'logo').toLowerCase() === 'banner'
       ? 'banner'
       : 'logo';
+
+    // openshare-project-branding-byte-check-v1
+    // The fileFilter only saw the client-declared Content-Type. Verify the bytes are
+    // a real raster image, and store it under an extension that matches its content,
+    // so a branding file is never served as HTML/SVG or under the wrong type.
+    const removeRejectedBrandingFile = async () => {
+      const rejectedPath = String(file?.path || '').trim();
+      if (!rejectedPath) return;
+      try {
+        await fs.promises.unlink(rejectedPath);
+      } catch (cleanupError: any) {
+        if (cleanupError?.code !== 'ENOENT') {
+          this.logger.warn(
+            `Failed to clean rejected project branding upload: ${
+              cleanupError?.message || cleanupError
+            }`,
+          );
+        }
+      }
+    };
+
+    const detectedImageMime = await detectUploadImageSignature(String(file.path || ''));
+    if (!detectedImageMime) {
+      await removeRejectedBrandingFile();
+      throw new BadRequestException(
+        'Project branding must be a JPG, PNG, GIF, WebP, AVIF, BMP, or TIFF image.',
+      );
+    }
+
+    const storedExt = path.extname(file.filename || '').slice(1).toLowerCase();
+    if (!imageExtensionMatches(storedExt, detectedImageMime)) {
+      const canonicalExt = canonicalImageExtension(detectedImageMime) || 'png';
+      const baseName = path.basename(file.filename, path.extname(file.filename));
+      const renamedFilename = `${baseName}.${canonicalExt}`;
+      const renamedPath = path.join(path.dirname(file.path), renamedFilename);
+      try {
+        await fs.promises.rename(file.path, renamedPath);
+      } catch {
+        await removeRejectedBrandingFile();
+        throw new BadRequestException('This branding image could not be stored.');
+      }
+      file.path = renamedPath;
+      file.filename = renamedFilename;
+    }
+    file.mimetype = detectedImageMime;
 
     const url = `/uploads/${file.filename}`;
 

@@ -6,6 +6,7 @@ import { TextModerationInterceptor } from '../moderation/moderation.interceptor'
 import { ImageModerationService } from '../moderation/image-moderation.service';
 import { ModerationService } from '../moderation/moderation.service';
 import { policyForUpload } from '../moderation/policy';
+import { detectUploadImageSignature } from '../common/upload-image-signature';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { ApiBearerAuth, ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -122,12 +123,17 @@ export class VaultController {
       // FULL MODERATION PIPELINE (matches /api/uploads/file)
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Decide whether this really is an image from its bytes, not the client's
+    // Content-Type, so a mislabeled image cannot skip AI image moderation.
+    const detectedImageMime = await detectUploadImageSignature(fsPath);
+    const effectiveMime = detectedImageMime || mime;
+
     // 1) Virus scan
     const virus = await this.moderationService.virusScan(fsPath);
 
     // 2) Real AI image moderation via OpenAI Vision
     let image = null;
-    if (mime.startsWith('image/') && fsPath) {
+    if (detectedImageMime && fsPath) {
       const imgResult = await this.imageModerationService.moderateImage(fsPath);
       if (imgResult.action === 'block') {
         throw new BadRequestException(imgResult.reason || 'Image rejected by AI moderation safety filters.');
@@ -140,13 +146,13 @@ export class VaultController {
     }
 
     // 3) Policy decision
-    const decision = policyForUpload({ ext, sizeBytes: size, mime, virus, image });
+    const decision = policyForUpload({ ext, sizeBytes: size, mime: effectiveMime, virus, image });
 
     await this.moderationService.logDecision({
       kind: 'upload',
       ext,
       size,
-      mime,
+      mime: effectiveMime,
       decision: decision.decision,
       reason: decision.reason,
       ts: Date.now(),
@@ -154,6 +160,11 @@ export class VaultController {
 
     if (decision.decision === 'BLOCK') {
       throw new BadRequestException(decision.reason || 'This file is not allowed.');
+    }
+
+    // Persist the server-detected image type rather than the client's claim.
+    if (detectedImageMime) {
+      file.mimetype = detectedImageMime;
     }
 
     } catch (error) {

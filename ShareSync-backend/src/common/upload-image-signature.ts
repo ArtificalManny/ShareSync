@@ -79,3 +79,27 @@ export async function detectUploadImageSignature(
     }
   }
 }
+
+// Normal file extensions (without the dot) for each detected image type.
+// The first entry is the canonical one.
+const IMAGE_EXTENSIONS: Record<string, string[]> = {
+  'image/jpeg': ['jpg', 'jpeg', 'jpe', 'jfif'],
+  'image/png': ['png'],
+  'image/gif': ['gif'],
+  'image/webp': ['webp'],
+  'image/avif': ['avif'],
+  'image/bmp': ['bmp'],
+  'image/tiff': ['tif', 'tiff'],
+};
+
+/** True when a file extension (with or without the dot) is normal for the detected image type. */
+export function imageExtensionMatches(ext: string, mime: string): boolean {
+  const list = IMAGE_EXTENSIONS[mime];
+  return !!list && list.includes(String(ext || '').replace(/^\./, '').toLowerCase());
+}
+
+/** The canonical file extension (without the dot) for a detected image type, or null. */
+export function canonicalImageExtension(mime: string): string | null {
+  const list = IMAGE_EXTENSIONS[mime];
+  return list ? list[0] : null;
+}
