@@ -7,7 +7,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import compression from 'compression';
-import { join } from 'path';
+import { join, extname } from 'path';
 
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
@@ -24,11 +24,6 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // Serve uploaded files as static assets
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
-
   app.use(
     helmet({
       contentSecurityPolicy: process.env.NODE_ENV === 'production',
@@ -36,6 +31,33 @@ async function bootstrap() {
       crossOriginResourcePolicy: false,
     }),
   );
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Serve uploaded files as static assets.
+  // Registered AFTER helmet so uploaded files carry its security headers, and with
+  // a setHeaders hook so a stored HTML/SVG file cannot run as a page on the API
+  // origin. Images are unaffected: browsers ignore Content-Disposition on <img>
+  // loads, and a resource's own CSP does not govern how another page embeds it.
+  // ─────────────────────────────────────────────────────────────────────────────
+  const UPLOADS_NEVER_INLINE = new Set([
+    '.html', '.htm', '.xhtml', '.shtml', '.htc',
+    '.xml', '.svg', '.svgz',
+    '.js', '.mjs', '.cjs', '.css',
+  ]);
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+    setHeaders: (res, filePath) => {
+      // Never let the browser second-guess the declared Content-Type.
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      // Make a directly-opened upload inert (no script, no same-origin, sandboxed).
+      // Images and PDFs still render/download normally.
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      // Active-content types are forced to download instead of rendering inline.
+      if (UPLOADS_NEVER_INLINE.has(extname(filePath).toLowerCase())) {
+        res.setHeader('Content-Disposition', 'attachment');
+      }
+    },
+  });
 
   // ✅ CORS: allow production OpenShare domains + localhost dev ports
   const configuredCorsOrigins = configService.get<string>('CORS_ORIGINS', '');
