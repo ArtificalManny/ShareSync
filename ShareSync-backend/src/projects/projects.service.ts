@@ -2297,18 +2297,22 @@ export class ProjectsService {
     }
 
     // VaultFile is the primary current project upload model.
+    // openshare-vault-private-storage-v1: private copies are found by storage key.
     const vaultFiles = await this.vaultFileModel
       .find({
         projectId: { $in: projectIds },
       })
-      .select('fileUrl')
+      .select('fileUrl storageProvider storageBucket storageKey')
       .lean()
       .exec();
 
     for (const file of vaultFiles) {
-      if ((file as any)?.fileUrl) {
+      if ((file as any)?.fileUrl || (file as any)?.storageKey) {
         references.push({
-          url: String((file as any).fileUrl),
+          url: String((file as any).fileUrl || ''),
+          storageProvider: (file as any).storageProvider || null,
+          storageBucket: (file as any).storageBucket || null,
+          storageKey: (file as any).storageKey || null,
         });
       }
     }

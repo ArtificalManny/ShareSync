@@ -31,6 +31,8 @@ import {
   fetchTaskDetail,
 } from "../../api/taskApi";
 import { getActivity } from "../../api/activity";
+// openshare-vault-private-links-v1
+import { openVaultFile } from "../../api/vaultLinks";
 
 function normalizeId(value) {
   if (!value) return "";
@@ -1485,7 +1487,24 @@ export default function MoveTaskCollaborationPanel({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      {fileUrl ? (
+                      {isProjectFileReference && fileId ? (
+                        <a
+                          href="#"
+                          role="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openVaultFile(fileId);
+                          }}
+                          className="group inline-flex max-w-full items-center gap-1.5 text-sm font-black text-slate-800 hover:text-violet-700 dark:text-zinc-100 dark:hover:text-violet-300"
+                          title={`Open ${fileName}`}
+                        >
+                          <span className="truncate">
+                            {fileName}
+                          </span>
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-50 transition group-hover:opacity-100" />
+                        </a>
+                      ) : fileUrl ? (
                         <a
                           href={fileUrl}
                           target="_blank"

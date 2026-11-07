@@ -5,6 +5,8 @@ import {
   Link2, Download, Star, Eye, ChevronRight, ChevronDown, Folder
 } from 'lucide-react';
 import { getProjectVault, createFolder, uploadVaultFile, renameVaultFile, moveVaultFile, deleteVaultFile } from '../../api/vault';
+// openshare-vault-private-links-v1
+import { openVaultFile, useVaultThumbnailUrl } from '../../api/vaultLinks';
 import CreateFolderModal from '../vault/CreateFolderModal';
 import UploadModal from '../vault/UploadModal';
 import PricingModal from '../subscription/PricingModal';
@@ -206,15 +208,27 @@ function FileCard({
   const Icon = style.icon;
 
   const rawFileUrl = String(file?.fileUrl || '');
-  const fileUrl = getVaultFileUrl(file);
   const isLegacyStorageUrl = /^https?:\/\/storage\.sharesync\.app\//i.test(rawFileUrl);
 
   const currentFolderId = file?.folderId?._id || file?.folderId || '';
 
-  const canPreviewImage =
+  // openshare-vault-private-links-v1
+  // Thumbnails, Open and Download all use short-lived links from the backend,
+  // never the stored fileUrl.
+  const wantsThumbnail =
     fileType === 'image' &&
-    Boolean(fileUrl) &&
-    !isLegacyStorageUrl &&
+    Boolean(fileId) &&
+    !isLegacyStorageUrl;
+
+  const {
+    url: thumbnailUrl,
+    retried: thumbnailRetried,
+    retry: retryThumbnail,
+  } = useVaultThumbnailUrl(fileId, { enabled: wantsThumbnail });
+
+  const canPreviewImage =
+    wantsThumbnail &&
+    Boolean(thumbnailUrl) &&
     !imageFailed;
 
   const createdDate = formatVaultDate(file?.createdAt);
@@ -364,11 +378,17 @@ function FileCard({
       >
         {canPreviewImage ? (
           <img
-            src={fileUrl}
+            src={thumbnailUrl}
             alt={fileName}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
-            onError={() => setImageFailed(true)}
+            onError={() => {
+              if (thumbnailRetried) {
+                setImageFailed(true);
+              } else {
+                retryThumbnail();
+              }
+            }}
           />
         ) : (
           <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-white/60 bg-white/70 shadow-lg shadow-slate-900/5 backdrop-blur-xl dark:border-white/[0.08] dark:bg-white/[0.06]">
@@ -385,13 +405,16 @@ function FileCard({
             <span className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-center text-xs font-bold text-white">
               Re-upload needed
             </span>
-          ) : fileUrl ? (
+          ) : fileId ? (
             <>
               <a
-                href={fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
+                href="#"
+                role="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openVaultFile(fileId);
+                }}
                 className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition-all hover:-translate-y-0.5 hover:bg-white/20"
                 title="Open preview"
                 aria-label={`Open ${fileName}`}
@@ -400,11 +423,13 @@ function FileCard({
               </a>
 
               <a
-                href={fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                download={fileName}
-                onClick={(e) => e.stopPropagation()}
+                href="#"
+                role="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openVaultFile(fileId, { download: true });
+                }}
                 className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition-all hover:-translate-y-0.5 hover:bg-white/20"
                 title="Download file"
                 aria-label={`Download ${fileName}`}

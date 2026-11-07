@@ -16,6 +16,8 @@ import {
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
+// openshare-vault-private-links-v1
+import { openVaultFile } from '../../api/vaultLinks';
 import {
   getAnnouncements, createAnnouncement, updateAnnouncement,
   toggleAnnouncementPin, deleteAnnouncement, markAnnouncementAsRead,
@@ -1357,17 +1359,16 @@ function AnnouncementFileReferences({
       </div>
 
       {files.map((file) => {
-        const href =
-          resolveAnnouncementFileUrl(
-            file.fileUrl
-          );
-
         return (
           <a
             key={file.fileId}
-            href={href || undefined}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#"
+            role="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openVaultFile(file.fileId);
+            }}
             className="group flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 px-4 py-3 transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:shadow-md hover:shadow-cyan-500/10"
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">

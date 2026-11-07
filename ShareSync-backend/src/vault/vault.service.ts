@@ -33,6 +33,29 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 // openshare-vault-subscription-wiring-v1
 
+// openshare-vault-private-storage-v1
+// Placeholder kept in fileUrl for privately stored files. It is deliberately not a
+// link a browser can open, so copies of it in tasks, milestones, announcements and
+// team-room messages are harmless. Files are opened through getFileLink().
+const PRIVATE_VAULT_FILE_URL_PREFIX = 'vault-private:';
+
+function privateVaultFileUrl(fileId: string): string {
+  return `${PRIVATE_VAULT_FILE_URL_PREFIX}${fileId}`;
+}
+
+function isPrivateVaultFileUrl(value: string): boolean {
+  return String(value || '').startsWith(PRIVATE_VAULT_FILE_URL_PREFIX);
+}
+
+type VaultFileLink = {
+  fileId: string;
+  url: string;
+  expiresAt: string | null;
+  isPrivate: boolean;
+  fileName: string;
+  mimeType: string;
+};
+
 type VaultBacklinkCounts = {
   moves: number;
   milestones: number;
@@ -581,7 +604,24 @@ export class VaultService {
     // 2. Persist file through the shared uploads pipeline.
     // In production this stores to Cloudflare R2 when R2 env vars are configured.
     // It falls back to local disk only when R2 is not configured.
-    const stored = await this.uploadsService.uploadFile(file);
+    //
+    // openshare-vault-private-storage-v1
+    // With private Vault storage configured, the file goes to the private bucket and
+    // fileUrl holds a placeholder that is not a link. The file is then only reachable
+    // through getFileLink(), which checks access first.
+    const newFileId = new Types.ObjectId();
+    const usePrivateStorage =
+      this.uploadsService.isPrivateStorageEnabled();
+
+    const stored = usePrivateStorage
+      ? await this.uploadsService.uploadPrivateFile(
+          file,
+          `vault/${new Types.ObjectId(projectId).toString()}`,
+        )
+      : await this.uploadsService.uploadFile(file);
+
+    const storedPrivately =
+      stored.storageProvider === 'r2-private';
 
     const storedFilename =
       stored.name ||
@@ -589,7 +629,9 @@ export class VaultService {
       file.filename ||
       'New File';
 
-    const fileUrl = String(stored.url || '');
+    const fileUrl = storedPrivately
+      ? privateVaultFileUrl(newFileId.toString())
+      : String(stored.url || '');
     const storedSize = Number(stored.size ?? file.size ?? 0);
     const storedMime = stored.mime || file.mimetype || 'application/octet-stream';
 
@@ -602,6 +644,7 @@ export class VaultService {
 
     // 3. Save Metadata
     const newFile = new this.fileModel({
+      _id: newFileId,
       projectId: new Types.ObjectId(projectId),
       folderId: folderId ? new Types.ObjectId(folderId) : null,
       originalName: file.originalname,
@@ -609,9 +652,30 @@ export class VaultService {
       sizeInBytes: storedSize,
       mimeType: storedMime,
       uploadedBy: new Types.ObjectId(userId),
+      storageProvider: storedPrivately ? 'r2-private' : null,
+      storageBucket: storedPrivately ? stored.storageBucket || null : null,
+      storageKey: storedPrivately ? stored.storageKey || null : null,
     });
 
-    const saved = await newFile.save();
+    const saved = await newFile.save().catch(async (saveError: any) => {
+      // openshare-vault-private-storage-v1
+      // Do not leave an unreachable private copy behind if the record cannot be saved.
+      if (storedPrivately) {
+        try {
+          await this.uploadsService.deleteStoredObject({
+            storageProvider: 'r2-private',
+            storageKey: stored.storageKey || null,
+            storageBucket: stored.storageBucket || null,
+          });
+        } catch (cleanupError: any) {
+          this.logger.warn(
+            `Could not remove private Vault copy after a failed save: ${cleanupError?.message || cleanupError}`,
+          );
+        }
+      }
+
+      throw saveError;
+    });
 
     await this.recordProjectActivity({
       userId,
@@ -1221,6 +1285,186 @@ export class VaultService {
     return file;
   }
 
+  // openshare-vault-private-links-v1
+  //
+  // The way to open a Vault file. Runs the same read check as the Vault list
+  // (participants; spectators on public projects; private-folder rules), then hands
+  // out a link that expires in a few minutes. Files stored before private storage get
+  // their existing public link back until they are migrated.
+  async getFileLink(
+    fileId: string,
+    userId: string,
+    options: { download?: boolean } = {},
+  ): Promise<VaultFileLink> {
+    const file = await this.findVaultFileOrThrow(fileId);
+
+    const accessible = await this.findAccessibleFileForProject(
+      fileId,
+      this.normalizeId((file as any).projectId),
+      userId,
+    );
+
+    return this.buildFileLink(accessible, options);
+  }
+
+  // Links for up to 100 files at once (thumbnails). Files the user may not see are
+  // left out rather than reported, so the response reveals nothing about them.
+  async getFileLinks(
+    fileIds: string[],
+    userId: string,
+  ): Promise<{ links: VaultFileLink[] }> {
+    const ids = Array.from(
+      new Set(
+        (Array.isArray(fileIds) ? fileIds : [])
+          .map((value) => String(value || '').trim())
+          .filter((value) => /^[0-9a-f]{24}$/i.test(value)),
+      ),
+    ).slice(0, 100);
+
+    if (
+      ids.length === 0 ||
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      return { links: [] };
+    }
+
+    const userObjectId = new Types.ObjectId(userId);
+
+    const files = await this.fileModel
+      .find({
+        _id: {
+          $in: ids.map((id) => new Types.ObjectId(id)),
+        },
+      })
+      .exec();
+
+    const readableProjects = new Map<string, boolean>();
+    const folders = new Map<string, any>();
+    const links: VaultFileLink[] = [];
+
+    for (const file of files) {
+      const projectId = this.normalizeId((file as any).projectId);
+
+      if (!readableProjects.has(projectId)) {
+        try {
+          await this.assertVaultProjectReadable(projectId, userId);
+          readableProjects.set(projectId, true);
+        } catch {
+          readableProjects.set(projectId, false);
+        }
+      }
+
+      if (!readableProjects.get(projectId)) {
+        continue;
+      }
+
+      const folderId = this.normalizeId((file as any).folderId);
+
+      if (folderId) {
+        const folderKey = `${projectId}:${folderId}`;
+
+        if (!folders.has(folderKey)) {
+          const folder = Types.ObjectId.isValid(folderId)
+            ? await this.folderModel
+                .findOne({
+                  _id: new Types.ObjectId(folderId),
+                  projectId: new Types.ObjectId(projectId),
+                })
+                .exec()
+            : null;
+
+          folders.set(folderKey, folder || null);
+        }
+
+        const folder = folders.get(folderKey);
+
+        if (
+          !folder ||
+          !this.isVaultFolderVisibleTo(folder, userObjectId)
+        ) {
+          continue;
+        }
+      }
+
+      try {
+        links.push(await this.buildFileLink(file, {}));
+      } catch {
+        // A file that cannot be linked is simply left out.
+      }
+    }
+
+    return { links };
+  }
+
+  // Same rule as findAccessibleFileForProject(): public folders, the folder's
+  // creator, and users the folder was shared with.
+  private isVaultFolderVisibleTo(
+    folder: any,
+    userObjectId: Types.ObjectId,
+  ): boolean {
+    return (
+      folder?.accessLevel === 'public' ||
+      Boolean(folder?.createdBy?.equals?.(userObjectId)) ||
+      (Array.isArray(folder?.allowedUsers)
+        ? folder.allowedUsers
+        : []
+      ).some((allowedUserId: any) =>
+        Boolean(allowedUserId?.equals?.(userObjectId)),
+      )
+    );
+  }
+
+  private async buildFileLink(
+    file: any,
+    options: { download?: boolean },
+  ): Promise<VaultFileLink> {
+    const fileId = this.normalizeId(file?._id);
+    const fileName = String(file?.originalName || 'file');
+    const mimeType = String(file?.mimeType || 'application/octet-stream');
+    const storedUrl = String(file?.fileUrl || '').trim();
+
+    if (
+      String(file?.storageProvider || '') === 'r2-private' &&
+      file?.storageKey
+    ) {
+      const link =
+        await this.uploadsService.createPrivateFileLink(
+          {
+            storageKey: file.storageKey,
+            storageBucket: file.storageBucket || null,
+          },
+          {
+            download: Boolean(options?.download),
+            fileName,
+            mimeType,
+          },
+        );
+
+      return {
+        fileId,
+        url: link.url,
+        expiresAt: link.expiresAt,
+        isPrivate: true,
+        fileName,
+        mimeType,
+      };
+    }
+
+    if (!storedUrl || isPrivateVaultFileUrl(storedUrl)) {
+      throw new NotFoundException('This File is not available');
+    }
+
+    return {
+      fileId,
+      url: storedUrl,
+      expiresAt: null,
+      isPrivate: false,
+      fileName,
+      mimeType,
+    };
+  }
+
   private async assertCanManageFile(
     file: VaultFileDocument,
     userId: string,
@@ -1317,9 +1561,14 @@ export class VaultService {
     return cleaned;
   }
 
-  private async removeStoredUpload(fileUrl: string): Promise<void> {
+  private async removeStoredUpload(file: any): Promise<void> {
+    // openshare-vault-private-storage-v1
+    // Private copies are found by their storage key; older files by their public link.
     await this.uploadsService.deleteStoredObject({
-      url: fileUrl,
+      url: String(file?.fileUrl || ''),
+      storageProvider: file?.storageProvider || null,
+      storageKey: file?.storageKey || null,
+      storageBucket: file?.storageBucket || null,
     });
   }
 
@@ -1406,7 +1655,7 @@ export class VaultService {
     const originalName = String((file as any).originalName || 'File');
 
     // Delete the actual R2/local object before removing the Mongo locator.
-    await this.removeStoredUpload(fileUrl);
+    await this.removeStoredUpload(file);
     await this.fileModel.deleteOne({ _id: (file as any)._id }).exec();
 
     this.eventEmitter.emit('vault.file.deleted', {

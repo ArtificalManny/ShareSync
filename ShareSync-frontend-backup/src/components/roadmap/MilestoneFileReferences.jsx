@@ -20,6 +20,8 @@ import {
 import {
   fetchProjectFilesForReference,
 } from "../../api/taskApi";
+// openshare-vault-private-links-v1
+import { openVaultFile } from "../../api/vaultLinks";
 
 function normalizeId(value) {
   if (!value) return "";
@@ -565,11 +567,6 @@ export default function MilestoneFileReferences({
       {linkedFiles.length > 0 ? (
         <div className="mt-3 space-y-2">
           {linkedFiles.map((file) => {
-            const fileUrl =
-              resolveFileUrl(
-                file.fileUrl
-              );
-
             const size =
               formatFileSize(
                 file.fileSize
@@ -618,11 +615,15 @@ export default function MilestoneFileReferences({
                   </p>
                 </div>
 
-                {fileUrl ? (
+                {file.fileId ? (
                   <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                    href="#"
+                    role="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openVaultFile(file.fileId);
+                    }}
                     title="Open File"
                     className="
                       inline-flex h-7 w-7

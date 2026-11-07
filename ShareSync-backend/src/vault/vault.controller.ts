@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Req, UseGuards,
-  UseInterceptors, UploadedFile, BadRequestException
+  UseInterceptors, UploadedFile, BadRequestException, Query, Header, HttpCode
 } from '@nestjs/common';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 import { ImageModerationService } from '../moderation/image-moderation.service';
@@ -14,6 +14,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { VaultService } from './vault.service';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+
+// openshare-vault-upload-size-limit-v1
+// Same 50 MB ceiling as policyForUpload, but enforced while the upload is still
+// arriving: an oversized file is cut off (Multer removes the partial temp file)
+// instead of being written to disk in full before the policy rejects it.
+const VAULT_MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 // Multer disk storage — saves vault files to /uploads with unique names
 const vaultDiskStorage = diskStorage({
@@ -60,7 +66,7 @@ export class VaultController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', { storage: vaultDiskStorage }))
+  @UseInterceptors(FileInterceptor('file', { storage: vaultDiskStorage, limits: { fileSize: VAULT_MAX_UPLOAD_BYTES } }))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -181,6 +187,58 @@ export class VaultController {
     const uploadedFile = await this.vaultService.uploadFile(projectId, userId, file, folderId);
     return { success: true, data: uploadedFile };
   }
+  // openshare-vault-private-links-v1
+  // Short-lived links to open or download a Vault file, issued only after the Vault
+  // read check. Never cached.
+  @Get('files/:fileId/link')
+  @Header('Cache-Control', 'no-store')
+  async getFileLink(
+    @Req() req: any,
+    @Param('fileId') fileId: string,
+    @Query('download') download?: string,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    const data = await this.vaultService.getFileLink(fileId, userId, {
+      download: download === '1' || download === 'true',
+    });
+
+    return { success: true, data };
+  }
+
+  @Post('files/links')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  async getFileLinks(
+    @Req() req: any,
+    @Body('fileIds') fileIds?: unknown,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    if (!Array.isArray(fileIds)) {
+      throw new BadRequestException('fileIds must be a list of file IDs');
+    }
+
+    if (fileIds.length > 100) {
+      throw new BadRequestException('Request links for at most 100 files at a time');
+    }
+
+    const data = await this.vaultService.getFileLinks(
+      fileIds.map((value) => String(value ?? '')),
+      userId,
+    );
+
+    return { success: true, data };
+  }
+
   @Patch('files/:fileId')
   @UseInterceptors(TextModerationInterceptor)
   async renameFile(

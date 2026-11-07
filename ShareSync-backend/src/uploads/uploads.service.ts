@@ -5,7 +5,13 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { Injectable } from '@nestjs/common';
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -21,14 +27,16 @@ export interface StoredFile {
   // openshare-team-room-upload-registration-v1
   // Optional persistent-object metadata lets higher layers reliably roll
   // back a failed upload without changing existing UploadsService callers.
-  storageProvider?: 'r2' | 'local';
+  storageProvider?: 'r2' | 'local' | 'r2-private';
   storageKey?: string;
+  storageBucket?: string;
 }
 
 export interface StoredObjectReference {
   url?: string | null;
   storageKey?: string | null;
   storageProvider?: string | null;
+  storageBucket?: string | null;
 }
 
 function trimSlash(value: string): string {
@@ -76,6 +84,85 @@ const R2_ENABLED = Boolean(
     R2_SECRET_ACCESS_KEY &&
     R2_PUBLIC_BASE_URL,
 );
+
+// openshare-vault-private-storage-v1
+// Private Vault storage: a separate R2 bucket with no public access. Objects in it are
+// only reachable through short-lived signed links that the backend hands out after an
+// access check. Same endpoint and API keys as the public bucket; switched on by
+// R2_VAULT_BUCKET. Without it, everything behaves exactly as before.
+const R2_VAULT_BUCKET = String(process.env.R2_VAULT_BUCKET || '').trim();
+
+const R2_PRIVATE_ENABLED = Boolean(
+  R2_VAULT_BUCKET &&
+    R2_ENDPOINT &&
+    R2_ACCESS_KEY_ID &&
+    R2_SECRET_ACCESS_KEY,
+);
+
+export const PRIVATE_LINK_TTL_SECONDS = 300;
+
+// Types a browser may show directly. Everything else is stored as a download, so an
+// uploaded page or script never renders.
+const PRIVATE_INLINE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/bmp',
+  'application/pdf',
+]);
+
+function contentDispositionFor(
+  fileName: string,
+  mime: string,
+  forceDownload: boolean,
+): string {
+  const name =
+    String(fileName || '')
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .trim() || 'file';
+
+  const asciiName = name
+    .replace(/[^\x20-\x7e]/g, '_')
+    .replace(/["\\]/g, '_');
+
+  const encodedName = encodeURIComponent(name).replace(
+    /['()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+
+  const type =
+    !forceDownload &&
+    PRIVATE_INLINE_TYPES.has(String(mime || '').toLowerCase())
+      ? 'inline'
+      : 'attachment';
+
+  return `${type}; filename="${asciiName}"; filename*=UTF-8''${encodedName}`;
+}
+
+function normalizePrivateKeyPrefix(prefix: string): string {
+  const value = String(prefix || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+
+  if (!/^vault\/[A-Za-z0-9_-]{1,64}$/.test(value)) {
+    throw new Error(`Invalid private storage prefix: ${prefix}`);
+  }
+
+  return value;
+}
+
+function isValidPrivateKey(key: string): boolean {
+  return /^vault\/[A-Za-z0-9_-]{1,64}\/[0-9a-f-]{36}(\.[a-z0-9]{1,16})?$/.test(
+    String(key || ''),
+  );
+}
+
+function safePrivateExtension(file: Express.Multer.File): string {
+  const ext = String(getExtension(file) || '').toLowerCase();
+  return /^\.[a-z0-9]{1,16}$/.test(ext) ? ext : '';
+}
 
 let r2Client: S3Client | null = null;
 
@@ -283,6 +370,16 @@ export class UploadsService {
       .trim()
       .toLowerCase();
 
+    // openshare-vault-private-storage-v1
+    if (storageProvider === 'r2-private') {
+      if (!storageKey) {
+        throw new Error('Private stored object is missing its storage key');
+      }
+
+      await this.deletePrivateKey(storageKey, reference.storageBucket);
+      return;
+    }
+
     // Explicit remote metadata wins when available.
     if (
       (storageProvider === 'r2' || storageProvider === 's3') &&
@@ -327,6 +424,150 @@ export class UploadsService {
 
     // External URLs (Google avatars, remote images, etc.) are not OpenShare
     // storage objects and must not be deleted.
+  }
+
+  // openshare-vault-private-storage-v1
+  isPrivateStorageEnabled(): boolean {
+    return R2_PRIVATE_ENABLED;
+  }
+
+  private assertPrivateObjectReference(
+    storageKey: string,
+    storageBucket?: string | null,
+  ): { bucket: string; key: string } {
+    if (!R2_PRIVATE_ENABLED) {
+      throw new Error('Private storage is not configured');
+    }
+
+    const bucket = String(storageBucket || R2_VAULT_BUCKET).trim();
+    const key = String(storageKey || '').trim();
+
+    if (bucket !== R2_VAULT_BUCKET) {
+      throw new Error('Private object is not in the configured private bucket');
+    }
+
+    if (!isValidPrivateKey(key)) {
+      throw new Error('Invalid private object key');
+    }
+
+    return { bucket, key };
+  }
+
+  async uploadPrivateFile(
+    file: Express.Multer.File,
+    keyPrefix: string,
+  ): Promise<StoredFile> {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!R2_PRIVATE_ENABLED) {
+      throw new Error('Private storage is not configured');
+    }
+
+    const prefix = normalizePrivateKeyPrefix(keyPrefix);
+    const id = crypto.randomUUID();
+    const key = `${prefix}/${id}${safePrivateExtension(file)}`;
+    const mime = file.mimetype || 'application/octet-stream';
+    const size = Number(file.size || 0);
+    const name = file.originalname || id;
+    const localPath = getLocalSourcePath(file);
+
+    let body: Buffer | fs.ReadStream;
+
+    if (file.buffer) {
+      body = file.buffer;
+    } else if (localPath) {
+      body = fs.createReadStream(localPath);
+    } else {
+      throw new Error('No file data available for private upload');
+    }
+
+    try {
+      await getR2Client().send(
+        new PutObjectCommand({
+          Bucket: R2_VAULT_BUCKET,
+          Key: key,
+          Body: body,
+          ContentType: mime,
+          CacheControl: 'private, no-store',
+          ContentDisposition: contentDispositionFor(name, mime, false),
+        }),
+      );
+    } finally {
+      if (localPath) {
+        try {
+          fs.unlinkSync(localPath);
+        } catch {
+          // Non-blocking cleanup.
+        }
+      }
+    }
+
+    return {
+      id,
+      url: '',
+      name,
+      size,
+      mime,
+      storageProvider: 'r2-private',
+      storageKey: key,
+      storageBucket: R2_VAULT_BUCKET,
+    };
+  }
+
+  // A link to one private object that stops working after PRIVATE_LINK_TTL_SECONDS.
+  // Callers must check access first.
+  async createPrivateFileLink(
+    reference: { storageKey?: string | null; storageBucket?: string | null },
+    options: { download?: boolean; fileName?: string; mimeType?: string } = {},
+  ): Promise<{ url: string; expiresAt: string }> {
+    const { bucket, key } = this.assertPrivateObjectReference(
+      String(reference?.storageKey || ''),
+      reference?.storageBucket,
+    );
+
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ...(options.download
+        ? {
+            ResponseContentDisposition: contentDispositionFor(
+              options.fileName || 'file',
+              options.mimeType || '',
+              true,
+            ),
+          }
+        : {}),
+    });
+
+    const url = await getSignedUrl(getR2Client(), command, {
+      expiresIn: PRIVATE_LINK_TTL_SECONDS,
+    });
+
+    return {
+      url,
+      expiresAt: new Date(
+        Date.now() + PRIVATE_LINK_TTL_SECONDS * 1000,
+      ).toISOString(),
+    };
+  }
+
+  private async deletePrivateKey(
+    storageKey: string,
+    storageBucket?: string | null,
+  ): Promise<void> {
+    const { bucket, key } = this.assertPrivateObjectReference(
+      storageKey,
+      storageBucket,
+    );
+
+    await getR2Client().send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
   }
 
   async uploadFile(file: Express.Multer.File): Promise<StoredFile> {
