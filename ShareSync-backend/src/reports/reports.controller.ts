@@ -54,8 +54,12 @@ export class ReportsController {
   @Get('download/:filename')
   @ApiOperation({ summary: 'Download exported file' })
   @ApiParam({ name: 'filename', description: 'Filename to download' })
-  async downloadFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filepath = this.reportsService.getFilePath(filename);
+  async downloadFile(
+    @Req() req: any,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    const filepath = this.reportsService.getFilePath(filename, req.user?.userId);
     
     if (!filepath) {
       throw new NotFoundException('File not found or expired');

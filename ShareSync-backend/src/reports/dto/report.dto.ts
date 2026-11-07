@@ -11,6 +11,7 @@ import {
   IsMongoId,
   IsDate,
   IsArray,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -93,9 +94,9 @@ export class ExportDataDto {
   @IsMongoId()
   projectId: string;
 
-  @ApiPropertyOptional()
-  @IsString()
+  @ApiPropertyOptional({ enum: ['tasks', 'users', 'sprints', 'all'] })
   @IsOptional()
+  @IsIn(['tasks', 'users', 'sprints', 'all'])
   dataType?: 'tasks' | 'users' | 'sprints' | 'all';
 
   @ApiPropertyOptional()

@@ -3,11 +3,17 @@
 // REPORTS SERVICE: Report generation and data export
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import {
   GenerateReportDto,
   ExportDataDto,
@@ -24,6 +30,18 @@ export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
   private readonly exportsDir = path.join(process.cwd(), 'exports');
 
+  // openshare-reports-download-ownership-v1
+  // Per-process key used to tag each export filename with its creator. A random
+  // key means a download link is valid only for the user who created it, and
+  // only within the process that created it. Exports are disposable and cleaned
+  // up within 24h, so links not surviving a restart is an acceptable trade-off
+  // and needs no secret management.
+  private readonly downloadKey: Buffer = crypto.randomBytes(32);
+
+  // A bare export filename: <prefix>-<owner tag>-<timestamp>.<ext>, nothing else.
+  private static readonly EXPORT_FILE =
+    /^[a-z0-9_-]{1,40}-([a-f0-9]{16})-\d{10,16}\.(?:json|csv|xlsx|pdf)$/i;
+
   constructor(
     // Inject necessary models
     @InjectModel('Task') private readonly taskModel: Model<any>,
@@ -35,6 +53,102 @@ export class ReportsService {
     if (!fs.existsSync(this.exportsDir)) {
       fs.mkdirSync(this.exportsDir, { recursive: true });
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ACCESS CONTROL
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private normalizeId(value: any): string {
+    if (value === null || value === undefined) return '';
+    try {
+      if (value instanceof Types.ObjectId) return value.toString();
+    } catch {
+      // not an ObjectId instance
+    }
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'object' && typeof value.toString === 'function') {
+      return String(value.toString()).trim();
+    }
+    return String(value).trim();
+  }
+
+  // Participant (owner or current member) check, mirroring the Vault pattern.
+  // Reports can contain member names and emails, so public/spectator visibility
+  // is intentionally NOT enough — only owners and members pass.
+  private async assertProjectAccess(
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(projectId) ||
+      !userId ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+
+    const project: any = await this.projectModel.findById(projectId).lean();
+
+    // Do not disclose whether the project exists.
+    if (!project) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+
+    const userIdString = new Types.ObjectId(userId).toString();
+
+    const ownerRefs = [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+      project.creatorId,
+      project.userId,
+    ];
+    const isOwner = ownerRefs.some(
+      (ref: any) => this.normalizeId(ref) === userIdString,
+    );
+
+    const members = Array.isArray(project.members) ? project.members : [];
+    const isMember = members.some(
+      (candidate: any) =>
+        this.normalizeId(
+          candidate?.userId ??
+            candidate?.user ??
+            candidate?._id ??
+            candidate?.id ??
+            candidate,
+        ) === userIdString,
+    );
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+  }
+
+  // Resolve a sprint to its project, then apply the same project check.
+  private async assertSprintAccess(
+    sprintId: string,
+    userId: string,
+  ): Promise<void> {
+    if (!sprintId || !Types.ObjectId.isValid(sprintId)) {
+      throw new ForbiddenException('You do not have access to this sprint');
+    }
+    const sprint: any = await this.sprintModel.findById(sprintId).lean();
+    if (!sprint || !sprint.projectId) {
+      throw new ForbiddenException('You do not have access to this sprint');
+    }
+    await this.assertProjectAccess(this.normalizeId(sprint.projectId), userId);
+  }
+
+  // Keyed tag binding an export file to the user who created it.
+  private ownerTag(userId: string): string {
+    return crypto
+      .createHmac('sha256', this.downloadKey)
+      .update(String(userId || ''))
+      .digest('hex')
+      .slice(0, 16);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -58,36 +172,54 @@ export class ReportsService {
     switch (dto.type) {
       case ReportType.PROJECT_SUMMARY:
         if (!dto.projectId) throw new BadRequestException('Project ID required');
+        await this.assertProjectAccess(dto.projectId, userId);
         reportData = await this.generateProjectSummary(dto.projectId, startDate, endDate);
         title = title || `Project Summary Report`;
         break;
 
       case ReportType.SPRINT_REPORT:
         if (!dto.sprintId) throw new BadRequestException('Sprint ID required');
+        await this.assertSprintAccess(dto.sprintId, userId);
         reportData = await this.generateSprintReport(dto.sprintId);
         title = title || `Sprint Report`;
         break;
 
       case ReportType.TEAM_PRODUCTIVITY:
         if (!dto.projectId) throw new BadRequestException('Project ID required');
+        await this.assertProjectAccess(dto.projectId, userId);
         reportData = await this.generateTeamProductivityReport(dto.projectId, startDate, endDate);
         title = title || `Team Productivity Report`;
         break;
 
-      case ReportType.INDIVIDUAL_PERFORMANCE:
+      case ReportType.INDIVIDUAL_PERFORMANCE: {
         const targetUserId = dto.userIds?.[0] || userId;
+        if (this.normalizeId(targetUserId) !== this.normalizeId(userId)) {
+          // Reporting on someone else is only allowed within a project you both belong to.
+          if (!dto.projectId) {
+            throw new ForbiddenException(
+              'A project is required to report on another user, and you must both belong to it.',
+            );
+          }
+          await this.assertProjectAccess(dto.projectId, userId);
+          await this.assertProjectAccess(dto.projectId, targetUserId);
+        } else if (dto.projectId) {
+          await this.assertProjectAccess(dto.projectId, userId);
+        }
         reportData = await this.generateIndividualReport(targetUserId, startDate, endDate, dto.projectId);
         title = title || `Individual Performance Report`;
         break;
+      }
 
       case ReportType.BURNDOWN:
         if (!dto.sprintId) throw new BadRequestException('Sprint ID required');
+        await this.assertSprintAccess(dto.sprintId, userId);
         reportData = await this.generateBurndownReport(dto.sprintId);
         title = title || `Burndown Report`;
         break;
 
       case ReportType.VELOCITY:
         if (!dto.projectId) throw new BadRequestException('Project ID required');
+        await this.assertProjectAccess(dto.projectId, userId);
         reportData = await this.generateVelocityReport(dto.projectId);
         title = title || `Velocity Report`;
         break;
@@ -108,7 +240,7 @@ export class ReportsService {
     // Export to file if format specified
     let downloadUrl: string | undefined;
     if (dto.format) {
-      const filename = await this.exportToFile(metadata, reportData, dto.format);
+      const filename = await this.exportToFile(metadata, reportData, dto.format, userId);
       downloadUrl = `/api/reports/download/${filename}`;
     }
 
@@ -446,6 +578,8 @@ export class ReportsService {
     mimeType: string;
     downloadUrl: string;
   }> {
+    await this.assertProjectAccess(dto.projectId, userId);
+
     let data: any[];
     
     switch (dto.dataType) {
@@ -462,7 +596,7 @@ export class ReportsService {
         data = await this.exportAll(dto.projectId);
     }
 
-    const filename = await this.createExportFile(data, dto.format, dto.dataType || 'export');
+    const filename = await this.createExportFile(data, dto.format, dto.dataType || 'export', userId);
     
     return {
       filename,
@@ -547,36 +681,45 @@ export class ReportsService {
     data: any,
     format: ExportFormat,
     prefix: string,
+    userId: string,
   ): Promise<string> {
     const timestamp = Date.now();
+    // Defense in depth: the prefix becomes part of a filename, so reduce it to a
+    // safe token no matter what reached here.
+    const safePrefix =
+      String(prefix || 'export')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '')
+        .slice(0, 40) || 'export';
+    const stem = `${safePrefix}-${this.ownerTag(userId)}-${timestamp}`;
     let filename: string;
     let content: string | Buffer;
 
     switch (format) {
       case ExportFormat.JSON:
-        filename = `${prefix}-${timestamp}.json`;
+        filename = `${stem}.json`;
         content = JSON.stringify(data, null, 2);
         break;
 
       case ExportFormat.CSV:
-        filename = `${prefix}-${timestamp}.csv`;
+        filename = `${stem}.csv`;
         content = this.convertToCSV(data);
         break;
 
       case ExportFormat.EXCEL:
         // Would use ExcelJS here
-        filename = `${prefix}-${timestamp}.xlsx`;
+        filename = `${stem}.xlsx`;
         content = JSON.stringify(data); // Placeholder
         break;
 
       case ExportFormat.PDF:
         // Would use PDFKit here
-        filename = `${prefix}-${timestamp}.pdf`;
+        filename = `${stem}.pdf`;
         content = JSON.stringify(data); // Placeholder
         break;
 
       default:
-        filename = `${prefix}-${timestamp}.json`;
+        filename = `${stem}.json`;
         content = JSON.stringify(data, null, 2);
     }
 
@@ -593,9 +736,10 @@ export class ReportsService {
     metadata: any,
     data: any,
     format: ExportFormat,
+    userId: string,
   ): Promise<string> {
     const report = { metadata, data };
-    return this.createExportFile(report, format, metadata.type);
+    return this.createExportFile(report, format, metadata.type, userId);
   }
 
   private convertToCSV(data: any[]): string {
@@ -648,11 +792,25 @@ export class ReportsService {
   // FILE DOWNLOAD
   // ─────────────────────────────────────────────────────────────────────────────
 
-  getFilePath(filename: string): string | null {
-    const filepath = path.join(this.exportsDir, filename);
-    if (fs.existsSync(filepath)) {
-      return filepath;
-    }
-    return null;
+  getFilePath(filename: string, userId: string): string | null {
+    const name = String(filename || '');
+
+    // Only a bare filename is acceptable: no path segments, no traversal.
+    if (path.basename(name) !== name) return null;
+
+    const match = ReportsService.EXPORT_FILE.exec(name);
+    if (!match) return null;
+
+    // The owner tag embedded at creation must match the requesting user.
+    if (match[1].toLowerCase() !== this.ownerTag(userId)) return null;
+
+    // Confine strictly to the exports directory.
+    const base = path.resolve(this.exportsDir);
+    const resolved = path.resolve(base, name);
+    if (resolved !== path.join(base, name)) return null;
+    if (resolved !== base && !resolved.startsWith(base + path.sep)) return null;
+
+    if (!fs.existsSync(resolved)) return null;
+    return resolved;
   }
 }
