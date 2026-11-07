@@ -7,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -42,6 +43,121 @@ export class FilesService {
     private readonly activities: ActivitiesService,
     private readonly uploadsService: UploadsService,
   ) {}
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ACCESS CONTROL
+  // openshare-files-project-membership-v1
+  // Every /files route must prove the caller is the project owner or a current
+  // member before reading or changing anything (mirrors the Vault participant
+  // check). Public/listed visibility does not grant access to project files.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private normalizeAccessId(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Types.ObjectId) return value.toString();
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'object' && typeof value.toString === 'function') {
+      return String(value.toString()).trim();
+    }
+    return String(value).trim();
+  }
+
+  async assertProjectAccess(projectId: string, userId: string): Promise<void> {
+    if (
+      !projectId ||
+      !Types.ObjectId.isValid(String(projectId)) ||
+      !userId ||
+      !Types.ObjectId.isValid(String(userId))
+    ) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+
+    const project: any = await this.fileModel.db
+      .collection('projects')
+      .findOne({ _id: new Types.ObjectId(String(projectId)) });
+
+    // Do not disclose whether the project exists.
+    if (!project) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+
+    const userIdString = new Types.ObjectId(String(userId)).toString();
+
+    const ownerRefs = [
+      project.ownerId,
+      project.owner,
+      project.createdBy,
+      project.createdById,
+      project.creatorId,
+      project.userId,
+    ];
+    const isOwner = ownerRefs.some(
+      (ref: any) => this.normalizeAccessId(ref) === userIdString,
+    );
+
+    const members = Array.isArray(project.members) ? project.members : [];
+    const isMember = members.some(
+      (candidate: any) =>
+        this.normalizeAccessId(
+          candidate?.userId ??
+            candidate?.user ??
+            candidate?._id ??
+            candidate?.id ??
+            candidate,
+        ) === userIdString,
+    );
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+  }
+
+  // Resolves a file to its project, checks access, and returns the project id.
+  async assertFileAccess(fileId: string, userId: string): Promise<string> {
+    if (!fileId || !Types.ObjectId.isValid(String(fileId))) {
+      throw new NotFoundException('File not found');
+    }
+    const file: any = await this.fileModel
+      .findById(fileId)
+      .select('projectId')
+      .lean();
+    if (!file) {
+      throw new NotFoundException('File not found');
+    }
+    const projectId = this.normalizeAccessId(file.projectId);
+    await this.assertProjectAccess(projectId, userId);
+    return projectId;
+  }
+
+  // Resolves a folder to its project, checks access, and returns the project id.
+  async assertFolderAccess(folderId: string, userId: string): Promise<string> {
+    if (!folderId || !Types.ObjectId.isValid(String(folderId))) {
+      throw new NotFoundException('Folder not found');
+    }
+    const folder: any = await this.folderModel
+      .findById(folderId)
+      .select('projectId')
+      .lean();
+    if (!folder) {
+      throw new NotFoundException('Folder not found');
+    }
+    const projectId = this.normalizeAccessId(folder.projectId);
+    await this.assertProjectAccess(projectId, userId);
+    return projectId;
+  }
+
+  // A destination folder (create, update, move) must belong to the same project.
+  async assertFolderInProject(
+    folderId: string | null | undefined,
+    projectId: string,
+    userId: string,
+  ): Promise<void> {
+    if (!folderId) return;
+    const folderProjectId = await this.assertFolderAccess(folderId, userId);
+    if (folderProjectId !== this.normalizeAccessId(projectId)) {
+      throw new BadRequestException('Folder belongs to a different project');
+    }
+  }
 
   private async recordFileActivity(data: {
     userId: string;

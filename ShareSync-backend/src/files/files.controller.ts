@@ -50,6 +50,12 @@ export class FilesController {
 
   constructor(private readonly filesService: FilesService) {}
 
+  // openshare-files-project-membership-v1
+  // Every route below proves project membership before doing anything else.
+  private userIdFrom(req: any): string {
+    return String(req?.user?.userId || req?.user?.sub || req?.user?.id || '');
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // FILE CRUD
   // ─────────────────────────────────────────────────────────────────────────────
@@ -58,6 +64,9 @@ export class FilesController {
   @ApiOperation({ summary: 'Create a file record (after upload to storage)' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'File created' })
   async createFile(@Req() req: any, @Body() dto: CreateFileDto) {
+    const userId = this.userIdFrom(req);
+    await this.filesService.assertProjectAccess(dto.projectId, userId);
+    await this.filesService.assertFolderInProject(dto.folderId, dto.projectId, userId);
     const file = await this.filesService.createFile(req.user.userId, dto);
     return {
       success: true,
@@ -73,9 +82,11 @@ export class FilesController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'starredOnly', type: Boolean, required: false })
   async findByProject(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Query() query: FileQueryDto,
   ) {
+    await this.filesService.assertProjectAccess(projectId, this.userIdFrom(req));
     const result = await this.filesService.findByProject(projectId, query);
     return {
       success: true,
@@ -89,7 +100,8 @@ export class FilesController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a file by ID' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async findById(@Param('id') id: string) {
+  async findById(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const file = await this.filesService.findById(id);
 
     // Track view
@@ -104,7 +116,10 @@ export class FilesController {
   @Put(':id')
   @ApiOperation({ summary: 'Update a file' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async update(@Param('id') id: string, @Body() dto: UpdateFileDto) {
+  async update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateFileDto) {
+    const userId = this.userIdFrom(req);
+    const projectId = await this.filesService.assertFileAccess(id, userId);
+    await this.filesService.assertFolderInProject(dto.folderId, projectId, userId);
     const file = await this.filesService.update(id, dto);
     return {
       success: true,
@@ -116,7 +131,10 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Move a file to another folder' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async moveFile(@Param('id') id: string, @Body() dto: MoveFileDto) {
+  async moveFile(@Req() req: any, @Param('id') id: string, @Body() dto: MoveFileDto) {
+    const userId = this.userIdFrom(req);
+    const projectId = await this.filesService.assertFileAccess(id, userId);
+    await this.filesService.assertFolderInProject(dto.targetFolderId, projectId, userId);
     const file = await this.filesService.moveFile(id, dto.targetFolderId);
     return {
       success: true,
@@ -128,7 +146,8 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a file' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async delete(@Param('id') id: string) {
+  async delete(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     await this.filesService.delete(id);
     return {
       success: true,
@@ -148,6 +167,7 @@ export class FilesController {
     @Param('id') id: string,
     @Body() dto: UploadNewVersionDto,
   ) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const file = await this.filesService.uploadNewVersion(
       id,
       req.user.userId,
@@ -162,7 +182,8 @@ export class FilesController {
   @Get(':id/versions')
   @ApiOperation({ summary: 'Get file versions' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async getVersions(@Param('id') id: string) {
+  async getVersions(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const versions = await this.filesService.getVersions(id);
     return {
       success: true,
@@ -179,6 +200,7 @@ export class FilesController {
   @ApiOperation({ summary: 'Toggle file star' })
   @ApiParam({ name: 'id', description: 'File ID' })
   async toggleStar(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const result = await this.filesService.toggleStar(id, req.user.userId);
     return {
       success: true,
@@ -190,7 +212,8 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive a file' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async archive(@Param('id') id: string) {
+  async archive(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const file = await this.filesService.archive(id);
     return {
       success: true,
@@ -202,7 +225,8 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Unarchive a file' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async unarchive(@Param('id') id: string) {
+  async unarchive(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const file = await this.filesService.unarchive(id);
     return {
       success: true,
@@ -217,7 +241,8 @@ export class FilesController {
   @Get(':id/download')
   @ApiOperation({ summary: 'Get download URL (and track download)' })
   @ApiParam({ name: 'id', description: 'File ID' })
-  async download(@Param('id') id: string) {
+  async download(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFileAccess(id, this.userIdFrom(req));
     const file = await this.filesService.findById(id);
 
     // Track download
@@ -241,6 +266,9 @@ export class FilesController {
   @Post('folders')
   @ApiOperation({ summary: 'Create a folder' })
   async createFolder(@Req() req: any, @Body() dto: CreateFolderDto) {
+    const userId = this.userIdFrom(req);
+    await this.filesService.assertProjectAccess(dto.projectId, userId);
+    await this.filesService.assertFolderInProject(dto.parentId, dto.projectId, userId);
     const folder = await this.filesService.createFolder(req.user.userId, dto);
     return {
       success: true,
@@ -253,9 +281,11 @@ export class FilesController {
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   @ApiQuery({ name: 'parentId', required: false })
   async findFoldersByProject(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Query('parentId') parentId?: string,
   ) {
+    await this.filesService.assertProjectAccess(projectId, this.userIdFrom(req));
     const folders = await this.filesService.findFoldersByProject(projectId, parentId);
     return {
       success: true,
@@ -266,7 +296,8 @@ export class FilesController {
   @Get('folders/:id')
   @ApiOperation({ summary: 'Get a folder by ID' })
   @ApiParam({ name: 'id', description: 'Folder ID' })
-  async findFolderById(@Param('id') id: string) {
+  async findFolderById(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFolderAccess(id, this.userIdFrom(req));
     const folder = await this.filesService.findFolderById(id);
     return {
       success: true,
@@ -277,7 +308,8 @@ export class FilesController {
   @Get('folders/:id/contents')
   @ApiOperation({ summary: 'Get folder contents (subfolders and files)' })
   @ApiParam({ name: 'id', description: 'Folder ID' })
-  async getFolderContents(@Param('id') id: string) {
+  async getFolderContents(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFolderAccess(id, this.userIdFrom(req));
     const folder = await this.filesService.findFolderById(id);
     const contents = await this.filesService.getFolderContents(
       folder.projectId.toString(),
@@ -292,7 +324,8 @@ export class FilesController {
   @Get('project/:projectId/root')
   @ApiOperation({ summary: 'Get root folder contents' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
-  async getRootContents(@Param('projectId') projectId: string) {
+  async getRootContents(@Req() req: any, @Param('projectId') projectId: string) {
+    await this.filesService.assertProjectAccess(projectId, this.userIdFrom(req));
     const contents = await this.filesService.getFolderContents(projectId);
     return {
       success: true,
@@ -303,7 +336,8 @@ export class FilesController {
   @Put('folders/:id')
   @ApiOperation({ summary: 'Update a folder' })
   @ApiParam({ name: 'id', description: 'Folder ID' })
-  async updateFolder(@Param('id') id: string, @Body() dto: UpdateFolderDto) {
+  async updateFolder(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateFolderDto) {
+    await this.filesService.assertFolderAccess(id, this.userIdFrom(req));
     const folder = await this.filesService.updateFolder(id, dto);
     return {
       success: true,
@@ -315,7 +349,10 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Move a folder' })
   @ApiParam({ name: 'id', description: 'Folder ID' })
-  async moveFolder(@Param('id') id: string, @Body() dto: MoveFolderDto) {
+  async moveFolder(@Req() req: any, @Param('id') id: string, @Body() dto: MoveFolderDto) {
+    const userId = this.userIdFrom(req);
+    const projectId = await this.filesService.assertFolderAccess(id, userId);
+    await this.filesService.assertFolderInProject(dto.targetParentId || null, projectId, userId);
     const folder = await this.filesService.moveFolder(id, dto.targetParentId || null);
     return {
       success: true,
@@ -327,7 +364,8 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a folder (must be empty)' })
   @ApiParam({ name: 'id', description: 'Folder ID' })
-  async deleteFolder(@Param('id') id: string) {
+  async deleteFolder(@Req() req: any, @Param('id') id: string) {
+    await this.filesService.assertFolderAccess(id, this.userIdFrom(req));
     await this.filesService.deleteFolder(id);
     return {
       success: true,
