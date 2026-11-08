@@ -1424,10 +1424,11 @@ export class VaultService {
     const mimeType = String(file?.mimeType || 'application/octet-stream');
     const storedUrl = String(file?.fileUrl || '').trim();
 
-    if (
-      String(file?.storageProvider || '') === 'r2-private' &&
-      file?.storageKey
-    ) {
+    if (String(file?.storageProvider || '') === 'r2-private') {
+      if (!file?.storageKey) {
+        throw new NotFoundException('This File is not available');
+      }
+
       const link =
         await this.uploadsService.createPrivateFileLink(
           {

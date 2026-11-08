@@ -2629,6 +2629,16 @@ export class ProjectsService {
       throw new ForbiddenException('Only the project owner can delete this project');
     }
 
+    // openshare-project-delete-storage-cleanup-v1
+    // Remove the project's stored files first (Vault files, logo and banner, Files-tab
+    // uploads: the same cleanup account deletion runs), then the Vault records, then
+    // the project. If a stored file cannot be removed, deletion stops here so nothing
+    // is left behind with a working public link; the owner can try again.
+    await this.cleanupOwnedProjectStorage([project], [project._id]);
+
+    await this.vaultFileModel.deleteMany({ projectId: project._id }).exec();
+    await this.vaultFolderModel.deleteMany({ projectId: project._id }).exec();
+
     await this.projectModel.deleteOne({ _id: project._id });
 
     this.eventEmitter.emit('project.deleted', {
