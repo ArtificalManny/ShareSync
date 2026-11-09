@@ -21,6 +21,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 
 import { Announcement, AnnouncementDocument } from './schemas/announcements.schema';
+import { normalizeAnnouncementAttachmentLinks } from './announcement-attachment-links';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { VaultService } from '../vault/vault.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -152,8 +153,10 @@ export class AnnouncementsService {
   }
 
 
+  // openshare-announcements-no-email-v1: announcement authors and commenters are
+  // shown by name and avatar only. Email addresses are never sent with them.
   private readonly userPopulateFields =
-    'name firstName lastName username email profilePicture profileImage avatar avatarUrl photoUrl imageUrl image picture';
+    'name firstName lastName username profilePicture profileImage avatar avatarUrl photoUrl imageUrl image picture';
 
   private toObjectId(id: string, label: string): Types.ObjectId {
     if (!Types.ObjectId.isValid(id)) {
@@ -505,6 +508,7 @@ export class AnnouncementsService {
   public async create(input: CreateAnnouncementInput) {
     const projectObjectId = this.toObjectId(input.projectId, 'projectId');
     const authorObjectId = this.toObjectId(input.authorId, 'authorId');
+    const attachments = normalizeAnnouncementAttachmentLinks(input.attachments);
 
     const [
       affectedMoveIds,
@@ -538,7 +542,7 @@ export class AnnouncementsService {
       message: input.message,
       type: input.type || 'info',
       pinned: Boolean(input.pinned),
-      attachments: input.attachments || [],
+      attachments,
       fileReferences,
       affectedMoveIds,
       affectedMilestoneIds,
@@ -712,7 +716,10 @@ export class AnnouncementsService {
     }
 
     if (Array.isArray(input.attachments)) {
-      update.attachments = input.attachments;
+      update.attachments = normalizeAnnouncementAttachmentLinks(
+        input.attachments,
+        (existing as any).attachments,
+      );
     }
 
     if (Array.isArray(input.affectedMoveIds)) {
@@ -974,7 +981,9 @@ export class AnnouncementsService {
       text: cleanText,
       content: cleanText,
       message: cleanText,
-      attachments: Array.isArray(attachments) ? attachments : [],
+      attachments: normalizeAnnouncementAttachmentLinks(
+        Array.isArray(attachments) ? attachments : [],
+      ),
       createdAt: new Date(),
       updatedAt: new Date(),
     };

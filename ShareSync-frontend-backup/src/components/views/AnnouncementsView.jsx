@@ -686,8 +686,28 @@ function Avatar({ author, size = 'md', currentUser = null }) {
 // ─── Attachment Components ──────────────────────────────────────────────────
 
 // announcement-edit-attachments-v1
+// openshare-announcement-attachment-links-v1
+// Only http(s) links and the app's own /uploads/ paths are shown as links.
+// Anything else (javascript:, data:, //host and so on) is never rendered.
+function isSafeAnnouncementAttachmentUrl(value) {
+  if (!value || /[\u0000-\u001f\u007f]/.test(value)) return false;
+  if (value.startsWith('/uploads/') || value.startsWith('uploads/')) return true;
+
+  try {
+    const url = new URL(value);
+    return (
+      (url.protocol === 'https:' || url.protocol === 'http:') &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getAnnouncementAttachmentUrl(attachment) {
-  return String(
+  const url = String(
     typeof attachment === 'string'
       ? attachment
       : (
@@ -696,6 +716,8 @@ function getAnnouncementAttachmentUrl(attachment) {
           ''
         )
   ).trim();
+
+  return isSafeAnnouncementAttachmentUrl(url) ? url : '';
 }
 
 function getAnnouncementAttachmentName(

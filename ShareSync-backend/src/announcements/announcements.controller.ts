@@ -15,12 +15,15 @@ import {
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 
 import { AnnouncementsService } from './announcements.service';
+import { AnnouncementsProjectAccessGuard } from './announcements-project-access.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SkipThrottle } from '@nestjs/throttler';
 
+// openshare-announcements-project-access-v1: every route needs a signed-in user
+// (JwtAuthGuard) who may use this project's announcements (the access guard).
 @SkipThrottle({ default: true, short: true, medium: true, long: true })
 @Controller('projects/:projectId/announcements')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AnnouncementsProjectAccessGuard)
 export class AnnouncementsController {
   constructor(
     private readonly announcementsService: AnnouncementsService,
@@ -75,10 +78,12 @@ export class AnnouncementsController {
     const authorId =
       String(req?.user?.userId || req?.user?._id || req?.user?.id || req?.user?.sub || '');
 
+    // The project and the author come from the route and the sign-in only. They
+    // are set after the body, so a body field can never replace them.
     return this.announcementsService.create({
+      ...body,
       projectId,
       authorId,
-      ...body,
     });
   }
 
