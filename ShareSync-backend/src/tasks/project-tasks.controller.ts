@@ -75,8 +75,8 @@ export class ProjectTasksController {
   @ProjectAccess({
     param: 'projectId',
     intent: 'write',
-    // Optional role gate if you want it:
-    // roles: ['owner', 'admin', 'member'],
+    // openshare-moves-project-access-v1 (R51): viewers and guests only read.
+    roles: ['owner', 'admin', 'member'],
   })
   @UseGuards(JwtAuthGuard, ProjectAccessGuard)
   async createInProject(

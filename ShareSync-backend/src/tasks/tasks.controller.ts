@@ -30,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { MovesProjectAccessGuard } from './moves-project-access.guard';
 import { TasksService, TaskQueryOptions } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import {
@@ -49,9 +50,13 @@ import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 // CONTROLLER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// openshare-moves-project-access-v1 (R51): every route needs a signed-in user
+// (JwtAuthGuard). Changing a Move also needs the owner, or a member whose role
+// is owner, admin or member, and following one needs a member (the Moves
+// access guard). Reading is unchanged.
 @ApiTags('Tasks')
 @Controller('tasks')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, MovesProjectAccessGuard)
 @ApiBearerAuth()
 export class TasksController {
   private readonly logger = new Logger(TasksController.name);

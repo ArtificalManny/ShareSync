@@ -29,6 +29,7 @@ import {
 } from './schemas/task.schema';
 import { EVENTS, TaskCompletedEvent } from '../common/events/events.types';
 import { ProjectsService } from '../projects/projects.service';
+import { Project } from '../projects/schemas/project.schema';
 import { VaultService } from '../vault/vault.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import {
@@ -112,6 +113,8 @@ export class TasksService {
   constructor(
     @InjectModel(Task.name)
     private readonly taskModel: Model<TaskDocument>,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<any>,
     private readonly projectsService: ProjectsService,
     private readonly vaultService: VaultService,
     private readonly eventEmitter: EventEmitter2,
@@ -605,6 +608,36 @@ export class TasksService {
     return task;
   }
 
+  // openshare-moves-member-projects-v1 (R51)
+  // The projects where the user is the owner or a current member. Move lists that
+  // aren't tied to one project (search, recent ships, priorities) only cover these,
+  // so a Move from someone else's project never shows up in them.
+  private async memberProjectIds(userId: string): Promise<Types.ObjectId[]> {
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      return [];
+    }
+
+    const user = new Types.ObjectId(userId);
+    const projects = await this.projectModel
+      .find({
+        $or: [
+          { ownerId: user },
+          { owner: user },
+          { createdBy: user },
+          { createdById: user },
+          { members: user },
+          { 'members.userId': user },
+          { 'members.user': user },
+          { 'members.memberId': user },
+        ],
+      })
+      .select('_id')
+      .lean()
+      .exec();
+
+    return projects.map((project: any) => project._id);
+  }
+
   async find(
     userId: string,
     options: TaskQueryOptions = {},
@@ -624,11 +657,22 @@ export class TasksService {
       sortOrder = 'desc',
     } = options;
 
+    // openshare-moves-member-projects-v1 (R51): at most 200 Moves per request.
+    const pageSize = Number.isFinite(limit)
+      ? Math.min(Math.max(Math.trunc(limit), 1), 200)
+      : 50;
+    const skip = Number.isFinite(offset)
+      ? Math.max(Math.trunc(offset), 0)
+      : 0;
+
     const query: any = {};
 
     if (projectId) {
       await this.projectsService.findByIdWithAccess(projectId, userId);
       query.projectId = new Types.ObjectId(projectId);
+    } else {
+      // Without a project, only Moves from the user's own projects.
+      query.projectId = { $in: await this.memberProjectIds(userId) };
     }
 
     if (assigneeId) query.assigneeId = new Types.ObjectId(assigneeId);
@@ -643,8 +687,8 @@ export class TasksService {
       this.taskModel
         .find(query)
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(offset)
-        .limit(limit)
+        .skip(skip)
+        .limit(pageSize)
         .lean(),
       this.taskModel.countDocuments(query),
     ]);
@@ -724,9 +768,15 @@ export class TasksService {
 
     const userObjectId = new Types.ObjectId(userId);
 
+    // openshare-moves-member-projects-v1 (R51): without a project, only Moves
+    // from projects the user still owns or belongs to.
+    const projectFilter = projectId
+      ? { projectId: new Types.ObjectId(projectId) }
+      : { projectId: { $in: await this.memberProjectIds(userId) } };
+
     const tasks = await this.taskModel
       .find({
-        ...(projectId ? { projectId: new Types.ObjectId(projectId) } : {}),
+        ...projectFilter,
         $or: [
           // Current task ownership/assignment fields
           { assigneeId: userObjectId },
