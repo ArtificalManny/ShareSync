@@ -23,6 +23,7 @@ import { NotificationPolicy } from './notification-policy';
 
 // Gateway
 import { NotificationsGateway } from './notifications.gateway';
+import { LiveAccessService } from '../realtime/live-access.service';
 
 // Schemas
 import { Notification, NotificationSchema } from './schemas/notification.schema';
@@ -89,6 +90,8 @@ try {
   providers: [
     NotificationsService,
     NotificationsGateway,
+    // openshare-live-access-v1 (R52b)
+    LiveAccessService,
     NotificationChannelsService,
     EmailService,
     SmsService,

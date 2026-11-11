@@ -32,6 +32,7 @@ import { validateWsSession } from '../auth/ws-session.validator';
 import { Project } from '../projects/schemas/project.schema';
 import { OnEvent } from '@nestjs/event-emitter';
 import { NotificationDocument } from './schemas/notification.schema';
+import { LiveAccessService } from '../realtime/live-access.service';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -63,6 +64,7 @@ export class NotificationsGateway
     private readonly connection: Connection,
     @InjectModel(Project.name)
     private readonly projectModel: Model<Project>,
+    private readonly live: LiveAccessService,
   ) {}
 
   afterInit(_server: Server) {
@@ -89,6 +91,11 @@ export class NotificationsGateway
       );
 
       client.userId = session.userId;
+      // openshare-live-access-v1 (R52b): remembered on the socket so every send
+      // can check the session is still current.
+      client.data = client.data || {};
+      client.data.userId = String(session.userId).toLowerCase();
+      client.data.tokenVersion = Number((payload as any)?.tokenVersion ?? 0);
 
       // Track socket
       if (!this.userSockets.has(client.userId)) {
@@ -255,7 +262,8 @@ export class NotificationsGateway
     const userId = notification.userId.toString();
 
     // Push new notification to recipient user room
-    this.server.to(`user:${userId}`).emit('notification:new', {
+    // openshare-live-access-v1 (R52b): only to that person's current sessions.
+    void this.live.sendToUser(this.server, userId, 'notification:new', {
       id: (notification as any)._id,
       type: notification.type,
       title: notification.title,
@@ -272,7 +280,7 @@ export class NotificationsGateway
   handleNotificationRead(payload: { userId: string; notificationId: string }) {
     if (!payload?.userId || !payload?.notificationId) return;
 
-    this.server.to(`user:${payload.userId}`).emit('notification:read', {
+    void this.live.sendToUser(this.server, payload.userId, 'notification:read', {
       id: payload.notificationId,
     });
   }
@@ -281,7 +289,7 @@ export class NotificationsGateway
   handleNotificationReadAll(payload: { userId: string; markedCount: number }) {
     if (!payload?.userId) return;
 
-    this.server.to(`user:${payload.userId}`).emit('notification:read', {
+    void this.live.sendToUser(this.server, payload.userId, 'notification:read', {
       all: true,
       markedCount: payload.markedCount ?? 0,
     });
@@ -291,7 +299,7 @@ export class NotificationsGateway
   handleNotificationDeleted(payload: { userId: string; notificationId: string }) {
     if (!payload?.userId || !payload?.notificationId) return;
 
-    this.server.to(`user:${payload.userId}`).emit('notification:deleted', {
+    void this.live.sendToUser(this.server, payload.userId, 'notification:deleted', {
       id: payload.notificationId,
     });
   }
@@ -300,7 +308,7 @@ export class NotificationsGateway
   handleNotificationCount(payload: { userId: string; unread: number }) {
     if (!payload?.userId) return;
 
-    this.server.to(`user:${payload.userId}`).emit('notification:count', {
+    void this.live.sendToUser(this.server, payload.userId, 'notification:count', {
       unread: payload.unread ?? 0,
     });
   }
@@ -310,16 +318,16 @@ export class NotificationsGateway
   // ─────────────────────────────────────────────────────────────────────────────
 
   sendToUser(userId: string, event: string, data: any) {
-    this.server.to(`user:${userId}`).emit(event, data);
+    void this.live.sendToUser(this.server, userId, event, data);
   }
 
   sendToProject(projectId: string, event: string, data: any) {
-    this.server.to(`project:${projectId}`).emit(event, data);
+    void this.live.sendToProject(this.server, projectId, event, data);
   }
 
   // ✅ NEW helper
   sendToPublicProject(projectId: string, event: string, data: any) {
-    this.server.to(`public:project:${projectId}`).emit(event, data);
+    void this.live.sendToPublicProject(this.server, projectId, event, data);
   }
 
   broadcast(event: string, data: any) {

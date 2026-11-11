@@ -39,6 +39,7 @@ import { FocusService } from './focus.service';
 import { FocusGateway } from './focus.gateway';
 import { RealtimeGateway } from './realtime.gateway';
 import { RealtimeService } from './realtime.service';
+import { LiveAccessService } from './live-access.service';
 
 // ============================================
 // GUARDS (local realtime folder)
@@ -79,6 +80,8 @@ import { WsJwtGuard } from './ws-jwt.guard';
     PresenceService,
     FocusService,
     RealtimeService,
+    // openshare-live-access-v1 (R52b)
+    LiveAccessService,
     WsJwtGuard,
   ],
 
@@ -88,6 +91,7 @@ import { WsJwtGuard } from './ws-jwt.guard';
     PresenceService,
     FocusService,
     RealtimeService,
+    LiveAccessService,
     RealtimeGateway,
     FocusGateway,
     MongooseModule,

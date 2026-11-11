@@ -16,6 +16,7 @@ import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WsJwtGuard } from '../auth/ws-jwt.guard';
 import { FocusService } from './focus.service';
+import { LiveAccessService, MEMBER_STANDINGS } from './live-access.service';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(WsJwtGuard)
@@ -23,7 +24,10 @@ export class FocusGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly focusService: FocusService) {}
+  constructor(
+    private readonly focusService: FocusService,
+    private readonly live: LiveAccessService,
+  ) {}
 
   handleConnection(client: Socket) {
     console.log(`🔌 Focus: Client connected ${client.id}`);
@@ -45,6 +49,17 @@ export class FocusGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = (client as any).user?.id;
     if (!userId) return;
 
+    // openshare-live-access-v1 (R52b): a focus session can only be tagged with a
+    // project you are the owner or a member of; it is announced to that project.
+    const projectId = data?.projectId;
+    if (projectId !== undefined && projectId !== null && projectId !== '') {
+      const standing = await this.live.standingOf(typeof projectId === 'string' ? projectId : '', String(userId));
+      if (!MEMBER_STANDINGS.has(standing)) {
+        client.emit('focus:error', { message: 'Not authorized for this project' });
+        return { success: false, error: 'Not authorized for this project' };
+      }
+    }
+
     try {
       const session = await this.focusService.startSession(userId, data);
       
@@ -53,7 +68,7 @@ export class FocusGateway implements OnGatewayConnection, OnGatewayDisconnect {
       
       // Notify project members if applicable
       if (session.projectId) {
-        this.server.to(`project:${session.projectId}`).emit('focus:user-started', {
+        await this.live.sendToProject(this.server, String(session.projectId), 'focus:user-started', {
           userId,
           sessionId: session._id,
         });
@@ -86,7 +101,7 @@ export class FocusGateway implements OnGatewayConnection, OnGatewayDisconnect {
       
       // Notify project members
       if (session.projectId) {
-        this.server.to(`project:${session.projectId}`).emit('focus:user-completed', {
+        await this.live.sendToProject(this.server, String(session.projectId), 'focus:user-completed', {
           userId,
           sessionId: session._id,
           xpEarned: session.xpEarned,
@@ -108,6 +123,6 @@ export class FocusGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Broadcast focus session update to project
    */
   broadcastToProject(projectId: string, event: string, data: any) {
-    this.server.to(`project:${projectId}`).emit(event, data);
+    void this.live.sendToProject(this.server, projectId, event, data);
   }
 }

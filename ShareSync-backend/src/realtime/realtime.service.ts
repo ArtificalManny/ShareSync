@@ -1,10 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Server } from 'socket.io';
+import { LiveAccessService } from './live-access.service';
+
+// openshare-live-access-v1 (R52b): every send goes through LiveAccessService,
+// which checks each recipient at the moment of sending.
+
+const ROOM = /^(public:project|project|user):([0-9a-f]{24})$/i;
 
 @Injectable()
 export class RealtimeService {
   private readonly logger = new Logger(RealtimeService.name);
   private server?: Server;
+
+  constructor(private readonly live: LiveAccessService) {}
 
   setServer(server: Server) {
     this.server = server;
@@ -14,20 +22,26 @@ export class RealtimeService {
   // Emit to canonical project room: project:{projectId}
   projectEmit(projectId: string, event: string, payload: any) {
     if (!projectId || !this.server) return;
-    this.server.to(`project:${projectId}`).emit(event, payload);
+    void this.live.sendToProject(this.server, projectId, event, payload);
   }
 
   // Emit to canonical user room: user:{userId}
   userEmit(userId: string, event: string, payload: any) {
     if (!userId || !this.server) return;
-    this.server.to(`user:${userId}`).emit(event, payload);
+    void this.live.sendToUser(this.server, userId, event, payload);
   }
 
-  // ✅ NEW: emit to ANY explicit room string (e.g. public:project:{projectId})
-  // This fixes TS error: "Property 'roomEmit' does not exist on type 'RealtimeService'."
+  // Emit to an explicit room string: project:{id}, public:project:{id} or user:{id}.
+  // Any other room name is not used by the app and is ignored.
   roomEmit(room: string, event: string, payload: any) {
     if (!room || !this.server) return;
-    this.server.to(room).emit(event, payload);
+    const match = ROOM.exec(String(room));
+    if (!match) return;
+    const kind = match[1].toLowerCase();
+    const id = match[2].toLowerCase();
+    if (kind === 'project') void this.live.sendToProject(this.server, id, event, payload);
+    else if (kind === 'user') void this.live.sendToUser(this.server, id, event, payload);
+    else void this.live.sendToPublicProject(this.server, id, event, payload);
   }
 
   // ✅ Step 5 naming aliases (no breaking changes)
