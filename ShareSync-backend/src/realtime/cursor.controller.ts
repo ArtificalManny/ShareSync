@@ -25,6 +25,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Cursor, CursorDocument } from './schemas/cursor.schema';
 import {
@@ -142,7 +143,9 @@ export class CursorController {
       .exec()) as any as CursorDocument[];
   }
 
+  // openshare-project-read-access-v1 (R52)
   @Get('project/:projectId/recent')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get recent cursors in project' })
   @ApiResponse({
     status: 200,
@@ -162,6 +165,7 @@ export class CursorController {
   }
 
   @Get('project/:projectId/active')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get active users in project' })
   @ApiResponse({
     status: 200,

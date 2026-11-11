@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectReadAccess, ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { AIService } from './ai.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { SuggestionType, ChatRequestDto } from './dto';
@@ -69,7 +70,11 @@ export class AIController {
   // NEW ENDPOINTS (For MentorDock & AISuggestionCard)
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // openshare-project-read-access-v1 (R52): a chat about a project only for
+  // someone who may read it.
   @Post('chat')
+  @UseGuards(ProjectReadAccessGuard)
+  @ProjectReadAccess({ body: 'projectId', optional: true })
   async chat(@Req() req: Request, @Body() body: any) {
     const billingUserId =
       await this.assertAiCallAllowed(req);

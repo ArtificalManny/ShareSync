@@ -7,6 +7,7 @@
 
 import { Controller, Get, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { SelfOnlyGuard } from '../common/guards/self-only.guard';
 import { GrowthService } from './growth.service';
 import { Types } from 'mongoose';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -21,7 +22,9 @@ const ALLOWED_TREND_METRICS = new Set([
 
 @ApiTags('Growth Analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+// openshare-self-only-v1 (R52): growth data names your Moves and their projects,
+// so only you get yours.
+@UseGuards(JwtAuthGuard, SelfOnlyGuard)
 @Controller('analytics/growth')
 export class GrowthController {
   constructor(private readonly growthService: GrowthService) {}

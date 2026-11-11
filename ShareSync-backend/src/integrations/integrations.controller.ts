@@ -30,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { IntegrationsAccessGuard } from './integrations-access.guard';
 import { IntegrationsService } from './integrations.service';
 import { IntegrationType } from './schemas/integration.schema';
 import {
@@ -48,8 +49,10 @@ export class IntegrationsController {
   // OAUTH
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // openshare-integrations-access-v1 (R52): connecting to a project needs its
+  // owner or an admin.
   @Get('oauth/:type')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Initiate OAuth flow' })
   @ApiParam({ name: 'type', enum: IntegrationType })
@@ -93,8 +96,10 @@ export class IntegrationsController {
   // CRUD
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // openshare-integrations-access-v1 (R52): a project's integrations only for its
+  // owner and admins; a personal one only for the person who connected it.
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a webhook integration' })
   async create(@Req() req: any, @Body() dto: CreateIntegrationDto) {
@@ -112,7 +117,7 @@ export class IntegrationsController {
   }
 
   @Get('project/:projectId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get project integrations' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
@@ -122,7 +127,7 @@ export class IntegrationsController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get integration by ID' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -132,7 +137,7 @@ export class IntegrationsController {
   }
 
   @Put(':id/settings')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update integration settings' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -146,7 +151,7 @@ export class IntegrationsController {
 
   @Post(':id/disconnect')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Disconnect integration' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -157,7 +162,7 @@ export class IntegrationsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete integration' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -171,7 +176,7 @@ export class IntegrationsController {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Get(':id/github/repos')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get GitHub repositories' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -181,7 +186,7 @@ export class IntegrationsController {
   }
 
   @Get(':id/slack/channels')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get Slack channels' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -191,7 +196,7 @@ export class IntegrationsController {
   }
 
   @Post(':id/slack/message')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Send Slack message' })
   @ApiParam({ name: 'id', description: 'Integration ID' })
@@ -249,7 +254,7 @@ export class IntegrationsController {
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Get(':id/logs')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, IntegrationsAccessGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get webhook logs' })
   @ApiParam({ name: 'id', description: 'Integration ID' })

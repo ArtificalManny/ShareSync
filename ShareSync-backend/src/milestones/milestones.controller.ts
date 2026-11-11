@@ -15,6 +15,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProjectReadAccess, ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { MilestonesService } from './milestones.service';
 import {
   CreateMilestoneDto,
@@ -55,13 +56,19 @@ export class MilestonesController {
   }
 
   // keep your current GET signature (query param projectId) to avoid breaking any frontend
+  // openshare-project-read-access-v1 (R52): milestones only for people who may
+  // read their project.
   @Get()
+  @UseGuards(ProjectReadAccessGuard)
+  @ProjectReadAccess({ query: 'projectId' })
   async findAll(@Query('projectId') projectId: string) {
     const milestones = await this.milestonesService.findByProject(projectId);
     return { success: true, data: milestones, timestamp: this.now() };
   }
 
   @Get(':id')
+  @UseGuards(ProjectReadAccessGuard)
+  @ProjectReadAccess({ entity: { collection: 'milestones', param: 'id' } })
   async findOne(@Param('id') id: string) {
     const milestone = await this.milestonesService.findById(id);
     return { success: true, data: milestone, timestamp: this.now() };

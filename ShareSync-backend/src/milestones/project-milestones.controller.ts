@@ -1,6 +1,7 @@
 // src/milestones/project-milestones.controller.ts
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { MilestonesService } from './milestones.service';
 
 @Controller('projects/:projectId/milestones')
@@ -19,7 +20,9 @@ export class ProjectMilestonesController {
    * Returns milestones with computed progress:
    * progress = doneTasks / totalTasks where tasks have milestoneId
    */
+  // openshare-project-read-access-v1 (R52)
   @Get()
+  @UseGuards(ProjectReadAccessGuard)
   async list(@Param('projectId') projectId: string) {
     const milestones = await this.milestonesService.findByProjectWithProgress(projectId);
     return { success: true, data: milestones, timestamp: this.now() };

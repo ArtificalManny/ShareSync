@@ -111,3 +111,25 @@ export function projectStanding(project: any, userId: string): ProjectStanding {
 
   return isPublicReadable(project) ? 'spectator' : 'none';
 }
+
+// openshare-project-standing-v2 (R52)
+// Who may manage a project's connections: the owner, or a member whose role
+// is owner or admin. Project settings (projectsService.canEdit) also go to
+// the owner and admins.
+const MANAGER_ROLES = new Set(['owner', 'admin']);
+
+export function isProjectManager(project: any, userId: string): boolean {
+  if (!project || typeof userId !== 'string' || !OBJECT_ID.test(userId)) return false;
+  const actor = userId.toLowerCase();
+
+  if (ownerIdOf(project) === actor) return true;
+
+  const members = Array.isArray(project.members) ? project.members : [];
+  for (const member of members) {
+    if (memberIdOf(member) !== actor) continue;
+    const role = String(member?.role ?? '').trim().toLowerCase() || 'member';
+    return MANAGER_ROLES.has(role);
+  }
+
+  return false;
+}

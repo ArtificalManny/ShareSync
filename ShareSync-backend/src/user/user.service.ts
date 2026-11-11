@@ -856,6 +856,21 @@ export class UserService {
     return result as any;
   }
 
+  // openshare-user-public-profile-v1 (R52)
+  // What anyone signed in may see of someone else: the same public profile
+  // fields as the member profile lookup below. Never email, birthday, settings
+  // or anything else from the account record.
+  async findPublicProfileById(id: string): Promise<UserDocument | null> {
+    if (typeof id !== 'string' || !/^[0-9a-f]{24}$/i.test(id)) return null;
+    const result = await this.userModel
+      .findById(id)
+      .select(
+        '_id username firstName lastName displayName profilePicture avatarUrl bannerPicture bio location jobTitle company website socialLinks publicProfile persona xp level streakDays totalShips createdAt updatedAt',
+      )
+      .exec();
+    return result as any;
+  }
+
   async findByUsername(username: string): Promise<UserDocument | null> {
     const result = await this.userModel.findOne({ username }).exec();
     return result as any;

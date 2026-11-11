@@ -29,6 +29,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import {
   Presence,
@@ -267,7 +268,9 @@ export class PresenceController {
   // GET USERS IN PROJECT
   // ============================================
 
+  // openshare-project-read-access-v1 (R52)
   @Get('project/:projectId')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get users in project' })
   @ApiResponse({
     status: 200,
@@ -424,7 +427,10 @@ export class PresenceController {
   // JOIN PROJECT
   // ============================================
 
+  // openshare-project-read-access-v1 (R52): you show up in a project only if
+  // you may read it.
   @Post('join/:projectId')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Join project' })
   @ApiResponse({
     status: 200,

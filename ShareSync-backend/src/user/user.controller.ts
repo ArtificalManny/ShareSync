@@ -27,6 +27,7 @@ import { Response } from 'express';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OBJECT_ID, actorIdOf } from '../common/guards/project-standing';
 import { UserService } from './user.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -836,10 +837,20 @@ export class UserController {
   // GET /users/:id
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // openshare-user-public-profile-v1 (R52): your own record in full; anyone
+  // else gets only the public profile, never email, birthday or settings.
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async getById(@Param('id') id: string) {
-    const user = await this.users.findById(id);
+  async getById(@Req() req: any, @Param('id') id: string) {
+    const requesterId = actorIdOf(req?.user);
+    const own =
+      Boolean(requesterId) &&
+      typeof id === 'string' &&
+      OBJECT_ID.test(id) &&
+      id.toLowerCase() === requesterId;
+    const user = own
+      ? await this.users.findById(id)
+      : await this.users.findPublicProfileById(id);
     if (!user) throw new NotFoundException('User not found');
     return user;
   }

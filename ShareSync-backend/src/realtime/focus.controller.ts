@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FocusService } from './focus.service';
 import { SessionType } from './schemas/focus-session.schema';
@@ -158,7 +159,9 @@ export class FocusController {
     return this.focusService.getUserStats(user.id, parseInt(days) || 30);
   }
 
+  // openshare-project-read-access-v1 (R52)
   @Get('project/:projectId')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get project sessions' })
   @ApiResponse({ status: 200, description: 'Project sessions retrieved' })
   async getProjectSessions(@Param('projectId') projectId: string) {

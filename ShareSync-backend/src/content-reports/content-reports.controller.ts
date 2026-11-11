@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ContentReportsService } from './content-reports.service';
+import { AdminGuard } from '../account-enforcement/admin.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   ContentType,
@@ -120,8 +121,11 @@ export class ContentReportsController {
    * GET /content-reports/admin/queue
    * Get pending reports for admin review
    */
+  // openshare-content-reports-admin-only-v1 (R52): the moderation admin routes
+  // need an admin. Before, anyone signed in could read every report and resolve
+  // one, which hides or unhides the reported content.
   @Get('admin/queue')
-  // TODO: Add @UseGuards(AdminGuard) when you have admin role checking
+  @UseGuards(AdminGuard)
   async getAdminQueue(@Query() query: ReportsFilterQuery) {
     const page = query.page || 1;
     const limit = Math.min(query.limit || 20, 100);
@@ -140,6 +144,7 @@ export class ContentReportsController {
    * Get report statistics for dashboard
    */
   @Get('admin/stats')
+  @UseGuards(AdminGuard)
   async getAdminStats() {
     return this.reportsService.getReportStats();
   }
@@ -149,6 +154,7 @@ export class ContentReportsController {
    * Get single report details
    */
   @Get('admin/:id')
+  @UseGuards(AdminGuard)
   async getReportById(@Param('id') id: string) {
     return this.reportsService.getReportById(id);
   }
@@ -158,6 +164,7 @@ export class ContentReportsController {
    * Resolve a report (admin action)
    */
   @Patch('admin/:id/resolve')
+  @UseGuards(AdminGuard)
   async resolveReport(
     @Param('id') id: string,
     @Body() dto: ResolveReportDto,
@@ -190,6 +197,7 @@ export class ContentReportsController {
    * Get all reports against a specific user
    */
   @Get('admin/user/:userId')
+  @UseGuards(AdminGuard)
   async getReportsAgainstUser(
     @Param('userId') userId: string,
     @Query('status') status?: ReportStatus,

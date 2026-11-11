@@ -25,6 +25,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { GamificationService } from './gamification.service';
 import { BadgeService } from './services/badge.service';
 import { StreakService } from './services/streak.service';
@@ -174,7 +175,9 @@ export class GamificationController {
     return { success: true, data: leaderboard };
   }
 
+  // openshare-project-read-access-v1 (R52)
   @Get('leaderboard/project/:projectId')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get project leaderboard' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   @ApiQuery({

@@ -21,6 +21,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
+import { SelfOnlyGuard } from '../common/guards/self-only.guard';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsQueryDto } from './dto/analytics.dto';
 
@@ -37,7 +39,10 @@ export class AnalyticsController {
   // PROJECT ANALYTICS
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // openshare-project-read-access-v1 (R52): project analytics only for people
+  // who may read the project.
   @Get('project/:projectId/overview')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get project overview metrics' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   async getProjectOverview(
@@ -52,6 +57,7 @@ export class AnalyticsController {
   }
 
   @Get('project/:projectId/health')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get project health score and risks' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   async getProjectHealth(@Param('projectId') projectId: string) {
@@ -63,6 +69,7 @@ export class AnalyticsController {
   }
 
   @Get('project/:projectId/velocity')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get velocity trend' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   @ApiQuery({ name: 'days', type: Number, required: false })
@@ -81,6 +88,7 @@ export class AnalyticsController {
   }
 
   @Get('project/:projectId/forecast')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get completion forecast' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   async getCompletionForecast(@Param('projectId') projectId: string) {
@@ -92,6 +100,7 @@ export class AnalyticsController {
   }
 
   @Get('project/:projectId/team')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get team productivity breakdown' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   async getTeamProductivity(
@@ -106,6 +115,7 @@ export class AnalyticsController {
   }
 
   @Get('project/:projectId/activity')
+  @UseGuards(ProjectReadAccessGuard)
   @ApiOperation({ summary: 'Get recent activity feed' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   @ApiQuery({ name: 'limit', type: Number, required: false })
@@ -190,7 +200,9 @@ export class AnalyticsController {
     };
   }
 
+  // openshare-self-only-v1 (R52): your own productivity only.
   @Get('user/:userId/productivity')
+  @UseGuards(SelfOnlyGuard)
   @ApiOperation({ summary: 'Get specific user productivity metrics' })
   @ApiParam({ name: 'userId', description: 'User ID' })
   async getSpecificUserProductivity(
