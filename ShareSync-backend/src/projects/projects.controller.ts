@@ -21,7 +21,6 @@ import {
   HttpStatus,
   HttpCode,
   Logger,
-  Request,
   UploadedFile,
   BadRequestException,
   } from '@nestjs/common';
@@ -132,39 +131,6 @@ export class ProjectsController {
     private readonly moderationService: ModerationService,
     private readonly imageModerationService: ImageModerationService,
   ) {}
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // DEBUG (TEMPORARY) — MUST BE BEFORE ANY :id ROUTES
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  @Get('debug')
-  @ApiOperation({ summary: 'DEBUG: Inspect projects in DB vs. user query' })
-  async debugProjects(@Request() req: any) {
-    const userId = req.user?.sub || req.user?.userId;
-
-    const allProjects = await this.projectsService.findAllNoFilter();
-    const userProjects = await this.projectsService.findByUser(userId);
-
-    return {
-      success: true,
-      debug: {
-        currentUserId: userId,
-        allProjectsCount: allProjects.length,
-        allProjects: allProjects.map((p: any) => ({
-          id: p._id,
-          name: p.name,
-          ownerId: p.ownerId?.toString?.() || null,
-          owner: p.owner?.toString?.() || null,
-          members: (p.members || []).map((m: any) => ({
-            userId: m.userId?.toString?.() || null,
-            user: m.user?.toString?.() || null,
-          })),
-        })),
-        userProjectsCount: userProjects.length,
-        userProjects: userProjects.map((p) => p.name),
-      },
-    };
-  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // CREATE
