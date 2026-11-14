@@ -1,3 +1,4 @@
+import { assertProjectWriter } from '../common/guards/project-write-standing';
 import {
   BadRequestException,
   ForbiddenException,
@@ -548,6 +549,9 @@ export class ResponsibilityMapService {
         userId,
       );
 
+    // openshare-project-write-standing-v1 (R53): only writers change shared work.
+    assertProjectWriter(project, userId);
+
     // openshare-structured-work-billing-write-v1
     await this.projectsService
       .assertProjectWritableForBilling(
@@ -676,6 +680,9 @@ export class ResponsibilityMapService {
         projectId,
         userId,
       );
+
+    // openshare-project-write-standing-v1 (R53): only writers change shared work.
+    assertProjectWriter(project, userId);
 
     await this.projectsService
       .assertProjectWritableForBilling(

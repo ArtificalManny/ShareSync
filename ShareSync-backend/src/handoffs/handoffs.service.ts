@@ -1,3 +1,4 @@
+import { assertProjectMember, assertProjectWriter } from '../common/guards/project-write-standing';
 import {
   BadRequestException,
   ForbiddenException,
@@ -346,6 +347,9 @@ export class HandoffsService {
         userId,
       );
 
+    // openshare-project-write-standing-v1 (R53): only writers change shared work.
+    assertProjectWriter(project, userId);
+
     // openshare-structured-work-billing-write-v1
     await this.projectsService
       .assertProjectWritableForBilling(
@@ -530,10 +534,16 @@ export class HandoffsService {
     userId: string,
     dto: UpdateHandoffDto,
   ) {
-    await this.assertProjectAccess(
-      projectId,
-      userId,
-    );
+    const project =
+      await this.assertProjectAccess(
+        projectId,
+        userId,
+      );
+
+    // openshare-project-write-standing-v1 (R53): answering a handoff sent to
+    // you, or cancelling your own, needs current membership (any role).
+    // Accepting one also needs a writer, below: it hands you the work.
+    assertProjectMember(project, userId);
 
     await this.projectsService
       .assertProjectWritableForBilling(
@@ -628,6 +638,15 @@ export class HandoffsService {
         throw new ForbiddenException(
           'Only the selected recipient can accept or decline this Handoff',
         );
+      }
+
+      // Accepting takes over the work (and its Move, if it has one): writers
+      // only, the same rule as changing a Move. A viewer can still decline.
+      if (
+        dto.status ===
+        HandoffStatus.ACCEPTED
+      ) {
+        assertProjectWriter(project, userId);
       }
 
       if (

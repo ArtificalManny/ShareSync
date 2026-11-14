@@ -1,3 +1,4 @@
+import { assertProjectMember, assertProjectWriter } from '../common/guards/project-write-standing';
 import {
   BadRequestException,
   ForbiddenException,
@@ -331,6 +332,9 @@ export class ApprovalsService {
         userId,
       );
 
+    // openshare-project-write-standing-v1 (R53): only writers change shared work.
+    assertProjectWriter(project, userId);
+
     const title =
       this.cleanText(
         dto?.title,
@@ -473,10 +477,17 @@ export class ApprovalsService {
     userId: string,
     dto: UpdateApprovalDto,
   ) {
-    await this.assertProjectAccess(
-      projectId,
-      userId,
-    );
+    const project =
+      await this.assertProjectAccess(
+        projectId,
+        userId,
+      );
+
+    // openshare-project-write-standing-v1 (R53): deciding an approval you were
+    // asked for, or cancelling your own request, needs current membership (any
+    // role, so a viewer asked to approve still can). Spectators and people
+    // removed from the project can't.
+    assertProjectMember(project, userId);
 
     if (
       !Types.ObjectId.isValid(

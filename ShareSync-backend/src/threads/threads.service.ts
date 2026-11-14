@@ -8,6 +8,8 @@ import { Thread, ThreadDocument } from './schemas/thread.schema';
 import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProjectsService } from '../projects/projects.service';
+import { projectStanding } from '../common/guards/project-standing';
+import { READ_ONLY_MESSAGE } from '../common/guards/project-write-standing';
 import {
   TeamRoomUploadCleanupService,
 } from '../uploads/team-room-upload-cleanup.service';
@@ -95,10 +97,12 @@ export class ThreadsService {
     userIdValue: any,
     options: {
       skipMemberBilling?: boolean;
+      requireWriter?: boolean;
     } = {},
   ): Promise<{
     userObjectId: Types.ObjectId;
     isOwner: boolean;
+    canWrite: boolean;
   }> {
     const projectId =
       this.normalizeProjectUserId(
@@ -217,6 +221,24 @@ export class ThreadsService {
       );
     }
 
+    // openshare-project-write-standing-v1 (R53): every participant reads the
+    // Team Room; starting, renaming, pinning or deleting threads needs a writer
+    // (the owner, or a member whose role is owner, admin or member).
+    const canWrite =
+      projectStanding(
+        project,
+        userId,
+      ) === 'writer';
+
+    if (
+      options.requireWriter &&
+      !canWrite
+    ) {
+      throw new ForbiddenException(
+        READ_ONLY_MESSAGE,
+      );
+    }
+
     // openshare-thread-member-access-enforcement-v1
     //
     // Ordinary Team Room authorization has already succeeded.
@@ -241,6 +263,8 @@ export class ThreadsService {
         ownerIds.has(
           userId,
         ),
+
+      canWrite,
     };
   }
 
@@ -275,6 +299,7 @@ export class ThreadsService {
     await this.requireProjectAccess(
       dto.projectId,
       userId,
+      { requireWriter: true },
     );
 
     // openshare-thread-billing-enforcement-v1
@@ -519,6 +544,7 @@ export class ThreadsService {
   async findByProject(projectId: string, options: FindThreadsOptions = {}, userId?: string): Promise<ThreadDocument[]> {
     const {
       userObjectId,
+      canWrite,
     } =
       await this.requireProjectAccess(
         projectId,
@@ -574,8 +600,10 @@ export class ThreadsService {
               ),
           });
 
+      // Only a writer's visit starts the General thread; a viewer just sees none.
       if (
-        totalProjectThreads === 0
+        totalProjectThreads === 0 &&
+        canWrite
       ) {
         const generalThread =
           await this.create(
@@ -612,6 +640,7 @@ export class ThreadsService {
       await this.requireProjectAccess(
         (thread as any).projectId,
         userId,
+        { requireWriter: true },
       );
 
     const isManager =
@@ -693,6 +722,7 @@ export class ThreadsService {
       await this.requireProjectAccess(
         (thread as any).projectId,
         userId,
+        { requireWriter: true },
       );
 
     if (

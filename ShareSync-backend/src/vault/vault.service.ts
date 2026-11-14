@@ -5,6 +5,8 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
+import { projectStanding } from '../common/guards/project-standing';
+import { READ_ONLY_MESSAGE } from '../common/guards/project-write-standing';
 import { VaultFolder, VaultFolderDocument } from './schemas/vault-folder.schema';
 import { VaultFile, VaultFileDocument } from './schemas/vault-file.schema';
 import {
@@ -388,11 +390,56 @@ export class VaultService {
       );
     }
 
+    // openshare-project-write-standing-v1 (R53): uploading, creating folders
+    // and renaming, moving or deleting files need a writer: the owner, or a
+    // member whose role is owner, admin or member. Viewers and guests read.
+    if (projectStanding(project, userIdString) !== 'writer') {
+      throw new ForbiddenException(READ_ONLY_MESSAGE);
+    }
+
     return {
       project,
       userIdString,
       isOwner,
       member,
+    };
+  }
+
+  // openshare-project-write-standing-v1 (R53)
+  //
+  // A folder a Vault write uses must be a folder of this project that the
+  // writer can open, by the same rule as reading: public, created by them, or
+  // shared with them. Returns null for a missing folder or another project's.
+  private async findUsableVaultFolder(
+    projectId: string,
+    folderId: unknown,
+    userIdString: string,
+  ): Promise<{ folder: VaultFolderDocument | null; visible: boolean }> {
+    const folderIdText = this.normalizeId(folderId);
+    if (
+      !/^[0-9a-f]{24}$/i.test(folderIdText) ||
+      !/^[0-9a-f]{24}$/i.test(String(projectId || '')) ||
+      !/^[0-9a-f]{24}$/i.test(String(userIdString || ''))
+    ) {
+      return { folder: null, visible: false };
+    }
+
+    const folder = await this.folderModel
+      .findOne({
+        _id: new Types.ObjectId(folderIdText),
+        projectId: new Types.ObjectId(String(projectId)),
+      })
+      .exec();
+
+    return {
+      folder,
+      visible: Boolean(
+        folder &&
+        this.isVaultFolderVisibleTo(
+          folder,
+          new Types.ObjectId(userIdString),
+        ),
+      ),
     };
   }
 
@@ -559,14 +606,41 @@ export class VaultService {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   async uploadFile(projectId: string, userId: string, file: Express.Multer.File, folderId?: string) {
+    // A private destination folder, once checked below (R53).
+    let privateFolder: VaultFolderDocument | null = null;
+
     // openshare-vault-storage-consistency-v1
     // 1. Verify quota before persistence. If quota rejects this request,
     // remove only the Multer temp file that has not yet become stored data.
     try {
-      await this.assertVaultProjectParticipant(
-        projectId,
-        userId,
-      );
+      const access =
+        await this.assertVaultProjectParticipant(
+          projectId,
+          userId,
+        );
+
+      // openshare-project-write-standing-v1 (R53): the destination must be a
+      // folder of this project that the uploader can open.
+      if (folderId) {
+        const destination =
+          await this.findUsableVaultFolder(
+            projectId,
+            folderId,
+            access.userIdString,
+          );
+
+        if (!destination.folder) {
+          throw new NotFoundException('Destination folder not found');
+        }
+
+        if (!destination.visible) {
+          throw new ForbiddenException('You do not have access to this folder');
+        }
+
+        if (destination.folder.accessLevel !== 'public') {
+          privateFolder = destination.folder;
+        }
+      }
 
       await this.assertVaultWriteAllowedForBilling(
         projectId,
@@ -677,7 +751,10 @@ export class VaultService {
       throw saveError;
     });
 
-    await this.recordProjectActivity({
+    // openshare-project-write-standing-v1 (R53): a file in a private folder
+    // isn't announced to the whole project (activity feed, live room); only
+    // the people who can open the folder are notified, below.
+    if (!privateFolder) await this.recordProjectActivity({
       userId,
       projectId,
       type: 'file_uploaded',
@@ -730,7 +807,12 @@ export class VaultService {
           .map(id => id.toString())
           .filter(id => id !== userId);
 
-        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)];
+        const uniqueMembers: string[] = [...new Set(memberIdsToNotify)].filter(
+          (id) =>
+            !privateFolder ||
+            (/^[0-9a-f]{24}$/i.test(id) &&
+              this.isVaultFolderVisibleTo(privateFolder, new Types.ObjectId(id))),
+        );
         const safeProjectName = typeof projectDoc.name === 'string' && projectDoc.name.trim() ? projectDoc.name.trim() : (projectDoc.title || 'Project');
         const safeFileName = file.originalname || 'New File';
 
@@ -815,6 +897,8 @@ export class VaultService {
         }
 
         // 2. LIVE ROOM OVERRIDE: Blast notification to anyone currently viewing the project board
+        // (R53: never for a file in a private folder.)
+        if (!privateFolder) {
         const liveRoomNotif = {
           _id: new Types.ObjectId(), // Ephemeral ID for the frontend to render
           type: 'file_uploaded',
@@ -838,6 +922,7 @@ export class VaultService {
         if (rtGateway && rtGateway.server) {
           rtGateway.server.to(`project:${projectId}`).emit('new_notification', liveRoomNotif);
           rtGateway.server.to(projectId).emit('new_notification', liveRoomNotif);
+        }
         }
 
         this.logger.log(`✅ File ${saved._id.toString()} natively notified ${uniqueMembers.length} DB recipient(s) AND broadcasted to Live Rooms`);
@@ -869,7 +954,9 @@ export class VaultService {
     });
     const saved = await folder.save();
 
-    await this.recordProjectActivity({
+    // openshare-project-write-standing-v1 (R53): a private folder's name stays
+    // with the people it's shared with; only public folders reach the feed.
+    if (accessLevel === 'public') await this.recordProjectActivity({
       userId,
       projectId,
       type: 'folder_created',
@@ -1492,6 +1579,25 @@ export class VaultService {
         userId,
       );
 
+    // openshare-project-write-standing-v1 (R53): a file in a folder can be
+    // renamed, moved or deleted only by someone who can open that folder,
+    // the same rule as reading it. Uploading it or owning the project doesn't
+    // reach into a private folder you aren't in.
+    if ((file as any).folderId) {
+      const source =
+        await this.findUsableVaultFolder(
+          projectId,
+          (file as any).folderId,
+          access.userIdString,
+        );
+
+      if (!source.visible) {
+        throw new ForbiddenException(
+          'You do not have permission to manage this file',
+        );
+      }
+    }
+
     const uploadedById =
       this.normalizeId(
         (file as any).uploadedBy,
@@ -1617,17 +1723,22 @@ export class VaultService {
 
     if (folderId) {
       const folderObjectId = this.toObjectId(folderId, 'Folder');
-      const targetFolder = await this.folderModel.findById(folderObjectId).exec();
 
-      if (!targetFolder) {
+      // openshare-project-write-standing-v1 (R53): the destination must be a
+      // folder of the file's project that the mover can open.
+      const destination =
+        await this.findUsableVaultFolder(
+          projectId,
+          folderObjectId,
+          this.normalizeId(userId),
+        );
+
+      if (!destination.folder) {
         throw new NotFoundException('Destination folder not found');
       }
 
-      const fileProjectId = this.normalizeId((file as any).projectId);
-      const folderProjectId = this.normalizeId((targetFolder as any).projectId);
-
-      if (fileProjectId !== folderProjectId) {
-        throw new ForbiddenException('Cannot move file into a folder from another project');
+      if (!destination.visible) {
+        throw new ForbiddenException('You do not have access to this folder');
       }
 
       file.folderId = folderObjectId;

@@ -41,6 +41,7 @@ import { NotificationPriority, NotificationType } from '../notifications/schemas
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { StoredObjectReference, UploadsService } from '../uploads/uploads.service';
+import { projectStanding } from '../common/guards/project-standing';
 
 export const DEFAULT_PROJECT_NOTIFICATION_PREFERENCES = {
   taskAssigned: true,
@@ -1722,9 +1723,10 @@ export class ProjectsService {
     const project = await this.findByIdWithAccess(args.projectId, args.userId);
 
     // Ship updates are lightweight project activity, not full project closeout/editing.
-    // Owners and real project members may post ship updates.
-    // Public spectators still cannot post because they are not owners/members.
-    if (!this.isProjectOwner(project, args.userId) && !this.isProjectMember(project, args.userId)) {
+    // openshare-project-write-standing-v1 (R53): the owner and members who can
+    // edit (role owner, admin or member) may post them. Viewers, guests and
+    // public spectators only read.
+    if (projectStanding(project, String(args.userId ?? '')) !== 'writer') {
       throw new ForbiddenException('You do not have permission to post updates for this project');
     }
 

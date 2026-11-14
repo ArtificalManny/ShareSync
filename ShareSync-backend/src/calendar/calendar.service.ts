@@ -4,10 +4,13 @@
 // + ⭐ Native DB Insert + Shotgun Gateway Broadcast + Live Room Override
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { projectStanding } from '../common/guards/project-standing';
+import { READ_ONLY_MESSAGE } from '../common/guards/project-write-standing';
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -645,6 +648,22 @@ export class CalendarService {
     if (!project) {
       throw new BadRequestException(
         'Only a current project member can modify project schedule sessions',
+      );
+    }
+
+    // openshare-project-write-standing-v1 (R53): a project's schedule is
+    // shared project content. Creating, editing, cancelling or deleting its
+    // sessions (and managing their attendees) needs a writer: the owner, or a
+    // member whose role is owner, admin or member. Viewers and guests read it
+    // and still answer invitations.
+    if (
+      projectStanding(
+        project,
+        normalizedUserId,
+      ) !== 'writer'
+    ) {
+      throw new ForbiddenException(
+        READ_ONLY_MESSAGE,
       );
     }
 

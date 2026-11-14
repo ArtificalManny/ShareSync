@@ -14,6 +14,7 @@ import {
   Query,
   UseGuards,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +26,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectReadAccessGuard } from '../common/guards/project-read-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FocusService } from './focus.service';
+import { LiveAccessService, MEMBER_STANDINGS } from './live-access.service';
+import { actorIdOf } from '../common/guards/project-standing';
 import { SessionType } from './schemas/focus-session.schema';
 
 /**
@@ -52,7 +55,10 @@ class CompleteSessionDto {
 @UseGuards(JwtAuthGuard)
 @Controller('api/focus')
 export class FocusController {
-  constructor(private readonly focusService: FocusService) {}
+  constructor(
+    private readonly focusService: FocusService,
+    private readonly live: LiveAccessService,
+  ) {}
 
   // ============================================
   // START SESSION
@@ -62,6 +68,20 @@ export class FocusController {
   @ApiOperation({ summary: 'Start a new focus session' })
   @ApiResponse({ status: 201, description: 'Session started' })
   async startSession(@Body() data: StartSessionDto, @CurrentUser() user: any) {
+    // openshare-project-write-standing-v1 (R53): a focus session can be tagged
+    // only with a project you're the owner or a member of, the same rule as
+    // starting one on the live connection (R52b).
+    const projectId = data?.projectId;
+    if (projectId !== undefined && projectId !== null && projectId !== '') {
+      const standing = await this.live.standingOf(
+        typeof projectId === 'string' ? projectId : '',
+        actorIdOf(user),
+      );
+      if (!MEMBER_STANDINGS.has(standing)) {
+        throw new ForbiddenException('Not authorized for this project');
+      }
+    }
+
     return this.focusService.startSession(user.id, data);
   }
 

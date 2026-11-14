@@ -1,3 +1,4 @@
+import { assertProjectWriter } from '../common/guards/project-write-standing';
 import {
   BadRequestException,
   ForbiddenException,
@@ -593,6 +594,9 @@ export class AsyncCheckInsService {
         userId,
       );
 
+    // openshare-project-write-standing-v1 (R53): only writers change shared work.
+    assertProjectWriter(project, userId);
+
     const title =
       String(
         dto?.title || '',
@@ -704,6 +708,9 @@ export class AsyncCheckInsService {
         projectId,
         userId,
       );
+
+    // openshare-project-write-standing-v1 (R53): only writers change shared work.
+    assertProjectWriter(project, userId);
 
     const checkIn =
       await this.findCheckInRecord(

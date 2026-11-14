@@ -13,6 +13,8 @@ import { ThreadMessage, ThreadMessageDocument } from './schemas/thread-message.s
 import { NotificationsService } from '../notifications/notifications.service';
 import { VaultService } from '../vault/vault.service';
 import { ProjectsService } from '../projects/projects.service';
+import { projectStanding } from '../common/guards/project-standing';
+import { READ_ONLY_MESSAGE } from '../common/guards/project-write-standing';
 import {
   TeamRoomPendingUpload,
 } from '../uploads/schemas/team-room-pending-upload.schema';
@@ -94,6 +96,7 @@ export class ThreadMessagesService {
     userId: string,
     options: {
       skipMemberBilling?: boolean;
+      requireWriter?: boolean;
     } = {},
   ): Promise<string> {
     if (
@@ -235,6 +238,21 @@ export class ThreadMessagesService {
     ) {
       throw new ForbiddenException(
         'You do not have access to this project',
+      );
+    }
+
+    // openshare-project-write-standing-v1 (R53): every participant reads the
+    // Team Room; posting or editing a message needs a writer (the owner, or a
+    // member whose role is owner, admin or member).
+    if (
+      options.requireWriter &&
+      projectStanding(
+        project,
+        userId,
+      ) !== 'writer'
+    ) {
+      throw new ForbiddenException(
+        READ_ONLY_MESSAGE,
       );
     }
 
@@ -926,6 +944,7 @@ export class ThreadMessagesService {
     await this.requireThreadAccess(
       threadId,
       userId,
+      { requireWriter: true },
     );
 
     if (
@@ -1304,6 +1323,7 @@ export class ThreadMessagesService {
       await this.requireThreadAccess(
         msg.threadId.toString(),
         userId,
+        { requireWriter: true },
       );
 
     if (!msg.userId.equals(new Types.ObjectId(userId))) throw new ForbiddenException('You can only edit your own messages');
