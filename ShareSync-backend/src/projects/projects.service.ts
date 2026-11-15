@@ -1535,12 +1535,19 @@ export class ProjectsService {
       patch.category = String((dto as any).category).trim();
     }
 
-    if (typeof (dto as any).logoUrl === 'string' && String((dto as any).logoUrl).trim()) {
-      patch.logoUrl = String((dto as any).logoUrl).trim();
-    }
-
-    if (typeof (dto as any).bannerUrl === 'string' && String((dto as any).bannerUrl).trim()) {
-      patch.bannerUrl = String((dto as any).bannerUrl).trim();
+    // R54: the generic PUT endpoint must not accept a new branding URL. A
+    // caller could otherwise bypass R2 storage, moderation, or project-scoped
+    // object-key generation. Allow an unchanged value for legacy clients that
+    // still send the current logo/banner alongside ordinary project edits.
+    for (const brandingField of ['logoUrl', 'bannerUrl'] as const) {
+      const supplied = (dto as any)[brandingField];
+      if (supplied !== undefined &&
+          String(supplied || '').trim() !==
+            String((project as any)[brandingField] || '').trim()) {
+        throw new BadRequestException(
+          'Project images must be updated through the branding-image upload endpoint',
+        );
+      }
     }
 
     if (typeof (dto as any).isStarred === 'boolean') {
@@ -1597,6 +1604,60 @@ export class ProjectsService {
     });
 
     return updated;
+  }
+
+  // R54: Trusted storage-only branding commit. Public callers cannot choose
+  // arbitrary logo/banner URLs through the generic update DTO.
+  async updateProjectBranding(
+    projectId: string,
+    userId: string,
+    kind: 'logo' | 'banner',
+    url: string,
+  ): Promise<ProjectDocument> {
+    await this.assertProjectEditableByUser(projectId, userId);
+    await this.assertProjectWritableForBilling(projectId);
+
+    if ((kind !== 'logo' && kind !== 'banner') ||
+        !/^https:\/\//i.test(String(url || ''))) {
+      throw new BadRequestException('Invalid project branding update');
+    }
+
+    const field = kind === 'banner' ? 'bannerUrl' : 'logoUrl';
+    const patch = { [field]: url, updatedAt: new Date() };
+    const updated = await this.projectModel.findByIdAndUpdate(
+      projectId,
+      { $set: patch },
+      { new: true, runValidators: false },
+    ).exec();
+    if (!updated) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Persistence is already committed; a synchronous notification listener
+    // failure must not make the caller roll back its referenced R2 object.
+    try {
+      this.eventEmitter.emit('project.updated', {
+        projectId: updated._id,
+        userId,
+        changes: patch,
+      });
+    } catch {
+      this.logger.warn('R54 project branding saved but update notification failed');
+    }
+    return updated;
+  }
+
+  // On an uncertain MongoDB outcome, do not delete an object which the project
+  // might already reference. This is an internal rollback-safety read only.
+  async isProjectBrandingUrlCurrent(
+    projectId: string,
+    kind: 'logo' | 'banner',
+    url: string,
+  ): Promise<boolean> {
+    const field = kind === 'banner' ? 'bannerUrl' : 'logoUrl';
+    const current = await this.projectModel.findById(projectId)
+      .select(field).lean().exec();
+    return String((current as any)?.[field] || '') === url;
   }
 
   async toggleStar(

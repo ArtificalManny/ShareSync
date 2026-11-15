@@ -13,9 +13,8 @@ import client from '../../api/client';
 // ─────────────────────────────────────────────────────────────────────────────
 // PROJECT BRANDING FRONTEND BRIDGE
 // ─────────────────────────────────────────────────────────────────────────────
-// The backend stores uploaded image URLs as relative values like:
-//   /uploads/project-branding-...
-// The browser is running on Vite, so previews need the backend asset origin.
+// R54 uploads return durable absolute R2 URLs. Older projects may still have
+// relative /uploads/ URLs; keep resolving those for backward compatibility.
 const RAW_PROJECT_ASSET_BASE =
   client?.defaults?.baseURL ||
   import.meta?.env?.VITE_API_URL ||
@@ -186,17 +185,8 @@ const ProjectSettings = () => {
       icon: cleanIcon,
     };
 
-    const cleanLogoUrl = String(formData.picture || '').trim();
-    const cleanBannerUrl = String(formData.banner || '').trim();
-
-    // Do not send empty image URLs. Let the branding upload endpoint control these.
-    if (cleanLogoUrl && !cleanLogoUrl.startsWith('blob:')) {
-      payload.logoUrl = cleanLogoUrl;
-    }
-
-    if (cleanBannerUrl && !cleanBannerUrl.startsWith('blob:')) {
-      payload.bannerUrl = cleanBannerUrl;
-    }
+    // R54: Branding is saved exclusively by POST /projects/:id/branding-image.
+    // Do not resubmit stale local or R2 image URLs during an ordinary settings save.
 
     setSaving(true);
 

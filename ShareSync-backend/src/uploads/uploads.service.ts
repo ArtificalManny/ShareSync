@@ -4,7 +4,7 @@
 // Uses Cloudflare R2 in production when configured, with local disk fallback.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -568,6 +568,94 @@ export class UploadsService {
         Key: key,
       }),
     );
+  }
+
+  // R54: Project branding always uses the public R2 bucket. There is deliberately
+  // no local-disk fallback; Render's ephemeral filesystem cannot be the source
+  // of record for logos or banners. All callers must authorize and moderate
+  // the image before invoking this method.
+  isPublicStorageEnabled(): boolean {
+    return R2_ENABLED;
+  }
+
+  async uploadProjectBranding(
+    file: Express.Multer.File,
+    projectId: string,
+    kind: 'logo' | 'banner',
+  ): Promise<StoredFile> {
+    if (!R2_ENABLED) {
+      throw new ServiceUnavailableException(
+        'Project branding storage is unavailable. Existing branding was not changed.',
+      );
+    }
+
+    if (!/^[a-f0-9]{24}$/i.test(String(projectId || '')) ||
+        (kind !== 'logo' && kind !== 'banner')) {
+      throw new BadRequestException('Invalid project branding destination');
+    }
+
+    const extensions: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+      'image/avif': '.avif',
+      'image/bmp': '.bmp',
+      'image/tiff': '.tiff',
+    };
+    const mime = String(file?.mimetype || '').toLowerCase();
+    const ext = extensions[mime];
+    const size = Number(file?.size);
+
+    // The controller already validates the bytes, but the storage boundary
+    // fails closed if another caller accidentally bypasses those checks.
+    if (!file || !ext || !Number.isFinite(size) ||
+        size <= 0 || size > 5 * 1024 * 1024) {
+      throw new BadRequestException('Invalid project branding image');
+    }
+
+    // Branding images have a strict 5 MiB cap, so a bounded Buffer avoids
+    // non-retryable streaming requests and guarantees a concrete Content-Length
+    // for the Cloudflare R2 S3 API (which can reject chunked uploads with 411).
+    const localPath = getLocalSourcePath(file);
+    const body = Buffer.isBuffer(file.buffer)
+      ? file.buffer
+      : localPath ? await fs.promises.readFile(localPath) : null;
+    if (!body) {
+      throw new BadRequestException('No project branding file data available');
+    }
+    if (body.length !== size) {
+      throw new BadRequestException('Project branding file size does not match its data');
+    }
+
+    const id = crypto.randomUUID();
+    const key = `project-branding/${projectId.toLowerCase()}/${kind}/${id}${ext}`;
+
+    await getR2Client().send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: body,
+        ContentLength: body.length,
+        ContentType: mime,
+        CacheControl: 'public, max-age=31536000, immutable',
+      }),
+    );
+
+    // Do not remove the temporary upload here: the calling controller has a
+    // single finally block to clean up on both successful and failed paths.
+    const url = `${R2_PUBLIC_BASE_URL}/${key}`;
+    return {
+      id,
+      url,
+      thumbUrl: url,
+      name: file.originalname || `${id}${ext}`,
+      size,
+      mime,
+      storageProvider: 'r2',
+      storageKey: key,
+      storageBucket: R2_BUCKET,
+    };
   }
 
   async uploadFile(file: Express.Multer.File): Promise<StoredFile> {

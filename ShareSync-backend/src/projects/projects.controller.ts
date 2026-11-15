@@ -23,6 +23,7 @@ import {
   Logger,
   UploadedFile,
   BadRequestException,
+  ServiceUnavailableException,
   } from '@nestjs/common';
 import {
   ApiTags,
@@ -60,6 +61,7 @@ import { ImageModerationService } from '../moderation/image-moderation.service';
 import { policyForUpload } from '../moderation/policy';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { UploadsService, StoredFile } from '../uploads/uploads.service';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {
@@ -78,9 +80,9 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // Purpose:
 // - Let project owners/admins upload a logo/profile image or banner image.
-// - Store the file in the existing /uploads folder.
-// - Save the resulting relative URL on the Project document via ProjectsService.update.
-// - Keep permission checks centralized in ProjectsService.update.
+// - Temporarily stage to local disk for byte validation and moderation.
+// - Persist the accepted image to the public R2 bucket (no local fallback).
+// - Save the durable R2 URL only after authorization and billing checks.
 const PROJECT_BRANDING_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const PROJECT_BRANDING_UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
@@ -130,6 +132,7 @@ export class ProjectsController {
     private readonly projectFollowService: ProjectFollowService,
     private readonly moderationService: ModerationService,
     private readonly imageModerationService: ImageModerationService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -484,71 +487,67 @@ export class ProjectsController {
     @Body('kind') kind?: string,
   ) {
     const userId = req.user?.sub || req.user?.userId;
-
     if (!file) {
       throw new BadRequestException('No image file provided');
     }
 
-    const normalizedKind = String(kind || 'logo').toLowerCase() === 'banner'
-      ? 'banner'
-      : 'logo';
-
-    // openshare-project-branding-byte-check-v1
-    // The fileFilter only saw the client-declared Content-Type. Verify the bytes are
-    // a real raster image, and store it under an extension that matches its content,
-    // so a branding file is never served as HTML/SVG or under the wrong type.
-    const removeRejectedBrandingFile = async () => {
-      const rejectedPath = String(file?.path || '').trim();
-      if (!rejectedPath) return;
+    // Multer has already created the temporary file when this method runs.
+    // Clean it on EVERY exit path, including unauthorized requests and R2 errors.
+    const cleanupTempFile = async () => {
+      if (!file.path) return;
       try {
-        await fs.promises.unlink(rejectedPath);
-      } catch (cleanupError: any) {
-        if (cleanupError?.code !== 'ENOENT') {
-          this.logger.warn(
-            `Failed to clean rejected project branding upload: ${
-              cleanupError?.message || cleanupError
-            }`,
-          );
+        await fs.promises.unlink(file.path);
+      } catch (error: any) {
+        if (error?.code !== 'ENOENT') {
+          this.logger.warn('Could not clean temporary branding upload');
         }
       }
     };
 
-    const detectedImageMime = await detectUploadImageSignature(String(file.path || ''));
-    if (!detectedImageMime) {
-      await removeRejectedBrandingFile();
-      throw new BadRequestException(
-        'Project branding must be a JPG, PNG, GIF, WebP, AVIF, BMP, or TIFF image.',
-      );
-    }
-
-    const storedExt = path.extname(file.filename || '').slice(1).toLowerCase();
-    if (!imageExtensionMatches(storedExt, detectedImageMime)) {
-      const canonicalExt = canonicalImageExtension(detectedImageMime) || 'png';
-      const baseName = path.basename(file.filename, path.extname(file.filename));
-      const renamedFilename = `${baseName}.${canonicalExt}`;
-      const renamedPath = path.join(path.dirname(file.path), renamedFilename);
-      try {
-        await fs.promises.rename(file.path, renamedPath);
-      } catch {
-        await removeRejectedBrandingFile();
-        throw new BadRequestException('This branding image could not be stored.');
-      }
-      file.path = renamedPath;
-      file.filename = renamedFilename;
-    }
-    file.mimetype = detectedImageMime;
-
-    // openshare-project-branding-moderation-v1
-    // Only someone who can edit the project may upload its branding, and the image
-    // goes through the same moderation pipeline as profile photos before it is saved.
-    // Branding is public as soon as it is saved, so an image held for review is
-    // rejected rather than published.
     try {
-      await this.projectsService.assertProjectEditableByUser(id, userId);
+      const normalizedKind = String(kind || 'logo').toLowerCase();
+      if (normalizedKind !== 'logo' && normalizedKind !== 'banner') {
+        throw new BadRequestException('Branding kind must be logo or banner');
+      }
 
+      await this.projectsService.assertProjectEditableByUser(id, userId);
+      // Fail before moderation/R2 when the workspace is billing read-only.
+      // updateProjectBranding checks again before committing the pointer.
+      await this.projectsService.assertProjectWritableForBilling(id);
+      if (!this.uploadsService.isPublicStorageEnabled()) {
+        throw new ServiceUnavailableException(
+          'Project branding storage is unavailable. Existing branding was not changed.',
+        );
+      }
+
+      // The initial Multer filter only checks the client-supplied MIME type.
+      // The detected bytes remain authoritative; reject SVG and HTML uploads.
+      const detectedImageMime = await detectUploadImageSignature(file.path);
+      if (!detectedImageMime) {
+        throw new BadRequestException(
+          'Project branding must be a JPG, PNG, GIF, WebP, AVIF, BMP, or TIFF image.',
+        );
+      }
+
+      const storedExt = path.extname(file.filename || '').slice(1).toLowerCase();
+      if (!imageExtensionMatches(storedExt, detectedImageMime)) {
+        const canonicalExt = canonicalImageExtension(detectedImageMime) || 'png';
+        const baseName = path.basename(file.filename, path.extname(file.filename));
+        const renamedFilename = `${baseName}.${canonicalExt}`;
+        const renamedPath = path.join(path.dirname(file.path), renamedFilename);
+        try {
+          await fs.promises.rename(file.path, renamedPath);
+        } catch {
+          throw new BadRequestException('This branding image could not be stored.');
+        }
+        file.path = renamedPath;
+        file.filename = renamedFilename;
+      }
+      file.mimetype = detectedImageMime;
+
+      // Retain R53 scanning, AI moderation, decision logging, and policy.
       const brandingExt = path.extname(file.filename || '').slice(1).toLowerCase();
       const brandingSize = Number(file.size || 0);
-
       const virus = await this.moderationService.virusScan(file.path);
       const imgResult = await this.imageModerationService.moderateImage(file.path);
 
@@ -557,19 +556,14 @@ export class ProjectsController {
           imgResult.reason || 'This branding image is not allowed.',
         );
       }
-
       const image = {
         decision: (
-          imgResult.action === 'allow'
-            ? 'ALLOW'
-            : imgResult.action === 'review'
-              ? 'REVIEW'
-              : 'BLOCK'
+          imgResult.action === 'allow' ? 'ALLOW' :
+          imgResult.action === 'review' ? 'REVIEW' : 'BLOCK'
         ) as ModerationDecision,
         reason: imgResult.reason,
         categories: imgResult.labels.map((label) => label.name) as ModerationCategory[],
       };
-
       const decision = policyForUpload({
         ext: brandingExt,
         sizeBytes: brandingSize,
@@ -577,7 +571,6 @@ export class ProjectsController {
         virus,
         image,
       });
-
       await this.moderationService.logDecision({
         kind: 'image',
         projectId: id,
@@ -590,80 +583,67 @@ export class ProjectsController {
         meta: { surface: 'project-branding', brandingKind: normalizedKind },
         ts: Date.now(),
       });
-
       if (decision.decision === 'BLOCK') {
         throw new BadRequestException(
           decision.reason || 'This branding image is not allowed.',
         );
       }
-
       if (decision.decision === 'REVIEW') {
         throw new BadRequestException(
           decision.reason || 'This branding image needs review and cannot be used yet.',
         );
       }
-    } catch (error) {
-      await removeRejectedBrandingFile();
-      throw error;
-    }
 
-    const url = `/uploads/${file.filename}`;
-
-    let project;
-
-    try {
-      project =
-        await this.projectsService.update(
+      // Upload first, then persist the pointer. Never overwrite the old pointer
+      // before R2 acknowledges persistence. If the MongoDB update fails, remove
+      // only the newly-created R2 object, not the previously referenced image.
+      const stored: StoredFile = await this.uploadsService.uploadProjectBranding(
+        file,
+        id,
+        normalizedKind,
+      );
+      let project;
+      try {
+        project = await this.projectsService.updateProjectBranding(
           id,
           userId,
-          normalizedKind === 'banner'
-            ? ({
-                bannerUrl: url,
-              } as UpdateProjectDto)
-            : ({
-                logoUrl: url,
-              } as UpdateProjectDto),
+          normalizedKind,
+          stored.url,
         );
-    } catch (error) {
-      // openshare-project-generic-update-billing-v1
-      // The uploaded branding file has not been associated with the Project
-      // because update() failed. Remove only this newly-uploaded file.
-      const uploadedPath =
-        String(
-          file?.path || '',
-        ).trim();
-
-      if (uploadedPath) {
+      } catch (error) {
+        // A failed/uncertain database response might occur after the write
+        // persisted. Never delete an object if the project already points to it.
+        // When the database is unreachable, leave the object for reconciliation.
+        let safeToDelete = false;
         try {
-          await fs.promises.unlink(
-            uploadedPath,
-          );
-        } catch (cleanupError: any) {
-          if (
-            cleanupError?.code !==
-            'ENOENT'
-          ) {
-            this.logger.warn(
-              `Failed to clean rejected project branding upload: ${
-                cleanupError?.message ||
-                cleanupError
-              }`,
-            );
+          safeToDelete = !(await this.projectsService.isProjectBrandingUrlCurrent(
+            id, normalizedKind, stored.url,
+          ));
+        } catch {
+          this.logger.warn('R54 could not confirm branding rollback safety');
+        }
+        if (safeToDelete) {
+          try {
+            await this.uploadsService.deleteStoredObject({
+              storageProvider: stored.storageProvider,
+              storageKey: stored.storageKey,
+              storageBucket: stored.storageBucket,
+              url: stored.url,
+            });
+          } catch {
+            this.logger.error('R54 failed to roll back newly uploaded branding object');
           }
         }
+        throw error;
       }
 
-      throw error;
+      return {
+        success: true,
+        data: { kind: normalizedKind, url: stored.url, project },
+      };
+    } finally {
+      await cleanupTempFile();
     }
-
-    return {
-      success: true,
-      data: {
-        kind: normalizedKind,
-        url,
-        project,
-      },
-    };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
