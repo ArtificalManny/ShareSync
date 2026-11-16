@@ -110,7 +110,6 @@ import GlobalPulseBar, { useGlobalPulse } from "../components/ui/GlobalPulseBar"
 
 // Utilities
 import QuickActionsManager from "../components/quick-actions/QuickActionsManager";
-import KeyboardShortcuts from "../components/quick-actions/KeyboardShortcuts";
 
 // Realtime
 import { useSocketContext } from "../context/SocketContext";
@@ -5702,7 +5701,6 @@ export default function ProjectHome() {
       <GlobalPulseBar position="bottom" color="brand" />
 
       {canUseMemberActions && <QuickActionsManager projectId={id} />}
-      <KeyboardShortcuts />
 
       {canUseMemberActions && showAddMilestone && (
         <AddMilestoneModal
