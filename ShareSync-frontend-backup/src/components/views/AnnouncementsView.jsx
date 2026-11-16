@@ -11,7 +11,7 @@ import {
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
   ExternalLink, FileText, Link2, Search,
-  ListTodo, Target, Milestone, Play, Video,
+  ListTodo, Target, Milestone, Play,
 } from 'lucide-react';
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
@@ -903,13 +903,12 @@ function AttachmentGallery({
 function AttachmentInput({
   uploadedFiles,
   onFilesChange,
-  onVideoSelected,
+  onVideosSelected,
   uploadingVideo,
-  videoUploadDisabled,
+  disabled,
 }) {
   const fileInputRef =
     useRef(null);
-  const videoInputRef = useRef(null);
 
   const allowedDocumentExtensions =
     new Set([
@@ -965,20 +964,20 @@ function AttachmentInput({
   const handleFileSelect = (
     e
   ) => {
-    const files =
-      Array.from(
-        e.target.files || []
-      );
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (disabled || uploadingVideo) return;
 
-    if (
-      files.length === 0
-    ) {
-      return;
-    }
+    const videos = [];
 
     for (
       const file of files
     ) {
+      if (file.type?.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name)) {
+        videos.push(file);
+        continue;
+      }
+
       if (
         !isAllowedFile(file)
       ) {
@@ -1081,12 +1080,7 @@ function AttachmentInput({
         });
     }
 
-    if (
-      fileInputRef.current
-    ) {
-      fileInputRef.current
-        .value = '';
-    }
+    if (videos.length) onVideosSelected(videos);
   };
 
   const removeFile = (
@@ -1216,21 +1210,23 @@ function AttachmentInput({
 
       <button
         type="button"
+        disabled={disabled || uploadingVideo}
         onClick={() =>
           fileInputRef
             .current
             ?.click()
         }
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-600 transition-all hover:border-violet-400 hover:bg-slate-50 hover:text-violet-600"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-600 transition-all hover:border-violet-400 hover:bg-slate-50 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Paperclip className="h-5 w-5" />
-        Upload image or document
+        {uploadingVideo ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+        {uploadingVideo ? 'Uploading video…' : 'Attach files'}
       </button>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf"
+        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp4,.webm,video/mp4,video/webm"
+        aria-label="Choose announcement attachments"
         multiple
         onChange={
           handleFileSelect
@@ -1238,29 +1234,8 @@ function AttachmentInput({
         className="hidden"
       />
 
-      <button
-        type="button"
-        disabled={videoUploadDisabled || uploadingVideo}
-        onClick={() => videoInputRef.current?.click()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-600 transition-all hover:border-violet-400 hover:bg-slate-50 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {uploadingVideo ? <Loader2 className="h-5 w-5 animate-spin" /> : <Video className="h-5 w-5" />}
-        {uploadingVideo ? 'Uploading video…' : 'Upload video'}
-      </button>
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept=".mp4,.webm,video/mp4,video/webm"
-        aria-label="Choose announcement video"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) onVideoSelected(file);
-        }}
-      />
       <p className="text-xs font-medium text-slate-500">
-        MP4 or WebM, up to 50 MB. Videos are saved to Project Files.
+        Images and documents up to 10 MB. MP4 and WebM videos up to 50 MB are saved to Project Files.
       </p>
     </div>
   );
@@ -3384,32 +3359,47 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     resetAnnouncementForm();
   };
 
-  const uploadAnnouncementVideo = async (file) => {
-    if (readOnly || !projectId || posting || uploadingVideo ||
-        linkedProjectFiles.length >= MAX_ANNOUNCEMENT_PROJECT_FILES) return;
+  const uploadAnnouncementVideos = async (files) => {
+    if (readOnly || !projectId || posting || uploadingVideo) return;
 
-    const videoType = getAnnouncementVideoType(file.name, file.type);
-    if (!videoType || !file.size || file.size > MAX_ANNOUNCEMENT_VIDEO_BYTES) {
-      toast({ title: 'Choose an MP4 or WebM video up to 50 MB', variant: 'error' });
+    const videos = files
+      .map((file) => ({ file, type: getAnnouncementVideoType(file.name, file.type) }))
+      .filter(({ file, type }) => {
+        if (type && file.size > 0 && file.size <= MAX_ANNOUNCEMENT_VIDEO_BYTES) return true;
+        toast({
+          title: 'Choose an MP4 or WebM video up to 50 MB',
+          description: file.name,
+          variant: 'error',
+        });
+        return false;
+      });
+    if (!videos.length) return;
+
+    if (linkedProjectFiles.length + videos.length > MAX_ANNOUNCEMENT_PROJECT_FILES) {
+      toast({ title: 'An announcement can link up to 10 project files', variant: 'error' });
       return;
     }
 
     setUploadingVideo(true);
     try {
-      const videoFile = file.type === videoType
-        ? file
-        : new File([file], file.name, { type: videoType, lastModified: file.lastModified });
-      const uploaded = await uploadVaultFile(projectId, null, videoFile);
-      const reference = normalizeAnnouncementFileReference(uploaded);
-      if (!reference) throw new Error('The video uploaded but could not be linked. Check Project Files.');
+      for (const { file, type } of videos) {
+        try {
+          const videoFile = file.type === type
+            ? file
+            : new File([file], file.name, { type, lastModified: file.lastModified });
+          const uploaded = await uploadVaultFile(projectId, null, videoFile);
+          const reference = normalizeAnnouncementFileReference(uploaded);
+          if (!reference) throw new Error('The video uploaded but could not be linked. Check Project Files.');
 
-      setLinkedProjectFiles((files) => normalizeAnnouncementFileReferenceList([...files, reference]));
-    } catch (error) {
-      toast({
-        title: 'Video upload failed',
-        description: error?.response?.data?.message || error?.message,
-        variant: 'error',
-      });
+          setLinkedProjectFiles((current) => normalizeAnnouncementFileReferenceList([...current, reference]));
+        } catch (error) {
+          toast({
+            title: `Could not attach ${file.name}`,
+            description: error?.response?.data?.message || error?.message,
+            variant: 'error',
+          });
+        }
+      }
     } finally {
       setUploadingVideo(false);
     }
@@ -4306,9 +4296,9 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
               <AttachmentInput
                 uploadedFiles={uploadedFiles}
                 onFilesChange={setUploadedFiles}
-                onVideoSelected={uploadAnnouncementVideo}
+                onVideosSelected={uploadAnnouncementVideos}
                 uploadingVideo={uploadingVideo}
-                videoUploadDisabled={posting || !projectId || linkedProjectFiles.length >= MAX_ANNOUNCEMENT_PROJECT_FILES}
+                disabled={posting || !projectId}
               />
 
               <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-3 transition-colors hover:border-amber-200 hover:bg-amber-50/60 sm:gap-4 sm:p-4">
