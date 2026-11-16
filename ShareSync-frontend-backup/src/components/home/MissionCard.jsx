@@ -14,7 +14,7 @@ import {
   CheckCircle2,
   Clock,
   Rocket,
-  Target } from "lucide-react";
+} from "lucide-react";
 import { ShipButton, ShippableCard } from "../ship";
 import useShipCeremony, { PHASES } from "../../hooks/useShipCeremony";
 import { tryShipProject } from "../../api/home";
@@ -89,10 +89,6 @@ function getPriorityLabel(project) {
   if (priority === "low") return "Low";
 
   return "";
-}
-
-function isRecommendedTaskMission(project) {
-  return Boolean(project?.recommendedTask || project?.recommendationSource === "priority-task");
 }
 
 function getSignalIcon(project) {
@@ -240,7 +236,6 @@ export default function MissionCard({ project, onClick, onShipped }) {
   const reason = getDisplayReason(hydratedProject);
   const progressValue = getProgressValue(hydratedProject);
   const priorityLabel = getPriorityLabel(hydratedProject);
-  const isPriorityMission = isRecommendedTaskMission(hydratedProject);
 
   const getProgressFillClass = (percentage) => {
     if (percentage >= 100) return "bg-success";
@@ -288,25 +283,17 @@ export default function MissionCard({ project, onClick, onShipped }) {
                 title={`${title || "Project"} logo`}
               />
 
-              {(isThisShipped || isThisShipping || isPriorityMission) && (
+              {(isThisShipped || isThisShipping) && (
                 <span
                   className={`
                     absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white shadow-sm
-                    ${
-                      isThisShipped
-                        ? "bg-emerald-500 text-white"
-                        : isThisShipping
-                          ? "bg-violet-500 text-white"
-                          : "bg-white text-violet-600"
-                    }
+                    ${isThisShipped ? "bg-emerald-500 text-white" : "bg-violet-500 text-white"}
                   `}
                 >
                   {isThisShipped ? (
                     <CheckCircle2 className="h-3 w-3" />
-                  ) : isThisShipping ? (
-                    <Rocket className="h-3 w-3 animate-pulse" />
                   ) : (
-                    <Target className="h-3 w-3" />
+                    <Rocket className="h-3 w-3 animate-pulse" />
                   )}
                 </span>
               )}
