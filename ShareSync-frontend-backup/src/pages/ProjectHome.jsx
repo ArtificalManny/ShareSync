@@ -5453,6 +5453,7 @@ export default function ProjectHome() {
           return (
             <div className={pageWrap}>
               <AnnouncementsView
+                key={id}
                 projectId={id}
                 announcements={announcements || []}
                 readOnly={!canUseMemberActions}

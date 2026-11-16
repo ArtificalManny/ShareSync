@@ -11,13 +11,14 @@ import {
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
   Heart, MessageCircle, Paperclip, Image as ImageIcon,
   ExternalLink, FileText, Link2, Search,
-  ListTodo, Target, Milestone,
+  ListTodo, Target, Milestone, Play, Video,
 } from 'lucide-react';
 import { toast } from '../ui/toast';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 // openshare-vault-private-links-v1
-import { openVaultFile } from '../../api/vaultLinks';
+import { getVaultFileLink, openVaultFile } from '../../api/vaultLinks';
+import { uploadVaultFile } from '../../api/vault';
 import {
   getAnnouncements, createAnnouncement, updateAnnouncement,
   toggleAnnouncementPin, deleteAnnouncement, markAnnouncementAsRead,
@@ -902,9 +903,13 @@ function AttachmentGallery({
 function AttachmentInput({
   uploadedFiles,
   onFilesChange,
+  onVideoSelected,
+  uploadingVideo,
+  videoUploadDisabled,
 }) {
   const fileInputRef =
     useRef(null);
+  const videoInputRef = useRef(null);
 
   const allowedDocumentExtensions =
     new Set([
@@ -1232,6 +1237,31 @@ function AttachmentInput({
         }
         className="hidden"
       />
+
+      <button
+        type="button"
+        disabled={videoUploadDisabled || uploadingVideo}
+        onClick={() => videoInputRef.current?.click()}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-600 transition-all hover:border-violet-400 hover:bg-slate-50 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {uploadingVideo ? <Loader2 className="h-5 w-5 animate-spin" /> : <Video className="h-5 w-5" />}
+        {uploadingVideo ? 'Uploading video…' : 'Upload video'}
+      </button>
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept=".mp4,.webm,video/mp4,video/webm"
+        aria-label="Choose announcement video"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) onVideoSelected(file);
+        }}
+      />
+      <p className="text-xs font-medium text-slate-500">
+        MP4 or WebM, up to 50 MB. Videos are saved to Project Files.
+      </p>
     </div>
   );
 }
@@ -1330,6 +1360,91 @@ function formatAnnouncementFileSize(bytes) {
   ).toFixed(1)} MB`;
 }
 
+const MAX_ANNOUNCEMENT_PROJECT_FILES = 10;
+const MAX_ANNOUNCEMENT_VIDEO_BYTES = 50 * 1024 * 1024;
+const ANNOUNCEMENT_VIDEO_TYPES = new Map([
+  ['mp4', 'video/mp4'],
+  ['webm', 'video/webm'],
+]);
+
+function getAnnouncementVideoType(fileName, mimeType) {
+  const match = /\.(mp4|webm)$/i.exec(fileName);
+  if (!match) return '';
+
+  const expectedType = ANNOUNCEMENT_VIDEO_TYPES.get(match[1].toLowerCase());
+  const type = String(mimeType || '').trim().toLowerCase();
+
+  return !type || type === 'application/octet-stream' || type === expectedType
+    ? expectedType
+    : '';
+}
+
+function AnnouncementVideo({ file }) {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const position = useRef(0);
+
+  const loadVideo = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const link = await getVaultFileLink(file.fileId);
+      setUrl(link.url);
+    } catch (requestError) {
+      const status = requestError?.response?.status;
+      setError(status === 403 || status === 404
+        ? 'This video is unavailable or you do not have access.'
+        : 'Could not load this video. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      {url ? (
+        <video
+          aria-label={file.fileName}
+          className="block max-h-[420px] w-full bg-slate-950 object-contain"
+          src={url}
+          controls
+          playsInline
+          autoPlay
+          onLoadedMetadata={(event) => {
+            if (position.current > 0) event.currentTarget.currentTime = position.current;
+          }}
+          onTimeUpdate={(event) => { position.current = event.currentTarget.currentTime; }}
+          onError={() => {
+            setUrl('');
+            setError('Playback stopped. Try again to reload the video.');
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={loadVideo}
+          disabled={loading}
+          aria-label={`${loading ? 'Loading' : error ? 'Retry' : 'Play'} ${file.fileName}`}
+          className="flex min-h-20 w-full items-center gap-3 px-4 py-3 text-left text-slate-800 hover:bg-cyan-50 disabled:opacity-60"
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-100 text-cyan-800">
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-black">{file.fileName}</span>
+            <span className="block text-xs font-semibold text-slate-600">
+              {loading ? 'Loading video…' : error ? 'Retry video' : 'Play video'}
+            </span>
+          </span>
+        </button>
+      )}
+      {error && <p role="status" className="px-4 pb-3 text-sm text-rose-700">{error}</p>}
+    </div>
+  );
+}
+
 function resolveAnnouncementFileUrl(value) {
   const raw = String(value || '').trim();
 
@@ -1381,6 +1496,10 @@ function AnnouncementFileReferences({
       </div>
 
       {files.map((file) => {
+        if (getAnnouncementVideoType(file.fileName, file.fileType)) {
+          return <AnnouncementVideo key={file.fileId} file={file} />;
+        }
+
         return (
           <a
             key={file.fileId}
@@ -1519,7 +1638,7 @@ function AnnouncementProjectFileInput({
   const addFile = (file) => {
     if (
       disabled ||
-      normalizedSelected.length >= 10
+      normalizedSelected.length >= MAX_ANNOUNCEMENT_PROJECT_FILES
     ) {
       return;
     }
@@ -1659,7 +1778,7 @@ function AnnouncementProjectFileInput({
                     type="button"
                     disabled={
                       disabled ||
-                      normalizedSelected.length >= 10
+                      normalizedSelected.length >= MAX_ANNOUNCEMENT_PROJECT_FILES
                     }
                     onClick={() =>
                       addFile(file)
@@ -3102,6 +3221,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
   const [type, setType] = useState('info');
   const [pinned, setPinned] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [
     linkedProjectFiles,
     setLinkedProjectFiles,
@@ -3136,7 +3256,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
   const [posting, setPosting] = useState(false);
   const mountedRef = useRef(true);
 
-  const anyUploading = uploadedFiles.some((a) => a.uploading);
+  const anyUploading = uploadingVideo || uploadedFiles.some((a) => a.uploading);
   const resetAnnouncementForm = () => {
     setTitle('');
     setMessage('');
@@ -3258,9 +3378,41 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
   };
 
   const closeAnnouncementModal = () => {
+    if (uploadingVideo) return;
     setShowCreate(false);
     setEditingAnnouncement(null);
     resetAnnouncementForm();
+  };
+
+  const uploadAnnouncementVideo = async (file) => {
+    if (readOnly || !projectId || posting || uploadingVideo ||
+        linkedProjectFiles.length >= MAX_ANNOUNCEMENT_PROJECT_FILES) return;
+
+    const videoType = getAnnouncementVideoType(file.name, file.type);
+    if (!videoType || !file.size || file.size > MAX_ANNOUNCEMENT_VIDEO_BYTES) {
+      toast({ title: 'Choose an MP4 or WebM video up to 50 MB', variant: 'error' });
+      return;
+    }
+
+    setUploadingVideo(true);
+    try {
+      const videoFile = file.type === videoType
+        ? file
+        : new File([file], file.name, { type: videoType, lastModified: file.lastModified });
+      const uploaded = await uploadVaultFile(projectId, null, videoFile);
+      const reference = normalizeAnnouncementFileReference(uploaded);
+      if (!reference) throw new Error('The video uploaded but could not be linked. Check Project Files.');
+
+      setLinkedProjectFiles((files) => normalizeAnnouncementFileReferenceList([...files, reference]));
+    } catch (error) {
+      toast({
+        title: 'Video upload failed',
+        description: error?.response?.data?.message || error?.message,
+        variant: 'error',
+      });
+    } finally {
+      setUploadingVideo(false);
+    }
   };
 
 
@@ -4024,6 +4176,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             type="button"
             className="pc-create-backdrop fixed inset-0 bg-black/5 backdrop-blur-[2px] pointer-events-auto"
             onClick={closeAnnouncementModal}
+            disabled={uploadingVideo}
             aria-label="Close post announcement modal backdrop"
           />
 
@@ -4048,6 +4201,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                 <button
                   type="button"
                   onClick={closeAnnouncementModal}
+                  disabled={uploadingVideo}
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700"
                   aria-label="Close post announcement modal"
                 >
@@ -4146,12 +4300,15 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                 projectId={projectId}
                 selectedFiles={linkedProjectFiles}
                 onChange={setLinkedProjectFiles}
-                disabled={posting}
+                disabled={posting || uploadingVideo}
               />
 
               <AttachmentInput
                 uploadedFiles={uploadedFiles}
                 onFilesChange={setUploadedFiles}
+                onVideoSelected={uploadAnnouncementVideo}
+                uploadingVideo={uploadingVideo}
+                videoUploadDisabled={posting || !projectId || linkedProjectFiles.length >= MAX_ANNOUNCEMENT_PROJECT_FILES}
               />
 
               <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-slate-50/70 p-3 transition-colors hover:border-amber-200 hover:bg-amber-50/60 sm:gap-4 sm:p-4">
@@ -4182,6 +4339,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             <div className="shrink-0 flex items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:justify-end sm:gap-4 sm:px-6 sm:py-5">
               <button
                 onClick={closeAnnouncementModal}
+                disabled={uploadingVideo}
                 className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:bg-slate-100 sm:flex-none sm:px-6"
               >
                 Cancel
