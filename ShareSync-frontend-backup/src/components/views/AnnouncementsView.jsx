@@ -1355,53 +1355,97 @@ function getAnnouncementVideoType(fileName, mimeType) {
 }
 
 function AnnouncementVideo({ file }) {
-  const [url, setUrl] = useState('');
+  const [link, setLink] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
   const [error, setError] = useState('');
+  const card = useRef(null);
+  const video = useRef(null);
+  const request = useRef(null);
   const position = useRef(0);
 
-  const loadVideo = async () => {
+  const prepareVideo = useCallback(async () => {
+    if (request.current) return;
     setLoading(true);
     setError('');
+    request.current = getVaultFileLink(file.fileId);
 
     try {
-      const link = await getVaultFileLink(file.fileId);
-      setUrl(link.url);
+      setLink(await request.current);
     } catch (requestError) {
       const status = requestError?.response?.status;
-      setError(status === 403 || status === 404
-        ? 'This video is unavailable or you do not have access.'
-        : 'Could not load this video. Try again.');
+      setError(
+        status === 403 || status === 404
+          ? 'This video is unavailable or you do not have access.'
+          : 'Could not load this video. Try again.',
+      );
     } finally {
+      request.current = null;
       setLoading(false);
     }
+  }, [file.fileId]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      observer.disconnect();
+      void prepareVideo();
+    }, { rootMargin: '160px' });
+
+    observer.observe(card.current);
+    return () => observer.disconnect();
+  }, [prepareVideo]);
+
+  const handlePlaybackError = () => {
+    video.current?.removeAttribute('src');
+    setShowPlayer(false);
+    setLink(null);
+    setError('Playback stopped. Try again to reload the video.');
   };
 
+  const handlePlay = () => {
+    if (!link || (link.expiresAt && Date.parse(link.expiresAt) <= Date.now() + 30_000)) {
+      void prepareVideo();
+      return;
+    }
+
+    // Keep play() in the tap handler for browsers that require a user gesture.
+    const player = video.current;
+    setShowPlayer(true);
+    setError('');
+    player.src = link.url;
+    player.play()?.catch((playError) => {
+      if (playError.name !== 'AbortError' && playError.name !== 'NotAllowedError') {
+        handlePlaybackError();
+      }
+    });
+  };
+
+  const action = loading ? 'Preparing' : error ? 'Retry' : link ? 'Play' : 'Load';
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-      {url ? (
-        <video
-          aria-label={file.fileName}
-          className="block max-h-[420px] w-full bg-slate-950 object-contain"
-          src={url}
-          controls
-          playsInline
-          autoPlay
-          onLoadedMetadata={(event) => {
-            if (position.current > 0) event.currentTarget.currentTime = position.current;
-          }}
-          onTimeUpdate={(event) => { position.current = event.currentTarget.currentTime; }}
-          onError={() => {
-            setUrl('');
-            setError('Playback stopped. Try again to reload the video.');
-          }}
-        />
-      ) : (
+    <div ref={card} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      <video
+        ref={video}
+        aria-label={file.fileName}
+        className={`${showPlayer ? 'block' : 'hidden'} max-h-[420px] w-full bg-slate-950 object-contain`}
+        controls
+        playsInline
+        preload="none"
+        onLoadedMetadata={(event) => {
+          if (position.current > 0) event.currentTarget.currentTime = position.current;
+        }}
+        onTimeUpdate={(event) => { position.current = event.currentTarget.currentTime; }}
+        onError={handlePlaybackError}
+      />
+      {!showPlayer && (
         <button
           type="button"
-          onClick={loadVideo}
+          onClick={handlePlay}
           disabled={loading}
-          aria-label={`${loading ? 'Loading' : error ? 'Retry' : 'Play'} ${file.fileName}`}
+          aria-label={`${action} ${file.fileName}`}
           className="flex min-h-20 w-full items-center gap-3 px-4 py-3 text-left text-slate-800 hover:bg-cyan-50 disabled:opacity-60"
         >
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-100 text-cyan-800">
@@ -1410,7 +1454,7 @@ function AnnouncementVideo({ file }) {
           <span className="min-w-0">
             <span className="block truncate text-sm font-black">{file.fileName}</span>
             <span className="block text-xs font-semibold text-slate-600">
-              {loading ? 'Loading video…' : error ? 'Retry video' : 'Play video'}
+              {action} video{loading ? '…' : ''}
             </span>
           </span>
         </button>
