@@ -17,6 +17,7 @@ export default function OpenShareLogo({
   variant = "mark",
   markClassName = "w-10 h-10 shrink-0",
   wordmarkClassName = "text-2xl",
+  openWordClassName = "text-slate-950 dark:text-white",
 }) {
   const rawId = useId().replace(/:/g, "");
 
@@ -153,7 +154,7 @@ export default function OpenShareLogo({
         aria-hidden="true"
         className={`inline-flex items-baseline font-semibold tracking-[-0.045em] leading-none ${wordmarkClassName}`}
       >
-        <span className="text-slate-950 dark:text-white">
+        <span className={openWordClassName}>
           Open
         </span>
         <span className="bg-gradient-to-r from-violet-600 via-indigo-500 to-blue-500 bg-clip-text text-transparent">

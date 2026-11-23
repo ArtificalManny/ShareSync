@@ -87,6 +87,7 @@ export function AuthLayout({ title, subtitle, children }) {
                 className="justify-center"
                 markClassName="w-12 h-12 shrink-0"
                 wordmarkClassName="text-[1.55rem] sm:text-[1.7rem]"
+                openWordClassName="text-slate-950 dark:text-slate-950"
                 title="OpenShare"
               />
             </div>
