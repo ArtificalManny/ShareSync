@@ -1,10 +1,10 @@
 // src/pages/PrivacyManifesto.jsx - Week 7 Privacy Foundation
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Shield, Lock, Eye, Database, Users, CheckCircle, 
+  Shield, Lock, Eye, Database, Users, CheckCircle,
   ArrowLeft, FileText, BarChart3, MessageCircle, Cloud,
-  Zap, Heart, Target, X
+  Heart, Target
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useMobile';
 import useDocumentTitle from "../hooks/useDocumentTitle";
@@ -22,72 +22,45 @@ const PrivacyManifesto = () => {
   const principles = [
     {
       icon: Lock,
-      title: 'End-to-End Encryption',
-      description: 'Your 1:1 and group chats are encrypted before leaving your device. Not even we can read them.',
-      status: 'Active',
+      title: 'Access and permissions',
+      description: 'OpenShare uses account sign-in and project permissions to help people control access to their work. Sharing choices and visibility depend on the feature.',
+      status: 'Principle',
       color: 'emerald'
     },
     {
       icon: Cloud,
-      title: 'Server-Side Encryption',
-      description: 'Project files are encrypted on our servers using AES-256. Your data is protected at rest.',
-      status: 'Active',
+      title: 'Hosted services',
+      description: 'OpenShare relies on infrastructure and email providers to operate the service. We explain their roles and relevant data handling in our Privacy Policy.',
+      status: 'Principle',
       color: 'blue'
     },
     {
       icon: BarChart3,
-      title: 'Anonymous Analytics',
-      description: 'Stats and streaks show private activity counts. We never sell or share individual user data.',
-      status: 'Active',
+      title: 'Clear activity disclosures',
+      description: 'Project activity and account data support OpenShare features. Technical logs and any enabled analytics are described in our Privacy Policy.',
+      status: 'Principle',
       color: 'purple'
     },
     {
       icon: Eye,
-      title: 'Zero-Knowledge Architecture',
-      description: 'We designed OpenShare so we can\'t access your private content even if we wanted to.',
-      status: 'Active',
+      title: 'Meaningful visibility choices',
+      description: 'Some OpenShare features are public by design, while others rely on workspace access controls. Review your project and profile settings before sharing.',
+      status: 'Principle',
       color: 'orange'
     },
     {
       icon: Database,
-      title: 'Data Minimization',
-      description: 'We only collect what\'s necessary for the app to work. No tracking pixels, no third-party analytics.',
-      status: 'Active',
+      title: 'Data minimization',
+      description: 'Our goal is to process only the information needed to operate, secure, and improve OpenShare, with disclosures that reflect actual service behavior.',
+      status: 'Principle',
       color: 'cyan'
     },
     {
       icon: Users,
-      title: 'You Own Your Data',
-      description: 'Export all your data anytime. Delete your account and everything is permanently removed.',
-      status: 'Active',
+      title: 'Account and data controls',
+      description: 'Users can export available account information and request account deletion. Certain shared contributions may remain for collaborators as explained in our policy.',
+      status: 'Principle',
       color: 'fuchsia'
-    }
-  ];
-
-  const comparisons = [
-    {
-      feature: 'Chat Encryption',
-      shareSync: 'End-to-end',
-      others: 'Server-side only',
-      sharesynWins: true
-    },
-    {
-      feature: 'Data Selling',
-      shareSync: 'Never',
-      others: 'To advertisers',
-      sharesynWins: true
-    },
-    {
-      feature: 'Analytics Tracking',
-      shareSync: 'Anonymous only',
-      others: 'Full user tracking',
-      sharesynWins: true
-    },
-    {
-      feature: 'Your Control',
-      shareSync: '100%',
-      others: 'Limited',
-      sharesynWins: true
     }
   ];
 
@@ -147,15 +120,15 @@ const PrivacyManifesto = () => {
           <div className="flex items-start gap-4">
             <Heart className="w-8 h-8 text-emerald-400 flex-shrink-0 mt-1" />
             <div>
-              <h2 className="text-2xl font-bold text-white mb-3">Our Promise to You</h2>
+              <h2 className="text-2xl font-bold text-white mb-3">Our Approach to Privacy</h2>
               <p className="text-slate-300 leading-relaxed mb-3">
-                OpenShare is built on trust. We believe your data belongs to you, not to us or advertisers.
-                We've designed every system with privacy-first principles.
+                OpenShare aims to give people meaningful control over their work and personal information.
+                Our privacy commitments should be clear, practical, and consistent with how the service actually operates.
               </p>
               <p className="text-slate-300 leading-relaxed">
-                We will <strong className="text-white">never sell your data</strong>, 
-                we will <strong className="text-white">never track you across the web</strong>, 
-                and we will <strong className="text-white">always be transparent</strong> about how your information is used.
+                This manifesto explains our guiding principles, not a guarantee of a particular encryption method.
+                For specific collection, sharing, retention, and deletion practices, read our{' '}
+                <Link to="/privacy" className="text-purple-300 underline hover:text-purple-200">Privacy Policy</Link>.
               </p>
             </div>
           </div>
@@ -183,9 +156,9 @@ const PrivacyManifesto = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-white">{principle.title}</h3>
-                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+
                       </div>
-                      <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full">
+                      <span className="text-xs px-2 py-1 bg-slate-700/60 text-slate-300 rounded-full">
                         {principle.status}
                       </span>
                     </div>
@@ -199,37 +172,19 @@ const PrivacyManifesto = () => {
           </div>
         </div>
 
-        {/* Comparison Table */}
+        {/* Privacy commitments in practice */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <Zap className="w-6 h-6 text-yellow-400" />
-            How We Compare
+          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+            <FileText className="w-6 h-6 text-purple-400" />
+            Privacy in Practice
           </h2>
-
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-3 bg-slate-900/50 border-b border-slate-700/50">
-              <div className="p-4 font-bold text-white">Feature</div>
-              <div className="p-4 font-bold text-purple-400 border-l border-slate-700/50">OpenShare</div>
-              <div className="p-4 font-bold text-slate-400 border-l border-slate-700/50">Others</div>
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 text-slate-300 leading-7 space-y-4">
+            <p>OpenShare processes account information, project content, and operational records to provide and protect the service. Some projects, profiles, and collaborative activity may be public when shared.</p>
+            <p>OpenShare has an account-deletion workflow designed to remove the account and associated records. Some authored messages and shared-project contributions may remain to preserve collaborative history; details and deletion requests are explained in the pages below.</p>
+            <div className="flex flex-wrap gap-4">
+              <Link to="/privacy" className="font-semibold text-purple-300 underline hover:text-purple-200">Read the Privacy Policy</Link>
+              <Link to="/delete-account" className="font-semibold text-purple-300 underline hover:text-purple-200">Account deletion information</Link>
             </div>
-
-            {comparisons.map((row, index) => (
-              <div key={index} className="grid grid-cols-3 border-b border-slate-700/50 last:border-b-0">
-                <div className="p-4 text-white">{row.feature}</div>
-                <div className="p-4 border-l border-slate-700/50">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-300 font-semibold">{row.shareSync}</span>
-                  </div>
-                </div>
-                <div className="p-4 border-l border-slate-700/50">
-                  <div className="flex items-center gap-2">
-                    <X className="w-4 h-4 text-red-400" />
-                    <span className="text-slate-400">{row.others}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -242,35 +197,33 @@ const PrivacyManifesto = () => {
               <div>
                 <h3 className="font-bold text-white mb-2 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-emerald-400" />
-                  Chat Encryption (encrypted in transit)
+                  Messaging and Access
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  We use the Signal Protocol for end-to-end encryption in all 1:1 and group chats. 
-                  Messages are encrypted on your device before being sent, and only the recipient can decrypt them.
-                  Not even OpenShare servers can read your messages.
+                  OpenShare uses authentication and access controls for messaging and collaboration.
+                  The specific encryption protections available depend on the implementation and should not be assumed to provide end-to-end encryption.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-bold text-white mb-2 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-blue-400" />
-                  File Encryption (AES-256)
+                  Project Files and Storage
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Files uploaded to projects are encrypted at rest using AES-256, the same encryption standard
-                  used by banks and governments. Your files are stored securely on our servers and only
-                  accessible by authorized project members.
+                  Project files are handled by OpenShare and its storage infrastructure, subject to access and sharing controls.
+                  Our formal Privacy Policy provides current information about data handling; individual encryption mechanisms should only be represented after verification.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-bold text-white mb-2 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-400" />
-                  Anonymous Analytics
+                  Usage Data and Diagnostics
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  We collect anonymous aggregate statistics to improve OpenShare (e.g., "100 ships today across all users").
-                  We never track individual user behavior, use cookies for advertising, or sell data to third parties.
+                  OpenShare processes user-linked application events and technical logs for functionality, troubleshooting, and security.
+                  The frontend also has an optional analytics integration. The current Privacy Policy explains production settings and disclosures.
                 </p>
               </div>
             </div>
@@ -284,11 +237,11 @@ const PrivacyManifesto = () => {
           <div className="bg-gradient-to-r from-purple-500/10 to-fuchsia-500/10 border border-purple-500/30 rounded-2xl p-6">
             <ul className="space-y-3">
               {[
-                'Export all your data anytime in standard formats',
-                'Delete your account and all data permanently',
+                'Request an export of available account information',
+                'Request account deletion, with shared-history exceptions explained in our policy',
                 'Control who sees your profile and activity',
-                'Opt out of any non-essential data collection',
-                'Request a copy of all data we have about you',
+                'Review the Privacy Policy for how data is processed',
+                'Ask about available access, correction, or deletion options',
                 'Contact us with any privacy concerns'
               ].map((right, index) => (
                 <li key={index} className="flex items-start gap-3">
@@ -307,7 +260,7 @@ const PrivacyManifesto = () => {
             We're always happy to explain how we protect your data.
           </p>
           <button
-            onClick={() => window.location.href = 'mailto:privacy@sharesync.com'}
+            onClick={() => { window.location.href = 'mailto:realMannyRivas@proton.me'; }}
             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-xl font-semibold transition-all"
           >
             Contact Privacy Team

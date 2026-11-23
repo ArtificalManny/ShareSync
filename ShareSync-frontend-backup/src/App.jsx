@@ -68,6 +68,8 @@ import InstallPrompt from "./components/pwa/InstallPrompt";
 import AhaMomentToast from "./components/home/AhaMomentToast";
 
 import PrivacyManifesto from "./pages/PrivacyManifesto";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DeleteAccountPage from "./pages/DeleteAccountPage";
 
 // ⭐ PHASE H: Focus Engine Provider
 import { FocusEngineProvider } from "./contexts/FocusEngineContext";
@@ -849,6 +851,8 @@ function AppRoutes() {
                 }
               />
               <Route path="/privacy-manifesto" element={<PrivacyManifesto />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/delete-account" element={<DeleteAccountPage />} />
               <Route
                 path="/community"
                 element={

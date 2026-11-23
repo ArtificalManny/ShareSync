@@ -546,7 +546,7 @@ export default function Login({ rootSeo = false }) {
             Terms
           </Link>{" "}
           and{" "}
-          <Link to="#" className="text-[#7c3aed] hover:underline">
+          <Link to="/privacy" className="text-[#7c3aed] hover:underline">
             Privacy Policy
           </Link>
         </p>

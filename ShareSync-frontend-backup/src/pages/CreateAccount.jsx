@@ -769,7 +769,7 @@ export default function CreateAccount() {
               By creating an account, you agree to OpenShare&apos;s{" "}
               <a href="#" className="text-[#7c3aed] hover:underline">Terms</a>{" "}
               and{" "}
-              <a href="#" className="text-[#7c3aed] hover:underline">Privacy Policy</a>
+              <a href="/privacy" className="text-[#7c3aed] hover:underline">Privacy Policy</a>
             </p>
           </motion.form>
         ) : (
