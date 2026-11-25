@@ -877,17 +877,17 @@ function AttachmentGallery({
                 }`}
               />
             ) : (
-              <div className="flex min-h-[112px] items-center gap-3 rounded-[1rem] bg-slate-50 px-4 py-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+              <div data-os-ann-r2="attachment-inner" className="flex min-h-[112px] items-center gap-3 rounded-[1rem] bg-slate-50 px-4 py-4">
+                <span data-os-ann-r2="attachment-icon" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
                   <Paperclip className="h-5 w-5" />
                 </span>
 
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-800">
+                  <p data-os-ann-r2="attachment-name" className="truncate text-sm font-black text-slate-800">
                     {name}
                   </p>
 
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                  <p data-os-ann-r2="attachment-meta" className="mt-1 text-xs font-semibold text-slate-500">
                     Open attachment
                   </p>
                 </div>
@@ -1426,7 +1426,7 @@ function AnnouncementVideo({ file }) {
   const action = loading ? 'Preparing' : error ? 'Retry' : link ? 'Play' : 'Load';
 
   return (
-    <div ref={card} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+    <div ref={card} data-os-ann-r2="video-card" className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
       <video
         ref={video}
         aria-label={file.fileName}
@@ -1446,20 +1446,20 @@ function AnnouncementVideo({ file }) {
           onClick={handlePlay}
           disabled={loading}
           aria-label={`${action} ${file.fileName}`}
-          className="flex min-h-20 w-full items-center gap-3 px-4 py-3 text-left text-slate-800 hover:bg-cyan-50 disabled:opacity-60"
+          data-os-ann-r2="video-button" className="flex min-h-20 w-full items-center gap-3 px-4 py-3 text-left text-slate-800 hover:bg-cyan-50 disabled:opacity-60"
         >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-100 text-cyan-800">
+          <span data-os-ann-r2="video-icon" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-100 text-cyan-800">
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
           </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-black">{file.fileName}</span>
-            <span className="block text-xs font-semibold text-slate-600">
+          <span data-os-ann-r2="video-details" className="min-w-0">
+            <span data-os-ann-r2="video-name" className="block truncate text-sm font-black">{file.fileName}</span>
+            <span data-os-ann-r2="video-status" className="block text-xs font-semibold text-slate-600">
               {action} video{loading ? '…' : ''}
             </span>
           </span>
         </button>
       )}
-      {error && <p role="status" className="px-4 pb-3 text-sm text-rose-700">{error}</p>}
+      {error && <p role="status" data-os-ann-r2="video-error" className="px-4 pb-3 text-sm text-rose-700">{error}</p>}
     </div>
   );
 }
@@ -1509,7 +1509,7 @@ function AnnouncementFileReferences({
 
   return (
     <div className="mt-5 space-y-2">
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-700">
+      <div data-os-ann-r2="files-label" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-700">
         <Link2 className="h-3.5 w-3.5" />
         Project Files
       </div>
@@ -1529,25 +1529,25 @@ function AnnouncementFileReferences({
               event.stopPropagation();
               openVaultFile(file.fileId);
             }}
-            className="group flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 px-4 py-3 transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:shadow-md hover:shadow-cyan-500/10"
+            data-os-ann-r2="file" className="group flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/50 px-4 py-3 transition-all hover:border-cyan-200 hover:bg-cyan-50 hover:shadow-md hover:shadow-cyan-500/10"
           >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
+            <span data-os-ann-r2="file-icon" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
               <FileText className="h-5 w-5" />
             </span>
 
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-black text-slate-900">
+              <span data-os-ann-r2="file-name" className="block truncate text-sm font-black text-slate-900">
                 {file.fileName}
               </span>
 
-              <span className="mt-0.5 block text-xs font-semibold text-slate-500">
+              <span data-os-ann-r2="file-meta" className="mt-0.5 block text-xs font-semibold text-slate-500">
                 {formatAnnouncementFileSize(
                   file.fileSize
                 )}
               </span>
             </span>
 
-            <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-cyan-700" />
+            <ExternalLink data-os-ann-r2="file-external" className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-cyan-700" />
           </a>
         );
       })}
@@ -2402,9 +2402,9 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
   const visibleComments = expanded ? comments : comments.slice(-2);
 
   return (
-    <div className="border-t border-slate-100">
+    <div data-os-ann-r2="comments" className="border-t border-slate-100">
       {commentCount > 2 && !expanded && (
-        <button onClick={() => setExpanded(true)} className="w-full px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-violet-600 hover:bg-slate-50 transition-colors text-left">
+        <button onClick={() => setExpanded(true)} data-os-ann-r2="expand-comments" className="w-full px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-violet-600 hover:bg-slate-50 transition-colors text-left">
           View all {commentCount} comments
         </button>
       )}
@@ -2420,15 +2420,15 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
               <div key={c._id || i} className="flex items-start gap-3">
                 <Avatar author={c.authorId} size="sm" currentUser={currentUser} />
                 <div className="flex-1 min-w-0">
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm">
-                    <span className="text-xs font-bold text-slate-900 block mb-0.5">{authorName}</span>
-                    <p className="text-sm font-medium text-slate-700 leading-relaxed">{c.text}</p>
+                  <div data-os-ann-r2="comment-card" className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm">
+                    <span data-os-ann-r2="comment-author" className="text-xs font-bold text-slate-900 block mb-0.5">{authorName}</span>
+                    <p data-os-ann-r2="comment-copy" className="text-sm font-medium text-slate-700 leading-relaxed">{c.text}</p>
                     <AttachmentGallery attachments={c.attachments} />
                   </div>
                   <div className="flex items-center gap-3 mt-1.5 px-2">
-                    <span className="text-[11px] font-medium text-slate-400">{timeAgo(c.createdAt)}</span>
+                    <span data-os-ann-r2="comment-time" className="text-[11px] font-medium text-slate-400">{timeAgo(c.createdAt)}</span>
                     {isMe && (
-                      <button onClick={() => handleDelete(c._id)} className="text-[11px] font-bold text-slate-400 hover:text-rose-500 transition-colors">
+                      <button onClick={() => handleDelete(c._id)} data-os-ann-r2="comment-delete" className="text-[11px] font-bold text-slate-400 hover:text-rose-500 transition-colors">
                         Delete
                       </button>
                     )}
@@ -2440,10 +2440,10 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
         </div>
       )}
 
-      <div className="px-6 py-4 flex items-start gap-3 bg-slate-50/50">
+      <div data-os-ann-r2="composer" className="px-6 py-4 flex items-start gap-3 bg-slate-50/50">
         <Avatar author={currentUser} size="sm" currentUser={currentUser} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2 border border-slate-200 shadow-sm focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all">
+          <div data-os-ann-r2="input-shell" className="flex items-center gap-2 bg-white rounded-xl px-4 py-2 border border-slate-200 shadow-sm focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all">
             <input
               ref={inputRef}
               type="text"
@@ -2451,7 +2451,7 @@ function CommentSection({ item, projectId, currentUser, onUpdate }) {
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePost(); } }}
               placeholder="Write a comment..."
-              className="flex-1 bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none"
+              data-os-ann-r2="input" className="flex-1 bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none"
             />
             {posting ? (
               <Loader2 className="w-4 h-4 text-violet-500 animate-spin flex-shrink-0" />
@@ -3011,16 +3011,16 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
       <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
       {isPinned && (
-        <div className="relative flex items-center justify-between gap-3 border-b border-amber-200/80 bg-gradient-to-r from-amber-50 via-orange-50 to-white px-6 py-3">
+        <div data-os-ann-r2="pinned-banner" className="relative flex items-center justify-between gap-3 border-b border-amber-200/80 bg-gradient-to-r from-amber-50 via-orange-50 to-white px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shadow-sm">
+            <span data-os-ann-r2="pinned-icon" className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shadow-sm">
               <Pin className="h-3.5 w-3.5 fill-current" />
             </span>
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-800">
+            <span data-os-ann-r2="pinned-title" className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-800">
               Pinned Broadcast
             </span>
           </div>
-          <span className="hidden text-[11px] font-bold text-amber-700/80 sm:inline">
+          <span data-os-ann-r2="pinned-meta" className="hidden text-[11px] font-bold text-amber-700/80 sm:inline">
             Stays visible at the top of the feed
           </span>
         </div>
@@ -3044,12 +3044,12 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
 
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {isMe && (
-                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-500/10 dark:text-violet-200 dark:ring-violet-400/20">
+                    <span data-os-ann-r2="you" className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-violet-700 ring-1 ring-violet-200/80 dark:bg-violet-500/10 dark:text-violet-200 dark:ring-violet-400/20">
                       You
                     </span>
                   )}
 
-                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
+                  <span data-os-ann-r2="chip" className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
                     {style.label}
                   </span>
@@ -3113,13 +3113,13 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
 
           <div className="relative">
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
+              <span data-os-ann-r2="chip" className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${style.chip}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
                 Broadcast
               </span>
 
               {isPinned && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+                <span data-os-ann-r2="pinned-chip" className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
                   Pinned
                 </span>
               )}
@@ -3160,31 +3160,31 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
       </div>
 
       {(likeCount > 0 || commentCount > 0) && (
-        <div className="mx-6 flex items-center justify-between border-t border-slate-100 py-3 text-xs font-bold text-slate-500">
+        <div data-os-ann-r2="engagement" className="mx-6 flex items-center justify-between border-t border-slate-100 py-3 text-xs font-bold text-slate-500">
           <div className="flex items-center gap-2">
             {likeCount > 0 && (
               <>
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 shadow-sm">
                   <Heart className="h-3.5 w-3.5 fill-white text-white" />
                 </span>
-                <span className="text-slate-700">{likeCount}</span>
+                <span data-os-ann-r2="counter" className="text-slate-700">{likeCount}</span>
               </>
             )}
           </div>
 
           {commentCount > 0 && (
-            <span className="text-slate-700">
+            <span data-os-ann-r2="counter" className="text-slate-700">
               {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
             </span>
           )}
         </div>
       )}
 
-      <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-3">
+      <div data-os-ann-r2="toolbar" className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-3">
         <button
           onClick={handleLike}
           disabled={liking}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition-all ${
+          data-os-ann-r2="action" data-os-ann-liked={hasLiked ? 'true' : undefined} className={`flex flex-1 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition-all ${
             hasLiked
               ? 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100'
               : 'border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-white'
@@ -3194,10 +3194,10 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
           <span>{hasLiked ? 'Liked' : 'Like'}</span>
         </button>
 
-        <div className="h-7 w-px bg-slate-200" />
+        <div data-os-ann-r2="divider" className="h-7 w-px bg-slate-200" />
 
         <button
-          className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent py-3 text-sm font-black text-slate-600 dark:text-slate-300 transition-all hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+          data-os-ann-r2="action" className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent py-3 text-sm font-black text-slate-600 dark:text-slate-300 transition-all hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-white"
           onClick={() => {
             const el = document.querySelector(`[data-comment-input="${getId(item)}"]`);
             if (el) {
@@ -3841,6 +3841,277 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
             box-shadow:
               0 28px 90px rgba(0, 0, 0, 0.42),
               inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+          }
+
+          /* Announcement Dark Mode R2.1 */
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="you"],
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="chip"].bg-violet-50 {
+            background: #30234f !important;
+            color: #ddd6fe !important;
+            border-color: #6d4bb3 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="you"] {
+            box-shadow: inset 0 0 0 1px #6d4bb3 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="chip"].bg-amber-50,
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="pinned-chip"] {
+            background: #392b16 !important;
+            color: #fcd34d !important;
+            border-color: #92641f !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="chip"].bg-emerald-50 {
+            background: #12352c !important;
+            color: #6ee7b7 !important;
+            border-color: #26775b !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="chip"].bg-rose-50 {
+            background: #401f30 !important;
+            color: #fda4af !important;
+            border-color: #98445e !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="pinned-banner"] {
+            background: linear-gradient(90deg, #332714, #211d22) !important;
+            border-color: #705321 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="pinned-icon"] {
+            background: #49361b !important;
+            color: #fcd34d !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="pinned-title"] {
+            color: #fcd34d !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="pinned-meta"] {
+            color: #e7c98c !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="engagement"],
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comments"] {
+            border-color: #334155 !important;
+            color: #94a3b8 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="counter"] {
+            color: #cbd5e1 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="toolbar"] {
+            background: rgba(15, 23, 42, 0.65) !important;
+            border-color: #334155 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="divider"] {
+            background: #334155 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="action"]:not([data-os-ann-liked="true"]):hover {
+            background: #1e293b !important;
+            color: #f8fafc !important;
+            border-color: #475569 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-liked="true"] {
+            background: #401f30 !important;
+            color: #fda4af !important;
+            border-color: #98445e !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-liked="true"]:hover {
+            background: #542439 !important;
+            color: #fecdd3 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-card"] {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-author"] {
+            background: transparent !important;
+            color: #f1f5f9 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            padding: 0 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-copy"] {
+            background: transparent !important;
+            color: #cbd5e1 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-time"],
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-delete"],
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="expand-comments"] {
+            color: #94a3b8 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-delete"]:hover {
+            color: #fda4af !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="expand-comments"]:hover {
+            background: #1e293b !important;
+            color: #c4b5fd !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="composer"] {
+            background: transparent !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="input-shell"] {
+            background: #1e293b !important;
+            border-color: #475569 !important;
+            border-radius: 0.75rem !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="input-shell"]:focus-within {
+            border-color: #a78bfa !important;
+            box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.35) !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="input"] {
+            background: transparent !important;
+            color: #f8fafc !important;
+            caret-color: #f8fafc !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            outline: none !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="input"]::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="files-label"] {
+            color: #67e8f9 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file"] {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file"]:hover {
+            background: #243449 !important;
+            border-color: #0891b2 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file-icon"] {
+            background: #16404d !important;
+            color: #67e8f9 !important;
+            box-shadow: inset 0 0 0 1px #246577 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file-name"] {
+            background: transparent !important;
+            color: #e2e8f0 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file-meta"],
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file-external"] {
+            background: transparent !important;
+            color: #94a3b8 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file"]:hover [data-os-ann-r2="file-external"] {
+            color: #67e8f9 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card .announcement-attachment-card {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.20) !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card .announcement-attachment-card:hover {
+            border-color: #8b5cf6 !important;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32) !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="attachment-inner"] {
+            background: #1e293b !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="attachment-icon"] {
+            background: #30234f !important;
+            color: #c4b5fd !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="attachment-name"] {
+            background: transparent !important;
+            color: #e2e8f0 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="attachment-meta"] {
+            background: transparent !important;
+            color: #94a3b8 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="action"]:focus-visible,
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="expand-comments"]:focus-visible,
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="comment-delete"]:focus-visible,
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="file"]:focus-visible,
+          html:is(.dark, [data-theme="dark"]) .announcement-card .announcement-attachment-card:focus-visible {
+            outline: 2px solid #a78bfa !important;
+            outline-offset: 2px !important;
+          }
+
+          /* Announcement Dark Mode R2.2 */
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-card"] {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-button"] {
+            background: transparent !important;
+            color: #e2e8f0 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-button"]:not(:disabled):hover {
+            background: #243449 !important;
+            color: #f8fafc !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-icon"] {
+            background: #16404d !important;
+            color: #67e8f9 !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-details"] {
+            background: transparent !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-name"] {
+            background: transparent !important;
+            color: #e2e8f0 !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-status"] {
+            background: transparent !important;
+            color: #94a3b8 !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-error"] {
+            background: transparent !important;
+            color: #fda4af !important;
+          }
+
+          html:is(.dark, [data-theme="dark"]) .announcement-card [data-os-ann-r2="video-button"]:focus-visible {
+            outline: 2px solid #67e8f9 !important;
+            outline-offset: -3px !important;
           }
 
           .announcement-message-panel {
