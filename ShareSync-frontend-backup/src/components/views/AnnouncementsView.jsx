@@ -3056,7 +3056,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
                 </div>
               </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
                   Posted {formatAnnouncementTimestamp(item.createdAt)}
@@ -3125,7 +3125,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
               )}
             </div>
 
-            <h3 className="max-w-4xl text-2xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 sm:text-3xl">
+            <h3 className="max-w-4xl text-2xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 dark:text-slate-50 sm:text-3xl">
               {displayTitle}
             </h3>
 
@@ -3134,7 +3134,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
             <div
               dir="ltr"
               style={{ direction: 'ltr', unicodeBidi: 'normal', textAlign: 'left', transform: 'none' }}
-              className="announcement-rich-body mt-5 text-[16px] font-medium leading-8 text-slate-700 [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_strong]:font-black [&_b]:font-black [&_em]:italic [&_i]:italic [&_u]:underline"
+              className="announcement-rich-body mt-5 text-[16px] font-medium leading-8 text-slate-700 dark:text-slate-200 [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_strong]:font-black [&_b]:font-black [&_em]:italic [&_i]:italic [&_u]:underline"
               dangerouslySetInnerHTML={{ __html: getAnnouncementBodyHtml(item) }}
             />
 
@@ -3187,7 +3187,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
           className={`flex flex-1 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition-all ${
             hasLiked
               ? 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100'
-              : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm'
+              : 'border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-white'
           }`}
         >
           <Heart className={`h-4 w-4 ${hasLiked ? 'fill-rose-500' : ''}`} />
@@ -3197,7 +3197,7 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
         <div className="h-7 w-px bg-slate-200" />
 
         <button
-          className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent py-3 text-sm font-black text-slate-600 transition-all hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm"
+          className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent py-3 text-sm font-black text-slate-600 dark:text-slate-300 transition-all hover:border-slate-200 hover:bg-white hover:text-slate-950 hover:shadow-sm dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-white"
           onClick={() => {
             const el = document.querySelector(`[data-comment-input="${getId(item)}"]`);
             if (el) {
