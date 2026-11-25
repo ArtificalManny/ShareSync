@@ -20,7 +20,10 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 
-import { Announcement, AnnouncementDocument } from './schemas/announcements.schema';
+import { Announcement, AnnouncementDocument, AnnouncementCommentEmailEvent } from './schemas/announcements.schema';
+import { announcementStanding } from './announcements-project-access.guard';
+import { COMMENT_EMAIL_LIMITS, commentEmailAdmission } from './announcement-comment-email.limits';
+import { announcementCommentRecipients, commentEmailId } from '../notifications/announcement-comment-email.policy';
 import { normalizeAnnouncementAttachmentLinks } from './announcement-attachment-links';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { VaultService } from '../vault/vault.service';
@@ -950,6 +953,48 @@ export class AnnouncementsService {
     return ann;
   }
 
+  private async prepareCommentEmailEvent(
+    announcement: AnnouncementDocument,
+    actorId: string,
+    commentId: Types.ObjectId,
+  ): Promise<AnnouncementCommentEmailEvent | undefined> {
+    // Keep disabled until the delivery worker and its tests are complete.
+    if (process.env.ANNOUNCEMENT_COMMENT_EMAIL_ENABLED !== 'true' || announcement.archived) return;
+    try {
+      const projectId = commentEmailId(announcement.projectId);
+      const actor = commentEmailId(actorId);
+      if (!projectId || !actor) return;
+      const project = await this.projectModel.findById(projectId)
+        .select({ ownerId: 1, owner: 1, createdBy: 1, createdById: 1, members: 1,
+          settings: 1, status: 1, isArchived: 1 }).lean().exec();
+      if (announcementStanding(project, actor) !== 'writer') return;
+      const recipients = announcementCommentRecipients(project, actor).filter((id) => {
+        const standing = announcementStanding(project, id);
+        return standing === 'writer' || standing === 'reader';
+      });
+      if (!recipients.length) return;
+      if (recipients.length > COMMENT_EMAIL_LIMITS.recipientsPerEvent) {
+        this.logger.warn('Announcement comment email suppressed: recipient limit');
+        return;
+      }
+      return {
+        commentId,
+        actorId: new Types.ObjectId(actor),
+        recipientIds: recipients.map((id) => new Types.ObjectId(id)),
+        queuedAt: new Date(),
+        nextAttemptAt: new Date(),
+        leaseUntil: new Date(0),
+        cursor: 0,
+        attempts: 0,
+      };
+    } catch {
+      // Notification-only lookup failure must not reject a valid comment.
+      // No user content, addresses or provider credentials are logged.
+      this.logger.warn('Announcement comment email eligibility lookup failed; comment will be saved without an email event');
+      return;
+    }
+  }
+
   public async addComment(
     announcementId: string,
     userId: string,
@@ -988,20 +1033,28 @@ export class AnnouncementsService {
       updatedAt: new Date(),
     };
 
-    const updated = await this.announcementModel
-      .findByIdAndUpdate(
-        annId,
-        {
-          $push: { comments: nextComment },
-        },
-        {
-          new: true,
-          runValidators: false,
-        },
-      )
+    const emailEvent = await this.prepareCommentEmailEvent(existing, actorId, nextComment._id);
+
+    // Conditional write caps the outbox even with concurrent comment submissions.
+    // A rejected admission is not a rejected comment. Do not retry ambiguous write errors.
+    const options = { new: true, runValidators: false };
+    const present = (query: any) => query.select('-commentEmailOutbox')
       .populate('authorId', this.userPopulateFields)
-      .populate('comments.authorId', this.userPopulateFields)
-      .exec();
+      .populate('comments.authorId', this.userPopulateFields).exec();
+    let updated: AnnouncementDocument | null = null;
+    if (emailEvent) {
+      updated = await present(this.announcementModel.findOneAndUpdate(
+        { _id: annId, projectId: existing.projectId, archived: { $ne: true },
+          ...commentEmailAdmission(emailEvent.actorId) },
+        { $push: { comments: nextComment, commentEmailOutbox: emailEvent } }, options,
+      ));
+      if (!updated) this.logger.warn('Announcement comment email suppressed: outbox admission limit or announcement changed');
+    }
+    if (!updated) {
+      updated = await present(this.announcementModel.findByIdAndUpdate(
+        annId, { $push: { comments: nextComment } }, options,
+      ));
+    }
 
     if (!updated) {
       throw new NotFoundException('Announcement not found');

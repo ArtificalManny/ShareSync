@@ -7,6 +7,8 @@ import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ModerationModule } from '../moderation/moderation.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { User, UserSchema } from '../user/schemas/user.schema';
+import { AnnouncementCommentEmailWorker } from './announcement-comment-email.worker';
 import { VaultModule } from '../vault/vault.module';
 
 @Module({
@@ -14,6 +16,7 @@ import { VaultModule } from '../vault/vault.module';
     MongooseModule.forFeature([
       { name: Announcement.name, schema: AnnouncementSchema },
       { name: Project.name, schema: ProjectSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     UploadsModule,
     ModerationModule,
@@ -21,7 +24,7 @@ import { VaultModule } from '../vault/vault.module';
     VaultModule,
   ],
   controllers: [AnnouncementsController],
-  providers: [AnnouncementsService],
+  providers: [AnnouncementsService, AnnouncementCommentEmailWorker],
   exports: [AnnouncementsService],
 })
 export class AnnouncementsModule {}

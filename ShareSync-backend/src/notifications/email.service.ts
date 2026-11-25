@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
+import { announcementCommentEmailAddress, commentEmailId } from './announcement-comment-email.policy';
+
+export type AnnouncementCommentEmailResult =
+  | { status: 'skipped'; reason: string }
+  | { status: 'accepted'; providerMessageId: string }
+  | { status: 'failed'; retryable: boolean; reason: string; httpStatus?: number };
+
 type TransporterLike = {
   sendMail: (args: {
     from: string;
@@ -468,6 +475,67 @@ export class EmailService {
       html,
       text,
     });
+  }
+
+  // Isolated Resend delivery path; callers must reauthorize membership before each attempt.
+  // This is intentionally not wired to comment creation until the delivery ledger is ready.
+  async sendAnnouncementCommentEmail(user: UserLike, event: {
+    projectId: string;
+    announcementId: string;
+    commentId: string;
+    recipientId: string;
+  }): Promise<AnnouncementCommentEmailResult> {
+    if (process.env.ANNOUNCEMENT_COMMENT_EMAIL_ENABLED !== 'true') {
+      return { status: 'skipped', reason: 'disabled' };
+    }
+    const projectId = commentEmailId(event.projectId);
+    const announcementId = commentEmailId(event.announcementId);
+    const commentId = commentEmailId(event.commentId);
+    const recipientId = commentEmailId(event.recipientId);
+    if (!projectId || !announcementId || !commentId || !recipientId ||
+        commentEmailId((user as any)?._id) !== recipientId) {
+      return { status: 'skipped', reason: 'invalid-event' };
+    }
+    const to = announcementCommentEmailAddress(user);
+    if (!to || !this.isEmailAllowed(user)) return { status: 'skipped', reason: 'ineligible' };
+    if (!this.resendApiKey || !this.resendFromAddress || typeof globalThis.fetch !== 'function') {
+      return { status: 'failed', retryable: true, reason: 'transport-unavailable' };
+    }
+    const title = 'New announcement comment';
+    const message = 'A project member posted a comment. Sign in to OpenShare to view the conversation.';
+    const url = `https://openshare.ca/projects/${projectId}`;
+    const html = this.buildEmailTemplate({ title, message, actionData: { url } });
+    const key = `announcement-comment/${commentId}/${recipientId}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await globalThis.fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        redirect: 'error',
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': key,
+        },
+        body: JSON.stringify({ from: this.resendFromAddress, to, subject: title, html,
+          text: `${message}\n\nView in OpenShare: ${url}` }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        const retryable = response.status === 408 || response.status === 429 ||
+          response.status >= 500 || (response.status === 409 && payload?.name === 'concurrent_idempotent_requests');
+        return { status: 'failed', retryable, reason: 'provider-error', httpStatus: response.status };
+      }
+      if (typeof payload?.id !== 'string' || !payload.id.trim()) {
+        return { status: 'failed', retryable: true, reason: 'missing-provider-id' };
+      }
+      return { status: 'accepted', providerMessageId: payload.id };
+    } catch {
+      return { status: 'failed', retryable: true, reason: 'network-error' };
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /**
