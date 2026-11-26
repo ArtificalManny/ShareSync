@@ -1473,6 +1473,359 @@ export default function Settings() {
             }
           }
         `}</style>
+        <style data-settings-dark-mode-r1>{`
+/* OPENSHARE SETTINGS DARK MODE R1
+   Application-theme aware.
+   Scoped to Settings only.
+   No changes to business logic.
+*/
+
+html.dark main[data-settings-app-frame="true"] {
+  color-scheme: dark;
+  --settings-primary: #f8fafc;
+  --settings-secondary: #cbd5e1;
+  --settings-muted: #b8c4d6;
+  --settings-surface: #202024;
+  --settings-selected: #30264f;
+  --settings-focus: #c4b5fd;
+}
+
+/* Secondary labels and descriptions */
+
+html.dark main[data-settings-app-frame="true"] [class~="dark:text-zinc-500"],
+html.dark main[data-settings-app-frame="true"] [class~="dark:text-zinc-400"],
+html.dark main[data-settings-app-frame="true"] [class~="dark:text-slate-500"],
+html.dark main[data-settings-app-frame="true"] [class~="dark:text-slate-400"],
+html.dark main[data-settings-app-frame="true"] [class~="dark:text-gray-500"],
+html.dark main[data-settings-app-frame="true"] [class~="dark:text-gray-400"],
+html.dark main[data-settings-app-frame="true"] [class~="text-slate-500"]:not([class*="dark:text-"]),
+html.dark main[data-settings-app-frame="true"] [class~="text-slate-400"]:not([class*="dark:text-"]),
+html.dark main[data-settings-app-frame="true"] [class~="text-zinc-500"]:not([class*="dark:text-"]),
+html.dark main[data-settings-app-frame="true"] [class~="text-zinc-400"]:not([class*="dark:text-"]) {
+  color: var(--settings-muted) !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Form labels must not inherit pale surfaces */
+
+html.dark main[data-settings-app-frame="true"] label {
+  color: var(--settings-secondary) !important;
+  background: transparent !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Native text controls */
+
+html.dark main[data-settings-app-frame="true"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]),
+html.dark main[data-settings-app-frame="true"] select,
+html.dark main[data-settings-app-frame="true"] textarea {
+  background-color: #19191f !important;
+  color: var(--settings-primary) !important;
+  border-color: #52525b !important;
+  -webkit-text-fill-color: currentColor !important;
+  color-scheme: dark !important;
+}
+
+html.dark main[data-settings-app-frame="true"] select option {
+  background-color: #19191f !important;
+  color: #f8fafc !important;
+}
+
+html.dark main[data-settings-app-frame="true"] input::placeholder,
+html.dark main[data-settings-app-frame="true"] textarea::placeholder {
+  color: #a1a1aa !important;
+  -webkit-text-fill-color: #a1a1aa !important;
+  opacity: 1;
+}
+
+html.dark main[data-settings-app-frame="true"] input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #19191f inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+/* Selected density, mentor and visibility options */
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-violet-50"][class~="dark:bg-violet-500/10"],
+html.dark main[data-settings-app-frame="true"] button[class~="bg-violet-50/95"][class~="dark:bg-violet-500/10"],
+html.dark main[data-settings-app-frame="true"] button[class~="ring-purple-500"][class~="bg-purple-500/10"] {
+  background: var(--settings-selected) !important;
+  color: var(--settings-primary) !important;
+  border-color: #a78bfa !important;
+  box-shadow: inset 0 0 0 1px #a78bfa !important;
+}
+
+/* Selected option titles */
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-violet-50"][class~="dark:bg-violet-500/10"] [class~="font-medium"],
+html.dark main[data-settings-app-frame="true"] button[class~="bg-violet-50"][class~="dark:bg-violet-500/10"] [class~="font-semibold"] {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Unselected option and secondary button surfaces */
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-slate-50"][class~="dark:bg-white/5"],
+html.dark main[data-settings-app-frame="true"] button[class~="bg-white"][class~="dark:bg-white/5"] {
+  background: #202024 !important;
+  border-color: #52525b !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-slate-50"][class~="dark:bg-white/5"]:hover:not(:disabled),
+html.dark main[data-settings-app-frame="true"] button[class~="bg-white"][class~="dark:bg-white/5"]:hover:not(:disabled) {
+  background: #2d2939 !important;
+  border-color: #a78bfa !important;
+}
+
+/* Privacy information and account data panels */
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-violet-50"][class~="dark:bg-violet-500/10"],
+html.dark main[data-settings-app-frame="true"] [data-openshare-data-export="v1"] {
+  background: #251d3d !important;
+  border-color: #a78bfa !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-violet-50"][class~="dark:bg-violet-500/10"] p {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-violet-50"][class~="dark:bg-violet-500/10"] svg {
+  color: #c4b5fd !important;
+}
+
+/* Settings-specific privacy and preference rows */
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-slate-50"][class~="dark:bg-white/5"],
+html.dark main[data-settings-app-frame="true"] div[class~="bg-slate-50/80"][class~="dark:bg-white/[0.04]"],
+html.dark main[data-settings-app-frame="true"] div[class~="bg-slate-50"][class~="dark:bg-white/[0.035]"] {
+  background: #202024 !important;
+  border-color: #52525b !important;
+}
+
+/* Account deletion subscription warning.
+   Preserve every word and the existing Apple link.
+*/
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-amber-50"][class~="dark:bg-amber-500/10"] {
+  background: #302311 !important;
+  border-color: #b7791f !important;
+  color: #fef3c7 !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-amber-50"][class~="dark:bg-amber-500/10"] p {
+  color: #fef3c7 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-amber-50"][class~="dark:bg-amber-500/10"] p.font-semibold {
+  color: #fde68a !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-amber-50"][class~="dark:bg-amber-500/10"] a {
+  color: #fde68a !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-decoration-color: #fde68a !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-amber-50"][class~="dark:bg-amber-500/10"] a:hover {
+  color: #ffffff !important;
+}
+
+/* Danger Zone */
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-red-50/90"][class~="dark:bg-[#1A0B0D]"] {
+  background: #1a0b0d !important;
+  border-color: #7f1d1d !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-white/80"][class~="dark:bg-black/10"][class~="border-red-200/90"] {
+  background: #211015 !important;
+  border-color: #7f1d1d !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-red-50/80"][class~="dark:bg-red-500/10"],
+html.dark main[data-settings-app-frame="true"] div[class~="bg-red-50"][class~="dark:bg-red-500/10"] {
+  background: #451a1a !important;
+  border-color: #b91c1c !important;
+  color: #fecaca !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-red-50/80"][class~="dark:bg-red-500/10"] p {
+  color: #fecaca !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-red-50"][class~="dark:bg-red-500/10"] {
+  background: #451a1a !important;
+  border-color: #f87171 !important;
+  color: #fecaca !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-red-50"][class~="dark:bg-red-500/10"]:hover:not(:disabled) {
+  background: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+html.dark main[data-settings-app-frame="true"] button[class~="bg-red-50"][class~="dark:bg-red-500/10"] svg {
+  color: #fecaca !important;
+}
+
+/* Google identity confirmation notice */
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-blue-50"][class~="dark:bg-blue-500/10"] {
+  background: #172554 !important;
+  border-color: #60a5fa !important;
+  color: #dbeafe !important;
+}
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-blue-50"][class~="dark:bg-blue-500/10"] p {
+  color: #dbeafe !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Success and error notices */
+
+html.dark main[data-settings-app-frame="true"] div[class~="bg-emerald-50"][class~="dark:bg-emerald-500/10"] {
+  background: #064e3b !important;
+  border-color: #34d399 !important;
+  color: #d1fae5 !important;
+}
+
+/* Settings feedback entry card */
+
+html.dark main[data-settings-app-frame="true"] .pilot-feedback-settings-card-v2 {
+  background: #19191f !important;
+  border-color: #52525b !important;
+  color: #f8fafc !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .pilot-feedback-settings-card-v2 [class~="!bg-violet-50"] {
+  background: #30264f !important;
+  border-color: #a78bfa !important;
+  color: #ede9fe !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Save button: readable white text across gradient */
+
+html.dark main[data-settings-app-frame="true"] [data-settings-save-button-inner="true"] {
+  background: linear-gradient(
+    90deg, #6d28d9, #7e22ce, #86198f
+  ) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Keyboard focus. Do not override disabled state. */
+
+html.dark main[data-settings-app-frame="true"] button:not(:disabled):focus-visible,
+html.dark main[data-settings-app-frame="true"] a[href]:focus-visible,
+html.dark main[data-settings-app-frame="true"] input:not(:disabled):focus-visible,
+html.dark main[data-settings-app-frame="true"] select:not(:disabled):focus-visible,
+html.dark main[data-settings-app-frame="true"] textarea:not(:disabled):focus-visible {
+  outline: 2px solid var(--settings-focus) !important;
+  outline-offset: 3px !important;
+}
+
+
+/* BILLING CONTRAST REFINEMENT R1.4A */
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] {
+  background: #251d3d !important;
+  background-image: none !important;
+  border-color: #8b5cf6 !important;
+  color: #f8fafc !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] h3 {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] p {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] [class~="text-3xl"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] [class~="text-slate-400"] {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Subscription feature indicators */
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] span[class~="border-amber-200"] {
+  background: #302311 !important;
+  background-image: none !important;
+  border-color: #b7791f !important;
+  color: #fde68a !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Annual savings indicator */
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] span[class~="bg-emerald-100"] {
+  background: #064e3b !important;
+  background-image: none !important;
+  color: #d1fae5 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] [class~="dark:text-emerald-300"] {
+  color: #d1fae5 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Monthly and annual interval controls */
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] div[class~="grid-cols-2"][class~="bg-white"] {
+  background: #202024 !important;
+  border-color: #52525b !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] button[class~="bg-violet-600"] {
+  background: #6d28d9 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] button[class~="text-slate-500"] {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Keep checkout behavior and disabled opacity intact */
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] button.openshare-subscribe-cta {
+  background: #6d28d9 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] button.openshare-subscribe-cta:hover:not(:disabled) {
+  background: #5b21b6 !important;
+}
+
+html.dark main[data-settings-app-frame="true"] .settings-billing-live-sync > div[class~="from-violet-50"][class~="to-fuchsia-50"] button.openshare-subscribe-cta:disabled {
+  opacity: 0.65 !important;
+}
+
+/* END BILLING CONTRAST REFINEMENT R1.4A */
+
+/* END OPENSHARE SETTINGS DARK MODE R1 */
+        `}</style>
+
 
       <div className="mx-auto max-w-[410px] space-y-3 md:max-w-6xl md:space-y-8">
 
