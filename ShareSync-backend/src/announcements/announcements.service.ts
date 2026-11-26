@@ -3,6 +3,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   Logger,
   Optional,
@@ -25,6 +26,7 @@ import { announcementStanding } from './announcements-project-access.guard';
 import { COMMENT_EMAIL_LIMITS, commentEmailAdmission } from './announcement-comment-email.limits';
 import { announcementCommentRecipients, commentEmailId } from '../notifications/announcement-comment-email.policy';
 import { normalizeAnnouncementAttachmentLinks } from './announcement-attachment-links';
+import { assertAnnouncementContent, hasValidAnnouncementPoll, normalizeAnnouncementText } from './announcement-content.policy';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { VaultService } from '../vault/vault.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -62,8 +64,8 @@ export type AnnouncementAffectedReferenceInput =
 export type CreateAnnouncementInput = {
   projectId: string;
   authorId: string;
-  title: string;
-  message: string;
+  title?: string;
+  message?: string;
   type?: string;
   pinned?: boolean;
   attachments?: string[];
@@ -512,6 +514,15 @@ export class AnnouncementsService {
     const projectObjectId = this.toObjectId(input.projectId, 'projectId');
     const authorObjectId = this.toObjectId(input.authorId, 'authorId');
     const attachments = normalizeAnnouncementAttachmentLinks(input.attachments);
+    const title = normalizeAnnouncementText(input.title, 'title');
+    const message = normalizeAnnouncementText(input.message, 'message');
+    if (input.poll != null && !hasValidAnnouncementPoll(input.poll)) {
+      throw new BadRequestException('Add a poll question and at least two options');
+    }
+    const poll = this.normalizePoll(input.poll);
+    if (input.poll != null && !hasValidAnnouncementPoll(poll)) {
+      throw new BadRequestException('Add a poll question and at least two options');
+    }
 
     const [
       affectedMoveIds,
@@ -538,18 +549,20 @@ export class AnnouncementsService {
         input.fileReferences,
       );
 
+    assertAnnouncementContent({ title, message, attachments, fileReferences, poll });
+
     const doc = await this.announcementModel.create({
       projectId: projectObjectId,
       authorId: authorObjectId,
-      title: input.title,
-      message: input.message,
+      title,
+      message,
       type: input.type || 'info',
       pinned: Boolean(input.pinned),
       attachments,
       fileReferences,
       affectedMoveIds,
       affectedMilestoneIds,
-      poll: this.normalizePoll(input.poll),
+      poll,
       readBy: [],
     });
     await doc.populate([
@@ -598,9 +611,9 @@ export class AnnouncementsService {
       entityId: doc._id?.toString?.(),
       action: 'created',
       details: {
-        announcementTitle: input.title || 'Announcement',
-        title: input.title || 'Announcement',
-        message: input.message || '',
+        announcementTitle: title || 'Announcement',
+        title: title || 'Announcement',
+        message,
         announcementType: input.type || 'info',
         pinned: Boolean(input.pinned),
       },
@@ -609,7 +622,7 @@ export class AnnouncementsService {
         announcementId: doc._id?.toString?.(),
       },
       payload: {
-        announcementTitle: input.title || 'Announcement',
+        announcementTitle: title || 'Announcement',
         announcementId: doc._id?.toString?.(),
       },
     });
@@ -632,10 +645,8 @@ export class AnnouncementsService {
 
     const safeProjectName =
       typeof project.name === 'string' && project.name.trim() ? project.name.trim() : 'Project';
-    const safeTitle =
-      typeof input.title === 'string' && input.title.trim() ? input.title.trim() : 'New announcement';
-    const safeBody =
-      typeof input.message === 'string' && input.message.trim() ? input.message.trim() : safeTitle;
+    const safeTitle = title || 'New announcement';
+    const safeBody = message || safeTitle;
     const priority = NotificationPriority.HIGH;
 
     // Route through NotificationsService so in-app + email fan-out both run.
@@ -699,14 +710,12 @@ export class AnnouncementsService {
       updatedAt: new Date(),
     };
 
-    if (typeof input.title === 'string') {
-      const title = input.title.trim();
-      if (title) update.title = title;
+    if (input.title !== undefined) {
+      update.title = normalizeAnnouncementText(input.title, 'title');
     }
 
-    if (typeof input.message === 'string') {
-      const message = input.message.trim();
-      if (message) update.message = message;
+    if (input.message !== undefined) {
+      update.message = normalizeAnnouncementText(input.message, 'message');
     }
 
     if (typeof input.type === 'string') {
@@ -768,14 +777,29 @@ export class AnnouncementsService {
         );
     }
 
+    // Validate the resulting document, not just the fields supplied in a PATCH.
+    // Polls and votes remain read-only in this existing edit endpoint.
+    assertAnnouncementContent({
+      title: update.title ?? existing.title,
+      message: update.message ?? existing.message,
+      attachments: update.attachments ?? existing.attachments,
+      fileReferences: update.fileReferences ?? existing.fileReferences,
+      poll: existing.poll,
+    });
+
+    // Compare and increment the version so two partial edits cannot jointly
+    // remove the last content. Do not overwrite comments or the email outbox.
+    const version = (existing as any).__v;
     const updated = await this.announcementModel
-      .findByIdAndUpdate(
-        annId,
+      .findOneAndUpdate(
+        { _id: annId, projectId: projectObjectId, __v: version === undefined ? { $exists: false } : version },
         {
           $set: update,
+          $inc: { __v: 1 },
         },
         {
           new: true,
+          runValidators: true,
         },
       )
       .populate(
@@ -797,7 +821,7 @@ export class AnnouncementsService {
       .exec();
 
     if (!updated) {
-      throw new NotFoundException('Announcement not found');
+      throw new ConflictException('Announcement changed while editing. Refresh and try again.');
     }
 
     return updated;

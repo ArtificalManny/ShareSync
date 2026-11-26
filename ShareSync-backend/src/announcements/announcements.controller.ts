@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { TextModerationInterceptor } from '../moderation/moderation.interceptor';
 
-import { AnnouncementsService } from './announcements.service';
+import { AnnouncementsService, AnnouncementPollInput } from './announcements.service';
 import { AnnouncementsProjectAccessGuard } from './announcements-project-access.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -51,8 +51,9 @@ export class AnnouncementsController {
     @Request() req: any,
     @Body()
     body: {
-      title: string;
-      message: string;
+      title?: string;
+      message?: string;
+      poll?: AnnouncementPollInput;
       type?: string;
       pinned?: boolean;
       attachments?: string[];

@@ -62,10 +62,10 @@ export class AnnouncementFileReference {
 
 @Schema({ timestamps: true })
 export class Announcement {
-  @Prop({ required: true })
+  @Prop({ default: '' })
   title: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   message: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true })

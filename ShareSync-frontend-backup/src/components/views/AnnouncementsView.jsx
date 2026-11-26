@@ -6,6 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { hasVisibleAnnouncementText, getAnnouncementDraftState } from './announcementContent.mjs';
 import {
   Megaphone, Plus, Pin, PencilLine, Trash2, Clock, Send, X,
   Loader2, RefreshCw, CheckCheck, AlertTriangle,
@@ -365,26 +366,6 @@ function getPollOptionVotes(option) {
   return Array.isArray(option?.votes) ? option.votes : [];
 }
 
-function normalizePollForSubmit(enabled, question, options) {
-  if (!enabled) return null;
-
-  const cleanQuestion = String(question || '').trim();
-  const cleanOptions = (Array.isArray(options) ? options : [])
-    .map((option) => ({
-      text: String(option?.text || option || '').trim(),
-    }))
-    .filter((option) => option.text)
-    .slice(0, 5);
-
-  if (!cleanQuestion || cleanOptions.length < 2) return null;
-
-  return {
-    question: cleanQuestion,
-    options: cleanOptions,
-    closed: false,
-  };
-}
-
 function makeRenderablePoll(poll) {
   if (!poll?.question || !Array.isArray(poll?.options) || poll.options.length < 2) {
     return null;
@@ -470,7 +451,7 @@ function setLocalAnnouncementLike(announcement, currentUser, shouldLike) {
 
 
 const ANNOUNCEMENT_ALLOWED_TAGS = new Set(['P','BR','STRONG','B','EM','I','U','SPAN','DIV','UL','OL','LI']);
-const ANNOUNCEMENT_BLOCKED_TAGS = ['script','style','iframe','object','embed','link','meta','form','input','button','textarea','select','option'];
+const ANNOUNCEMENT_BLOCKED_TAGS = ['script','style','iframe','object','embed','link','meta','form','input','button','textarea','select','option','template','noscript'];
 const ANNOUNCEMENT_FONT_SIZE_MAP = { 1:'12px', 2:'14px', 3:'16px', 4:'18px', 5:'20px', 6:'24px', 7:'32px' };
 
 function isSafeAnnouncementColor(value) {
@@ -565,7 +546,7 @@ function announcementTextToHtml(text = '') {
 }
 
 function getAnnouncementBodyHtml(announcement) {
-  const raw = announcement?.message || announcement?.content || announcement?.text || announcement?.description || '';
+  const raw = announcement?.message ?? announcement?.content ?? announcement?.text ?? announcement?.description ?? '';
   const body = String(raw || '');
   if (!body.trim()) return '';
   return /<\/?[a-z][\s\S]*>/i.test(body) ? sanitizeAnnouncementHtml(body) : announcementTextToHtml(body);
@@ -2919,8 +2900,10 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
   const isMe = currentUserId && authorIdStr === currentUserId;
   const authorName = getAuthorName(isMe ? currentUser : item.authorId);
 
-  const displayTitle = item.title || item.subject || item.name || 'Untitled Announcement';
-  const displayMessage = item.message || item.content || item.text || item.description || '';
+  const displayTitle = String(item.title ?? item.subject ?? item.name ?? '');
+  const displayBodyHtml = getAnnouncementBodyHtml(item);
+  const showHeadline = hasVisibleAnnouncementText(displayTitle);
+  const showDetails = hasVisibleAnnouncementText(getAnnouncementPlainText(displayBodyHtml));
 
   const likes = Array.isArray(item.likes)
     ? item.likes
@@ -3125,18 +3108,24 @@ function AnnouncementCard({ item, projectId, currentUser, onPin, onDelete, onEdi
               )}
             </div>
 
+            {showHeadline && (
             <h3 className="max-w-4xl text-2xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 dark:text-slate-50 sm:text-3xl">
               {displayTitle}
             </h3>
+            )}
 
+            {showHeadline && showDetails && (
             <div className="mt-4 h-px w-full max-w-3xl bg-gradient-to-r from-violet-300 via-cyan-200 to-transparent" />
+            )}
 
+            {showDetails && (
             <div
               dir="ltr"
               style={{ direction: 'ltr', unicodeBidi: 'normal', textAlign: 'left', transform: 'none' }}
               className="announcement-rich-body mt-5 text-[16px] font-medium leading-8 text-slate-700 dark:text-slate-200 [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_strong]:font-black [&_b]:font-black [&_em]:italic [&_i]:italic [&_u]:underline"
-              dangerouslySetInnerHTML={{ __html: getAnnouncementBodyHtml(item) }}
+              dangerouslySetInnerHTML={{ __html: displayBodyHtml }}
             />
+            )}
 
             <AttachmentGallery attachments={item.attachments} />
             <AnnouncementFileReferences
@@ -3300,12 +3289,12 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
   const openEditModal = (announcement) => {
     if (readOnly) return;
     setEditingAnnouncement(announcement);
-    setTitle(announcement?.title || announcement?.subject || announcement?.name || '');
+    setTitle(announcement?.title ?? announcement?.subject ?? announcement?.name ?? '');
     setMessage(
-      announcement?.message ||
-      announcement?.content ||
-      announcement?.text ||
-      announcement?.description ||
+      announcement?.message ??
+      announcement?.content ??
+      announcement?.text ??
+      announcement?.description ??
       ''
     );
     setType(String(announcement?.type || 'info').toLowerCase());
@@ -3548,32 +3537,17 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
 
   const handleCreate = async () => {
     if (readOnly) return;
-    const cleanMessage = sanitizeAnnouncementHtml(message);
-    const cleanPoll = normalizePollForSubmit(pollEnabled, pollQuestion, pollOptions);
+    if (posting) return;
+    const { cleanTitle, cleanPoll, attachmentUrls } = draft;
+    const cleanMessage = draft.hasBody ? cleanMessageHtml : '';
 
-    if (!title.trim() || !getAnnouncementPlainText(cleanMessage).trim() || posting) return;
-
-    if (pollEnabled && !cleanPoll) {
-      toast({ title: 'Add a poll question and at least two options', variant: 'error' });
+    if (!draft.canPublish) {
+      const reason = anyUploading ? 'Please wait for uploads to finish'
+        : draft.incompletePoll ? 'Add a poll question and at least two options'
+        : 'Add text, a valid poll, or an attachment to publish';
+      toast({ title: reason, variant: 'error' });
       return;
     }
-
-    if (anyUploading) {
-      toast({ title: 'Please wait for uploads to finish', variant: 'error' });
-      return;
-    }
-
-    const attachmentUrls =
-      uploadedFiles
-        .filter(
-          (attachment) =>
-            attachment.url &&
-            !attachment.error
-        )
-        .map(
-          (attachment) =>
-            attachment.url
-        );
 
     setPosting(true);
 
@@ -3587,7 +3561,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
         }
 
         const response = await updateAnnouncement(projectId, announcementId, {
-          title: title.trim(),
+          title: cleanTitle,
           message: cleanMessage,
           type,
           pinned,
@@ -3612,11 +3586,11 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                   {
                     ...announcement,
                     ...updated,
-                    title: updated?.title || title.trim(),
+                    title: updated?.title ?? cleanTitle,
                     message:
-                      updated?.message ||
-                      updated?.content ||
-                      updated?.text ||
+                      updated?.message ??
+                      updated?.content ??
+                      updated?.text ??
                       cleanMessage,
                     type: updated?.type || type,
                     attachments:
@@ -3662,7 +3636,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
       }
 
         const response = await createAnnouncement(projectId, {
-          title: title.trim(),
+          title: cleanTitle,
           message: cleanMessage,
           type,
           pinned,
@@ -3684,8 +3658,8 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
         const optimisticAnnouncement = {
           ...created,
           authorId: created?.authorId || user,
-          title: created?.title || title.trim(),
-          message: created?.message || created?.content || cleanMessage,
+          title: created?.title ?? cleanTitle,
+          message: created?.message ?? created?.content ?? cleanMessage,
           attachments: created?.attachments || attachmentUrls,
           fileReferences:
             Array.isArray(
@@ -3771,7 +3745,12 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
 
-  const hasAnnouncementBody = getAnnouncementPlainText(message).trim().length > 0;
+  const cleanMessageHtml = sanitizeAnnouncementHtml(message);
+  const draft = getAnnouncementDraftState({
+    title, bodyText: getAnnouncementPlainText(cleanMessageHtml), pollEnabled,
+    pollQuestion, pollOptions, editingAnnouncement, uploadedFiles,
+    linkedProjectFiles, posting, anyUploading,
+  });
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
@@ -4542,7 +4521,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
 
               <div>
                 <label className="text-xs font-black uppercase tracking-[0.18em] text-slate-700">
-                  Headline <span className="text-rose-500">*</span>
+                  Headline <span className="normal-case tracking-normal font-medium text-slate-500">(optional)</span>
                 </label>
 
                 <input
@@ -4558,20 +4537,31 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
 
               <div>
                 <label className="text-xs font-black uppercase tracking-[0.18em] text-slate-700">
-                  Details <span className="text-rose-500">*</span>
+                  Details <span className="normal-case tracking-normal font-medium text-slate-500">(optional)</span>
                 </label>
 
                 <RichAnnouncementBodyEditor value={message} onChange={setMessage} />
+                <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400" aria-live="polite">
+                  {draft.incompletePoll
+                    ? 'Complete the poll question and at least two options, or remove the poll.'
+                    : 'Add at least one: headline, details, poll, attachment, or project file.'}
+                </p>
               </div>
 
-                            <PollComposer
-                enabled={pollEnabled}
-                setEnabled={setPollEnabled}
-                question={pollQuestion}
-                setQuestion={setPollQuestion}
-                options={pollOptions}
-                setOptions={setPollOptions}
-              />
+              {!editingAnnouncement ? (
+                <PollComposer
+                  enabled={pollEnabled}
+                  setEnabled={setPollEnabled}
+                  question={pollQuestion}
+                  setQuestion={setPollQuestion}
+                  options={pollOptions}
+                  setOptions={setPollOptions}
+                />
+              ) : editingAnnouncement.poll?.question ? (
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  Existing poll and votes will be preserved.
+                </p>
+              ) : null}
 
               <AnnouncementAffectedWorkInput
                 moves={
@@ -4652,7 +4642,7 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
 
               <button
                 onClick={handleCreate}
-                disabled={!title.trim() || !hasAnnouncementBody || posting || anyUploading}
+                disabled={!draft.canPublish}
                 className="announcements-primary-button relative isolate flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl px-4 py-3 text-sm font-black text-white shadow-xl shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-100 sm:flex-none sm:px-8"
               >
                 <span
@@ -4660,11 +4650,11 @@ export default function AnnouncementsView({ projectId, readOnly = false }) {
                   className="pointer-events-none absolute inset-0 rounded-2xl"
                   style={{
                     background:
-                      title.trim() && hasAnnouncementBody && !posting && !anyUploading
+                      draft.canPublish
                         ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 48%, #6d28d9 100%)'
                         : 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 52%, #7c3aed 100%)',
                     boxShadow:
-                      title.trim() && hasAnnouncementBody && !posting && !anyUploading
+                      draft.canPublish
                         ? 'inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 16px 36px rgba(109, 40, 217, 0.34)'
                         : 'inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 24px rgba(109, 40, 217, 0.20)',
                   }}
