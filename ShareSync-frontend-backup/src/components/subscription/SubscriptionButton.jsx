@@ -204,7 +204,7 @@ function FeaturePill({ children }) {
 function SubscriptionPortalGlyph() {
   return (
     <div
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-[0_10px_28px_rgba(139,92,246,0.16)] dark:border-violet-400/25 dark:from-violet-500/15 dark:via-white/[0.05] dark:to-cyan-400/10 dark:text-violet-300"
+      className="openshare-subscription-wallet-r1 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-[0_10px_28px_rgba(139,92,246,0.16)] dark:border-violet-400/25 dark:from-violet-500/15 dark:via-white/[0.05] dark:to-cyan-400/10 dark:text-violet-300"
       aria-hidden="true"
     >
       <WalletCards className="h-5 w-5" strokeWidth={2.2} />
@@ -216,7 +216,7 @@ function SubscriptionPortalGlyph() {
 function SubscriptionPortalGlyphCompact() {
   return (
     <span
-      className="grid h-5 w-5 shrink-0 place-items-center rounded-lg border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-[0_6px_16px_rgba(139,92,246,0.16)] dark:border-violet-400/25 dark:from-violet-500/15 dark:via-white/[0.05] dark:to-cyan-400/10 dark:text-violet-300"
+      className="openshare-subscription-wallet-r1 grid h-5 w-5 shrink-0 place-items-center rounded-lg border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-cyan-50 text-violet-600 shadow-[0_6px_16px_rgba(139,92,246,0.16)] dark:border-violet-400/25 dark:from-violet-500/15 dark:via-white/[0.05] dark:to-cyan-400/10 dark:text-violet-300"
       aria-hidden="true"
     >
       <WalletCards className="h-3.5 w-3.5" strokeWidth={2.2} />
@@ -433,7 +433,7 @@ export default function SubscriptionButton() {
     : 'Free usage';
 
   return (
-    <div className="relative" ref={dropRef}>
+    <div className="relative" ref={dropRef} data-subscription-button-r1="true">
       <button
         type="button"
         onClick={() => setShowDropdown((current) => !current)}
@@ -526,7 +526,7 @@ export default function SubscriptionButton() {
                       {planLabel} Plan
                     </span>
 
-                    <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[9px] font-black text-violet-700 dark:border-violet-400/25 dark:bg-violet-400/10 dark:text-violet-200">
+                    <span className="openshare-subscription-freshness-r1 shrink-0 whitespace-nowrap rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[9px] font-black text-violet-700 dark:border-violet-400/25 dark:bg-violet-400/10 dark:text-violet-200">
                       {refreshAgeLabel}
                     </span>
                   </div>
@@ -541,7 +541,7 @@ export default function SubscriptionButton() {
                     refreshProjectCount();
                   }}
                   className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:text-violet-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-500 dark:hover:text-violet-300"
-                  title="Refresh subscription"
+                  data-subscription-refresh-r1="true" title="Refresh subscription"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
@@ -656,6 +656,119 @@ export default function SubscriptionButton() {
           loading={loading}
         />
       )}
+      <style data-subscription-button-dark-mode-r1>{`
+/* OPENSHARE SUBSCRIPTION BUTTON DARK MODE R1 */
+
+/* Refresh-age indicator */
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+.openshare-subscription-freshness-r1 {
+  background: #30264f !important;
+  background-image: none !important;
+  border-color: #8b5cf6 !important;
+  color: #ede9fe !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
+/* Subscription refresh control */
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+button[data-subscription-refresh-r1="true"] {
+  background: #252536 !important;
+  background-image: none !important;
+  border-color: #64748b !important;
+  color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+button[data-subscription-refresh-r1="true"] svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+button[data-subscription-refresh-r1="true"]:hover:not(:disabled) {
+  background: #30264f !important;
+  border-color: #a78bfa !important;
+  color: #f5f3ff !important;
+}
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+button[data-subscription-refresh-r1="true"]:focus-visible {
+  outline: 2px solid #c4b5fd !important;
+  outline-offset: 2px !important;
+}
+
+/* Subscription wallet glyphs: compact and dropdown */
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-wallet-r1 {
+  background: #30264f !important;
+  background-image: none !important;
+  border-color: #8b5cf6 !important;
+  color: #ddd6fe !important;
+  box-shadow: none !important;
+}
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-wallet-r1 svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+
+/* SUBSCRIPTION BADGE LAYOUT R1.3-R2 */
+
+/*
+ * Give the Free Plan title and freshness indicator
+ * independent rows without displacing refresh controls.
+ */
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+div:has(> .openshare-subscription-freshness-r1) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 6px 10px !important;
+  border-radius: 12px !important;
+  box-sizing: border-box !important;
+}
+
+html.dark [data-subscription-button-r1="true"]
+.openshare-subscription-menu
+.openshare-subscription-freshness-r1 {
+  display: inline-block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.25 !important;
+  flex-shrink: 1 !important;
+}
+
+/* END SUBSCRIPTION BADGE LAYOUT R1.3-R2 */
+
+/* END OPENSHARE SUBSCRIPTION BUTTON DARK MODE R1 */
+`}</style>
+
     </div>
   );
 }
