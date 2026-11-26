@@ -703,70 +703,212 @@ export default function Sidebar({ user }) {
             linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent) !important;
         }
 
-        @media (prefers-color-scheme: dark) {
-          #app-sidebar {
-            background:
-              radial-gradient(circle at 18% 10%, rgba(139, 92, 246, 0.18), transparent 34%),
-              radial-gradient(circle at 86% 26%, rgba(34, 211, 238, 0.10), transparent 36%),
-              radial-gradient(circle at 24% 88%, rgba(16, 185, 129, 0.08), transparent 36%),
-              linear-gradient(180deg, rgba(8, 12, 22, 0.99), rgba(10, 13, 24, 0.97)) !important;
-            border-right-color: rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 22px 0 60px rgba(0, 0, 0, 0.32) !important;
-          }
 
-          #app-sidebar .openshare-sidebar-wordmark {
-            color: #f8fafc !important;
-            text-shadow: 0 0 18px rgba(139, 92, 246, 0.26);
-          }
+        /* OPENSHARE SIDEBAR DARK MODE R1
+           Follow the application's resolved theme.
+           Scoped to the sidebar; preserve light mode.
+        */
 
-          #app-sidebar .openshare-sidebar-nav a,
-          #app-sidebar .openshare-sidebar-nav button,
-          #app-sidebar .openshare-sidebar-nav a span,
-          #app-sidebar .openshare-sidebar-nav button span {
-            color: #dbeafe !important;
-          }
-
-          #app-sidebar .openshare-sidebar-nav svg {
-            color: #cbd5e1 !important;
-          }
-
-          #app-sidebar .openshare-sidebar-nav a:hover,
-          #app-sidebar .openshare-sidebar-nav button:hover {
-            color: #ffffff !important;
-            background:
-              linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(76, 29, 149, 0.26)) !important;
-            border-color: rgba(167, 139, 250, 0.28) !important;
-          }
-
-          #app-sidebar .openshare-sidebar-nav a[aria-current="page"],
-          #app-sidebar .openshare-sidebar-nav a[aria-current="true"],
-          #app-sidebar .openshare-sidebar-nav .active {
-            color: #ffffff !important;
-            background:
-              linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(76, 29, 149, 0.38)) !important;
-            border-color: rgba(167, 139, 250, 0.42) !important;
-            box-shadow:
-              0 18px 44px rgba(0, 0, 0, 0.38),
-              0 0 0 4px rgba(139, 92, 246, 0.10),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-          }
-
-          #app-sidebar .openshare-sidebar-nav a[aria-current="page"] span,
-          #app-sidebar .openshare-sidebar-nav a[aria-current="true"] span,
-          #app-sidebar .openshare-sidebar-nav .active span {
-            color: #ffffff !important;
-          }
-
-          #app-sidebar .sidebar-telemetry-card,
-          #app-sidebar .sidebar-team-hud {
-            background:
-              linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(30, 41, 59, 0.52)) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            box-shadow:
-              0 16px 36px rgba(0, 0, 0, 0.25),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-          }
+        html.dark #app-sidebar {
+          color-scheme: dark;
+          color: #e2e8f0 !important;
+          background:
+            radial-gradient(circle at 18% 10%,
+              rgba(139, 92, 246, 0.14), transparent 34%),
+            radial-gradient(circle at 86% 26%,
+              rgba(34, 211, 238, 0.07), transparent 36%),
+            linear-gradient(180deg, #111827, #0a0f1c) !important;
+          border-right-color: #334155 !important;
+          box-shadow: 22px 0 60px rgba(0, 0, 0, 0.32) !important;
         }
+
+        html.dark #app-sidebar .openshare-sidebar-wordmark {
+          color: #f8fafc !important;
+        }
+
+        html.dark #app-sidebar .openshare-logo-shell::after {
+          background: #1e293b;
+          box-shadow:
+            inset 0 0 0 1px rgba(167, 139, 250, 0.25),
+            0 10px 28px rgba(124, 58, 237, 0.18);
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav {
+          background: transparent !important;
+        }
+
+        /* Default navigation labels and icons */
+
+        html.dark #app-sidebar .openshare-sidebar-nav :is(a, button),
+        html.dark #app-sidebar .openshare-sidebar-nav :is(a, button) span {
+          color: #e2e8f0 !important;
+          -webkit-text-fill-color: currentColor !important;
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav svg {
+          color: #cbd5e1 !important;
+          opacity: 1 !important;
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav a > div.relative {
+          background: #1e293b !important;
+          border-color: #475569 !important;
+        }
+
+        /* Hover state */
+
+        html.dark #app-sidebar .openshare-sidebar-nav :is(a, button):hover {
+          color: #ffffff !important;
+          background: #253247 !important;
+          border-color: #64748b !important;
+          box-shadow: none !important;
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav :is(a, button):hover span {
+          color: #ffffff !important;
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav :is(a, button):hover svg {
+          color: #c4b5fd !important;
+        }
+
+        /* Selected navigation item */
+
+        html.dark #app-sidebar .openshare-sidebar-nav
+          :is(a[aria-current="page"], a[aria-current="true"], a.active) {
+          color: #ffffff !important;
+          background:
+            linear-gradient(135deg, #30264f, #252b46) !important;
+          border-color: #a78bfa !important;
+          box-shadow:
+            0 12px 28px rgba(0, 0, 0, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav
+          :is(a[aria-current="page"], a[aria-current="true"], a.active) span {
+          color: #ffffff !important;
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav
+          :is(a[aria-current="page"], a[aria-current="true"], a.active) svg {
+          color: #c4b5fd !important;
+          filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.3));
+        }
+
+        html.dark #app-sidebar .openshare-sidebar-nav
+          :is(a[aria-current="page"], a[aria-current="true"], a.active)
+          > div.relative {
+          background: #41366d !important;
+          border-color: #8b5cf6 !important;
+        }
+
+        /* Keyboard accessibility */
+
+        html.dark #app-sidebar .openshare-sidebar-nav
+          :is(a, button):focus-visible,
+        html.dark #app-sidebar .sidebar-catalyst-button:focus-visible {
+          outline: 2px solid #c4b5fd !important;
+          outline-offset: -3px !important;
+        }
+
+        /* Navigation divider */
+
+        html.dark #app-sidebar .openshare-sidebar-nav .h-px {
+          background: #334155 !important;
+        }
+
+        /* Collapsed navigation tooltip */
+
+        html.dark #app-sidebar .openshare-sidebar-nav a > div.absolute.left-full {
+          color: #f8fafc !important;
+          background: #1e293b !important;
+          border: 1px solid #64748b !important;
+        }
+
+        /* Personal telemetry and team activity */
+
+        html.dark #app-sidebar .sidebar-telemetry-card,
+        html.dark #app-sidebar .sidebar-team-hud {
+          color: #e2e8f0 !important;
+          background: #1e293b !important;
+          border-color: #475569 !important;
+          box-shadow:
+            0 12px 28px rgba(0, 0, 0, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        }
+
+        html.dark #app-sidebar .sidebar-telemetry-card .text-slate-800 {
+          color: #f8fafc !important;
+        }
+
+        html.dark #app-sidebar .sidebar-team-hud .text-slate-700 {
+          color: #e2e8f0 !important;
+        }
+
+        html.dark #app-sidebar .sidebar-telemetry-card .text-slate-500,
+        html.dark #app-sidebar .sidebar-team-hud .text-slate-500 {
+          color: #cbd5e1 !important;
+        }
+
+        html.dark #app-sidebar .sidebar-telemetry-card .text-amber-600 {
+          color: #fcd34d !important;
+          background: #422c12 !important;
+          border-color: #a16207 !important;
+          box-shadow: none !important;
+        }
+
+        html.dark #app-sidebar .sidebar-telemetry-card .bg-slate-200 {
+          background: #334155 !important;
+        }
+
+        html.dark #app-sidebar .sidebar-telemetry-card .bg-slate-300 {
+          background: #a78bfa !important;
+        }
+
+        html.dark #app-sidebar .sidebar-team-hud .bg-blue-500 {
+          background-color: #1d4ed8 !important;
+        }
+
+        html.dark #app-sidebar .sidebar-team-hud .bg-emerald-500 {
+          background-color: #047857 !important;
+        }
+
+        html.dark #app-sidebar .sidebar-team-hud .bg-orange-400 {
+          background-color: #9a3412 !important;
+        }
+
+        /* Focus Next Mission */
+
+        html.dark #app-sidebar .sidebar-catalyst-button {
+          background: #30264f !important;
+          color: #ddd6fe !important;
+          border-color: #a78bfa !important;
+          box-shadow:
+            0 10px 28px rgba(0, 0, 0, 0.22) !important;
+        }
+
+        html.dark #app-sidebar .sidebar-catalyst-button span {
+          color: #ddd6fe !important;
+        }
+
+        html.dark #app-sidebar .sidebar-catalyst-button svg {
+          color: #c4b5fd !important;
+        }
+
+        html.dark #app-sidebar .sidebar-catalyst-button:hover {
+          background: #4c1d95 !important;
+          color: #ffffff !important;
+          border-color: #c4b5fd !important;
+        }
+
+        html.dark #app-sidebar .sidebar-catalyst-button:hover span,
+        html.dark #app-sidebar .sidebar-catalyst-button:hover svg {
+          color: #ffffff !important;
+        }
+
+        /* END OPENSHARE SIDEBAR DARK MODE R1 */
+
       `}</style>
 
       <aside
